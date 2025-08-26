@@ -1,0 +1,339 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          avatar_url: string | null
+          level: string
+          program: string
+          purpose: string
+          subscription_type: 'free' | 'premium'
+          subscription_expires_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email: string
+          avatar_url?: string | null
+          level: string
+          program: string
+          purpose: string
+          subscription_type?: 'free' | 'premium'
+          subscription_expires_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string
+          avatar_url?: string | null
+          level?: string
+          program?: string
+          purpose?: string
+          subscription_type?: 'free' | 'premium'
+          subscription_expires_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      courses: {
+        Row: {
+          id: string
+          title: string
+          description: string
+          subject: string
+          level: string
+          resources: Json
+          tips: Json
+          progress: number
+          related_courses: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description: string
+          subject: string
+          level: string
+          resources?: Json
+          tips?: Json
+          progress?: number
+          related_courses?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string
+          subject?: string
+          level?: string
+          resources?: Json
+          tips?: Json
+          progress?: number
+          related_courses?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_courses: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string
+          progress: number
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_id: string
+          progress?: number
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          course_id?: string
+          progress?: number
+          is_active?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_courses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      notes: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string | null
+          content: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_id?: string | null
+          content: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          course_id?: string | null
+          content?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      quizzes: {
+        Row: {
+          id: string
+          course_id: string
+          question: string
+          options: Json
+          answer: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          course_id: string
+          question: string
+          options: Json
+          answer: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          course_id?: string
+          question?: string
+          options?: Json
+          answer?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      pomodoro_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string | null
+          start_time: string
+          end_time: string
+          duration: number
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_id?: string | null
+          start_time: string
+          end_time: string
+          duration: number
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          course_id?: string | null
+          start_time?: string
+          end_time?: string
+          duration?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pomodoro_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pomodoro_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      friends: {
+        Row: {
+          id: string
+          user_id: string
+          friend_id: string
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          friend_id: string
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          friend_id?: string
+          status?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friends_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friends_friend_id_fkey"
+            columns: ["friend_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      settings: {
+        Row: {
+          id: string
+          user_id: string
+          dark_mode: boolean
+          timer_focus: number
+          timer_break: number
+          notifications: boolean
+          language: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          dark_mode?: boolean
+          timer_focus?: number
+          timer_break?: number
+          notifications?: boolean
+          language?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          dark_mode?: boolean
+          timer_focus?: number
+          timer_break?: number
+          notifications?: boolean
+          language?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}

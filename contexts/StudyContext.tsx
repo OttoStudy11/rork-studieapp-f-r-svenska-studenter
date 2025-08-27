@@ -1,7 +1,6 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePremium } from '@/contexts/PremiumContext';
 import * as db from '@/lib/database';
 import { Database } from '@/lib/database.types';
 
@@ -133,7 +132,6 @@ const dbSessionToSession = (dbSession: DbPomodoroSession): PomodoroSession => ({
 
 export const [StudyProvider, useStudy] = createContextHook(() => {
   const { user: authUser, isAuthenticated, isLoading: authLoading, hasCompletedOnboarding, setOnboardingCompleted } = useAuth();
-  const { canAddCourse, canAddNote, showPremiumModal } = usePremium();
   const [user, setUser] = useState<User | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -294,12 +292,6 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) return;
       
-      // Check premium limits
-      if (!canAddCourse(courses.length)) {
-        showPremiumModal('Obegränsat antal kurser');
-        return;
-      }
-      
       // Create course in database
       const dbCourse = await db.createCourse({
         title: course.title,
@@ -323,7 +315,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       console.error('Error adding course:', error);
       throw error;
     }
-  }, [authUser, courses.length, canAddCourse, showPremiumModal]);
+  }, [authUser]);
 
   const updateCourse = useCallback(async (id: string, updates: Partial<Course>) => {
     try {
@@ -352,12 +344,6 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) return;
       
-      // Check premium limits
-      if (!canAddNote(notes.length)) {
-        showPremiumModal('Obegränsat antal anteckningar');
-        return;
-      }
-      
       const dbNote = await db.createNote({
         user_id: authUser.id,
         course_id: note.courseId || null,
@@ -370,7 +356,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       console.error('Error adding note:', error);
       throw error;
     }
-  }, [authUser, notes.length, canAddNote, showPremiumModal]);
+  }, [authUser]);
 
   const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
     try {

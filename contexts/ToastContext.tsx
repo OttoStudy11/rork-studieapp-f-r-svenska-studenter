@@ -69,7 +69,11 @@ const ToastComponent: React.FC<{
       handleDismiss();
     }, toast.duration || 4000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
   }, [slideAnim, opacityAnim, handleDismiss, toast.duration]);
 
 

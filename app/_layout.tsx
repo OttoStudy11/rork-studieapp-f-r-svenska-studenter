@@ -17,7 +17,7 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { ToastContainer } = useToast();
-  const { isAuthenticated, isLoading, hasCompletedOnboarding } = useAuth();
+  const { isLoading } = useAuth();
   
   if (isLoading) {
     return (
@@ -63,11 +63,11 @@ export default function RootLayout() {
           <AuthProvider>
             <PremiumProvider>
               <StudyProvider>
-                <AchievementProvider>
-                  <GestureHandlerRootView style={{ flex: 1 }}>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <AchievementProvider>
                     <RootLayoutNav />
-                  </GestureHandlerRootView>
-                </AchievementProvider>
+                  </AchievementProvider>
+                </GestureHandlerRootView>
               </StudyProvider>
             </PremiumProvider>
           </AuthProvider>

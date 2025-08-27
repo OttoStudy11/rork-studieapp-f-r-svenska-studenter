@@ -26,8 +26,24 @@ export default function HomeScreen() {
   const { user, courses, notes, pomodoroSessions, isLoading } = useStudy();
   const { totalPoints, getUserLevel, getRecentAchievements, currentStreak } = useAchievements();
   const { showSuccess } = useToast();
-  const { isPremium, limits, isDemoMode } = usePremium();
+  const { isPremium, limits, isDemoMode, canAddCourse, canAddNote, showPremiumModal } = usePremium();
   const { theme, isDark } = useTheme();
+  
+  const handleAddCourse = () => {
+    if (!canAddCourse(courses.length)) {
+      showPremiumModal('Obegränsat antal kurser');
+      return;
+    }
+    router.push('/courses');
+  };
+  
+  const handleAddNote = () => {
+    if (!canAddNote(notes.length)) {
+      showPremiumModal('Obegränsat antal anteckningar');
+      return;
+    }
+    router.push('/notes');
+  };
 
   // Handle loading
   if (isLoading) {

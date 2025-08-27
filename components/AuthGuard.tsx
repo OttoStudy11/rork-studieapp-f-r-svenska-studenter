@@ -20,7 +20,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         router.replace('/onboarding');
       } else {
         // User is authenticated and has completed onboarding
-        router.replace('/(tabs)');
+        router.replace('/(tabs)/home');
       }
     }
   }, [isAuthenticated, isLoading, hasCompletedOnboarding]);

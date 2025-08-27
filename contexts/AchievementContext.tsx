@@ -161,11 +161,16 @@ const ACHIEVEMENTS: Omit<Achievement, 'progress' | 'unlockedAt'>[] = [
 ];
 
 export const [AchievementProvider, useAchievements] = createContextHook(() => {
-  const { pomodoroSessions, courses, notes } = useStudy();
+  const studyContext = useStudy();
   const { showAchievement } = useToast();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
   const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
+  
+  // Safely extract data from study context with useMemo to prevent re-renders
+  const pomodoroSessions = useMemo(() => studyContext?.pomodoroSessions || [], [studyContext?.pomodoroSessions]);
+  const courses = useMemo(() => studyContext?.courses || [], [studyContext?.courses]);
+  const notes = useMemo(() => studyContext?.notes || [], [studyContext?.notes]);
 
   // Initialize achievements
   useEffect(() => {

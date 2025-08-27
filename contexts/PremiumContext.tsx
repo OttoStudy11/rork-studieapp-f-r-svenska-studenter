@@ -112,12 +112,12 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
       setSubscriptionExpiresAt(null);
       setIsLoading(false);
     }
-  }, [authUser, isAuthenticated]);
+  }, [authUser, isAuthenticated, loadSubscriptionData]);
 
   // Load demo mode state
   useEffect(() => {
     loadDemoModeState();
-  }, []);
+  }, [loadDemoModeState]);
 
   const isPremium = useMemo(() => {
     if (subscriptionType !== 'premium') return false;

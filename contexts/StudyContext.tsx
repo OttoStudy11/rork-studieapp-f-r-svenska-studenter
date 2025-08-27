@@ -140,20 +140,6 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
   const [pomodoroSessions, setPomodoroSessions] = useState<PomodoroSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!authLoading) {
-      if (isAuthenticated && authUser && hasCompletedOnboarding) {
-        loadUserData(authUser.id);
-      } else {
-        setUser(null);
-        setCourses([]);
-        setNotes([]);
-        setPomodoroSessions([]);
-        setIsLoading(false);
-      }
-    }
-  }, [authUser, isAuthenticated, authLoading, hasCompletedOnboarding]);
-
   const loadUserData = useCallback(async (userId: string) => {
     try {
       setIsLoading(true);
@@ -174,6 +160,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       
     } catch (error) {
       console.error('Error loading user data:', error);
+      console.error('Error details:', error instanceof Error ? error.message : String(error));
       // User doesn't exist in database yet, they need to complete onboarding
       setUser(null);
       setCourses([]);
@@ -183,6 +170,20 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (isAuthenticated && authUser && hasCompletedOnboarding) {
+        loadUserData(authUser.id);
+      } else {
+        setUser(null);
+        setCourses([]);
+        setNotes([]);
+        setPomodoroSessions([]);
+        setIsLoading(false);
+      }
+    }
+  }, [authUser, isAuthenticated, authLoading, hasCompletedOnboarding, loadUserData]);
 
   const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'>) => {
     try {

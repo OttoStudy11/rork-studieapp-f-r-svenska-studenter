@@ -14,8 +14,11 @@ import { useStudy } from '@/contexts/StudyContext';
 import { useAchievements } from '@/contexts/AchievementContext';
 import { useToast } from '@/contexts/ToastContext';
 import { usePremium } from '@/contexts/PremiumContext';
-import { BookOpen, Clock, Target, TrendingUp, Plus, Award, Zap, Star, Crown } from 'lucide-react-native';
+import { useTheme } from '@/contexts/ThemeContext';
+import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
+import { Skeleton, SkeletonStats, SkeletonList } from '@/components/Skeleton';
 
 const { width } = Dimensions.get('window');
 
@@ -24,6 +27,7 @@ export default function HomeScreen() {
   const { totalPoints, getUserLevel, getRecentAchievements, currentStreak } = useAchievements();
   const { showSuccess } = useToast();
   const { isPremium, limits, isDemoMode } = usePremium();
+  const { theme, isDark } = useTheme();
 
   // Handle loading
   if (isLoading) {
@@ -86,28 +90,30 @@ export default function HomeScreen() {
         </LinearGradient>
 
         {/* Quick Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <BookOpen size={24} color="#4F46E5" />
-            <Text style={styles.statNumber}>{activeCourses.length}</Text>
-            <Text style={styles.statLabel}>Aktiva kurser</Text>
+        <SlideInView direction="up" delay={200}>
+          <View style={styles.statsContainer}>
+            <AnimatedPressable style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <BookOpen size={24} color={theme.colors.primary} />
+              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{activeCourses.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Aktiva kurser</Text>
+            </AnimatedPressable>
+            <AnimatedPressable style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <Clock size={24} color={theme.colors.secondary} />
+              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{todaySessions.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Sessioner idag</Text>
+            </AnimatedPressable>
+            <AnimatedPressable style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <Zap size={24} color={theme.colors.warning} />
+              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{currentStreak}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Dagars streak</Text>
+            </AnimatedPressable>
+            <AnimatedPressable style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <Star size={24} color="#8B5CF6" />
+              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{totalPoints}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Poäng</Text>
+            </AnimatedPressable>
           </View>
-          <View style={styles.statCard}>
-            <Clock size={24} color="#10B981" />
-            <Text style={styles.statNumber}>{todaySessions.length}</Text>
-            <Text style={styles.statLabel}>Sessioner idag</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Zap size={24} color="#F59E0B" />
-            <Text style={styles.statNumber}>{currentStreak}</Text>
-            <Text style={styles.statLabel}>Dagars streak</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Star size={24} color="#8B5CF6" />
-            <Text style={styles.statNumber}>{totalPoints}</Text>
-            <Text style={styles.statLabel}>Poäng</Text>
-          </View>
-        </View>
+        </SlideInView>
 
         {/* Level Progress */}
         <View style={styles.section}>

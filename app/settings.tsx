@@ -1,0 +1,307 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+  Switch,
+} from 'react-native';
+import { useTheme, ThemeMode } from '@/contexts/ThemeContext';
+import { useToast } from '@/contexts/ToastContext';
+import { Settings, Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle } from 'lucide-react-native';
+import { AnimatedPressable, FadeInView } from '@/components/Animations';
+
+interface SettingItem {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+  isThemeSelector?: boolean;
+  hasSwitch?: boolean;
+  switchValue?: boolean;
+}
+
+export default function SettingsScreen() {
+  const { theme, themeMode, setThemeMode } = useTheme();
+  const { showSuccess, showInfo } = useToast();
+
+  const themeOptions: { mode: ThemeMode; label: string; icon: React.ReactNode }[] = [
+    { mode: 'light', label: 'Ljust', icon: <Sun size={20} color={theme.colors.textSecondary} /> },
+    { mode: 'dark', label: 'Mörkt', icon: <Moon size={20} color={theme.colors.textSecondary} /> },
+    { mode: 'system', label: 'Systemets', icon: <Smartphone size={20} color={theme.colors.textSecondary} /> },
+  ];
+
+  const handleThemeChange = (mode: ThemeMode) => {
+    setThemeMode(mode);
+    showSuccess('Tema uppdaterat', `Bytte till ${mode === 'light' ? 'ljust' : mode === 'dark' ? 'mörkt' : 'systemets'} tema`);
+  };
+
+  const settingsSections: { title: string; items: SettingItem[] }[] = [
+    {
+      title: 'Utseende',
+      items: [
+        {
+          icon: <Palette size={20} color={theme.colors.textSecondary} />,
+          title: 'Tema',
+          subtitle: `Nuvarande: ${themeMode === 'light' ? 'Ljust' : themeMode === 'dark' ? 'Mörkt' : 'Systemets'}`,
+          onPress: () => {},
+          isThemeSelector: true,
+        },
+      ],
+    },
+    {
+      title: 'Notifikationer',
+      items: [
+        {
+          icon: <Bell size={20} color={theme.colors.textSecondary} />,
+          title: 'Push-notifikationer',
+          subtitle: 'Få påminnelser om studiesessioner',
+          onPress: () => showInfo('Kommer snart', 'Notifikationer kommer i nästa uppdatering'),
+          hasSwitch: true,
+          switchValue: false,
+        },
+      ],
+    },
+    {
+      title: 'Säkerhet & Integritet',
+      items: [
+        {
+          icon: <Shield size={20} color={theme.colors.textSecondary} />,
+          title: 'Integritetspolicy',
+          subtitle: 'Läs om hur vi hanterar din data',
+          onPress: () => showInfo('Integritetspolicy', 'Din data är säker hos oss och delas aldrig med tredje part.'),
+        },
+      ],
+    },
+    {
+      title: 'Support',
+      items: [
+        {
+          icon: <HelpCircle size={20} color={theme.colors.textSecondary} />,
+          title: 'Hjälp & Support',
+          subtitle: 'Få hjälp med appen',
+          onPress: () => showInfo('Support', 'Kontakta oss på support@studyflow.se för hjälp'),
+        },
+      ],
+    },
+  ];
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <FadeInView>
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <Settings size={32} color={theme.colors.primary} />
+              <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Inställningar</Text>
+            </View>
+          </View>
+        </FadeInView>
+
+        {settingsSections.map((section, sectionIndex) => (
+          <FadeInView key={section.title} delay={sectionIndex * 100}>
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+                {section.title}
+              </Text>
+              
+              <View style={[styles.sectionCard, { backgroundColor: theme.colors.card }]}>
+                {section.items.map((item, itemIndex) => (
+                  <View key={item.title}>
+                    {item.isThemeSelector ? (
+                      <View>
+                        <View style={styles.settingItem}>
+                          <View style={styles.settingIcon}>
+                            {item.icon}
+                          </View>
+                          <View style={styles.settingContent}>
+                            <Text style={[styles.settingTitle, { color: theme.colors.text }]}>
+                              {item.title}
+                            </Text>
+                            <Text style={[styles.settingSubtitle, { color: theme.colors.textSecondary }]}>
+                              {item.subtitle}
+                            </Text>
+                          </View>
+                        </View>
+                        
+                        <View style={styles.themeOptions}>
+                          {themeOptions.map((option) => (
+                            <AnimatedPressable
+                              key={option.mode}
+                              style={[
+                                styles.themeOption,
+                                {
+                                  backgroundColor: themeMode === option.mode 
+                                    ? theme.colors.primaryLight 
+                                    : theme.colors.background,
+                                  borderColor: themeMode === option.mode 
+                                    ? theme.colors.primary 
+                                    : theme.colors.border,
+                                },
+                              ]}
+                              onPress={() => handleThemeChange(option.mode)}
+                            >
+                              {option.icon}
+                              <Text style={[
+                                styles.themeOptionText,
+                                {
+                                  color: themeMode === option.mode 
+                                    ? theme.colors.primary 
+                                    : theme.colors.textSecondary,
+                                  fontWeight: themeMode === option.mode ? '600' : '400',
+                                },
+                              ]}>
+                                {option.label}
+                              </Text>
+                            </AnimatedPressable>
+                          ))}
+                        </View>
+                      </View>
+                    ) : (
+                      <AnimatedPressable
+                        style={styles.settingItem}
+                        onPress={item.onPress}
+                      >
+                        <View style={styles.settingIcon}>
+                          {item.icon}
+                        </View>
+                        <View style={styles.settingContent}>
+                          <Text style={[styles.settingTitle, { color: theme.colors.text }]}>
+                            {item.title}
+                          </Text>
+                          <Text style={[styles.settingSubtitle, { color: theme.colors.textSecondary }]}>
+                            {item.subtitle}
+                          </Text>
+                        </View>
+                        {item.hasSwitch && (
+                          <Switch
+                            value={item.switchValue}
+                            onValueChange={() => item.onPress()}
+                            trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                            thumbColor={item.switchValue ? theme.colors.surface : theme.colors.textMuted}
+                          />
+                        )}
+                      </AnimatedPressable>
+                    )}
+                    
+                    {itemIndex < section.items.length - 1 && (
+                      <View style={[styles.separator, { backgroundColor: theme.colors.borderLight }]} />
+                    )}
+                  </View>
+                ))}
+              </View>
+            </View>
+          </FadeInView>
+        ))}
+
+        <FadeInView delay={400}>
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: theme.colors.textMuted }]}>
+              StudyFlow v1.0.0
+            </Text>
+            <Text style={[styles.footerText, { color: theme.colors.textMuted }]}>
+              Gjord med ❤️ för svenska studenter
+            </Text>
+          </View>
+        </FadeInView>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    padding: 24,
+    paddingTop: 60,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  section: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  sectionCard: {
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  settingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  settingContent: {
+    flex: 1,
+  },
+  settingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  settingSubtitle: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  separator: {
+    height: 1,
+    marginLeft: 68,
+  },
+  themeOptions: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    gap: 8,
+  },
+  themeOptionText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  footer: {
+    alignItems: 'center',
+    padding: 24,
+    gap: 4,
+  },
+  footerText: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+});

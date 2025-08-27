@@ -8,6 +8,7 @@ import { StudyProvider } from "@/contexts/StudyContext";
 import { ToastProvider, useToast } from "@/contexts/ToastContext";
 import { AchievementProvider } from "@/contexts/AchievementContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { View, ActivityIndicator, Text } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
@@ -43,6 +44,7 @@ function RootLayoutNav() {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="premium" options={{ title: "Premium" }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
       </Stack>
       <ToastContainer />
     </>
@@ -57,17 +59,19 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <AuthProvider>
-          <PremiumProvider>
-            <StudyProvider>
-              <AchievementProvider>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                  <RootLayoutNav />
-                </GestureHandlerRootView>
-              </AchievementProvider>
-            </StudyProvider>
-          </PremiumProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <PremiumProvider>
+              <StudyProvider>
+                <AchievementProvider>
+                  <GestureHandlerRootView style={{ flex: 1 }}>
+                    <RootLayoutNav />
+                  </GestureHandlerRootView>
+                </AchievementProvider>
+              </StudyProvider>
+            </PremiumProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </ToastProvider>
     </QueryClientProvider>
   );

@@ -9,9 +9,10 @@ import {
   TextInput,
   Modal,
   Alert,
-  Switch
 } from 'react-native';
 import { useStudy } from '@/contexts/StudyContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useToast } from '@/contexts/ToastContext';
 import { 
   User, 
   Edit3, 
@@ -20,29 +21,24 @@ import {
   Clock, 
   Target, 
   TrendingUp,
-  Moon,
-  Bell,
-  Globe,
   Download,
   LogOut,
   X
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
+import { router } from 'expo-router';
 
 export default function ProfileScreen() {
   const { user, courses, pomodoroSessions, updateUser } = useStudy();
+  const { theme } = useTheme();
+  const { showSuccess } = useToast();
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editForm, setEditForm] = useState({
     name: user?.name || '',
     program: user?.program || '',
     purpose: user?.purpose || ''
   });
-  
-  // Settings state
-  const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(true);
-  const [language, setLanguage] = useState('sv');
 
   const totalStudyTime = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
   const averageProgress = courses.length > 0 
@@ -207,23 +203,26 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Inställningar</Text>
           
-          <TouchableOpacity 
+          <AnimatedPressable 
             style={styles.settingItem}
-            onPress={() => setShowSettingsModal(true)}
+            onPress={() => {
+              router.push('/settings');
+              showSuccess('Navigerar', 'Öppnar inställningar');
+            }}
           >
             <Settings size={20} color="#6B7280" />
             <Text style={styles.settingText}>Appinställningar</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
 
-          <TouchableOpacity style={styles.settingItem} onPress={handleExportData}>
+          <AnimatedPressable style={styles.settingItem} onPress={handleExportData}>
             <Download size={20} color="#6B7280" />
             <Text style={styles.settingText}>Exportera data</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
 
-          <TouchableOpacity style={styles.settingItem} onPress={handleSignOut}>
+          <AnimatedPressable style={styles.settingItem} onPress={handleSignOut}>
             <LogOut size={20} color="#EF4444" />
             <Text style={[styles.settingText, { color: '#EF4444' }]}>Logga ut</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
       </ScrollView>
 
@@ -293,77 +292,7 @@ export default function ProfileScreen() {
         </SafeAreaView>
       </Modal>
 
-      {/* Settings Modal */}
-      <Modal
-        visible={showSettingsModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Inställningar</Text>
-            <TouchableOpacity onPress={() => setShowSettingsModal(false)}>
-              <X size={24} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
 
-          <ScrollView style={styles.modalContent}>
-            <View style={styles.settingsGroup}>
-              <Text style={styles.settingsGroupTitle}>Utseende</Text>
-              
-              <View style={styles.settingsItem}>
-                <View style={styles.settingsItemLeft}>
-                  <Moon size={20} color="#6B7280" />
-                  <Text style={styles.settingsItemText}>Mörkt tema</Text>
-                </View>
-                <Switch
-                  value={darkMode}
-                  onValueChange={setDarkMode}
-                  trackColor={{ false: '#E5E7EB', true: '#4F46E5' }}
-                  thumbColor={darkMode ? '#FFFFFF' : '#FFFFFF'}
-                />
-              </View>
-            </View>
-
-            <View style={styles.settingsGroup}>
-              <Text style={styles.settingsGroupTitle}>Notifikationer</Text>
-              
-              <View style={styles.settingsItem}>
-                <View style={styles.settingsItemLeft}>
-                  <Bell size={20} color="#6B7280" />
-                  <Text style={styles.settingsItemText}>Push-notifikationer</Text>
-                </View>
-                <Switch
-                  value={notifications}
-                  onValueChange={setNotifications}
-                  trackColor={{ false: '#E5E7EB', true: '#4F46E5' }}
-                  thumbColor={notifications ? '#FFFFFF' : '#FFFFFF'}
-                />
-              </View>
-            </View>
-
-            <View style={styles.settingsGroup}>
-              <Text style={styles.settingsGroupTitle}>Språk</Text>
-              
-              <TouchableOpacity style={styles.settingsItem}>
-                <View style={styles.settingsItemLeft}>
-                  <Globe size={20} color="#6B7280" />
-                  <Text style={styles.settingsItemText}>Svenska</Text>
-                </View>
-                <Text style={styles.settingsItemValue}>sv</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.appInfo}>
-              <Text style={styles.appInfoTitle}>StudyFlow</Text>
-              <Text style={styles.appInfoVersion}>Version 1.0.0</Text>
-              <Text style={styles.appInfoText}>
-                En modern studieapp för svenska studenter
-              </Text>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
     </SafeAreaView>
   );
 }

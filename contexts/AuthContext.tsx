@@ -81,7 +81,15 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         
-        if (session?.user) {
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log('User signed in successfully');
+          setUser(session.user);
+          await checkOnboardingStatus(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          console.log('User signed out');
+          setUser(null);
+          setHasCompletedOnboarding(false);
+        } else if (session?.user) {
           setUser(session.user);
           await checkOnboardingStatus(session.user.id);
         } else {

@@ -46,36 +46,47 @@ export default function AuthScreen() {
 
     try {
       if (isLogin) {
+        console.log('Attempting to sign in with:', email);
         const { error } = await signIn(email, password);
+        console.log('Sign in result:', { error });
+        
         if (error) {
           const errorMessage = (error as any)?.message || '';
+          console.error('Sign in error:', errorMessage);
           if (errorMessage.includes('Invalid login credentials')) {
             showError('Fel e-post eller lösenord');
           } else {
-            showError('Inloggning misslyckades');
+            showError('Inloggning misslyckades: ' + errorMessage);
           }
         } else {
+          console.log('Sign in successful!');
           showSuccess('Välkommen tillbaka!');
+          // Don't navigate here - let AuthGuard handle it
         }
       } else {
+        console.log('Attempting to sign up with:', email);
         const { error } = await signUp(email, password);
+        console.log('Sign up result:', { error });
+        
         if (error) {
           const errorMessage = (error as any)?.message || '';
+          console.error('Sign up error:', errorMessage);
           if (errorMessage.includes('User already registered')) {
             showError('E-postadressen är redan registrerad');
           } else if (errorMessage.includes('Password should be at least 6 characters')) {
             showError('Lösenordet måste vara minst 6 tecken');
           } else {
-            showError('Registrering misslyckades');
+            showError('Registrering misslyckades: ' + errorMessage);
           }
         } else {
+          console.log('Sign up successful!');
           showSuccess('Konto skapat! Kolla din e-post för verifiering');
           setIsLogin(true);
         }
       }
     } catch (error) {
       console.error('Auth error:', error);
-      showError('Ett fel uppstod');
+      showError('Ett fel uppstod: ' + String(error));
     } finally {
       setIsLoading(false);
     }

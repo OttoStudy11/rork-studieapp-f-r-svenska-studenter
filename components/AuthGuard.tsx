@@ -12,23 +12,35 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
   useEffect(() => {
     if (!isLoading) {
-      if (!isAuthenticated) {
-        // User is not authenticated, redirect to auth screen
-        router.replace('/auth');
-      } else if (!hasCompletedOnboarding) {
-        // User is authenticated but hasn't completed onboarding
-        router.replace('/onboarding');
-      } else {
-        // User is authenticated and has completed onboarding
-        router.replace('/(tabs)/home');
-      }
+      console.log('AuthGuard - Auth state:', { isAuthenticated, hasCompletedOnboarding });
+      
+      // Add a small delay to ensure auth state is stable
+      const timer = setTimeout(() => {
+        if (!isAuthenticated) {
+          console.log('AuthGuard - Redirecting to auth');
+          router.replace('/auth');
+        } else if (!hasCompletedOnboarding) {
+          console.log('AuthGuard - Redirecting to onboarding');
+          router.replace('/onboarding');
+        } else {
+          console.log('AuthGuard - Redirecting to home');
+          router.replace('/(tabs)/home');
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [isAuthenticated, isLoading, hasCompletedOnboarding]);
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#4F46E5" />
+      <View style={{ 
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        backgroundColor: '#1E293B'
+      }}>
+        <ActivityIndicator size="large" color="#3B82F6" />
       </View>
     );
   }

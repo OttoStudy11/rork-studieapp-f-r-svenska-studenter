@@ -15,7 +15,7 @@ import { useAchievements } from '@/contexts/AchievementContext';
 import { useToast } from '@/contexts/ToastContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
 import { Skeleton, SkeletonStats, SkeletonList } from '@/components/Skeleton';
@@ -87,16 +87,24 @@ export default function HomeScreen() {
           style={styles.header}
         >
           <View style={styles.headerContent}>
-            <View>
+            <View style={styles.headerLeft}>
               <Text style={styles.greeting}>Hej, {user?.name}! 👋</Text>
               <Text style={styles.subtitle}>Redo att plugga idag?</Text>
             </View>
-            {isPremium && (
-              <View style={styles.premiumBadge}>
-                <Crown size={16} color="#FFD700" />
-                <Text style={styles.premiumText}>Premium</Text>
-              </View>
-            )}
+            <View style={styles.headerRight}>
+              {isPremium && (
+                <View style={styles.premiumBadge}>
+                  <Crown size={16} color="#FFD700" />
+                  <Text style={styles.premiumText}>Premium</Text>
+                </View>
+              )}
+              <TouchableOpacity 
+                style={styles.profileButton}
+                onPress={() => router.push('/profile')}
+              >
+                <User size={24} color="white" />
+              </TouchableOpacity>
+            </View>
           </View>
           {isDemoMode && (
             <View style={styles.demoBanner}>
@@ -227,29 +235,90 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Recent Notes */}
+        {/* Notes Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Senaste anteckningar</Text>
-            <TouchableOpacity onPress={() => router.push('/notes')}>
-              <Text style={styles.seeAllText}>Se alla</Text>
+            <View style={styles.sectionTitleContainer}>
+              <StickyNote size={24} color="#4F46E5" />
+              <Text style={styles.sectionTitle}>Mina anteckningar</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.addNoteButton}
+              onPress={handleAddNote}
+            >
+              <Plus size={16} color="white" />
+              <Text style={styles.addNoteButtonText}>Ny</Text>
             </TouchableOpacity>
           </View>
           
+          {/* Premium limits info for notes */}
+          {!isPremium && (
+            <View style={styles.noteLimitsInfo}>
+              <Text style={styles.noteLimitsText}>
+                Anteckningar: {notes.length}/{limits.maxNotes}
+              </Text>
+              {notes.length >= limits.maxNotes && (
+                <TouchableOpacity 
+                  style={styles.upgradeSmallButton}
+                  onPress={() => router.push('/premium')}
+                >
+                  <Crown size={12} color="#F59E0B" />
+                  <Text style={styles.upgradeSmallButtonText}>Uppgradera</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          
           {recentNotes.length > 0 ? (
-            recentNotes.map((note) => (
-              <TouchableOpacity key={note.id} style={styles.noteCard}>
-                <Text style={styles.notePreview} numberOfLines={2}>
-                  {note.content}
-                </Text>
-                <Text style={styles.noteDate}>
-                  {new Date(note.createdAt).toLocaleDateString('sv-SE')}
-                </Text>
-              </TouchableOpacity>
-            ))
+            <View>
+              {recentNotes.map((note) => (
+                <TouchableOpacity key={note.id} style={styles.noteCard}>
+                  <View style={styles.noteHeader}>
+                    <Text style={styles.noteTitle} numberOfLines={1}>
+                      {note.content.split('\n')[0] || 'Anteckning utan titel'}
+                    </Text>
+                    <Edit3 size={16} color="#9CA3AF" />
+                  </View>
+                  <Text style={styles.notePreview} numberOfLines={2}>
+                    {note.content}
+                  </Text>
+                  <View style={styles.noteFooter}>
+                    <Text style={styles.noteDate}>
+                      {new Date(note.createdAt).toLocaleDateString('sv-SE')}
+                    </Text>
+                    {note.courseId && (
+                      <Text style={styles.noteCourse}>
+                        {courses.find(c => c.id === note.courseId)?.title || 'Okänd kurs'}
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+              {notes.length > 3 && (
+                <TouchableOpacity 
+                  style={styles.viewAllNotesButton}
+                  onPress={() => router.push('/notes')}
+                >
+                  <Text style={styles.viewAllNotesText}>
+                    Visa alla {notes.length} anteckningar
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Inga anteckningar än</Text>
+            <View style={styles.emptyNotesState}>
+              <StickyNote size={48} color="#9CA3AF" />
+              <Text style={styles.emptyTitle}>Inga anteckningar än</Text>
+              <Text style={styles.emptyText}>
+                Skapa din första anteckning för att komma igång med dina studier
+              </Text>
+              <TouchableOpacity 
+                style={styles.createFirstNoteButton}
+                onPress={handleAddNote}
+              >
+                <Plus size={20} color="white" />
+                <Text style={styles.createFirstNoteButtonText}>Skapa anteckning</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -665,5 +734,119 @@ const styles = StyleSheet.create({
   limitText: {
     fontSize: 14,
     color: '#6B7280',
+  },
+  // Header styles
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Notes section styles
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  addNoteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4,
+  },
+  addNoteButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  noteLimitsInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  noteLimitsText: {
+    fontSize: 14,
+    color: '#92400E',
+    fontWeight: '500',
+  },
+  upgradeSmallButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  upgradeSmallButtonText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  noteHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  noteFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  noteCourse: {
+    fontSize: 12,
+    color: '#4F46E5',
+    fontWeight: '500',
+  },
+  viewAllNotesButton: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  viewAllNotesText: {
+    fontSize: 14,
+    color: '#4F46E5',
+    fontWeight: '600',
+  },
+  emptyNotesState: {
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  createFirstNoteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  createFirstNoteButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
 });

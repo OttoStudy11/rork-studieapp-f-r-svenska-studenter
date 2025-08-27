@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { Home, BookOpen, StickyNote, Timer, Users, User } from "lucide-react-native";
+import { Home, BookOpen, Timer, Users } from "lucide-react-native";
 import { Platform } from "react-native";
 
 export default function TabLayout() {
@@ -47,13 +47,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="notes"
-        options={{
-          title: "Anteckningar",
-          tabBarIcon: ({ color, size }) => <StickyNote color={color} size={size} />,
-        }}
-      />
-      <Tabs.Screen
         name="timer"
         options={{
           title: "Timer",
@@ -65,13 +58,6 @@ export default function TabLayout() {
         options={{
           title: "Vänner",
           tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profil",
-          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />
     </Tabs>

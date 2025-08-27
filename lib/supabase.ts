@@ -21,7 +21,16 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 export const getCurrentUser = async () => {
   try {
     console.log('Getting current user...');
-    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('getCurrentUser timeout')), 5000);
+    });
+    
+    const userPromise = supabase.auth.getUser();
+    
+    const result = await Promise.race([userPromise, timeoutPromise]);
+    const { data: { user }, error } = result;
     console.log('Current user result:', { user: user?.id, error });
     return user;
   } catch (error) {

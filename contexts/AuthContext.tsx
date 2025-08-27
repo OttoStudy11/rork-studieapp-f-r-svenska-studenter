@@ -43,8 +43,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         } else {
           setHasCompletedOnboarding(false);
         }
-      } catch (dbError) {
-        // User doesn't exist in database, onboarding not completed
+      } catch (error) {
+        // User doesn't exist in database or other error, onboarding not completed
+        console.log('User not found in database or error occurred:', error);
         setHasCompletedOnboarding(false);
       }
     } catch (error) {
@@ -55,13 +56,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const initializeAuth = useCallback(async () => {
     try {
+      console.log('Initializing auth...');
       setIsLoading(true);
       const currentUser = await getCurrentUser();
       
       if (currentUser) {
+        console.log('Found current user:', currentUser.id);
         setUser(currentUser);
         await checkOnboardingStatus(currentUser.id);
       } else {
+        console.log('No current user found');
         setUser(null);
         setHasCompletedOnboarding(false);
       }
@@ -70,37 +74,65 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setUser(null);
       setHasCompletedOnboarding(false);
     } finally {
+      console.log('Auth initialization complete');
       setIsLoading(false);
     }
   }, [checkOnboardingStatus]);
 
   useEffect(() => {
-    initializeAuth();
+    let mounted = true;
+    
+    const initialize = async () => {
+      if (mounted) {
+        await initializeAuth();
+      }
+    };
+    
+    initialize();
+    
+    // Fallback timeout to ensure loading doesn't get stuck
+    const fallbackTimeout = setTimeout(() => {
+      if (mounted) {
+        console.log('Auth initialization timeout - forcing loading to false');
+        setIsLoading(false);
+      }
+    }, 10000); // 10 second timeout
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         console.log('Auth state changed:', event, session?.user?.id);
         
-        if (event === 'SIGNED_IN' && session?.user) {
-          console.log('User signed in successfully');
-          setUser(session.user);
-          await checkOnboardingStatus(session.user.id);
-        } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out');
-          setUser(null);
-          setHasCompletedOnboarding(false);
-        } else if (session?.user) {
-          setUser(session.user);
-          await checkOnboardingStatus(session.user.id);
-        } else {
-          setUser(null);
-          setHasCompletedOnboarding(false);
+        try {
+          if (event === 'SIGNED_IN' && session?.user) {
+            console.log('User signed in successfully');
+            setUser(session.user);
+            await checkOnboardingStatus(session.user.id);
+          } else if (event === 'SIGNED_OUT') {
+            console.log('User signed out');
+            setUser(null);
+            setHasCompletedOnboarding(false);
+          } else if (session?.user) {
+            setUser(session.user);
+            await checkOnboardingStatus(session.user.id);
+          } else {
+            setUser(null);
+            setHasCompletedOnboarding(false);
+          }
+        } catch (error) {
+          console.error('Error in auth state change:', error);
+        } finally {
+          if (mounted) {
+            setIsLoading(false);
+          }
         }
-        setIsLoading(false);
       }
     );
 
     return () => {
+      mounted = false;
+      clearTimeout(fallbackTimeout);
       subscription.unsubscribe();
     };
   }, [initializeAuth, checkOnboardingStatus]);

@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -9,13 +9,16 @@ interface AuthGuardProps {
 
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading, hasCompletedOnboarding } = useAuth();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && !hasRedirected) {
       console.log('AuthGuard - Auth state:', { isAuthenticated, hasCompletedOnboarding });
       
       // Add a small delay to ensure auth state is stable
       const timer = setTimeout(() => {
+        setHasRedirected(true);
+        
         if (!isAuthenticated) {
           console.log('AuthGuard - Redirecting to auth');
           router.replace('/auth');
@@ -30,7 +33,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, isLoading, hasCompletedOnboarding]);
+  }, [isAuthenticated, isLoading, hasCompletedOnboarding, hasRedirected]);
 
   if (isLoading) {
     return (
@@ -41,6 +44,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         backgroundColor: '#1E293B'
       }}>
         <ActivityIndicator size="large" color="#3B82F6" />
+        <Text style={{ color: '#CBD5E1', marginTop: 16 }}>Laddar...</Text>
       </View>
     );
   }

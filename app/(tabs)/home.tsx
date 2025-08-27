@@ -42,7 +42,7 @@ export default function HomeScreen() {
       showPremiumModal('Obegränsat antal anteckningar');
       return;
     }
-    router.push('/notes');
+    showSuccess('Anteckningar', 'Anteckningsfunktionen kommer snart!');
   };
 
   // Handle loading
@@ -297,7 +297,7 @@ export default function HomeScreen() {
               {notes.length > 3 && (
                 <TouchableOpacity 
                   style={styles.viewAllNotesButton}
-                  onPress={() => router.push('/notes')}
+                  onPress={() => showSuccess('Anteckningar', 'Visa alla anteckningar kommer snart!')}
                 >
                   <Text style={styles.viewAllNotesText}>
                     Visa alla {notes.length} anteckningar

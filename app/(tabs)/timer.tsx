@@ -162,135 +162,141 @@ export default function TimerScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <LinearGradient
-        colors={sessionType === 'focus' ? ['#667eea', '#764ba2'] : ['#11998e', '#38ef7d']}
-        style={styles.header}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>
-            {sessionType === 'focus' ? 'Fokus' : 'Paus'}
-          </Text>
-          <Text style={styles.headerSubtitle}>
-            {sessionType === 'focus' ? 'Tid att koncentrera sig' : 'Vila och ladda om'}
-          </Text>
-        </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => setShowStats(true)}
-          >
-            <BarChart3 size={20} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => setShowSettings(true)}
-          >
-            <Settings size={20} color="white" />
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-
-      {/* Timer Circle */}
-      <View style={styles.timerContainer}>
-        <View style={styles.timerCircle}>
-          <Animated.View
-            style={[
-              styles.progressRing,
-              {
-                transform: [{
-                  rotate: progressAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0deg', '360deg']
-                  })
-                }]
-              }
-            ]}
-          />
-          <View style={styles.timerContent}>
-            <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
-            <Text style={styles.sessionTypeText}>
+        {/* Header */}
+        <LinearGradient
+          colors={sessionType === 'focus' ? ['#667eea', '#764ba2'] : ['#11998e', '#38ef7d']}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>
               {sessionType === 'focus' ? 'Fokus' : 'Paus'}
             </Text>
+            <Text style={styles.headerSubtitle}>
+              {sessionType === 'focus' ? 'Tid att koncentrera sig' : 'Vila och ladda om'}
+            </Text>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => setShowStats(true)}
+            >
+              <BarChart3 size={20} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => setShowSettings(true)}
+            >
+              <Settings size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+
+        {/* Timer Circle */}
+        <View style={styles.timerContainer}>
+          <View style={styles.timerCircle}>
+            <Animated.View
+              style={[
+                styles.progressRing,
+                {
+                  transform: [{
+                    rotate: progressAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg']
+                    })
+                  }]
+                }
+              ]}
+            />
+            <View style={styles.timerContent}>
+              <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
+              <Text style={styles.sessionTypeText}>
+                {sessionType === 'focus' ? 'Fokus' : 'Paus'}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Course Selection */}
-      {sessionType === 'focus' && (
-        <View style={styles.courseSection}>
-          <Text style={styles.sectionTitle}>Vad pluggar du?</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseList}>
-            <TouchableOpacity
-              style={[
-                styles.courseChip,
-                !selectedCourse && styles.courseChipActive
-              ]}
-              onPress={() => setSelectedCourse('')}
-            >
-              <Text style={[
-                styles.courseChipText,
-                !selectedCourse && styles.courseChipTextActive
-              ]}>Allmänt</Text>
-            </TouchableOpacity>
-            {courses.map((course) => (
+        {/* Course Selection */}
+        {sessionType === 'focus' && (
+          <View style={styles.courseSection}>
+            <Text style={styles.sectionTitle}>Vad pluggar du?</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseList}>
               <TouchableOpacity
-                key={course.id}
                 style={[
                   styles.courseChip,
-                  selectedCourse === course.id && styles.courseChipActive
+                  !selectedCourse && styles.courseChipActive
                 ]}
-                onPress={() => setSelectedCourse(course.id)}
+                onPress={() => setSelectedCourse('')}
               >
                 <Text style={[
                   styles.courseChipText,
-                  selectedCourse === course.id && styles.courseChipTextActive
-                ]}>{course.title}</Text>
+                  !selectedCourse && styles.courseChipTextActive
+                ]}>Allmänt</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Controls */}
-      <View style={styles.controls}>
-        {timerState === 'idle' ? (
-          <TouchableOpacity style={styles.playButton} onPress={startTimer}>
-            <Play size={32} color="white" />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.activeControls}>
-            <TouchableOpacity style={styles.controlButton} onPress={stopTimer}>
-              <Square size={24} color="#EF4444" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.playButton, styles.pauseButton]}
-              onPress={timerState === 'running' ? pauseTimer : startTimer}
-            >
-              {timerState === 'running' ? (
-                <Pause size={32} color="white" />
-              ) : (
-                <Play size={32} color="white" />
-              )}
-            </TouchableOpacity>
+              {courses.map((course) => (
+                <TouchableOpacity
+                  key={course.id}
+                  style={[
+                    styles.courseChip,
+                    selectedCourse === course.id && styles.courseChipActive
+                  ]}
+                  onPress={() => setSelectedCourse(course.id)}
+                >
+                  <Text style={[
+                    styles.courseChipText,
+                    selectedCourse === course.id && styles.courseChipTextActive
+                  ]}>{course.title}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         )}
-      </View>
 
-      {/* Today's Stats */}
-      <View style={styles.statsSection}>
-        <Text style={styles.sectionTitle}>Idag</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{todayStats.sessions}</Text>
-            <Text style={styles.statLabel}>Sessioner</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{todayStats.minutes}</Text>
-            <Text style={styles.statLabel}>Minuter</Text>
+        {/* Controls */}
+        <View style={styles.controls}>
+          {timerState === 'idle' ? (
+            <TouchableOpacity style={styles.playButton} onPress={startTimer}>
+              <Play size={32} color="white" />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.activeControls}>
+              <TouchableOpacity style={styles.controlButton} onPress={stopTimer}>
+                <Square size={24} color="#EF4444" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.playButton, styles.pauseButton]}
+                onPress={timerState === 'running' ? pauseTimer : startTimer}
+              >
+                {timerState === 'running' ? (
+                  <Pause size={32} color="white" />
+                ) : (
+                  <Play size={32} color="white" />
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Today's Stats */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Idag</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{todayStats.sessions}</Text>
+              <Text style={styles.statLabel}>Sessioner</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{todayStats.minutes}</Text>
+              <Text style={styles.statLabel}>Minuter</Text>
+            </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
 
       {/* Settings Modal */}
       <Modal
@@ -435,26 +441,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
-    paddingTop: 60,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    padding: 20,
+    paddingTop: 16,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    marginBottom: 20,
   },
   headerContent: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 4,
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
   },
   headerActions: {
@@ -467,15 +481,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   timerContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 30,
+    paddingHorizontal: 20,
   },
   timerCircle: {
-    width: 280,
-    height: 280,
-    borderRadius: 140,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
     backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
@@ -488,10 +502,10 @@ const styles = StyleSheet.create({
   },
   progressRing: {
     position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    borderWidth: 10,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    borderWidth: 8,
     borderColor: '#4F46E5',
     borderTopColor: 'transparent',
     borderRightColor: 'transparent',
@@ -500,7 +514,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timerText: {
-    fontSize: 48,
+    fontSize: 42,
     fontWeight: 'bold',
     color: '#1F2937',
     marginBottom: 8,
@@ -512,7 +526,7 @@ const styles = StyleSheet.create({
   },
   courseSection: {
     paddingHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
@@ -546,7 +560,8 @@ const styles = StyleSheet.create({
   },
   controls: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
   },
   playButton: {
     width: 80,
@@ -585,7 +600,7 @@ const styles = StyleSheet.create({
   },
   statsSection: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingTop: 8,
   },
   statsRow: {
     flexDirection: 'row',

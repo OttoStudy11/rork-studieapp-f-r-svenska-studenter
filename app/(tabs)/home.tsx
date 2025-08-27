@@ -80,7 +80,10 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Header */}
         <LinearGradient
           colors={['#667eea', '#764ba2']}
@@ -400,11 +403,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
   header: {
-    padding: 24,
-    paddingTop: 60,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    padding: 20,
+    paddingTop: 16,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    marginBottom: 16,
   },
   headerContent: {
     flexDirection: 'row',
@@ -438,19 +446,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   greeting: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
   },
   statsContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    marginTop: -30,
+    marginTop: -20,
     marginBottom: 20,
     gap: 12,
   },

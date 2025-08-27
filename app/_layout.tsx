@@ -25,11 +25,11 @@ function RootLayoutNav() {
         flex: 1, 
         justifyContent: 'center', 
         alignItems: 'center',
-        backgroundColor: '#F9FAFB'
+        backgroundColor: '#1E293B'
       }}>
-        <ActivityIndicator size="large" color="#4F46E5" />
+        <ActivityIndicator size="large" color="#3B82F6" />
         <View style={{ marginTop: 16 }}>
-          <Text style={{ fontSize: 16, color: '#6B7280', textAlign: 'center' }}>
+          <Text style={{ fontSize: 16, color: '#CBD5E1', textAlign: 'center' }}>
             Laddar StudyFlow...
           </Text>
         </View>
@@ -39,12 +39,13 @@ function RootLayoutNav() {
   
   return (
     <>
-      <Stack screenOptions={{ headerBackTitle: "Tillbaka" }}>
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="premium" options={{ title: "Premium" }} />
+        <Stack.Screen name="premium" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
       </Stack>
       <ToastContainer />
     </>

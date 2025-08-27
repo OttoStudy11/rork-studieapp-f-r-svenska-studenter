@@ -4,16 +4,17 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Animated,
-  Alert,
   Modal,
-  ScrollView
+  ScrollView,
+  Dimensions
 } from 'react-native';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { Timer, Play, Pause, Square, Settings, BarChart3, BookOpen } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle } from 'react-native-svg';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 type TimerState = 'idle' | 'running' | 'paused';
 type SessionType = 'focus' | 'break';
@@ -160,24 +161,24 @@ export default function TimerScreen() {
 
   const todayStats = getTodayStats();
 
+  const circumference = 2 * Math.PI * 120;
+  const strokeDashoffset = circumference * (1 - progress);
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <LinearGradient
-          colors={sessionType === 'focus' ? ['#667eea', '#764ba2'] : ['#11998e', '#38ef7d']}
-          style={styles.header}
-        >
+        <View style={styles.header}>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>
               {sessionType === 'focus' ? 'Fokus' : 'Paus'}
             </Text>
             <Text style={styles.headerSubtitle}>
-              {sessionType === 'focus' ? 'Tid att koncentrera sig' : 'Vila och ladda om'}
+              {getSelectedCourseTitle()}
             </Text>
           </View>
           <View style={styles.headerActions}>
@@ -185,44 +186,61 @@ export default function TimerScreen() {
               style={styles.headerButton}
               onPress={() => setShowStats(true)}
             >
-              <BarChart3 size={20} color="white" />
+              <BarChart3 size={20} color="#F9FAFB" />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.headerButton}
               onPress={() => setShowSettings(true)}
             >
-              <Settings size={20} color="white" />
+              <Settings size={20} color="#F9FAFB" />
             </TouchableOpacity>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Timer Circle */}
         <View style={styles.timerContainer}>
           <View style={styles.timerCircle}>
-            <Animated.View
-              style={[
-                styles.progressRing,
-                {
-                  transform: [{
-                    rotate: progressAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '360deg']
-                    })
-                  }]
-                }
-              ]}
-            />
+            <Svg width={280} height={280} style={styles.progressSvg}>
+              {/* Background circle */}
+              <Circle
+                cx={140}
+                cy={140}
+                r={120}
+                stroke="#334155"
+                strokeWidth={8}
+                fill="none"
+                opacity={0.3}
+              />
+              {/* Progress circle */}
+              <Circle
+                cx={140}
+                cy={140}
+                r={120}
+                stroke={sessionType === 'focus' ? '#A3E635' : '#3B82F6'}
+                strokeWidth={8}
+                fill="none"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+                transform={`rotate(-90 140 140)`}
+              />
+            </Svg>
             <View style={styles.timerContent}>
               <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
               <Text style={styles.sessionTypeText}>
                 {sessionType === 'focus' ? 'Fokus' : 'Paus'}
               </Text>
+              <View style={styles.timerDots}>
+                <View style={[styles.dot, timerState === 'running' && styles.dotActive]} />
+                <View style={[styles.dot, timerState === 'paused' && styles.dotActive]} />
+                <View style={[styles.dot, timerState === 'idle' && styles.dotActive]} />
+              </View>
             </View>
           </View>
         </View>
 
         {/* Course Selection */}
-        {sessionType === 'focus' && (
+        {sessionType === 'focus' && timerState === 'idle' && (
           <View style={styles.courseSection}>
             <Text style={styles.sectionTitle}>Vad pluggar du?</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseList}>
@@ -261,21 +279,21 @@ export default function TimerScreen() {
         <View style={styles.controls}>
           {timerState === 'idle' ? (
             <TouchableOpacity style={styles.playButton} onPress={startTimer}>
-              <Play size={32} color="white" />
+              <Play size={28} color="#1E293B" fill="#1E293B" />
             </TouchableOpacity>
           ) : (
             <View style={styles.activeControls}>
-              <TouchableOpacity style={styles.controlButton} onPress={stopTimer}>
-                <Square size={24} color="#EF4444" />
+              <TouchableOpacity style={styles.stopButton} onPress={stopTimer}>
+                <Square size={20} color="#F9FAFB" fill="#F9FAFB" />
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.playButton, styles.pauseButton]}
+                style={styles.playButton}
                 onPress={timerState === 'running' ? pauseTimer : startTimer}
               >
                 {timerState === 'running' ? (
-                  <Pause size={32} color="white" />
+                  <Pause size={28} color="#1E293B" fill="#1E293B" />
                 ) : (
-                  <Play size={32} color="white" />
+                  <Play size={28} color="#1E293B" fill="#1E293B" />
                 )}
               </TouchableOpacity>
             </View>
@@ -304,7 +322,7 @@ export default function TimerScreen() {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Inställningar</Text>
             <TouchableOpacity onPress={() => setShowSettings(false)}>
@@ -377,7 +395,7 @@ export default function TimerScreen() {
               <Text style={styles.resetButtonText}>Återställ timer</Text>
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
+        </View>
       </Modal>
 
       {/* Stats Modal */}
@@ -386,7 +404,7 @@ export default function TimerScreen() {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Statistik</Text>
             <TouchableOpacity onPress={() => setShowStats(false)}>
@@ -430,340 +448,328 @@ export default function TimerScreen() {
               </View>
             )}
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#1E293B',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 16,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    marginBottom: 20,
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 20,
   },
   headerContent: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#F9FAFB',
     marginBottom: 4,
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 16,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
   headerActions: {
     flexDirection: 'row',
     gap: 12,
   },
   headerButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#334155',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   timerContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 30,
+    paddingVertical: 40,
     paddingHorizontal: 20,
   },
   timerCircle: {
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
-    position: 'relative',
-  },
-  progressRing: {
-    position: 'absolute',
     width: 280,
     height: 280,
     borderRadius: 140,
-    borderWidth: 8,
-    borderColor: '#4F46E5',
-    borderTopColor: 'transparent',
-    borderRightColor: 'transparent',
+    backgroundColor: '#334155',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  progressSvg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
   timerContent: {
     alignItems: 'center',
+    zIndex: 1,
   },
   timerText: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontSize: 48,
+    fontWeight: '300',
+    color: '#F9FAFB',
     marginBottom: 8,
+    fontVariant: ['tabular-nums'],
   },
   sessionTypeText: {
-    fontSize: 18,
-    color: '#6B7280',
-    fontWeight: '600',
+    fontSize: 16,
+    color: '#94A3B8',
+    fontWeight: '500',
+    marginBottom: 16,
+  },
+  timerDots: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#475569',
+  },
+  dotActive: {
+    backgroundColor: '#A3E635',
   },
   courseSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: 24,
+    marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 12,
+    fontWeight: '600',
+    color: '#F9FAFB',
+    marginBottom: 16,
   },
   courseList: {
     flexDirection: 'row',
   },
   courseChip: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
+    backgroundColor: '#334155',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginRight: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#475569',
   },
   courseChipActive: {
-    backgroundColor: '#4F46E5',
-    borderColor: '#4F46E5',
+    backgroundColor: '#A3E635',
+    borderColor: '#A3E635',
   },
   courseChipText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#94A3B8',
     fontWeight: '500',
   },
   courseChipTextActive: {
-    color: 'white',
+    color: '#1E293B',
   },
   controls: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 32,
     paddingHorizontal: 20,
   },
   playButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#4F46E5',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#A3E635',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  pauseButton: {
-    backgroundColor: '#F59E0B',
-    shadowColor: '#F59E0B',
   },
   activeControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 20,
+    gap: 32,
   },
-  controlButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'white',
+  stopButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#EF4444',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
   },
   statsSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 8,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#334155',
+    borderRadius: 16,
+    padding: 20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#475569',
   },
   statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#4F46E5',
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#A3E635',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#94A3B8',
+    fontWeight: '500',
   },
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#1E293B',
+    paddingTop: 60,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    backgroundColor: 'white',
+    borderBottomColor: '#475569',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#F9FAFB',
   },
   closeButton: {
     fontSize: 16,
-    color: '#4F46E5',
+    color: '#A3E635',
     fontWeight: '600',
   },
   modalContent: {
     flex: 1,
-    padding: 20,
+    padding: 24,
   },
   settingGroup: {
     marginBottom: 32,
   },
   settingLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 12,
+    color: '#F9FAFB',
+    marginBottom: 16,
   },
   timeSelector: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
   },
   timeOption: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: '#334155',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#475569',
   },
   timeOptionActive: {
-    backgroundColor: '#4F46E5',
-    borderColor: '#4F46E5',
+    backgroundColor: '#A3E635',
+    borderColor: '#A3E635',
   },
   timeOptionText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 16,
+    color: '#94A3B8',
     fontWeight: '500',
   },
   timeOptionTextActive: {
-    color: 'white',
+    color: '#1E293B',
   },
   resetButton: {
     backgroundColor: '#EF4444',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 32,
   },
   resetButtonText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#F9FAFB',
+    fontSize: 18,
     fontWeight: '600',
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
+    gap: 16,
+    marginBottom: 32,
   },
   bigStatCard: {
     flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: '#334155',
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#475569',
   },
   bigStatNumber: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#4F46E5',
+    fontSize: 36,
+    fontWeight: '600',
+    color: '#A3E635',
     marginBottom: 8,
   },
   bigStatLabel: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 16,
+    color: '#94A3B8',
     textAlign: 'center',
+    fontWeight: '500',
   },
   recentSessions: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: '#334155',
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#475569',
   },
   sessionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#475569',
   },
   sessionInfo: {
     flex: 1,
   },
   sessionCourse: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 2,
+    color: '#F9FAFB',
+    marginBottom: 4,
   },
   sessionDate: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    fontSize: 14,
+    color: '#94A3B8',
   },
   sessionDuration: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#4F46E5',
+    color: '#A3E635',
   },
 });

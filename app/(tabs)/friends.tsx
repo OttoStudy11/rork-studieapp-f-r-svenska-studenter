@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,119 +8,150 @@ import {
   SafeAreaView,
   TextInput,
   Modal,
-  Alert
+  ActivityIndicator
 } from 'react-native';
-import { useStudy } from '@/contexts/StudyContext';
-import { Users, Plus, Search, X, UserPlus, Clock, BookOpen, Trophy, TrendingUp } from 'lucide-react-native';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
+import { Users, Plus, Search, X, UserPlus, Trophy } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as db from '@/lib/database';
 
-// Mock friends data since we don't have real social features yet
-const mockFriends = [
-  {
-    id: '1',
-    name: 'Anna Andersson',
-    program: 'Naturvetenskapsprogrammet',
-    level: 'gymnasie' as const,
-    avatar: '👩‍🎓',
-    status: 'online' as const,
-    currentActivity: 'Pluggar Matematik 3c',
-    todaySessions: 3,
-    totalMinutes: 75,
-    streak: 5
-  },
-  {
-    id: '2',
-    name: 'Erik Eriksson',
-    program: 'Civilingenjör Datateknik',
-    level: 'högskola' as const,
-    avatar: '👨‍💻',
-    status: 'studying' as const,
-    currentActivity: 'Använder timer - Algoritmer',
-    todaySessions: 2,
-    totalMinutes: 90,
-    streak: 12
-  },
-  {
-    id: '3',
-    name: 'Maria Svensson',
-    program: 'Samhällsvetenskapsprogrammet',
-    level: 'gymnasie' as const,
-    avatar: '👩‍📚',
-    status: 'offline' as const,
-    currentActivity: 'Senast aktiv: 2h sedan',
-    todaySessions: 1,
-    totalMinutes: 25,
-    streak: 3
-  },
-  {
-    id: '4',
-    name: 'Johan Johansson',
-    program: 'Ekonomiprogrammet',
-    level: 'gymnasie' as const,
-    avatar: '👨‍💼',
-    status: 'online' as const,
-    currentActivity: 'Läser anteckningar',
-    todaySessions: 4,
-    totalMinutes: 120,
-    streak: 8
-  }
-];
+interface Friend {
+  id: string;
+  name: string;
+  program: string;
+  level: 'gymnasie' | 'högskola';
+  avatar?: string;
+}
 
-const mockFriendRequests = [
-  {
-    id: '1',
-    name: 'Lisa Larsson',
-    program: 'Teknikprogrammet',
-    level: 'gymnasie' as const,
-    avatar: '👩‍🔧',
-    mutualFriends: 2
-  }
-];
+interface FriendRequest {
+  id: string;
+  name: string;
+  program: string;
+  level: 'gymnasie' | 'högskola';
+  avatar?: string;
+}
 
 export default function FriendsScreen() {
-  const { user } = useStudy();
+  const { user } = useAuth();
+  const { showError, showSuccess } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [activeTab, setActiveTab] = useState<'friends' | 'requests'>('friends');
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [addFriendQuery, setAddFriendQuery] = useState('');
 
-  const filteredFriends = mockFriends.filter(friend =>
+  const filteredFriends = friends.filter(friend =>
     friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     friend.program.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'online': return '#10B981';
-      case 'studying': return '#F59E0B';
-      case 'offline': return '#9CA3AF';
-      default: return '#9CA3AF';
+  const loadFriends = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const [friendsData, requestsData] = await Promise.all([
+        db.getUserFriends(user.id),
+        db.getFriendRequests(user.id)
+      ]);
+      
+      const mappedFriends: Friend[] = friendsData.map((f: any) => ({
+        id: f.friend.id,
+        name: f.friend.name,
+        program: f.friend.program,
+        level: f.friend.level,
+        avatar: f.friend.avatar_url
+      }));
+      
+      const mappedRequests: FriendRequest[] = requestsData.map((r: any) => ({
+        id: r.id,
+        name: r.requester.name,
+        program: r.requester.program,
+        level: r.requester.level,
+        avatar: r.requester.avatar_url
+      }));
+      
+      setFriends(mappedFriends);
+      setFriendRequests(mappedRequests);
+    } catch (error) {
+      console.error('Error loading friends:', error);
+      showError('Kunde inte ladda vänner');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [user, showError]);
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'online': return 'Online';
-      case 'studying': return 'Pluggar';
-      case 'offline': return 'Offline';
-      default: return 'Okänd';
+  useEffect(() => {
+    loadFriends();
+  }, [loadFriends]);
+
+  const searchUsers = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchResults([]);
+      return;
     }
-  };
+    
+    try {
+      setIsSearching(true);
+      const results = await db.searchUsers(query);
+      // Filter out current user and existing friends
+      const filteredResults = results.filter(result => 
+        result.id !== user?.id && 
+        !friends.some(friend => friend.id === result.id)
+      );
+      setSearchResults(filteredResults);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      showError('Kunde inte söka användare');
+    } finally {
+      setIsSearching(false);
+    }
+  }, [user?.id, friends, showError]);
 
   const handleAddFriend = () => {
-    Alert.alert('Lägg till vän', 'Sök efter vänner med e-post eller namn');
     setShowAddModal(true);
   };
 
-  const handleAcceptRequest = (friendId: string) => {
-    Alert.alert('Vänförfrågan accepterad! 🎉');
+  const sendFriendRequest = async (friendId: string) => {
+    if (!user) return;
+    
+    try {
+      await db.sendFriendRequest(user.id, friendId);
+      showSuccess('Vänförfrågan skickad!');
+      setSearchResults(prev => prev.filter(result => result.id !== friendId));
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      showError('Kunde inte skicka vänförfrågan');
+    }
   };
 
-  const handleRejectRequest = (friendId: string) => {
-    Alert.alert('Vänförfrågan avvisad');
+  const handleAcceptRequest = async (requestId: string) => {
+    try {
+      await db.acceptFriendRequest(requestId);
+      showSuccess('Vänförfrågan accepterad! 🎉');
+      await loadFriends();
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      showError('Kunde inte acceptera vänförfrågan');
+    }
   };
 
-  const sortedFriendsForLeaderboard = [...mockFriends].sort((a, b) => b.totalMinutes - a.totalMinutes);
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      await db.rejectFriendRequest(requestId);
+      showSuccess('Vänförfrågan avvisad');
+      await loadFriends();
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+      showError('Kunde inte avvisa vänförfrågan');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -169,7 +200,7 @@ export default function FriendsScreen() {
           onPress={() => setActiveTab('friends')}
         >
           <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
-            Vänner ({mockFriends.length})
+            Vänner ({friends.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -177,80 +208,42 @@ export default function FriendsScreen() {
           onPress={() => setActiveTab('requests')}
         >
           <Text style={[styles.tabText, activeTab === 'requests' && styles.activeTabText]}>
-            Förfrågningar ({mockFriendRequests.length})
+            Förfrågningar ({friendRequests.length})
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {activeTab === 'friends' ? (
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4F46E5" />
+            <Text style={styles.loadingText}>Laddar vänner...</Text>
+          </View>
+        ) : activeTab === 'friends' ? (
           <>
-            {/* Online Friends First */}
-            {filteredFriends.filter(f => f.status !== 'offline').length > 0 && (
+            {filteredFriends.length > 0 ? (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Online nu</Text>
-                {filteredFriends
-                  .filter(f => f.status !== 'offline')
-                  .map((friend) => (
-                    <TouchableOpacity key={friend.id} style={styles.friendCard}>
-                      <View style={styles.friendHeader}>
-                        <View style={styles.friendAvatar}>
-                          <Text style={styles.avatarText}>{friend.avatar}</Text>
-                          <View 
-                            style={[styles.statusDot, { backgroundColor: getStatusColor(friend.status) }]} 
-                          />
-                        </View>
-                        <View style={styles.friendInfo}>
-                          <Text style={styles.friendName}>{friend.name}</Text>
-                          <Text style={styles.friendProgram}>
-                            {friend.program} • {friend.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
-                          </Text>
-                          <Text style={styles.friendActivity}>{friend.currentActivity}</Text>
-                        </View>
-                        <View style={styles.friendStats}>
-                          <Text style={styles.statNumber}>{friend.todaySessions}</Text>
-                          <Text style={styles.statLabel}>sessioner</Text>
-                        </View>
+                <Text style={styles.sectionTitle}>Dina vänner</Text>
+                {filteredFriends.map((friend) => (
+                  <TouchableOpacity key={friend.id} style={styles.friendCard}>
+                    <View style={styles.friendHeader}>
+                      <View style={styles.friendAvatar}>
+                        <Text style={styles.avatarText}>
+                          {friend.avatar || friend.name.charAt(0).toUpperCase()}
+                        </Text>
                       </View>
-                    </TouchableOpacity>
-                  ))}
-              </View>
-            )}
-
-            {/* Offline Friends */}
-            {filteredFriends.filter(f => f.status === 'offline').length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Offline</Text>
-                {filteredFriends
-                  .filter(f => f.status === 'offline')
-                  .map((friend) => (
-                    <TouchableOpacity key={friend.id} style={[styles.friendCard, styles.offlineFriend]}>
-                      <View style={styles.friendHeader}>
-                        <View style={styles.friendAvatar}>
-                          <Text style={styles.avatarText}>{friend.avatar}</Text>
-                          <View 
-                            style={[styles.statusDot, { backgroundColor: getStatusColor(friend.status) }]} 
-                          />
-                        </View>
-                        <View style={styles.friendInfo}>
-                          <Text style={styles.friendName}>{friend.name}</Text>
-                          <Text style={styles.friendProgram}>
-                            {friend.program} • {friend.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
-                          </Text>
-                          <Text style={styles.friendActivity}>{friend.currentActivity}</Text>
-                        </View>
-                        <View style={styles.friendStats}>
-                          <Text style={styles.statNumber}>{friend.todaySessions}</Text>
-                          <Text style={styles.statLabel}>sessioner</Text>
-                        </View>
+                      <View style={styles.friendInfo}>
+                        <Text style={styles.friendName}>{friend.name}</Text>
+                        <Text style={styles.friendProgram}>
+                          {friend.program} • {friend.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
+                        </Text>
                       </View>
-                    </TouchableOpacity>
-                  ))}
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </View>
-            )}
-
-            {filteredFriends.length === 0 && (
+            ) : (
               <View style={styles.emptyState}>
                 <Users size={64} color="#9CA3AF" />
                 <Text style={styles.emptyTitle}>
@@ -272,19 +265,18 @@ export default function FriendsScreen() {
         ) : (
           <>
             {/* Friend Requests */}
-            {mockFriendRequests.map((request) => (
+            {friendRequests.map((request) => (
               <View key={request.id} style={styles.requestCard}>
                 <View style={styles.requestHeader}>
                   <View style={styles.friendAvatar}>
-                    <Text style={styles.avatarText}>{request.avatar}</Text>
+                    <Text style={styles.avatarText}>
+                      {request.avatar || request.name.charAt(0).toUpperCase()}
+                    </Text>
                   </View>
                   <View style={styles.friendInfo}>
                     <Text style={styles.friendName}>{request.name}</Text>
                     <Text style={styles.friendProgram}>
                       {request.program} • {request.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
-                    </Text>
-                    <Text style={styles.mutualFriends}>
-                      {request.mutualFriends} gemensamma vänner
                     </Text>
                   </View>
                 </View>
@@ -305,7 +297,7 @@ export default function FriendsScreen() {
               </View>
             ))}
 
-            {mockFriendRequests.length === 0 && (
+            {friendRequests.length === 0 && (
               <View style={styles.emptyState}>
                 <UserPlus size={64} color="#9CA3AF" />
                 <Text style={styles.emptyTitle}>Inga vänförfrågningar</Text>
@@ -335,25 +327,67 @@ export default function FriendsScreen() {
           <View style={styles.modalContent}>
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Sök efter vänner</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="E-post eller namn..."
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
+              <View style={styles.searchInputContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Namn..."
+                  value={addFriendQuery}
+                  onChangeText={(text) => {
+                    setAddFriendQuery(text);
+                    searchUsers(text);
+                  }}
+                  autoCapitalize="words"
+                />
+                {isSearching && (
+                  <ActivityIndicator size="small" color="#4F46E5" style={styles.searchSpinner} />
+                )}
+              </View>
             </View>
-            
-            <TouchableOpacity style={styles.searchButton}>
-              <Search size={20} color="white" />
-              <Text style={styles.searchButtonText}>Sök</Text>
-            </TouchableOpacity>
 
-            <View style={styles.suggestionSection}>
-              <Text style={styles.suggestionTitle}>Förslag</Text>
-              <Text style={styles.suggestionText}>
-                Här kommer förslag på vänner baserat på ditt program och kurser att visas
-              </Text>
-            </View>
+            {searchResults.length > 0 && (
+              <View style={styles.searchResultsSection}>
+                <Text style={styles.suggestionTitle}>Sökresultat</Text>
+                {searchResults.map((result) => (
+                  <View key={result.id} style={styles.searchResultItem}>
+                    <View style={styles.friendAvatar}>
+                      <Text style={styles.avatarText}>
+                        {result.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.friendInfo}>
+                      <Text style={styles.friendName}>{result.name}</Text>
+                      <Text style={styles.friendProgram}>
+                        {result.program} • {result.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.addButton}
+                      onPress={() => sendFriendRequest(result.id)}
+                    >
+                      <UserPlus size={16} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {addFriendQuery.length > 0 && searchResults.length === 0 && !isSearching && (
+              <View style={styles.suggestionSection}>
+                <Text style={styles.suggestionTitle}>Inga resultat</Text>
+                <Text style={styles.suggestionText}>
+                  Inga användare hittades med det namnet
+                </Text>
+              </View>
+            )}
+
+            {addFriendQuery.length === 0 && (
+              <View style={styles.suggestionSection}>
+                <Text style={styles.suggestionTitle}>Tips</Text>
+                <Text style={styles.suggestionText}>
+                  Sök efter vänner genom att skriva deras namn
+                </Text>
+              </View>
+            )}
           </View>
         </SafeAreaView>
       </Modal>
@@ -366,37 +400,21 @@ export default function FriendsScreen() {
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Topplista - Denna vecka</Text>
+            <Text style={styles.modalTitle}>Topplista - Kommer snart</Text>
             <TouchableOpacity onPress={() => setShowLeaderboard(false)}>
               <X size={24} color="#6B7280" />
             </TouchableOpacity>
           </View>
           
-          <ScrollView style={styles.modalContent}>
-            {sortedFriendsForLeaderboard.map((friend, index) => (
-              <View key={friend.id} style={styles.leaderboardItem}>
-                <View style={styles.leaderboardRank}>
-                  <Text style={styles.rankNumber}>#{index + 1}</Text>
-                  {index < 3 && (
-                    <Text style={styles.rankEmoji}>
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.friendAvatar}>
-                  <Text style={styles.avatarText}>{friend.avatar}</Text>
-                </View>
-                <View style={styles.leaderboardInfo}>
-                  <Text style={styles.leaderboardName}>{friend.name}</Text>
-                  <Text style={styles.leaderboardProgram}>{friend.program}</Text>
-                </View>
-                <View style={styles.leaderboardStats}>
-                  <Text style={styles.leaderboardMinutes}>{friend.totalMinutes} min</Text>
-                  <Text style={styles.leaderboardSessions}>{friend.todaySessions} sessioner</Text>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
+          <View style={styles.modalContent}>
+            <View style={styles.comingSoonContainer}>
+              <Trophy size={64} color="#9CA3AF" />
+              <Text style={styles.comingSoonTitle}>Topplista kommer snart!</Text>
+              <Text style={styles.comingSoonText}>
+                Vi arbetar på en topplista där du kan tävla med dina vänner om vem som pluggar mest.
+              </Text>
+            </View>
+          </View>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -512,8 +530,16 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  offlineFriend: {
-    opacity: 0.7,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
   },
   friendHeader: {
     flexDirection: 'row',
@@ -532,16 +558,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 24,
   },
-  statusDot: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: 'white',
-  },
+
   friendInfo: {
     flex: 1,
   },
@@ -556,23 +573,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 4,
   },
-  friendActivity: {
-    fontSize: 14,
-    color: '#4F46E5',
-    fontWeight: '500',
-  },
-  friendStats: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4F46E5',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
+
   requestCard: {
     backgroundColor: 'white',
     borderRadius: 16,
@@ -589,11 +590,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  mutualFriends: {
-    fontSize: 12,
-    color: '#10B981',
-    fontWeight: '500',
-  },
+
   requestActions: {
     flexDirection: 'row',
     gap: 12,
@@ -693,20 +690,51 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  searchButton: {
+  searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4F46E5',
+  },
+  searchSpinner: {
+    marginLeft: 8,
+  },
+  searchResultsSection: {
+    backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 32,
+    marginBottom: 20,
   },
-  searchButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  addButton: {
+    backgroundColor: '#4F46E5',
+    borderRadius: 20,
+    padding: 8,
+    marginLeft: 'auto',
+  },
+  comingSoonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  comingSoonTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  comingSoonText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   suggestionSection: {
     backgroundColor: 'white',
@@ -724,59 +752,5 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     lineHeight: 20,
   },
-  // Leaderboard styles
-  leaderboardItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  leaderboardRank: {
-    width: 50,
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  rankNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#6B7280',
-  },
-  rankEmoji: {
-    fontSize: 20,
-    marginTop: 4,
-  },
-  leaderboardInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  leaderboardName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 2,
-  },
-  leaderboardProgram: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  leaderboardStats: {
-    alignItems: 'flex-end',
-  },
-  leaderboardMinutes: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4F46E5',
-  },
-  leaderboardSessions: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
-  },
+
 });

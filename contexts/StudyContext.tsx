@@ -77,10 +77,10 @@ export interface StudyContextType {
 }
 
 // Helper functions to convert between database and app types
-const dbUserToUser = (dbUser: DbUser): User => ({
+const dbUserToUser = (dbUser: DbUser, email: string): User => ({
   id: dbUser.id,
   name: dbUser.name,
-  email: `${dbUser.name.toLowerCase().replace(/\s+/g, '')}@demo.com`, // Generate email from name since profiles table doesn't have email
+  email: email,
   studyLevel: dbUser.level as 'gymnasie' | 'högskola',
   program: dbUser.program,
   purpose: dbUser.purpose,
@@ -138,12 +138,12 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
   const [pomodoroSessions, setPomodoroSessions] = useState<PomodoroSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadUserData = useCallback(async (userId: string) => {
+  const loadUserData = useCallback(async (userId: string, userEmail: string) => {
     try {
       setIsLoading(true);
       // Try to get user from database
       const dbUser = await db.getUser(userId);
-      setUser(dbUserToUser(dbUser));
+      setUser(dbUserToUser(dbUser, userEmail));
       
       // Load user's courses, notes, and sessions
       const [userCourses, userNotes, userSessions] = await Promise.all([
@@ -172,7 +172,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
   useEffect(() => {
     if (!authLoading) {
       if (isAuthenticated && authUser && hasCompletedOnboarding) {
-        loadUserData(authUser.id);
+        loadUserData(authUser.id, authUser.email);
       } else {
         setUser(null);
         setCourses([]);
@@ -266,7 +266,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       console.log('Onboarding marked as completed');
       
       // Load user data
-      await loadUserData(authUser.id);
+      await loadUserData(authUser.id, authUser.email);
       console.log('User data loaded successfully');
       
     } catch (error) {
@@ -292,7 +292,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       }
       
       const updatedDbUser = await db.updateUser(authUser.id, updateData);
-      setUser(dbUserToUser(updatedDbUser));
+      setUser(dbUserToUser(updatedDbUser, authUser.email));
     } catch (error) {
       console.error('Error updating user:', error);
       throw error;

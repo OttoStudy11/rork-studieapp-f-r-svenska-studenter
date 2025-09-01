@@ -1,38 +1,30 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '@/lib/supabase';
 
-// Simple UUID v4 generator for demo purposes
-const generateUUID = (): string => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
-
-export interface DemoUser {
+export interface AuthUser {
   id: string;
-  name: string;
   email: string;
   createdAt: string;
 }
 
 export interface AuthContextType {
-  user: DemoUser | null;
+  user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   hasCompletedOnboarding: boolean;
-  signIn: (name: string, email?: string) => Promise<{ error?: any }>;
+  signUp: (email: string, password: string) => Promise<{ error?: any }>;
+  signIn: (email: string, password: string) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
   setOnboardingCompleted: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error?: any }>;
 }
 
-const USER_KEY = 'demo_user';
 const ONBOARDING_KEY = 'hasCompletedOnboarding';
 
 export const [AuthProvider, useAuth] = createContextHook(() => {
-  const [user, setUser] = useState<DemoUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
@@ -48,17 +40,26 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const initializeAuth = useCallback(async () => {
     try {
-      console.log('Initializing demo auth...');
+      console.log('Initializing Supabase auth...');
       setIsLoading(true);
-      const storedUser = await AsyncStorage.getItem(USER_KEY);
       
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser) as DemoUser;
-        console.log('Found stored user:', parsedUser.name);
-        setUser(parsedUser);
-        await checkOnboardingStatus(parsedUser.id);
+      const { data: { user: supabaseUser }, error } = await supabase.auth.getUser();
+      
+      if (error) {
+        console.error('Error getting user:', error);
+        setUser(null);
+        setHasCompletedOnboarding(false);
+      } else if (supabaseUser) {
+        console.log('Found authenticated user:', supabaseUser.email);
+        const authUser: AuthUser = {
+          id: supabaseUser.id,
+          email: supabaseUser.email!,
+          createdAt: supabaseUser.created_at
+        };
+        setUser(authUser);
+        await checkOnboardingStatus(supabaseUser.id);
       } else {
-        console.log('No stored user found');
+        console.log('No authenticated user found');
         setUser(null);
         setHasCompletedOnboarding(false);
       }
@@ -83,55 +84,125 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     
     initialize();
     
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (!mounted) return;
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+          const authUser: AuthUser = {
+            id: session.user.id,
+            email: session.user.email!,
+            createdAt: session.user.created_at
+          };
+          setUser(authUser);
+          await checkOnboardingStatus(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setHasCompletedOnboarding(false);
+        }
+        
+        setIsLoading(false);
+      }
+    );
+    
     // Fallback timeout to ensure loading doesn't get stuck
     const fallbackTimeout = setTimeout(() => {
       if (mounted) {
         console.log('Auth initialization timeout - forcing loading to false');
         setIsLoading(false);
       }
-    }, 5000); // 5 second timeout
+    }, 10000); // 10 second timeout
 
     return () => {
       mounted = false;
+      subscription.unsubscribe();
       clearTimeout(fallbackTimeout);
     };
-  }, [initializeAuth]);
+  }, [initializeAuth, checkOnboardingStatus]);
 
-  const handleSignIn = useCallback(async (name: string, email?: string) => {
+  const handleSignUp = useCallback(async (email: string, password: string) => {
     try {
-      if (!name.trim()) {
-        return { error: { message: 'Namn krävs' } };
-      }
-
-      const newUser: DemoUser = {
-        id: generateUUID(),
-        name: name.trim(),
-        email: email || `${name.toLowerCase().replace(/\s+/g, '')}@demo.com`,
-        createdAt: new Date().toISOString()
-      };
-
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(newUser));
-      setUser(newUser);
-      setHasCompletedOnboarding(false);
+      console.log('Signing up user:', email);
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password
+      });
       
+      if (error) {
+        console.error('Sign up error:', error);
+        return { error };
+      }
+      
+      console.log('Sign up successful:', data.user?.email);
       return { error: null };
     } catch (error) {
+      console.error('Sign up exception:', error);
+      return { error };
+    }
+  }, []);
+
+  const handleSignIn = useCallback(async (email: string, password: string) => {
+    try {
+      console.log('Signing in user:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      });
+      
+      if (error) {
+        console.error('Sign in error:', error);
+        return { error };
+      }
+      
+      console.log('Sign in successful:', data.user?.email);
+      return { error: null };
+    } catch (error) {
+      console.error('Sign in exception:', error);
       return { error };
     }
   }, []);
 
   const handleSignOut = useCallback(async () => {
     try {
-      await AsyncStorage.removeItem(USER_KEY);
+      console.log('Signing out user...');
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Sign out error:', error);
+      }
+      
+      // Clear onboarding status
       if (user) {
         await AsyncStorage.removeItem(`${ONBOARDING_KEY}_${user.id}`);
       }
+      
       setUser(null);
       setHasCompletedOnboarding(false);
     } catch (error) {
       console.error('Error signing out:', error);
     }
   }, [user]);
+
+  const handleResetPassword = useCallback(async (email: string) => {
+    try {
+      console.log('Resetting password for:', email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+      
+      if (error) {
+        console.error('Reset password error:', error);
+        return { error };
+      }
+      
+      console.log('Reset password email sent');
+      return { error: null };
+    } catch (error) {
+      console.error('Reset password exception:', error);
+      return { error };
+    }
+  }, []);
 
   const setOnboardingCompleted = useCallback(async () => {
     if (user) {
@@ -144,13 +215,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   }, [user]);
 
-  return {
+  return useMemo(() => ({
     user,
     isLoading,
     isAuthenticated: !!user,
     hasCompletedOnboarding,
+    signUp: handleSignUp,
     signIn: handleSignIn,
     signOut: handleSignOut,
-    setOnboardingCompleted
-  };
+    setOnboardingCompleted,
+    resetPassword: handleResetPassword
+  }), [
+    user,
+    isLoading,
+    hasCompletedOnboarding,
+    handleSignUp,
+    handleSignIn,
+    handleSignOut,
+    setOnboardingCompleted,
+    handleResetPassword
+  ]);
 });

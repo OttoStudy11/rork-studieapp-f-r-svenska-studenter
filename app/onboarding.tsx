@@ -48,7 +48,7 @@ export default function OnboardingScreen() {
   
   const [step, setStep] = useState(0);
   const [data, setData] = useState<OnboardingData>({
-    name: user?.name || '',
+    name: user?.email?.split('@')[0] || '',
     studyLevel: '',
     program: '',
     goals: [],
@@ -67,10 +67,10 @@ export default function OnboardingScreen() {
     if (data.studyLevel && data.name) {
       try {
         console.log('Completing basic onboarding with data:', data);
-        const finalName = data.name || user?.name || '';
+        const finalName = data.name || user?.email?.split('@')[0] || '';
         await completeOnboarding({
           name: finalName,
-          email: user?.email || `${finalName.toLowerCase().replace(/\s+/g, '')}@demo.com`,
+          email: user?.email || '',
           studyLevel: data.studyLevel as 'gymnasie' | 'högskola',
           program: data.program || 'Ej valt',
           purpose: [...data.goals, ...data.purpose].join(', ') || 'Allmän studiehjälp',
@@ -94,7 +94,7 @@ export default function OnboardingScreen() {
 
   const canProceed = () => {
     switch (step) {
-      case 0: return (data.name || user?.name || '').length > 0;
+      case 0: return data.name.length > 0;
       case 1: return data.studyLevel !== '';
       case 2: return true; // Skip program requirement for now
       case 3: return true; // Make goals optional
@@ -109,12 +109,12 @@ export default function OnboardingScreen() {
         return (
           <View style={styles.stepContainer}>
             <GraduationCap size={80} color="#4F46E5" style={styles.icon} />
-            <Text style={styles.title}>Hej {user?.name || 'där'}!</Text>
+            <Text style={styles.title}>Hej {user?.email?.split('@')[0] || 'där'}!</Text>
             <Text style={styles.subtitle}>Låt oss anpassa StudyFlow för dig</Text>
             <TextInput
               style={styles.input}
-              placeholder="Bekräfta ditt namn"
-              value={data.name || user?.name || ''}
+              placeholder="Ange ditt namn"
+              value={data.name}
               onChangeText={(text) => setData({ ...data, name: text })}
               autoFocus
             />

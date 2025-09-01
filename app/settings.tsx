@@ -6,10 +6,12 @@ import {
   ScrollView,
   SafeAreaView,
   Switch,
+  Alert
 } from 'react-native';
 import { useTheme, ThemeMode } from '@/contexts/ThemeContext';
 import { useToast } from '@/contexts/ToastContext';
-import { Settings, Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle } from 'lucide-react-native';
+import { useAuth } from '@/contexts/AuthContext';
+import { Settings, Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User } from 'lucide-react-native';
 import { AnimatedPressable, FadeInView } from '@/components/Animations';
 
 interface SettingItem {
@@ -25,6 +27,7 @@ interface SettingItem {
 export default function SettingsScreen() {
   const { theme, themeMode, setThemeMode } = useTheme();
   const { showSuccess, showInfo } = useToast();
+  const { user, signOut } = useAuth();
 
   const themeOptions: { mode: ThemeMode; label: string; icon: React.ReactNode }[] = [
     { mode: 'light', label: 'Ljust', icon: <Sun size={20} color={theme.colors.textSecondary} /> },
@@ -37,7 +40,44 @@ export default function SettingsScreen() {
     showSuccess('Tema uppdaterat', `Bytte till ${mode === 'light' ? 'ljust' : mode === 'dark' ? 'mörkt' : 'systemets'} tema`);
   };
 
+  const handleSignOut = () => {
+    Alert.alert(
+      'Logga ut',
+      'Är du säker på att du vill logga ut?',
+      [
+        {
+          text: 'Avbryt',
+          style: 'cancel',
+        },
+        {
+          text: 'Logga ut',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+              showSuccess('Utloggad', 'Du har loggats ut');
+            } catch (error) {
+              console.error('Sign out error:', error);
+              showInfo('Fel', 'Kunde inte logga ut');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const settingsSections: { title: string; items: SettingItem[] }[] = [
+    {
+      title: 'Konto',
+      items: [
+        {
+          icon: <User size={20} color={theme.colors.textSecondary} />,
+          title: 'Inloggad som',
+          subtitle: user?.email || 'Okänd användare',
+          onPress: () => {},
+        },
+      ],
+    },
     {
       title: 'Utseende',
       items: [
@@ -82,6 +122,17 @@ export default function SettingsScreen() {
           title: 'Hjälp & Support',
           subtitle: 'Få hjälp med appen',
           onPress: () => showInfo('Support', 'Kontakta oss på support@studyflow.se för hjälp'),
+        },
+      ],
+    },
+    {
+      title: 'Konto',
+      items: [
+        {
+          icon: <LogOut size={20} color={theme.colors.error || '#EF4444'} />,
+          title: 'Logga ut',
+          subtitle: 'Logga ut från ditt konto',
+          onPress: handleSignOut,
         },
       ],
     },

@@ -33,9 +33,9 @@ export const createUser = async (userData: Tables['profiles']['Insert']) => {
       .single();
     
     if (error) {
-      console.error('Database error creating user:', error.message || error);
-      console.error('Full error details:', error);
-      throw new Error(`Failed to create user: ${error.message}`);
+      console.error('Database error creating user:', error.message || 'Unknown error');
+      console.error('Full error details:', JSON.stringify(error, null, 2));
+      throw new Error(`Failed to create user: ${error.message || 'Unknown database error'}`);
     }
     console.log('User created successfully:', data);
     return data;
@@ -447,14 +447,23 @@ export const getAllAchievements = async () => {
       .order('created_at', { ascending: true });
     
     if (error) {
-      console.error('Error fetching achievements:', error.message);
-      console.error('Error details:', error);
+      console.error('Error fetching achievements:', error.message || 'Unknown error');
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      
+      // If achievements table doesn't exist, return empty array
+      if (error.code === '42P01' || error.message?.includes('relation "achievements" does not exist')) {
+        console.warn('Achievements table does not exist. Returning empty array.');
+        return [];
+      }
       throw error;
     }
     return data || [];
   } catch (error) {
-    console.error('Exception in getAllAchievements:', error);
-    throw error;
+    console.error('Exception in getAllAchievements:', error instanceof Error ? error.message : String(error));
+    console.error('Full error object:', JSON.stringify(error, null, 2));
+    
+    // Return empty array if achievements system is not available
+    return [];
   }
 };
 
@@ -469,36 +478,67 @@ export const getUserAchievements = async (userId: string) => {
       .eq('user_id', userId);
     
     if (error) {
-      console.error('Error fetching user achievements:', error.message);
-      console.error('Error details:', error);
+      console.error('Error fetching user achievements:', error.message || 'Unknown error');
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      
+      // If user_achievements table doesn't exist, return empty array
+      if (error.code === '42P01' || error.message?.includes('relation "user_achievements" does not exist')) {
+        console.warn('User achievements table does not exist. Returning empty array.');
+        return [];
+      }
       throw error;
     }
     return data || [];
   } catch (error) {
-    console.error('Exception in getUserAchievements:', error);
-    throw error;
+    console.error('Exception in getUserAchievements:', error instanceof Error ? error.message : String(error));
+    console.error('Full error object:', JSON.stringify(error, null, 2));
+    
+    // Return empty array if achievements system is not available
+    return [];
   }
 };
 
 export const initializeUserAchievements = async (userId: string) => {
-  // Get all achievements
-  const achievements = await getAllAchievements();
-  
-  // Create user_achievement records for all achievements
-  const userAchievements = achievements.map(achievement => ({
-    user_id: userId,
-    achievement_id: achievement.id,
-    progress: 0,
-    unlocked_at: null
-  }));
-  
-  const { data, error } = await supabase
-    .from('user_achievements')
-    .upsert(userAchievements, { onConflict: 'user_id,achievement_id' })
-    .select();
-  
-  if (error) throw error;
-  return data;
+  try {
+    // Get all achievements
+    const achievements = await getAllAchievements();
+    
+    // If no achievements exist, skip initialization
+    if (achievements.length === 0) {
+      console.log('No achievements found, skipping user achievement initialization');
+      return [];
+    }
+    
+    // Create user_achievement records for all achievements
+    const userAchievements = achievements.map(achievement => ({
+      user_id: userId,
+      achievement_id: achievement.id,
+      progress: 0,
+      unlocked_at: null
+    }));
+    
+    const { data, error } = await supabase
+      .from('user_achievements')
+      .upsert(userAchievements, { onConflict: 'user_id,achievement_id' })
+      .select();
+    
+    if (error) {
+      console.error('Error initializing user achievements:', error.message || 'Unknown error');
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      
+      // If table doesn't exist, return empty array
+      if (error.code === '42P01' || error.message?.includes('relation "user_achievements" does not exist')) {
+        console.warn('User achievements table does not exist. Skipping initialization.');
+        return [];
+      }
+      throw error;
+    }
+    return data || [];
+  } catch (error) {
+    console.error('Exception in initializeUserAchievements:', error instanceof Error ? error.message : String(error));
+    console.error('Full error object:', JSON.stringify(error, null, 2));
+    return [];
+  }
 };
 
 export const updateUserAchievementProgress = async (
@@ -615,6 +655,12 @@ export const checkAndUpdateAchievements = async (userId: string) => {
     // Get user's current achievement progress
     const userAchievements = await getUserAchievements(userId);
     
+    // If no achievements exist, skip checking
+    if (userAchievements.length === 0) {
+      console.log('No user achievements found, skipping achievement check');
+      return [];
+    }
+    
     // Get user's data for calculations
     const [pomodoroSessions, userCourses, userNotes] = await Promise.all([
       getUserPomodoroSessions(userId),
@@ -716,7 +762,8 @@ export const checkAndUpdateAchievements = async (userId: string) => {
     
     return newlyUnlocked;
   } catch (error) {
-    console.error('Error checking achievements:', error);
-    throw error;
+    console.error('Error checking achievements:', error instanceof Error ? error.message : String(error));
+    console.error('Full error object:', JSON.stringify(error, null, 2));
+    return [];
   }
 };

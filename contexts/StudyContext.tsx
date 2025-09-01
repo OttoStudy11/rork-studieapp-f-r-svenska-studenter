@@ -177,7 +177,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       
     } catch (error) {
       console.error('Error loading user data:', error instanceof Error ? error.message : String(error));
-      console.error('Error details:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       
       // Check if it's a "not found" error vs other database errors
       const errorMessage = error instanceof Error ? error.message : String(error);

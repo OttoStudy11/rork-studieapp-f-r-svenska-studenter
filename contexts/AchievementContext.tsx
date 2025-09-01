@@ -124,7 +124,7 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       console.log('Achievements loaded:', achievements.length, 'Total points:', points);
     } catch (error) {
       console.error('Error loading achievements:', error instanceof Error ? error.message : String(error));
-      console.error('Achievement error details:', error);
+      console.error('Achievement error details:', JSON.stringify(error, null, 2));
       
       // If achievements system is not available, set empty state
       setAchievements([]);

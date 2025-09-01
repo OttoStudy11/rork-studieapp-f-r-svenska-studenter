@@ -8,12 +8,8 @@ export const createUser = async (userData: Tables['profiles']['Insert']) => {
   try {
     console.log('Creating user with data:', userData);
     
-    // First check if user already exists
-    const { data: existingUser } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userData.id!)
-      .single();
+    // First check if user already exists using the safer getUser function
+    const existingUser = await getUser(userData.id!);
     
     if (existingUser) {
       console.log('User already exists, returning existing user:', existingUser);
@@ -52,7 +48,13 @@ export const getUser = async (userId: string) => {
     .eq('id', userId)
     .single();
   
-  if (error) throw error;
+  if (error) {
+    // If user doesn't exist (PGRST116), return null instead of throwing
+    if (error.code === 'PGRST116') {
+      return null;
+    }
+    throw error;
+  }
   return data;
 };
 
@@ -500,6 +502,13 @@ export const getUserAchievements = async (userId: string) => {
 
 export const initializeUserAchievements = async (userId: string) => {
   try {
+    // First check if user exists in profiles table
+    const userProfile = await getUser(userId);
+    if (!userProfile) {
+      console.log('User profile not found, cannot initialize achievements for user:', userId);
+      return [];
+    }
+    
     // Get all achievements
     const achievements = await getAllAchievements();
     
@@ -531,6 +540,13 @@ export const initializeUserAchievements = async (userId: string) => {
         console.warn('User achievements table does not exist. Skipping initialization.');
         return [];
       }
+      
+      // If foreign key constraint violation, user profile doesn't exist
+      if (error.code === '23503' && error.message?.includes('user_id')) {
+        console.warn('User profile does not exist, cannot initialize achievements for user:', userId);
+        return [];
+      }
+      
       throw error;
     }
     return data || [];

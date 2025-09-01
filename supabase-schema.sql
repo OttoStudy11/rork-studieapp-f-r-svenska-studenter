@@ -1,14 +1,22 @@
--- Supabase SQL Schema for Advanced Study App
--- Run this in your Supabase SQL editor to create all tables
+-- Drop all tables in the correct order (respecting foreign key constraints)
+DROP TABLE IF EXISTS settings CASCADE;
+DROP TABLE IF EXISTS friends CASCADE;
+DROP TABLE IF EXISTS pomodoro_sessions CASCADE;
+DROP TABLE IF EXISTS quizzes CASCADE;
+DROP TABLE IF EXISTS notes CASCADE;
+DROP TABLE IF EXISTS user_courses CASCADE;
+DROP TABLE IF EXISTS courses CASCADE;
+DROP TABLE IF EXISTS profiles CASCADE;
+-- Drop the function
+DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Users table
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- Profiles table (links to Supabase Auth users)
+CREATE TABLE profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
     avatar_url TEXT,
     level TEXT NOT NULL CHECK (level IN ('gymnasie', 'högskola')),
     program TEXT NOT NULL,
@@ -35,7 +43,7 @@ CREATE TABLE courses (
 -- User-Course relationship table
 CREATE TABLE user_courses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
     progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
     is_active BOOLEAN DEFAULT FALSE,
@@ -45,7 +53,7 @@ CREATE TABLE user_courses (
 -- Notes table
 CREATE TABLE notes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
     content TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -65,7 +73,7 @@ CREATE TABLE quizzes (
 -- Pomodoro sessions table
 CREATE TABLE pomodoro_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
     start_time TIMESTAMP WITH TIME ZONE NOT NULL,
     end_time TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -75,8 +83,8 @@ CREATE TABLE pomodoro_sessions (
 -- Friends table
 CREATE TABLE friends (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    friend_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    friend_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'blocked')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(user_id, friend_id),
@@ -86,7 +94,7 @@ CREATE TABLE friends (
 -- Settings table
 CREATE TABLE settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
     dark_mode BOOLEAN DEFAULT FALSE,
     timer_focus INTEGER DEFAULT 25 CHECK (timer_focus > 0),
     timer_break INTEGER DEFAULT 5 CHECK (timer_break > 0),
@@ -179,19 +187,8 @@ INSERT INTO courses (title, description, subject, level, resources, tips, progre
  '["Läs forskningsartiklar kritiskt", "Förstå statistiska metoder", "Koppla teori till praktik", "Reflektera över egna erfarenheter"]'::jsonb,
  0, '[]'::jsonb);
 
--- Disable Row Level Security (RLS) for demo purposes
--- In production, you would enable RLS and create proper policies
--- ALTER TABLE users ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE user_courses ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE quizzes ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE pomodoro_sessions ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE friends ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
-
--- For demo purposes, allow all operations on all tables
--- This is NOT secure and should only be used for development/demo
+-- Disable Row Level Security (RLS) för demo
+-- (I produktion: ENABLE RLS + policies)
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO anon;

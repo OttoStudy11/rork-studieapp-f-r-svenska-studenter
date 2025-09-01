@@ -43,13 +43,39 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log('Initializing Supabase auth...');
       setIsLoading(true);
       
+      // First check if we have a session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.log('Session error (expected if no session):', sessionError.message);
+        setUser(null);
+        setHasCompletedOnboarding(false);
+        return;
+      }
+      
+      if (!session) {
+        console.log('No active session found');
+        setUser(null);
+        setHasCompletedOnboarding(false);
+        return;
+      }
+      
+      // If we have a session, get the user
       const { data: { user: supabaseUser }, error } = await supabase.auth.getUser();
       
       if (error) {
-        console.error('Error getting user:', error);
-        setUser(null);
-        setHasCompletedOnboarding(false);
-      } else if (supabaseUser) {
+        console.log('Error getting user:', error.message);
+        // If we get an auth session missing error, clear everything
+        if (error.message.includes('Auth session missing')) {
+          console.log('Auth session missing - clearing state');
+          setUser(null);
+          setHasCompletedOnboarding(false);
+          return;
+        }
+        throw error;
+      }
+      
+      if (supabaseUser) {
         console.log('Found authenticated user:', supabaseUser.email);
         const authUser: AuthUser = {
           id: supabaseUser.id,
@@ -63,8 +89,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         setUser(null);
         setHasCompletedOnboarding(false);
       }
-    } catch (error) {
-      console.error('Error initializing auth:', error);
+    } catch (error: any) {
+      console.log('Error initializing auth:', error?.message || error);
+      // Handle auth session missing gracefully
+      if (error?.message?.includes('Auth session missing')) {
+        console.log('Auth session missing - user needs to sign in');
+      }
       setUser(null);
       setHasCompletedOnboarding(false);
     } finally {
@@ -114,7 +144,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         console.log('Auth initialization timeout - forcing loading to false');
         setIsLoading(false);
       }
-    }, 10000); // 10 second timeout
+    }, 5000); // 5 second timeout
 
     return () => {
       mounted = false;

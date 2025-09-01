@@ -29,7 +29,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           console.log('AuthGuard - Redirecting to home');
           router.replace('/(tabs)/home');
         }
-      }, 100);
+      }, 50); // Reduced delay
       
       return () => clearTimeout(timer);
     }

@@ -22,6 +22,14 @@ export const getCurrentUser = async () => {
   try {
     console.log('Getting current user...');
     
+    // First check if we have a session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      console.log('No active session:', sessionError?.message || 'No session');
+      return null;
+    }
+    
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('getCurrentUser timeout')), 5000);
@@ -31,9 +39,19 @@ export const getCurrentUser = async () => {
     
     const result = await Promise.race([userPromise, timeoutPromise]);
     const { data: { user }, error } = result;
+    
+    if (error && error.message.includes('Auth session missing')) {
+      console.log('Auth session missing - returning null');
+      return null;
+    }
+    
     console.log('Current user result:', { user: user?.id, error });
     return user;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message?.includes('Auth session missing')) {
+      console.log('Auth session missing in getCurrentUser');
+      return null;
+    }
     console.error('Error getting current user:', error);
     return null;
   }

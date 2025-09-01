@@ -33,7 +33,8 @@ export const createUser = async (userData: Tables['profiles']['Insert']) => {
       .single();
     
     if (error) {
-      console.error('Database error creating user:', error);
+      console.error('Database error creating user:', error.message || error);
+      console.error('Full error details:', error);
       throw new Error(`Failed to create user: ${error.message}`);
     }
     console.log('User created successfully:', data);
@@ -439,26 +440,44 @@ export const searchUsers = async (query: string) => {
 
 // Achievement functions
 export const getAllAchievements = async () => {
-  const { data, error } = await supabase
-    .from('achievements')
-    .select('*')
-    .order('created_at', { ascending: true });
-  
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from('achievements')
+      .select('*')
+      .order('created_at', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching achievements:', error.message);
+      console.error('Error details:', error);
+      throw error;
+    }
+    return data || [];
+  } catch (error) {
+    console.error('Exception in getAllAchievements:', error);
+    throw error;
+  }
 };
 
 export const getUserAchievements = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('user_achievements')
-    .select(`
-      *,
-      achievements (*)
-    `)
-    .eq('user_id', userId);
-  
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from('user_achievements')
+      .select(`
+        *,
+        achievements (*)
+      `)
+      .eq('user_id', userId);
+    
+    if (error) {
+      console.error('Error fetching user achievements:', error.message);
+      console.error('Error details:', error);
+      throw error;
+    }
+    return data || [];
+  } catch (error) {
+    console.error('Exception in getUserAchievements:', error);
+    throw error;
+  }
 };
 
 export const initializeUserAchievements = async (userId: string) => {

@@ -82,6 +82,18 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       setIsLoading(true);
       console.log('Loading achievements for user:', authUser.id);
       
+      // Check if achievements tables exist by trying to get all achievements first
+      const allAchievements = await db.getAllAchievements();
+      
+      if (allAchievements.length === 0) {
+        console.warn('No achievements found in database. Achievements system may not be set up.');
+        setAchievements([]);
+        setTotalPoints(0);
+        setUnlockedBadges([]);
+        setCurrentStreak(0);
+        return;
+      }
+      
       // Initialize user achievements if they don't exist
       await db.initializeUserAchievements(authUser.id);
       
@@ -111,7 +123,14 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       
       console.log('Achievements loaded:', achievements.length, 'Total points:', points);
     } catch (error) {
-      console.error('Error loading achievements:', error);
+      console.error('Error loading achievements:', error instanceof Error ? error.message : String(error));
+      console.error('Achievement error details:', error);
+      
+      // If achievements system is not available, set empty state
+      setAchievements([]);
+      setTotalPoints(0);
+      setUnlockedBadges([]);
+      setCurrentStreak(0);
     } finally {
       setIsLoading(false);
     }

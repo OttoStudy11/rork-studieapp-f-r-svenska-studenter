@@ -141,8 +141,21 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
   const loadUserData = useCallback(async (userId: string, userEmail: string) => {
     try {
       setIsLoading(true);
+      console.log('Loading user data for:', userId);
+      
       // Try to get user from database
       const dbUser = await db.getUser(userId);
+      
+      if (!dbUser) {
+        console.log('User not found in database, needs onboarding');
+        setUser(null);
+        setCourses([]);
+        setNotes([]);
+        setPomodoroSessions([]);
+        return;
+      }
+      
+      console.log('User found in database:', dbUser.name);
       setUser(dbUserToUser(dbUser, userEmail));
       
       // Load user's courses, notes, and sessions
@@ -152,13 +165,28 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         db.getUserPomodoroSessions(userId)
       ]);
       
+      console.log('Loaded user data:', {
+        courses: userCourses.length,
+        notes: userNotes.length,
+        sessions: userSessions.length
+      });
+      
       setCourses(userCourses.map(dbCourseToUserCourse));
       setNotes(userNotes.map(dbNoteToNote));
       setPomodoroSessions(userSessions.map(dbSessionToSession));
       
     } catch (error) {
-      console.error('Error loading user data:', error);
-      console.error('Error details:', error instanceof Error ? error.message : String(error));
+      console.error('Error loading user data:', error instanceof Error ? error.message : String(error));
+      console.error('Error details:', error);
+      
+      // Check if it's a "not found" error vs other database errors
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('PGRST116') || errorMessage.includes('not found')) {
+        console.log('User not found in database, needs onboarding');
+      } else {
+        console.error('Database connection or other error occurred');
+      }
+      
       // User doesn't exist in database yet, they need to complete onboarding
       setUser(null);
       setCourses([]);

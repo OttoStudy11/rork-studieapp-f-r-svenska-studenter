@@ -82,8 +82,14 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       setIsLoading(true);
       console.log('Loading achievements for user:', authUser.id);
       
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Achievement loading timeout')), 10000);
+      });
+      
       // Check if achievements tables exist by trying to get all achievements first
-      const allAchievements = await db.getAllAchievements();
+      const allAchievementsPromise = db.getAllAchievements();
+      const allAchievements = await Promise.race([allAchievementsPromise, timeoutPromise]);
       
       if (allAchievements.length === 0) {
         console.warn('No achievements found in database. Achievements system may not be set up.');
@@ -95,10 +101,12 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       }
       
       // Initialize user achievements if they don't exist
-      await db.initializeUserAchievements(authUser.id);
+      const initPromise = db.initializeUserAchievements(authUser.id);
+      await Promise.race([initPromise, timeoutPromise]);
       
       // Get user achievements with progress
-      const userAchievements = await db.getUserAchievements(authUser.id);
+      const userAchievementsPromise = db.getUserAchievements(authUser.id);
+      const userAchievements = await Promise.race([userAchievementsPromise, timeoutPromise]);
       
       // Convert to app format
       const achievements = userAchievements
@@ -117,14 +125,35 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       setTotalPoints(points);
       setUnlockedBadges(badges);
       
-      // Get current streak
-      const streak = await db.calculateUserStreak(authUser.id);
-      setCurrentStreak(streak);
+      // Get current streak with timeout
+      try {
+        const streakPromise = db.calculateUserStreak(authUser.id);
+        const streak = await Promise.race([streakPromise, timeoutPromise]);
+        setCurrentStreak(streak);
+      } catch (streakError) {
+        console.warn('Failed to load streak, setting to 0:', streakError);
+        setCurrentStreak(0);
+      }
       
       console.log('Achievements loaded:', achievements.length, 'Total points:', points);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading achievements:', error instanceof Error ? error.message : String(error));
-      console.error('Achievement error details:', JSON.stringify(error, null, 2));
+      
+      // Handle specific error types
+      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout')) {
+        console.error('Network error or timeout loading achievements. This might be due to:');
+        console.error('1. No internet connection');
+        console.error('2. Supabase service unavailable');
+        console.error('3. Database connection timeout');
+        console.error('Achievement error details:', {
+          message: error.message || 'Unknown error',
+          details: error.stack || 'No stack trace',
+          hint: 'Check network connection and Supabase status',
+          code: error.code || ''
+        });
+      } else {
+        console.error('Achievement error details:', JSON.stringify(error, null, 2));
+      }
       
       // If achievements system is not available, set empty state
       setAchievements([]);
@@ -147,7 +176,14 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
 
     try {
       console.log('Checking for new achievements...');
-      const newlyUnlocked = await db.checkAndUpdateAchievements(authUser.id);
+      
+      // Add timeout for achievement checking
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Achievement check timeout')), 8000);
+      });
+      
+      const checkPromise = db.checkAndUpdateAchievements(authUser.id);
+      const newlyUnlocked = await Promise.race([checkPromise, timeoutPromise]);
       
       // Show notifications for newly unlocked achievements
       for (const userAchievement of newlyUnlocked) {
@@ -164,8 +200,12 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       if (newlyUnlocked.length > 0) {
         await loadUserAchievements();
       }
-    } catch (error) {
-      console.error('Error checking achievements:', error);
+    } catch (error: any) {
+      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout')) {
+        console.warn('Network error checking achievements, skipping:', error.message);
+      } else {
+        console.error('Error checking achievements:', error);
+      }
     }
   }, [authUser, isAuthenticated, showAchievement, loadUserAchievements]);
 

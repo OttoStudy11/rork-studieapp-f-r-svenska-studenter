@@ -453,10 +453,17 @@ export const searchUsers = async (query: string) => {
 // Achievement functions
 export const getAllAchievements = async () => {
   try {
-    const { data, error } = await supabase
+    // Add timeout to prevent hanging requests
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Database request timeout')), 8000);
+    });
+    
+    const queryPromise = supabase
       .from('achievements')
       .select('*')
       .order('created_at', { ascending: true });
+    
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
     
     if (error) {
       console.error('Error fetching achievements:', error.message || 'Unknown error');
@@ -470,9 +477,21 @@ export const getAllAchievements = async () => {
       throw error;
     }
     return data || [];
-  } catch (error) {
+  } catch (error: any) {
     console.error('Exception in getAllAchievements:', error instanceof Error ? error.message : String(error));
-    console.error('Full error object:', JSON.stringify(error, null, 2));
+    
+    // Handle network errors specifically
+    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout')) {
+      console.error('Network error in getAllAchievements - database may be unreachable');
+      console.error('Full error object:', {
+        message: error.message || 'Unknown error',
+        details: error.stack || 'No stack trace',
+        hint: 'Check network connection and Supabase status',
+        code: error.code || ''
+      });
+    } else {
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+    }
     
     // Return empty array if achievements system is not available
     return [];
@@ -481,13 +500,20 @@ export const getAllAchievements = async () => {
 
 export const getUserAchievements = async (userId: string) => {
   try {
-    const { data, error } = await supabase
+    // Add timeout to prevent hanging requests
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Database request timeout')), 8000);
+    });
+    
+    const queryPromise = supabase
       .from('user_achievements')
       .select(`
         *,
         achievements (*)
       `)
       .eq('user_id', userId);
+    
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
     
     if (error) {
       console.error('Error fetching user achievements:', error.message || 'Unknown error');
@@ -501,9 +527,21 @@ export const getUserAchievements = async (userId: string) => {
       throw error;
     }
     return data || [];
-  } catch (error) {
+  } catch (error: any) {
     console.error('Exception in getUserAchievements:', error instanceof Error ? error.message : String(error));
-    console.error('Full error object:', JSON.stringify(error, null, 2));
+    
+    // Handle network errors specifically
+    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout')) {
+      console.error('Network error in getUserAchievements - database may be unreachable');
+      console.error('Full error object:', {
+        message: error.message || 'Unknown error',
+        details: error.stack || 'No stack trace',
+        hint: 'Check network connection and Supabase status',
+        code: error.code || ''
+      });
+    } else {
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+    }
     
     // Return empty array if achievements system is not available
     return [];
@@ -629,14 +667,25 @@ export const getUserAchievementStats = async (userId: string) => {
 
 // Calculate streak from pomodoro sessions
 export const calculateUserStreak = async (userId: string) => {
-  const { data: sessions, error } = await supabase
-    .from('pomodoro_sessions')
-    .select('end_time')
-    .eq('user_id', userId)
-    .order('end_time', { ascending: false });
-  
-  if (error) throw error;
-  if (!sessions || sessions.length === 0) return 0;
+  try {
+    // Add timeout to prevent hanging requests
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Database request timeout')), 8000);
+    });
+    
+    const queryPromise = supabase
+      .from('pomodoro_sessions')
+      .select('end_time')
+      .eq('user_id', userId)
+      .order('end_time', { ascending: false });
+    
+    const { data: sessions, error } = await Promise.race([queryPromise, timeoutPromise]);
+    
+    if (error) {
+      console.error('Error calculating user streak:', error.message || 'Unknown error');
+      throw error;
+    }
+    if (!sessions || sessions.length === 0) return 0;
   
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -670,7 +719,18 @@ export const calculateUserStreak = async (userId: string) => {
     }
   }
   
-  return streak;
+    return streak;
+  } catch (error: any) {
+    console.error('Exception in calculateUserStreak:', error instanceof Error ? error.message : String(error));
+    
+    // Handle network errors specifically
+    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout')) {
+      console.warn('Network error calculating streak, returning 0');
+    }
+    
+    // Return 0 if we can't calculate streak
+    return 0;
+  }
 };
 
 // Check and update achievements for a user

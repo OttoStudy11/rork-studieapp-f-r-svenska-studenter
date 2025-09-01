@@ -13,7 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { GraduationCap, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, Check } from 'lucide-react-native';
 
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -22,6 +22,7 @@ export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   
   const { signIn, signUp, resetPassword } = useAuth();
   const { showError, showSuccess } = useToast();
@@ -47,7 +48,7 @@ export default function AuthScreen() {
     try {
       const { error } = isSignUp 
         ? await signUp(email, password)
-        : await signIn(email, password);
+        : await signIn(email, password, rememberMe);
       
       if (error) {
         const errorMessage = (error as any)?.message || '';
@@ -190,6 +191,18 @@ export default function AuthScreen() {
 
                 {!showForgotPassword && (
                   <>
+                    {!isSignUp && (
+                      <TouchableOpacity
+                        style={styles.rememberMeContainer}
+                        onPress={() => setRememberMe(!rememberMe)}
+                      >
+                        <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                          {rememberMe && <Check size={16} color="white" />}
+                        </View>
+                        <Text style={styles.rememberMeText}>Kom ihåg mig</Text>
+                      </TouchableOpacity>
+                    )}
+
                     <TouchableOpacity
                       style={styles.linkButton}
                       onPress={() => setShowForgotPassword(true)}
@@ -340,5 +353,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderColor: 'white',
+  },
+  rememberMeText: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14,
   },
 });

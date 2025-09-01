@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '@/lib/supabase';
+import { supabase, createRememberMeSession, validateRememberMeSession, clearRememberMeSession, cleanupExpiredSessions } from '@/lib/supabase';
 
 export interface AuthUser {
   id: string;
@@ -15,7 +15,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   hasCompletedOnboarding: boolean;
   signUp: (email: string, password: string) => Promise<{ error?: any }>;
-  signIn: (email: string, password: string) => Promise<{ error?: any }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
   setOnboardingCompleted: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: any }>;
@@ -38,6 +38,50 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   }, []);
 
+  const tryRememberMeLogin = useCallback(async () => {
+    try {
+      console.log('Trying remember me login...');
+      const { userId, error } = await validateRememberMeSession();
+      
+      if (error || !userId) {
+        console.log('No valid remember me session');
+        setUser(null);
+        setHasCompletedOnboarding(false);
+        return;
+      }
+      
+      // Get user profile from database using the userId
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (profileError || !profile) {
+        console.log('Could not find user profile for remember me session');
+        await clearRememberMeSession();
+        setUser(null);
+        setHasCompletedOnboarding(false);
+        return;
+      }
+      
+      // Create a mock auth user from profile data
+      const authUser: AuthUser = {
+        id: profile.id,
+        email: `${profile.name}@studyflow.app`, // Temporary email format
+        createdAt: profile.created_at
+      };
+      
+      console.log('Remember me login successful for user:', authUser.id);
+      setUser(authUser);
+      await checkOnboardingStatus(authUser.id);
+    } catch (error) {
+      console.error('Error in remember me login:', error);
+      setUser(null);
+      setHasCompletedOnboarding(false);
+    }
+  }, [checkOnboardingStatus]);
+
   const initializeAuth = useCallback(async () => {
     try {
       console.log('Initializing Supabase auth...');
@@ -48,15 +92,15 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       if (sessionError) {
         console.log('Session error (expected if no session):', sessionError.message);
-        setUser(null);
-        setHasCompletedOnboarding(false);
+        // Try remember me session if no active session
+        await tryRememberMeLogin();
         return;
       }
       
       if (!session) {
         console.log('No active session found');
-        setUser(null);
-        setHasCompletedOnboarding(false);
+        // Try remember me session if no active session
+        await tryRememberMeLogin();
         return;
       }
       
@@ -65,11 +109,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       if (error) {
         console.log('Error getting user:', error.message);
-        // If we get an auth session missing error, clear everything
+        // If we get an auth session missing error, try remember me
         if (error.message.includes('Auth session missing')) {
-          console.log('Auth session missing - clearing state');
-          setUser(null);
-          setHasCompletedOnboarding(false);
+          console.log('Auth session missing - trying remember me');
+          await tryRememberMeLogin();
           return;
         }
         throw error;
@@ -84,24 +127,27 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         };
         setUser(authUser);
         await checkOnboardingStatus(supabaseUser.id);
+        // Clean up expired sessions for this user
+        await cleanupExpiredSessions(supabaseUser.id);
       } else {
         console.log('No authenticated user found');
-        setUser(null);
-        setHasCompletedOnboarding(false);
+        await tryRememberMeLogin();
       }
     } catch (error: any) {
       console.log('Error initializing auth:', error?.message || error);
       // Handle auth session missing gracefully
       if (error?.message?.includes('Auth session missing')) {
-        console.log('Auth session missing - user needs to sign in');
+        console.log('Auth session missing - trying remember me');
+        await tryRememberMeLogin();
+      } else {
+        setUser(null);
+        setHasCompletedOnboarding(false);
       }
-      setUser(null);
-      setHasCompletedOnboarding(false);
     } finally {
       console.log('Auth initialization complete');
       setIsLoading(false);
     }
-  }, [checkOnboardingStatus]);
+  }, [checkOnboardingStatus, tryRememberMeLogin]);
 
   useEffect(() => {
     let mounted = true;
@@ -174,9 +220,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   }, []);
 
-  const handleSignIn = useCallback(async (email: string, password: string) => {
+  const handleSignIn = useCallback(async (email: string, password: string, rememberMe: boolean = false) => {
     try {
-      console.log('Signing in user:', email);
+      console.log('Signing in user:', email, 'Remember me:', rememberMe);
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password
@@ -188,6 +234,17 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
       
       console.log('Sign in successful:', data.user?.email);
+      
+      // Create remember me session if requested
+      if (rememberMe && data.user) {
+        console.log('Creating remember me session...');
+        const { error: rememberError } = await createRememberMeSession(data.user.id);
+        if (rememberError) {
+          console.error('Failed to create remember me session:', rememberError);
+          // Don't fail the login if remember me fails
+        }
+      }
+      
       return { error: null };
     } catch (error) {
       console.error('Sign in exception:', error);
@@ -198,6 +255,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const handleSignOut = useCallback(async () => {
     try {
       console.log('Signing out user...');
+      
+      // Clear remember me session first
+      await clearRememberMeSession();
+      
       const { error } = await supabase.auth.signOut();
       
       if (error) {

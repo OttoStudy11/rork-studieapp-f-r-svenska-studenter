@@ -150,6 +150,18 @@ CREATE TABLE user_achievements (
     UNIQUE(user_id, achievement_id)
 );
 
+-- Remember me sessions table
+CREATE TABLE remember_me_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    device_info JSONB DEFAULT '{}'::jsonb,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    last_used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    is_active BOOLEAN DEFAULT TRUE
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_user_courses_user_id ON user_courses(user_id);
 CREATE INDEX idx_user_courses_course_id ON user_courses(course_id);
@@ -170,6 +182,10 @@ CREATE INDEX idx_achievements_key ON achievements(achievement_key);
 CREATE INDEX idx_user_achievements_user_id ON user_achievements(user_id);
 CREATE INDEX idx_user_achievements_unlocked ON user_achievements(user_id, unlocked_at);
 CREATE INDEX idx_user_achievements_progress ON user_achievements(user_id, progress);
+CREATE INDEX idx_remember_me_sessions_user_id ON remember_me_sessions(user_id);
+CREATE INDEX idx_remember_me_sessions_token ON remember_me_sessions(token_hash);
+CREATE INDEX idx_remember_me_sessions_expires ON remember_me_sessions(expires_at);
+CREATE INDEX idx_remember_me_sessions_active ON remember_me_sessions(is_active, expires_at);
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -300,6 +316,20 @@ INSERT INTO achievements (achievement_key, title, description, icon, category, r
 -- Daily Achievements
 ('early_bird', 'Morgonpigg', 'Starta en session före 08:00', '🌅', 'study', 'sessions', 1, 'day', 15, NULL),
 ('night_owl', 'Nattuggla', 'Starta en session efter 22:00', '🦉', 'study', 'sessions', 1, 'day', 15, NULL);
+
+-- Function to clean up expired remember me sessions
+CREATE OR REPLACE FUNCTION cleanup_expired_remember_me_sessions()
+RETURNS INTEGER AS $
+DECLARE
+    deleted_count INTEGER;
+BEGIN
+    DELETE FROM remember_me_sessions 
+    WHERE expires_at < NOW() OR is_active = FALSE;
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    RETURN deleted_count;
+END;
+$ LANGUAGE plpgsql;
 
 -- Disable Row Level Security (RLS) för demo
 -- (I produktion: ENABLE RLS + policies)

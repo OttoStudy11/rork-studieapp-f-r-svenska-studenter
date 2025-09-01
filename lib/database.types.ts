@@ -471,6 +471,47 @@ export interface Database {
           }
         ]
       }
+      remember_me_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          token_hash: string
+          device_info: Json
+          expires_at: string
+          last_used_at: string
+          created_at: string
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          token_hash: string
+          device_info?: Json
+          expires_at: string
+          last_used_at?: string
+          created_at?: string
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          token_hash?: string
+          device_info?: Json
+          expires_at?: string
+          last_used_at?: string
+          created_at?: string
+          is_active?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remember_me_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

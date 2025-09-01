@@ -13,6 +13,8 @@ CREATE TABLE users (
     level TEXT NOT NULL CHECK (level IN ('gymnasie', 'högskola')),
     program TEXT NOT NULL,
     purpose TEXT NOT NULL,
+    subscription_type TEXT NOT NULL DEFAULT 'free' CHECK (subscription_type IN ('free', 'premium')),
+    subscription_expires_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

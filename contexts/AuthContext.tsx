@@ -1,53 +1,36 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, getCurrentUser, signIn, signUp, signOut, resetPassword } from '@/lib/supabase';
-import { User } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export interface DemoUser {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
 export interface AuthContextType {
-  user: User | null;
+  user: DemoUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   hasCompletedOnboarding: boolean;
-  signIn: (email: string, password: string) => Promise<{ error?: any }>;
-  signUp: (email: string, password: string) => Promise<{ error?: any }>;
+  signIn: (name: string, email?: string) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error?: any }>;
   setOnboardingCompleted: () => Promise<void>;
 }
 
+const USER_KEY = 'demo_user';
 const ONBOARDING_KEY = 'hasCompletedOnboarding';
 
 export const [AuthProvider, useAuth] = createContextHook(() => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<DemoUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
   const checkOnboardingStatus = useCallback(async (userId: string) => {
     try {
-      // First check AsyncStorage for local onboarding status
       const stored = await AsyncStorage.getItem(`${ONBOARDING_KEY}_${userId}`);
-      if (stored === 'true') {
-        setHasCompletedOnboarding(true);
-        return;
-      }
-      
-      // If not found locally, check if user exists in database
-      try {
-        const { getUser } = await import('@/lib/database');
-        const dbUser = await getUser(userId);
-        if (dbUser) {
-          // User exists in database, mark onboarding as completed
-          await AsyncStorage.setItem(`${ONBOARDING_KEY}_${userId}`, 'true');
-          setHasCompletedOnboarding(true);
-        } else {
-          setHasCompletedOnboarding(false);
-        }
-      } catch (error) {
-        // User doesn't exist in database or other error, onboarding not completed
-        console.log('User not found in database or error occurred:', error);
-        setHasCompletedOnboarding(false);
-      }
+      setHasCompletedOnboarding(stored === 'true');
     } catch (error) {
       console.error('Error checking onboarding status:', error);
       setHasCompletedOnboarding(false);
@@ -56,16 +39,17 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const initializeAuth = useCallback(async () => {
     try {
-      console.log('Initializing auth...');
+      console.log('Initializing demo auth...');
       setIsLoading(true);
-      const currentUser = await getCurrentUser();
+      const storedUser = await AsyncStorage.getItem(USER_KEY);
       
-      if (currentUser) {
-        console.log('Found current user:', currentUser.id);
-        setUser(currentUser);
-        await checkOnboardingStatus(currentUser.id);
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser) as DemoUser;
+        console.log('Found stored user:', parsedUser.name);
+        setUser(parsedUser);
+        await checkOnboardingStatus(parsedUser.id);
       } else {
-        console.log('No current user found');
+        console.log('No stored user found');
         setUser(null);
         setHasCompletedOnboarding(false);
       }
@@ -96,65 +80,31 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         console.log('Auth initialization timeout - forcing loading to false');
         setIsLoading(false);
       }
-    }, 10000); // 10 second timeout
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-        
-        console.log('Auth state changed:', event, session?.user?.id);
-        
-        try {
-          if (event === 'SIGNED_IN' && session?.user) {
-            console.log('User signed in successfully');
-            setUser(session.user);
-            await checkOnboardingStatus(session.user.id);
-          } else if (event === 'SIGNED_OUT') {
-            console.log('User signed out');
-            setUser(null);
-            setHasCompletedOnboarding(false);
-          } else if (session?.user) {
-            setUser(session.user);
-            await checkOnboardingStatus(session.user.id);
-          } else {
-            setUser(null);
-            setHasCompletedOnboarding(false);
-          }
-        } catch (error) {
-          console.error('Error in auth state change:', error);
-        } finally {
-          if (mounted) {
-            setIsLoading(false);
-          }
-        }
-      }
-    );
+    }, 5000); // 5 second timeout
 
     return () => {
       mounted = false;
       clearTimeout(fallbackTimeout);
-      subscription.unsubscribe();
     };
-  }, [initializeAuth, checkOnboardingStatus]);
+  }, [initializeAuth]);
 
-  const handleSignIn = useCallback(async (email: string, password: string) => {
+  const handleSignIn = useCallback(async (name: string, email?: string) => {
     try {
-      const { data, error } = await signIn(email, password);
-      if (error) {
-        return { error };
+      if (!name.trim()) {
+        return { error: { message: 'Namn krävs' } };
       }
-      return { error: null };
-    } catch (error) {
-      return { error };
-    }
-  }, []);
 
-  const handleSignUp = useCallback(async (email: string, password: string) => {
-    try {
-      const { data, error } = await signUp(email, password);
-      if (error) {
-        return { error };
-      }
+      const newUser: DemoUser = {
+        id: Date.now().toString(),
+        name: name.trim(),
+        email: email || `${name.toLowerCase().replace(/\s+/g, '')}@demo.com`,
+        createdAt: new Date().toISOString()
+      };
+
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(newUser));
+      setUser(newUser);
+      setHasCompletedOnboarding(false);
+      
       return { error: null };
     } catch (error) {
       return { error };
@@ -163,22 +113,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const handleSignOut = useCallback(async () => {
     try {
-      await signOut();
+      await AsyncStorage.removeItem(USER_KEY);
+      if (user) {
+        await AsyncStorage.removeItem(`${ONBOARDING_KEY}_${user.id}`);
+      }
       setUser(null);
       setHasCompletedOnboarding(false);
     } catch (error) {
       console.error('Error signing out:', error);
     }
-  }, []);
-
-  const handleResetPassword = useCallback(async (email: string) => {
-    try {
-      const { data, error } = await resetPassword(email);
-      return { error };
-    } catch (error) {
-      return { error };
-    }
-  }, []);
+  }, [user]);
 
   const setOnboardingCompleted = useCallback(async () => {
     if (user) {
@@ -197,9 +141,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     isAuthenticated: !!user,
     hasCompletedOnboarding,
     signIn: handleSignIn,
-    signUp: handleSignUp,
     signOut: handleSignOut,
-    resetPassword: handleResetPassword,
     setOnboardingCompleted
   };
 });

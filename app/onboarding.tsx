@@ -42,17 +42,18 @@ const purposeOptions = [
 ];
 
 export default function OnboardingScreen() {
+  const { user } = useAuth();
+  const { completeOnboarding } = useStudy();
+  const { showError, showSuccess } = useToast();
+  
   const [step, setStep] = useState(0);
   const [data, setData] = useState<OnboardingData>({
-    name: '',
+    name: user?.name || '',
     studyLevel: '',
     program: '',
     goals: [],
     purpose: []
   });
-  const { user } = useAuth();
-  const { completeOnboarding } = useStudy();
-  const { showError, showSuccess } = useToast();
 
   const handleNext = () => {
     if (step < 4) {
@@ -66,9 +67,10 @@ export default function OnboardingScreen() {
     if (data.studyLevel && data.name && data.program) {
       try {
         console.log('Completing onboarding with data:', data);
+        const finalName = data.name || user?.name || '';
         await completeOnboarding({
-          name: data.name,
-          email: user?.email || 'unknown@example.com',
+          name: finalName,
+          email: user?.email || `${finalName.toLowerCase().replace(/\s+/g, '')}@demo.com`,
           studyLevel: data.studyLevel as 'gymnasie' | 'högskola',
           program: data.program,
           purpose: [...data.goals, ...data.purpose].join(', '),
@@ -93,7 +95,7 @@ export default function OnboardingScreen() {
 
   const canProceed = () => {
     switch (step) {
-      case 0: return data.name.length > 0;
+      case 0: return (data.name || user?.name || '').length > 0;
       case 1: return data.studyLevel !== '';
       case 2: return data.program.length > 0;
       case 3: return data.goals.length > 0;
@@ -108,12 +110,12 @@ export default function OnboardingScreen() {
         return (
           <View style={styles.stepContainer}>
             <GraduationCap size={80} color="#4F46E5" style={styles.icon} />
-            <Text style={styles.title}>Välkommen till StudyFlow!</Text>
-            <Text style={styles.subtitle}>Vad heter du?</Text>
+            <Text style={styles.title}>Hej {user?.name || 'där'}!</Text>
+            <Text style={styles.subtitle}>Låt oss anpassa StudyFlow för dig</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ditt namn"
-              value={data.name}
+              placeholder="Bekräfta ditt namn"
+              value={data.name || user?.name || ''}
               onChangeText={(text) => setData({ ...data, name: text })}
               autoFocus
             />

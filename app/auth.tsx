@@ -12,77 +12,35 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { GraduationCap, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
+import { GraduationCap, User, Mail } from 'lucide-react-native';
 
 export default function AuthScreen() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn } = useAuth();
   const { showError, showSuccess } = useToast();
 
   const handleAuth = async () => {
-    if (!email || !password) {
-      showError('Fyll i alla fält');
-      return;
-    }
-
-    if (!isLogin && password !== confirmPassword) {
-      showError('Lösenorden matchar inte');
-      return;
-    }
-
-    if (!isLogin && password.length < 6) {
-      showError('Lösenordet måste vara minst 6 tecken');
+    if (!name.trim()) {
+      showError('Ange ditt namn');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      if (isLogin) {
-        console.log('Attempting to sign in with:', email);
-        const { error } = await signIn(email, password);
-        console.log('Sign in result:', { error });
-        
-        if (error) {
-          const errorMessage = (error as any)?.message || '';
-          console.error('Sign in error:', errorMessage);
-          if (errorMessage.includes('Invalid login credentials')) {
-            showError('Fel e-post eller lösenord');
-          } else {
-            showError('Inloggning misslyckades: ' + errorMessage);
-          }
-        } else {
-          console.log('Sign in successful!');
-          showSuccess('Välkommen tillbaka!');
-          // Don't navigate here - let AuthGuard handle it
-        }
+      console.log('Creating demo user with name:', name);
+      const { error } = await signIn(name, email || undefined);
+      
+      if (error) {
+        const errorMessage = (error as any)?.message || '';
+        console.error('Demo sign in error:', errorMessage);
+        showError('Kunde inte skapa användare: ' + errorMessage);
       } else {
-        console.log('Attempting to sign up with:', email);
-        const { error } = await signUp(email, password);
-        console.log('Sign up result:', { error });
-        
-        if (error) {
-          const errorMessage = (error as any)?.message || '';
-          console.error('Sign up error:', errorMessage);
-          if (errorMessage.includes('User already registered')) {
-            showError('E-postadressen är redan registrerad');
-          } else if (errorMessage.includes('Password should be at least 6 characters')) {
-            showError('Lösenordet måste vara minst 6 tecken');
-          } else {
-            showError('Registrering misslyckades: ' + errorMessage);
-          }
-        } else {
-          console.log('Sign up successful!');
-          showSuccess('Konto skapat! Kolla din e-post för verifiering');
-          setIsLogin(true);
-        }
+        console.log('Demo user created successfully!');
+        showSuccess(`Välkommen ${name}!`);
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -92,19 +50,7 @@ export default function AuthScreen() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!email) {
-      showError('Ange din e-postadress först');
-      return;
-    }
 
-    const { error } = await resetPassword(email);
-    if (error) {
-      showError('Kunde inte skicka återställningslänk');
-    } else {
-      showSuccess('Återställningslänk skickad till din e-post');
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -121,16 +67,29 @@ export default function AuthScreen() {
               <GraduationCap size={80} color="white" style={styles.logo} />
               <Text style={styles.title}>StudyFlow</Text>
               <Text style={styles.subtitle}>
-                {isLogin ? 'Välkommen tillbaka!' : 'Skapa ditt konto'}
+                Kom igång med din studieresa!
               </Text>
             </View>
 
             <View style={styles.form}>
               <View style={styles.inputContainer}>
+                <User size={20} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ditt namn"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  autoFocus
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
                 <Mail size={20} color="#666" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="E-postadress"
+                  placeholder="E-post (valfritt)"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -139,81 +98,19 @@ export default function AuthScreen() {
                 />
               </View>
 
-              <View style={styles.inputContainer}>
-                <Lock size={20} color="#666" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Lösenord"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} color="#666" />
-                  ) : (
-                    <Eye size={20} color="#666" />
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              {!isLogin && (
-                <View style={styles.inputContainer}>
-                  <Lock size={20} color="#666" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Bekräfta lösenord"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry={!showConfirmPassword}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={20} color="#666" />
-                    ) : (
-                      <Eye size={20} color="#666" />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              )}
-
               <TouchableOpacity
                 style={[styles.authButton, isLoading && styles.disabledButton]}
                 onPress={handleAuth}
                 disabled={isLoading}
               >
                 <Text style={styles.authButtonText}>
-                  {isLoading ? 'Laddar...' : (isLogin ? 'Logga in' : 'Skapa konto')}
+                  {isLoading ? 'Skapar användare...' : 'Kom igång!'}
                 </Text>
               </TouchableOpacity>
 
-              {isLogin && (
-                <TouchableOpacity
-                  style={styles.forgotButton}
-                  onPress={handleForgotPassword}
-                >
-                  <Text style={styles.forgotButtonText}>Glömt lösenord?</Text>
-                </TouchableOpacity>
-              )}
-
-              <View style={styles.switchContainer}>
-                <Text style={styles.switchText}>
-                  {isLogin ? 'Har du inget konto?' : 'Har du redan ett konto?'}
-                </Text>
-                <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
-                  <Text style={styles.switchButtonText}>
-                    {isLogin ? 'Skapa konto' : 'Logga in'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.demoText}>
+                Detta är en demo-version. Ingen registrering krävs!
+              </Text>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -275,9 +172,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  eyeIcon: {
-    padding: 4,
-  },
+
   authButton: {
     backgroundColor: 'white',
     borderRadius: 12,
@@ -295,27 +190,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#4F46E5',
   },
-  forgotButton: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  forgotButtonText: {
+  demoText: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 14,
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  switchText: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 14,
-  },
-  switchButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 16,
+    lineHeight: 20,
   },
 });

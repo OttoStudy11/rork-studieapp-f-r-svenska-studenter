@@ -153,6 +153,126 @@ export default function TimerScreen() {
     };
   };
 
+  const getWeekStats = () => {
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    const weekSessions = pomodoroSessions.filter(session => {
+      const sessionDate = new Date(session.endTime);
+      return sessionDate >= weekAgo && sessionDate <= now;
+    });
+    
+    const totalMinutes = weekSessions.reduce((sum, session) => sum + session.duration, 0);
+    const averagePerDay = Math.round(totalMinutes / 7);
+    
+    return {
+      sessions: weekSessions.length,
+      minutes: totalMinutes,
+      averagePerDay
+    };
+  };
+
+  const getMonthStats = () => {
+    const now = new Date();
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const monthSessions = pomodoroSessions.filter(session => {
+      const sessionDate = new Date(session.endTime);
+      return sessionDate >= monthAgo && sessionDate <= now;
+    });
+    
+    const totalMinutes = monthSessions.reduce((sum, session) => sum + session.duration, 0);
+    const totalHours = Math.round(totalMinutes / 60 * 10) / 10;
+    
+    return {
+      sessions: monthSessions.length,
+      minutes: totalMinutes,
+      hours: totalHours
+    };
+  };
+
+  const getCourseStats = () => {
+    const courseStats = new Map<string, { sessions: number; minutes: number; courseName: string }>();
+    
+    pomodoroSessions.forEach(session => {
+      if (session.courseId) {
+        const course = courses.find(c => c.id === session.courseId);
+        const courseName = course?.title || 'Okänd kurs';
+        const existing = courseStats.get(session.courseId) || { sessions: 0, minutes: 0, courseName };
+        courseStats.set(session.courseId, {
+          sessions: existing.sessions + 1,
+          minutes: existing.minutes + session.duration,
+          courseName
+        });
+      }
+    });
+    
+    return Array.from(courseStats.entries())
+      .map(([courseId, stats]) => ({ courseId, ...stats }))
+      .sort((a, b) => b.minutes - a.minutes)
+      .slice(0, 5);
+  };
+
+  const getStreakStats = () => {
+    if (pomodoroSessions.length === 0) return { current: 0, longest: 0 };
+    
+    const sortedSessions = [...pomodoroSessions]
+      .sort((a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime());
+    
+    const sessionDates = new Set(
+      sortedSessions.map(session => new Date(session.endTime).toDateString())
+    );
+    
+    const uniqueDates = Array.from(sessionDates).sort((a, b) => 
+      new Date(b).getTime() - new Date(a).getTime()
+    );
+    
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+    
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString();
+    
+    // Calculate current streak
+    if (uniqueDates.includes(today)) {
+      currentStreak = 1;
+      for (let i = 1; i < uniqueDates.length; i++) {
+        const currentDate = new Date(uniqueDates[i]);
+        const previousDate = new Date(uniqueDates[i - 1]);
+        const dayDiff = (previousDate.getTime() - currentDate.getTime()) / (24 * 60 * 60 * 1000);
+        
+        if (dayDiff === 1) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+    } else if (uniqueDates.includes(yesterday)) {
+      // If no session today but had yesterday, streak is broken
+      currentStreak = 0;
+    }
+    
+    // Calculate longest streak
+    tempStreak = 1;
+    longestStreak = 1;
+    
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const currentDate = new Date(uniqueDates[i]);
+      const previousDate = new Date(uniqueDates[i - 1]);
+      const dayDiff = (previousDate.getTime() - currentDate.getTime()) / (24 * 60 * 60 * 1000);
+      
+      if (dayDiff === 1) {
+        tempStreak++;
+        longestStreak = Math.max(longestStreak, tempStreak);
+      } else {
+        tempStreak = 1;
+      }
+    }
+    
+    return { current: currentStreak, longest: longestStreak };
+  };
+
   const getSelectedCourseTitle = () => {
     if (!selectedCourse) return 'Allmän session';
     const course = courses.find(c => c.id === selectedCourse);
@@ -160,6 +280,10 @@ export default function TimerScreen() {
   };
 
   const todayStats = getTodayStats();
+  const weekStats = getWeekStats();
+  const monthStats = getMonthStats();
+  const courseStats = getCourseStats();
+  const streakStats = getStreakStats();
 
   const circumference = 2 * Math.PI * 120;
   const strokeDashoffset = circumference * (1 - progress);
@@ -413,6 +537,7 @@ export default function TimerScreen() {
           </View>
           
           <ScrollView style={styles.modalContent}>
+            {/* Overview Stats */}
             <View style={styles.statsGrid}>
               <View style={styles.bigStatCard}>
                 <Text style={styles.bigStatNumber}>{pomodoroSessions.length}</Text>
@@ -420,12 +545,103 @@ export default function TimerScreen() {
               </View>
               <View style={styles.bigStatCard}>
                 <Text style={styles.bigStatNumber}>
-                  {pomodoroSessions.reduce((sum, s) => sum + s.duration, 0)}
+                  {Math.round(pomodoroSessions.reduce((sum, s) => sum + s.duration, 0) / 60 * 10) / 10}
                 </Text>
-                <Text style={styles.bigStatLabel}>Totala minuter</Text>
+                <Text style={styles.bigStatLabel}>Totala timmar</Text>
               </View>
             </View>
 
+            {/* Streak Stats */}
+            <View style={styles.streakSection}>
+              <Text style={styles.sectionTitle}>Studiestreak</Text>
+              <View style={styles.streakGrid}>
+                <View style={styles.streakCard}>
+                  <Text style={styles.streakNumber}>{streakStats.current}</Text>
+                  <Text style={styles.streakLabel}>Nuvarande streak</Text>
+                  <Text style={styles.streakSubtext}>dagar i rad</Text>
+                </View>
+                <View style={styles.streakCard}>
+                  <Text style={styles.streakNumber}>{streakStats.longest}</Text>
+                  <Text style={styles.streakLabel}>Längsta streak</Text>
+                  <Text style={styles.streakSubtext}>dagar totalt</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Time Period Stats */}
+            <View style={styles.periodSection}>
+              <Text style={styles.sectionTitle}>Tidsperioder</Text>
+              
+              <View style={styles.periodCard}>
+                <View style={styles.periodHeader}>
+                  <Text style={styles.periodTitle}>📅 Denna vecka</Text>
+                </View>
+                <View style={styles.periodStats}>
+                  <View style={styles.periodStat}>
+                    <Text style={styles.periodStatNumber}>{weekStats.sessions}</Text>
+                    <Text style={styles.periodStatLabel}>Sessioner</Text>
+                  </View>
+                  <View style={styles.periodStat}>
+                    <Text style={styles.periodStatNumber}>{Math.round(weekStats.minutes / 60 * 10) / 10}</Text>
+                    <Text style={styles.periodStatLabel}>Timmar</Text>
+                  </View>
+                  <View style={styles.periodStat}>
+                    <Text style={styles.periodStatNumber}>{weekStats.averagePerDay}</Text>
+                    <Text style={styles.periodStatLabel}>Min/dag</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.periodCard}>
+                <View style={styles.periodHeader}>
+                  <Text style={styles.periodTitle}>📊 Senaste 30 dagarna</Text>
+                </View>
+                <View style={styles.periodStats}>
+                  <View style={styles.periodStat}>
+                    <Text style={styles.periodStatNumber}>{monthStats.sessions}</Text>
+                    <Text style={styles.periodStatLabel}>Sessioner</Text>
+                  </View>
+                  <View style={styles.periodStat}>
+                    <Text style={styles.periodStatNumber}>{monthStats.hours}</Text>
+                    <Text style={styles.periodStatLabel}>Timmar</Text>
+                  </View>
+                  <View style={styles.periodStat}>
+                    <Text style={styles.periodStatNumber}>{Math.round(monthStats.minutes / 30)}</Text>
+                    <Text style={styles.periodStatLabel}>Min/dag</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Course Stats */}
+            {courseStats.length > 0 && (
+              <View style={styles.courseStatsSection}>
+                <Text style={styles.sectionTitle}>Mest studerade kurser</Text>
+                {courseStats.map((stat, index) => (
+                  <View key={stat.courseId} style={styles.courseStatItem}>
+                    <View style={styles.courseStatRank}>
+                      <Text style={styles.courseStatRankText}>{index + 1}</Text>
+                    </View>
+                    <View style={styles.courseStatInfo}>
+                      <Text style={styles.courseStatName}>{stat.courseName}</Text>
+                      <Text style={styles.courseStatDetails}>
+                        {stat.sessions} sessioner • {Math.round(stat.minutes / 60 * 10) / 10} timmar
+                      </Text>
+                    </View>
+                    <View style={styles.courseStatProgress}>
+                      <View 
+                        style={[
+                          styles.courseStatBar,
+                          { width: `${Math.min(100, (stat.minutes / Math.max(...courseStats.map(s => s.minutes))) * 100)}%` }
+                        ]} 
+                      />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Recent Sessions */}
             {pomodoroSessions.length > 0 && (
               <View style={styles.recentSessions}>
                 <Text style={styles.sectionTitle}>Senaste sessioner</Text>
@@ -439,7 +655,12 @@ export default function TimerScreen() {
                         }
                       </Text>
                       <Text style={styles.sessionDate}>
-                        {new Date(session.endTime).toLocaleDateString('sv-SE')}
+                        {new Date(session.endTime).toLocaleDateString('sv-SE', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </Text>
                     </View>
                     <Text style={styles.sessionDuration}>{session.duration} min</Text>
@@ -771,5 +992,130 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#A3E635',
+  },
+  // New statistics styles
+  streakSection: {
+    marginBottom: 32,
+  },
+  streakGrid: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  streakCard: {
+    flex: 1,
+    backgroundColor: '#334155',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  streakNumber: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#A3E635',
+    marginBottom: 4,
+  },
+  streakLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#F9FAFB',
+    marginBottom: 2,
+  },
+  streakSubtext: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  periodSection: {
+    marginBottom: 32,
+  },
+  periodCard: {
+    backgroundColor: '#334155',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  periodHeader: {
+    marginBottom: 16,
+  },
+  periodTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#F9FAFB',
+  },
+  periodStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  periodStat: {
+    alignItems: 'center',
+  },
+  periodStatNumber: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#A3E635',
+    marginBottom: 4,
+  },
+  periodStatLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  courseStatsSection: {
+    backgroundColor: '#334155',
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  courseStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#475569',
+  },
+  courseStatRank: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#A3E635',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  courseStatRankText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  courseStatInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  courseStatName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#F9FAFB',
+    marginBottom: 2,
+  },
+  courseStatDetails: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  courseStatProgress: {
+    width: 60,
+    height: 4,
+    backgroundColor: '#475569',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  courseStatBar: {
+    height: '100%',
+    backgroundColor: '#A3E635',
+    borderRadius: 2,
   },
 });

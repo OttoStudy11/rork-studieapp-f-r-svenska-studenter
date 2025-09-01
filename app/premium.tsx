@@ -22,7 +22,8 @@ import {
   BarChart3, 
   Download,
   Palette,
-  Moon
+  Moon,
+  ArrowLeft
 } from 'lucide-react-native';
 
 export default function PremiumScreen() {
@@ -99,6 +100,12 @@ export default function PremiumScreen() {
           colors={['#667eea', '#764ba2']}
           style={styles.header}
         >
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <ArrowLeft size={24} color="white" />
+          </TouchableOpacity>
           <Crown size={60} color="#FFD700" />
           <Text style={styles.premiumTitle}>Du är Premium!</Text>
           <Text style={styles.premiumSubtitle}>
@@ -137,6 +144,12 @@ export default function PremiumScreen() {
           colors={['#667eea', '#764ba2']}
           style={styles.header}
         >
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <ArrowLeft size={24} color="white" />
+          </TouchableOpacity>
           <Crown size={60} color="#FFD700" />
           <Text style={styles.title}>Uppgradera till Premium</Text>
           <Text style={styles.subtitle}>
@@ -484,5 +497,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     lineHeight: 20,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 16,
+    left: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
   },
 });

@@ -2,6 +2,15 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Simple UUID v4 generator for demo purposes
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export interface DemoUser {
   id: string;
   name: string;
@@ -95,7 +104,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
 
       const newUser: DemoUser = {
-        id: Date.now().toString(),
+        id: generateUUID(),
         name: name.trim(),
         email: email || `${name.toLowerCase().replace(/\s+/g, '')}@demo.com`,
         createdAt: new Date().toISOString()

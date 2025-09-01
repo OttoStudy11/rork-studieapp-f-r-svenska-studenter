@@ -2,7 +2,6 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import * as db from '@/lib/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type SubscriptionType = 'free' | 'premium';
@@ -86,14 +85,11 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
       setIsLoading(true);
       if (!authUser) return;
       
-      const userData = await db.getUser(authUser.id);
-      setSubscriptionType(userData.subscription_type as SubscriptionType);
-      
-      if (userData.subscription_expires_at) {
-        setSubscriptionExpiresAt(new Date(userData.subscription_expires_at));
-      } else {
-        setSubscriptionExpiresAt(null);
-      }
+      // For demo users, always set to free subscription
+      // In a real app, this would query the database
+      console.log('Loading subscription data for demo user:', authUser.name);
+      setSubscriptionType('free');
+      setSubscriptionExpiresAt(null);
     } catch (error) {
       console.error('Error loading subscription data:', error);
       setSubscriptionType('free');

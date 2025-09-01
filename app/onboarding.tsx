@@ -44,7 +44,7 @@ const purposeOptions = [
 export default function OnboardingScreen() {
   const { user } = useAuth();
   const { completeOnboarding } = useStudy();
-  const { showError, showSuccess } = useToast();
+  const { showError } = useToast();
   
   const [step, setStep] = useState(0);
   const [data, setData] = useState<OnboardingData>({
@@ -64,21 +64,20 @@ export default function OnboardingScreen() {
   };
 
   const handleComplete = async () => {
-    if (data.studyLevel && data.name && data.program) {
+    if (data.studyLevel && data.name) {
       try {
-        console.log('Completing onboarding with data:', data);
+        console.log('Completing basic onboarding with data:', data);
         const finalName = data.name || user?.name || '';
         await completeOnboarding({
           name: finalName,
           email: user?.email || `${finalName.toLowerCase().replace(/\s+/g, '')}@demo.com`,
           studyLevel: data.studyLevel as 'gymnasie' | 'högskola',
-          program: data.program,
-          purpose: [...data.goals, ...data.purpose].join(', '),
+          program: data.program || 'Ej valt',
+          purpose: [...data.goals, ...data.purpose].join(', ') || 'Allmän studiehjälp',
           subscriptionType: 'free'
         });
-        showSuccess('Välkommen till StudyFlow!');
-        console.log('Onboarding completed, redirecting to home');
-        router.replace('/(tabs)');
+        console.log('Basic onboarding completed, redirecting to program selection');
+        router.replace('/program-selection');
       } catch (error) {
         console.error('Onboarding error:', error);
         showError('Något gick fel. Försök igen.');
@@ -97,9 +96,9 @@ export default function OnboardingScreen() {
     switch (step) {
       case 0: return (data.name || user?.name || '').length > 0;
       case 1: return data.studyLevel !== '';
-      case 2: return data.program.length > 0;
-      case 3: return data.goals.length > 0;
-      case 4: return data.purpose.length > 0;
+      case 2: return true; // Skip program requirement for now
+      case 3: return true; // Make goals optional
+      case 4: return true; // Make purpose optional
       default: return false;
     }
   };
@@ -164,19 +163,11 @@ export default function OnboardingScreen() {
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.title}>
-              {data.studyLevel === 'gymnasie' ? 'Vilket program?' : 'Vilket program/inriktning?'}
+              Nästan klar!
             </Text>
-            <TextInput
-              style={styles.input}
-              placeholder={
-                data.studyLevel === 'gymnasie' 
-                  ? 'T.ex. Naturvetenskapsprogrammet' 
-                  : 'T.ex. Civilingenjör Datateknik'
-              }
-              value={data.program}
-              onChangeText={(text) => setData({ ...data, program: text })}
-              autoFocus
-            />
+            <Text style={styles.subtitle}>
+              Vi kommer att hjälpa dig välja program och kurser i nästa steg
+            </Text>
           </View>
         );
 
@@ -276,7 +267,7 @@ export default function OnboardingScreen() {
               disabled={!canProceed()}
             >
               <Text style={styles.nextButtonText}>
-                {step === 4 ? 'Kom igång!' : 'Nästa'}
+                {step === 4 ? 'Välj program och kurser' : step === 2 ? 'Fortsätt' : 'Nästa'}
               </Text>
             </TouchableOpacity>
           </View>

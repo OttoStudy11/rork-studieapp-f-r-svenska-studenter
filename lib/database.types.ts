@@ -9,44 +9,103 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      users: {
+      profiles: {
         Row: {
           id: string
           name: string
-          email: string
           avatar_url: string | null
           level: string
           program: string
           purpose: string
           subscription_type: 'free' | 'premium'
           subscription_expires_at: string | null
+          program_id: string | null
           created_at: string
         }
         Insert: {
-          id?: string
+          id: string
           name: string
-          email: string
           avatar_url?: string | null
           level: string
           program: string
           purpose: string
           subscription_type?: 'free' | 'premium'
           subscription_expires_at?: string | null
+          program_id?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
-          email?: string
           avatar_url?: string | null
           level?: string
           program?: string
           purpose?: string
           subscription_type?: 'free' | 'premium'
           subscription_expires_at?: string | null
+          program_id?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      programs: {
+        Row: {
+          id: string
+          name: string
+          level: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          level: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          level?: string
           created_at?: string
         }
         Relationships: []
+      }
+      program_courses: {
+        Row: {
+          program_id: string
+          course_id: string
+        }
+        Insert: {
+          program_id: string
+          course_id: string
+        }
+        Update: {
+          program_id?: string
+          course_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_courses_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       courses: {
         Row: {
@@ -114,7 +173,7 @@ export interface Database {
             foreignKeyName: "user_courses_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -156,7 +215,7 @@ export interface Database {
             foreignKeyName: "notes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -233,7 +292,7 @@ export interface Database {
             foreignKeyName: "pomodoro_sessions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -272,14 +331,14 @@ export interface Database {
             foreignKeyName: "friends_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "friends_friend_id_fkey"
             columns: ["friend_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           }
         ]
@@ -317,7 +376,7 @@ export interface Database {
             foreignKeyName: "settings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           }
         ]

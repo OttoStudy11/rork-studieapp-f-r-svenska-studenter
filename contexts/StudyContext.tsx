@@ -91,7 +91,7 @@ const dbUserToUser = (dbUser: DbUser): User => ({
 });
 
 const userToDbUser = (user: Partial<User> & { id: string }): Database['public']['Tables']['profiles']['Insert'] => ({
-  id: user.id,
+  id: user.id, // Use the demo auth UUID directly
   name: user.name!,
   level: user.studyLevel!,
   program: user.program!,

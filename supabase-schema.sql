@@ -1,4 +1,6 @@
 -- Drop all tables in the correct order (respecting foreign key constraints)
+DROP TABLE IF EXISTS programs CASCADE;
+DROP TABLE IF EXISTS program_courses CASCADE;
 DROP TABLE IF EXISTS settings CASCADE;
 DROP TABLE IF EXISTS friends CASCADE;
 DROP TABLE IF EXISTS pomodoro_sessions CASCADE;
@@ -13,13 +15,22 @@ DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Profiles table (links to Supabase Auth users)
+-- Programs table
+CREATE TABLE programs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT UNIQUE NOT NULL,
+    level TEXT NOT NULL CHECK (level IN ('gymnasie','högskola')),
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Profiles table (demo version without auth.users dependency)
 CREATE TABLE profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     avatar_url TEXT,
     level TEXT NOT NULL CHECK (level IN ('gymnasie', 'högskola')),
     program TEXT NOT NULL,
+    program_id UUID REFERENCES programs(id),
     purpose TEXT NOT NULL,
     subscription_type TEXT NOT NULL DEFAULT 'free' CHECK (subscription_type IN ('free', 'premium')),
     subscription_expires_at TIMESTAMP WITH TIME ZONE,
@@ -38,6 +49,13 @@ CREATE TABLE courses (
     progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
     related_courses JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Program ↔ Kurser
+CREATE TABLE program_courses (
+    program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+    course_id  UUID NOT NULL REFERENCES courses(id)  ON DELETE CASCADE,
+    PRIMARY KEY (program_id, course_id)
 );
 
 -- User-Course relationship table
@@ -186,6 +204,35 @@ INSERT INTO courses (title, description, subject, level, resources, tips, progre
  '["Psykologibok", "Forskningsartiklar", "Statistikprogram", "Fallstudier"]'::jsonb,
  '["Läs forskningsartiklar kritiskt", "Förstå statistiska metoder", "Koppla teori till praktik", "Reflektera över egna erfarenheter"]'::jsonb,
  0, '[]'::jsonb);
+
+-- Seed programs
+INSERT INTO programs (name, level) VALUES
+  ('Teknikprogrammet', 'gymnasie'),
+  ('Industritekniska programmet', 'gymnasie'),
+  ('Ekonomiprogrammet', 'gymnasie'),
+  ('Naturvetenskapsprogrammet', 'gymnasie'),
+  ('Vård- och omsorgsprogrammet', 'gymnasie')
+ON CONFLICT (name) DO NOTHING;
+
+-- Add indexes for programs
+CREATE INDEX IF NOT EXISTS idx_programs_name ON programs (name);
+CREATE INDEX IF NOT EXISTS idx_profiles_program_id ON profiles (program_id);
+
+-- Koppla exempelkurser (ändra efter dina faktiska kurser)
+WITH p AS (SELECT id, name FROM programs),
+c AS (SELECT id, title FROM courses)
+INSERT INTO program_courses (program_id, course_id)
+SELECT p.id, c.id FROM p
+JOIN c ON (
+  (p.name IN ('Teknikprogrammet','Naturvetenskapsprogrammet') AND c.title IN ('Matematik 3c','Fysik 2','Kemi 2','Engelska 7','Svenska 3'))
+  OR
+  (p.name = 'Industritekniska programmet' AND c.title IN ('Matematik 3c','Fysik 2','Svenska 3'))
+  OR
+  (p.name = 'Ekonomiprogrammet' AND c.title IN ('Svenska 3','Engelska 7'))
+  OR
+  (p.name = 'Vård- och omsorgsprogrammet' AND c.title IN ('Svenska 3'))
+)
+ON CONFLICT DO NOTHING;
 
 -- Disable Row Level Security (RLS) för demo
 -- (I produktion: ENABLE RLS + policies)

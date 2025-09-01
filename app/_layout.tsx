@@ -9,7 +9,7 @@ import { ToastProvider, useToast } from "@/contexts/ToastContext";
 import { AchievementProvider } from "@/contexts/AchievementContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { View, ActivityIndicator, Text } from "react-native";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -20,21 +20,7 @@ function RootLayoutNav() {
   const { isLoading } = useAuth();
   
   if (isLoading) {
-    return (
-      <View style={{ 
-        flex: 1, 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        backgroundColor: '#1E293B'
-      }}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <View style={{ marginTop: 16 }}>
-          <Text style={{ fontSize: 16, color: '#CBD5E1', textAlign: 'center' }}>
-            Laddar StudyFlow...
-          </Text>
-        </View>
-      </View>
-    );
+    return <LoadingScreen message="Startar din studieplats..." />;
   }
   
   return (

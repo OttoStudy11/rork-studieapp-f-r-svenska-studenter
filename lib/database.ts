@@ -4,13 +4,13 @@ import { Database } from './database.types';
 type Tables = Database['public']['Tables'];
 
 // User functions
-export const createUser = async (userData: Tables['users']['Insert']) => {
+export const createUser = async (userData: Tables['profiles']['Insert']) => {
   try {
     console.log('Creating user with data:', userData);
     
     // First check if user already exists
     const { data: existingUser } = await supabase
-      .from('users')
+      .from('profiles')
       .select('*')
       .eq('id', userData.id!)
       .single();
@@ -27,7 +27,7 @@ export const createUser = async (userData: Tables['users']['Insert']) => {
     };
     
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .insert(userDataWithDefaults)
       .select()
       .single();
@@ -46,7 +46,7 @@ export const createUser = async (userData: Tables['users']['Insert']) => {
 
 export const getUser = async (userId: string) => {
   const { data, error } = await supabase
-    .from('users')
+    .from('profiles')
     .select('*')
     .eq('id', userId)
     .single();
@@ -55,9 +55,9 @@ export const getUser = async (userId: string) => {
   return data;
 };
 
-export const updateUser = async (userId: string, updates: Tables['users']['Update']) => {
+export const updateUser = async (userId: string, updates: Tables['profiles']['Update']) => {
   const { data, error } = await supabase
-    .from('users')
+    .from('profiles')
     .update(updates)
     .eq('id', userId)
     .select()
@@ -289,7 +289,7 @@ export const getUserFriends = async (userId: string) => {
     .from('friends')
     .select(`
       *,
-      friend:users!friends_friend_id_fkey (*)
+      friend:profiles!friends_friend_id_fkey (*)
     `)
     .eq('user_id', userId)
     .eq('status', 'accepted');
@@ -303,7 +303,7 @@ export const getFriendRequests = async (userId: string) => {
     .from('friends')
     .select(`
       *,
-      requester:users!friends_user_id_fkey (*)
+      requester:profiles!friends_user_id_fkey (*)
     `)
     .eq('friend_id', userId)
     .eq('status', 'pending');
@@ -382,7 +382,7 @@ export const createOrUpdateSettings = async (userId: string, settings: Partial<T
 // Premium subscription functions
 export const updateUserSubscription = async (userId: string, subscriptionType: 'free' | 'premium', expiresAt?: string) => {
   const { data, error } = await supabase
-    .from('users')
+    .from('profiles')
     .update({
       subscription_type: subscriptionType,
       subscription_expires_at: expiresAt || null
@@ -397,7 +397,7 @@ export const updateUserSubscription = async (userId: string, subscriptionType: '
 
 export const getUserSubscriptionStatus = async (userId: string) => {
   const { data, error } = await supabase
-    .from('users')
+    .from('profiles')
     .select('subscription_type, subscription_expires_at')
     .eq('id', userId)
     .single();
@@ -428,9 +428,9 @@ export const searchCourses = async (query: string, level?: string) => {
 
 export const searchUsers = async (query: string) => {
   const { data, error } = await supabase
-    .from('users')
-    .select('id, name, email, level, program')
-    .or(`name.ilike.%${query}%,email.ilike.%${query}%`)
+    .from('profiles')
+    .select('id, name, level, program')
+    .or(`name.ilike.%${query}%`)
     .limit(10);
   
   if (error) throw error;

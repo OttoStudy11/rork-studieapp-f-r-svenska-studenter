@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import * as db from '@/lib/database';
 import { Database } from '@/lib/database.types';
 
-type DbUser = Database['public']['Tables']['users']['Row'];
+type DbUser = Database['public']['Tables']['profiles']['Row'];
 
 type DbNote = Database['public']['Tables']['notes']['Row'];
 type DbPomodoroSession = Database['public']['Tables']['pomodoro_sessions']['Row'];
@@ -80,7 +80,7 @@ export interface StudyContextType {
 const dbUserToUser = (dbUser: DbUser): User => ({
   id: dbUser.id,
   name: dbUser.name,
-  email: dbUser.email,
+  email: `${dbUser.name.toLowerCase().replace(/\s+/g, '')}@demo.com`, // Generate email from name since profiles table doesn't have email
   studyLevel: dbUser.level as 'gymnasie' | 'högskola',
   program: dbUser.program,
   purpose: dbUser.purpose,
@@ -90,9 +90,9 @@ const dbUserToUser = (dbUser: DbUser): User => ({
   subscriptionExpiresAt: dbUser.subscription_expires_at ? new Date(dbUser.subscription_expires_at) : undefined
 });
 
-const userToDbUser = (user: Partial<User>): Database['public']['Tables']['users']['Insert'] => ({
+const userToDbUser = (user: Partial<User> & { id: string }): Database['public']['Tables']['profiles']['Insert'] => ({
+  id: user.id,
   name: user.name!,
-  email: user.email!,
   level: user.studyLevel!,
   program: user.program!,
   purpose: user.purpose!,
@@ -190,10 +190,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       console.log('Starting onboarding for user:', authUser.id);
       
       // Create user in database (this will check if user already exists)
-      const dbUser = await db.createUser({
-        id: authUser.id,
-        ...userToDbUser({ ...userData, id: authUser.id })
-      });
+      const dbUser = await db.createUser(
+        userToDbUser({ ...userData, id: authUser.id })
+      );
       
       console.log('User created/found in database:', dbUser.id);
       
@@ -280,7 +279,19 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser || !user) return;
       
-      const updatedDbUser = await db.updateUser(authUser.id, userToDbUser(updates));
+      // Create a separate function for updates that doesn't require id
+      const updateData: Database['public']['Tables']['profiles']['Update'] = {};
+      if (updates.name) updateData.name = updates.name;
+      if (updates.studyLevel) updateData.level = updates.studyLevel;
+      if (updates.program) updateData.program = updates.program;
+      if (updates.purpose) updateData.purpose = updates.purpose;
+      if (updates.avatar !== undefined) updateData.avatar_url = updates.avatar || null;
+      if (updates.subscriptionType) updateData.subscription_type = updates.subscriptionType;
+      if (updates.subscriptionExpiresAt !== undefined) {
+        updateData.subscription_expires_at = updates.subscriptionExpiresAt?.toISOString() || null;
+      }
+      
+      const updatedDbUser = await db.updateUser(authUser.id, updateData);
       setUser(dbUserToUser(updatedDbUser));
     } catch (error) {
       console.error('Error updating user:', error);

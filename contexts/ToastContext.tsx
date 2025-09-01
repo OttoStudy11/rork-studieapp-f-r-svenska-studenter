@@ -158,6 +158,18 @@ const ToastComponent: React.FC<{
   );
 };
 
+export const ToastContainer: React.FC<{ toasts: Toast[]; onDismiss: (id: string) => void }> = ({ toasts, onDismiss }) => (
+  <View style={styles.container} pointerEvents="box-none">
+    {toasts.map(toast => (
+      <ToastComponent
+        key={toast.id}
+        toast={toast}
+        onDismiss={onDismiss}
+      />
+    ))}
+  </View>
+);
+
 export const [ToastProvider, useToast] = createContextHook(() => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -191,26 +203,15 @@ export const [ToastProvider, useToast] = createContextHook(() => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   }, []);
 
-  const ToastContainer = useCallback(() => (
-    <View style={styles.container} pointerEvents="box-none">
-      {toasts.map(toast => (
-        <ToastComponent
-          key={toast.id}
-          toast={toast}
-          onDismiss={dismissToast}
-        />
-      ))}
-    </View>
-  ), [toasts, dismissToast]);
-
   return useMemo(() => ({
+    toasts,
     showToast,
     showSuccess,
     showError,
     showInfo,
     showAchievement,
-    ToastContainer,
-  }), [showToast, showSuccess, showError, showInfo, showAchievement, ToastContainer]);
+    dismissToast,
+  }), [toasts, showToast, showSuccess, showError, showInfo, showAchievement, dismissToast]);
 });
 
 const styles = StyleSheet.create({

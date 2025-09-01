@@ -5,7 +5,7 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { StudyProvider } from "@/contexts/StudyContext";
-import { ToastProvider, useToast } from "@/contexts/ToastContext";
+import { ToastProvider, useToast, ToastContainer } from "@/contexts/ToastContext";
 import { AchievementProvider } from "@/contexts/AchievementContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -16,7 +16,7 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
-  const { ToastContainer } = useToast();
+  const { toasts, dismissToast } = useToast();
   const { isLoading } = useAuth();
   
   if (isLoading) {
@@ -33,7 +33,7 @@ function RootLayoutNav() {
         <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="profile" options={{ headerShown: false }} />
       </Stack>
-      <ToastContainer />
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>
   );
 }

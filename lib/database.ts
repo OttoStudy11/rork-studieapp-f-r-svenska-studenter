@@ -42,20 +42,30 @@ export const createUser = async (userData: Tables['profiles']['Insert']) => {
 };
 
 export const getUser = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  
-  if (error) {
-    // If user doesn't exist (PGRST116), return null instead of throwing
-    if (error.code === 'PGRST116') {
-      return null;
+  try {
+    console.log('Getting user from database:', userId);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.log('Database error getting user:', error.code, error.message);
+      // If user doesn't exist (PGRST116), return null instead of throwing
+      if (error.code === 'PGRST116') {
+        console.log('User not found in database (PGRST116)');
+        return null;
+      }
+      throw error;
     }
+    
+    console.log('User found in database:', data.name);
+    return data;
+  } catch (error) {
+    console.error('Exception in getUser:', error);
     throw error;
   }
-  return data;
 };
 
 export const updateUser = async (userId: string, updates: Tables['profiles']['Update']) => {

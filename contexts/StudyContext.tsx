@@ -131,7 +131,7 @@ const dbSessionToSession = (dbSession: DbPomodoroSession): PomodoroSession => ({
 });
 
 export const [StudyProvider, useStudy] = createContextHook(() => {
-  const { user: authUser, isAuthenticated, isLoading: authLoading, hasCompletedOnboarding, setOnboardingCompleted } = useAuth();
+  const { user: authUser, isAuthenticated, isLoading: authLoading, setOnboardingCompleted } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -147,12 +147,37 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       const dbUser = await db.getUser(userId);
       
       if (!dbUser) {
-        console.log('User not found in database, needs onboarding');
-        setUser(null);
-        setCourses([]);
-        setNotes([]);
-        setPomodoroSessions([]);
-        return;
+        console.log('User not found in database, creating user profile...');
+        
+        // Create a basic user profile if it doesn't exist
+        try {
+          const newUser = await db.createUser({
+            id: userId,
+            name: userEmail.split('@')[0] || 'Student',
+            level: 'gymnasie',
+            program: 'Naturvetenskapsprogrammet',
+            purpose: 'Förbättra mina studieresultat',
+            subscription_type: 'free',
+            subscription_expires_at: null
+          });
+          
+          console.log('Created new user profile:', newUser.name);
+          setUser(dbUserToUser(newUser, userEmail));
+          
+          // Initialize with empty data for new user
+          setCourses([]);
+          setNotes([]);
+          setPomodoroSessions([]);
+          
+          return;
+        } catch (createError) {
+          console.error('Failed to create user profile:', createError);
+          setUser(null);
+          setCourses([]);
+          setNotes([]);
+          setPomodoroSessions([]);
+          return;
+        }
       }
       
       console.log('User found in database:', dbUser.name);
@@ -160,9 +185,18 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       
       // Load user's courses, notes, and sessions
       const [userCourses, userNotes, userSessions] = await Promise.all([
-        db.getUserCourses(userId),
-        db.getUserNotes(userId),
-        db.getUserPomodoroSessions(userId)
+        db.getUserCourses(userId).catch(err => {
+          console.warn('Failed to load user courses:', err);
+          return [];
+        }),
+        db.getUserNotes(userId).catch(err => {
+          console.warn('Failed to load user notes:', err);
+          return [];
+        }),
+        db.getUserPomodoroSessions(userId).catch(err => {
+          console.warn('Failed to load user sessions:', err);
+          return [];
+        })
       ]);
       
       console.log('Loaded user data:', {
@@ -199,7 +233,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
 
   useEffect(() => {
     if (!authLoading) {
-      if (isAuthenticated && authUser && hasCompletedOnboarding) {
+      if (isAuthenticated && authUser) {
+        // Load user data regardless of onboarding status
+        // This ensures we have user data available
         loadUserData(authUser.id, authUser.email);
       } else {
         setUser(null);
@@ -209,7 +245,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         setIsLoading(false);
       }
     }
-  }, [authUser, isAuthenticated, authLoading, hasCompletedOnboarding, loadUserData]);
+  }, [authUser, isAuthenticated, authLoading, loadUserData]);
 
   const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'>) => {
     try {

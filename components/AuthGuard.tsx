@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStudy } from '@/contexts/StudyContext';
 import { View, ActivityIndicator, Text } from 'react-native';
 
 interface AuthGuardProps {
@@ -8,8 +9,11 @@ interface AuthGuardProps {
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, isLoading, hasCompletedOnboarding } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, hasCompletedOnboarding } = useAuth();
+  const { isLoading: studyLoading } = useStudy();
   const [hasRedirected, setHasRedirected] = useState(false);
+
+  const isLoading = authLoading || studyLoading;
 
   useEffect(() => {
     if (!isLoading && !hasRedirected) {
@@ -29,7 +33,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           console.log('AuthGuard - Redirecting to home');
           router.replace('/(tabs)/home');
         }
-      }, 50); // Reduced delay
+      }, 100); // Slightly longer delay to ensure data is loaded
       
       return () => clearTimeout(timer);
     }

@@ -436,3 +436,268 @@ export const searchUsers = async (query: string) => {
   if (error) throw error;
   return data;
 };
+
+// Achievement functions
+export const getAllAchievements = async () => {
+  const { data, error } = await supabase
+    .from('achievements')
+    .select('*')
+    .order('created_at', { ascending: true });
+  
+  if (error) throw error;
+  return data;
+};
+
+export const getUserAchievements = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('user_achievements')
+    .select(`
+      *,
+      achievements (*)
+    `)
+    .eq('user_id', userId);
+  
+  if (error) throw error;
+  return data;
+};
+
+export const initializeUserAchievements = async (userId: string) => {
+  // Get all achievements
+  const achievements = await getAllAchievements();
+  
+  // Create user_achievement records for all achievements
+  const userAchievements = achievements.map(achievement => ({
+    user_id: userId,
+    achievement_id: achievement.id,
+    progress: 0,
+    unlocked_at: null
+  }));
+  
+  const { data, error } = await supabase
+    .from('user_achievements')
+    .upsert(userAchievements, { onConflict: 'user_id,achievement_id' })
+    .select();
+  
+  if (error) throw error;
+  return data;
+};
+
+export const updateUserAchievementProgress = async (
+  userId: string, 
+  achievementId: string, 
+  progress: number, 
+  unlockedAt?: string
+) => {
+  const updateData: Tables['user_achievements']['Update'] = {
+    progress,
+    updated_at: new Date().toISOString()
+  };
+  
+  if (unlockedAt) {
+    updateData.unlocked_at = unlockedAt;
+  }
+  
+  const { data, error } = await supabase
+    .from('user_achievements')
+    .update(updateData)
+    .eq('user_id', userId)
+    .eq('achievement_id', achievementId)
+    .select(`
+      *,
+      achievements (*)
+    `)
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
+
+export const getUserAchievementStats = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('user_achievements')
+    .select(`
+      *,
+      achievements (*)
+    `)
+    .eq('user_id', userId);
+  
+  if (error) throw error;
+  
+  const totalAchievements = data.length;
+  const unlockedAchievements = data.filter(ua => ua.unlocked_at).length;
+  const totalPoints = data
+    .filter(ua => ua.unlocked_at)
+    .reduce((sum, ua) => sum + (ua.achievements?.reward_points || 0), 0);
+  const badges = data
+    .filter(ua => ua.unlocked_at && ua.achievements?.reward_badge)
+    .map(ua => ua.achievements?.reward_badge)
+    .filter(Boolean);
+  
+  return {
+    totalAchievements,
+    unlockedAchievements,
+    totalPoints,
+    badges,
+    achievements: data
+  };
+};
+
+// Calculate streak from pomodoro sessions
+export const calculateUserStreak = async (userId: string) => {
+  const { data: sessions, error } = await supabase
+    .from('pomodoro_sessions')
+    .select('end_time')
+    .eq('user_id', userId)
+    .order('end_time', { ascending: false });
+  
+  if (error) throw error;
+  if (!sessions || sessions.length === 0) return 0;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  let streak = 0;
+  let currentDate = new Date(today);
+  
+  // Check if user studied today or yesterday (to maintain streak)
+  const lastSessionDate = new Date(sessions[0].end_time);
+  lastSessionDate.setHours(0, 0, 0, 0);
+  
+  const daysDiff = Math.floor((today.getTime() - lastSessionDate.getTime()) / (1000 * 60 * 60 * 24));
+  if (daysDiff > 1) return 0; // Streak broken
+  
+  // Count consecutive days
+  for (let i = 0; i < 365; i++) { // Max 365 days to prevent infinite loop
+    const dayStart = new Date(currentDate);
+    const dayEnd = new Date(currentDate);
+    dayEnd.setHours(23, 59, 59, 999);
+    
+    const hasSessionThisDay = sessions.some(session => {
+      const sessionDate = new Date(session.end_time);
+      return sessionDate >= dayStart && sessionDate <= dayEnd;
+    });
+    
+    if (hasSessionThisDay) {
+      streak++;
+      currentDate.setDate(currentDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  
+  return streak;
+};
+
+// Check and update achievements for a user
+export const checkAndUpdateAchievements = async (userId: string) => {
+  try {
+    console.log('Checking achievements for user:', userId);
+    
+    // Get user's current achievement progress
+    const userAchievements = await getUserAchievements(userId);
+    
+    // Get user's data for calculations
+    const [pomodoroSessions, userCourses, userNotes] = await Promise.all([
+      getUserPomodoroSessions(userId),
+      getUserCourses(userId),
+      getUserNotes(userId)
+    ]);
+    
+    const currentStreak = await calculateUserStreak(userId);
+    
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    const newlyUnlocked: any[] = [];
+    
+    // Check each achievement
+    for (const userAchievement of userAchievements) {
+      const achievement = userAchievement.achievements;
+      if (!achievement || userAchievement.unlocked_at) continue; // Skip if already unlocked
+      
+      let currentValue = 0;
+      
+      switch (achievement.requirement_type) {
+        case 'study_time':
+          if (achievement.requirement_timeframe === 'day') {
+            const todayStart = new Date(today);
+            todayStart.setHours(0, 0, 0, 0);
+            currentValue = pomodoroSessions
+              .filter(session => new Date(session.end_time) >= todayStart)
+              .reduce((sum, session) => sum + session.duration, 0);
+          } else if (achievement.requirement_timeframe === 'week') {
+            currentValue = pomodoroSessions
+              .filter(session => new Date(session.end_time) >= weekStart)
+              .reduce((sum, session) => sum + session.duration, 0);
+          } else if (achievement.requirement_timeframe === 'month') {
+            currentValue = pomodoroSessions
+              .filter(session => new Date(session.end_time) >= monthStart)
+              .reduce((sum, session) => sum + session.duration, 0);
+          } else {
+            currentValue = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
+          }
+          break;
+          
+        case 'sessions':
+          if (achievement.requirement_timeframe === 'day') {
+            const todayStart = new Date(today);
+            todayStart.setHours(0, 0, 0, 0);
+            currentValue = pomodoroSessions.filter(session => 
+              new Date(session.end_time) >= todayStart
+            ).length;
+          } else if (achievement.requirement_timeframe === 'week') {
+            currentValue = pomodoroSessions.filter(session => 
+              new Date(session.end_time) >= weekStart
+            ).length;
+          } else if (achievement.requirement_timeframe === 'month') {
+            currentValue = pomodoroSessions.filter(session => 
+              new Date(session.end_time) >= monthStart
+            ).length;
+          } else {
+            currentValue = pomodoroSessions.length;
+          }
+          break;
+          
+        case 'courses':
+          currentValue = userCourses.length;
+          break;
+          
+        case 'notes':
+          currentValue = userNotes.length;
+          break;
+          
+        case 'streak':
+          currentValue = currentStreak;
+          break;
+          
+        default:
+          currentValue = 0;
+      }
+      
+      const progress = Math.min(100, (currentValue / achievement.requirement_target) * 100);
+      const isUnlocked = progress >= 100;
+      
+      // Update progress
+      const updatedAchievement = await updateUserAchievementProgress(
+        userId,
+        achievement.id,
+        progress,
+        isUnlocked ? new Date().toISOString() : undefined
+      );
+      
+      if (isUnlocked && !userAchievement.unlocked_at) {
+        newlyUnlocked.push(updatedAchievement);
+        console.log('Achievement unlocked:', achievement.title);
+      }
+    }
+    
+    return newlyUnlocked;
+  } catch (error) {
+    console.error('Error checking achievements:', error);
+    throw error;
+  }
+};

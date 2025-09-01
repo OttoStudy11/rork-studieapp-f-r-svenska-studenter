@@ -1,4 +1,6 @@
 -- Drop all tables in the correct order (respecting foreign key constraints)
+DROP TABLE IF EXISTS user_achievements CASCADE;
+DROP TABLE IF EXISTS achievements CASCADE;
 DROP TABLE IF EXISTS programs CASCADE;
 DROP TABLE IF EXISTS program_courses CASCADE;
 DROP TABLE IF EXISTS settings CASCADE;
@@ -120,6 +122,34 @@ CREATE TABLE settings (
     language TEXT DEFAULT 'sv' CHECK (language IN ('sv', 'en'))
 );
 
+-- Achievements table
+CREATE TABLE achievements (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    achievement_key TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    icon TEXT NOT NULL,
+    category TEXT NOT NULL CHECK (category IN ('study', 'social', 'streak', 'milestone')),
+    requirement_type TEXT NOT NULL CHECK (requirement_type IN ('study_time', 'sessions', 'courses', 'notes', 'streak', 'friends')),
+    requirement_target INTEGER NOT NULL CHECK (requirement_target > 0),
+    requirement_timeframe TEXT CHECK (requirement_timeframe IN ('day', 'week', 'month', 'total')),
+    reward_points INTEGER NOT NULL DEFAULT 0,
+    reward_badge TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User achievements table (tracks which achievements users have unlocked)
+CREATE TABLE user_achievements (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    achievement_id UUID NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
+    progress DECIMAL(5,2) DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+    unlocked_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, achievement_id)
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_user_courses_user_id ON user_courses(user_id);
 CREATE INDEX idx_user_courses_course_id ON user_courses(course_id);
@@ -135,6 +165,11 @@ CREATE INDEX idx_friends_friend_id ON friends(friend_id);
 CREATE INDEX idx_friends_status ON friends(status);
 CREATE INDEX idx_courses_level ON courses(level);
 CREATE INDEX idx_courses_subject ON courses(subject);
+CREATE INDEX idx_achievements_category ON achievements(category);
+CREATE INDEX idx_achievements_key ON achievements(achievement_key);
+CREATE INDEX idx_user_achievements_user_id ON user_achievements(user_id);
+CREATE INDEX idx_user_achievements_unlocked ON user_achievements(user_id, unlocked_at);
+CREATE INDEX idx_user_achievements_progress ON user_achievements(user_id, progress);
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -148,6 +183,12 @@ $$ language 'plpgsql';
 -- Create trigger for notes table
 CREATE TRIGGER update_notes_updated_at 
     BEFORE UPDATE ON notes 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Create trigger for user_achievements table
+CREATE TRIGGER update_user_achievements_updated_at 
+    BEFORE UPDATE ON user_achievements 
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();
 
@@ -233,6 +274,32 @@ JOIN c ON (
   (p.name = 'Vård- och omsorgsprogrammet' AND c.title IN ('Svenska 3'))
 )
 ON CONFLICT DO NOTHING;
+
+-- Insert predefined achievements
+INSERT INTO achievements (achievement_key, title, description, icon, category, requirement_type, requirement_target, requirement_timeframe, reward_points, reward_badge) VALUES
+-- Study Time Achievements
+('first_session', 'Första steget', 'Genomför din första studiesession', '🎯', 'study', 'sessions', 1, 'total', 10, NULL),
+('study_warrior', 'Studiekriger', 'Plugga 60 minuter på en dag', '⚔️', 'study', 'study_time', 60, 'day', 25, NULL),
+('marathon_student', 'Maratonstudent', 'Plugga 300 minuter på en vecka', '🏃‍♂️', 'study', 'study_time', 300, 'week', 50, NULL),
+('dedication_master', 'Hängivenhetsmästare', 'Plugga 1000 minuter totalt', '👑', 'milestone', 'study_time', 1000, 'total', 100, 'dedication'),
+
+-- Streak Achievements
+('consistency_starter', 'Konsekvensstartare', 'Plugga 3 dagar i rad', '🔥', 'streak', 'streak', 3, NULL, 30, NULL),
+('week_warrior', 'Veckokriger', 'Plugga 7 dagar i rad', '🔥🔥', 'streak', 'streak', 7, NULL, 75, NULL),
+('unstoppable', 'Ostoppbar', 'Plugga 30 dagar i rad', '🔥🔥🔥', 'streak', 'streak', 30, NULL, 200, 'unstoppable'),
+
+-- Course Achievements
+('course_collector', 'Kurssamlare', 'Lägg till 5 kurser', '📚', 'milestone', 'courses', 5, 'total', 20, NULL),
+('note_taker', 'Anteckningstagare', 'Skriv 10 anteckningar', '📝', 'milestone', 'notes', 10, 'total', 15, NULL),
+('prolific_writer', 'Produktiv skribent', 'Skriv 50 anteckningar', '✍️', 'milestone', 'notes', 50, 'total', 60, NULL),
+
+-- Session Achievements
+('session_master', 'Sessionsmästare', 'Genomför 25 studiesessioner', '🎖️', 'milestone', 'sessions', 25, 'total', 40, NULL),
+('century_club', 'Hundraklubben', 'Genomför 100 studiesessioner', '💯', 'milestone', 'sessions', 100, 'total', 150, 'century'),
+
+-- Daily Achievements
+('early_bird', 'Morgonpigg', 'Starta en session före 08:00', '🌅', 'study', 'sessions', 1, 'day', 15, NULL),
+('night_owl', 'Nattuggla', 'Starta en session efter 22:00', '🦉', 'study', 'sessions', 1, 'day', 15, NULL);
 
 -- Disable Row Level Security (RLS) för demo
 -- (I produktion: ENABLE RLS + policies)

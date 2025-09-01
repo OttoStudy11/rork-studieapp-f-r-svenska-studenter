@@ -381,6 +381,96 @@ export interface Database {
           }
         ]
       }
+      achievements: {
+        Row: {
+          id: string
+          achievement_key: string
+          title: string
+          description: string
+          icon: string
+          category: 'study' | 'social' | 'streak' | 'milestone'
+          requirement_type: 'study_time' | 'sessions' | 'courses' | 'notes' | 'streak' | 'friends'
+          requirement_target: number
+          requirement_timeframe: 'day' | 'week' | 'month' | 'total' | null
+          reward_points: number
+          reward_badge: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          achievement_key: string
+          title: string
+          description: string
+          icon: string
+          category: 'study' | 'social' | 'streak' | 'milestone'
+          requirement_type: 'study_time' | 'sessions' | 'courses' | 'notes' | 'streak' | 'friends'
+          requirement_target: number
+          requirement_timeframe?: 'day' | 'week' | 'month' | 'total' | null
+          reward_points?: number
+          reward_badge?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          achievement_key?: string
+          title?: string
+          description?: string
+          icon?: string
+          category?: 'study' | 'social' | 'streak' | 'milestone'
+          requirement_type?: 'study_time' | 'sessions' | 'courses' | 'notes' | 'streak' | 'friends'
+          requirement_target?: number
+          requirement_timeframe?: 'day' | 'week' | 'month' | 'total' | null
+          reward_points?: number
+          reward_badge?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          id: string
+          user_id: string
+          achievement_id: string
+          progress: number
+          unlocked_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          achievement_id: string
+          progress?: number
+          unlocked_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          achievement_id?: string
+          progress?: number
+          unlocked_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

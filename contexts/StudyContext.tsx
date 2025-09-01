@@ -257,6 +257,14 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
             console.error('Error creating course:', courseData.title, courseError);
           }
         }
+        
+        // Initialize user achievements
+        try {
+          await db.initializeUserAchievements(authUser.id);
+          console.log('User achievements initialized');
+        } catch (achievementError) {
+          console.error('Error initializing achievements:', achievementError);
+        }
       } else {
         console.log('User already has courses, skipping course creation');
       }
@@ -322,6 +330,13 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       const userCourses = await db.getUserCourses(authUser.id);
       setCourses(userCourses.map(dbCourseToUserCourse));
       
+      // Check for achievements after adding a course
+      try {
+        await db.checkAndUpdateAchievements(authUser.id);
+      } catch (achievementError) {
+        console.error('Error checking achievements after adding course:', achievementError);
+      }
+      
     } catch (error) {
       console.error('Error adding course:', error);
       throw error;
@@ -362,6 +377,13 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       });
       
       setNotes(prev => [dbNoteToNote(dbNote), ...prev]);
+      
+      // Check for achievements after adding a note
+      try {
+        await db.checkAndUpdateAchievements(authUser.id);
+      } catch (achievementError) {
+        console.error('Error checking achievements after adding note:', achievementError);
+      }
       
     } catch (error) {
       console.error('Error adding note:', error);
@@ -409,6 +431,13 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       });
       
       setPomodoroSessions(prev => [dbSessionToSession(dbSession), ...prev]);
+      
+      // Check for achievements after completing a pomodoro session
+      try {
+        await db.checkAndUpdateAchievements(authUser.id);
+      } catch (achievementError) {
+        console.error('Error checking achievements after pomodoro session:', achievementError);
+      }
       
     } catch (error) {
       console.error('Error adding pomodoro session:', error);

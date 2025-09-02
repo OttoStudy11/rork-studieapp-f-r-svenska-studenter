@@ -82,9 +82,9 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       setIsLoading(true);
       console.log('Loading achievements for user:', authUser.id);
       
-      // Add timeout to prevent hanging requests
+      // Shorter timeout for better UX
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Achievement loading timeout')), 10000);
+        setTimeout(() => reject(new Error('Achievement loading timeout')), 5000);
       });
       
       // Check if achievements tables exist by trying to get all achievements first
@@ -137,25 +137,14 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       
       console.log('Achievements loaded:', achievements.length, 'Total points:', points);
     } catch (error: any) {
-      console.error('Error loading achievements:', error instanceof Error ? error.message : String(error));
-      
-      // Handle specific error types
-      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout')) {
-        console.error('Network error or timeout loading achievements. This might be due to:');
-        console.error('1. No internet connection');
-        console.error('2. Supabase service unavailable');
-        console.error('3. Database connection timeout');
-        console.error('Achievement error details:', {
-          message: error.message || 'Unknown error',
-          details: error.stack || 'No stack trace',
-          hint: 'Check network connection and Supabase status',
-          code: error.code || ''
-        });
+      // Silently handle network errors to avoid spamming console
+      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
+        console.warn('Network connectivity issue - achievements temporarily unavailable');
       } else {
-        console.error('Achievement error details:', JSON.stringify(error, null, 2));
+        console.error('Error loading achievements:', error instanceof Error ? error.message : String(error));
       }
       
-      // If achievements system is not available, set empty state
+      // Always set empty state gracefully when there are errors
       setAchievements([]);
       setTotalPoints(0);
       setUnlockedBadges([]);
@@ -177,9 +166,9 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
     try {
       console.log('Checking for new achievements...');
       
-      // Add timeout for achievement checking
+      // Shorter timeout for better UX
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Achievement check timeout')), 8000);
+        setTimeout(() => reject(new Error('Achievement check timeout')), 3000);
       });
       
       const checkPromise = db.checkAndUpdateAchievements(authUser.id);
@@ -201,8 +190,9 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
         await loadUserAchievements();
       }
     } catch (error: any) {
-      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout')) {
-        console.warn('Network error checking achievements, skipping:', error.message);
+      // Silently handle network errors to avoid disrupting user experience
+      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
+        console.warn('Network connectivity issue - skipping achievement check');
       } else {
         console.error('Error checking achievements:', error);
       }

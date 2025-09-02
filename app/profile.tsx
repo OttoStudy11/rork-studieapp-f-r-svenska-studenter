@@ -194,8 +194,8 @@ export default function ProfileScreen() {
         {/* Recent Activity */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Senaste aktivitet</Text>
-          {pomodoroSessions.slice(0, 5).map((session) => (
-            <View key={session.id} style={styles.activityItem}>
+          {pomodoroSessions.slice(0, 5).map((session, sessionIndex) => (
+            <View key={`session-${sessionIndex}-${session.id}`} style={styles.activityItem}>
               <View style={styles.activityIcon}>
                 <Clock size={16} color="#4F46E5" />
               </View>

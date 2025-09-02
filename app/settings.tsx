@@ -151,7 +151,7 @@ export default function SettingsScreen() {
         </FadeInView>
 
         {settingsSections.map((section, sectionIndex) => (
-          <FadeInView key={section.title} delay={sectionIndex * 100}>
+          <FadeInView key={`section-${sectionIndex}-${section.title}`} delay={sectionIndex * 100}>
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
                 {section.title}
@@ -159,7 +159,7 @@ export default function SettingsScreen() {
               
               <View style={[styles.sectionCard, { backgroundColor: theme.colors.card }]}>
                 {section.items.map((item, itemIndex) => (
-                  <View key={item.title}>
+                  <View key={`item-${sectionIndex}-${itemIndex}-${item.title}`}>
                     {item.isThemeSelector ? (
                       <View>
                         <View style={styles.settingItem}>
@@ -177,9 +177,9 @@ export default function SettingsScreen() {
                         </View>
                         
                         <View style={styles.themeOptions}>
-                          {themeOptions.map((option) => (
+                          {themeOptions.map((option, optionIndex) => (
                             <AnimatedPressable
-                              key={option.mode}
+                              key={`theme-${optionIndex}-${option.mode}`}
                               style={[
                                 styles.themeOption,
                                 {

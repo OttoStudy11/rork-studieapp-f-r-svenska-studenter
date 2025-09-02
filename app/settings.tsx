@@ -126,7 +126,7 @@ export default function SettingsScreen() {
       ],
     },
     {
-      title: 'Konto',
+      title: 'Kontoinställningar',
       items: [
         {
           icon: <LogOut size={20} color={theme.colors.error || '#EF4444'} />,

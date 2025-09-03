@@ -40,6 +40,7 @@ export const createUser = async (userData: Tables['profiles']['Insert']) => {
     };
     
     console.log('Attempting to insert user into database...');
+    
     const { data, error } = await supabase
       .from('profiles')
       .insert(userDataWithDefaults)
@@ -55,7 +56,7 @@ export const createUser = async (userData: Tables['profiles']['Insert']) => {
       
       // Provide more specific error messages
       if (error.code === '42501') {
-        throw new Error('Database permission error: Row Level Security policy violation. Please check database configuration.');
+        throw new Error('Database permission error: Row Level Security is blocking user creation. Please ensure RLS is disabled for the profiles table in your database.');
       } else if (error.code === '23505') {
         throw new Error('User already exists with this information.');
       } else if (error.code === '23503') {

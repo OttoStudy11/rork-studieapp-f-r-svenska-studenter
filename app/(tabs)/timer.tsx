@@ -7,10 +7,12 @@ import {
   Animated,
   Modal,
   ScrollView,
-  Dimensions
+  Dimensions,
+  StatusBar
 } from 'react-native';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Timer, Play, Pause, Square, Settings, BarChart3, BookOpen } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -22,6 +24,7 @@ type SessionType = 'focus' | 'break';
 export default function TimerScreen() {
   const { courses, addPomodoroSession, pomodoroSessions } = useStudy();
   const { showSuccess, showAchievement } = useToast();
+  const { theme, isDark } = useTheme();
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [sessionType, setSessionType] = useState<SessionType>('focus');
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
@@ -289,34 +292,38 @@ export default function TimerScreen() {
   const strokeDashoffset = circumference * (1 - progress);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar 
+        barStyle={isDark ? 'light-content' : 'dark-content'} 
+        backgroundColor={theme.colors.background}
+      />
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>
+            <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
               {sessionType === 'focus' ? 'Fokus' : 'Paus'}
             </Text>
-            <Text style={styles.headerSubtitle}>
+            <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
               {getSelectedCourseTitle()}
             </Text>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity
-              style={styles.headerButton}
+              style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
               onPress={() => setShowStats(true)}
             >
-              <BarChart3 size={20} color="#F9FAFB" />
+              <BarChart3 size={20} color={theme.colors.text} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.headerButton}
+              style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
               onPress={() => setShowSettings(true)}
             >
-              <Settings size={20} color="#F9FAFB" />
+              <Settings size={20} color={theme.colors.text} />
             </TouchableOpacity>
           </View>
         </View>

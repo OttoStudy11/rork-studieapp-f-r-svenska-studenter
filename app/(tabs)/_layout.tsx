@@ -2,33 +2,39 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { Home, BookOpen, Timer, Users } from "lucide-react-native";
 import { Platform } from "react-native";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function TabLayout() {
+  const { theme, isDark } = useTheme();
+  
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#3B82F6',
-        tabBarInactiveTintColor: '#94A3B8',
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.textMuted,
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#334155',
-          borderTopWidth: 0,
-          paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-          height: Platform.OS === 'ios' ? 90 : 80,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 8,
+          backgroundColor: theme.colors.surface,
+          borderTopWidth: 1,
+          borderTopColor: theme.colors.border,
+          paddingTop: 12,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+          paddingHorizontal: 20,
+          height: Platform.OS === 'ios' ? 95 : 85,
+          shadowColor: theme.colors.shadow,
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: isDark ? 0.3 : 0.1,
+          shadowRadius: 12,
+          elevation: 12,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: '600',
-          marginTop: 2,
+          marginTop: 4,
+          letterSpacing: 0.5,
         },
         tabBarIconStyle: {
-          marginTop: 4,
+          marginTop: 2,
         },
       }}
     >
@@ -36,28 +42,52 @@ export default function TabLayout() {
         name="home"
         options={{
           title: "Hem",
-          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Home 
+              color={color} 
+              size={focused ? 26 : 24} 
+              strokeWidth={focused ? 2.5 : 2}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="courses"
         options={{
           title: "Kurser",
-          tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <BookOpen 
+              color={color} 
+              size={focused ? 26 : 24} 
+              strokeWidth={focused ? 2.5 : 2}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="timer"
         options={{
-          title: "Timer",
-          tabBarIcon: ({ color, size }) => <Timer color={color} size={size} />,
+          title: "Fokus",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Timer 
+              color={color} 
+              size={focused ? 26 : 24} 
+              strokeWidth={focused ? 2.5 : 2}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="friends"
         options={{
           title: "Vänner",
-          tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Users 
+              color={color} 
+              size={focused ? 26 : 24} 
+              strokeWidth={focused ? 2.5 : 2}
+            />
+          ),
         }}
       />
     </Tabs>

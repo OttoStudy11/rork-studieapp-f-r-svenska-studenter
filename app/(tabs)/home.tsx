@@ -5,9 +5,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
+  StatusBar
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
@@ -15,7 +15,7 @@ import { useAchievements } from '@/contexts/AchievementContext';
 import { useToast } from '@/contexts/ToastContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3 } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
 import { Skeleton, SkeletonStats, SkeletonList } from '@/components/Skeleton';
@@ -48,16 +48,16 @@ export default function HomeScreen() {
   // Handle loading
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#4F46E5" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   if (!user) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Ingen användardata tillgänglig</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <Text style={[styles.errorText, { color: theme.colors.text }]}>Ingen användardata tillgänglig</Text>
       </View>
     );
   }
@@ -79,416 +79,395 @@ export default function HomeScreen() {
   const totalStudyTime = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar 
+        barStyle={isDark ? 'light-content' : 'dark-content'} 
+        backgroundColor={theme.colors.background}
+      />
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        bounces={true}
       >
         {/* Header */}
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.header}
-        >
-          <View style={styles.headerContent}>
+        <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+          <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
-              <Text style={styles.greeting}>Hej, {user?.name}! 👋</Text>
-              <Text style={styles.subtitle}>Redo att plugga idag?</Text>
+              <Text style={[styles.greeting, { color: theme.colors.text }]}>Hej, {user?.name}! 👋</Text>
+              <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>Redo att plugga idag?</Text>
             </View>
             <View style={styles.headerRight}>
               {isPremium && (
-                <View style={styles.premiumBadge}>
-                  <Crown size={16} color="#FFD700" />
-                  <Text style={styles.premiumText}>Premium</Text>
+                <View style={[styles.premiumBadge, { backgroundColor: theme.colors.warning + '20' }]}>
+                  <Crown size={16} color={theme.colors.warning} />
+                  <Text style={[styles.premiumText, { color: theme.colors.warning }]}>Pro</Text>
                 </View>
               )}
               <TouchableOpacity 
-                style={styles.profileButton}
+                style={[styles.profileButton, { backgroundColor: theme.colors.primary + '15' }]}
                 onPress={() => router.push('/profile')}
               >
-                <User size={24} color="white" />
+                <User size={22} color={theme.colors.primary} />
               </TouchableOpacity>
             </View>
           </View>
           {isDemoMode && (
-            <View style={styles.demoBanner}>
-              <Text style={styles.demoText}>🎯 Demo-läge aktivt</Text>
+            <View style={[styles.demoBanner, { backgroundColor: theme.colors.info + '15' }]}>
+              <Text style={[styles.demoText, { color: theme.colors.info }]}>🎯 Demo-läge aktivt</Text>
             </View>
           )}
-        </LinearGradient>
+        </View>
 
-        {/* Quick Stats */}
+        {/* Hero Stats Card */}
+        <SlideInView direction="up" delay={100}>
+          <LinearGradient
+            colors={theme.colors.gradient as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroCard}
+          >
+            <View style={styles.heroContent}>
+              <View style={styles.heroStats}>
+                <View style={styles.heroStatItem}>
+                  <View style={styles.heroStatIcon}>
+                    <Flame size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatNumber}>{currentStreak}</Text>
+                  <Text style={styles.heroStatLabel}>Dagars streak</Text>
+                </View>
+                <View style={styles.heroStatDivider} />
+                <View style={styles.heroStatItem}>
+                  <View style={styles.heroStatIcon}>
+                    <Clock size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatNumber}>{todaySessions.length}</Text>
+                  <Text style={styles.heroStatLabel}>Idag</Text>
+                </View>
+                <View style={styles.heroStatDivider} />
+                <View style={styles.heroStatItem}>
+                  <View style={styles.heroStatIcon}>
+                    <Star size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatNumber}>{totalPoints}</Text>
+                  <Text style={styles.heroStatLabel}>Poäng</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
+        </SlideInView>
+
+        {/* Quick Actions */}
         <SlideInView direction="up" delay={200}>
-          <View style={styles.statsContainer}>
-            <AnimatedPressable style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-              <BookOpen size={24} color={theme.colors.primary} />
-              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{activeCourses.length}</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Aktiva kurser</Text>
-            </AnimatedPressable>
-            <AnimatedPressable style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-              <Clock size={24} color={theme.colors.secondary} />
-              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{todaySessions.length}</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Sessioner idag</Text>
-            </AnimatedPressable>
-            <AnimatedPressable style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-              <Zap size={24} color={theme.colors.warning} />
-              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{currentStreak}</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Dagars streak</Text>
-            </AnimatedPressable>
-            <AnimatedPressable style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-              <Star size={24} color="#8B5CF6" />
-              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{totalPoints}</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Poäng</Text>
-            </AnimatedPressable>
+          <View style={styles.quickActions}>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
+              onPress={() => router.push('/timer')}
+            >
+              <Clock size={24} color="white" />
+              <Text style={styles.actionButtonText}>Starta fokus</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: theme.colors.secondary }]}
+              onPress={handleAddCourse}
+            >
+              <Plus size={24} color="white" />
+              <Text style={styles.actionButtonText}>Ny kurs</Text>
+            </TouchableOpacity>
+          </View>
+        </SlideInView>
+
+        {/* Mini Stats Grid */}
+        <SlideInView direction="up" delay={300}>
+          <View style={styles.miniStatsGrid}>
+            <View style={[styles.miniStatCard, { backgroundColor: theme.colors.card }]}>
+              <BookOpen size={20} color={theme.colors.primary} />
+              <Text style={[styles.miniStatNumber, { color: theme.colors.text }]}>{activeCourses.length}</Text>
+              <Text style={[styles.miniStatLabel, { color: theme.colors.textSecondary }]}>Aktiva kurser</Text>
+            </View>
+            <View style={[styles.miniStatCard, { backgroundColor: theme.colors.card }]}>
+              <TrendingUp size={20} color={theme.colors.secondary} />
+              <Text style={[styles.miniStatNumber, { color: theme.colors.text }]}>{averageProgress}%</Text>
+              <Text style={[styles.miniStatLabel, { color: theme.colors.textSecondary }]}>Genomsnitt</Text>
+            </View>
+            <View style={[styles.miniStatCard, { backgroundColor: theme.colors.card }]}>
+              <Calendar size={20} color={theme.colors.warning} />
+              <Text style={[styles.miniStatNumber, { color: theme.colors.text }]}>{Math.round(totalStudyTime / 60)}h</Text>
+              <Text style={[styles.miniStatLabel, { color: theme.colors.textSecondary }]}>Total tid</Text>
+            </View>
           </View>
         </SlideInView>
 
         {/* Level Progress */}
-        <View style={styles.section}>
-          <View style={styles.levelCard}>
-            <View style={styles.levelHeader}>
-              <View style={styles.levelBadge}>
-                <Award size={20} color="#4F46E5" />
+        <SlideInView direction="up" delay={400}>
+          <View style={styles.section}>
+            <View style={[styles.levelCard, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.levelHeader}>
+                <View style={[styles.levelBadge, { backgroundColor: theme.colors.primary + '15' }]}>
+                  <Award size={22} color={theme.colors.primary} />
+                </View>
+                <View style={styles.levelInfo}>
+                  <Text style={[styles.levelTitle, { color: theme.colors.text }]}>Nivå {userLevel.level}</Text>
+                  <Text style={[styles.levelSubtitle, { color: theme.colors.textSecondary }]}>{userLevel.title}</Text>
+                </View>
+                <TouchableOpacity 
+                  style={[styles.achievementsButton, { backgroundColor: theme.colors.primary }]}
+                  onPress={() => router.push('/achievements')}
+                >
+                  <Text style={styles.achievementsButtonText}>Se alla</Text>
+                </TouchableOpacity>
               </View>
-              <View style={styles.levelInfo}>
-                <Text style={styles.levelTitle}>Nivå {userLevel.level}</Text>
-                <Text style={styles.levelSubtitle}>{userLevel.title}</Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.achievementsButton}
-                onPress={() => router.push('/achievements')}
-              >
-                <Text style={styles.achievementsButtonText}>Se alla</Text>
+              {recentAchievements.length > 0 && (
+                <View style={[styles.recentAchievements, { borderTopColor: theme.colors.border }]}>
+                  <Text style={[styles.recentAchievementsTitle, { color: theme.colors.textSecondary }]}>Senaste prestationer:</Text>
+                  {recentAchievements.slice(0, 2).map((achievement) => (
+                    <View key={achievement.id} style={styles.achievementItem}>
+                      <Text style={styles.achievementIcon}>{achievement.icon}</Text>
+                      <Text style={[styles.achievementText, { color: theme.colors.text }]}>{achievement.title}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        </SlideInView>
+
+        {/* Active Courses */}
+        <SlideInView direction="up" delay={500}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Aktiva kurser</Text>
+              <TouchableOpacity onPress={() => router.push('/courses')}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
-            {recentAchievements.length > 0 && (
-              <View style={styles.recentAchievements}>
-                <Text style={styles.recentAchievementsTitle}>Senaste prestationer:</Text>
-                {recentAchievements.slice(0, 2).map((achievement) => (
-                  <View key={achievement.id} style={styles.achievementItem}>
-                    <Text style={styles.achievementIcon}>{achievement.icon}</Text>
-                    <Text style={styles.achievementText}>{achievement.title}</Text>
-                  </View>
-                ))}
+            
+            {activeCourses.length > 0 ? (
+              activeCourses.slice(0, 3).map((course, index) => (
+                <FadeInView key={course.id} delay={600 + index * 100}>
+                  <TouchableOpacity style={[styles.courseCard, { backgroundColor: theme.colors.card }]}>
+                    <View style={styles.courseHeader}>
+                      <View style={styles.courseInfo}>
+                        <Text style={[styles.courseTitle, { color: theme.colors.text }]}>{course.title}</Text>
+                        <Text style={[styles.courseSubject, { color: theme.colors.textSecondary }]}>{course.subject}</Text>
+                      </View>
+                      <View style={styles.courseProgressContainer}>
+                        <Text style={[styles.courseProgress, { color: theme.colors.primary }]}>{course.progress}%</Text>
+                      </View>
+                    </View>
+                    <View style={[styles.progressBar, { backgroundColor: theme.colors.borderLight }]}>
+                      <View 
+                        style={[styles.progressFill, { 
+                          width: `${course.progress}%`,
+                          backgroundColor: theme.colors.primary
+                        }]} 
+                      />
+                    </View>
+                  </TouchableOpacity>
+                </FadeInView>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <Target size={48} color={theme.colors.textMuted} />
+                <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Inga aktiva kurser</Text>
+                <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>Lägg till kurser för att komma igång</Text>
+                <TouchableOpacity 
+                  style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
+                  onPress={() => router.push('/courses')}
+                >
+                  <Plus size={20} color="white" />
+                  <Text style={styles.addButtonText}>Lägg till kurs</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
-        </View>
-
-        {/* Active Courses */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Aktiva kurser</Text>
-            <TouchableOpacity onPress={() => router.push('/courses')}>
-              <Text style={styles.seeAllText}>Se alla</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {/* Premium limits info */}
-          {!isPremium && (
-            <View style={styles.limitsCard}>
-              <View style={styles.limitsHeader}>
-                <Crown size={20} color="#F59E0B" />
-                <Text style={styles.limitsTitle}>Gratis-plan</Text>
-                <TouchableOpacity 
-                  style={styles.upgradeButton}
-                  onPress={() => router.push('/premium')}
-                >
-                  <Text style={styles.upgradeButtonText}>Uppgradera</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.limitsContent}>
-                <Text style={styles.limitText}>
-                  Kurser: {courses.length}/{limits.maxCourses}
-                </Text>
-                <Text style={styles.limitText}>
-                  Anteckningar: {notes.length}/{limits.maxNotes}
-                </Text>
-              </View>
-            </View>
-          )}
-          
-          {activeCourses.length > 0 ? (
-            activeCourses.map((course) => (
-              <TouchableOpacity key={course.id} style={styles.courseCard}>
-                <View style={styles.courseHeader}>
-                  <Text style={styles.courseTitle}>{course.title}</Text>
-                  <Text style={styles.courseProgress}>{course.progress}%</Text>
-                </View>
-                <Text style={styles.courseSubject}>{course.subject}</Text>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[styles.progressFill, { width: `${course.progress}%` }]} 
-                  />
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Target size={48} color="#9CA3AF" />
-              <Text style={styles.emptyTitle}>Inga aktiva kurser</Text>
-              <Text style={styles.emptyText}>Lägg till kurser för att komma igång</Text>
-              <TouchableOpacity 
-                style={styles.addButton}
-                onPress={() => router.push('/courses')}
-              >
-                <Plus size={20} color="white" />
-                <Text style={styles.addButtonText}>Lägg till kurs</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* Notes Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <StickyNote size={24} color="#4F46E5" />
-              <Text style={styles.sectionTitle}>Mina anteckningar</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.addNoteButton}
-              onPress={handleAddNote}
-            >
-              <Plus size={16} color="white" />
-              <Text style={styles.addNoteButtonText}>Ny</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {/* Premium limits info for notes */}
-          {!isPremium && (
-            <View style={styles.noteLimitsInfo}>
-              <Text style={styles.noteLimitsText}>
-                Anteckningar: {notes.length}/{limits.maxNotes}
-              </Text>
-              {notes.length >= limits.maxNotes && (
-                <TouchableOpacity 
-                  style={styles.upgradeSmallButton}
-                  onPress={() => router.push('/premium')}
-                >
-                  <Crown size={12} color="#F59E0B" />
-                  <Text style={styles.upgradeSmallButtonText}>Uppgradera</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-          
-          {recentNotes.length > 0 ? (
-            <View>
-              {recentNotes.map((note) => (
-                <TouchableOpacity key={note.id} style={styles.noteCard}>
-                  <View style={styles.noteHeader}>
-                    <Text style={styles.noteTitle} numberOfLines={1}>
-                      {note.content.split('\n')[0] || 'Anteckning utan titel'}
-                    </Text>
-                    <Edit3 size={16} color="#9CA3AF" />
-                  </View>
-                  <Text style={styles.notePreview} numberOfLines={2}>
-                    {note.content}
-                  </Text>
-                  <View style={styles.noteFooter}>
-                    <Text style={styles.noteDate}>
-                      {new Date(note.createdAt).toLocaleDateString('sv-SE')}
-                    </Text>
-                    {note.courseId && (
-                      <Text style={styles.noteCourse}>
-                        {courses.find(c => c.id === note.courseId)?.title || 'Okänd kurs'}
-                      </Text>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              ))}
-              {notes.length > 3 && (
-                <TouchableOpacity 
-                  style={styles.viewAllNotesButton}
-                  onPress={() => showSuccess('Anteckningar', 'Visa alla anteckningar kommer snart!')}
-                >
-                  <Text style={styles.viewAllNotesText}>
-                    Visa alla {notes.length} anteckningar
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ) : (
-            <View style={styles.emptyNotesState}>
-              <StickyNote size={48} color="#9CA3AF" />
-              <Text style={styles.emptyTitle}>Inga anteckningar än</Text>
-              <Text style={styles.emptyText}>
-                Skapa din första anteckning för att komma igång med dina studier
-              </Text>
-              <TouchableOpacity 
-                style={styles.createFirstNoteButton}
-                onPress={handleAddNote}
-              >
-                <Plus size={20} color="white" />
-                <Text style={styles.createFirstNoteButtonText}>Skapa anteckning</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* Study Recommendations */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Rekommendationer för dig</Text>
-          
-          {currentStreak === 0 && (
-            <View style={styles.recommendationCard}>
-              <Text style={styles.recommendationTitle}>🔥 Starta din streak!</Text>
-              <Text style={styles.recommendationText}>
-                Börja plugga idag för att starta din studiestreak. Konsekvent pluggande ger bäst resultat!
-              </Text>
-            </View>
-          )}
-          
-          {currentStreak > 0 && currentStreak < 7 && (
-            <View style={styles.recommendationCard}>
-              <Text style={styles.recommendationTitle}>💪 Håll streaken vid liv!</Text>
-              <Text style={styles.recommendationText}>
-                Du har pluggat {currentStreak} dagar i rad. Fortsätt så här för att nå 7-dagars målet!
-              </Text>
-            </View>
-          )}
-          
-          {!isPremium && courses.length >= limits.maxCourses && (
-            <View style={styles.recommendationCard}>
-              <Text style={styles.recommendationTitle}>📚 Uppgradera för fler kurser</Text>
-              <Text style={styles.recommendationText}>
-                Du har nått gränsen för gratis-planen. Uppgradera till Premium för obegränsat antal kurser!
-              </Text>
-            </View>
-          )}
-          
-          {!isPremium && notes.length >= limits.maxNotes && (
-            <View style={styles.recommendationCard}>
-              <Text style={styles.recommendationTitle}>📝 Uppgradera för fler anteckningar</Text>
-              <Text style={styles.recommendationText}>
-                Du har nått gränsen för anteckningar. Premium ger dig obegränsat utrymme!
-              </Text>
-            </View>
-          )}
-          
-          {totalStudyTime < 60 && (
-            <View style={styles.recommendationCard}>
-              <Text style={styles.recommendationTitle}>⏰ Använd Pomodoro-tekniken</Text>
-              <Text style={styles.recommendationText}>
-                Prova 25-minuters fokussessioner för bättre koncentration och för att låsa upp prestationer.
-              </Text>
-            </View>
-          )}
-          
-          {activeCourses.length === 0 && (
-            <View style={styles.recommendationCard}>
-              <Text style={styles.recommendationTitle}>📚 Lägg till kurser</Text>
-              <Text style={styles.recommendationText}>
-                Lägg till dina kurser för att få personliga rekommendationer och spåra din progress.
-              </Text>
-            </View>
-          )}
-          
-          {notes.length === 0 && (
-            <View style={styles.recommendationCard}>
-              <Text style={styles.recommendationTitle}>📝 Börja anteckna</Text>
-              <Text style={styles.recommendationText}>
-                Anteckningar hjälper dig att komma ihåg viktiga koncept och förbättra ditt lärande.
-              </Text>
-            </View>
-          )}
-        </View>
+        </SlideInView>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: 100,
   },
   header: {
-    padding: 20,
-    paddingTop: 16,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    marginBottom: 16,
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 24,
   },
-  headerContent: {
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  greeting: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 4,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontWeight: '400',
+  },
   premiumBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     gap: 4,
   },
   premiumText: {
-    color: '#FFD700',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  profileButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   demoBanner: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-    padding: 8,
-    marginTop: 12,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 16,
     alignItems: 'center',
   },
   demoText: {
-    color: 'white',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  greeting: {
-    fontSize: 22,
-    fontWeight: 'bold',
+  heroCard: {
+    marginHorizontal: 24,
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  heroContent: {
+    alignItems: 'center',
+  },
+  heroStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  heroStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  heroStatIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  heroStatNumber: {
+    fontSize: 24,
+    fontWeight: '700',
     color: 'white',
     marginBottom: 4,
   },
-  subtitle: {
-    fontSize: 14,
+  heroStatLabel: {
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
+    textAlign: 'center',
   },
-  statsContainer: {
+  heroStatDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginHorizontal: 16,
+  },
+  quickActions: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginTop: -20,
-    marginBottom: 20,
-    gap: 12,
+    paddingHorizontal: 24,
+    marginBottom: 24,
+    gap: 16,
   },
-  statCard: {
+  actionButton: {
     flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
   },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginTop: 8,
+  actionButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
-  statLabel: {
+  miniStatsGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    marginBottom: 32,
+    gap: 12,
+  },
+  miniStatCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  miniStatNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  miniStatLabel: {
     fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
     textAlign: 'center',
+    fontWeight: '500',
   },
   section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: 24,
+    marginBottom: 32,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -497,143 +476,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
   seeAllText: {
-    fontSize: 14,
-    color: '#4F46E5',
-    fontWeight: '600',
-  },
-  courseCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  courseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  courseTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
-    flex: 1,
   },
-  courseProgress: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4F46E5',
-  },
-  courseSubject: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 12,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 3,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#4F46E5',
-    borderRadius: 3,
-  },
-  noteCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  noteTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  notePreview: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  noteDate: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  recommendationCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4F46E5',
-  },
-  recommendationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  recommendationText: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4F46E5',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 8,
-  },
-  addButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  // Level and Achievement styles
   levelCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 4,
   },
   levelHeader: {
@@ -642,47 +499,42 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   levelBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#EEF2FF',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   levelInfo: {
     flex: 1,
   },
   levelTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontSize: 20,
+    fontWeight: '700',
     marginBottom: 2,
   },
   levelSubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    fontWeight: '500',
   },
   achievementsButton: {
-    backgroundColor: '#4F46E5',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   achievementsButtonText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   recentAchievements: {
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
     paddingTop: 16,
   },
   recentAchievementsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
     marginBottom: 12,
   },
   achievementItem: {
@@ -696,165 +548,79 @@ const styles = StyleSheet.create({
   },
   achievementText: {
     fontSize: 14,
-    color: '#1F2937',
     fontWeight: '500',
   },
-  limitsCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#F59E0B',
+  courseCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 2,
   },
-  limitsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
-  },
-  limitsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    flex: 1,
-  },
-  upgradeButton: {
-    backgroundColor: '#F59E0B',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  upgradeButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  limitsContent: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  limitText: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  // Header styles
-  headerLeft: {
-    flex: 1,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  profileButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Notes section styles
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  addNoteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4F46E5',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 4,
-  },
-  addNoteButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  noteLimitsInfo: {
+  courseHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    padding: 12,
-    borderRadius: 8,
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
-  noteLimitsText: {
+  courseInfo: {
+    flex: 1,
+  },
+  courseTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  courseSubject: {
     fontSize: 14,
-    color: '#92400E',
     fontWeight: '500',
   },
-  upgradeSmallButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F59E0B',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
+  courseProgressContainer: {
+    alignItems: 'flex-end',
   },
-  upgradeSmallButtonText: {
-    color: 'white',
-    fontSize: 11,
+  courseProgress: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  progressBar: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  emptyTitle: {
+    fontSize: 20,
     fontWeight: '600',
-  },
-  noteHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    marginTop: 16,
     marginBottom: 8,
   },
-  noteFooter: {
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  addButton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
-  },
-  noteCourse: {
-    fontSize: 12,
-    color: '#4F46E5',
-    fontWeight: '500',
-  },
-  viewAllNotesButton: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  viewAllNotesText: {
-    fontSize: 14,
-    color: '#4F46E5',
-    fontWeight: '600',
-  },
-  emptyNotesState: {
-    alignItems: 'center',
-    padding: 32,
-    backgroundColor: 'white',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: 12,
-    marginTop: 8,
-  },
-  createFirstNoteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4F46E5',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
     gap: 8,
   },
-  createFirstNoteButtonText: {
+  addButtonText: {
     color: 'white',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

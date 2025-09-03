@@ -162,6 +162,7 @@ export default function AchievementsScreen() {
             <TouchableOpacity 
               onPress={() => router.back()}
               style={styles.backButton}
+              activeOpacity={0.7}
             >
               <ArrowLeft size={24} color={isDark ? '#FFFFFF' : '#111827'} />
             </TouchableOpacity>
@@ -354,8 +355,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backButton: {
-    padding: 8,
-    marginLeft: -8,
+    padding: 12,
+    marginLeft: -4,
+    borderRadius: 8,
   },
   scrollView: {
     flex: 1,

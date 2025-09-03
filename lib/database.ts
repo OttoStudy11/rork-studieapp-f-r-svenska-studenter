@@ -6,14 +6,31 @@ type Tables = Database['public']['Tables'];
 // User functions
 export const createUser = async (userData: Tables['profiles']['Insert']) => {
   try {
-    console.log('Creating user with data:', userData);
+    console.log('Creating user with data:', {
+      ...userData,
+      // Don't log sensitive data, just structure
+      id: userData.id ? 'provided' : 'not provided',
+      name: userData.name ? 'provided' : 'not provided'
+    });
+    
+    // Validate required fields
+    if (!userData.name || !userData.level || !userData.program || !userData.purpose) {
+      const missingFields = [];
+      if (!userData.name) missingFields.push('name');
+      if (!userData.level) missingFields.push('level');
+      if (!userData.program) missingFields.push('program');
+      if (!userData.purpose) missingFields.push('purpose');
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    }
     
     // First check if user already exists using the safer getUser function
-    const existingUser = await getUser(userData.id!);
-    
-    if (existingUser) {
-      console.log('User already exists, returning existing user:', existingUser);
-      return existingUser;
+    if (userData.id) {
+      const existingUser = await getUser(userData.id);
+      
+      if (existingUser) {
+        console.log('User already exists, returning existing user:', existingUser.name);
+        return existingUser;
+      }
     }
     
     const userDataWithDefaults = {
@@ -22,6 +39,7 @@ export const createUser = async (userData: Tables['profiles']['Insert']) => {
       subscription_expires_at: userData.subscription_expires_at || null
     };
     
+    console.log('Attempting to insert user into database...');
     const { data, error } = await supabase
       .from('profiles')
       .insert(userDataWithDefaults)
@@ -30,13 +48,34 @@ export const createUser = async (userData: Tables['profiles']['Insert']) => {
     
     if (error) {
       console.error('Database error creating user:', error.message || 'Unknown error');
-      console.error('Full error details:', JSON.stringify(error, null, 2));
-      throw new Error(`Failed to create user: ${error.message || 'Unknown database error'}`);
+      console.error('Error code:', error.code);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+      
+      // Provide more specific error messages
+      if (error.code === '42501') {
+        throw new Error('Database permission error: Row Level Security policy violation. Please check database configuration.');
+      } else if (error.code === '23505') {
+        throw new Error('User already exists with this information.');
+      } else if (error.code === '23503') {
+        throw new Error('Invalid reference data provided (e.g., program_id).');
+      } else {
+        throw new Error(`Failed to create user: ${error.message || 'Unknown database error'}`);
+      }
     }
-    console.log('User created successfully:', data);
+    
+    if (!data) {
+      throw new Error('User creation succeeded but no data returned');
+    }
+    
+    console.log('User created successfully:', data.name, 'with ID:', data.id);
     return data;
   } catch (error: any) {
     console.error('Error in createUser:', error?.message || error?.toString() || 'Unknown error');
+    if (error?.code) {
+      console.error('Error code:', error.code);
+    }
     console.error('Full error details:', JSON.stringify(error, null, 2));
     throw error;
   }

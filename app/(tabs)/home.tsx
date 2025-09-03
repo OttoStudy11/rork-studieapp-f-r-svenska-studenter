@@ -155,7 +155,7 @@ export default function HomeScreen() {
               </View>
               <TouchableOpacity 
                 style={styles.achievementsButton}
-                onPress={() => showSuccess('Achievements', 'Kommer snart!')}
+                onPress={() => router.push('/achievements')}
               >
                 <Text style={styles.achievementsButtonText}>Se alla</Text>
               </TouchableOpacity>

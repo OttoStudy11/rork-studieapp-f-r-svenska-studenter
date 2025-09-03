@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase, createRememberMeSession, validateRememberMeSession, clearRememberMeSession, cleanupExpiredSessions } from '@/lib/supabase';
+import { supabase, createRememberMeSession, validateRememberMeSession, clearRememberMeSession, cleanupExpiredSessions, testDatabaseConnection } from '@/lib/supabase';
 
 export interface AuthUser {
   id: string;
@@ -86,6 +86,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     try {
       console.log('Initializing Supabase auth...');
       setIsLoading(true);
+      
+      // Test database connection first
+      const dbConnected = await testDatabaseConnection();
+      if (!dbConnected) {
+        console.warn('Database connection failed, but continuing with auth initialization');
+      }
       
       // First check if we have a session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();

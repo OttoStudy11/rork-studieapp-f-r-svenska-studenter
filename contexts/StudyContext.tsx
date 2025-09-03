@@ -145,6 +145,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       
       // Try to get user from database
       const dbUser = await db.getUser(userId);
+      console.log('getUser result:', dbUser ? 'User found' : 'User not found');
       
       if (!dbUser) {
         console.log('User not found in database, creating user profile...');
@@ -170,8 +171,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           setPomodoroSessions([]);
           
           return;
-        } catch (createError) {
-          console.error('Failed to create user profile:', createError);
+        } catch (createError: any) {
+          console.error('Failed to create user profile:', createError?.message || createError?.toString() || 'Unknown error');
+          console.error('Full error details:', JSON.stringify(createError, null, 2));
           setUser(null);
           setCourses([]);
           setNotes([]);
@@ -341,8 +343,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       await loadUserData(authUser.id, authUser.email);
       console.log('User data loaded successfully');
       
-    } catch (error) {
-      console.error('Error completing onboarding:', error);
+    } catch (error: any) {
+      console.error('Error completing onboarding:', error?.message || error?.toString() || 'Unknown error');
+      console.error('Full error details:', JSON.stringify(error, null, 2));
       throw error;
     }
   }, [authUser, setOnboardingCompleted, loadUserData]);

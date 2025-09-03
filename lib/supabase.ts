@@ -20,6 +20,30 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Test database connection
+export const testDatabaseConnection = async () => {
+  try {
+    console.log('Testing database connection...');
+    const { error } = await supabase
+      .from('profiles')
+      .select('count')
+      .limit(1);
+    
+    if (error) {
+      console.error('Database connection test failed:', error.message);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      return false;
+    }
+    
+    console.log('Database connection test successful');
+    return true;
+  } catch (error: any) {
+    console.error('Database connection test exception:', error?.message || error?.toString() || 'Unknown error');
+    console.error('Full error details:', JSON.stringify(error, null, 2));
+    return false;
+  }
+};
+
 // Auth helpers
 export const getCurrentUser = async () => {
   try {

@@ -35,8 +35,9 @@ export const createUser = async (userData: Tables['profiles']['Insert']) => {
     }
     console.log('User created successfully:', data);
     return data;
-  } catch (error) {
-    console.error('Error in createUser:', error);
+  } catch (error: any) {
+    console.error('Error in createUser:', error?.message || error?.toString() || 'Unknown error');
+    console.error('Full error details:', JSON.stringify(error, null, 2));
     throw error;
   }
 };
@@ -62,8 +63,9 @@ export const getUser = async (userId: string) => {
     
     console.log('User found in database:', data.name);
     return data;
-  } catch (error) {
-    console.error('Exception in getUser:', error);
+  } catch (error: any) {
+    console.error('Exception in getUser:', error?.message || error?.toString() || 'Unknown error');
+    console.error('Full error details:', JSON.stringify(error, null, 2));
     throw error;
   }
 };

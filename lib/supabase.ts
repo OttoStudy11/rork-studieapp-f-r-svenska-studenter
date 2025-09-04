@@ -223,12 +223,24 @@ export const createRememberMeSession = async (userId: string): Promise<{ token?:
   try {
     console.log('Creating remember me session for user:', userId);
     
+    // Check if remember_me_sessions table exists by testing database connection first
+    const dbConnected = await testDatabaseConnection();
+    if (!dbConnected) {
+      console.warn('Database not available, skipping remember me session creation');
+      return { error: 'Database connection failed' };
+    }
+    
     const token = await generateRememberMeToken();
     const tokenHash = await hashToken(token);
     const expiresAt = new Date(Date.now() + REMEMBER_ME_DURATION).toISOString();
     const deviceInfo = getDeviceInfo();
     
-    const { error } = await supabase
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Remember me session creation timeout')), 10000);
+    });
+    
+    const insertPromise = supabase
       .from('remember_me_sessions')
       .insert({
         user_id: userId,
@@ -238,9 +250,23 @@ export const createRememberMeSession = async (userId: string): Promise<{ token?:
         is_active: true
       });
     
+    const { error } = await Promise.race([insertPromise, timeoutPromise]);
+    
     if (error) {
-      console.error('Error creating remember me session:', error);
-      return { error };
+      console.error('Error creating remember me session:', {
+        message: error.message || 'Unknown error',
+        code: error.code || 'No code',
+        details: error.details || 'No details',
+        hint: error.hint || 'No hint'
+      });
+      
+      // If table doesn't exist, silently fail
+      if (error.code === '42P01' || error.message?.includes('relation "remember_me_sessions" does not exist')) {
+        console.warn('Remember me sessions table does not exist, skipping session creation');
+        return { error: 'Table not found' };
+      }
+      
+      return { error: error.message || 'Failed to create remember me session' };
     }
     
     // Store the token locally
@@ -248,9 +274,18 @@ export const createRememberMeSession = async (userId: string): Promise<{ token?:
     console.log('Remember me session created successfully');
     
     return { token };
-  } catch (error) {
-    console.error('Exception creating remember me session:', error);
-    return { error };
+  } catch (error: any) {
+    const errorMessage = error?.message || error?.toString() || 'Unknown error';
+    console.error('Exception creating remember me session:', errorMessage);
+    console.error('Full error details:', JSON.stringify(error, null, 2));
+    
+    // Handle network errors gracefully
+    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
+      console.warn('Network connectivity issue - remember me session creation unavailable');
+      return { error: 'Network connection failed' };
+    }
+    
+    return { error: errorMessage };
   }
 };
 
@@ -265,9 +300,21 @@ export const validateRememberMeSession = async (): Promise<{ userId?: string; er
       return { error: 'No token found' };
     }
     
+    // Check if database is available
+    const dbConnected = await testDatabaseConnection();
+    if (!dbConnected) {
+      console.warn('Database not available, cannot validate remember me session');
+      return { error: 'Database connection failed' };
+    }
+    
     const tokenHash = await hashToken(token);
     
-    const { data, error } = await supabase
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Remember me validation timeout')), 10000);
+    });
+    
+    const queryPromise = supabase
       .from('remember_me_sessions')
       .select('*')
       .eq('token_hash', tokenHash)
@@ -275,23 +322,47 @@ export const validateRememberMeSession = async (): Promise<{ userId?: string; er
       .gt('expires_at', new Date().toISOString())
       .single();
     
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+    
     if (error || !data) {
-      console.log('Invalid or expired remember me session:', error?.message);
+      console.log('Invalid or expired remember me session:', error?.message || 'No data');
       await AsyncStorage.removeItem(REMEMBER_ME_KEY);
+      
+      // If table doesn't exist, silently fail
+      if (error?.code === '42P01' || error?.message?.includes('relation "remember_me_sessions" does not exist')) {
+        console.warn('Remember me sessions table does not exist');
+        return { error: 'Table not found' };
+      }
+      
       return { error: error?.message || 'Session not found' };
     }
     
-    // Update last used timestamp
-    await supabase
-      .from('remember_me_sessions')
-      .update({ last_used_at: new Date().toISOString() })
-      .eq('id', data.id);
+    // Update last used timestamp (don't await to avoid blocking)
+    (async () => {
+      try {
+        await supabase
+          .from('remember_me_sessions')
+          .update({ last_used_at: new Date().toISOString() })
+          .eq('id', data.id);
+        console.log('Updated last used timestamp');
+      } catch (err: any) {
+        console.warn('Failed to update last used timestamp:', err?.message || 'Unknown error');
+      }
+    })();
     
     console.log('Remember me session validated for user:', data.user_id);
     return { userId: data.user_id };
-  } catch (error) {
-    console.error('Exception validating remember me session:', error);
-    return { error };
+  } catch (error: any) {
+    const errorMessage = error?.message || error?.toString() || 'Unknown error';
+    console.error('Exception validating remember me session:', errorMessage);
+    
+    // Handle network errors gracefully
+    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
+      console.warn('Network connectivity issue - remember me validation unavailable');
+      return { error: 'Network connection failed' };
+    }
+    
+    return { error: errorMessage };
   }
 };
 
@@ -302,20 +373,39 @@ export const clearRememberMeSession = async (): Promise<void> => {
     
     const token = await AsyncStorage.getItem(REMEMBER_ME_KEY);
     if (token) {
-      const tokenHash = await hashToken(token);
-      
-      // Deactivate the session in database
-      await supabase
-        .from('remember_me_sessions')
-        .update({ is_active: false })
-        .eq('token_hash', tokenHash);
+      try {
+        const tokenHash = await hashToken(token);
+        
+        // Deactivate the session in database (don't await to avoid blocking logout)
+        (async () => {
+          try {
+            await supabase
+              .from('remember_me_sessions')
+              .update({ is_active: false })
+              .eq('token_hash', tokenHash);
+            console.log('Remember me session deactivated in database');
+          } catch (err: any) {
+            console.warn('Failed to deactivate remember me session in database:', err?.message || 'Unknown error');
+          }
+        })();
+      } catch (dbError) {
+        console.warn('Failed to deactivate remember me session in database:', dbError);
+      }
     }
     
-    // Remove local token
+    // Always remove local token regardless of database operation
     await AsyncStorage.removeItem(REMEMBER_ME_KEY);
-    console.log('Remember me session cleared');
-  } catch (error) {
-    console.error('Error clearing remember me session:', error);
+    console.log('Remember me session cleared locally');
+  } catch (error: any) {
+    const errorMessage = error?.message || error?.toString() || 'Unknown error';
+    console.error('Error clearing remember me session:', errorMessage);
+    
+    // Still try to remove local token even if there's an error
+    try {
+      await AsyncStorage.removeItem(REMEMBER_ME_KEY);
+    } catch (storageError) {
+      console.error('Failed to remove remember me token from storage:', storageError);
+    }
   }
 };
 

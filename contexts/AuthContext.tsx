@@ -254,9 +254,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         // Create remember me session if requested
         if (rememberMe) {
           console.log('Creating remember me session...');
-          const { error: rememberError } = await createRememberMeSession(data.user.id);
-          if (rememberError) {
-            console.error('Failed to create remember me session:', rememberError);
+          try {
+            const { error: rememberError } = await createRememberMeSession(data.user.id);
+            if (rememberError) {
+              console.error('Error creating remember me session:', rememberError);
+              // Don't fail the login if remember me fails
+            } else {
+              console.log('Remember me session created successfully');
+            }
+          } catch (rememberException) {
+            console.error('Exception creating remember me session:', rememberException);
             // Don't fail the login if remember me fails
           }
         }

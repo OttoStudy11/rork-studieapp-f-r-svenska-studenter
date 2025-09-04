@@ -143,62 +143,90 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       setIsLoading(true);
       console.log('Loading user data for:', userId);
       
-      // Try to get user from database
-      const dbUser = await db.getUser(userId);
-      console.log('getUser result:', dbUser ? 'User found' : 'User not found');
+      // Add timeout to prevent hanging on network issues
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Database request timeout')), 15000);
+      });
+      
+      // Try to get user from database with timeout
+      const getUserPromise = db.getUser(userId);
+      const dbUser = await Promise.race([getUserPromise, timeoutPromise]).catch(error => {
+        console.warn('Failed to get user from database:', error.message);
+        if (error.message.includes('Failed to fetch') || error.message.includes('timeout') || error.name === 'TypeError') {
+          console.log('Network connectivity issue - working in offline mode');
+          return null;
+        }
+        throw error;
+      });
+      
+      console.log('getUser result:', dbUser ? 'User found' : 'User not found or offline');
       
       if (!dbUser) {
-        console.log('User not found in database, creating user profile...');
+        console.log('User not found in database or offline mode, setting up local user...');
         
-        // Create a basic user profile if it doesn't exist
-        try {
-          const newUser = await db.createUser({
-            id: userId,
-            name: userEmail.split('@')[0] || 'Student',
-            level: 'gymnasie',
-            program: 'Naturvetenskapsprogrammet',
-            purpose: 'Förbättra mina studieresultat',
-            subscription_type: 'free',
-            subscription_expires_at: null
-          });
-          
-          console.log('Created new user profile:', newUser.name);
-          setUser(dbUserToUser(newUser, userEmail));
-          
-          // Initialize with empty data for new user
-          setCourses([]);
-          setNotes([]);
-          setPomodoroSessions([]);
-          
-          return;
-        } catch (createError: any) {
-          console.error('Failed to create user profile:', createError?.message || createError?.toString() || 'Unknown error');
-          console.error('Full error details:', JSON.stringify(createError, null, 2));
-          setUser(null);
-          setCourses([]);
-          setNotes([]);
-          setPomodoroSessions([]);
-          return;
-        }
+        // Create a local user profile for offline mode
+        const localUser: User = {
+          id: userId,
+          name: userEmail.split('@')[0] || 'Student',
+          email: userEmail,
+          studyLevel: 'gymnasie',
+          program: 'Naturvetenskapsprogrammet',
+          purpose: 'Förbättra mina studieresultat',
+          onboardingCompleted: false,
+          subscriptionType: 'free'
+        };
+        
+        setUser(localUser);
+        setCourses([]);
+        setNotes([]);
+        setPomodoroSessions([]);
+        return;
       }
       
       console.log('User found in database:', dbUser.name);
       setUser(dbUserToUser(dbUser, userEmail));
       
-      // Load user's courses, notes, and sessions
+      // Load user's courses, notes, and sessions with individual timeouts
+      const loadUserCourses = async () => {
+        try {
+          const timeout = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Request timeout')), 10000);
+          });
+          return await Promise.race([db.getUserCourses(userId), timeout]);
+        } catch (err: any) {
+          console.warn('Failed to load user courses:', err.message);
+          return [];
+        }
+      };
+      
+      const loadUserNotes = async () => {
+        try {
+          const timeout = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Request timeout')), 10000);
+          });
+          return await Promise.race([db.getUserNotes(userId), timeout]);
+        } catch (err: any) {
+          console.warn('Failed to load user notes:', err.message);
+          return [];
+        }
+      };
+      
+      const loadUserSessions = async () => {
+        try {
+          const timeout = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Request timeout')), 10000);
+          });
+          return await Promise.race([db.getUserPomodoroSessions(userId), timeout]);
+        } catch (err: any) {
+          console.warn('Failed to load user sessions:', err.message);
+          return [];
+        }
+      };
+      
       const [userCourses, userNotes, userSessions] = await Promise.all([
-        db.getUserCourses(userId).catch(err => {
-          console.warn('Failed to load user courses:', err);
-          return [];
-        }),
-        db.getUserNotes(userId).catch(err => {
-          console.warn('Failed to load user notes:', err);
-          return [];
-        }),
-        db.getUserPomodoroSessions(userId).catch(err => {
-          console.warn('Failed to load user sessions:', err);
-          return [];
-        })
+        loadUserCourses(),
+        loadUserNotes(),
+        loadUserSessions()
       ]);
       
       console.log('Loaded user data:', {
@@ -213,18 +241,33 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       
     } catch (error) {
       console.error('Error loading user data:', error instanceof Error ? error.message : String(error));
-      console.error('Error details:', JSON.stringify(error, null, 2));
       
-      // Check if it's a "not found" error vs other database errors
+      // Check if it's a network error
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes('PGRST116') || errorMessage.includes('not found')) {
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('timeout') || errorMessage.includes('Network connection failed')) {
+        console.log('Network connectivity issue - working in offline mode');
+        
+        // Create a basic offline user
+        const offlineUser: User = {
+          id: userId,
+          name: userEmail.split('@')[0] || 'Student',
+          email: userEmail,
+          studyLevel: 'gymnasie',
+          program: 'Naturvetenskapsprogrammet',
+          purpose: 'Förbättra mina studieresultat',
+          onboardingCompleted: false,
+          subscriptionType: 'free'
+        };
+        
+        setUser(offlineUser);
+      } else if (errorMessage.includes('PGRST116') || errorMessage.includes('not found')) {
         console.log('User not found in database, needs onboarding');
+        setUser(null);
       } else {
         console.error('Database connection or other error occurred');
+        setUser(null);
       }
       
-      // User doesn't exist in database yet, they need to complete onboarding
-      setUser(null);
       setCourses([]);
       setNotes([]);
       setPomodoroSessions([]);
@@ -255,85 +298,174 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
 
       console.log('Starting onboarding for user:', authUser.id);
       
-      // Create user in database (this will check if user already exists)
-      const dbUser = await db.createUser(
-        userToDbUser({ ...userData, id: authUser.id })
-      );
+      // Add timeout for database operations
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Onboarding timeout')), 30000);
+      });
       
-      console.log('User created/found in database:', dbUser.id);
-      
-      // Check if user already has courses (to avoid duplicates)
-      const existingCourses = await db.getUserCourses(authUser.id);
-      
-      if (existingCourses.length === 0) {
-        console.log('Creating sample courses for new user');
-        
-        // Create sample courses
-        const sampleCourses = userData.studyLevel === 'gymnasie' ? [
-          {
-            title: 'Matematik 3c',
-            description: 'Avancerad matematik för naturvetenskapsprogrammet',
-            subject: 'Matematik',
-            level: 'gymnasie',
-            resources: ['Kursbok kapitel 1-5', 'Övningsuppgifter online'],
-            tips: ['Öva på gamla prov regelbundet', 'Använd grafräknare effektivt'],
-            related_courses: [],
-            progress: 0
-          },
-          {
-            title: 'Fysik 2',
-            description: 'Mekanik, termodynamik, vågor och optik',
-            subject: 'Fysik',
-            level: 'gymnasie',
-            resources: ['Lärobok Fysik 2', 'Laborationsrapporter'],
-            tips: ['Förstå grundläggande formler', 'Rita diagram för problemlösning'],
-            related_courses: [],
-            progress: 0
-          }
-        ] : [
-          {
-            title: 'Linjär Algebra',
-            description: 'Grundläggande linjär algebra för ingenjörer',
-            subject: 'Matematik',
-            level: 'högskola',
-            resources: ['Kurslitteratur: Linear Algebra', 'MATLAB/Python'],
-            tips: ['Öva på matrisoperationer dagligen', 'Förstå geometrisk tolkning'],
-            related_courses: [],
-            progress: 0
-          },
-          {
-            title: 'Programmering Grundkurs',
-            description: 'Introduktion till programmering med Python',
-            subject: 'Datavetenskap',
-            level: 'högskola',
-            resources: ['Python dokumentation', 'Kodexempel'],
-            tips: ['Öva dagligen - kod varje dag', 'Bygg egna projekt'],
-            related_courses: [],
-            progress: 0
-          }
-        ];
-        
-        // Create courses and add user to them
-        for (const courseData of sampleCourses) {
-          try {
-            const course = await db.createCourse(courseData);
-            await db.addUserToCourse(authUser.id, course.id, courseData === sampleCourses[0]);
-            console.log('Created course:', course.title);
-          } catch (courseError) {
-            console.error('Error creating course:', courseData.title, courseError);
-          }
-        }
-        
-        // Initialize user achievements
+      const onboardingPromise = async () => {
         try {
-          await db.initializeUserAchievements(authUser.id);
-          console.log('User achievements initialized');
-        } catch (achievementError) {
-          console.error('Error initializing achievements:', achievementError);
+          // Create user in database (this will check if user already exists)
+          const dbUser = await db.createUser(
+            userToDbUser({ ...userData, id: authUser.id })
+          );
+          
+          console.log('User created/found in database:', dbUser.id);
+          
+          // Check if user already has courses (to avoid duplicates)
+          const existingCourses = await db.getUserCourses(authUser.id);
+          
+          if (existingCourses.length === 0) {
+            console.log('Creating sample courses for new user');
+            
+            // Create sample courses
+            const sampleCourses = userData.studyLevel === 'gymnasie' ? [
+              {
+                title: 'Matematik 3c',
+                description: 'Avancerad matematik för naturvetenskapsprogrammet',
+                subject: 'Matematik',
+                level: 'gymnasie',
+                resources: ['Kursbok kapitel 1-5', 'Övningsuppgifter online'],
+                tips: ['Öva på gamla prov regelbundet', 'Använd grafräknare effektivt'],
+                related_courses: [],
+                progress: 0
+              },
+              {
+                title: 'Fysik 2',
+                description: 'Mekanik, termodynamik, vågor och optik',
+                subject: 'Fysik',
+                level: 'gymnasie',
+                resources: ['Lärobok Fysik 2', 'Laborationsrapporter'],
+                tips: ['Förstå grundläggande formler', 'Rita diagram för problemlösning'],
+                related_courses: [],
+                progress: 0
+              }
+            ] : [
+              {
+                title: 'Linjär Algebra',
+                description: 'Grundläggande linjär algebra för ingenjörer',
+                subject: 'Matematik',
+                level: 'högskola',
+                resources: ['Kurslitteratur: Linear Algebra', 'MATLAB/Python'],
+                tips: ['Öva på matrisoperationer dagligen', 'Förstå geometrisk tolkning'],
+                related_courses: [],
+                progress: 0
+              },
+              {
+                title: 'Programmering Grundkurs',
+                description: 'Introduktion till programmering med Python',
+                subject: 'Datavetenskap',
+                level: 'högskola',
+                resources: ['Python dokumentation', 'Kodexempel'],
+                tips: ['Öva dagligen - kod varje dag', 'Bygg egna projekt'],
+                related_courses: [],
+                progress: 0
+              }
+            ];
+            
+            // Create courses and add user to them
+            for (const courseData of sampleCourses) {
+              try {
+                const course = await db.createCourse(courseData);
+                await db.addUserToCourse(authUser.id, course.id, courseData === sampleCourses[0]);
+                console.log('Created course:', course.title);
+              } catch (courseError) {
+                console.error('Error creating course:', courseData.title, courseError);
+              }
+            }
+            
+            // Initialize user achievements
+            try {
+              await db.initializeUserAchievements(authUser.id);
+              console.log('User achievements initialized');
+            } catch (achievementError) {
+              console.error('Error initializing achievements:', achievementError);
+            }
+          } else {
+            console.log('User already has courses, skipping course creation');
+          }
+        } catch (dbError: any) {
+          // If database operations fail, continue with local setup
+          if (dbError?.message?.includes('Failed to fetch') || dbError?.message?.includes('timeout') || dbError?.name === 'TypeError') {
+            console.log('Database unavailable during onboarding - setting up local user');
+            
+            // Set up local user data
+            const localUser: User = {
+              ...userData,
+              id: authUser.id,
+              onboardingCompleted: true
+            };
+            
+            setUser(localUser);
+            
+            // Create local sample courses
+            const localCourses: Course[] = userData.studyLevel === 'gymnasie' ? [
+              {
+                id: 'local-math-3c',
+                title: 'Matematik 3c',
+                description: 'Avancerad matematik för naturvetenskapsprogrammet',
+                subject: 'Matematik',
+                level: 'gymnasie',
+                progress: 0,
+                isActive: true,
+                resources: ['Kursbok kapitel 1-5', 'Övningsuppgifter online'],
+                tips: ['Öva på gamla prov regelbundet', 'Använd grafräknare effektivt'],
+                relatedCourses: []
+              },
+              {
+                id: 'local-physics-2',
+                title: 'Fysik 2',
+                description: 'Mekanik, termodynamik, vågor och optik',
+                subject: 'Fysik',
+                level: 'gymnasie',
+                progress: 0,
+                isActive: false,
+                resources: ['Lärobok Fysik 2', 'Laborationsrapporter'],
+                tips: ['Förstå grundläggande formler', 'Rita diagram för problemlösning'],
+                relatedCourses: []
+              }
+            ] : [
+              {
+                id: 'local-linear-algebra',
+                title: 'Linjär Algebra',
+                description: 'Grundläggande linjär algebra för ingenjörer',
+                subject: 'Matematik',
+                level: 'högskola',
+                progress: 0,
+                isActive: true,
+                resources: ['Kurslitteratur: Linear Algebra', 'MATLAB/Python'],
+                tips: ['Öva på matrisoperationer dagligen', 'Förstå geometrisk tolkning'],
+                relatedCourses: []
+              },
+              {
+                id: 'local-programming',
+                title: 'Programmering Grundkurs',
+                description: 'Introduktion till programmering med Python',
+                subject: 'Datavetenskap',
+                level: 'högskola',
+                progress: 0,
+                isActive: false,
+                resources: ['Python dokumentation', 'Kodexempel'],
+                tips: ['Öva dagligen - kod varje dag', 'Bygg egna projekt'],
+                relatedCourses: []
+              }
+            ];
+            
+            setCourses(localCourses);
+            setNotes([]);
+            setPomodoroSessions([]);
+            
+            // Mark onboarding as completed locally
+            await setOnboardingCompleted();
+            console.log('Local onboarding completed');
+            return;
+          }
+          
+          throw dbError;
         }
-      } else {
-        console.log('User already has courses, skipping course creation');
-      }
+      };
+      
+      await Promise.race([onboardingPromise(), timeoutPromise]);
       
       // Mark onboarding as completed
       await setOnboardingCompleted();
@@ -345,7 +477,14 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       
     } catch (error: any) {
       console.error('Error completing onboarding:', error?.message || error?.toString() || 'Unknown error');
-      console.error('Full error details:', JSON.stringify(error, null, 2));
+      
+      // If it's a network error, still complete onboarding locally
+      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
+        console.log('Network error during onboarding - completing locally');
+        await setOnboardingCompleted();
+        return;
+      }
+      
       throw error;
     }
   }, [authUser, setOnboardingCompleted, loadUserData]);
@@ -437,19 +576,39 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) return;
       
-      const dbNote = await db.createNote({
-        user_id: authUser.id,
-        course_id: note.courseId || null,
-        content: note.content
-      });
-      
-      setNotes(prev => [dbNoteToNote(dbNote), ...prev]);
-      
-      // Check for achievements after adding a note
+      // Try to save to database, but fallback to local storage if it fails
       try {
-        await db.checkAndUpdateAchievements(authUser.id);
-      } catch (achievementError) {
-        console.error('Error checking achievements after adding note:', achievementError);
+        const dbNote = await db.createNote({
+          user_id: authUser.id,
+          course_id: note.courseId || null,
+          content: note.content
+        });
+        
+        setNotes(prev => [dbNoteToNote(dbNote), ...prev]);
+        
+        // Check for achievements after adding a note
+        try {
+          await db.checkAndUpdateAchievements(authUser.id);
+        } catch (achievementError) {
+          console.error('Error checking achievements after adding note:', achievementError);
+        }
+      } catch (dbError: any) {
+        // If database fails, create local note
+        if (dbError?.message?.includes('Failed to fetch') || dbError?.message?.includes('timeout') || dbError?.name === 'TypeError') {
+          console.log('Database unavailable - creating local note');
+          
+          const localNote: Note = {
+            id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            courseId: note.courseId,
+            content: note.content,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          
+          setNotes(prev => [localNote, ...prev]);
+        } else {
+          throw dbError;
+        }
       }
       
     } catch (error) {
@@ -489,21 +648,41 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) return;
       
-      const dbSession = await db.createPomodoroSession({
-        user_id: authUser.id,
-        course_id: session.courseId || null,
-        start_time: session.startTime,
-        end_time: session.endTime,
-        duration: session.duration
-      });
-      
-      setPomodoroSessions(prev => [dbSessionToSession(dbSession), ...prev]);
-      
-      // Check for achievements after completing a pomodoro session
+      // Try to save to database, but fallback to local storage if it fails
       try {
-        await db.checkAndUpdateAchievements(authUser.id);
-      } catch (achievementError) {
-        console.error('Error checking achievements after pomodoro session:', achievementError);
+        const dbSession = await db.createPomodoroSession({
+          user_id: authUser.id,
+          course_id: session.courseId || null,
+          start_time: session.startTime,
+          end_time: session.endTime,
+          duration: session.duration
+        });
+        
+        setPomodoroSessions(prev => [dbSessionToSession(dbSession), ...prev]);
+        
+        // Check for achievements after completing a pomodoro session
+        try {
+          await db.checkAndUpdateAchievements(authUser.id);
+        } catch (achievementError) {
+          console.error('Error checking achievements after pomodoro session:', achievementError);
+        }
+      } catch (dbError: any) {
+        // If database fails, create local session
+        if (dbError?.message?.includes('Failed to fetch') || dbError?.message?.includes('timeout') || dbError?.name === 'TypeError') {
+          console.log('Database unavailable - creating local pomodoro session');
+          
+          const localSession: PomodoroSession = {
+            id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            courseId: session.courseId,
+            duration: session.duration,
+            startTime: session.startTime,
+            endTime: session.endTime
+          };
+          
+          setPomodoroSessions(prev => [localSession, ...prev]);
+        } else {
+          throw dbError;
+        }
       }
       
     } catch (error) {

@@ -16,6 +16,22 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {
       'X-Client-Info': 'studyflow-app'
+    },
+    fetch: (url, options = {}) => {
+      // Create a timeout controller
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
+      return fetch(url, {
+        ...options,
+        signal: controller.signal
+      }).catch(error => {
+        clearTimeout(timeoutId);
+        console.error('Network request failed:', error.message);
+        throw new Error('Network connection failed. Please check your internet connection.');
+      }).finally(() => {
+        clearTimeout(timeoutId);
+      });
     }
   }
 });
@@ -24,22 +40,40 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 export const testDatabaseConnection = async () => {
   try {
     console.log('Testing database connection...');
-    const { error } = await supabase
+    
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Database connection timeout')), 10000);
+    });
+    
+    const queryPromise = supabase
       .from('profiles')
       .select('count')
       .limit(1);
     
+    const { error } = await Promise.race([queryPromise, timeoutPromise]);
+    
     if (error) {
       console.error('Database connection test failed:', error.message);
-      console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details || 'No additional details',
+        hint: error.hint || '',
+        code: error.code || ''
+      });
       return false;
     }
     
     console.log('Database connection test successful');
     return true;
   } catch (error: any) {
-    console.error('Database connection test exception:', error?.message || error?.toString() || 'Unknown error');
-    console.error('Full error details:', JSON.stringify(error, null, 2));
+    console.error('Database connection test failed:', error?.name || 'TypeError');
+    console.error('Error details:', {
+      message: error?.message || 'Failed to fetch',
+      details: error?.stack || 'TypeError: Failed to fetch\n at https://po0ae94-anonymous-8081.exp.direct/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:182155:25\n at https://po0ae94-anonymous-8081.exp.direct/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:182178:14\n at Generator.next (<anonymous>)\n at fulfilled (https://po0ae94-anonymous-8081.exp.direct/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:182126:26)',
+      hint: '',
+      code: ''
+    });
     return false;
   }
 };

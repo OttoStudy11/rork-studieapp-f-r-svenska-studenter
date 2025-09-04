@@ -570,15 +570,23 @@ export const getUserAchievements = async (userId: string) => {
 
 export const initializeUserAchievements = async (userId: string) => {
   try {
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Network connection failed. Please check your internet connection.')), 5000);
+    });
+    
     // First check if user exists in profiles table
-    const userProfile = await getUser(userId);
+    const userProfilePromise = getUser(userId);
+    const userProfile = await Promise.race([userProfilePromise, timeoutPromise]);
+    
     if (!userProfile) {
       console.log('User profile not found, cannot initialize achievements for user:', userId);
       return [];
     }
     
     // Get all achievements
-    const achievements = await getAllAchievements();
+    const achievementsPromise = getAllAchievements();
+    const achievements = await Promise.race([achievementsPromise, timeoutPromise]);
     
     // If no achievements exist, skip initialization
     if (achievements.length === 0) {
@@ -594,15 +602,14 @@ export const initializeUserAchievements = async (userId: string) => {
       unlocked_at: null
     }));
     
-    const { data, error } = await supabase
+    const queryPromise = supabase
       .from('user_achievements')
       .upsert(userAchievements, { onConflict: 'user_id,achievement_id' })
       .select();
     
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+    
     if (error) {
-      console.error('Error initializing user achievements:', error.message || 'Unknown error');
-      console.error('Error details:', JSON.stringify(error, null, 2));
-      
       // If table doesn't exist, return empty array
       if (error.code === '42P01' || error.message?.includes('relation "user_achievements" does not exist')) {
         console.warn('User achievements table does not exist. Skipping initialization.');
@@ -615,13 +622,19 @@ export const initializeUserAchievements = async (userId: string) => {
         return [];
       }
       
-      throw error;
+      throw new Error(`Database error: ${error.message}`);
     }
     return data || [];
-  } catch (error) {
-    console.error('Exception in initializeUserAchievements:', error instanceof Error ? error.message : String(error));
-    console.error('Full error object:', JSON.stringify(error, null, 2));
-    return [];
+  } catch (error: any) {
+    // Handle network errors gracefully
+    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('Network connection failed') || error?.name === 'TypeError') {
+      console.warn('Network connectivity issue - achievements initialization unavailable');
+      throw new Error('Network connection failed. Please check your internet connection.');
+    }
+    
+    console.error('Error initializing user achievements:', error instanceof Error ? error.message : String(error));
+    console.error('Error details:', JSON.stringify(error, null, 2));
+    throw error;
   }
 };
 

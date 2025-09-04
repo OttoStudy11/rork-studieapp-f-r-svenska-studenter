@@ -101,8 +101,21 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       }
       
       // Initialize user achievements if they don't exist
-      const initPromise = db.initializeUserAchievements(authUser.id);
-      await Promise.race([initPromise, timeoutPromise]);
+      try {
+        const initPromise = db.initializeUserAchievements(authUser.id);
+        await Promise.race([initPromise, timeoutPromise]);
+      } catch (initError: any) {
+        // If initialization fails due to network issues, continue with empty state
+        if (initError?.message?.includes('Network connection failed')) {
+          console.warn('Network issue during achievement initialization - continuing with empty state');
+          setAchievements([]);
+          setTotalPoints(0);
+          setUnlockedBadges([]);
+          setCurrentStreak(0);
+          return;
+        }
+        throw initError;
+      }
       
       // Get user achievements with progress
       const userAchievementsPromise = db.getUserAchievements(authUser.id);
@@ -138,7 +151,10 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       console.log('Achievements loaded:', achievements.length, 'Total points:', points);
     } catch (error: any) {
       // Silently handle network errors to avoid spamming console
-      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
+      if (error?.message?.includes('Failed to fetch') || 
+          error?.message?.includes('timeout') || 
+          error?.message?.includes('Network connection failed') || 
+          error?.name === 'TypeError') {
         console.warn('Network connectivity issue - achievements temporarily unavailable');
       } else {
         console.error('Error loading achievements:', error instanceof Error ? error.message : String(error));

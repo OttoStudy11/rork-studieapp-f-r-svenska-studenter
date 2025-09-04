@@ -20,14 +20,18 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     fetch: (url, options = {}) => {
       // Create a timeout controller
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // Reduced timeout
       
       return fetch(url, {
         ...options,
         signal: controller.signal
       }).catch(error => {
         clearTimeout(timeoutId);
-        console.error('Network request failed:', error.message);
+        // Only log network errors once to avoid spam
+        if (!error.logged) {
+          console.warn('Network request failed:', error.name || 'NetworkError');
+          error.logged = true;
+        }
         throw new Error('Network connection failed. Please check your internet connection.');
       }).finally(() => {
         clearTimeout(timeoutId);

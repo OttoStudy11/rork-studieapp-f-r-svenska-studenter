@@ -32,14 +32,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const checkOnboardingStatus = useCallback(async (userId: string) => {
     try {
-      // First check if user has selected a program in the database
+      // Check if user has selected a program in the database
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('program_id')
+        .select('program_id, program')
         .eq('id', userId)
         .single();
       
-      if (!error && profile && profile.program_id) {
+      if (!error && profile && profile.program_id && profile.program !== 'Ej valt') {
         // User has selected a program, mark onboarding as completed
         console.log('User has selected program, onboarding completed');
         setHasCompletedOnboarding(true);
@@ -48,9 +48,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         return;
       }
       
-      // Fallback to AsyncStorage check
-      const stored = await AsyncStorage.getItem(`${ONBOARDING_KEY}_${userId}`);
-      setHasCompletedOnboarding(stored === 'true');
+      // If no program selected, onboarding is not completed
+      console.log('User has not selected program yet, onboarding not completed');
+      setHasCompletedOnboarding(false);
+      // Remove from AsyncStorage if it exists
+      await AsyncStorage.removeItem(`${ONBOARDING_KEY}_${userId}`);
     } catch (error) {
       console.error('Error checking onboarding status:', error);
       setHasCompletedOnboarding(false);
@@ -268,33 +270,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       console.log('Sign up successful:', data.user?.email);
       
-      // Create basic user profile immediately after signup
+      // Profile will be created automatically by the database trigger
       if (data.user) {
-        try {
-          console.log('Creating basic user profile for:', data.user.id);
-          const { supabase: supabaseClient } = await import('@/lib/supabase');
-          
-          // Create a basic profile that will be completed during onboarding
-          const { error: profileError } = await supabaseClient
-            .from('profiles')
-            .insert({
-              id: data.user.id,
-              name: email.split('@')[0] || 'Student',
-              level: 'gymnasie', // Default, will be updated during onboarding
-              program: 'Ej valt', // Default, will be updated during onboarding
-              purpose: 'Förbättra mina studieresultat' // Default, will be updated during onboarding
-            });
-          
-          if (profileError) {
-            console.warn('Could not create user profile during signup:', profileError.message);
-            // Don't fail signup if profile creation fails
-          } else {
-            console.log('Basic user profile created successfully');
-          }
-        } catch (profileException) {
-          console.warn('Exception creating user profile during signup:', profileException);
-          // Don't fail signup if profile creation fails
-        }
+        console.log('User signed up successfully, profile will be created automatically:', data.user.id);
       }
       
       return { error: null };
@@ -357,44 +335,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         setUser(authUser);
         await checkOnboardingStatus(data.user.id);
         
-        // Ensure user profile exists before creating remember me session
-        try {
-          console.log('Checking if user profile exists...');
-          const { data: profile, error: profileCheckError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', data.user.id)
-            .single();
-          
-          if (profileCheckError || !profile) {
-            console.log('User profile does not exist, creating basic profile...');
-            
-            // Create basic profile if it doesn't exist
-            const { error: profileCreateError } = await supabase
-              .from('profiles')
-              .insert({
-                id: data.user.id,
-                name: data.user.email!.split('@')[0] || 'Student',
-                level: 'gymnasie', // Default, will be updated during onboarding
-                program: 'Ej valt', // Default, will be updated during onboarding
-                purpose: 'Förbättra mina studieresultat' // Default, will be updated during onboarding
-              });
-            
-            if (profileCreateError) {
-              console.error('Could not create user profile during signin:', profileCreateError);
-              // If we can't create profile, don't try remember me
-              return { error: null };
-            } else {
-              console.log('Basic user profile created during signin');
-            }
-          } else {
-            console.log('User profile already exists');
-          }
-        } catch (profileException) {
-          console.error('Exception checking/creating user profile during signin:', profileException);
-          // If profile creation fails, still allow login but skip remember me
-          return { error: null };
-        }
+        // Profile should exist automatically due to database trigger
+        console.log('User signed in successfully, profile should exist automatically');
         
         // Create remember me session if requested (only after profile exists)
         if (rememberMe) {

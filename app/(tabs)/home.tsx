@@ -320,35 +320,30 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.tipsScrollContainer}
-            >
-              {studyTips.slice(0, 4).map((tip, index) => (
-                <FadeInView key={tip.id} delay={600 + index * 100}>
-                  <TouchableOpacity style={[styles.tipCard, { backgroundColor: theme.colors.card }]}>
-                    <View style={styles.tipHeader}>
-                      <Text style={styles.tipIcon}>{tip.icon}</Text>
-                      <View style={[styles.tipDifficulty, { 
-                        backgroundColor: tip.difficulty === 'Nybörjare' ? theme.colors.success + '20' :
-                                       tip.difficulty === 'Medel' ? theme.colors.warning + '20' :
-                                       theme.colors.error + '20'
-                      }]}>
-                        <Text style={[styles.tipDifficultyText, { 
-                          color: tip.difficulty === 'Nybörjare' ? theme.colors.success :
-                                tip.difficulty === 'Medel' ? theme.colors.warning :
-                                theme.colors.error
-                        }]}>{tip.difficulty}</Text>
-                      </View>
+            <View style={styles.tipsGrid}>
+              {studyTips.slice(0, 6).map((tip, index) => (
+                <FadeInView key={tip.id} delay={600 + index * 50}>
+                  <TouchableOpacity 
+                    style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
+                    onPress={() => router.push(`/study-tip/${tip.id}`)}
+                  >
+                    <Text style={styles.compactTipIcon}>{tip.icon}</Text>
+                    <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
+                    <View style={[styles.compactTipDifficulty, { 
+                      backgroundColor: tip.difficulty === 'Nybörjare' ? theme.colors.success + '20' :
+                                     tip.difficulty === 'Medel' ? theme.colors.warning + '20' :
+                                     theme.colors.error + '20'
+                    }]}>
+                      <Text style={[styles.compactTipDifficultyText, { 
+                        color: tip.difficulty === 'Nybörjare' ? theme.colors.success :
+                              tip.difficulty === 'Medel' ? theme.colors.warning :
+                              theme.colors.error
+                      }]}>{tip.difficulty}</Text>
                     </View>
-                    <Text style={[styles.tipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
-                    <Text style={[styles.tipDescription, { color: theme.colors.textSecondary }]}>{tip.description}</Text>
-                    <Text style={[styles.tipCategory, { color: theme.colors.primary }]}>{tip.category}</Text>
                   </TouchableOpacity>
                 </FadeInView>
               ))}
-            </ScrollView>
+            </View>
           </View>
         </SlideInView>
 
@@ -362,38 +357,24 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             
-            {studyTechniques.map((technique, index) => (
-              <FadeInView key={technique.id} delay={700 + index * 100}>
-                <TouchableOpacity style={[styles.techniqueCard, { backgroundColor: theme.colors.card }]}>
-                  <View style={styles.techniqueHeader}>
-                    <View style={styles.techniqueLeft}>
-                      <Text style={styles.techniqueIcon}>{technique.icon}</Text>
-                      <View style={styles.techniqueInfo}>
-                        <Text style={[styles.techniqueTitle, { color: theme.colors.text }]}>{technique.title}</Text>
-                        <Text style={[styles.techniqueDescription, { color: theme.colors.textSecondary }]}>{technique.description}</Text>
-                      </View>
+            <View style={styles.techniquesGrid}>
+              {studyTechniques.map((technique, index) => (
+                <FadeInView key={technique.id} delay={700 + index * 50}>
+                  <TouchableOpacity 
+                    style={[styles.compactTechniqueCard, { backgroundColor: theme.colors.card }]}
+                    onPress={() => router.push(`/study-technique/${technique.id}`)}
+                  >
+                    <Text style={styles.compactTechniqueIcon}>{technique.icon}</Text>
+                    <Text style={[styles.compactTechniqueTitle, { color: theme.colors.text }]}>{technique.title}</Text>
+                    <View style={[styles.compactTimeTag, { backgroundColor: theme.colors.primary + '15' }]}>
+                      <Clock size={10} color={theme.colors.primary} />
+                      <Text style={[styles.compactTimeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
                     </View>
-                    <View style={styles.techniqueRight}>
-                      <View style={[styles.timeTag, { backgroundColor: theme.colors.primary + '15' }]}>
-                        <Clock size={12} color={theme.colors.primary} />
-                        <Text style={[styles.timeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
-                      </View>
-                      <ArrowRight size={16} color={theme.colors.textMuted} />
-                    </View>
-                  </View>
-                  <View style={styles.stepsContainer}>
-                    {technique.steps.map((step, stepIndex) => (
-                      <View key={stepIndex} style={styles.stepItem}>
-                        <View style={[styles.stepNumber, { backgroundColor: theme.colors.primary }]}>
-                          <Text style={styles.stepNumberText}>{stepIndex + 1}</Text>
-                        </View>
-                        <Text style={[styles.stepText, { color: theme.colors.textSecondary }]}>{step}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </TouchableOpacity>
-              </FadeInView>
-            ))}
+                    <ArrowRight size={14} color={theme.colors.textMuted} style={styles.compactArrow} />
+                  </TouchableOpacity>
+                </FadeInView>
+              ))}
+            </View>
           </View>
         </SlideInView>
 
@@ -789,55 +770,82 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  tipsScrollContainer: {
-    paddingRight: 24,
+  tipsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
-  tipCard: {
-    width: 200,
-    marginRight: 16,
-    borderRadius: 16,
-    padding: 16,
+  compactTipCard: {
+    width: (width - 72) / 2,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
-  tipHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  tipIcon: {
-    fontSize: 24,
-  },
-  tipDifficulty: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  tipDifficultyText: {
-    fontSize: 10,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  tipTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+  compactTipIcon: {
+    fontSize: 20,
     marginBottom: 8,
   },
-  tipDescription: {
-    fontSize: 13,
+  compactTipTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
     lineHeight: 18,
-    marginBottom: 12,
   },
-  tipCategory: {
-    fontSize: 12,
+  compactTipDifficulty: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  compactTipDifficultyText: {
+    fontSize: 9,
     fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+  },
+  techniquesGrid: {
+    gap: 12,
+  },
+  compactTechniqueCard: {
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  compactTechniqueIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  compactTechniqueTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  compactTimeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    gap: 3,
+    marginRight: 8,
+  },
+  compactTimeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  compactArrow: {
+    opacity: 0.6,
   },
   techniqueCard: {
     borderRadius: 16,

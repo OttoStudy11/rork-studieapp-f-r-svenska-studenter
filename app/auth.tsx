@@ -65,23 +65,19 @@ export default function AuthScreen() {
       
       if (error) {
         const errorMessage = (error as any)?.message || '';
-        console.error('Auth error:', errorMessage);
+        console.error('ERROR Auth error:', errorMessage);
         
-        // Handle common Supabase auth errors
-        if (errorMessage.includes('Invalid login credentials')) {
-          showError('Felaktiga uppgifter');
-        } else if (errorMessage.includes('User already registered')) {
-          showError('En användare med denna e-post finns redan');
-        } else if (errorMessage.includes('Email not confirmed')) {
-          showError('Bekräfta din e-post innan du loggar in');
-        } else if (errorMessage.includes('Network connection failed')) {
-          showError('Nätverksfel - kontrollera din internetanslutning');
+        // Use the improved error message from AuthContext if available
+        if (errorMessage) {
+          showError(errorMessage);
         } else {
-          showError('Felaktiga uppgifter');
+          showError('Ett fel uppstod vid inloggning');
         }
       } else {
         if (isSignUp) {
-          showSuccess('Konto skapat! Kolla din e-post för att bekräfta kontot.');
+          showSuccess('Konto skapat! Kolla din e-post för att bekräfta kontot innan du loggar in.');
+          // Switch to sign in mode after successful signup
+          setIsSignUp(false);
         } else {
           // Don't show success message for login, just let navigation happen
           console.log('Login successful, waiting for navigation...');

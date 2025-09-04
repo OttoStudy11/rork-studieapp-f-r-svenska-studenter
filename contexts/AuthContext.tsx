@@ -222,9 +222,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     };
   }, [initializeAuth, checkOnboardingStatus]);
 
+  const [lastSignUpAttempt, setLastSignUpAttempt] = useState<number>(0);
+  const [lastSignInAttempt, setLastSignInAttempt] = useState<number>(0);
+  const RATE_LIMIT_DELAY = 60000; // 60 seconds
+
   const handleSignUp = useCallback(async (email: string, password: string) => {
     try {
+      // Check rate limiting
+      const now = Date.now();
+      const timeSinceLastAttempt = now - lastSignUpAttempt;
+      
+      if (timeSinceLastAttempt < RATE_LIMIT_DELAY) {
+        const remainingTime = Math.ceil((RATE_LIMIT_DELAY - timeSinceLastAttempt) / 1000);
+        return { error: { message: `Vänta ${remainingTime} sekunder innan du försöker igen` } };
+      }
+      
+      setLastSignUpAttempt(now);
       console.log('Signing up user:', email);
+      
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password
@@ -232,6 +247,22 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       if (error) {
         console.error('Sign up error:', error);
+        
+        // Handle specific Supabase errors
+        if (error.message.includes('For security purposes')) {
+          const match = error.message.match(/(\d+) seconds/);
+          const seconds = match ? match[1] : '60';
+          return { error: { message: `Vänta ${seconds} sekunder innan du försöker igen` } };
+        }
+        
+        if (error.message.includes('User already registered')) {
+          return { error: { message: 'En användare med denna e-post finns redan' } };
+        }
+        
+        if (error.message.includes('Password should be at least')) {
+          return { error: { message: 'Lösenordet måste vara minst 6 tecken' } };
+        }
+        
         return { error };
       }
       
@@ -271,11 +302,22 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.error('Sign up exception:', error);
       return { error };
     }
-  }, []);
+  }, [lastSignUpAttempt]);
 
   const handleSignIn = useCallback(async (email: string, password: string, rememberMe: boolean = false) => {
     try {
+      // Check rate limiting
+      const now = Date.now();
+      const timeSinceLastAttempt = now - lastSignInAttempt;
+      
+      if (timeSinceLastAttempt < RATE_LIMIT_DELAY) {
+        const remainingTime = Math.ceil((RATE_LIMIT_DELAY - timeSinceLastAttempt) / 1000);
+        return { error: { message: `Vänta ${remainingTime} sekunder innan du försöker igen` } };
+      }
+      
+      setLastSignInAttempt(now);
       console.log('Signing in user:', email, 'Remember me:', rememberMe);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password
@@ -283,6 +325,22 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       if (error) {
         console.error('Sign in error:', error);
+        
+        // Handle specific Supabase errors
+        if (error.message.includes('For security purposes')) {
+          const match = error.message.match(/(\d+) seconds/);
+          const seconds = match ? match[1] : '60';
+          return { error: { message: `Vänta ${seconds} sekunder innan du försöker igen` } };
+        }
+        
+        if (error.message.includes('Email not confirmed')) {
+          return { error: { message: 'Bekräfta din e-post innan du loggar in. Kolla din inkorg och spam-mapp.' } };
+        }
+        
+        if (error.message.includes('Invalid login credentials')) {
+          return { error: { message: 'Felaktiga uppgifter' } };
+        }
+        
         return { error };
       }
       
@@ -364,7 +422,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.error('Sign in exception:', error);
       return { error };
     }
-  }, [checkOnboardingStatus]);
+  }, [checkOnboardingStatus, lastSignInAttempt]);
 
   const handleSignOut = useCallback(async () => {
     try {

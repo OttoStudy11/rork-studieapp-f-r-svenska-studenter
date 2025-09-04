@@ -8,13 +8,17 @@ import {
   Modal,
   ScrollView,
   Dimensions,
-  StatusBar
+  StatusBar,
+  Platform,
+  Alert
 } from 'react-native';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Timer, Play, Pause, Square, Settings, BarChart3, BookOpen } from 'lucide-react-native';
+import { Timer, Play, Pause, Square, Settings, BarChart3, BookOpen, BellOff, Bell } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
+import * as Notifications from 'expo-notifications';
+import * as SystemUI from 'expo-system-ui';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -34,12 +38,89 @@ export default function TimerScreen() {
   const [focusTime, setFocusTime] = useState(25);
   const [breakTime, setBreakTime] = useState(5);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [isDndActive, setIsDndActive] = useState(false);
+  const [dndPermissionGranted, setDndPermissionGranted] = useState(false);
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const progressAnim = useRef(new Animated.Value(1)).current;
 
   const totalTime = sessionType === 'focus' ? focusTime * 60 : breakTime * 60;
   const progress = timeLeft / totalTime;
+
+  // Check notification permissions on mount
+  useEffect(() => {
+    checkNotificationPermissions();
+  }, []);
+
+  const checkNotificationPermissions = async () => {
+    if (Platform.OS === 'web') {
+      setDndPermissionGranted(false);
+      return;
+    }
+
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        const { status: newStatus } = await Notifications.requestPermissionsAsync();
+        setDndPermissionGranted(newStatus === 'granted');
+      } else {
+        setDndPermissionGranted(true);
+      }
+    } catch (error) {
+      console.log('Error checking notification permissions:', error);
+      setDndPermissionGranted(false);
+    }
+  };
+
+  const enableDoNotDisturb = async () => {
+    if (Platform.OS === 'web') {
+      console.log('DND not available on web');
+      return;
+    }
+
+    try {
+      // Set notification behavior to be less intrusive during focus sessions
+      await Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: false,
+          shouldPlaySound: false,
+          shouldSetBadge: false,
+          shouldShowBanner: false,
+          shouldShowList: false,
+        }),
+      });
+      
+      setIsDndActive(true);
+      showSuccess('Stör ej aktiverat! 🔕', 'Notifikationer är nu tysta');
+    } catch (error) {
+      console.log('Error enabling DND:', error);
+    }
+  };
+
+  const disableDoNotDisturb = async () => {
+    if (Platform.OS === 'web') {
+      console.log('DND not available on web');
+      return;
+    }
+
+    try {
+      // Restore normal notification behavior
+      await Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+      
+      setIsDndActive(false);
+      showSuccess('Stör ej inaktiverat! 🔔', 'Notifikationer är nu aktiva');
+    } catch (error) {
+      console.log('Error disabling DND:', error);
+    }
+  };
 
   useEffect(() => {
     if (timerState === 'running') {
@@ -77,6 +158,11 @@ export default function TimerScreen() {
   const handleTimerComplete = async () => {
     setTimerState('idle');
     
+    // Disable Do Not Disturb when session completes
+    if (isDndActive && sessionType === 'focus') {
+      await disableDoNotDisturb();
+    }
+    
     if (sessionType === 'focus' && sessionStartTime) {
       // Save the completed focus session
       try {
@@ -112,9 +198,14 @@ export default function TimerScreen() {
     }
   };
 
-  const startTimer = () => {
+  const startTimer = async () => {
     if (timerState === 'idle') {
       setSessionStartTime(new Date());
+      
+      // Enable Do Not Disturb for focus sessions
+      if (sessionType === 'focus' && dndPermissionGranted) {
+        await enableDoNotDisturb();
+      }
     }
     setTimerState('running');
   };
@@ -123,17 +214,27 @@ export default function TimerScreen() {
     setTimerState('paused');
   };
 
-  const stopTimer = () => {
+  const stopTimer = async () => {
     setTimerState('idle');
     setTimeLeft(sessionType === 'focus' ? focusTime * 60 : breakTime * 60);
     setSessionStartTime(null);
+    
+    // Disable Do Not Disturb when stopping
+    if (isDndActive) {
+      await disableDoNotDisturb();
+    }
   };
 
-  const resetTimer = () => {
+  const resetTimer = async () => {
     setTimerState('idle');
     setSessionType('focus');
     setTimeLeft(focusTime * 60);
     setSessionStartTime(null);
+    
+    // Disable Do Not Disturb when resetting
+    if (isDndActive) {
+      await disableDoNotDisturb();
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -305,14 +406,37 @@ export default function TimerScreen() {
         {/* Header */}
         <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
           <View style={styles.headerContent}>
-            <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-              {sessionType === 'focus' ? 'Fokus' : 'Paus'}
-            </Text>
+            <View style={styles.titleRow}>
+              <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
+                {sessionType === 'focus' ? 'Fokus' : 'Paus'}
+              </Text>
+              {isDndActive && (
+                <View style={styles.dndIndicator}>
+                  <BellOff size={16} color="#EF4444" />
+                  <Text style={styles.dndText}>Stör ej</Text>
+                </View>
+              )}
+            </View>
             <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
               {getSelectedCourseTitle()}
             </Text>
           </View>
           <View style={styles.headerActions}>
+            {Platform.OS !== 'web' && dndPermissionGranted && (
+              <TouchableOpacity
+                style={[
+                  styles.headerButton, 
+                  { backgroundColor: isDndActive ? '#EF4444' : theme.colors.card }
+                ]}
+                onPress={isDndActive ? disableDoNotDisturb : enableDoNotDisturb}
+              >
+                {isDndActive ? (
+                  <BellOff size={20} color="#F9FAFB" />
+                ) : (
+                  <Bell size={20} color={theme.colors.text} />
+                )}
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
               onPress={() => setShowStats(true)}
@@ -518,13 +642,33 @@ export default function TimerScreen() {
 
             <TouchableOpacity 
               style={styles.resetButton} 
-              onPress={() => {
-                resetTimer();
+              onPress={async () => {
+                await resetTimer();
                 showSuccess('Timer återställd', 'Redo för en ny session!');
               }}
             >
               <Text style={styles.resetButtonText}>Återställ timer</Text>
             </TouchableOpacity>
+
+            {Platform.OS !== 'web' && (
+              <View style={styles.settingGroup}>
+                <Text style={styles.settingLabel}>Stör ej-läge</Text>
+                <Text style={styles.settingDescription}>
+                  {dndPermissionGranted 
+                    ? 'Aktiveras automatiskt under fokussessioner för att blockera notifikationer.'
+                    : 'Notifikationsbehörigheter krävs för att aktivera stör ej-läge.'
+                  }
+                </Text>
+                {!dndPermissionGranted && (
+                  <TouchableOpacity 
+                    style={styles.permissionButton}
+                    onPress={checkNotificationPermissions}
+                  >
+                    <Text style={styles.permissionButtonText}>Aktivera behörigheter</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -1124,5 +1268,42 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#A3E635',
     borderRadius: 2,
+  },
+  // DND styles
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dndIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  dndText: {
+    fontSize: 12,
+    color: '#EF4444',
+    fontWeight: '600',
+  },
+  settingDescription: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  permissionButton: {
+    backgroundColor: '#A3E635',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  permissionButtonText: {
+    color: '#1E293B',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

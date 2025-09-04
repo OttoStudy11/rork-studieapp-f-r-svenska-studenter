@@ -30,6 +30,23 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const checkOnboardingStatus = useCallback(async (userId: string) => {
     try {
+      // First check if user has selected a program in the database
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('program_id')
+        .eq('id', userId)
+        .single();
+      
+      if (!error && profile && profile.program_id) {
+        // User has selected a program, mark onboarding as completed
+        console.log('User has selected program, onboarding completed');
+        setHasCompletedOnboarding(true);
+        // Also store in AsyncStorage for faster future checks
+        await AsyncStorage.setItem(`${ONBOARDING_KEY}_${userId}`, 'true');
+        return;
+      }
+      
+      // Fallback to AsyncStorage check
       const stored = await AsyncStorage.getItem(`${ONBOARDING_KEY}_${userId}`);
       setHasCompletedOnboarding(stored === 'true');
     } catch (error) {

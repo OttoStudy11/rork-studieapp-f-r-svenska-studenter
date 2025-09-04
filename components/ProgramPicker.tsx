@@ -28,7 +28,7 @@ type Course = {
 };
 
 export default function ProgramPicker() {
-  const { user } = useAuth();
+  const { user, setOnboardingCompleted } = useAuth();
   const { showError, showSuccess } = useToast();
   
   const [query, setQuery] = useState('');
@@ -202,6 +202,9 @@ export default function ProgramPicker() {
         }
       }
 
+      // Mark onboarding as completed
+      await setOnboardingCompleted();
+      
       showSuccess('Program och kurser sparade!');
       router.replace('/(tabs)/home');
     } catch (error: any) {

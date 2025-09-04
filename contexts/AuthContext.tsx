@@ -241,13 +241,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       console.log('Sign in successful:', data.user?.email);
       
-      // Create remember me session if requested
-      if (rememberMe && data.user) {
-        console.log('Creating remember me session...');
-        const { error: rememberError } = await createRememberMeSession(data.user.id);
-        if (rememberError) {
-          console.error('Failed to create remember me session:', rememberError);
-          // Don't fail the login if remember me fails
+      // Immediately update the user state to ensure UI updates
+      if (data.user) {
+        const authUser: AuthUser = {
+          id: data.user.id,
+          email: data.user.email!,
+          createdAt: data.user.created_at
+        };
+        setUser(authUser);
+        await checkOnboardingStatus(data.user.id);
+        
+        // Create remember me session if requested
+        if (rememberMe) {
+          console.log('Creating remember me session...');
+          const { error: rememberError } = await createRememberMeSession(data.user.id);
+          if (rememberError) {
+            console.error('Failed to create remember me session:', rememberError);
+            // Don't fail the login if remember me fails
+          }
         }
       }
       
@@ -256,7 +267,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.error('Sign in exception:', error);
       return { error };
     }
-  }, []);
+  }, [checkOnboardingStatus]);
 
   const handleSignOut = useCallback(async () => {
     try {

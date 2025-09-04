@@ -143,9 +143,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       setIsLoading(true);
       console.log('Loading user data for:', userId);
       
-      // Add timeout to prevent hanging on network issues
+      // Add timeout to prevent hanging on network issues - reduced to 8 seconds
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Database request timeout')), 15000);
+        setTimeout(() => reject(new Error('Database request timeout')), 8000);
       });
       
       // Try to get user from database with timeout
@@ -190,7 +190,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       const loadUserCourses = async () => {
         try {
           const timeout = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), 10000);
+            setTimeout(() => reject(new Error('Request timeout')), 5000);
           });
           return await Promise.race([db.getUserCourses(userId), timeout]);
         } catch (err: any) {
@@ -202,7 +202,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       const loadUserNotes = async () => {
         try {
           const timeout = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), 10000);
+            setTimeout(() => reject(new Error('Request timeout')), 5000);
           });
           return await Promise.race([db.getUserNotes(userId), timeout]);
         } catch (err: any) {
@@ -214,7 +214,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       const loadUserSessions = async () => {
         try {
           const timeout = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), 10000);
+            setTimeout(() => reject(new Error('Request timeout')), 5000);
           });
           return await Promise.race([db.getUserPomodoroSessions(userId), timeout]);
         } catch (err: any) {
@@ -277,11 +277,19 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
   }, []);
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    
     if (!authLoading) {
       if (isAuthenticated && authUser) {
         // Load user data regardless of onboarding status
         // This ensures we have user data available
         loadUserData(authUser.id, authUser.email);
+        
+        // Fallback timeout to ensure loading doesn't get stuck
+        timeoutId = setTimeout(() => {
+          console.warn('StudyContext loading timeout - forcing loading to false');
+          setIsLoading(false);
+        }, 12000); // 12 second fallback timeout
       } else {
         setUser(null);
         setCourses([]);
@@ -290,6 +298,12 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         setIsLoading(false);
       }
     }
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [authUser, isAuthenticated, authLoading, loadUserData]);
 
   const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'>) => {

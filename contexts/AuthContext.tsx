@@ -257,13 +257,17 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           try {
             const { error: rememberError } = await createRememberMeSession(data.user.id);
             if (rememberError) {
-              console.error('Error creating remember me session:', rememberError);
+              if (rememberError === 'User profile not found') {
+                console.log('User profile not created yet - remember me will be available after onboarding');
+              } else {
+                console.error('ERROR Error creating remember me session:', rememberError);
+              }
               // Don't fail the login if remember me fails
             } else {
               console.log('Remember me session created successfully');
             }
           } catch (rememberException) {
-            console.error('Exception creating remember me session:', rememberException);
+            console.error('ERROR Error creating remember me session:', rememberException);
             // Don't fail the login if remember me fails
           }
         }

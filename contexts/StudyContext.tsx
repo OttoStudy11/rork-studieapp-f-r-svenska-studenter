@@ -485,6 +485,17 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       await setOnboardingCompleted();
       console.log('Onboarding marked as completed');
       
+      // Try to create remember me session if user had requested it during login
+      try {
+        const { createRememberMeSession } = await import('@/lib/supabase');
+        const { error: rememberError } = await createRememberMeSession(authUser.id);
+        if (!rememberError) {
+          console.log('Remember me session created after onboarding');
+        }
+      } catch (rememberError) {
+        console.log('Could not create remember me session after onboarding:', rememberError);
+      }
+      
       // Load user data
       await loadUserData(authUser.id, authUser.email);
       console.log('User data loaded successfully');

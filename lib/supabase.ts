@@ -230,6 +230,18 @@ export const createRememberMeSession = async (userId: string): Promise<{ token?:
       return { error: 'Database connection failed' };
     }
     
+    // Check if user profile exists first
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .single();
+    
+    if (profileError || !profile) {
+      console.warn('User profile does not exist yet, cannot create remember me session for user:', userId);
+      return { error: 'User profile not found' };
+    }
+    
     const token = await generateRememberMeToken();
     const tokenHash = await hashToken(token);
     const expiresAt = new Date(Date.now() + REMEMBER_ME_DURATION).toISOString();
@@ -264,6 +276,12 @@ export const createRememberMeSession = async (userId: string): Promise<{ token?:
       if (error.code === '42P01' || error.message?.includes('relation "remember_me_sessions" does not exist')) {
         console.warn('Remember me sessions table does not exist, skipping session creation');
         return { error: 'Table not found' };
+      }
+      
+      // If foreign key constraint violation, user profile doesn't exist
+      if (error.code === '23503' && error.message?.includes('user_id')) {
+        console.warn('User profile does not exist, cannot create remember me session for user:', userId);
+        return { error: 'User profile not found' };
       }
       
       return { error: error.message || 'Failed to create remember me session' };

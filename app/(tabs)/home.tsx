@@ -15,7 +15,7 @@ import { useAchievements } from '@/contexts/AchievementContext';
 import { useToast } from '@/contexts/ToastContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
 import { Skeleton, SkeletonStats, SkeletonList } from '@/components/Skeleton';
@@ -77,6 +77,85 @@ export default function HomeScreen() {
   const userLevel = getUserLevel();
   const recentAchievements = getRecentAchievements(3);
   const totalStudyTime = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
+
+  // Study tips and techniques data
+  const studyTips = [
+    {
+      id: 1,
+      title: 'Pomodoro-tekniken',
+      description: 'Studera i 25-minuters intervaller med 5 minuters pauser',
+      icon: '🍅',
+      category: 'Tidshantering',
+      difficulty: 'Nybörjare'
+    },
+    {
+      id: 2,
+      title: 'Aktiv repetition',
+      description: 'Testa dig själv istället för att bara läsa om materialet',
+      icon: '🧠',
+      category: 'Minnestekniker',
+      difficulty: 'Medel'
+    },
+    {
+      id: 3,
+      title: 'Spaced repetition',
+      description: 'Repetera material med ökande intervaller för bättre minne',
+      icon: '📅',
+      category: 'Minnestekniker',
+      difficulty: 'Avancerad'
+    },
+    {
+      id: 4,
+      title: 'Feynman-tekniken',
+      description: 'Förklara komplexa koncept med enkla ord',
+      icon: '👨‍🏫',
+      category: 'Förståelse',
+      difficulty: 'Medel'
+    },
+    {
+      id: 5,
+      title: 'Mind mapping',
+      description: 'Skapa visuella kartor för att organisera information',
+      icon: '🗺️',
+      category: 'Organisation',
+      difficulty: 'Nybörjare'
+    },
+    {
+      id: 6,
+      title: 'Miljöbyte',
+      description: 'Byt studiemiljö för att förbättra inlärningen',
+      icon: '🏠',
+      category: 'Miljö',
+      difficulty: 'Nybörjare'
+    }
+  ];
+
+  const studyTechniques = [
+    {
+      id: 1,
+      title: 'SQ3R-metoden',
+      description: 'Survey, Question, Read, Recite, Review - systematisk läsning',
+      steps: ['Överblicka', 'Fråga', 'Läs', 'Återge', 'Repetera'],
+      icon: '📖',
+      timeNeeded: '30-60 min'
+    },
+    {
+      id: 2,
+      title: 'Cornell-anteckningar',
+      description: 'Strukturerad anteckningsmetod med tre sektioner',
+      steps: ['Anteckningar', 'Ledtrådar', 'Sammanfattning'],
+      icon: '📝',
+      timeNeeded: '15-30 min'
+    },
+    {
+      id: 3,
+      title: 'Elaborativ förfrågan',
+      description: 'Ställ "varför" och "hur" frågor för djupare förståelse',
+      steps: ['Läs fakta', 'Fråga varför', 'Förklara samband', 'Koppla till tidigare kunskap'],
+      icon: '❓',
+      timeNeeded: '20-40 min'
+    }
+  ];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -231,8 +310,95 @@ export default function HomeScreen() {
           </View>
         </SlideInView>
 
-        {/* Active Courses */}
+        {/* Study Tips Section */}
         <SlideInView direction="up" delay={500}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
+              <TouchableOpacity>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tipsScrollContainer}
+            >
+              {studyTips.slice(0, 4).map((tip, index) => (
+                <FadeInView key={tip.id} delay={600 + index * 100}>
+                  <TouchableOpacity style={[styles.tipCard, { backgroundColor: theme.colors.card }]}>
+                    <View style={styles.tipHeader}>
+                      <Text style={styles.tipIcon}>{tip.icon}</Text>
+                      <View style={[styles.tipDifficulty, { 
+                        backgroundColor: tip.difficulty === 'Nybörjare' ? theme.colors.success + '20' :
+                                       tip.difficulty === 'Medel' ? theme.colors.warning + '20' :
+                                       theme.colors.error + '20'
+                      }]}>
+                        <Text style={[styles.tipDifficultyText, { 
+                          color: tip.difficulty === 'Nybörjare' ? theme.colors.success :
+                                tip.difficulty === 'Medel' ? theme.colors.warning :
+                                theme.colors.error
+                        }]}>{tip.difficulty}</Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.tipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
+                    <Text style={[styles.tipDescription, { color: theme.colors.textSecondary }]}>{tip.description}</Text>
+                    <Text style={[styles.tipCategory, { color: theme.colors.primary }]}>{tip.category}</Text>
+                  </TouchableOpacity>
+                </FadeInView>
+              ))}
+            </ScrollView>
+          </View>
+        </SlideInView>
+
+        {/* Study Techniques Section */}
+        <SlideInView direction="up" delay={600}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
+              <TouchableOpacity>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {studyTechniques.map((technique, index) => (
+              <FadeInView key={technique.id} delay={700 + index * 100}>
+                <TouchableOpacity style={[styles.techniqueCard, { backgroundColor: theme.colors.card }]}>
+                  <View style={styles.techniqueHeader}>
+                    <View style={styles.techniqueLeft}>
+                      <Text style={styles.techniqueIcon}>{technique.icon}</Text>
+                      <View style={styles.techniqueInfo}>
+                        <Text style={[styles.techniqueTitle, { color: theme.colors.text }]}>{technique.title}</Text>
+                        <Text style={[styles.techniqueDescription, { color: theme.colors.textSecondary }]}>{technique.description}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.techniqueRight}>
+                      <View style={[styles.timeTag, { backgroundColor: theme.colors.primary + '15' }]}>
+                        <Clock size={12} color={theme.colors.primary} />
+                        <Text style={[styles.timeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
+                      </View>
+                      <ArrowRight size={16} color={theme.colors.textMuted} />
+                    </View>
+                  </View>
+                  <View style={styles.stepsContainer}>
+                    {technique.steps.map((step, stepIndex) => (
+                      <View key={stepIndex} style={styles.stepItem}>
+                        <View style={[styles.stepNumber, { backgroundColor: theme.colors.primary }]}>
+                          <Text style={styles.stepNumberText}>{stepIndex + 1}</Text>
+                        </View>
+                        <Text style={[styles.stepText, { color: theme.colors.textSecondary }]}>{step}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </TouchableOpacity>
+              </FadeInView>
+            ))}
+          </View>
+        </SlideInView>
+
+        {/* Active Courses */}
+        <SlideInView direction="up" delay={800}>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Aktiva kurser</Text>
@@ -243,7 +409,7 @@ export default function HomeScreen() {
             
             {activeCourses.length > 0 ? (
               activeCourses.slice(0, 3).map((course, index) => (
-                <FadeInView key={course.id} delay={600 + index * 100}>
+                <FadeInView key={course.id} delay={900 + index * 100}>
                   <TouchableOpacity style={[styles.courseCard, { backgroundColor: theme.colors.card }]}>
                     <View style={styles.courseHeader}>
                       <View style={styles.courseInfo}>
@@ -622,5 +788,132 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  tipsScrollContainer: {
+    paddingRight: 24,
+  },
+  tipCard: {
+    width: 200,
+    marginRight: 16,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  tipHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  tipIcon: {
+    fontSize: 24,
+  },
+  tipDifficulty: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  tipDifficultyText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  tipTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  tipDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  tipCategory: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  techniqueCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  techniqueHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  techniqueLeft: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+  techniqueIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  techniqueInfo: {
+    flex: 1,
+  },
+  techniqueTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  techniqueDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  techniqueRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  timeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  timeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  stepsContainer: {
+    gap: 8,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stepNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepNumberText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stepText: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
   },
 });

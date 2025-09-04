@@ -157,7 +157,10 @@ export default function ProgramPicker() {
       // Update user profile with selected program
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ program_id: selectedProgram.id })
+        .update({ 
+          program_id: selectedProgram.id,
+          program: selectedProgram.name
+        })
         .eq('id', user.id);
 
       if (profileError) {

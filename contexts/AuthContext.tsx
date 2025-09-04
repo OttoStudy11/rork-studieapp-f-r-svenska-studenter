@@ -39,9 +39,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         .eq('id', userId)
         .single();
       
-      if (!error && profile && profile.program_id && profile.program !== 'Ej valt') {
+      if (!error && profile && profile.program_id) {
         // User has selected a program, mark onboarding as completed
-        console.log('User has selected program, onboarding completed');
+        console.log('User has selected program, onboarding completed:', profile.program || 'Unknown program');
         setHasCompletedOnboarding(true);
         // Also store in AsyncStorage for faster future checks
         await AsyncStorage.setItem(`${ONBOARDING_KEY}_${userId}`, 'true');

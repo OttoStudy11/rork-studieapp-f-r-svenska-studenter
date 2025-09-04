@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ScrollView
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { GraduationCap, Mail, Lock, Eye, EyeOff, Check } from 'lucide-react-native';
@@ -24,8 +25,20 @@ export default function AuthScreen() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn, signUp, resetPassword, isAuthenticated, hasCompletedOnboarding } = useAuth();
   const { showError, showSuccess } = useToast();
+
+  // Navigate immediately when authentication state changes
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      console.log('User authenticated, navigating...', { hasCompletedOnboarding });
+      if (hasCompletedOnboarding) {
+        router.replace('/(tabs)/home');
+      } else {
+        router.replace('/onboarding');
+      }
+    }
+  }, [isAuthenticated, hasCompletedOnboarding, isLoading]);
 
   const handleAuth = async () => {
     if (!email.trim()) {
@@ -56,7 +69,7 @@ export default function AuthScreen() {
         
         // Handle common Supabase auth errors
         if (errorMessage.includes('Invalid login credentials')) {
-          showError('Felaktig e-post eller lösenord');
+          showError('Felaktiga uppgifter');
         } else if (errorMessage.includes('User already registered')) {
           showError('En användare med denna e-post finns redan');
         } else if (errorMessage.includes('Email not confirmed')) {
@@ -64,13 +77,14 @@ export default function AuthScreen() {
         } else if (errorMessage.includes('Network connection failed')) {
           showError('Nätverksfel - kontrollera din internetanslutning');
         } else {
-          showError(errorMessage || 'Ett fel uppstod');
+          showError('Felaktiga uppgifter');
         }
       } else {
         if (isSignUp) {
           showSuccess('Konto skapat! Kolla din e-post för att bekräfta kontot.');
         } else {
-          showSuccess('Välkommen tillbaka!');
+          // Don't show success message for login, just let navigation happen
+          console.log('Login successful, waiting for navigation...');
         }
       }
     } catch (error) {

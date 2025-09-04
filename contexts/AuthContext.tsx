@@ -278,6 +278,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           email: data.user.email!,
           createdAt: data.user.created_at
         };
+        console.log('Setting user state after successful login:', authUser.email);
         setUser(authUser);
         await checkOnboardingStatus(data.user.id);
         

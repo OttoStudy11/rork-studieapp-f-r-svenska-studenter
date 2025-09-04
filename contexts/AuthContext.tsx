@@ -219,6 +219,36 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
       
       console.log('Sign up successful:', data.user?.email);
+      
+      // Create basic user profile immediately after signup
+      if (data.user) {
+        try {
+          console.log('Creating basic user profile for:', data.user.id);
+          const { supabase: supabaseClient } = await import('@/lib/supabase');
+          
+          // Create a basic profile that will be completed during onboarding
+          const { error: profileError } = await supabaseClient
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              name: email.split('@')[0] || 'Student',
+              level: 'gymnasie', // Default, will be updated during onboarding
+              program: 'Ej valt', // Default, will be updated during onboarding
+              purpose: 'Förbättra mina studieresultat' // Default, will be updated during onboarding
+            });
+          
+          if (profileError) {
+            console.warn('Could not create user profile during signup:', profileError.message);
+            // Don't fail signup if profile creation fails
+          } else {
+            console.log('Basic user profile created successfully');
+          }
+        } catch (profileException) {
+          console.warn('Exception creating user profile during signup:', profileException);
+          // Don't fail signup if profile creation fails
+        }
+      }
+      
       return { error: null };
     } catch (error) {
       console.error('Sign up exception:', error);
@@ -251,17 +281,48 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         setUser(authUser);
         await checkOnboardingStatus(data.user.id);
         
+        // Ensure user profile exists before creating remember me session
+        try {
+          console.log('Checking if user profile exists...');
+          const { data: profile, error: profileCheckError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', data.user.id)
+            .single();
+          
+          if (profileCheckError || !profile) {
+            console.log('User profile does not exist, creating basic profile...');
+            
+            // Create basic profile if it doesn't exist
+            const { error: profileCreateError } = await supabase
+              .from('profiles')
+              .insert({
+                id: data.user.id,
+                name: data.user.email!.split('@')[0] || 'Student',
+                level: 'gymnasie', // Default, will be updated during onboarding
+                program: 'Ej valt', // Default, will be updated during onboarding
+                purpose: 'Förbättra mina studieresultat' // Default, will be updated during onboarding
+              });
+            
+            if (profileCreateError) {
+              console.warn('Could not create user profile during signin:', profileCreateError.message);
+            } else {
+              console.log('Basic user profile created during signin');
+            }
+          } else {
+            console.log('User profile already exists');
+          }
+        } catch (profileException) {
+          console.warn('Exception checking/creating user profile during signin:', profileException);
+        }
+        
         // Create remember me session if requested
         if (rememberMe) {
           console.log('Creating remember me session...');
           try {
             const { error: rememberError } = await createRememberMeSession(data.user.id);
             if (rememberError) {
-              if (rememberError === 'User profile not found') {
-                console.log('User profile not created yet - remember me will be available after onboarding');
-              } else {
-                console.error('ERROR Error creating remember me session:', rememberError);
-              }
+              console.log('Failed to create remember me session:', rememberError);
               // Don't fail the login if remember me fails
             } else {
               console.log('Remember me session created successfully');

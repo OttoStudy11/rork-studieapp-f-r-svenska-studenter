@@ -61,6 +61,8 @@ export default function AuthScreen() {
           showError('En användare med denna e-post finns redan');
         } else if (errorMessage.includes('Email not confirmed')) {
           showError('Bekräfta din e-post innan du loggar in');
+        } else if (errorMessage.includes('Network connection failed')) {
+          showError('Nätverksfel - kontrollera din internetanslutning');
         } else {
           showError(errorMessage || 'Ett fel uppstod');
         }

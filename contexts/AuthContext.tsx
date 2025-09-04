@@ -305,7 +305,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
               });
             
             if (profileCreateError) {
-              console.warn('Could not create user profile during signin:', profileCreateError.message);
+              console.error('Could not create user profile during signin:', profileCreateError);
+              // If we can't create profile, don't try remember me
+              return { error: null };
             } else {
               console.log('Basic user profile created during signin');
             }
@@ -313,13 +315,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
             console.log('User profile already exists');
           }
         } catch (profileException) {
-          console.warn('Exception checking/creating user profile during signin:', profileException);
+          console.error('Exception checking/creating user profile during signin:', profileException);
+          // If profile creation fails, still allow login but skip remember me
+          return { error: null };
         }
         
-        // Create remember me session if requested
+        // Create remember me session if requested (only after profile exists)
         if (rememberMe) {
           console.log('Creating remember me session...');
           try {
+            // Wait a bit to ensure profile is fully created
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
             const { error: rememberError } = await createRememberMeSession(data.user.id);
             if (rememberError) {
               console.log('Failed to create remember me session:', rememberError);

@@ -27,6 +27,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [lastSignUpAttempt, setLastSignUpAttempt] = useState<number>(0);
+  const [lastSignInAttempt, setLastSignInAttempt] = useState<number>(0);
 
   const checkOnboardingStatus = useCallback(async (userId: string) => {
     try {
@@ -222,8 +224,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     };
   }, [initializeAuth, checkOnboardingStatus]);
 
-  const [lastSignUpAttempt, setLastSignUpAttempt] = useState<number>(0);
-  const [lastSignInAttempt, setLastSignInAttempt] = useState<number>(0);
   const RATE_LIMIT_DELAY = 60000; // 60 seconds
 
   const handleSignUp = useCallback(async (email: string, password: string) => {

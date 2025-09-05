@@ -171,7 +171,7 @@ export default function AuthScreen() {
             <View style={styles.content}>
               <View style={styles.header}>
                 <GraduationCap size={80} color="white" style={styles.logo} />
-                <Text style={styles.title}>Studiestugan</Text>
+                <Text style={styles.title}>StudieStugan</Text>
                 <Text style={styles.subtitle}>
                   {showEmailConfirmation
                     ? 'Bekräfta din e-post'

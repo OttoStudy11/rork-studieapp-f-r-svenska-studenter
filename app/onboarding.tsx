@@ -60,12 +60,7 @@ export default function OnboardingScreen() {
     goals: [],
     purpose: [],
     avatar: {
-      skinTone: 'medium-light',
-      hairStyle: 'medium',
-      hairColor: 'brown',
-      eyeColor: 'brown',
-      clothingColor: 'blue',
-      accessory: 'none'
+      emoji: '😊'
     }
   });
 
@@ -128,7 +123,7 @@ export default function OnboardingScreen() {
           <View style={styles.stepContainer}>
             <GraduationCap size={80} color="#4F46E5" style={styles.icon} />
             <Text style={styles.title}>Hej {user?.email?.split('@')[0] || 'där'}!</Text>
-            <Text style={styles.subtitle}>Låt oss anpassa Studiestugan för dig</Text>
+            <Text style={styles.subtitle}>Låt oss anpassa StudieStugan för dig</Text>
             <TextInput
               style={styles.input}
               placeholder="Ange ditt namn"

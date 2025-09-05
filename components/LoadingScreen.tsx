@@ -150,7 +150,7 @@ const StudieStuganLogo: React.FC<{ size?: number; animated?: boolean }> = ({
 };
 
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({ 
-  message = "Laddar Studie Stugan..." 
+  message = "Laddar StudieStugan..." 
 }) => {
   const insets = useSafeAreaInsets();
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -195,7 +195,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         
         {/* App name */}
         <Animated.View style={[styles.titleContainer, { opacity: textFadeAnim }]}>
-          <Text style={styles.title}>Studie Stugan</Text>
+          <Text style={styles.title}>StudieStugan</Text>
           <Text style={styles.subtitle}>Din plats för fokus och framgång.</Text>
         </Animated.View>
         

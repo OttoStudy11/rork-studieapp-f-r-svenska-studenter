@@ -30,6 +30,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
 import { router } from 'expo-router';
+import AvatarCustomizer, { type AvatarConfig } from '@/components/AvatarCustomizer';
+import Avatar from '@/components/Avatar';
 
 export default function ProfileScreen() {
   const { user, courses, pomodoroSessions, updateUser } = useStudy();
@@ -40,6 +42,15 @@ export default function ProfileScreen() {
     name: user?.name || '',
     program: user?.program || '',
     purpose: user?.purpose || ''
+  });
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(user?.avatar || {
+    skinTone: 'medium-light',
+    hairStyle: 'medium',
+    hairColor: 'brown',
+    eyeColor: 'brown',
+    clothingColor: 'blue',
+    accessory: 'none'
   });
 
   const totalStudyTime = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
@@ -82,6 +93,16 @@ export default function ProfileScreen() {
         { text: 'Logga ut', style: 'destructive', onPress: () => Alert.alert('Utloggad') }
       ]
     );
+  };
+
+  const handleSaveAvatar = async () => {
+    try {
+      await updateUser({ avatar: avatarConfig });
+      setShowAvatarModal(false);
+      showSuccess('Avatar uppdaterad! ✅');
+    } catch (error) {
+      Alert.alert('Fel', 'Kunde inte uppdatera avatar');
+    }
   };
 
   const getMotivationalMessage = () => {
@@ -134,11 +155,23 @@ export default function ProfileScreen() {
         style={styles.header}
       >
         <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user.name.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.avatarContainer}
+            onPress={() => setShowAvatarModal(true)}
+          >
+            {user.avatar ? (
+              <Avatar config={user.avatar} size={80} />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {user.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+            <View style={styles.editAvatarBadge}>
+              <Edit3 size={12} color="white" />
+            </View>
+          </TouchableOpacity>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user.name}</Text>
             <Text style={styles.profileProgram}>

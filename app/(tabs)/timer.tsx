@@ -270,10 +270,29 @@ export default function TimerScreen() {
     const totalMinutes = weekSessions.reduce((sum, session) => sum + session.duration, 0);
     const averagePerDay = Math.round(totalMinutes / 7);
     
+    // Calculate daily breakdown
+    const dailyStats = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      const dayString = date.toDateString();
+      
+      const daySessions = weekSessions.filter(session => {
+        const sessionDate = new Date(session.endTime).toDateString();
+        return sessionDate === dayString;
+      });
+      
+      return {
+        date: date,
+        sessions: daySessions.length,
+        minutes: daySessions.reduce((sum, session) => sum + session.duration, 0)
+      };
+    });
+    
     return {
       sessions: weekSessions.length,
       minutes: totalMinutes,
-      averagePerDay
+      averagePerDay,
+      dailyStats
     };
   };
 
@@ -297,17 +316,26 @@ export default function TimerScreen() {
   };
 
   const getCourseStats = () => {
-    const courseStats = new Map<string, { sessions: number; minutes: number; courseName: string }>();
+    const courseStats = new Map<string, { sessions: number; minutes: number; courseName: string; subject: string; lastSession: string }>();
     
     pomodoroSessions.forEach(session => {
       if (session.courseId) {
         const course = courses.find(c => c.id === session.courseId);
         const courseName = course?.title || 'Okänd kurs';
-        const existing = courseStats.get(session.courseId) || { sessions: 0, minutes: 0, courseName };
+        const subject = course?.subject || 'Allmänt';
+        const existing = courseStats.get(session.courseId) || { 
+          sessions: 0, 
+          minutes: 0, 
+          courseName, 
+          subject,
+          lastSession: session.endTime
+        };
         courseStats.set(session.courseId, {
           sessions: existing.sessions + 1,
           minutes: existing.minutes + session.duration,
-          courseName
+          courseName,
+          subject,
+          lastSession: new Date(session.endTime) > new Date(existing.lastSession) ? session.endTime : existing.lastSession
         });
       }
     });
@@ -317,9 +345,50 @@ export default function TimerScreen() {
       .sort((a, b) => b.minutes - a.minutes)
       .slice(0, 5);
   };
+  
+  const getProductivityInsights = () => {
+    if (pomodoroSessions.length === 0) return null;
+    
+    // Find most productive time of day
+    const hourStats = new Map<number, number>();
+    pomodoroSessions.forEach(session => {
+      const hour = new Date(session.startTime).getHours();
+      hourStats.set(hour, (hourStats.get(hour) || 0) + session.duration);
+    });
+    
+    const mostProductiveHour = Array.from(hourStats.entries())
+      .sort((a, b) => b[1] - a[1])[0];
+    
+    // Find most productive day of week
+    const dayStats = new Map<number, number>();
+    pomodoroSessions.forEach(session => {
+      const day = new Date(session.startTime).getDay();
+      dayStats.set(day, (dayStats.get(day) || 0) + session.duration);
+    });
+    
+    const mostProductiveDay = Array.from(dayStats.entries())
+      .sort((a, b) => b[1] - a[1])[0];
+    
+    const dayNames = ['Söndag', 'Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag'];
+    
+    // Calculate average session length
+    const avgSessionLength = Math.round(pomodoroSessions.reduce((sum, s) => sum + s.duration, 0) / pomodoroSessions.length);
+    
+    // Calculate study consistency (sessions per week)
+    const weeksActive = Math.max(1, Math.ceil((Date.now() - new Date(pomodoroSessions[pomodoroSessions.length - 1].startTime).getTime()) / (7 * 24 * 60 * 60 * 1000)));
+    const sessionsPerWeek = Math.round(pomodoroSessions.length / weeksActive);
+    
+    return {
+      mostProductiveHour: mostProductiveHour ? `${mostProductiveHour[0].toString().padStart(2, '0')}:00` : 'N/A',
+      mostProductiveDay: mostProductiveDay ? dayNames[mostProductiveDay[0]] : 'N/A',
+      avgSessionLength,
+      sessionsPerWeek,
+      totalHours: Math.round(pomodoroSessions.reduce((sum, s) => sum + s.duration, 0) / 60 * 10) / 10
+    };
+  };
 
   const getStreakStats = () => {
-    if (pomodoroSessions.length === 0) return { current: 0, longest: 0 };
+    if (pomodoroSessions.length === 0) return { current: 0, longest: 0, weeklyGoal: 0, monthlyGoal: 0 };
     
     const sortedSessions = [...pomodoroSessions]
       .sort((a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime());
@@ -375,7 +444,36 @@ export default function TimerScreen() {
       }
     }
     
-    return { current: currentStreak, longest: longestStreak };
+    // Calculate goal progress
+    const weeklyGoal = 5; // 5 days per week
+    const monthlyGoal = 20; // 20 days per month
+    
+    const thisWeekDays = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return date.toDateString();
+    });
+    
+    const thisMonthStart = new Date();
+    thisMonthStart.setDate(1);
+    const thisMonthDays = [];
+    const daysInMonth = new Date(thisMonthStart.getFullYear(), thisMonthStart.getMonth() + 1, 0).getDate();
+    
+    for (let i = 0; i < daysInMonth; i++) {
+      const date = new Date(thisMonthStart);
+      date.setDate(i + 1);
+      thisMonthDays.push(date.toDateString());
+    }
+    
+    const weeklyProgress = thisWeekDays.filter(day => uniqueDates.includes(day)).length;
+    const monthlyProgress = thisMonthDays.filter(day => uniqueDates.includes(day)).length;
+    
+    return { 
+      current: currentStreak, 
+      longest: longestStreak,
+      weeklyGoal: Math.round((weeklyProgress / weeklyGoal) * 100),
+      monthlyGoal: Math.round((monthlyProgress / monthlyGoal) * 100)
+    };
   };
 
   const getSelectedCourseTitle = () => {
@@ -389,6 +487,7 @@ export default function TimerScreen() {
   const monthStats = getMonthStats();
   const courseStats = getCourseStats();
   const streakStats = getStreakStats();
+  const productivityInsights = getProductivityInsights();
 
   const circumference = 2 * Math.PI * 120;
   const strokeDashoffset = circumference * (1 - progress);
@@ -784,79 +883,159 @@ export default function TimerScreen() {
           <ScrollView style={styles.modalContent}>
             {/* Overview Stats */}
             <View style={styles.statsGrid}>
-              <View style={styles.bigStatCard}>
+              <View style={[styles.bigStatCard, { backgroundColor: '#1E40AF' }]}>
                 <Text style={styles.bigStatNumber}>{pomodoroSessions.length}</Text>
                 <Text style={styles.bigStatLabel}>Totala sessioner</Text>
+                <Text style={styles.bigStatSubtext}>🎯 Fokuserade studier</Text>
               </View>
-              <View style={styles.bigStatCard}>
+              <View style={[styles.bigStatCard, { backgroundColor: '#7C3AED' }]}>
                 <Text style={styles.bigStatNumber}>
                   {Math.round(pomodoroSessions.reduce((sum, s) => sum + s.duration, 0) / 60 * 10) / 10}
                 </Text>
                 <Text style={styles.bigStatLabel}>Totala timmar</Text>
+                <Text style={styles.bigStatSubtext}>⏰ Studietid</Text>
               </View>
             </View>
+            
+            {/* Productivity Insights */}
+            {productivityInsights && (
+              <View style={styles.insightsSection}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Produktivitetsinsikter</Text>
+                <View style={styles.insightsGrid}>
+                  <View style={styles.insightCard}>
+                    <Text style={styles.insightIcon}>🌟</Text>
+                    <Text style={styles.insightTitle}>Bästa tid</Text>
+                    <Text style={styles.insightValue}>{productivityInsights.mostProductiveHour}</Text>
+                  </View>
+                  <View style={styles.insightCard}>
+                    <Text style={styles.insightIcon}>📅</Text>
+                    <Text style={styles.insightTitle}>Bästa dag</Text>
+                    <Text style={styles.insightValue}>{productivityInsights.mostProductiveDay}</Text>
+                  </View>
+                  <View style={styles.insightCard}>
+                    <Text style={styles.insightIcon}>⏱️</Text>
+                    <Text style={styles.insightTitle}>Snitt/session</Text>
+                    <Text style={styles.insightValue}>{productivityInsights.avgSessionLength}m</Text>
+                  </View>
+                  <View style={styles.insightCard}>
+                    <Text style={styles.insightIcon}>📈</Text>
+                    <Text style={styles.insightTitle}>Per vecka</Text>
+                    <Text style={styles.insightValue}>{productivityInsights.sessionsPerWeek}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
 
-            {/* Streak Stats */}
+            {/* Goals & Streaks */}
             <View style={styles.streakSection}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studiestreak</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mål & Streaks</Text>
               <View style={styles.streakGrid}>
-                <View style={styles.streakCard}>
+                <View style={[styles.streakCard, { backgroundColor: '#DC2626' }]}>
                   <Text style={styles.streakNumber}>{streakStats.current}</Text>
                   <Text style={styles.streakLabel}>Nuvarande streak</Text>
-                  <Text style={styles.streakSubtext}>dagar i rad</Text>
+                  <Text style={styles.streakSubtext}>🔥 dagar i rad</Text>
                 </View>
-                <View style={styles.streakCard}>
+                <View style={[styles.streakCard, { backgroundColor: '#EA580C' }]}>
                   <Text style={styles.streakNumber}>{streakStats.longest}</Text>
                   <Text style={styles.streakLabel}>Längsta streak</Text>
-                  <Text style={styles.streakSubtext}>dagar totalt</Text>
+                  <Text style={styles.streakSubtext}>🏆 personligt rekord</Text>
+                </View>
+              </View>
+              
+              {/* Goal Progress */}
+              <View style={styles.goalSection}>
+                <View style={styles.goalCard}>
+                  <View style={styles.goalHeader}>
+                    <Text style={styles.goalTitle}>🎯 Veckans mål</Text>
+                    <Text style={styles.goalPercentage}>{streakStats.weeklyGoal}%</Text>
+                  </View>
+                  <View style={styles.goalProgressBar}>
+                    <View 
+                      style={[
+                        styles.goalProgressFill,
+                        { width: `${Math.min(100, streakStats.weeklyGoal)}%`, backgroundColor: '#10B981' }
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.goalSubtext}>5 dagar studier per vecka</Text>
+                </View>
+                
+                <View style={styles.goalCard}>
+                  <View style={styles.goalHeader}>
+                    <Text style={styles.goalTitle}>📊 Månadens mål</Text>
+                    <Text style={styles.goalPercentage}>{streakStats.monthlyGoal}%</Text>
+                  </View>
+                  <View style={styles.goalProgressBar}>
+                    <View 
+                      style={[
+                        styles.goalProgressFill,
+                        { width: `${Math.min(100, streakStats.monthlyGoal)}%`, backgroundColor: '#3B82F6' }
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.goalSubtext}>20 dagar studier per månad</Text>
                 </View>
               </View>
             </View>
 
-            {/* Weekly Progress Graph */}
+            {/* Enhanced Weekly Progress Graph */}
             <View style={styles.graphSection}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
-              <View style={styles.weeklyGraph}>
-                {Array.from({ length: 7 }, (_, i) => {
-                  const date = new Date();
-                  date.setDate(date.getDate() - (6 - i));
-                  const dayName = date.toLocaleDateString('sv-SE', { weekday: 'short' });
-                  const dayString = date.toDateString();
-                  
-                  const daySessions = pomodoroSessions.filter(session => {
-                    const sessionDate = new Date(session.endTime).toDateString();
-                    return sessionDate === dayString;
-                  });
-                  
-                  const dayMinutes = daySessions.reduce((sum, session) => sum + session.duration, 0);
-                  const maxMinutes = Math.max(120, Math.max(...Array.from({ length: 7 }, (_, j) => {
-                    const checkDate = new Date();
-                    checkDate.setDate(checkDate.getDate() - (6 - j));
-                    const checkDayString = checkDate.toDateString();
-                    const checkDaySessions = pomodoroSessions.filter(session => {
-                      const sessionDate = new Date(session.endTime).toDateString();
-                      return sessionDate === checkDayString;
-                    });
-                    return checkDaySessions.reduce((sum, session) => sum + session.duration, 0);
-                  })));
-                  
-                  const barHeight = Math.max(4, (dayMinutes / maxMinutes) * 80);
-                  
-                  return (
-                    <View key={i} style={styles.dayColumn}>
-                      <View style={styles.barContainer}>
-                        <View 
-                          style={[
-                            styles.dayBar, 
-                            { height: barHeight, backgroundColor: dayMinutes > 0 ? '#A3E635' : '#475569' }
-                          ]} 
-                        />
+              <View style={styles.weeklyGraphContainer}>
+                <View style={styles.weeklyGraph}>
+                  {weekStats.dailyStats.map((day, i) => {
+                    const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
+                    const isToday = day.date.toDateString() === new Date().toDateString();
+                    
+                    const maxMinutes = Math.max(120, Math.max(...weekStats.dailyStats.map(d => d.minutes)));
+                    const barHeight = Math.max(4, (day.minutes / maxMinutes) * 80);
+                    
+                    return (
+                      <View key={i} style={styles.dayColumn}>
+                        <View style={styles.barContainer}>
+                          <View 
+                            style={[
+                              styles.dayBar, 
+                              { 
+                                height: barHeight, 
+                                backgroundColor: day.minutes > 0 ? (isToday ? '#F59E0B' : '#A3E635') : '#475569'
+                              }
+                            ]} 
+                          />
+                          {day.sessions > 0 && (
+                            <View style={styles.sessionDots}>
+                              {Array.from({ length: Math.min(day.sessions, 5) }, (_, j) => (
+                                <View key={j} style={styles.sessionDot} />
+                              ))}
+                              {day.sessions > 5 && (
+                                <Text style={styles.sessionOverflow}>+{day.sessions - 5}</Text>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                        <Text style={[styles.dayLabel, isToday && styles.todayLabel]}>{dayName}</Text>
+                        <Text style={[styles.dayValue, isToday && styles.todayValue]}>{day.minutes}m</Text>
+                        <Text style={styles.sessionCount}>{day.sessions} sess</Text>
                       </View>
-                      <Text style={styles.dayLabel}>{dayName}</Text>
-                      <Text style={styles.dayValue}>{dayMinutes}m</Text>
-                    </View>
-                  );
-                })}
+                    );
+                  })}
+                </View>
+                
+                {/* Week Summary */}
+                <View style={styles.weekSummary}>
+                  <View style={styles.weekSummaryItem}>
+                    <Text style={styles.weekSummaryLabel}>Totalt denna vecka</Text>
+                    <Text style={styles.weekSummaryValue}>{Math.round(weekStats.minutes / 60 * 10) / 10}h</Text>
+                  </View>
+                  <View style={styles.weekSummaryItem}>
+                    <Text style={styles.weekSummaryLabel}>Snitt per dag</Text>
+                    <Text style={styles.weekSummaryValue}>{weekStats.averagePerDay}m</Text>
+                  </View>
+                  <View style={styles.weekSummaryItem}>
+                    <Text style={styles.weekSummaryLabel}>Aktiva dagar</Text>
+                    <Text style={styles.weekSummaryValue}>{weekStats.dailyStats.filter(d => d.minutes > 0).length}/7</Text>
+                  </View>
+                </View>
               </View>
             </View>
 
@@ -921,31 +1100,49 @@ export default function TimerScreen() {
               </View>
             </View>
 
-            {/* Course Stats */}
+            {/* Enhanced Course Stats */}
             {courseStats.length > 0 && (
               <View style={styles.courseStatsSection}>
                 <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mest studerade kurser</Text>
-                {courseStats.map((stat, index) => (
-                  <View key={stat.courseId} style={styles.courseStatItem}>
-                    <View style={styles.courseStatRank}>
-                      <Text style={styles.courseStatRankText}>{index + 1}</Text>
+                {courseStats.map((stat, index) => {
+                  const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32', '#A3E635', '#60A5FA'];
+                  const rankEmojis = ['🥇', '🥈', '🥉', '🏅', '⭐'];
+                  
+                  return (
+                    <View key={stat.courseId} style={styles.courseStatItem}>
+                      <View style={[styles.courseStatRank, { backgroundColor: rankColors[index] || '#A3E635' }]}>
+                        <Text style={styles.courseStatRankEmoji}>{rankEmojis[index] || '📚'}</Text>
+                      </View>
+                      <View style={styles.courseStatInfo}>
+                        <Text style={styles.courseStatName}>{stat.courseName}</Text>
+                        <Text style={styles.courseStatSubject}>{stat.subject}</Text>
+                        <Text style={styles.courseStatDetails}>
+                          {stat.sessions} sessioner • {Math.round(stat.minutes / 60 * 10) / 10}h
+                        </Text>
+                        <Text style={styles.courseStatLastSession}>
+                          Senast: {new Date(stat.lastSession).toLocaleDateString('sv-SE', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </Text>
+                      </View>
+                      <View style={styles.courseStatProgress}>
+                        <View 
+                          style={[
+                            styles.courseStatBar,
+                            { 
+                              width: `${Math.min(100, (stat.minutes / Math.max(...courseStats.map(s => s.minutes))) * 100)}%`,
+                              backgroundColor: rankColors[index] || '#A3E635'
+                            }
+                          ]} 
+                        />
+                        <Text style={styles.courseStatMinutes}>{stat.minutes}m</Text>
+                      </View>
                     </View>
-                    <View style={styles.courseStatInfo}>
-                      <Text style={styles.courseStatName}>{stat.courseName}</Text>
-                      <Text style={styles.courseStatDetails}>
-                        {stat.sessions} sessioner • {Math.round(stat.minutes / 60 * 10) / 10} timmar
-                      </Text>
-                    </View>
-                    <View style={styles.courseStatProgress}>
-                      <View 
-                        style={[
-                          styles.courseStatBar,
-                          { width: `${Math.min(100, (stat.minutes / Math.max(...courseStats.map(s => s.minutes))) * 100)}%` }
-                        ]} 
-                      />
-                    </View>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             )}
 
@@ -1276,13 +1473,20 @@ const styles = StyleSheet.create({
   },
   bigStatNumber: {
     fontSize: 36,
-    fontWeight: '600',
-    color: '#A3E635',
-    marginBottom: 8,
+    fontWeight: '700',
+    color: 'white',
+    marginBottom: 4,
   },
   bigStatLabel: {
     fontSize: 16,
-    color: '#94A3B8',
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  bigStatSubtext: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
     fontWeight: '500',
   },
@@ -1544,5 +1748,170 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#60A5FA',
     borderRadius: 2,
+  },
+  // New enhanced statistics styles
+  insightsSection: {
+    marginBottom: 32,
+  },
+  insightsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  insightCard: {
+    backgroundColor: '#334155',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    flex: 1,
+    minWidth: '45%',
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  insightIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  insightTitle: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '500',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  insightValue: {
+    fontSize: 16,
+    color: '#F9FAFB',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  goalSection: {
+    marginTop: 16,
+    gap: 12,
+  },
+  goalCard: {
+    backgroundColor: '#334155',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  goalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  goalTitle: {
+    fontSize: 14,
+    color: '#F9FAFB',
+    fontWeight: '600',
+  },
+  goalPercentage: {
+    fontSize: 16,
+    color: '#A3E635',
+    fontWeight: '700',
+  },
+  goalProgressBar: {
+    height: 6,
+    backgroundColor: '#475569',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  goalProgressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  goalSubtext: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  weeklyGraphContainer: {
+    backgroundColor: '#334155',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  sessionDots: {
+    position: 'absolute',
+    top: -20,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 2,
+  },
+  sessionDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#A3E635',
+  },
+  sessionOverflow: {
+    fontSize: 8,
+    color: '#A3E635',
+    fontWeight: '600',
+  },
+  todayLabel: {
+    color: '#F59E0B',
+    fontWeight: '600',
+  },
+  todayValue: {
+    color: '#F59E0B',
+    fontWeight: '700',
+  },
+  sessionCount: {
+    fontSize: 9,
+    color: '#64748B',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  weekSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#475569',
+  },
+  weekSummaryItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  weekSummaryLabel: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  weekSummaryValue: {
+    fontSize: 16,
+    color: '#A3E635',
+    fontWeight: '700',
+  },
+  courseStatRankEmoji: {
+    fontSize: 16,
+  },
+  courseStatSubject: {
+    fontSize: 12,
+    color: '#A3E635',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  courseStatLastSession: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  courseStatMinutes: {
+    fontSize: 12,
+    color: '#F9FAFB',
+    fontWeight: '600',
+    marginTop: 4,
+    textAlign: 'center',
   },
 });

@@ -23,9 +23,11 @@ export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   
-  const { signIn, signUp, resetPassword, isAuthenticated, hasCompletedOnboarding } = useAuth();
+  const { signIn, signUp, resetPassword, resendConfirmation, isAuthenticated, hasCompletedOnboarding } = useAuth();
   const { showError, showSuccess } = useToast();
 
   // Navigate immediately when authentication state changes
@@ -65,7 +67,15 @@ export default function AuthScreen() {
       
       if (error) {
         const errorMessage = (error as any)?.message || '';
+        const errorCode = (error as any)?.code || '';
         console.error('ERROR Auth error:', errorMessage);
+        
+        // Handle email not confirmed error specifically
+        if (errorCode === 'EMAIL_NOT_CONFIRMED') {
+          setPendingEmail(email);
+          setShowEmailConfirmation(true);
+          return;
+        }
         
         // Use the improved error message from AuthContext if available
         if (errorMessage) {
@@ -116,6 +126,32 @@ export default function AuthScreen() {
     }
   };
 
+  const handleResendConfirmation = async () => {
+    if (!pendingEmail.trim()) {
+      showError('Ingen e-postadress att skicka till');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await resendConfirmation(pendingEmail);
+      
+      if (error) {
+        const errorMessage = (error as any)?.message || '';
+        showError(errorMessage || 'Kunde inte skicka bekräftelselänk');
+      } else {
+        showSuccess('Bekräftelselänk skickad till din e-post! Kolla din inkorg och spam-mapp.');
+        setShowEmailConfirmation(false);
+        setPendingEmail('');
+      }
+    } catch (error) {
+      console.error('Resend confirmation error:', error);
+      showError('Ett fel uppstod');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
 
   return (
@@ -137,71 +173,107 @@ export default function AuthScreen() {
                 <GraduationCap size={80} color="white" style={styles.logo} />
                 <Text style={styles.title}>StudyFlow</Text>
                 <Text style={styles.subtitle}>
-                  {showForgotPassword 
-                    ? 'Återställ ditt lösenord'
-                    : isSignUp 
-                      ? 'Skapa ditt konto'
-                      : 'Välkommen tillbaka!'
+                  {showEmailConfirmation
+                    ? 'Bekräfta din e-post'
+                    : showForgotPassword 
+                      ? 'Återställ ditt lösenord'
+                      : isSignUp 
+                        ? 'Skapa ditt konto'
+                        : 'Välkommen tillbaka!'
                   }
                 </Text>
               </View>
 
               <View style={styles.form}>
-                <View style={styles.inputContainer}>
-                  <Mail size={20} color="#666" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="E-postadress"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    autoComplete="email"
-                    autoFocus
-                  />
-                </View>
-
-                {!showForgotPassword && (
-                  <View style={styles.inputContainer}>
-                    <Lock size={20} color="#666" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Lösenord"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry={!showPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      autoComplete="password"
-                    />
-                    <TouchableOpacity
-                      onPress={() => setShowPassword(!showPassword)}
-                      style={styles.eyeButton}
-                    >
-                      {showPassword ? (
-                        <EyeOff size={20} color="#666" />
-                      ) : (
-                        <Eye size={20} color="#666" />
-                      )}
-                    </TouchableOpacity>
+                {showEmailConfirmation ? (
+                  <View style={styles.confirmationContainer}>
+                    <Text style={styles.confirmationText}>
+                      Vi har skickat en bekräftelselänk till:
+                    </Text>
+                    <Text style={styles.confirmationEmail}>{pendingEmail}</Text>
+                    <Text style={styles.confirmationInstructions}>
+                      Kolla din inkorg och spam-mapp. Klicka på länken för att bekräfta ditt konto.
+                    </Text>
                   </View>
+                ) : (
+                  <>
+                    <View style={styles.inputContainer}>
+                      <Mail size={20} color="#666" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="E-postadress"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        autoComplete="email"
+                        autoFocus
+                      />
+                    </View>
+
+                    {!showForgotPassword && (
+                      <View style={styles.inputContainer}>
+                        <Lock size={20} color="#666" style={styles.inputIcon} />
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Lösenord"
+                          value={password}
+                          onChangeText={setPassword}
+                          secureTextEntry={!showPassword}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          autoComplete="password"
+                        />
+                        <TouchableOpacity
+                          onPress={() => setShowPassword(!showPassword)}
+                          style={styles.eyeButton}
+                        >
+                          {showPassword ? (
+                            <EyeOff size={20} color="#666" />
+                          ) : (
+                            <Eye size={20} color="#666" />
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </>
                 )}
 
                 <TouchableOpacity
                   style={[styles.authButton, isLoading && styles.disabledButton]}
-                  onPress={showForgotPassword ? handleForgotPassword : handleAuth}
+                  onPress={
+                    showEmailConfirmation 
+                      ? handleResendConfirmation 
+                      : showForgotPassword 
+                        ? handleForgotPassword 
+                        : handleAuth
+                  }
                   disabled={isLoading}
                 >
                   <Text style={styles.authButtonText}>
                     {isLoading 
-                      ? (showForgotPassword ? 'Skickar...' : isSignUp ? 'Skapar konto...' : 'Loggar in...')
-                      : (showForgotPassword ? 'Skicka återställningslänk' : isSignUp ? 'Skapa konto' : 'Logga in')
+                      ? (showEmailConfirmation 
+                          ? 'Skickar...' 
+                          : showForgotPassword 
+                            ? 'Skickar...' 
+                            : isSignUp 
+                              ? 'Skapar konto...' 
+                              : 'Loggar in...'
+                        )
+                      : (showEmailConfirmation 
+                          ? 'Skicka bekräftelselänk igen' 
+                          : showForgotPassword 
+                            ? 'Skicka återställningslänk' 
+                            : isSignUp 
+                              ? 'Skapa konto' 
+                              : 'Logga in'
+                        )
                     }
                   </Text>
                 </TouchableOpacity>
 
-                {!showForgotPassword && (
+                {!showForgotPassword && !showEmailConfirmation && (
                   <>
                     {!isSignUp && (
                       <TouchableOpacity
@@ -238,10 +310,14 @@ export default function AuthScreen() {
                   </>
                 )}
 
-                {showForgotPassword && (
+                {(showForgotPassword || showEmailConfirmation) && (
                   <TouchableOpacity
                     style={styles.linkButton}
-                    onPress={() => setShowForgotPassword(false)}
+                    onPress={() => {
+                      setShowForgotPassword(false);
+                      setShowEmailConfirmation(false);
+                      setPendingEmail('');
+                    }}
                   >
                     <Text style={styles.linkText}>Tillbaka till inloggning</Text>
                   </TouchableOpacity>
@@ -389,5 +465,30 @@ const styles = StyleSheet.create({
   rememberMeText: {
     color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 14,
+  },
+  confirmationContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+  },
+  confirmationText: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  confirmationEmail: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  confirmationInstructions: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

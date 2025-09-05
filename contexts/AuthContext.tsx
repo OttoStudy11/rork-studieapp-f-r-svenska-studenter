@@ -19,6 +19,7 @@ export interface AuthContextType {
   signOut: () => Promise<void>;
   setOnboardingCompleted: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: any }>;
+  resendConfirmation: (email: string) => Promise<{ error?: any }>;
 }
 
 const ONBOARDING_KEY = 'hasCompletedOnboarding';
@@ -312,7 +313,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         }
         
         if (error.message.includes('Email not confirmed')) {
-          return { error: { message: 'Bekräfta din e-post innan du loggar in. Kolla din inkorg och spam-mapp.' } };
+          return { error: { message: 'Bekräfta din e-post innan du loggar in. Kolla din inkorg och spam-mapp.', code: 'EMAIL_NOT_CONFIRMED' } };
         }
         
         if (error.message.includes('Invalid login credentials')) {
@@ -409,6 +410,38 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   }, []);
 
+  const handleResendConfirmation = useCallback(async (email: string) => {
+    try {
+      console.log('Resending confirmation email for:', email);
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim()
+      });
+      
+      if (error) {
+        console.error('Resend confirmation error:', error);
+        
+        if (error.message.includes('For security purposes')) {
+          const match = error.message.match(/(\d+) seconds/);
+          const seconds = match ? match[1] : '60';
+          return { error: { message: `Vänta ${seconds} sekunder innan du försöker igen` } };
+        }
+        
+        if (error.message.includes('Email rate limit exceeded')) {
+          return { error: { message: 'För många e-postförfrågningar. Vänta en stund innan du försöker igen.' } };
+        }
+        
+        return { error };
+      }
+      
+      console.log('Confirmation email resent successfully');
+      return { error: null };
+    } catch (error) {
+      console.error('Resend confirmation exception:', error);
+      return { error };
+    }
+  }, []);
+
   const setOnboardingCompleted = useCallback(async () => {
     if (user) {
       try {
@@ -429,7 +462,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     signIn: handleSignIn,
     signOut: handleSignOut,
     setOnboardingCompleted,
-    resetPassword: handleResetPassword
+    resetPassword: handleResetPassword,
+    resendConfirmation: handleResendConfirmation
   }), [
     user,
     isLoading,
@@ -438,6 +472,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     handleSignIn,
     handleSignOut,
     setOnboardingCompleted,
-    handleResetPassword
+    handleResetPassword,
+    handleResendConfirmation
   ]);
 });

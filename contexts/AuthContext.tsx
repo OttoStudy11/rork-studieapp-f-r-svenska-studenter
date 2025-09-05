@@ -453,7 +453,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   }, [user]);
 
-  return useMemo(() => ({
+  const contextValue = useMemo(() => ({
     user,
     isLoading,
     isAuthenticated: !!user,
@@ -475,4 +475,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     handleResetPassword,
     handleResendConfirmation
   ]);
+
+  return contextValue;
 });

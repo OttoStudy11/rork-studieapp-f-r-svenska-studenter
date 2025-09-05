@@ -122,6 +122,39 @@ export const updateUser = async (userId: string, updates: Tables['profiles']['Up
   return data;
 };
 
+// Program functions
+export const getPrograms = async () => {
+  const { data, error } = await supabase
+    .from('programs')
+    .select('*')
+    .order('name', { ascending: true });
+  
+  if (error) throw error;
+  return data || [];
+};
+
+export const getProgramsByLevel = async (level: 'gymnasie' | 'högskola') => {
+  const { data, error } = await supabase
+    .from('programs')
+    .select('*')
+    .eq('level', level)
+    .order('name', { ascending: true });
+  
+  if (error) throw error;
+  return data || [];
+};
+
+export const getProgram = async (programId: string) => {
+  const { data, error } = await supabase
+    .from('programs')
+    .select('*')
+    .eq('id', programId)
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
+
 // Course functions
 export const getCourses = async () => {
   const { data, error } = await supabase
@@ -130,7 +163,49 @@ export const getCourses = async () => {
     .order('created_at', { ascending: false });
   
   if (error) throw error;
-  return data;
+  return data || [];
+};
+
+// Get courses by level (gymnasie/högskola)
+export const getCoursesByLevel = async (level: 'gymnasie' | 'högskola') => {
+  const { data, error } = await supabase
+    .from('courses')
+    .select('*')
+    .eq('level', level)
+    .order('subject', { ascending: true });
+  
+  if (error) throw error;
+  return data || [];
+};
+
+// Get courses by program
+export const getCoursesByProgram = async (programId: string) => {
+  const { data, error } = await supabase
+    .from('program_courses')
+    .select(`
+      courses (*)
+    `)
+    .eq('program_id', programId);
+  
+  if (error) throw error;
+  return data?.map(pc => pc.courses).filter(Boolean) || [];
+};
+
+// Get courses by program name (for backward compatibility)
+export const getCoursesByProgramName = async (programName: string) => {
+  // First get the program by name
+  const { data: program, error: programError } = await supabase
+    .from('programs')
+    .select('id')
+    .eq('name', programName)
+    .single();
+  
+  if (programError || !program) {
+    console.warn('Program not found:', programName);
+    return [];
+  }
+  
+  return getCoursesByProgram(program.id);
 };
 
 export const getCourse = async (courseId: string) => {
@@ -144,17 +219,17 @@ export const getCourse = async (courseId: string) => {
   return data;
 };
 
+// Note: Course creation is restricted to service_role in RLS
+// Regular users should not create courses - they should select from existing ones
 export const createCourse = async (courseData: Tables['courses']['Insert']) => {
   try {
-    console.log('Creating course with data:', {
+    console.log('Attempting to create course (requires admin privileges):', {
       title: courseData.title,
       subject: courseData.subject,
-      level: courseData.level,
-      // Don't log full arrays to keep logs clean
-      hasResources: Array.isArray(courseData.resources),
-      hasTips: Array.isArray(courseData.tips)
+      level: courseData.level
     });
     
+    // This will only work if called with service_role key or RLS is disabled
     const { data, error } = await supabase
       .from('courses')
       .insert(courseData)
@@ -163,13 +238,11 @@ export const createCourse = async (courseData: Tables['courses']['Insert']) => {
     
     if (error) {
       console.error('Database error creating course:', error.message || 'Unknown error');
-      console.error('Course error details:', error.message || 'Unknown error');
       console.error('Course error code:', error.code);
-      console.error('Full course error object:', JSON.stringify(error, null, 2));
       
       // Provide more specific error messages
       if (error.code === '42501') {
-        throw new Error('Database permission error: Row Level Security is blocking course creation. Please run the RLS fix script in your database or contact support.');
+        throw new Error('Permission denied: Only administrators can create courses. Please select from existing courses instead.');
       } else if (error.code === '23505') {
         throw new Error('Course already exists with this information.');
       } else if (error.code === '23503') {
@@ -189,7 +262,6 @@ export const createCourse = async (courseData: Tables['courses']['Insert']) => {
     return data;
   } catch (error: any) {
     console.error('Error creating course:', error?.message || error?.toString() || 'Unknown error');
-    console.error('Full course error object:', JSON.stringify(error, null, 2));
     throw error;
   }
 };

@@ -20,6 +20,8 @@ export interface Database {
           subscription_type: 'free' | 'premium'
           subscription_expires_at: string | null
           program_id: string | null
+          gymnasium_id: string | null
+          gymnasium_name: string | null
           created_at: string
         }
         Insert: {
@@ -32,6 +34,8 @@ export interface Database {
           subscription_type?: 'free' | 'premium'
           subscription_expires_at?: string | null
           program_id?: string | null
+          gymnasium_id?: string | null
+          gymnasium_name?: string | null
           created_at?: string
         }
         Update: {
@@ -44,6 +48,8 @@ export interface Database {
           subscription_type?: 'free' | 'premium'
           subscription_expires_at?: string | null
           program_id?: string | null
+          gymnasium_id?: string | null
+          gymnasium_name?: string | null
           created_at?: string
         }
         Relationships: [

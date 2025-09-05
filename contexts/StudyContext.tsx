@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import * as db from '@/lib/database';
 import { Database } from '@/lib/database.types';
+import type { Gymnasium } from '@/constants/gymnasiums';
 
 type DbUser = Database['public']['Tables']['profiles']['Row'];
 
@@ -20,6 +21,7 @@ export interface User {
   onboardingCompleted: boolean;
   subscriptionType: 'free' | 'premium';
   subscriptionExpiresAt?: Date;
+  gymnasium?: Gymnasium | null;
 }
 
 export interface Course {
@@ -87,7 +89,14 @@ const dbUserToUser = (dbUser: DbUser, email: string): User => ({
   avatar: dbUser.avatar_url || undefined,
   onboardingCompleted: true,
   subscriptionType: dbUser.subscription_type as 'free' | 'premium',
-  subscriptionExpiresAt: dbUser.subscription_expires_at ? new Date(dbUser.subscription_expires_at) : undefined
+  subscriptionExpiresAt: dbUser.subscription_expires_at ? new Date(dbUser.subscription_expires_at) : undefined,
+  gymnasium: dbUser.gymnasium_id && dbUser.gymnasium_name ? {
+    id: dbUser.gymnasium_id,
+    name: dbUser.gymnasium_name,
+    city: '',
+    municipality: '',
+    type: 'kommunal'
+  } : null
 });
 
 const userToDbUser = (user: Partial<User> & { id: string }): Database['public']['Tables']['profiles']['Insert'] => ({
@@ -98,7 +107,9 @@ const userToDbUser = (user: Partial<User> & { id: string }): Database['public'][
   purpose: user.purpose!,
   avatar_url: user.avatar || null,
   subscription_type: user.subscriptionType || 'free',
-  subscription_expires_at: user.subscriptionExpiresAt?.toISOString() || null
+  subscription_expires_at: user.subscriptionExpiresAt?.toISOString() || null,
+  gymnasium_id: user.gymnasium?.id || null,
+  gymnasium_name: user.gymnasium?.name || null
 });
 
 const dbCourseToUserCourse = (dbCourse: any): Course => ({

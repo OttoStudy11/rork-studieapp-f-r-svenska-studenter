@@ -13,11 +13,14 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
-import { GraduationCap, Target, Users, BookOpen } from 'lucide-react-native';
+import { GraduationCap, Target, Users, BookOpen, MapPin } from 'lucide-react-native';
+import GymnasiumPicker from '@/components/GymnasiumPicker';
+import type { Gymnasium } from '@/constants/gymnasiums';
 
 interface OnboardingData {
   name: string;
   studyLevel: 'gymnasie' | 'högskola' | '';
+  gymnasium: Gymnasium | null;
   program: string;
   goals: string[];
   purpose: string[];
@@ -50,13 +53,14 @@ export default function OnboardingScreen() {
   const [data, setData] = useState<OnboardingData>({
     name: user?.email?.split('@')[0] || '',
     studyLevel: '',
+    gymnasium: null,
     program: '',
     goals: [],
     purpose: []
   });
 
   const handleNext = () => {
-    if (step < 4) {
+    if (step < 5) {
       setStep(step + 1);
     } else {
       handleComplete();
@@ -74,7 +78,8 @@ export default function OnboardingScreen() {
           studyLevel: data.studyLevel as 'gymnasie' | 'högskola',
           program: data.program || 'Ej valt',
           purpose: [...data.goals, ...data.purpose].join(', ') || 'Allmän studiehjälp',
-          subscriptionType: 'free'
+          subscriptionType: 'free',
+          gymnasium: data.gymnasium
         });
         console.log('Basic onboarding completed, redirecting to program selection');
         router.replace('/program-selection');
@@ -96,9 +101,10 @@ export default function OnboardingScreen() {
     switch (step) {
       case 0: return data.name.length > 0;
       case 1: return data.studyLevel !== '';
-      case 2: return true; // Skip program requirement for now
-      case 3: return true; // Make goals optional
-      case 4: return true; // Make purpose optional
+      case 2: return data.studyLevel !== 'gymnasie' || data.gymnasium !== null; // Require gymnasium for gymnasie students
+      case 3: return true; // Skip program requirement for now
+      case 4: return true; // Make goals optional
+      case 5: return true; // Make purpose optional
       default: return false;
     }
   };
@@ -162,6 +168,35 @@ export default function OnboardingScreen() {
       case 2:
         return (
           <View style={styles.stepContainer}>
+            {data.studyLevel === 'gymnasie' ? (
+              <>
+                <MapPin size={80} color="#4F46E5" style={styles.icon} />
+                <Text style={styles.title}>Vilket gymnasium går du på?</Text>
+                <Text style={styles.subtitle}>Välj ditt gymnasium för att få relevant innehåll</Text>
+                <View style={styles.gymnasiumPickerContainer}>
+                  <GymnasiumPicker
+                    selectedGymnasium={data.gymnasium}
+                    onSelect={(gymnasium) => setData({ ...data, gymnasium })}
+                    placeholder="Välj ditt gymnasium"
+                  />
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.title}>
+                  Nästan klar!
+                </Text>
+                <Text style={styles.subtitle}>
+                  Vi kommer att hjälpa dig välja program och kurser i nästa steg
+                </Text>
+              </>
+            )}
+          </View>
+        );
+
+      case 3:
+        return (
+          <View style={styles.stepContainer}>
             <Text style={styles.title}>
               Nästan klar!
             </Text>
@@ -171,7 +206,7 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 3:
+      case 4:
         return (
           <View style={styles.stepContainer}>
             <Target size={80} color="#4F46E5" style={styles.icon} />
@@ -199,7 +234,7 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 4:
+      case 5:
         return (
           <View style={styles.stepContainer}>
             <Users size={80} color="#4F46E5" style={styles.icon} />
@@ -241,9 +276,9 @@ export default function OnboardingScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${((step + 1) / 5) * 100}%` }]} />
+              <View style={[styles.progressFill, { width: `${((step + 1) / 6) * 100}%` }]} />
             </View>
-            <Text style={styles.progressText}>{step + 1} av 5</Text>
+            <Text style={styles.progressText}>{step + 1} av 6</Text>
           </View>
 
           {renderStep()}
@@ -267,7 +302,7 @@ export default function OnboardingScreen() {
               disabled={!canProceed()}
             >
               <Text style={styles.nextButtonText}>
-                {step === 4 ? 'Välj program och kurser' : step === 2 ? 'Fortsätt' : 'Nästa'}
+                {step === 5 ? 'Välj program och kurser' : step === 3 ? 'Fortsätt' : 'Nästa'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -423,5 +458,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  gymnasiumPickerContainer: {
+    width: '100%',
+    marginTop: 20,
   },
 });

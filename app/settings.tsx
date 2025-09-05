@@ -11,7 +11,9 @@ import {
 import { useTheme, ThemeMode } from '@/contexts/ThemeContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Settings, Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User } from 'lucide-react-native';
+import { usePremium } from '@/contexts/PremiumContext';
+import { Settings, Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { AnimatedPressable, FadeInView } from '@/components/Animations';
 
 interface SettingItem {
@@ -28,6 +30,7 @@ export default function SettingsScreen() {
   const { theme, themeMode, setThemeMode } = useTheme();
   const { showSuccess, showInfo } = useToast();
   const { user, signOut } = useAuth();
+  const { isPremium, upgradeToPremium } = usePremium();
 
   const themeOptions: { mode: ThemeMode; label: string; icon: React.ReactNode }[] = [
     { mode: 'light', label: 'Ljust', icon: <Sun size={20} color={theme.colors.textSecondary} /> },
@@ -75,6 +78,12 @@ export default function SettingsScreen() {
           title: 'Inloggad som',
           subtitle: user?.email || 'Okänd användare',
           onPress: () => {},
+        },
+        {
+          icon: isPremium ? <Crown size={20} color={theme.colors.warning} /> : <Star size={20} color={theme.colors.primary} />,
+          title: isPremium ? 'Premium aktiv' : 'Uppgradera till Premium',
+          subtitle: isPremium ? 'Du har tillgång till alla funktioner' : 'Lås upp obegränsade funktioner',
+          onPress: () => router.push('/premium'),
         },
       ],
     },

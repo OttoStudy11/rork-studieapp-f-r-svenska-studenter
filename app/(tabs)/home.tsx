@@ -378,6 +378,31 @@ export default function HomeScreen() {
           </View>
         </SlideInView>
 
+        {/* Premium Upgrade Banner */}
+        {!isPremium && (
+          <SlideInView direction="up" delay={700}>
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={[styles.premiumBanner, { backgroundColor: theme.colors.warning + '15', borderColor: theme.colors.warning + '30' }]}
+                onPress={() => router.push('/premium')}
+              >
+                <View style={styles.premiumBannerContent}>
+                  <View style={styles.premiumBannerLeft}>
+                    <Crown size={24} color={theme.colors.warning} />
+                    <View style={styles.premiumBannerText}>
+                      <Text style={[styles.premiumBannerTitle, { color: theme.colors.text }]}>Uppgradera till Premium</Text>
+                      <Text style={[styles.premiumBannerSubtitle, { color: theme.colors.textSecondary }]}>Obegränsade kurser, avancerad statistik och mer</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.premiumBannerButton, { backgroundColor: theme.colors.warning }]}>
+                    <Text style={styles.premiumBannerButtonText}>Uppgradera</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </SlideInView>
+        )}
+
         {/* Active Courses */}
         <SlideInView direction="up" delay={800}>
           <View style={styles.section}>
@@ -846,6 +871,49 @@ const styles = StyleSheet.create({
   },
   compactArrow: {
     opacity: 0.6,
+  },
+  premiumBanner: {
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  premiumBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  premiumBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  premiumBannerText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  premiumBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  premiumBannerSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  premiumBannerButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  premiumBannerButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
   },
   techniqueCard: {
     borderRadius: 16,

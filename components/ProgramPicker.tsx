@@ -211,7 +211,17 @@ export default function ProgramPicker() {
       showSuccess('Program och kurser sparade!');
       router.replace('/(tabs)/home');
     } catch (error: any) {
-      console.error('Error saving selection:', error);
+      console.error('Error saving selection:', error?.message || error?.toString() || 'Unknown error');
+      if (error?.code) {
+        console.error('Error code:', error.code);
+      }
+      if (error?.details) {
+        console.error('Error details:', error.details);
+      }
+      if (error?.hint) {
+        console.error('Error hint:', error.hint);
+      }
+      console.error('Full error object:', JSON.stringify(error, null, 2));
       showError(error?.message ?? 'Kunde inte spara valet');
     } finally {
       setSaving(false);

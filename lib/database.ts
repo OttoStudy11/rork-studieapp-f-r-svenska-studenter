@@ -145,14 +145,44 @@ export const getCourse = async (courseId: string) => {
 };
 
 export const createCourse = async (courseData: Tables['courses']['Insert']) => {
-  const { data, error } = await supabase
-    .from('courses')
-    .insert(courseData)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data;
+  try {
+    console.log('Creating course with data:', {
+      title: courseData.title,
+      subject: courseData.subject,
+      level: courseData.level,
+      // Don't log full arrays to keep logs clean
+      hasResources: Array.isArray(courseData.resources),
+      hasTips: Array.isArray(courseData.tips)
+    });
+    
+    const { data, error } = await supabase
+      .from('courses')
+      .insert(courseData)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Database error creating course:', error.message || 'Unknown error');
+      console.error('Error code:', error.code);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
+      throw error;
+    }
+    
+    if (!data) {
+      throw new Error('Course creation succeeded but no data returned');
+    }
+    
+    console.log('Course created successfully:', data.title, 'with ID:', data.id);
+    return data;
+  } catch (error: any) {
+    console.error('Error in createCourse:', error?.message || error?.toString() || 'Unknown error');
+    if (error?.code) {
+      console.error('Error code:', error.code);
+    }
+    console.error('Full error details:', JSON.stringify(error, null, 2));
+    throw error;
+  }
 };
 
 // User-Course relationship functions

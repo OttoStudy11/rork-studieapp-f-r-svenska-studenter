@@ -387,7 +387,14 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
                 if (courseError?.code) {
                   console.error('Course error code:', courseError.code);
                 }
+                if (courseError?.details) {
+                  console.error('Course error details:', courseError.details);
+                }
+                if (courseError?.hint) {
+                  console.error('Course error hint:', courseError.hint);
+                }
                 console.error('Full course error object:', JSON.stringify(courseError, null, 2));
+                // Continue with other courses even if one fails
               }
             }
             
@@ -570,8 +577,18 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         console.error('Error checking achievements after adding course:', achievementError);
       }
       
-    } catch (error) {
-      console.error('Error adding course:', error);
+    } catch (error: any) {
+      console.error('Error adding course:', error?.message || error?.toString() || 'Unknown error');
+      if (error?.code) {
+        console.error('Error code:', error.code);
+      }
+      if (error?.details) {
+        console.error('Error details:', error.details);
+      }
+      if (error?.hint) {
+        console.error('Error hint:', error.hint);
+      }
+      console.error('Full error object:', JSON.stringify(error, null, 2));
       throw error;
     }
   }, [authUser]);

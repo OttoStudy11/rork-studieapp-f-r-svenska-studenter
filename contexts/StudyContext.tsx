@@ -341,8 +341,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
                 level: 'gymnasie',
                 resources: ['Kursbok kapitel 1-5', 'Övningsuppgifter online'],
                 tips: ['Öva på gamla prov regelbundet', 'Använd grafräknare effektivt'],
-                related_courses: [],
-                progress: 0
+                related_courses: []
               },
               {
                 title: 'Fysik 2',
@@ -351,8 +350,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
                 level: 'gymnasie',
                 resources: ['Lärobok Fysik 2', 'Laborationsrapporter'],
                 tips: ['Förstå grundläggande formler', 'Rita diagram för problemlösning'],
-                related_courses: [],
-                progress: 0
+                related_courses: []
               }
             ] : [
               {
@@ -362,8 +360,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
                 level: 'högskola',
                 resources: ['Kurslitteratur: Linear Algebra', 'MATLAB/Python'],
                 tips: ['Öva på matrisoperationer dagligen', 'Förstå geometrisk tolkning'],
-                related_courses: [],
-                progress: 0
+                related_courses: []
               },
               {
                 title: 'Programmering Grundkurs',
@@ -372,19 +369,25 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
                 level: 'högskola',
                 resources: ['Python dokumentation', 'Kodexempel'],
                 tips: ['Öva dagligen - kod varje dag', 'Bygg egna projekt'],
-                related_courses: [],
-                progress: 0
+                related_courses: []
               }
             ];
             
             // Create courses and add user to them
-            for (const courseData of sampleCourses) {
+            for (let i = 0; i < sampleCourses.length; i++) {
+              const courseData = sampleCourses[i];
               try {
+                console.log('Creating course:', courseData.title);
                 const course = await db.createCourse(courseData);
-                await db.addUserToCourse(authUser.id, course.id, courseData === sampleCourses[0]);
-                console.log('Created course:', course.title);
-              } catch (courseError) {
-                console.error('Error creating course:', courseData.title, courseError);
+                await db.addUserToCourse(authUser.id, course.id, i === 0); // First course is active
+                console.log('Created course successfully:', course.title);
+              } catch (courseError: any) {
+                console.error('Error creating course:', courseData.title);
+                console.error('Course error details:', courseError?.message || courseError?.toString() || 'Unknown error');
+                if (courseError?.code) {
+                  console.error('Course error code:', courseError.code);
+                }
+                console.error('Full course error object:', JSON.stringify(courseError, null, 2));
               }
             }
             
@@ -550,8 +553,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         level: course.level,
         resources: course.resources,
         tips: course.tips,
-        related_courses: course.relatedCourses,
-        progress: 0
+        related_courses: course.relatedCourses
       });
       
       // Add user to course

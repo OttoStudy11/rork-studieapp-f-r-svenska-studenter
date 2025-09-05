@@ -461,36 +461,38 @@ export default function TimerScreen() {
 
         {/* Timer Circle */}
         <View style={styles.timerContainer}>
+          {/* Outer Progress Ring */}
+          <Svg width={320} height={320} style={styles.outerProgressSvg}>
+            {/* Background circle */}
+            <Circle
+              cx={160}
+              cy={160}
+              r={150}
+              stroke="rgba(255, 255, 255, 0.1)"
+              strokeWidth={6}
+              fill="none"
+            />
+            {/* Progress circle */}
+            <Circle
+              cx={160}
+              cy={160}
+              r={150}
+              stroke="#A3E635"
+              strokeWidth={6}
+              fill="none"
+              strokeDasharray={2 * Math.PI * 150}
+              strokeDashoffset={2 * Math.PI * 150 * (1 - progress)}
+              strokeLinecap="round"
+              transform={`rotate(-90 160 160)`}
+            />
+          </Svg>
+          
           <LinearGradient
             colors={theme.colors.gradient as any}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.timerCircle}
           >
-            <Svg width={280} height={280} style={styles.progressSvg}>
-              {/* Background circle */}
-              <Circle
-                cx={140}
-                cy={140}
-                r={120}
-                stroke="rgba(255, 255, 255, 0.2)"
-                strokeWidth={8}
-                fill="none"
-              />
-              {/* Progress circle */}
-              <Circle
-                cx={140}
-                cy={140}
-                r={120}
-                stroke="white"
-                strokeWidth={8}
-                fill="none"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                transform={`rotate(-90 140 140)`}
-              />
-            </Svg>
             <View style={styles.timerContent}>
               <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
               <Text style={styles.sessionTypeText}>
@@ -1032,6 +1034,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 40,
     paddingHorizontal: 20,
+    width: 320,
+    height: 320,
+    alignSelf: 'center',
+    position: 'relative',
   },
   timerCircle: {
     width: 280,
@@ -1039,21 +1045,25 @@ const styles = StyleSheet.create({
     borderRadius: 140,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 8,
   },
-  progressSvg: {
+  outerProgressSvg: {
     position: 'absolute',
     top: 0,
     left: 0,
+    zIndex: 1,
   },
   timerContent: {
     alignItems: 'center',
-    zIndex: 1,
+    zIndex: 3,
   },
   timerText: {
     fontSize: 48,

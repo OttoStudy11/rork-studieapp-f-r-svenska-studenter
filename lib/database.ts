@@ -765,6 +765,192 @@ export const calculateUserStreak = async (userId: string) => {
   }
 };
 
+// Leaderboard functions
+export const getFriendsLeaderboard = async (userId: string, timeframe: 'week' | 'month' | 'all' = 'week') => {
+  try {
+    // Get user's friends
+    const friends = await getUserFriends(userId);
+    const friendIds = friends.map(f => f.friend_id);
+    
+    // Include current user in the leaderboard
+    const allUserIds = [userId, ...friendIds];
+    
+    if (allUserIds.length === 0) {
+      return [];
+    }
+    
+    // Calculate date range
+    const now = new Date();
+    let startDate: Date;
+    
+    switch (timeframe) {
+      case 'week':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case 'all':
+      default:
+        startDate = new Date('2020-01-01'); // Far back date
+        break;
+    }
+    
+    // Get pomodoro sessions for all users in timeframe
+    let query = supabase
+      .from('pomodoro_sessions')
+      .select(`
+        user_id,
+        duration,
+        start_time,
+        end_time
+      `)
+      .in('user_id', allUserIds);
+    
+    if (timeframe !== 'all') {
+      query = query.gte('start_time', startDate.toISOString());
+    }
+    
+    const { data: sessions, error: sessionsError } = await query;
+    
+    if (sessionsError) throw sessionsError;
+    
+    // Get user profiles
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, name, level, program')
+      .in('id', allUserIds);
+    
+    if (profilesError) throw profilesError;
+    
+    // Calculate stats for each user
+    const leaderboardData = allUserIds.map(id => {
+      const userSessions = sessions?.filter(s => s.user_id === id) || [];
+      const profile = profiles?.find(p => p.id === id);
+      
+      const totalMinutes = userSessions.reduce((sum, session) => sum + session.duration, 0);
+      const totalSessions = userSessions.length;
+      const totalHours = Math.floor(totalMinutes / 60);
+      const remainingMinutes = totalMinutes % 60;
+      
+      return {
+        userId: id,
+        name: profile?.name || 'Unknown',
+        level: profile?.level || '',
+        program: profile?.program || '',
+        totalMinutes,
+        totalSessions,
+        totalHours,
+        remainingMinutes,
+        isCurrentUser: id === userId
+      };
+    });
+    
+    // Sort by total minutes (descending)
+    leaderboardData.sort((a, b) => b.totalMinutes - a.totalMinutes);
+    
+    // Add positions
+    return leaderboardData.map((user, index) => ({
+      ...user,
+      position: index + 1
+    }));
+    
+  } catch (error) {
+    console.error('Error getting friends leaderboard:', error);
+    throw error;
+  }
+};
+
+export const getGlobalLeaderboard = async (limit = 50, timeframe: 'week' | 'month' | 'all' = 'week') => {
+  try {
+    // Calculate date range
+    const now = new Date();
+    let startDate: Date;
+    
+    switch (timeframe) {
+      case 'week':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case 'all':
+      default:
+        startDate = new Date('2020-01-01');
+        break;
+    }
+    
+    // Get all pomodoro sessions in timeframe
+    let query = supabase
+      .from('pomodoro_sessions')
+      .select(`
+        user_id,
+        duration,
+        profiles!inner (
+          id,
+          name,
+          level,
+          program
+        )
+      `);
+    
+    if (timeframe !== 'all') {
+      query = query.gte('start_time', startDate.toISOString());
+    }
+    
+    const { data: sessions, error } = await query;
+    
+    if (error) throw error;
+    
+    // Group by user and calculate totals
+    const userStats = new Map();
+    
+    sessions?.forEach(session => {
+      const userId = session.user_id;
+      const profile = session.profiles;
+      
+      if (!userStats.has(userId)) {
+        userStats.set(userId, {
+          userId,
+          name: profile.name,
+          level: profile.level,
+          program: profile.program,
+          totalMinutes: 0,
+          totalSessions: 0
+        });
+      }
+      
+      const stats = userStats.get(userId);
+      stats.totalMinutes += session.duration;
+      stats.totalSessions += 1;
+    });
+    
+    // Convert to array and sort
+    const leaderboardData = Array.from(userStats.values())
+      .map(user => ({
+        ...user,
+        totalHours: Math.floor(user.totalMinutes / 60),
+        remainingMinutes: user.totalMinutes % 60
+      }))
+      .sort((a, b) => b.totalMinutes - a.totalMinutes)
+      .slice(0, limit)
+      .map((user, index) => ({
+        ...user,
+        position: index + 1
+      }));
+    
+    return leaderboardData;
+    
+  } catch (error) {
+    console.error('Error getting global leaderboard:', error);
+    throw error;
+  }
+};
+
 // Check and update achievements for a user
 export const checkAndUpdateAchievements = async (userId: string) => {
   try {

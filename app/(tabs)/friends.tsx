@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { Users, Plus, Search, X, UserPlus, Trophy } from 'lucide-react-native';
+import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as db from '@/lib/database';
 
@@ -45,6 +45,9 @@ export default function FriendsScreen() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [addFriendQuery, setAddFriendQuery] = useState('');
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [leaderboardTimeframe, setLeaderboardTimeframe] = useState<'week' | 'month' | 'all'>('week');
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
 
   const filteredFriends = friends.filter(friend =>
     friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -150,6 +153,53 @@ export default function FriendsScreen() {
     } catch (error) {
       console.error('Error rejecting friend request:', error);
       showError('Kunde inte avvisa vänförfrågan');
+    }
+  };
+
+  const loadLeaderboard = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoadingLeaderboard(true);
+      const data = await db.getFriendsLeaderboard(user.id, leaderboardTimeframe);
+      setLeaderboardData(data);
+    } catch (error) {
+      console.error('Error loading leaderboard:', error);
+      showError('Kunde inte ladda topplistan');
+    } finally {
+      setIsLoadingLeaderboard(false);
+    }
+  }, [user, leaderboardTimeframe, showError]);
+
+  useEffect(() => {
+    if (showLeaderboard) {
+      loadLeaderboard();
+    }
+  }, [showLeaderboard, loadLeaderboard]);
+
+  const getPositionIcon = (position: number) => {
+    switch (position) {
+      case 1:
+        return <Crown size={20} color="#FFD700" />;
+      case 2:
+        return <Medal size={20} color="#C0C0C0" />;
+      case 3:
+        return <Award size={20} color="#CD7F32" />;
+      default:
+        return null;
+    }
+  };
+
+  const getPositionColor = (position: number) => {
+    switch (position) {
+      case 1:
+        return '#FFD700';
+      case 2:
+        return '#C0C0C0';
+      case 3:
+        return '#CD7F32';
+      default:
+        return '#6B7280';
     }
   };
 
@@ -400,20 +450,102 @@ export default function FriendsScreen() {
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Topplista - Kommer snart</Text>
+            <Text style={styles.modalTitle}>Topplista</Text>
             <TouchableOpacity onPress={() => setShowLeaderboard(false)}>
               <X size={24} color="#6B7280" />
             </TouchableOpacity>
           </View>
           
           <View style={styles.modalContent}>
-            <View style={styles.comingSoonContainer}>
-              <Trophy size={64} color="#9CA3AF" />
-              <Text style={styles.comingSoonTitle}>Topplista kommer snart!</Text>
-              <Text style={styles.comingSoonText}>
-                Vi arbetar på en topplista där du kan tävla med dina vänner om vem som pluggar mest.
-              </Text>
+            {/* Timeframe Selector */}
+            <View style={styles.timeframeContainer}>
+              {(['week', 'month', 'all'] as const).map((timeframe) => (
+                <TouchableOpacity
+                  key={timeframe}
+                  style={[
+                    styles.timeframeButton,
+                    leaderboardTimeframe === timeframe && styles.activeTimeframeButton
+                  ]}
+                  onPress={() => setLeaderboardTimeframe(timeframe)}
+                >
+                  <Text style={[
+                    styles.timeframeButtonText,
+                    leaderboardTimeframe === timeframe && styles.activeTimeframeButtonText
+                  ]}>
+                    {timeframe === 'week' ? 'Vecka' : timeframe === 'month' ? 'Månad' : 'Totalt'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
+
+            {/* Leaderboard */}
+            {isLoadingLeaderboard ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#4F46E5" />
+                <Text style={styles.loadingText}>Laddar topplista...</Text>
+              </View>
+            ) : leaderboardData.length > 0 ? (
+              <ScrollView style={styles.leaderboardContainer} showsVerticalScrollIndicator={false}>
+                {leaderboardData.map((user, index) => (
+                  <View key={user.userId} style={[
+                    styles.leaderboardItem,
+                    user.isCurrentUser && styles.currentUserItem
+                  ]}>
+                    <View style={styles.leaderboardPosition}>
+                      {getPositionIcon(user.position) || (
+                        <Text style={[
+                          styles.positionText,
+                          { color: getPositionColor(user.position) }
+                        ]}>
+                          {user.position}
+                        </Text>
+                      )}
+                    </View>
+                    
+                    <View style={styles.leaderboardUserInfo}>
+                      <View style={styles.friendAvatar}>
+                        <Text style={styles.avatarText}>
+                          {user.name.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.userDetails}>
+                        <Text style={[
+                          styles.leaderboardUserName,
+                          user.isCurrentUser && styles.currentUserName
+                        ]}>
+                          {user.name} {user.isCurrentUser && '(Du)'}
+                        </Text>
+                        <Text style={styles.leaderboardUserProgram}>
+                          {user.program} • {user.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.leaderboardStats}>
+                      <Text style={styles.studyTime}>
+                        {user.totalHours}h {user.remainingMinutes}m
+                      </Text>
+                      <Text style={styles.sessionCount}>
+                        {user.totalSessions} sessioner
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.emptyLeaderboard}>
+                <Trophy size={64} color="#9CA3AF" />
+                <Text style={styles.emptyLeaderboardTitle}>Ingen data än</Text>
+                <Text style={styles.emptyLeaderboardText}>
+                  {leaderboardTimeframe === 'week' 
+                    ? 'Ingen har pluggat denna vecka än'
+                    : leaderboardTimeframe === 'month'
+                    ? 'Ingen har pluggat denna månad än'
+                    : 'Ingen studiedata hittades'
+                  }
+                </Text>
+              </View>
+            )}
           </View>
         </SafeAreaView>
       </Modal>
@@ -750,6 +882,116 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 14,
     color: '#6B7280',
+    lineHeight: 20,
+  },
+  
+  // Leaderboard styles
+  timeframeContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  timeframeButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  activeTimeframeButton: {
+    backgroundColor: '#4F46E5',
+  },
+  timeframeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  activeTimeframeButtonText: {
+    color: 'white',
+  },
+  leaderboardContainer: {
+    flex: 1,
+  },
+  leaderboardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  currentUserItem: {
+    borderWidth: 2,
+    borderColor: '#4F46E5',
+    backgroundColor: '#F8FAFF',
+  },
+  leaderboardPosition: {
+    width: 40,
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  positionText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  leaderboardUserInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userDetails: {
+    flex: 1,
+  },
+  leaderboardUserName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  currentUserName: {
+    color: '#4F46E5',
+  },
+  leaderboardUserProgram: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  leaderboardStats: {
+    alignItems: 'flex-end',
+  },
+  studyTime: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  sessionCount: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  emptyLeaderboard: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyLeaderboardTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyLeaderboardText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
     lineHeight: 20,
   },
 

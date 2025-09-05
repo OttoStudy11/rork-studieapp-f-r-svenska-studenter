@@ -163,10 +163,22 @@ export const createCourse = async (courseData: Tables['courses']['Insert']) => {
     
     if (error) {
       console.error('Database error creating course:', error.message || 'Unknown error');
-      console.error('Error code:', error.code);
-      console.error('Error details:', error.details);
-      console.error('Error hint:', error.hint);
-      throw error;
+      console.error('Course error details:', error.message || 'Unknown error');
+      console.error('Course error code:', error.code);
+      console.error('Full course error object:', JSON.stringify(error, null, 2));
+      
+      // Provide more specific error messages
+      if (error.code === '42501') {
+        throw new Error('Database permission error: Row Level Security is blocking course creation. Please run the RLS fix script in your database or contact support.');
+      } else if (error.code === '23505') {
+        throw new Error('Course already exists with this information.');
+      } else if (error.code === '23503') {
+        throw new Error('Invalid reference data provided.');
+      } else if (error.code === '42P01') {
+        throw new Error('Courses table does not exist. Please check your database setup.');
+      } else {
+        throw new Error(`Failed to create course: ${error.message || 'Unknown database error'}`);
+      }
     }
     
     if (!data) {
@@ -176,11 +188,8 @@ export const createCourse = async (courseData: Tables['courses']['Insert']) => {
     console.log('Course created successfully:', data.title, 'with ID:', data.id);
     return data;
   } catch (error: any) {
-    console.error('Error in createCourse:', error?.message || error?.toString() || 'Unknown error');
-    if (error?.code) {
-      console.error('Error code:', error.code);
-    }
-    console.error('Full error details:', JSON.stringify(error, null, 2));
+    console.error('Error creating course:', error?.message || error?.toString() || 'Unknown error');
+    console.error('Full course error object:', JSON.stringify(error, null, 2));
     throw error;
   }
 };

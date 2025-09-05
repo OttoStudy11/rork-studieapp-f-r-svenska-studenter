@@ -563,6 +563,15 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) return;
       
+      console.log('Creating course:', course.title);
+      console.log('Creating course with data:', {
+        title: course.title,
+        subject: course.subject,
+        level: course.level,
+        hasResources: course.resources?.length > 0,
+        hasTips: course.tips?.length > 0
+      });
+      
       // Create course in database
       const dbCourse = await db.createCourse({
         title: course.title,
@@ -573,6 +582,8 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         tips: course.tips,
         related_courses: course.relatedCourses
       });
+      
+      console.log('Course created successfully:', dbCourse.title);
       
       // Add user to course
       await db.addUserToCourse(authUser.id, dbCourse.id, course.isActive);
@@ -589,18 +600,19 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       }
       
     } catch (error: any) {
-      console.error('Error adding course:', error?.message || error?.toString() || 'Unknown error');
-      if (error?.code) {
-        console.error('Error code:', error.code);
+      console.error('Error adding course:', course.title);
+      console.error('Course error details:', error?.message || error?.toString() || 'Unknown error');
+      console.error('Course error code:', error?.code);
+      console.error('Full course error object:', JSON.stringify(error, null, 2));
+      
+      // Re-throw with more context
+      if (error?.message?.includes('Row Level Security')) {
+        throw new Error(`Database security error: ${error.message}. Please contact support to fix the database configuration.`);
+      } else if (error?.code === '42501') {
+        throw new Error('Database permission error. Please contact support to fix the database configuration.');
+      } else {
+        throw new Error(`Failed to create course "${course.title}": ${error?.message || 'Unknown database error'}`);
       }
-      if (error?.details) {
-        console.error('Error details:', error.details);
-      }
-      if (error?.hint) {
-        console.error('Error hint:', error.hint);
-      }
-      console.error('Full error object:', JSON.stringify(error, null, 2));
-      throw error;
     }
   }, [authUser]);
 

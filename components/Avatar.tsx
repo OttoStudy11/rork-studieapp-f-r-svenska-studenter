@@ -149,7 +149,7 @@ export default function Avatar({ config, size = 60, showBorder = false }: Avatar
         ]} />
         
         {/* Accessory */}
-        {config.accessory !== 'none' && accessory && (
+        {config.accessory !== 'none' && accessory && accessory.icon && (
           <View style={[styles.accessoryContainer, { top: 12 * scale }]}>
             <Text style={[styles.accessoryEmoji, { fontSize: 12 * scale }]}>
               {accessory.icon}

@@ -135,7 +135,7 @@ export default function AvatarCustomizer({ onAvatarChange, initialConfig = defau
           {config.accessory !== 'none' && (
             <View style={styles.accessoryContainer}>
               <Text style={styles.accessoryEmoji}>
-                {accessories.find(a => a.id === config.accessory)?.icon}
+                {accessories.find(a => a.id === config.accessory)?.icon || ''}
               </Text>
             </View>
           )}

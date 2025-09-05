@@ -12,10 +12,8 @@ import {
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useStudy } from '@/contexts/StudyContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useToast } from '@/contexts/ToastContext';
 import { 
-  User, 
   Edit3, 
   Settings, 
   BookOpen, 
@@ -28,14 +26,14 @@ import {
   ArrowLeft
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
+import { AnimatedPressable } from '@/components/Animations';
 import { router } from 'expo-router';
 import AvatarCustomizer, { type AvatarConfig } from '@/components/AvatarCustomizer';
 import Avatar from '@/components/Avatar';
 
 export default function ProfileScreen() {
   const { user, courses, pomodoroSessions, updateUser } = useStudy();
-  const { theme } = useTheme();
+
   const { showSuccess } = useToast();
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({

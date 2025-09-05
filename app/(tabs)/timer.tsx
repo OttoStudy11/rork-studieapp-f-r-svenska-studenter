@@ -427,28 +427,34 @@ export default function TimerScreen() {
               <TouchableOpacity
                 style={[
                   styles.headerButton, 
-                  { backgroundColor: isDndActive ? '#EF4444' : theme.colors.card }
+                  { 
+                    backgroundColor: isDndActive ? '#EF4444' : theme.colors.card,
+                    borderColor: isDndActive ? '#DC2626' : '#475569'
+                  }
                 ]}
                 onPress={isDndActive ? disableDoNotDisturb : enableDoNotDisturb}
+                activeOpacity={0.8}
               >
                 {isDndActive ? (
-                  <BellOff size={20} color="#F9FAFB" />
+                  <BellOff size={22} color="#F9FAFB" />
                 ) : (
-                  <Bell size={20} color={theme.colors.text} />
+                  <Bell size={22} color={theme.colors.text} />
                 )}
               </TouchableOpacity>
             )}
             <TouchableOpacity
               style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
               onPress={() => setShowStats(true)}
+              activeOpacity={0.8}
             >
-              <BarChart3 size={20} color={theme.colors.text} />
+              <BarChart3 size={22} color={theme.colors.text} />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
               onPress={() => setShowSettings(true)}
+              activeOpacity={0.8}
             >
-              <Settings size={20} color={theme.colors.text} />
+              <Settings size={22} color={theme.colors.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -507,32 +513,40 @@ export default function TimerScreen() {
               <TouchableOpacity
                 style={[
                   styles.courseChip,
-                  { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
-                  !selectedCourse && { backgroundColor: 'white' }
+                  { 
+                    backgroundColor: !selectedCourse ? '#A3E635' : theme.colors.card, 
+                    borderColor: !selectedCourse ? '#84CC16' : theme.colors.border 
+                  }
                 ]}
                 onPress={() => setSelectedCourse('')}
+                activeOpacity={0.8}
               >
                 <Text style={[
                   styles.courseChipText,
-                  { color: theme.colors.textSecondary },
-                  !selectedCourse && { color: theme.colors.primary }
-                ]}>Allmänt</Text>
+                  { 
+                    color: !selectedCourse ? '#1E293B' : theme.colors.textSecondary
+                  }
+                ]}>✨ Allmänt</Text>
               </TouchableOpacity>
               {courses.map((course) => (
                 <TouchableOpacity
                   key={course.id}
                   style={[
                     styles.courseChip,
-                    { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
-                    selectedCourse === course.id && { backgroundColor: 'white' }
+                    { 
+                      backgroundColor: selectedCourse === course.id ? '#A3E635' : theme.colors.card, 
+                      borderColor: selectedCourse === course.id ? '#84CC16' : theme.colors.border 
+                    }
                   ]}
                   onPress={() => setSelectedCourse(course.id)}
+                  activeOpacity={0.8}
                 >
                   <Text style={[
                     styles.courseChipText,
-                    { color: theme.colors.textSecondary },
-                    selectedCourse === course.id && { color: theme.colors.primary }
-                  ]}>{course.title}</Text>
+                    { 
+                      color: selectedCourse === course.id ? '#1E293B' : theme.colors.textSecondary
+                    }
+                  ]}>📚 {course.title}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -542,23 +556,92 @@ export default function TimerScreen() {
         {/* Controls */}
         <View style={styles.controls}>
           {timerState === 'idle' ? (
-            <TouchableOpacity style={[styles.playButton, { backgroundColor: 'white' }]} onPress={startTimer}>
-              <Play size={28} color={theme.colors.primary} fill={theme.colors.primary} />
+            <TouchableOpacity 
+              style={[
+                styles.playButton, 
+                { 
+                  backgroundColor: 'white',
+                  transform: [{ scale: 1 }]
+                }
+              ]} 
+              onPress={startTimer}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#A3E635', '#84CC16']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  position: 'absolute',
+                  top: 3,
+                  left: 3,
+                  right: 3,
+                  bottom: 3,
+                  borderRadius: 37,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Play size={32} color="white" fill="white" />
+              </LinearGradient>
             </TouchableOpacity>
           ) : (
             <View style={styles.activeControls}>
-              <TouchableOpacity style={[styles.stopButton, { backgroundColor: theme.colors.error }]} onPress={stopTimer}>
-                <Square size={20} color="white" fill="white" />
+              <TouchableOpacity 
+                style={[styles.stopButton, { backgroundColor: '#EF4444' }]} 
+                onPress={stopTimer}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#EF4444', '#DC2626']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    position: 'absolute',
+                    top: 2,
+                    left: 2,
+                    right: 2,
+                    bottom: 2,
+                    borderRadius: 26,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Square size={22} color="white" fill="white" />
+                </LinearGradient>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.playButton, { backgroundColor: 'white' }]}
+                style={[
+                  styles.playButton, 
+                  { 
+                    backgroundColor: 'white',
+                    transform: [{ scale: 1 }]
+                  }
+                ]}
                 onPress={timerState === 'running' ? pauseTimer : startTimer}
+                activeOpacity={0.8}
               >
-                {timerState === 'running' ? (
-                  <Pause size={28} color={theme.colors.primary} fill={theme.colors.primary} />
-                ) : (
-                  <Play size={28} color={theme.colors.primary} fill={theme.colors.primary} />
-                )}
+                <LinearGradient
+                  colors={timerState === 'running' ? ['#F59E0B', '#D97706'] : ['#A3E635', '#84CC16']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    position: 'absolute',
+                    top: 3,
+                    left: 3,
+                    right: 3,
+                    bottom: 3,
+                    borderRadius: 37,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  {timerState === 'running' ? (
+                    <Pause size={32} color="white" fill="white" />
+                  ) : (
+                    <Play size={32} color="white" fill="white" />
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           )}

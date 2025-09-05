@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import * as db from '@/lib/database';
 import { Database } from '@/lib/database.types';
 import type { Gymnasium } from '@/constants/gymnasiums';
+import type { AvatarConfig } from '@/components/AvatarCustomizer';
 
 type DbUser = Database['public']['Tables']['profiles']['Row'];
 
@@ -17,7 +18,7 @@ export interface User {
   studyLevel: 'gymnasie' | 'högskola';
   program: string;
   purpose: string;
-  avatar?: string;
+  avatar?: AvatarConfig;
   onboardingCompleted: boolean;
   subscriptionType: 'free' | 'premium';
   subscriptionExpiresAt?: Date;
@@ -86,7 +87,7 @@ const dbUserToUser = (dbUser: DbUser, email: string): User => ({
   studyLevel: dbUser.level as 'gymnasie' | 'högskola',
   program: dbUser.program,
   purpose: dbUser.purpose,
-  avatar: dbUser.avatar_url || undefined,
+  avatar: dbUser.avatar_url ? JSON.parse(dbUser.avatar_url) : undefined,
   onboardingCompleted: true,
   subscriptionType: dbUser.subscription_type as 'free' | 'premium',
   subscriptionExpiresAt: dbUser.subscription_expires_at ? new Date(dbUser.subscription_expires_at) : undefined,
@@ -105,7 +106,7 @@ const userToDbUser = (user: Partial<User> & { id: string }): Database['public'][
   level: user.studyLevel!,
   program: user.program!,
   purpose: user.purpose!,
-  avatar_url: user.avatar || null,
+  avatar_url: user.avatar ? JSON.stringify(user.avatar) : null,
   subscription_type: user.subscriptionType || 'free',
   subscription_expires_at: user.subscriptionExpiresAt?.toISOString() || null,
   gymnasium_id: user.gymnasium?.id || null,
@@ -545,7 +546,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       if (updates.studyLevel) updateData.level = updates.studyLevel;
       if (updates.program) updateData.program = updates.program;
       if (updates.purpose) updateData.purpose = updates.purpose;
-      if (updates.avatar !== undefined) updateData.avatar_url = updates.avatar || null;
+      if (updates.avatar !== undefined) updateData.avatar_url = updates.avatar ? JSON.stringify(updates.avatar) : null;
       if (updates.subscriptionType) updateData.subscription_type = updates.subscriptionType;
       if (updates.subscriptionExpiresAt !== undefined) {
         updateData.subscription_expires_at = updates.subscriptionExpiresAt?.toISOString() || null;

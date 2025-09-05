@@ -15,13 +15,15 @@ import { useToast } from '@/contexts/ToastContext';
 import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as db from '@/lib/database';
+import Avatar from '@/components/Avatar';
+import type { AvatarConfig } from '@/components/AvatarCustomizer';
 
 interface Friend {
   id: string;
   name: string;
   program: string;
   level: 'gymnasie' | 'högskola';
-  avatar?: string;
+  avatar?: AvatarConfig;
 }
 
 interface FriendRequest {
@@ -29,7 +31,7 @@ interface FriendRequest {
   name: string;
   program: string;
   level: 'gymnasie' | 'högskola';
-  avatar?: string;
+  avatar?: AvatarConfig;
 }
 
 export default function FriendsScreen() {
@@ -69,7 +71,7 @@ export default function FriendsScreen() {
         name: f.friend.name,
         program: f.friend.program,
         level: f.friend.level,
-        avatar: f.friend.avatar_url
+        avatar: f.friend.avatar_url ? JSON.parse(f.friend.avatar_url) : undefined
       }));
       
       const mappedRequests: FriendRequest[] = requestsData.map((r: any) => ({
@@ -77,7 +79,7 @@ export default function FriendsScreen() {
         name: r.requester.name,
         program: r.requester.program,
         level: r.requester.level,
-        avatar: r.requester.avatar_url
+        avatar: r.requester.avatar_url ? JSON.parse(r.requester.avatar_url) : undefined
       }));
       
       setFriends(mappedFriends);
@@ -278,11 +280,15 @@ export default function FriendsScreen() {
                 {filteredFriends.map((friend) => (
                   <TouchableOpacity key={friend.id} style={styles.friendCard}>
                     <View style={styles.friendHeader}>
-                      <View style={styles.friendAvatar}>
-                        <Text style={styles.avatarText}>
-                          {friend.avatar || friend.name.charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
+                      {friend.avatar ? (
+                        <Avatar config={friend.avatar} size={50} />
+                      ) : (
+                        <View style={styles.friendAvatar}>
+                          <Text style={styles.avatarText}>
+                            {friend.name.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
                       <View style={styles.friendInfo}>
                         <Text style={styles.friendName}>{friend.name}</Text>
                         <Text style={styles.friendProgram}>
@@ -318,11 +324,15 @@ export default function FriendsScreen() {
             {friendRequests.map((request) => (
               <View key={request.id} style={styles.requestCard}>
                 <View style={styles.requestHeader}>
-                  <View style={styles.friendAvatar}>
-                    <Text style={styles.avatarText}>
-                      {request.avatar || request.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
+                  {request.avatar ? (
+                    <Avatar config={request.avatar} size={50} />
+                  ) : (
+                    <View style={styles.friendAvatar}>
+                      <Text style={styles.avatarText}>
+                        {request.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.friendInfo}>
                     <Text style={styles.friendName}>{request.name}</Text>
                     <Text style={styles.friendProgram}>

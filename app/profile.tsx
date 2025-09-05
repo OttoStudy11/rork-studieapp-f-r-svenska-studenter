@@ -313,6 +313,54 @@ export default function ProfileScreen() {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* Avatar Customizer Modal */}
+      <Modal
+        visible={showAvatarModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Anpassa din avatar</Text>
+            <TouchableOpacity onPress={() => setShowAvatarModal(false)}>
+              <X size={24} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.avatarModalContent}>
+            <AvatarCustomizer
+              initialConfig={avatarConfig}
+              onAvatarChange={setAvatarConfig}
+            />
+          </View>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => {
+                setAvatarConfig(user?.avatar || {
+                  skinTone: 'medium-light',
+                  hairStyle: 'medium',
+                  hairColor: 'brown',
+                  eyeColor: 'brown',
+                  clothingColor: 'blue',
+                  accessory: 'none'
+                });
+                setShowAvatarModal(false);
+              }}
+            >
+              <Text style={styles.cancelButtonText}>Avbryt</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={handleSaveAvatar}
+            >
+              <Text style={styles.saveButtonText}>Spara avatar</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -345,6 +393,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 16,
+  },
   avatar: {
     width: 80,
     height: 80,
@@ -352,7 +404,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+  },
+  editAvatarBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#4F46E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'white',
   },
   avatarText: {
     fontSize: 32,
@@ -595,5 +659,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
+  },
+  avatarModalContent: {
+    flex: 1,
+    padding: 20,
   },
 });

@@ -13,8 +13,9 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
-import { GraduationCap, Target, Users, BookOpen, MapPin } from 'lucide-react-native';
+import { GraduationCap, Target, Users, BookOpen, MapPin, User } from 'lucide-react-native';
 import GymnasiumPicker from '@/components/GymnasiumPicker';
+import AvatarCustomizer, { type AvatarConfig } from '@/components/AvatarCustomizer';
 import type { Gymnasium } from '@/constants/gymnasiums';
 
 interface OnboardingData {
@@ -24,6 +25,7 @@ interface OnboardingData {
   program: string;
   goals: string[];
   purpose: string[];
+  avatar: AvatarConfig;
 }
 
 const goalOptions = [
@@ -56,11 +58,19 @@ export default function OnboardingScreen() {
     gymnasium: null,
     program: '',
     goals: [],
-    purpose: []
+    purpose: [],
+    avatar: {
+      skinTone: 'medium-light',
+      hairStyle: 'medium',
+      hairColor: 'brown',
+      eyeColor: 'brown',
+      clothingColor: 'blue',
+      accessory: 'none'
+    }
   });
 
   const handleNext = () => {
-    if (step < 5) {
+    if (step < 6) {
       setStep(step + 1);
     } else {
       handleComplete();
@@ -79,7 +89,8 @@ export default function OnboardingScreen() {
           program: data.program || 'Ej valt',
           purpose: [...data.goals, ...data.purpose].join(', ') || 'Allmän studiehjälp',
           subscriptionType: 'free',
-          gymnasium: data.gymnasium
+          gymnasium: data.gymnasium,
+          avatar: data.avatar
         });
         console.log('Basic onboarding completed, redirecting to program selection');
         router.replace('/program-selection');
@@ -102,9 +113,10 @@ export default function OnboardingScreen() {
       case 0: return data.name.length > 0;
       case 1: return data.studyLevel !== '';
       case 2: return data.studyLevel !== 'gymnasie' || data.gymnasium !== null; // Require gymnasium for gymnasie students
-      case 3: return true; // Skip program requirement for now
-      case 4: return true; // Make goals optional
-      case 5: return true; // Make purpose optional
+      case 3: return true; // Avatar customization is always optional
+      case 4: return true; // Skip program requirement for now
+      case 5: return true; // Make goals optional
+      case 6: return true; // Make purpose optional
       default: return false;
     }
   };
@@ -197,6 +209,21 @@ export default function OnboardingScreen() {
       case 3:
         return (
           <View style={styles.stepContainer}>
+            <User size={80} color="#4F46E5" style={styles.icon} />
+            <Text style={styles.title}>Skapa din avatar</Text>
+            <Text style={styles.subtitle}>Anpassa din gubbe som dina vänner kommer att se</Text>
+            <View style={styles.avatarCustomizerContainer}>
+              <AvatarCustomizer
+                initialConfig={data.avatar}
+                onAvatarChange={(avatar) => setData({ ...data, avatar })}
+              />
+            </View>
+          </View>
+        );
+
+      case 4:
+        return (
+          <View style={styles.stepContainer}>
             <Text style={styles.title}>
               Nästan klar!
             </Text>
@@ -206,7 +233,7 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 4:
+      case 5:
         return (
           <View style={styles.stepContainer}>
             <Target size={80} color="#4F46E5" style={styles.icon} />
@@ -234,7 +261,7 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 5:
+      case 6:
         return (
           <View style={styles.stepContainer}>
             <Users size={80} color="#4F46E5" style={styles.icon} />
@@ -276,9 +303,9 @@ export default function OnboardingScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${((step + 1) / 6) * 100}%` }]} />
+              <View style={[styles.progressFill, { width: `${((step + 1) / 7) * 100}%` }]} />
             </View>
-            <Text style={styles.progressText}>{step + 1} av 6</Text>
+            <Text style={styles.progressText}>{step + 1} av 7</Text>
           </View>
 
           {renderStep()}
@@ -302,7 +329,7 @@ export default function OnboardingScreen() {
               disabled={!canProceed()}
             >
               <Text style={styles.nextButtonText}>
-                {step === 5 ? 'Välj program och kurser' : step === 3 ? 'Fortsätt' : 'Nästa'}
+                {step === 6 ? 'Välj program och kurser' : step === 4 ? 'Fortsätt' : 'Nästa'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -460,6 +487,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   gymnasiumPickerContainer: {
+    width: '100%',
+    marginTop: 20,
+  },
+  avatarCustomizerContainer: {
+    flex: 1,
     width: '100%',
     marginTop: 20,
   },

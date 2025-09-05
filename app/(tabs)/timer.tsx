@@ -19,6 +19,7 @@ import { Timer, Play, Pause, Square, Settings, BarChart3, BookOpen, BellOff, Bel
 import Svg, { Circle } from 'react-native-svg';
 import * as Notifications from 'expo-notifications';
 import * as SystemUI from 'expo-system-ui';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -454,24 +455,28 @@ export default function TimerScreen() {
 
         {/* Timer Circle */}
         <View style={styles.timerContainer}>
-          <View style={styles.timerCircle}>
+          <LinearGradient
+            colors={theme.colors.gradient as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.timerCircle}
+          >
             <Svg width={280} height={280} style={styles.progressSvg}>
               {/* Background circle */}
               <Circle
                 cx={140}
                 cy={140}
                 r={120}
-                stroke="#334155"
+                stroke="rgba(255, 255, 255, 0.2)"
                 strokeWidth={8}
                 fill="none"
-                opacity={0.3}
               />
               {/* Progress circle */}
               <Circle
                 cx={140}
                 cy={140}
                 r={120}
-                stroke={sessionType === 'focus' ? '#A3E635' : '#3B82F6'}
+                stroke="white"
                 strokeWidth={8}
                 fill="none"
                 strokeDasharray={circumference}
@@ -491,24 +496,26 @@ export default function TimerScreen() {
                 <View style={[styles.dot, timerState === 'idle' && styles.dotActive]} />
               </View>
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Course Selection */}
         {sessionType === 'focus' && timerState === 'idle' && (
           <View style={styles.courseSection}>
-            <Text style={styles.sectionTitle}>Vad pluggar du?</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Vad pluggar du?</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseList}>
               <TouchableOpacity
                 style={[
                   styles.courseChip,
-                  !selectedCourse && styles.courseChipActive
+                  { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                  !selectedCourse && { backgroundColor: 'white' }
                 ]}
                 onPress={() => setSelectedCourse('')}
               >
                 <Text style={[
                   styles.courseChipText,
-                  !selectedCourse && styles.courseChipTextActive
+                  { color: theme.colors.textSecondary },
+                  !selectedCourse && { color: theme.colors.primary }
                 ]}>Allmänt</Text>
               </TouchableOpacity>
               {courses.map((course) => (
@@ -516,13 +523,15 @@ export default function TimerScreen() {
                   key={course.id}
                   style={[
                     styles.courseChip,
-                    selectedCourse === course.id && styles.courseChipActive
+                    { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                    selectedCourse === course.id && { backgroundColor: 'white' }
                   ]}
                   onPress={() => setSelectedCourse(course.id)}
                 >
                   <Text style={[
                     styles.courseChipText,
-                    selectedCourse === course.id && styles.courseChipTextActive
+                    { color: theme.colors.textSecondary },
+                    selectedCourse === course.id && { color: theme.colors.primary }
                   ]}>{course.title}</Text>
                 </TouchableOpacity>
               ))}
@@ -533,22 +542,22 @@ export default function TimerScreen() {
         {/* Controls */}
         <View style={styles.controls}>
           {timerState === 'idle' ? (
-            <TouchableOpacity style={styles.playButton} onPress={startTimer}>
-              <Play size={28} color="#1E293B" fill="#1E293B" />
+            <TouchableOpacity style={[styles.playButton, { backgroundColor: 'white' }]} onPress={startTimer}>
+              <Play size={28} color={theme.colors.primary} fill={theme.colors.primary} />
             </TouchableOpacity>
           ) : (
             <View style={styles.activeControls}>
-              <TouchableOpacity style={styles.stopButton} onPress={stopTimer}>
-                <Square size={20} color="#F9FAFB" fill="#F9FAFB" />
+              <TouchableOpacity style={[styles.stopButton, { backgroundColor: theme.colors.error }]} onPress={stopTimer}>
+                <Square size={20} color="white" fill="white" />
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.playButton}
+                style={[styles.playButton, { backgroundColor: 'white' }]}
                 onPress={timerState === 'running' ? pauseTimer : startTimer}
               >
                 {timerState === 'running' ? (
-                  <Pause size={28} color="#1E293B" fill="#1E293B" />
+                  <Pause size={28} color={theme.colors.primary} fill={theme.colors.primary} />
                 ) : (
-                  <Play size={28} color="#1E293B" fill="#1E293B" />
+                  <Play size={28} color={theme.colors.primary} fill={theme.colors.primary} />
                 )}
               </TouchableOpacity>
             </View>
@@ -557,15 +566,15 @@ export default function TimerScreen() {
 
         {/* Today's Stats */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Idag</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Idag</Text>
           <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{todayStats.sessions}</Text>
-              <Text style={styles.statLabel}>Sessioner</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+              <Text style={[styles.statNumber, { color: theme.colors.primary }]}>{todayStats.sessions}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Sessioner</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{todayStats.minutes}</Text>
-              <Text style={styles.statLabel}>Minuter</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+              <Text style={[styles.statNumber, { color: theme.colors.primary }]}>{todayStats.minutes}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Minuter</Text>
             </View>
           </View>
         </View>
@@ -704,7 +713,7 @@ export default function TimerScreen() {
 
             {/* Streak Stats */}
             <View style={styles.streakSection}>
-              <Text style={styles.sectionTitle}>Studiestreak</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studiestreak</Text>
               <View style={styles.streakGrid}>
                 <View style={styles.streakCard}>
                   <Text style={styles.streakNumber}>{streakStats.current}</Text>
@@ -721,7 +730,7 @@ export default function TimerScreen() {
 
             {/* Time Period Stats */}
             <View style={styles.periodSection}>
-              <Text style={styles.sectionTitle}>Tidsperioder</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Tidsperioder</Text>
               
               <View style={styles.periodCard}>
                 <View style={styles.periodHeader}>
@@ -767,7 +776,7 @@ export default function TimerScreen() {
             {/* Course Stats */}
             {courseStats.length > 0 && (
               <View style={styles.courseStatsSection}>
-                <Text style={styles.sectionTitle}>Mest studerade kurser</Text>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mest studerade kurser</Text>
                 {courseStats.map((stat, index) => (
                   <View key={stat.courseId} style={styles.courseStatItem}>
                     <View style={styles.courseStatRank}>
@@ -795,7 +804,7 @@ export default function TimerScreen() {
             {/* Recent Sessions */}
             {pomodoroSessions.length > 0 && (
               <View style={styles.recentSessions}>
-                <Text style={styles.sectionTitle}>Senaste sessioner</Text>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Senaste sessioner</Text>
                 {pomodoroSessions.slice(0, 10).map((session) => (
                   <View key={session.id} style={styles.sessionItem}>
                     <View style={styles.sessionInfo}>
@@ -882,10 +891,14 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 140,
-    backgroundColor: '#334155',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
   progressSvg: {
     position: 'absolute',
@@ -899,13 +912,13 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 48,
     fontWeight: '300',
-    color: '#F9FAFB',
+    color: 'white',
     marginBottom: 8,
     fontVariant: ['tabular-nums'],
   },
   sessionTypeText: {
     fontSize: 16,
-    color: '#94A3B8',
+    color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
     marginBottom: 16,
   },
@@ -917,10 +930,10 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#475569',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   dotActive: {
-    backgroundColor: '#A3E635',
+    backgroundColor: 'white',
   },
   courseSection: {
     paddingHorizontal: 24,
@@ -929,32 +942,26 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F9FAFB',
     marginBottom: 16,
   },
   courseList: {
     flexDirection: 'row',
   },
   courseChip: {
-    backgroundColor: '#334155',
     borderRadius: 24,
     paddingHorizontal: 20,
     paddingVertical: 12,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: '#475569',
-  },
-  courseChipActive: {
-    backgroundColor: '#A3E635',
-    borderColor: '#A3E635',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   courseChipText: {
     fontSize: 14,
-    color: '#94A3B8',
     fontWeight: '500',
-  },
-  courseChipTextActive: {
-    color: '#1E293B',
   },
   controls: {
     alignItems: 'center',
@@ -965,9 +972,13 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#A3E635',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   activeControls: {
     flexDirection: 'row',
@@ -978,9 +989,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#EF4444',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   statsSection: {
     paddingHorizontal: 24,
@@ -992,22 +1007,23 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#334155',
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#475569',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   statNumber: {
     fontSize: 28,
     fontWeight: '600',
-    color: '#A3E635',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 14,
-    color: '#94A3B8',
     fontWeight: '500',
   },
   // Modal styles

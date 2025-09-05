@@ -90,7 +90,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       // Create a mock auth user from profile data
       const authUser: AuthUser = {
         id: profile.id,
-        email: `${profile.name}@studyflow.app`, // Temporary email format
+        email: `${profile.name}@studiestugan.app`, // Temporary email format
         createdAt: profile.created_at
       };
       

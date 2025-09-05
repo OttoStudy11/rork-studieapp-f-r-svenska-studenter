@@ -130,7 +130,7 @@ export default function SettingsScreen() {
           icon: <HelpCircle size={20} color={theme.colors.textSecondary} />,
           title: 'Hjälp & Support',
           subtitle: 'Få hjälp med appen',
-          onPress: () => showInfo('Support', 'Kontakta oss på support@studyflow.se för hjälp'),
+          onPress: () => showInfo('Support', 'Kontakta oss på support@studiestugan.se för hjälp'),
         },
       ],
     },
@@ -258,7 +258,7 @@ export default function SettingsScreen() {
         <FadeInView delay={400}>
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: theme.colors.textMuted }]}>
-              StudyFlow v1.0.0
+              Studiestugan v1.0.0
             </Text>
             <Text style={[styles.footerText, { color: theme.colors.textMuted }]}>
               Gjord med ❤️ för svenska studenter

@@ -15,7 +15,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'X-Client-Info': 'studyflow-app'
+      'X-Client-Info': 'studiestugan-app'
     },
     fetch: (url, options = {}) => {
       // Create a timeout controller

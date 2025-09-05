@@ -109,7 +109,7 @@ export default function PremiumScreen() {
           <Crown size={60} color="#FFD700" />
           <Text style={styles.premiumTitle}>Du är Premium!</Text>
           <Text style={styles.premiumSubtitle}>
-            Tack för att du stödjer StudyFlow
+            Tack för att du stödjer Studiestugan
           </Text>
         </LinearGradient>
 
@@ -206,7 +206,7 @@ export default function PremiumScreen() {
             <View style={styles.pricingCard}>
               <View style={styles.pricingHeader}>
                 <Crown size={24} color="#FFD700" />
-                <Text style={styles.pricingTitle}>StudyFlow Premium</Text>
+                <Text style={styles.pricingTitle}>Studiestugan Premium</Text>
               </View>
               
               <View style={styles.pricingContent}>

@@ -728,6 +728,53 @@ export default function TimerScreen() {
               </View>
             </View>
 
+            {/* Weekly Progress Graph */}
+            <View style={styles.graphSection}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
+              <View style={styles.weeklyGraph}>
+                {Array.from({ length: 7 }, (_, i) => {
+                  const date = new Date();
+                  date.setDate(date.getDate() - (6 - i));
+                  const dayName = date.toLocaleDateString('sv-SE', { weekday: 'short' });
+                  const dayString = date.toDateString();
+                  
+                  const daySessions = pomodoroSessions.filter(session => {
+                    const sessionDate = new Date(session.endTime).toDateString();
+                    return sessionDate === dayString;
+                  });
+                  
+                  const dayMinutes = daySessions.reduce((sum, session) => sum + session.duration, 0);
+                  const maxMinutes = Math.max(120, Math.max(...Array.from({ length: 7 }, (_, j) => {
+                    const checkDate = new Date();
+                    checkDate.setDate(checkDate.getDate() - (6 - j));
+                    const checkDayString = checkDate.toDateString();
+                    const checkDaySessions = pomodoroSessions.filter(session => {
+                      const sessionDate = new Date(session.endTime).toDateString();
+                      return sessionDate === checkDayString;
+                    });
+                    return checkDaySessions.reduce((sum, session) => sum + session.duration, 0);
+                  })));
+                  
+                  const barHeight = Math.max(4, (dayMinutes / maxMinutes) * 80);
+                  
+                  return (
+                    <View key={i} style={styles.dayColumn}>
+                      <View style={styles.barContainer}>
+                        <View 
+                          style={[
+                            styles.dayBar, 
+                            { height: barHeight, backgroundColor: dayMinutes > 0 ? '#A3E635' : '#475569' }
+                          ]} 
+                        />
+                      </View>
+                      <Text style={styles.dayLabel}>{dayName}</Text>
+                      <Text style={styles.dayValue}>{dayMinutes}m</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+
             {/* Time Period Stats */}
             <View style={styles.periodSection}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Tidsperioder</Text>
@@ -735,6 +782,14 @@ export default function TimerScreen() {
               <View style={styles.periodCard}>
                 <View style={styles.periodHeader}>
                   <Text style={styles.periodTitle}>📅 Denna vecka</Text>
+                  <View style={styles.weekProgressBar}>
+                    <View 
+                      style={[
+                        styles.weekProgressFill,
+                        { width: `${Math.min(100, (weekStats.minutes / 300) * 100)}%` }
+                      ]}
+                    />
+                  </View>
                 </View>
                 <View style={styles.periodStats}>
                   <View style={styles.periodStat}>
@@ -755,6 +810,14 @@ export default function TimerScreen() {
               <View style={styles.periodCard}>
                 <View style={styles.periodHeader}>
                   <Text style={styles.periodTitle}>📊 Senaste 30 dagarna</Text>
+                  <View style={styles.monthProgressBar}>
+                    <View 
+                      style={[
+                        styles.monthProgressFill,
+                        { width: `${Math.min(100, (monthStats.minutes / 1200) * 100)}%` }
+                      ]}
+                    />
+                  </View>
                 </View>
                 <View style={styles.periodStats}>
                   <View style={styles.periodStat}>
@@ -911,7 +974,7 @@ const styles = StyleSheet.create({
   },
   timerText: {
     fontSize: 48,
-    fontWeight: '300',
+    fontWeight: '800',
     color: 'white',
     marginBottom: 8,
     fontVariant: ['tabular-nums'],
@@ -1324,5 +1387,69 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Graph styles
+  graphSection: {
+    marginBottom: 32,
+  },
+  weeklyGraph: {
+    backgroundColor: '#334155',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#475569',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 140,
+  },
+  dayColumn: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  barContainer: {
+    height: 80,
+    justifyContent: 'flex-end',
+    marginBottom: 8,
+  },
+  dayBar: {
+    width: 16,
+    borderRadius: 8,
+    minHeight: 4,
+  },
+  dayLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  dayValue: {
+    fontSize: 10,
+    color: '#A3E635',
+    fontWeight: '600',
+  },
+  weekProgressBar: {
+    height: 4,
+    backgroundColor: '#475569',
+    borderRadius: 2,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  weekProgressFill: {
+    height: '100%',
+    backgroundColor: '#A3E635',
+    borderRadius: 2,
+  },
+  monthProgressBar: {
+    height: 4,
+    backgroundColor: '#475569',
+    borderRadius: 2,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  monthProgressFill: {
+    height: '100%',
+    backgroundColor: '#60A5FA',
+    borderRadius: 2,
   },
 });

@@ -915,6 +915,9 @@ const styles = StyleSheet.create({
     color: 'white',
     marginBottom: 8,
     fontVariant: ['tabular-nums'],
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   sessionTypeText: {
     fontSize: 16,

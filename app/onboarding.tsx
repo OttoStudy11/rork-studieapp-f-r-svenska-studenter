@@ -13,19 +13,20 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
-import { GraduationCap, Target, Users, BookOpen, MapPin, User } from 'lucide-react-native';
-import GymnasiumPicker from '@/components/GymnasiumPicker';
-import AvatarCustomizer, { type AvatarConfig } from '@/components/AvatarCustomizer';
-import type { Gymnasium } from '@/constants/gymnasiums';
+import { GraduationCap, Target, Users, BookOpen, MapPin } from 'lucide-react-native';
+import GymnasiumAndProgramPicker from '@/components/GymnasiumAndProgramPicker';
+import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
+import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 
 interface OnboardingData {
   name: string;
   studyLevel: 'gymnasie' | 'högskola' | '';
   gymnasium: Gymnasium | null;
+  gymnasiumProgram: GymnasiumProgram | null;
+  gymnasiumGrade: GymnasiumGrade | null;
   program: string;
   goals: string[];
   purpose: string[];
-  avatar: AvatarConfig;
 }
 
 const goalOptions = [
@@ -56,16 +57,15 @@ export default function OnboardingScreen() {
     name: user?.email?.split('@')[0] || '',
     studyLevel: '',
     gymnasium: null,
+    gymnasiumProgram: null,
+    gymnasiumGrade: null,
     program: '',
     goals: [],
-    purpose: [],
-    avatar: {
-      emoji: '😊'
-    }
+    purpose: []
   });
 
   const handleNext = () => {
-    if (step < 6) {
+    if (step < 4) {
       setStep(step + 1);
     } else {
       handleComplete();
@@ -77,15 +77,19 @@ export default function OnboardingScreen() {
       try {
         console.log('Completing basic onboarding with data:', data);
         const finalName = data.name || user?.email?.split('@')[0] || '';
+        const programName = data.gymnasiumProgram ? 
+          `${data.gymnasiumProgram.name} - År ${data.gymnasiumGrade}` : 
+          data.program || 'Ej valt';
+        
         await completeOnboarding({
           name: finalName,
           email: user?.email || '',
           studyLevel: data.studyLevel as 'gymnasie' | 'högskola',
-          program: data.program || 'Ej valt',
+          program: programName,
           purpose: [...data.goals, ...data.purpose].join(', ') || 'Allmän studiehjälp',
           subscriptionType: 'free',
           gymnasium: data.gymnasium,
-          avatar: data.avatar
+          avatar: { emoji: '😊' }
         });
         console.log('Basic onboarding completed, redirecting to program selection');
         router.replace('/program-selection');
@@ -107,11 +111,9 @@ export default function OnboardingScreen() {
     switch (step) {
       case 0: return data.name.length > 0;
       case 1: return data.studyLevel !== '';
-      case 2: return data.studyLevel !== 'gymnasie' || data.gymnasiumSelection !== null; // Require gymnasium for gymnasie students
-      case 3: return true; // Avatar customization is always optional
-      case 4: return true; // Skip program requirement for now
-      case 5: return true; // Make goals optional
-      case 6: return true; // Make purpose optional
+      case 2: return data.studyLevel !== 'gymnasie' || (data.gymnasium !== null && data.gymnasiumProgram !== null);
+      case 3: return true; // Make goals optional
+      case 4: return true; // Make purpose optional
       default: return false;
     }
   };
@@ -178,13 +180,17 @@ export default function OnboardingScreen() {
             {data.studyLevel === 'gymnasie' ? (
               <>
                 <MapPin size={80} color="#4F46E5" style={styles.icon} />
-                <Text style={styles.title}>Vilket gymnasium går du på?</Text>
-                <Text style={styles.subtitle}>Välj ditt gymnasium för att få relevant innehåll</Text>
+                <Text style={styles.title}>Välj gymnasium och program</Text>
+                <Text style={styles.subtitle}>Välj ditt gymnasium, årskurs och program</Text>
                 <View style={styles.gymnasiumPickerContainer}>
-                  <GymnasiumPicker
+                  <GymnasiumAndProgramPicker
                     selectedGymnasium={data.gymnasium}
-                    onSelect={(gymnasium) => setData({ ...data, gymnasium })}
-                    placeholder="Välj ditt gymnasium"
+                    selectedProgram={data.gymnasiumProgram}
+                    selectedGrade={data.gymnasiumGrade}
+                    onSelect={(gymnasium, program, grade) => 
+                      setData({ ...data, gymnasium, gymnasiumProgram: program, gymnasiumGrade: grade })
+                    }
+                    placeholder="Välj gymnasium, årskurs och program"
                   />
                 </View>
               </>
@@ -202,33 +208,6 @@ export default function OnboardingScreen() {
         );
 
       case 3:
-        return (
-          <View style={styles.stepContainer}>
-            <User size={80} color="#4F46E5" style={styles.icon} />
-            <Text style={styles.title}>Skapa din avatar</Text>
-            <Text style={styles.subtitle}>Anpassa din gubbe som dina vänner kommer att se</Text>
-            <View style={styles.avatarCustomizerContainer}>
-              <AvatarCustomizer
-                initialConfig={data.avatar}
-                onAvatarChange={(avatar) => setData({ ...data, avatar })}
-              />
-            </View>
-          </View>
-        );
-
-      case 4:
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.title}>
-              Nästan klar!
-            </Text>
-            <Text style={styles.subtitle}>
-              Vi kommer att hjälpa dig välja program och kurser i nästa steg
-            </Text>
-          </View>
-        );
-
-      case 5:
         return (
           <View style={styles.stepContainer}>
             <Target size={80} color="#4F46E5" style={styles.icon} />
@@ -256,7 +235,7 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 6:
+      case 4:
         return (
           <View style={styles.stepContainer}>
             <Users size={80} color="#4F46E5" style={styles.icon} />
@@ -298,9 +277,9 @@ export default function OnboardingScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${((step + 1) / 7) * 100}%` }]} />
+              <View style={[styles.progressFill, { width: `${((step + 1) / 5) * 100}%` }]} />
             </View>
-            <Text style={styles.progressText}>{step + 1} av 7</Text>
+            <Text style={styles.progressText}>{step + 1} av 5</Text>
           </View>
 
           {renderStep()}
@@ -324,7 +303,7 @@ export default function OnboardingScreen() {
               disabled={!canProceed()}
             >
               <Text style={styles.nextButtonText}>
-                {step === 6 ? 'Välj program och kurser' : step === 4 ? 'Fortsätt' : 'Nästa'}
+                {step === 4 ? 'Välj kurser' : 'Nästa'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -482,11 +461,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   gymnasiumPickerContainer: {
-    width: '100%',
-    marginTop: 20,
-  },
-  avatarCustomizerContainer: {
-    flex: 1,
     width: '100%',
     marginTop: 20,
   },

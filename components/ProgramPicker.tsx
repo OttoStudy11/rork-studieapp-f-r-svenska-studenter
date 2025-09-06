@@ -315,7 +315,7 @@ export default function ProgramPicker() {
             disabled={!selectedProgram || saving}
           >
             {saving ? (
-              <ActivityIndicator size="small" color="white" />
+              <ActivityIndicator size="small" color="#4F46E5" />
             ) : (
               <Text style={styles.saveButtonText}>Spara och fortsätt</Text>
             )}
@@ -329,17 +329,17 @@ export default function ProgramPicker() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'transparent',
   },
   content: {
     padding: 20,
     paddingBottom: 40,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 24,
+    color: 'white',
+    marginBottom: 30,
     textAlign: 'center',
   },
   searchContainer: {
@@ -348,10 +348,10 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -368,10 +368,10 @@ const styles = StyleSheet.create({
   },
   programsList: {
     marginTop: 8,
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     overflow: 'hidden',
   },
   programItem: {
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   coursesTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1f2937',
+    color: 'white',
     flex: 1,
   },
   toggleAllButton: {
@@ -412,14 +412,14 @@ const styles = StyleSheet.create({
   },
   toggleAllText: {
     fontSize: 14,
-    color: '#4F46E5',
+    color: 'white',
     fontWeight: '500',
   },
   coursesList: {
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     overflow: 'hidden',
   },
   courseItem: {
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   saveButton: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: 'white',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -475,8 +475,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   saveButtonText: {
-    color: 'white',
+    color: '#4F46E5',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
 });

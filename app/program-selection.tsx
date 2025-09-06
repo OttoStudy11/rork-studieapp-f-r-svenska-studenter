@@ -1,11 +1,17 @@
 import React from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import ProgramPicker from '@/components/ProgramPicker';
 
 export default function ProgramSelectionScreen() {
   return (
     <SafeAreaView style={styles.container}>
-      <ProgramPicker />
+      <LinearGradient
+        colors={['#667eea', '#764ba2']}
+        style={styles.gradient}
+      >
+        <ProgramPicker />
+      </LinearGradient>
     </SafeAreaView>
   );
 }
@@ -13,6 +19,8 @@ export default function ProgramSelectionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+  },
+  gradient: {
+    flex: 1,
   },
 });

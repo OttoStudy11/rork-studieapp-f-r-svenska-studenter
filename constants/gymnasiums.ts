@@ -20,21 +20,48 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
   { id: 'sto-3', name: 'Norra Real', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
   { id: 'sto-4', name: 'Östra Real', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
   { id: 'sto-5', name: 'Kungsholmens Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
-  { id: 'sto-6', name: 'Viktor Rydbergs Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
-  { id: 'sto-7', name: 'Internationella Engelska Skolan', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-6', name: 'Viktor Rydberg Gymnasium Odenplan', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-7', name: 'Viktor Rydberg Gymnasium Djursholm', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
   { id: 'sto-8', name: 'Thorildsplans Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
   { id: 'sto-9', name: 'Blackebergs Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
   { id: 'sto-10', name: 'Enskilda Gymnasiet', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
-  { id: 'sto-11', name: 'Globala Gymnasiet', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
-  { id: 'sto-12', name: 'Stockholms Estetiska Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-11', name: 'Globala Gymnasiet', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-12', name: 'S:t Eriks Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
   { id: 'sto-13', name: 'Stockholms Tekniska Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
-  { id: 'sto-14', name: 'Rinkeby Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
-  { id: 'sto-15', name: 'Tensta Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-14', name: 'Ross Tensta Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-15', name: 'Spyken Gymnasium Stockholm', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
   { id: 'sto-16', name: 'Farsta Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
   { id: 'sto-17', name: 'Skärholmens Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
   { id: 'sto-18', name: 'Vällingby Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
   { id: 'sto-19', name: 'Bromma Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
   { id: 'sto-20', name: 'Spånga Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-21', name: 'Anna Whitlocks Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-22', name: 'Bernadottegymnasiet', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-23', name: 'Didaktus Jakobsberg', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-24', name: 'Europaskolan', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-25', name: 'Frans Schartaus Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-26', name: 'Fredrika Bremergymnasiet', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-27', name: 'Hersby Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-28', name: 'Hägersten Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-29', name: 'Jensen Gymnasium Norra', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-30', name: 'Jensen Gymnasium Södra', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-31', name: 'Kärrtorps Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-32', name: 'LBS Kreativa Gymnasiet Stockholm', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-33', name: 'Lycée Français Saint Louis', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-34', name: 'Mediagymnasiet', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-35', name: 'NTI Gymnasiet Stockholm', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-36', name: 'Praktiska Gymnasiet Stockholm', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-37', name: 'ProCivitas Privata Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-38', name: 'Rytmus Musikgymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-39', name: 'Sjölins Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-40', name: 'Stockholms Idrottsgymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-41', name: 'Stockholms Naturbruksgymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-42', name: 'Stockholms Transport och Fordonstekniska Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
+  { id: 'sto-43', name: 'Thoren Business School Stockholm', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-44', name: 'Tibble Fristående Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-45', name: 'Tyska Skolan', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-46', name: 'Yrkesplugget', city: 'Stockholm', municipality: 'Stockholm', type: 'friskola' },
+  { id: 'sto-47', name: 'Åsö Gymnasium', city: 'Stockholm', municipality: 'Stockholm', type: 'kommunal' },
 
   // Göteborg
   { id: 'got-1', name: 'Göteborgs Högre Samskola', city: 'Göteborg', municipality: 'Göteborg', type: 'friskola' },
@@ -51,14 +78,25 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
   // Malmö
   { id: 'mal-1', name: 'Malmö Borgarskola', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
   { id: 'mal-2', name: 'Malmö Latinskola', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
-  { id: 'mal-3', name: 'Katedralskolan', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
-  { id: 'mal-4', name: 'Malmö Idrottsgymnasium', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
-  { id: 'mal-5', name: 'Teknikum', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
-  { id: 'mal-6', name: 'Malmö Musikhögskola', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
-  { id: 'mal-7', name: 'Pildammsgymnasiet', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
-  { id: 'mal-8', name: 'Rosengård Gymnasium', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
-  { id: 'mal-9', name: 'Malmö Högskola Gymnasium', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
+  { id: 'mal-3', name: 'Malmö Idrottsgymnasium', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
+  { id: 'mal-6', name: 'S:t Petri Skola', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
+  { id: 'mal-7', name: 'Pauliskolan', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
+  { id: 'mal-8', name: 'Heleneholms Gymnasium', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
+  { id: 'mal-9', name: 'Värnhemsskolan', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
   { id: 'mal-10', name: 'Kunskapsskolan Malmö', city: 'Malmö', municipality: 'Malmö', type: 'friskola' },
+  { id: 'mal-11', name: 'Agnesfrids Gymnasium', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
+  { id: 'mal-12', name: 'Djupadals Gymnasium', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
+  { id: 'mal-13', name: 'Erik Dahlbergsgymnasiet', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
+  { id: 'mal-14', name: 'Gymnasieskolan Kvarnby', city: 'Malmö', municipality: 'Malmö', type: 'kommunal' },
+  { id: 'mal-15', name: 'Jensen Gymnasium Malmö', city: 'Malmö', municipality: 'Malmö', type: 'friskola' },
+  { id: 'mal-16', name: 'John Bauergymnasiet Malmö', city: 'Malmö', municipality: 'Malmö', type: 'friskola' },
+  { id: 'mal-17', name: 'LBS Kreativa Gymnasiet Malmö', city: 'Malmö', municipality: 'Malmö', type: 'friskola' },
+  { id: 'mal-18', name: 'Montessorigymnasiet', city: 'Malmö', municipality: 'Malmö', type: 'friskola' },
+  { id: 'mal-19', name: 'NTI Gymnasiet Malmö', city: 'Malmö', municipality: 'Malmö', type: 'friskola' },
+  { id: 'mal-20', name: 'Praktiska Gymnasiet Malmö', city: 'Malmö', municipality: 'Malmö', type: 'friskola' },
+  { id: 'mal-21', name: 'ProCivitas Privata Gymnasium Malmö', city: 'Malmö', municipality: 'Malmö', type: 'friskola' },
+  { id: 'mal-22', name: 'Rytmus Musikgymnasium Malmö', city: 'Malmö', municipality: 'Malmö', type: 'friskola' },
+  { id: 'mal-23', name: 'Thoren Business School Malmö', city: 'Malmö', municipality: 'Malmö', type: 'friskola' },
 
   // Uppsala
   { id: 'upp-1', name: 'Katedralskolan Uppsala', city: 'Uppsala', municipality: 'Uppsala', type: 'kommunal' },
@@ -66,9 +104,13 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
   { id: 'upp-3', name: 'Celsiusskolan', city: 'Uppsala', municipality: 'Uppsala', type: 'kommunal' },
   { id: 'upp-4', name: 'Lundellska Skolan', city: 'Uppsala', municipality: 'Uppsala', type: 'kommunal' },
   { id: 'upp-5', name: 'Rosendalsgymnasiet', city: 'Uppsala', municipality: 'Uppsala', type: 'kommunal' },
-  { id: 'upp-6', name: 'Åsö Gymnasium', city: 'Uppsala', municipality: 'Uppsala', type: 'kommunal' },
+  { id: 'upp-6', name: 'Bolandgymnasiet', city: 'Uppsala', municipality: 'Uppsala', type: 'kommunal' },
   { id: 'upp-7', name: 'Mikael Elias Teoretiska Gymnasium', city: 'Uppsala', municipality: 'Uppsala', type: 'friskola' },
   { id: 'upp-8', name: 'Praktiska Gymnasiet Uppsala', city: 'Uppsala', municipality: 'Uppsala', type: 'friskola' },
+  { id: 'upp-9', name: 'Kunskapsgymnasiet Uppsala', city: 'Uppsala', municipality: 'Uppsala', type: 'friskola' },
+  { id: 'upp-10', name: 'Jensen Gymnasium Uppsala', city: 'Uppsala', municipality: 'Uppsala', type: 'friskola' },
+  { id: 'upp-11', name: 'NTI Gymnasiet Uppsala', city: 'Uppsala', municipality: 'Uppsala', type: 'friskola' },
+  { id: 'upp-12', name: 'Thoren Business School Uppsala', city: 'Uppsala', municipality: 'Uppsala', type: 'friskola' },
 
   // Linköping
   { id: 'lin-1', name: 'Katedralskolan Linköping', city: 'Linköping', municipality: 'Linköping', type: 'kommunal' },
@@ -108,9 +150,12 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
 
   // Jönköping
   { id: 'jon-1', name: 'Sandagymnasiet', city: 'Jönköping', municipality: 'Jönköping', type: 'kommunal' },
-  { id: 'jon-2', name: 'Värnamo Gymnasium', city: 'Jönköping', municipality: 'Jönköping', type: 'kommunal' },
-  { id: 'jon-3', name: 'Ljungby Gymnasium', city: 'Jönköping', municipality: 'Jönköping', type: 'kommunal' },
-  { id: 'jon-4', name: 'Tekniska Gymnasiet Jönköping', city: 'Jönköping', municipality: 'Jönköping', type: 'kommunal' },
+  { id: 'jon-2', name: 'Per Brahegymnasiet', city: 'Jönköping', municipality: 'Jönköping', type: 'kommunal' },
+  { id: 'jon-3', name: 'Bäckadalsgymnasiet', city: 'Jönköping', municipality: 'Jönköping', type: 'kommunal' },
+  { id: 'jon-4', name: 'Erik Dahlbergsgymnasiet', city: 'Jönköping', municipality: 'Jönköping', type: 'kommunal' },
+  { id: 'jon-5', name: 'Wisbygymnasiet', city: 'Jönköping', municipality: 'Jönköping', type: 'friskola' },
+  { id: 'jon-6', name: 'Praktiska Gymnasiet Jönköping', city: 'Jönköping', municipality: 'Jönköping', type: 'friskola' },
+  { id: 'jon-7', name: 'Jensen Gymnasium Jönköping', city: 'Jönköping', municipality: 'Jönköping', type: 'friskola' },
 
   // Umeå
   { id: 'ume-1', name: 'Dragonskolan', city: 'Umeå', municipality: 'Umeå', type: 'kommunal' },
@@ -149,9 +194,11 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
   { id: 'kar-3', name: 'Karlstad Tekniska Gymnasium', city: 'Karlstad', municipality: 'Karlstad', type: 'kommunal' },
 
   // Växjö
-  { id: 'vax-1', name: 'Växjö Gymnasium', city: 'Växjö', municipality: 'Växjö', type: 'kommunal' },
-  { id: 'vax-2', name: 'Teleborg Gymnasium', city: 'Växjö', municipality: 'Växjö', type: 'kommunal' },
-  { id: 'vax-3', name: 'Växjö Tekniska Gymnasium', city: 'Växjö', municipality: 'Växjö', type: 'kommunal' },
+  { id: 'vax-1', name: 'Katedralskolan Växjö', city: 'Växjö', municipality: 'Växjö', type: 'kommunal' },
+  { id: 'vax-2', name: 'Kungsmadskolan', city: 'Växjö', municipality: 'Växjö', type: 'kommunal' },
+  { id: 'vax-3', name: 'Teknikum', city: 'Växjö', municipality: 'Växjö', type: 'kommunal' },
+  { id: 'vax-4', name: 'Växjö Fria Gymnasium', city: 'Växjö', municipality: 'Växjö', type: 'friskola' },
+  { id: 'vax-5', name: 'Praktiska Gymnasiet Växjö', city: 'Växjö', municipality: 'Växjö', type: 'friskola' },
 
   // Halmstad
   { id: 'hal-1', name: 'Gymnasieskolan Halmstad', city: 'Halmstad', municipality: 'Halmstad', type: 'kommunal' },
@@ -206,11 +253,7 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
   // Norrtälje
   { id: 'nrt-1', name: 'Norrtälje Gymnasium', city: 'Norrtälje', municipality: 'Norrtälje', type: 'kommunal' },
 
-  // Nykvarn
-  { id: 'nyk-1', name: 'Nykvarn Gymnasium', city: 'Nykvarn', municipality: 'Nykvarn', type: 'kommunal' },
 
-  // Salem
-  { id: 'sal-1', name: 'Salem Gymnasium', city: 'Salem', municipality: 'Salem', type: 'kommunal' },
 
   // Sigtuna
   { id: 'sig-1', name: 'Sigtunaskolan Humanistiska Läroverket', city: 'Sigtuna', municipality: 'Sigtuna', type: 'friskola' },
@@ -223,7 +266,7 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
   { id: 'val-1', name: 'Vallentuna Gymnasium', city: 'Vallentuna', municipality: 'Vallentuna', type: 'kommunal' },
 
   // Vaxholm
-  { id: 'vaxh-1', name: 'Vaxholm Gymnasium', city: 'Vaxholm', municipality: 'Vaxholm', type: 'kommunal' },
+  { id: 'vaxh-1', name: 'Kunskapscentrum Vaxholm', city: 'Vaxholm', municipality: 'Vaxholm', type: 'kommunal' },
 
   // Österåker
   { id: 'ost-1', name: 'Österåkers Gymnasium', city: 'Österåker', municipality: 'Österåker', type: 'kommunal' },
@@ -266,16 +309,22 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
   { id: 'hud-4', name: 'Strömbackaskolan', city: 'Hudiksvall', municipality: 'Hudiksvall', type: 'kommunal' },
 
   // Söderhamn
-  { id: 'sod-3', name: 'Söderhamns Gymnasium', city: 'Söderhamn', municipality: 'Söderhamn', type: 'kommunal' },
-  { id: 'sod-4', name: 'Ljusdalgymnasiet', city: 'Söderhamn', municipality: 'Söderhamn', type: 'kommunal' },
+  { id: 'sod-3', name: 'Staffangymnasiet', city: 'Söderhamn', municipality: 'Söderhamn', type: 'kommunal' },
+
+  // Ljusdal
+  { id: 'lju-1', name: 'Slottegymnasiet', city: 'Ljusdal', municipality: 'Ljusdal', type: 'kommunal' },
 
   // Bollnäs
-  { id: 'bol-1', name: 'Bollnäs Gymnasium', city: 'Bollnäs', municipality: 'Bollnäs', type: 'kommunal' },
-  { id: 'bol-2', name: 'Edsbyn Gymnasium', city: 'Bollnäs', municipality: 'Bollnäs', type: 'kommunal' },
+  { id: 'bol-1', name: 'Torsbergsgymnasiet', city: 'Bollnäs', municipality: 'Bollnäs', type: 'kommunal' },
+
+  // Ovanåker
+  { id: 'ova-1', name: 'Alftaåsens Gymnasium', city: 'Edsbyn', municipality: 'Ovanåker', type: 'kommunal' },
 
   // Kramfors
-  { id: 'kra-1', name: 'Kramfors Gymnasium', city: 'Kramfors', municipality: 'Kramfors', type: 'kommunal' },
-  { id: 'kra-2', name: 'Sollefteå Gymnasium', city: 'Kramfors', municipality: 'Kramfors', type: 'kommunal' },
+  { id: 'kra-1', name: 'Ådalsskolan', city: 'Kramfors', municipality: 'Kramfors', type: 'kommunal' },
+
+  // Sollefteå
+  { id: 'soll-1', name: 'Gudlav Bilderskolan', city: 'Sollefteå', municipality: 'Sollefteå', type: 'kommunal' },
 
   // Härnösand
   { id: 'har-1', name: 'Härnösands Gymnasium', city: 'Härnösand', municipality: 'Härnösand', type: 'kommunal' },
@@ -335,12 +384,10 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
   { id: 'sko-3', name: 'Västerhöjdsgymnasiet', city: 'Skövde', municipality: 'Skövde', type: 'kommunal' },
 
   // Mariestad
-  { id: 'mar-1', name: 'Mariestads Gymnasium', city: 'Mariestad', municipality: 'Mariestad', type: 'kommunal' },
-  { id: 'mar-2', name: 'Lidköpings Gymnasium', city: 'Mariestad', municipality: 'Mariestad', type: 'kommunal' },
+  { id: 'mar-1', name: 'Vådsbogymnasierna', city: 'Mariestad', municipality: 'Mariestad', type: 'kommunal' },
 
   // Lidköping
-  { id: 'lid-2', name: 'Lidköpings Gymnasium', city: 'Lidköping', municipality: 'Lidköping', type: 'kommunal' },
-  { id: 'lid-3', name: 'Vara Gymnasium', city: 'Lidköping', municipality: 'Lidköping', type: 'kommunal' },
+  { id: 'lid-2', name: 'De la Gardiegymnasiet', city: 'Lidköping', municipality: 'Lidköping', type: 'kommunal' },
 
   // Falköping
   { id: 'falk-1', name: 'Falköpings Gymnasium', city: 'Falköping', municipality: 'Falköping', type: 'kommunal' },
@@ -352,16 +399,18 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
 
   // Lerum
   { id: 'ler-1', name: 'Lerums Gymnasium', city: 'Lerum', municipality: 'Lerum', type: 'kommunal' },
-  { id: 'ler-2', name: 'Partille Gymnasium', city: 'Lerum', municipality: 'Lerum', type: 'kommunal' },
+  { id: 'ler-2', name: 'Hulebäcksgymnasiet', city: 'Lerum', municipality: 'Lerum', type: 'kommunal' },
+
+  // Partille
+  { id: 'par-1', name: 'Partille Gymnasium', city: 'Partille', municipality: 'Partille', type: 'kommunal' },
 
   // Mölndal
-  { id: 'mol-1', name: 'Mölndals Gymnasium', city: 'Mölndal', municipality: 'Mölndal', type: 'kommunal' },
-  { id: 'mol-2', name: 'Kungsbacka Gymnasium', city: 'Mölndal', municipality: 'Mölndal', type: 'kommunal' },
+  { id: 'mol-1', name: 'Krokslättsgymnasiet', city: 'Mölndal', municipality: 'Mölndal', type: 'kommunal' },
+  { id: 'mol-2', name: 'Fässbergsgymnasiet', city: 'Mölndal', municipality: 'Mölndal', type: 'kommunal' },
 
   // Varberg
-  { id: 'var-1', name: 'Varbergs Gymnasium', city: 'Varberg', municipality: 'Varberg', type: 'kommunal' },
-  { id: 'var-2', name: 'Peder Skrivares Gymnasium', city: 'Varberg', municipality: 'Varberg', type: 'kommunal' },
-  { id: 'var-3', name: 'Komvux Varberg', city: 'Varberg', municipality: 'Varberg', type: 'kommunal' },
+  { id: 'var-1', name: 'Peder Skrivares Gymnasium', city: 'Varberg', municipality: 'Varberg', type: 'kommunal' },
+  { id: 'var-2', name: 'Haegymnasiet', city: 'Varberg', municipality: 'Varberg', type: 'kommunal' },
 
   // Falkenberg
   { id: 'falke-1', name: 'Falkenbergs Gymnasium', city: 'Falkenberg', municipality: 'Falkenberg', type: 'kommunal' },
@@ -372,28 +421,37 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
   { id: 'kun-2', name: 'Onsala Gymnasium', city: 'Kungsbacka', municipality: 'Kungsbacka', type: 'kommunal' },
 
   // Laholm
-  { id: 'lah-1', name: 'Laholms Gymnasium', city: 'Laholm', municipality: 'Laholm', type: 'kommunal' },
-  { id: 'lah-2', name: 'Båstads Gymnasium', city: 'Laholm', municipality: 'Laholm', type: 'kommunal' },
+  { id: 'lah-1', name: 'Osbecksgymnasiet', city: 'Laholm', municipality: 'Laholm', type: 'kommunal' },
+
+  // Båstad
+  { id: 'bas-1', name: 'Akademi Båstad Gymnasium', city: 'Båstad', municipality: 'Båstad', type: 'kommunal' },
 
   // Åmål
-  { id: 'ama-1', name: 'Åmåls Gymnasium', city: 'Åmål', municipality: 'Åmål', type: 'kommunal' },
-  { id: 'ama-2', name: 'Säffle Gymnasium', city: 'Åmål', municipality: 'Åmål', type: 'kommunal' },
+  { id: 'ama-1', name: 'Karlbergsgymnasiet', city: 'Åmål', municipality: 'Åmål', type: 'kommunal' },
+
+  // Säffle
+  { id: 'saf-1', name: 'Herrgårdsgymnasiet', city: 'Säffle', municipality: 'Säffle', type: 'kommunal' },
 
   // Arvika
-  { id: 'arv-1', name: 'Arvika Gymnasium', city: 'Arvika', municipality: 'Arvika', type: 'kommunal' },
-  { id: 'arv-2', name: 'Eda Gymnasium', city: 'Arvika', municipality: 'Arvika', type: 'kommunal' },
+  { id: 'arv-1', name: 'Solbergagymnasiet', city: 'Arvika', municipality: 'Arvika', type: 'kommunal' },
+
+  // Eda
+  { id: 'eda-1', name: 'Gunnarsbygymnasiet', city: 'Charlottenberg', municipality: 'Eda', type: 'kommunal' },
 
   // Filipstad
-  { id: 'fil-1', name: 'Filipstads Gymnasium', city: 'Filipstad', municipality: 'Filipstad', type: 'kommunal' },
-  { id: 'fil-2', name: 'Hagfors Gymnasium', city: 'Filipstad', municipality: 'Filipstad', type: 'kommunal' },
+  { id: 'fil-1', name: 'Spångbergsgymnasiet', city: 'Filipstad', municipality: 'Filipstad', type: 'kommunal' },
+
+  // Hagfors
+  { id: 'hag-1', name: 'Älvstrandsgymnasiet', city: 'Hagfors', municipality: 'Hagfors', type: 'kommunal' },
 
   // Kristinehamn
-  { id: 'kris-1', name: 'Kristinehamns Gymnasium', city: 'Kristinehamn', municipality: 'Kristinehamn', type: 'kommunal' },
-  { id: 'kris-2', name: 'Degerfors Gymnasium', city: 'Kristinehamn', municipality: 'Kristinehamn', type: 'kommunal' },
+  { id: 'kris-1', name: 'Brogårdsgymnasiet', city: 'Kristinehamn', municipality: 'Kristinehamn', type: 'kommunal' },
 
   // Torsby
-  { id: 'tor-1', name: 'Torsby Gymnasium', city: 'Torsby', municipality: 'Torsby', type: 'kommunal' },
-  { id: 'tor-2', name: 'Sunne Gymnasium', city: 'Torsby', municipality: 'Torsby', type: 'kommunal' },
+  { id: 'tor-1', name: 'Stjerneskolan', city: 'Torsby', municipality: 'Torsby', type: 'kommunal' },
+
+  // Sunne
+  { id: 'sun-4', name: 'Brobygymnasiet', city: 'Sunne', municipality: 'Sunne', type: 'kommunal' },
 ];
 
 export const getGymnasiumsByCity = (city: string): Gymnasium[] => {

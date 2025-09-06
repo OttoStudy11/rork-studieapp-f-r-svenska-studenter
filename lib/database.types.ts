@@ -22,6 +22,7 @@ export interface Database {
           program_id: string | null
           gymnasium_id: string | null
           gymnasium_name: string | null
+          gymnasium_grade: string | null
           created_at: string
         }
         Insert: {
@@ -36,6 +37,7 @@ export interface Database {
           program_id?: string | null
           gymnasium_id?: string | null
           gymnasium_name?: string | null
+          gymnasium_grade?: string | null
           created_at?: string
         }
         Update: {
@@ -50,6 +52,7 @@ export interface Database {
           program_id?: string | null
           gymnasium_id?: string | null
           gymnasium_name?: string | null
+          gymnasium_grade?: string | null
           created_at?: string
         }
         Relationships: [

@@ -107,7 +107,7 @@ export default function OnboardingScreen() {
     switch (step) {
       case 0: return data.name.length > 0;
       case 1: return data.studyLevel !== '';
-      case 2: return data.studyLevel !== 'gymnasie' || data.gymnasium !== null; // Require gymnasium for gymnasie students
+      case 2: return data.studyLevel !== 'gymnasie' || data.gymnasiumSelection !== null; // Require gymnasium for gymnasie students
       case 3: return true; // Avatar customization is always optional
       case 4: return true; // Skip program requirement for now
       case 5: return true; // Make goals optional

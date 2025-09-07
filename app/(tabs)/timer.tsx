@@ -15,7 +15,7 @@ import {
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Timer, Play, Pause, Square, Settings, BarChart3, BookOpen, BellOff, Bell } from 'lucide-react-native';
+import { Timer, Play, Pause, Square, Settings, BookOpen, BellOff, Bell } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import * as Notifications from 'expo-notifications';
 import * as SystemUI from 'expo-system-ui';
@@ -35,7 +35,6 @@ export default function TimerScreen() {
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
-  const [showStats, setShowStats] = useState(false);
   const [focusTime, setFocusTime] = useState(25);
   const [breakTime, setBreakTime] = useState(5);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
@@ -543,13 +542,6 @@ export default function TimerScreen() {
             )}
             <TouchableOpacity
               style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
-              onPress={() => setShowStats(true)}
-              activeOpacity={0.8}
-            >
-              <BarChart3 size={22} color={theme.colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
               onPress={() => setShowSettings(true)}
               activeOpacity={0.8}
             >
@@ -748,19 +740,139 @@ export default function TimerScreen() {
           )}
         </View>
 
-        {/* Today's Stats */}
-        <View style={styles.statsSection}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Idag</Text>
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-              <Text style={[styles.statNumber, { color: theme.colors.primary }]}>{todayStats.sessions}</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Sessioner</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-              <Text style={[styles.statNumber, { color: theme.colors.primary }]}>{todayStats.minutes}</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Minuter</Text>
+        {/* Statistics Section */}
+        <View style={styles.statsMainSection}>
+          {/* Today's Quick Stats */}
+          <View style={styles.statsSection}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Idag</Text>
+            <View style={styles.statsRow}>
+              <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                <Text style={[styles.statNumber, { color: theme.colors.primary }]}>{todayStats.sessions}</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Sessioner</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                <Text style={[styles.statNumber, { color: theme.colors.primary }]}>{todayStats.minutes}</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Minuter</Text>
+              </View>
             </View>
           </View>
+
+          {/* Streaks & Goals */}
+          <View style={styles.streakSection}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mål & Streaks</Text>
+            <View style={styles.streakGrid}>
+              <View style={[styles.streakCard, { backgroundColor: '#DC2626' }]}>
+                <Text style={styles.streakNumber}>{streakStats.current}</Text>
+                <Text style={styles.streakLabel}>Nuvarande streak</Text>
+                <Text style={styles.streakSubtext}>🔥 dagar i rad</Text>
+              </View>
+              <View style={[styles.streakCard, { backgroundColor: '#EA580C' }]}>
+                <Text style={styles.streakNumber}>{streakStats.longest}</Text>
+                <Text style={styles.streakLabel}>Längsta streak</Text>
+                <Text style={styles.streakSubtext}>🏆 personligt rekord</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Weekly Progress */}
+          <View style={styles.graphSection}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
+            <View style={styles.weeklyGraphContainer}>
+              <View style={styles.weeklyGraph}>
+                {weekStats.dailyStats.map((day, i) => {
+                  const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
+                  const isToday = day.date.toDateString() === new Date().toDateString();
+                  
+                  const maxMinutes = Math.max(120, Math.max(...weekStats.dailyStats.map(d => d.minutes)));
+                  const barHeight = Math.max(4, (day.minutes / maxMinutes) * 80);
+                  
+                  return (
+                    <View key={i} style={styles.dayColumn}>
+                      <View style={styles.barContainer}>
+                        <View 
+                          style={[
+                            styles.dayBar, 
+                            { 
+                              height: barHeight, 
+                              backgroundColor: day.minutes > 0 ? (isToday ? '#F59E0B' : '#A3E635') : '#475569'
+                            }
+                          ]} 
+                        />
+                      </View>
+                      <Text style={[styles.dayLabel, isToday && styles.todayLabel]}>{dayName}</Text>
+                      <Text style={[styles.dayValue, isToday && styles.todayValue]}>{day.minutes}m</Text>
+                    </View>
+                  );
+                })}
+              </View>
+              
+              <View style={styles.weekSummary}>
+                <View style={styles.weekSummaryItem}>
+                  <Text style={styles.weekSummaryLabel}>Totalt denna vecka</Text>
+                  <Text style={styles.weekSummaryValue}>{Math.round(weekStats.minutes / 60 * 10) / 10}h</Text>
+                </View>
+                <View style={styles.weekSummaryItem}>
+                  <Text style={styles.weekSummaryLabel}>Snitt per dag</Text>
+                  <Text style={styles.weekSummaryValue}>{weekStats.averagePerDay}m</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Productivity Insights */}
+          {productivityInsights && (
+            <View style={styles.insightsSection}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Produktivitetsinsikter</Text>
+              <View style={styles.insightsGrid}>
+                <View style={[styles.insightCard, { backgroundColor: theme.colors.card }]}>
+                  <Text style={styles.insightIcon}>🌟</Text>
+                  <Text style={[styles.insightTitle, { color: theme.colors.textSecondary }]}>Bästa tid</Text>
+                  <Text style={[styles.insightValue, { color: theme.colors.text }]}>{productivityInsights.mostProductiveHour}</Text>
+                </View>
+                <View style={[styles.insightCard, { backgroundColor: theme.colors.card }]}>
+                  <Text style={styles.insightIcon}>📅</Text>
+                  <Text style={[styles.insightTitle, { color: theme.colors.textSecondary }]}>Bästa dag</Text>
+                  <Text style={[styles.insightValue, { color: theme.colors.text }]}>{productivityInsights.mostProductiveDay}</Text>
+                </View>
+                <View style={[styles.insightCard, { backgroundColor: theme.colors.card }]}>
+                  <Text style={styles.insightIcon}>⏱️</Text>
+                  <Text style={[styles.insightTitle, { color: theme.colors.textSecondary }]}>Snitt/session</Text>
+                  <Text style={[styles.insightValue, { color: theme.colors.text }]}>{productivityInsights.avgSessionLength}m</Text>
+                </View>
+                <View style={[styles.insightCard, { backgroundColor: theme.colors.card }]}>
+                  <Text style={styles.insightIcon}>📈</Text>
+                  <Text style={[styles.insightTitle, { color: theme.colors.textSecondary }]}>Per vecka</Text>
+                  <Text style={[styles.insightValue, { color: theme.colors.text }]}>{productivityInsights.sessionsPerWeek}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Top Courses */}
+          {courseStats.length > 0 && (
+            <View style={styles.courseStatsSection}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mest studerade kurser</Text>
+              {courseStats.slice(0, 3).map((stat, index) => {
+                const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+                const rankEmojis = ['🥇', '🥈', '🥉'];
+                
+                return (
+                  <View key={stat.courseId} style={[styles.courseStatItem, { backgroundColor: theme.colors.card }]}>
+                    <View style={[styles.courseStatRank, { backgroundColor: rankColors[index] }]}>
+                      <Text style={styles.courseStatRankEmoji}>{rankEmojis[index]}</Text>
+                    </View>
+                    <View style={styles.courseStatInfo}>
+                      <Text style={[styles.courseStatName, { color: theme.colors.text }]}>{stat.courseName}</Text>
+                      <Text style={[styles.courseStatSubject, { color: theme.colors.primary }]}>{stat.subject}</Text>
+                      <Text style={[styles.courseStatDetails, { color: theme.colors.textSecondary }]}>
+                        {stat.sessions} sessioner • {Math.round(stat.minutes / 60 * 10) / 10}h
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -866,316 +978,9 @@ export default function TimerScreen() {
         </View>
       </Modal>
 
-      {/* Stats Modal */}
-      <Modal
-        visible={showStats}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Statistik</Text>
-            <TouchableOpacity onPress={() => setShowStats(false)}>
-              <Text style={styles.closeButton}>Stäng</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <ScrollView style={styles.modalContent}>
-            {/* Overview Stats */}
-            <View style={styles.statsGrid}>
-              <View style={[styles.bigStatCard, { backgroundColor: '#1E40AF' }]}>
-                <Text style={styles.bigStatNumber}>{pomodoroSessions.length}</Text>
-                <Text style={styles.bigStatLabel}>Totala sessioner</Text>
-                <Text style={styles.bigStatSubtext}>🎯 Fokuserade studier</Text>
-              </View>
-              <View style={[styles.bigStatCard, { backgroundColor: '#7C3AED' }]}>
-                <Text style={styles.bigStatNumber}>
-                  {Math.round(pomodoroSessions.reduce((sum, s) => sum + s.duration, 0) / 60 * 10) / 10}
-                </Text>
-                <Text style={styles.bigStatLabel}>Totala timmar</Text>
-                <Text style={styles.bigStatSubtext}>⏰ Studietid</Text>
-              </View>
-            </View>
-            
-            {/* Productivity Insights */}
-            {productivityInsights && (
-              <View style={styles.insightsSection}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Produktivitetsinsikter</Text>
-                <View style={styles.insightsGrid}>
-                  <View style={styles.insightCard}>
-                    <Text style={styles.insightIcon}>🌟</Text>
-                    <Text style={styles.insightTitle}>Bästa tid</Text>
-                    <Text style={styles.insightValue}>{productivityInsights.mostProductiveHour}</Text>
-                  </View>
-                  <View style={styles.insightCard}>
-                    <Text style={styles.insightIcon}>📅</Text>
-                    <Text style={styles.insightTitle}>Bästa dag</Text>
-                    <Text style={styles.insightValue}>{productivityInsights.mostProductiveDay}</Text>
-                  </View>
-                  <View style={styles.insightCard}>
-                    <Text style={styles.insightIcon}>⏱️</Text>
-                    <Text style={styles.insightTitle}>Snitt/session</Text>
-                    <Text style={styles.insightValue}>{productivityInsights.avgSessionLength}m</Text>
-                  </View>
-                  <View style={styles.insightCard}>
-                    <Text style={styles.insightIcon}>📈</Text>
-                    <Text style={styles.insightTitle}>Per vecka</Text>
-                    <Text style={styles.insightValue}>{productivityInsights.sessionsPerWeek}</Text>
-                  </View>
-                </View>
-              </View>
-            )}
 
-            {/* Goals & Streaks */}
-            <View style={styles.streakSection}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mål & Streaks</Text>
-              <View style={styles.streakGrid}>
-                <View style={[styles.streakCard, { backgroundColor: '#DC2626' }]}>
-                  <Text style={styles.streakNumber}>{streakStats.current}</Text>
-                  <Text style={styles.streakLabel}>Nuvarande streak</Text>
-                  <Text style={styles.streakSubtext}>🔥 dagar i rad</Text>
-                </View>
-                <View style={[styles.streakCard, { backgroundColor: '#EA580C' }]}>
-                  <Text style={styles.streakNumber}>{streakStats.longest}</Text>
-                  <Text style={styles.streakLabel}>Längsta streak</Text>
-                  <Text style={styles.streakSubtext}>🏆 personligt rekord</Text>
-                </View>
-              </View>
-              
-              {/* Goal Progress */}
-              <View style={styles.goalSection}>
-                <View style={styles.goalCard}>
-                  <View style={styles.goalHeader}>
-                    <Text style={styles.goalTitle}>🎯 Veckans mål</Text>
-                    <Text style={styles.goalPercentage}>{streakStats.weeklyGoal}%</Text>
-                  </View>
-                  <View style={styles.goalProgressBar}>
-                    <View 
-                      style={[
-                        styles.goalProgressFill,
-                        { width: `${Math.min(100, streakStats.weeklyGoal)}%`, backgroundColor: '#10B981' }
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.goalSubtext}>5 dagar studier per vecka</Text>
-                </View>
-                
-                <View style={styles.goalCard}>
-                  <View style={styles.goalHeader}>
-                    <Text style={styles.goalTitle}>📊 Månadens mål</Text>
-                    <Text style={styles.goalPercentage}>{streakStats.monthlyGoal}%</Text>
-                  </View>
-                  <View style={styles.goalProgressBar}>
-                    <View 
-                      style={[
-                        styles.goalProgressFill,
-                        { width: `${Math.min(100, streakStats.monthlyGoal)}%`, backgroundColor: '#3B82F6' }
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.goalSubtext}>20 dagar studier per månad</Text>
-                </View>
-              </View>
-            </View>
 
-            {/* Enhanced Weekly Progress Graph */}
-            <View style={styles.graphSection}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
-              <View style={styles.weeklyGraphContainer}>
-                <View style={styles.weeklyGraph}>
-                  {weekStats.dailyStats.map((day, i) => {
-                    const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
-                    const isToday = day.date.toDateString() === new Date().toDateString();
-                    
-                    const maxMinutes = Math.max(120, Math.max(...weekStats.dailyStats.map(d => d.minutes)));
-                    const barHeight = Math.max(4, (day.minutes / maxMinutes) * 80);
-                    
-                    return (
-                      <View key={i} style={styles.dayColumn}>
-                        <View style={styles.barContainer}>
-                          <View 
-                            style={[
-                              styles.dayBar, 
-                              { 
-                                height: barHeight, 
-                                backgroundColor: day.minutes > 0 ? (isToday ? '#F59E0B' : '#A3E635') : '#475569'
-                              }
-                            ]} 
-                          />
-                          {day.sessions > 0 && (
-                            <View style={styles.sessionDots}>
-                              {Array.from({ length: Math.min(day.sessions, 5) }, (_, j) => (
-                                <View key={j} style={styles.sessionDot} />
-                              ))}
-                              {day.sessions > 5 && (
-                                <Text style={styles.sessionOverflow}>+{day.sessions - 5}</Text>
-                              )}
-                            </View>
-                          )}
-                        </View>
-                        <Text style={[styles.dayLabel, isToday && styles.todayLabel]}>{dayName}</Text>
-                        <Text style={[styles.dayValue, isToday && styles.todayValue]}>{day.minutes}m</Text>
-                        <Text style={styles.sessionCount}>{day.sessions} sess</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-                
-                {/* Week Summary */}
-                <View style={styles.weekSummary}>
-                  <View style={styles.weekSummaryItem}>
-                    <Text style={styles.weekSummaryLabel}>Totalt denna vecka</Text>
-                    <Text style={styles.weekSummaryValue}>{Math.round(weekStats.minutes / 60 * 10) / 10}h</Text>
-                  </View>
-                  <View style={styles.weekSummaryItem}>
-                    <Text style={styles.weekSummaryLabel}>Snitt per dag</Text>
-                    <Text style={styles.weekSummaryValue}>{weekStats.averagePerDay}m</Text>
-                  </View>
-                  <View style={styles.weekSummaryItem}>
-                    <Text style={styles.weekSummaryLabel}>Aktiva dagar</Text>
-                    <Text style={styles.weekSummaryValue}>{weekStats.dailyStats.filter(d => d.minutes > 0).length}/7</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
 
-            {/* Time Period Stats */}
-            <View style={styles.periodSection}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Tidsperioder</Text>
-              
-              <View style={styles.periodCard}>
-                <View style={styles.periodHeader}>
-                  <Text style={styles.periodTitle}>📅 Denna vecka</Text>
-                  <View style={styles.weekProgressBar}>
-                    <View 
-                      style={[
-                        styles.weekProgressFill,
-                        { width: `${Math.min(100, (weekStats.minutes / 300) * 100)}%` }
-                      ]}
-                    />
-                  </View>
-                </View>
-                <View style={styles.periodStats}>
-                  <View style={styles.periodStat}>
-                    <Text style={styles.periodStatNumber}>{weekStats.sessions}</Text>
-                    <Text style={styles.periodStatLabel}>Sessioner</Text>
-                  </View>
-                  <View style={styles.periodStat}>
-                    <Text style={styles.periodStatNumber}>{Math.round(weekStats.minutes / 60 * 10) / 10}</Text>
-                    <Text style={styles.periodStatLabel}>Timmar</Text>
-                  </View>
-                  <View style={styles.periodStat}>
-                    <Text style={styles.periodStatNumber}>{weekStats.averagePerDay}</Text>
-                    <Text style={styles.periodStatLabel}>Min/dag</Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.periodCard}>
-                <View style={styles.periodHeader}>
-                  <Text style={styles.periodTitle}>📊 Senaste 30 dagarna</Text>
-                  <View style={styles.monthProgressBar}>
-                    <View 
-                      style={[
-                        styles.monthProgressFill,
-                        { width: `${Math.min(100, (monthStats.minutes / 1200) * 100)}%` }
-                      ]}
-                    />
-                  </View>
-                </View>
-                <View style={styles.periodStats}>
-                  <View style={styles.periodStat}>
-                    <Text style={styles.periodStatNumber}>{monthStats.sessions}</Text>
-                    <Text style={styles.periodStatLabel}>Sessioner</Text>
-                  </View>
-                  <View style={styles.periodStat}>
-                    <Text style={styles.periodStatNumber}>{monthStats.hours}</Text>
-                    <Text style={styles.periodStatLabel}>Timmar</Text>
-                  </View>
-                  <View style={styles.periodStat}>
-                    <Text style={styles.periodStatNumber}>{Math.round(monthStats.minutes / 30)}</Text>
-                    <Text style={styles.periodStatLabel}>Min/dag</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Enhanced Course Stats */}
-            {courseStats.length > 0 && (
-              <View style={styles.courseStatsSection}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mest studerade kurser</Text>
-                {courseStats.map((stat, index) => {
-                  const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32', '#A3E635', '#60A5FA'];
-                  const rankEmojis = ['🥇', '🥈', '🥉', '🏅', '⭐'];
-                  
-                  return (
-                    <View key={stat.courseId} style={styles.courseStatItem}>
-                      <View style={[styles.courseStatRank, { backgroundColor: rankColors[index] || '#A3E635' }]}>
-                        <Text style={styles.courseStatRankEmoji}>{rankEmojis[index] || '📚'}</Text>
-                      </View>
-                      <View style={styles.courseStatInfo}>
-                        <Text style={styles.courseStatName}>{stat.courseName}</Text>
-                        <Text style={styles.courseStatSubject}>{stat.subject}</Text>
-                        <Text style={styles.courseStatDetails}>
-                          {stat.sessions} sessioner • {Math.round(stat.minutes / 60 * 10) / 10}h
-                        </Text>
-                        <Text style={styles.courseStatLastSession}>
-                          Senast: {new Date(stat.lastSession).toLocaleDateString('sv-SE', { 
-                            month: 'short', 
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </Text>
-                      </View>
-                      <View style={styles.courseStatProgress}>
-                        <View 
-                          style={[
-                            styles.courseStatBar,
-                            { 
-                              width: `${Math.min(100, (stat.minutes / Math.max(...courseStats.map(s => s.minutes))) * 100)}%`,
-                              backgroundColor: rankColors[index] || '#A3E635'
-                            }
-                          ]} 
-                        />
-                        <Text style={styles.courseStatMinutes}>{stat.minutes}m</Text>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-
-            {/* Recent Sessions */}
-            {pomodoroSessions.length > 0 && (
-              <View style={styles.recentSessions}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Senaste sessioner</Text>
-                {pomodoroSessions.slice(0, 10).map((session) => (
-                  <View key={session.id} style={styles.sessionItem}>
-                    <View style={styles.sessionInfo}>
-                      <Text style={styles.sessionCourse}>
-                        {session.courseId 
-                          ? courses.find(c => c.id === session.courseId)?.title || 'Okänd kurs'
-                          : 'Allmän session'
-                        }
-                      </Text>
-                      <Text style={styles.sessionDate}>
-                        {new Date(session.endTime).toLocaleDateString('sv-SE', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </Text>
-                    </View>
-                    <Text style={styles.sessionDuration}>{session.duration} min</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </ScrollView>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -1526,6 +1331,7 @@ const styles = StyleSheet.create({
   // New statistics styles
   streakSection: {
     marginBottom: 32,
+    paddingHorizontal: 24,
   },
   streakGrid: {
     flexDirection: 'row',
@@ -1598,6 +1404,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     marginBottom: 32,
+    marginHorizontal: 24,
     borderWidth: 1,
     borderColor: '#475569',
   },
@@ -1688,6 +1495,7 @@ const styles = StyleSheet.create({
   // Graph styles
   graphSection: {
     marginBottom: 32,
+    paddingHorizontal: 24,
   },
   weeklyGraph: {
     backgroundColor: '#334155',
@@ -1752,6 +1560,7 @@ const styles = StyleSheet.create({
   // New enhanced statistics styles
   insightsSection: {
     marginBottom: 32,
+    paddingHorizontal: 24,
   },
   insightsGrid: {
     flexDirection: 'row',
@@ -1913,5 +1722,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4,
     textAlign: 'center',
+  },
+  statsMainSection: {
+    paddingHorizontal: 24,
+    marginTop: 20,
   },
 });

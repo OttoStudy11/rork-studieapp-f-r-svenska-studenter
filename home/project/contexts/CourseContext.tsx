@@ -1,7 +1,29 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
-import { getCoursesForProgramAndYear, Course as ProgramCourse } from '@/constants/program-courses';
+// Temporary mock function until we fix the import
+function getCoursesForProgramAndYear(program: string, year: 1 | 2 | 3) {
+  const baseCourses = [
+    { name: 'Svenska', code: 'SVE01', points: 100, year, mandatory: true, category: 'gymnasiegemensam' as const },
+    { name: 'Engelska', code: 'ENG05', points: 100, year, mandatory: true, category: 'gymnasiegemensam' as const },
+    { name: 'Matematik', code: 'MAT01a', points: 100, year, mandatory: true, category: 'gymnasiegemensam' as const },
+    { name: 'Historia', code: 'HIS01a1', points: 50, year, mandatory: true, category: 'gymnasiegemensam' as const },
+    { name: 'Samhällskunskap', code: 'SAM01a1', points: 50, year, mandatory: true, category: 'gymnasiegemensam' as const },
+    { name: 'Religionskunskap', code: 'REL01', points: 50, year, mandatory: true, category: 'gymnasiegemensam' as const },
+    { name: 'Naturkunskap', code: 'NAT01a1', points: 50, year, mandatory: true, category: 'gymnasiegemensam' as const },
+    { name: 'Idrott och hälsa', code: 'IDH01', points: 100, year, mandatory: true, category: 'gymnasiegemensam' as const },
+  ];
+  return baseCourses;
+}
+
+type ProgramCourse = {
+  name: string;
+  code: string;
+  points: number;
+  year: 1 | 2 | 3;
+  mandatory: boolean;
+  category: 'gymnasiegemensam' | 'programgemensam' | 'inriktning' | 'programfördjupning' | 'individuellt val';
+};
 
 export interface Course {
   id: string;
@@ -135,9 +157,10 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
   };
 
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
-    if (!userProfile) return;
+    const updatedProfile = userProfile 
+      ? { ...userProfile, ...updates }
+      : { id: `user-${Date.now()}`, ...updates } as UserProfile;
     
-    const updatedProfile = { ...userProfile, ...updates };
     await saveProfile(updatedProfile);
     
     // If program or year changed, update courses

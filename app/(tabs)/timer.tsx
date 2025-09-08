@@ -17,7 +17,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAchievements } from '@/contexts/AchievementContext';
 import { Play, Pause, Square, Settings, BellOff, Bell, Flame, Target, Trophy, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, BookOpen, Clock, TrendingUp, Award, Star, CheckCircle, Timer, Activity } from 'lucide-react-native';
-import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop as SvgStop } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 import * as Notifications from 'expo-notifications';
@@ -558,8 +558,8 @@ export default function TimerScreen() {
           <Svg width={320} height={320} style={styles.timerSvg}>
             <Defs>
               <SvgLinearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor={theme.colors.primary} stopOpacity="1" />
-                <Stop offset="100%" stopColor={theme.colors.secondary} stopOpacity="1" />
+                <SvgStop offset="0%" stopColor={theme.colors.primary} stopOpacity="1" />
+                <SvgStop offset="100%" stopColor={theme.colors.secondary} stopOpacity="1" />
               </SvgLinearGradient>
             </Defs>
             {/* Outer decorative circle */}

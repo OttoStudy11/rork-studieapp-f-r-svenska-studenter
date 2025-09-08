@@ -16,9 +16,8 @@ import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Timer, Play, Pause, Square, Settings, BookOpen, BellOff, Bell } from 'lucide-react-native';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Text as SvgText } from 'react-native-svg';
 import * as Notifications from 'expo-notifications';
-import * as SystemUI from 'expo-system-ui';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -792,19 +791,19 @@ export default function TimerScreen() {
                   strokeLinecap="round"
                   transform="rotate(-90 140 140)"
                 />
-                <defs>
-                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#06B6D4" />
-                    <stop offset="50%" stopColor="#10B981" />
-                    <stop offset="100%" stopColor="#10B981" />
-                  </linearGradient>
-                </defs>
+                <Defs>
+                  <SvgLinearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <Stop offset="0%" stopColor="#06B6D4" />
+                    <Stop offset="50%" stopColor="#10B981" />
+                    <Stop offset="100%" stopColor="#10B981" />
+                  </SvgLinearGradient>
+                </Defs>
                 {/* Scale markers */}
-                <text x="140" y="50" fill="#94A3B8" fontSize="14" textAnchor="middle">100</text>
-                <text x="230" y="145" fill="#94A3B8" fontSize="14" textAnchor="middle">75</text>
-                <text x="140" y="240" fill="#94A3B8" fontSize="14" textAnchor="middle">50</text>
-                <text x="50" y="145" fill="#94A3B8" fontSize="14" textAnchor="middle">25</text>
-                <text x="35" y="210" fill="#94A3B8" fontSize="14" textAnchor="middle">0</text>
+                <SvgText x="140" y="50" fill="#94A3B8" fontSize="14" textAnchor="middle">100</SvgText>
+                <SvgText x="230" y="145" fill="#94A3B8" fontSize="14" textAnchor="middle">75</SvgText>
+                <SvgText x="140" y="240" fill="#94A3B8" fontSize="14" textAnchor="middle">50</SvgText>
+                <SvgText x="50" y="145" fill="#94A3B8" fontSize="14" textAnchor="middle">25</SvgText>
+                <SvgText x="35" y="210" fill="#94A3B8" fontSize="14" textAnchor="middle">0</SvgText>
               </Svg>
               <View style={styles.productivityContent}>
                 <Text style={styles.productivityIcon}>🔒</Text>

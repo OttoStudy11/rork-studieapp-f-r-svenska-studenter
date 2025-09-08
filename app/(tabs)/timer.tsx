@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,15 +8,14 @@ import {
   Modal,
   ScrollView,
   StatusBar,
-  Platform,
-  Dimensions
+  Platform
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAchievements } from '@/contexts/AchievementContext';
-import { Play, Pause, Square, Settings, BellOff, Bell, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, Timer, Activity, X, Star } from 'lucide-react-native';
+import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import * as Notifications from 'expo-notifications';
@@ -41,7 +40,8 @@ interface CompletionScreenProps {
 }
 
 function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions }: CompletionScreenProps) {
-  const { theme } = useTheme();
+  // Remove unused theme variable
+  // const { theme } = useTheme();
   const [starsVisible, setStarsVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
@@ -72,7 +72,7 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
         useNativeDriver: true,
       }).start();
     }, 500);
-  }, []);
+  }, [fadeAnim, scaleAnim, starsAnim]);
 
   if (!data) return null;
 
@@ -247,6 +247,12 @@ export default function TimerScreen() {
   const [totalFocusToday, setTotalFocusToday] = useState(0);
   const [weeklyAverage, setWeeklyAverage] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+  
+  // Suppress unused variable warnings for now
+  void motivationalQuote;
+  void totalFocusToday;
+  void weeklyAverage;
+  void bestStreak;
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   const [completedSessionData, setCompletedSessionData] = useState<{
     duration: number;
@@ -255,7 +261,7 @@ export default function TimerScreen() {
     coinsEarned: number;
   } | null>(null);
   
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const progressAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -264,7 +270,7 @@ export default function TimerScreen() {
   const totalTime = sessionType === 'focus' ? focusTime * 60 : breakTime * 60;
   const progress = timeLeft / totalTime;
 
-  const motivationalQuotes = [
+  const motivationalQuotes = useMemo(() => [
     'Du är fantastisk! Fortsätt så! 💪',
     'Varje minut räknas! 🌟',
     'Fokus är din superkraft! 🚀',
@@ -277,341 +283,9 @@ export default function TimerScreen() {
     'Din tid, din framtid! ⏰',
     'Varje session räknas! 📈',
     'Du är på rätt väg! 🛤️'
-  ];
+  ], []);
 
-  // Check notification permissions on mount and set random quote
-  useEffect(() => {
-    checkNotificationPermissions();
-    setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
-    calculateStats();
-    
-    // Start pulse animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-
-    // Scale animation for timer
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.02,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
-
-  const calculateStats = () => {
-    // Calculate today's total focus time
-    const today = new Date().toDateString();
-    const todaySessions = pomodoroSessions.filter(session => {
-      const sessionDate = new Date(session.endTime).toDateString();
-      return sessionDate === today;
-    });
-    const todayMinutes = todaySessions.reduce((sum, session) => sum + session.duration, 0);
-    setTotalFocusToday(todayMinutes);
-
-    // Calculate weekly average
-    const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const weekSessions = pomodoroSessions.filter(session => {
-      const sessionDate = new Date(session.endTime);
-      return sessionDate >= weekAgo && sessionDate <= now;
-    });
-    const weekMinutes = weekSessions.reduce((sum, session) => sum + session.duration, 0);
-    setWeeklyAverage(Math.round(weekMinutes / 7));
-
-    // Get best streak
-    const streakStats = getStreakStats();
-    setBestStreak(streakStats.longest);
-  };
-
-  const checkNotificationPermissions = async () => {
-    if (Platform.OS === 'web') {
-      setDndPermissionGranted(false);
-      return;
-    }
-
-    try {
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== 'granted') {
-        const { status: newStatus } = await Notifications.requestPermissionsAsync();
-        setDndPermissionGranted(newStatus === 'granted');
-      } else {
-        setDndPermissionGranted(true);
-      }
-    } catch (error) {
-      console.log('Error checking notification permissions:', error);
-      setDndPermissionGranted(false);
-    }
-  };
-
-  const enableDoNotDisturb = async () => {
-    if (Platform.OS === 'web') {
-      console.log('DND not available on web');
-      return;
-    }
-
-    try {
-      await Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: false,
-          shouldPlaySound: false,
-          shouldSetBadge: false,
-          shouldShowBanner: false,
-          shouldShowList: false,
-        }),
-      });
-      
-      setIsDndActive(true);
-      showSuccess('Stör ej aktiverat', 'Notifikationer är nu tysta');
-    } catch (error) {
-      console.log('Error enabling DND:', error);
-    }
-  };
-
-  const disableDoNotDisturb = async () => {
-    if (Platform.OS === 'web') {
-      console.log('DND not available on web');
-      return;
-    }
-
-    try {
-      await Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: true,
-          shouldShowBanner: true,
-          shouldShowList: true,
-        }),
-      });
-      
-      setIsDndActive(false);
-      showSuccess('Stör ej inaktiverat', 'Notifikationer är nu aktiva');
-    } catch (error) {
-      console.log('Error disabling DND:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (timerState === 'running') {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleTimerComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [timerState]);
-
-  useEffect(() => {
-    Animated.timing(progressAnim, {
-      toValue: progress,
-      duration: 100,
-      useNativeDriver: false,
-    }).start();
-  }, [progress]);
-
-  const handleTimerComplete = async () => {
-    setTimerState('idle');
-    
-    // Add haptic feedback
-    if (Platform.OS !== 'web') {
-      try {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch (error) {
-        console.log('Haptic feedback not available:', error);
-      }
-    }
-    
-    if (isDndActive && sessionType === 'focus') {
-      await disableDoNotDisturb();
-    }
-    
-    if (sessionType === 'focus' && sessionStartTime) {
-      try {
-        await addPomodoroSession({
-          courseId: selectedCourse || undefined,
-          duration: focusTime,
-          startTime: sessionStartTime.toISOString(),
-          endTime: new Date().toISOString()
-        });
-        
-        const courseName = selectedCourse 
-          ? courses.find(c => c.id === selectedCourse)?.title || 'Okänd kurs'
-          : 'Allmän session';
-        
-        // Update session count
-        setSessionCount(prev => prev + 1);
-        
-        // Calculate coins earned (1 coin per minute)
-        const coinsEarned = focusTime;
-        
-        // Set completion data and show completion screen
-        setCompletedSessionData({
-          duration: focusTime,
-          sessionType: 'focus',
-          courseName,
-          coinsEarned
-        });
-        setShowCompletionScreen(true);
-        
-        // Show achievement if daily goal reached
-        if (sessionCount + 1 === dailyGoal) {
-          showAchievement('Dagsmål uppnått! 🎯', `Du har slutfört ${dailyGoal} sessioner idag!`);
-        }
-      } catch (error) {
-        console.error('Failed to save pomodoro session:', error);
-      }
-    } else {
-      // For break completion, just show a simple completion
-      setCompletedSessionData({
-        duration: breakTime,
-        sessionType: 'break',
-        courseName: 'Paus',
-        coinsEarned: 0
-      });
-      setShowCompletionScreen(true);
-    }
-
-    if (sessionType === 'focus') {
-      setSessionType('break');
-      setTimeLeft(breakTime * 60);
-    } else {
-      setSessionType('focus');
-      setTimeLeft(focusTime * 60);
-    }
-    
-    // Update motivational quote
-    setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
-  };
-
-  const startTimer = async () => {
-    if (timerState === 'idle') {
-      setSessionStartTime(new Date());
-      
-      if (sessionType === 'focus' && dndPermissionGranted) {
-        await enableDoNotDisturb();
-      }
-    }
-    setTimerState('running');
-  };
-
-  const pauseTimer = () => {
-    setTimerState('paused');
-  };
-
-  const stopTimer = async () => {
-    setTimerState('idle');
-    setTimeLeft(sessionType === 'focus' ? focusTime * 60 : breakTime * 60);
-    setSessionStartTime(null);
-    
-    if (isDndActive) {
-      await disableDoNotDisturb();
-    }
-  };
-
-  const resetTimer = async () => {
-    setTimerState('idle');
-    setSessionType('focus');
-    setTimeLeft(focusTime * 60);
-    setSessionStartTime(null);
-    
-    if (isDndActive) {
-      await disableDoNotDisturb();
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const getTodayStats = () => {
-    const today = new Date().toDateString();
-    const todaySessions = pomodoroSessions.filter(session => {
-      const sessionDate = new Date(session.endTime).toDateString();
-      return sessionDate === today;
-    });
-    
-    const totalMinutes = todaySessions.reduce((sum, session) => sum + session.duration, 0);
-    return {
-      sessions: todaySessions.length,
-      minutes: totalMinutes
-    };
-  };
-
-  const getWeekStats = () => {
-    const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
-    const weekSessions = pomodoroSessions.filter(session => {
-      const sessionDate = new Date(session.endTime);
-      return sessionDate >= weekAgo && sessionDate <= now;
-    });
-    
-    const totalMinutes = weekSessions.reduce((sum, session) => sum + session.duration, 0);
-    const averagePerDay = Math.round(totalMinutes / 7);
-    
-    const dailyStats = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (6 - i));
-      const dayString = date.toDateString();
-      
-      const daySessions = weekSessions.filter(session => {
-        const sessionDate = new Date(session.endTime).toDateString();
-        return sessionDate === dayString;
-      });
-      
-      return {
-        date: date,
-        sessions: daySessions.length,
-        minutes: daySessions.reduce((sum, session) => sum + session.duration, 0)
-      };
-    });
-    
-    return {
-      sessions: weekSessions.length,
-      minutes: totalMinutes,
-      averagePerDay,
-      dailyStats
-    };
-  };
-
-  const getStreakStats = () => {
+  const getStreakStats = useCallback(() => {
     if (pomodoroSessions.length === 0) return { current: 0, longest: 0 };
     
     const sortedSessions = [...pomodoroSessions]
@@ -663,17 +337,355 @@ export default function TimerScreen() {
     }
     
     return { current: currentStreak, longest: longestStreak };
+  }, [pomodoroSessions]);
+
+  const calculateStats = useCallback(() => {
+    // Calculate today's total focus time
+    const today = new Date().toDateString();
+    const todaySessions = pomodoroSessions.filter(session => {
+      const sessionDate = new Date(session.endTime).toDateString();
+      return sessionDate === today;
+    });
+    const todayMinutes = todaySessions.reduce((sum, session) => sum + session.duration, 0);
+    setTotalFocusToday(todayMinutes);
+
+    // Calculate weekly average
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekSessions = pomodoroSessions.filter(session => {
+      const sessionDate = new Date(session.endTime);
+      return sessionDate >= weekAgo && sessionDate <= now;
+    });
+    const weekMinutes = weekSessions.reduce((sum, session) => sum + session.duration, 0);
+    setWeeklyAverage(Math.round(weekMinutes / 7));
+
+    // Get best streak
+    const streakStats = getStreakStats();
+    setBestStreak(streakStats.longest);
+  }, [pomodoroSessions, getStreakStats]);
+
+  // Check notification permissions on mount and set random quote
+  useEffect(() => {
+    const initializeTimer = async () => {
+      await checkNotificationPermissions();
+      setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
+      calculateStats();
+    };
+    
+    initializeTimer();
+    
+    // Start pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Scale animation for timer
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.02,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [calculateStats, motivationalQuotes, pulseAnim, scaleAnim]);
+
+  const checkNotificationPermissions = async () => {
+    if (Platform.OS === 'web') {
+      setDndPermissionGranted(false);
+      return;
+    }
+
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        const { status: newStatus } = await Notifications.requestPermissionsAsync();
+        setDndPermissionGranted(newStatus === 'granted');
+      } else {
+        setDndPermissionGranted(true);
+      }
+    } catch (error) {
+      console.log('Error checking notification permissions:', error);
+      setDndPermissionGranted(false);
+    }
   };
 
-  const getSelectedCourseTitle = () => {
+  const enableDoNotDisturb = async () => {
+    if (Platform.OS === 'web') {
+      console.log('DND not available on web');
+      return;
+    }
+
+    try {
+      await Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: false,
+          shouldPlaySound: false,
+          shouldSetBadge: false,
+          shouldShowBanner: false,
+          shouldShowList: false,
+        }),
+      });
+      
+      setIsDndActive(true);
+      showSuccess('Stör ej aktiverat', 'Notifikationer är nu tysta');
+    } catch (error) {
+      console.log('Error enabling DND:', error);
+    }
+  };
+
+  const disableDoNotDisturb = useCallback(async () => {
+    if (Platform.OS === 'web') {
+      console.log('DND not available on web');
+      return;
+    }
+
+    try {
+      await Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+      
+      setIsDndActive(false);
+      showSuccess('Stör ej inaktiverat', 'Notifikationer är nu aktiva');
+    } catch (error) {
+      console.log('Error disabling DND:', error);
+    }
+  }, [showSuccess]);
+
+  const handleTimerComplete = useCallback(async () => {
+    setTimerState('idle');
+    
+    // Add haptic feedback
+    if (Platform.OS !== 'web') {
+      try {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (error) {
+        console.log('Haptic feedback not available:', error);
+      }
+    }
+    
+    if (isDndActive && sessionType === 'focus') {
+      await disableDoNotDisturb();
+    }
+    
+    if (sessionType === 'focus' && sessionStartTime) {
+      try {
+        await addPomodoroSession({
+          courseId: selectedCourse || undefined,
+          duration: focusTime,
+          startTime: sessionStartTime.toISOString(),
+          endTime: new Date().toISOString()
+        });
+        
+        const courseName = selectedCourse 
+          ? courses.find((c: any) => c.id === selectedCourse)?.title || 'Okänd kurs'
+          : 'Allmän session';
+        
+        // Update session count
+        setSessionCount(prev => prev + 1);
+        
+        // Calculate coins earned (1 coin per minute)
+        const coinsEarned = focusTime;
+        
+        // Set completion data and show completion screen
+        setCompletedSessionData({
+          duration: focusTime,
+          sessionType: 'focus',
+          courseName,
+          coinsEarned
+        });
+        setShowCompletionScreen(true);
+        
+        // Show achievement if daily goal reached
+        if (sessionCount + 1 === dailyGoal) {
+          showAchievement('Dagsmål uppnått! 🎯', `Du har slutfört ${dailyGoal} sessioner idag!`);
+        }
+      } catch (error) {
+        console.error('Failed to save pomodoro session:', error);
+      }
+    } else {
+      // For break completion, just show a simple completion
+      setCompletedSessionData({
+        duration: breakTime,
+        sessionType: 'break',
+        courseName: 'Paus',
+        coinsEarned: 0
+      });
+      setShowCompletionScreen(true);
+    }
+
+    if (sessionType === 'focus') {
+      setSessionType('break');
+      setTimeLeft(breakTime * 60);
+    } else {
+      setSessionType('focus');
+      setTimeLeft(focusTime * 60);
+    }
+    
+    // Update motivational quote
+    setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
+  }, [sessionType, isDndActive, disableDoNotDisturb, addPomodoroSession, selectedCourse, courses, focusTime, sessionStartTime, sessionCount, dailyGoal, showAchievement, breakTime, motivationalQuotes]);
+
+  useEffect(() => {
+    if (timerState === 'running') {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            handleTimerComplete();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000) as any;
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [timerState, handleTimerComplete]);
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: progress,
+      duration: 100,
+      useNativeDriver: false,
+    }).start();
+  }, [progress, progressAnim]);
+
+  const startTimer = async () => {
+    if (timerState === 'idle') {
+      setSessionStartTime(new Date());
+      
+      if (sessionType === 'focus' && dndPermissionGranted) {
+        await enableDoNotDisturb();
+      }
+    }
+    setTimerState('running');
+  };
+
+  const pauseTimer = () => {
+    setTimerState('paused');
+  };
+
+  const stopTimer = async () => {
+    setTimerState('idle');
+    setTimeLeft(sessionType === 'focus' ? focusTime * 60 : breakTime * 60);
+    setSessionStartTime(null);
+    
+    if (isDndActive) {
+      await disableDoNotDisturb();
+    }
+  };
+
+  const resetTimer = async () => {
+    setTimerState('idle');
+    setSessionType('focus');
+    setTimeLeft(focusTime * 60);
+    setSessionStartTime(null);
+    
+    if (isDndActive) {
+      await disableDoNotDisturb();
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+
+
+
+
+  const getSelectedCourseTitle = useCallback(() => {
     if (!selectedCourse) return 'Allmän session';
-    const course = courses.find(c => c.id === selectedCourse);
+    const course = courses.find((c: any) => c.id === selectedCourse);
     return course ? course.title : 'Okänd kurs';
-  };
+  }, [selectedCourse, courses]);
 
-  const todayStats = getTodayStats();
-  const weekStats = getWeekStats();
-  const streakStats = getStreakStats();
+  const todayStats = useMemo(() => {
+    const today = new Date().toDateString();
+    const todaySessions = pomodoroSessions.filter(session => {
+      const sessionDate = new Date(session.endTime).toDateString();
+      return sessionDate === today;
+    });
+    
+    const totalMinutes = todaySessions.reduce((sum, session) => sum + session.duration, 0);
+    return {
+      sessions: todaySessions.length,
+      minutes: totalMinutes
+    };
+  }, [pomodoroSessions]);
+
+  const weekStats = useMemo(() => {
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    const weekSessions = pomodoroSessions.filter(session => {
+      const sessionDate = new Date(session.endTime);
+      return sessionDate >= weekAgo && sessionDate <= now;
+    });
+    
+    const totalMinutes = weekSessions.reduce((sum, session) => sum + session.duration, 0);
+    const averagePerDay = Math.round(totalMinutes / 7);
+    
+    const dailyStats = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      const dayString = date.toDateString();
+      
+      const daySessions = weekSessions.filter(session => {
+        const sessionDate = new Date(session.endTime).toDateString();
+        return sessionDate === dayString;
+      });
+      
+      return {
+        date: date,
+        sessions: daySessions.length,
+        minutes: daySessions.reduce((sum, session) => sum + session.duration, 0)
+      };
+    });
+    
+    return {
+      sessions: weekSessions.length,
+      minutes: totalMinutes,
+      averagePerDay,
+      dailyStats
+    };
+  }, [pomodoroSessions]);
+
+  const streakStats = useMemo(() => getStreakStats(), [getStreakStats]);
 
   const circumference = 2 * Math.PI * 120;
 
@@ -689,107 +701,145 @@ export default function TimerScreen() {
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        {/* Simplified Header */}
+        {/* Header */}
         <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
           <View style={styles.headerTop}>
-            <TouchableOpacity
-              style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
-              onPress={() => setShowSettings(true)}
-              activeOpacity={0.7}
-            >
-              <Settings size={20} color={theme.colors.text} />
-            </TouchableOpacity>
-            
-            <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-              {sessionType === 'focus' ? 'Fokus' : 'Paus'}
-            </Text>
-            
-            <TouchableOpacity
-              style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
-              onPress={() => setSoundEnabled(!soundEnabled)}
-              activeOpacity={0.7}
-            >
-              {soundEnabled ? (
-                <Volume2 size={20} color={theme.colors.text} />
-              ) : (
-                <VolumeX size={20} color={theme.colors.text} />
-              )}
-            </TouchableOpacity>
+            <View style={styles.headerLeft}>
+              <Text style={[styles.greeting, { color: theme.colors.text }]}>Timer 🎯</Text>
+              <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+                {sessionType === 'focus' ? 'Fokusera på dina mål' : 'Ta en välförtjänt paus'}
+              </Text>
+            </View>
+            <View style={styles.headerRight}>
+              <TouchableOpacity
+                style={[styles.headerButton, { backgroundColor: theme.colors.primary + '15' }]}
+                onPress={() => setShowSettings(true)}
+                activeOpacity={0.7}
+              >
+                <Settings size={22} color={theme.colors.primary} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.headerButton, { backgroundColor: theme.colors.secondary + '15' }]}
+                onPress={() => setSoundEnabled(!soundEnabled)}
+                activeOpacity={0.7}
+              >
+                {soundEnabled ? (
+                  <Volume2 size={22} color={theme.colors.secondary} />
+                ) : (
+                  <VolumeX size={22} color={theme.colors.secondary} />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
 
 
-        {/* Simplified Timer Circle */}
-        <View style={styles.timerContainer}>
-          <Svg width={280} height={280} style={styles.timerSvg}>
-            {/* Background circle */}
-            <Circle
-              cx={140}
-              cy={140}
-              r={120}
-              stroke={theme.colors.border}
-              strokeWidth={8}
-              fill="none"
-              opacity={0.2}
-            />
-            {/* Progress circle */}
-            <Circle
-              cx={140}
-              cy={140}
-              r={120}
-              stroke={theme.colors.primary}
-              strokeWidth={8}
-              fill="none"
-              strokeDasharray={circumference}
-              strokeDashoffset={circumference * (1 - progress)}
-              strokeLinecap="round"
-              transform={`rotate(-90 140 140)`}
-            />
-          </Svg>
-          
-          <View style={styles.timerContent}>
-            <Text style={[styles.timerText, { color: theme.colors.text }]}>
-              {formatTime(timeLeft)}
-            </Text>
-            <Text style={[styles.sessionLabel, { color: theme.colors.textSecondary }]}>
-              {getSelectedCourseTitle()}
-            </Text>
-          </View>
+        {/* Hero Timer Card */}
+        <View style={styles.timerSection}>
+          <LinearGradient
+            colors={sessionType === 'focus' 
+              ? theme.colors.gradient as any
+              : [theme.colors.secondary + '40', theme.colors.secondary + '20'] as any
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.timerCard}
+          >
+            <View style={styles.timerContainer}>
+              <Svg width={280} height={280} style={styles.timerSvg}>
+                {/* Background circle */}
+                <Circle
+                  cx={140}
+                  cy={140}
+                  r={120}
+                  stroke="rgba(255, 255, 255, 0.2)"
+                  strokeWidth={8}
+                  fill="none"
+                />
+                {/* Progress circle */}
+                <Circle
+                  cx={140}
+                  cy={140}
+                  r={120}
+                  stroke="white"
+                  strokeWidth={8}
+                  fill="none"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={circumference * (1 - progress)}
+                  strokeLinecap="round"
+                  transform={`rotate(-90 140 140)`}
+                />
+              </Svg>
+              
+              <View style={styles.timerContent}>
+                <Text style={styles.timerText}>
+                  {formatTime(timeLeft)}
+                </Text>
+                <Text style={styles.sessionLabel}>
+                  {getSelectedCourseTitle()}
+                </Text>
+                <View style={styles.sessionTypeIndicator}>
+                  <View style={[styles.sessionTypeBadge, { 
+                    backgroundColor: sessionType === 'focus' 
+                      ? 'rgba(255, 255, 255, 0.2)' 
+                      : 'rgba(255, 255, 255, 0.15)'
+                  }]}>
+                    {sessionType === 'focus' ? (
+                      <Brain size={16} color="white" />
+                    ) : (
+                      <Coffee size={16} color="white" />
+                    )}
+                    <Text style={styles.sessionTypeText}>
+                      {sessionType === 'focus' ? 'Fokus' : 'Paus'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
         </View>
 
         {/* Course Selection */}
         {sessionType === 'focus' && timerState === 'idle' && (
           <View style={styles.courseSection}>
+            <Text style={[styles.courseSectionTitle, { color: theme.colors.text }]}>Välj kurs</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseList}>
               <TouchableOpacity
                 style={[
                   styles.courseChip,
                   !selectedCourse && styles.courseChipActive,
-                  { backgroundColor: !selectedCourse ? theme.colors.primary : theme.colors.card }
+                  { 
+                    backgroundColor: !selectedCourse ? theme.colors.primary : theme.colors.card,
+                    borderColor: !selectedCourse ? theme.colors.primary : 'transparent'
+                  }
                 ]}
                 onPress={() => setSelectedCourse('')}
                 activeOpacity={0.8}
               >
                 <Text style={[
                   styles.courseChipText,
-                  { color: !selectedCourse ? '#FFFFFF' : theme.colors.textSecondary }
+                  { color: !selectedCourse ? '#FFFFFF' : theme.colors.text }
                 ]}>Allmänt</Text>
               </TouchableOpacity>
-              {courses.map((course) => (
+              {courses.map((course: any) => (
                 <TouchableOpacity
                   key={course.id}
                   style={[
                     styles.courseChip,
                     selectedCourse === course.id && styles.courseChipActive,
-                    { backgroundColor: selectedCourse === course.id ? theme.colors.primary : theme.colors.card }
+                    { 
+                      backgroundColor: selectedCourse === course.id ? theme.colors.primary : theme.colors.card,
+                      borderColor: selectedCourse === course.id ? theme.colors.primary : 'transparent'
+                    }
                   ]}
                   onPress={() => setSelectedCourse(course.id)}
                   activeOpacity={0.8}
                 >
                   <Text style={[
                     styles.courseChipText,
-                    { color: selectedCourse === course.id ? '#FFFFFF' : theme.colors.textSecondary }
+                    { color: selectedCourse === course.id ? '#FFFFFF' : theme.colors.text }
                   ]}>{course.title}</Text>
                 </TouchableOpacity>
               ))}
@@ -797,17 +847,24 @@ export default function TimerScreen() {
           </View>
         )}
 
-        {/* Simplified Controls */}
+        {/* Controls */}
         <View style={styles.controls}>
           {timerState === 'idle' ? (
             <View style={styles.idleControls}>
-              <TouchableOpacity 
-                style={[styles.mainButton, { backgroundColor: theme.colors.primary }]} 
-                onPress={startTimer}
-                activeOpacity={0.8}
+              <LinearGradient
+                colors={theme.colors.gradient as any}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.mainButtonGradient}
               >
-                <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
-              </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.mainButton} 
+                  onPress={startTimer}
+                  activeOpacity={0.8}
+                >
+                  <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
+                </TouchableOpacity>
+              </LinearGradient>
               
               <View style={styles.quickActions}>
                 <TouchableOpacity
@@ -854,17 +911,27 @@ export default function TimerScreen() {
                 <Square size={24} color={theme.colors.error} />
               </TouchableOpacity>
               
-              <TouchableOpacity
-                style={[styles.mainButton, { backgroundColor: timerState === 'running' ? theme.colors.warning : theme.colors.primary }]}
-                onPress={timerState === 'running' ? pauseTimer : startTimer}
-                activeOpacity={0.8}
+              <LinearGradient
+                colors={timerState === 'running' 
+                  ? [theme.colors.warning, theme.colors.warning + 'DD'] as any
+                  : theme.colors.gradient as any
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.mainButtonGradient}
               >
-                {timerState === 'running' ? (
-                  <Pause size={32} color="#FFFFFF" fill="#FFFFFF" />
-                ) : (
-                  <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
-                )}
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.mainButton}
+                  onPress={timerState === 'running' ? pauseTimer : startTimer}
+                  activeOpacity={0.8}
+                >
+                  {timerState === 'running' ? (
+                    <Pause size={32} color="#FFFFFF" fill="#FFFFFF" />
+                  ) : (
+                    <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
+              </LinearGradient>
               
               <TouchableOpacity 
                 style={[styles.controlButton, { backgroundColor: theme.colors.card }]} 
@@ -881,30 +948,36 @@ export default function TimerScreen() {
           )}
         </View>
 
-        {/* Simplified Statistics Section */}
+        {/* Statistics Section */}
         <View style={styles.statsSection}>
-          <Text style={[styles.statsSectionTitle, { color: theme.colors.text }]}>Statistik</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
+          </View>
           
-          {/* Streak and Goal Card */}
+          {/* Hero Stats Card */}
           <LinearGradient
-            colors={[theme.colors.primary + '15', theme.colors.secondary + '15'] as any}
+            colors={[theme.colors.primary + '20', theme.colors.secondary + '20'] as any}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.streakCard}
+            style={styles.heroStatsCard}
           >
-            <View style={styles.streakContent}>
-              <View style={styles.streakItem}>
-                <Flame size={24} color={theme.colors.warning} />
-                <Text style={[styles.streakNumber, { color: theme.colors.text }]}>{currentStreak}</Text>
-                <Text style={[styles.streakLabel, { color: theme.colors.textSecondary }]}>Dagars streak</Text>
+            <View style={styles.heroStatsContent}>
+              <View style={styles.heroStatItem}>
+                <View style={[styles.heroStatIcon, { backgroundColor: theme.colors.warning + '30' }]}>
+                  <Flame size={20} color={theme.colors.warning} />
+                </View>
+                <Text style={[styles.heroStatNumber, { color: theme.colors.text }]}>{currentStreak}</Text>
+                <Text style={[styles.heroStatLabel, { color: theme.colors.textSecondary }]}>Dagars streak</Text>
               </View>
-              <View style={styles.streakDivider} />
-              <View style={styles.streakItem}>
-                <Target size={24} color={theme.colors.primary} />
-                <Text style={[styles.streakNumber, { color: theme.colors.text }]}>
+              <View style={styles.heroStatDivider} />
+              <View style={styles.heroStatItem}>
+                <View style={[styles.heroStatIcon, { backgroundColor: theme.colors.primary + '30' }]}>
+                  <Target size={20} color={theme.colors.primary} />
+                </View>
+                <Text style={[styles.heroStatNumber, { color: theme.colors.text }]}>
                   {Math.round((sessionCount / dailyGoal) * 100)}%
                 </Text>
-                <Text style={[styles.streakLabel, { color: theme.colors.textSecondary }]}>Av dagsmål</Text>
+                <Text style={[styles.heroStatLabel, { color: theme.colors.textSecondary }]}>Av dagsmål</Text>
               </View>
             </View>
           </LinearGradient>
@@ -1011,14 +1084,14 @@ export default function TimerScreen() {
             >
               <Text style={[styles.graphTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
               <View style={styles.graphBars}>
-                {weekStats.dailyStats.map((day, i) => {
+                {weekStats.dailyStats.map((day: any, i: number) => {
                   const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
                   const isToday = day.date.toDateString() === new Date().toDateString();
                   const maxMinutes = Math.max(60, Math.max(...weekStats.dailyStats.map(d => d.minutes)));
                   const barHeight = Math.max(4, (day.minutes / maxMinutes) * 100);
                   
                   return (
-                    <View key={i} style={styles.dayColumn}>
+                    <View key={`day-${i}`} style={styles.dayColumn}>
                       <View style={styles.barContainer}>
                         <LinearGradient
                           colors={isToday 
@@ -1183,31 +1256,55 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 24,
   },
   headerTop: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    textAlign: 'center',
-    letterSpacing: 0.5,
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  greeting: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 4,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontWeight: '400',
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  timerSection: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  timerCard: {
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
   timerContainer: {
     alignItems: 'center',
-    marginVertical: 50,
     position: 'relative',
   },
   timerSvg: {
@@ -1220,44 +1317,74 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timerText: {
-    fontSize: 72,
+    fontSize: 64,
     fontWeight: '300',
+    color: 'white',
     marginBottom: 8,
     fontVariant: ['tabular-nums'],
     textAlign: 'center',
     letterSpacing: -2,
+    fontFamily: Platform.select({
+      ios: 'SF Pro Display',
+      android: 'Roboto',
+      default: 'system',
+    }),
   },
   sessionLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
-    opacity: 0.7,
+    marginBottom: 16,
+  },
+  sessionTypeIndicator: {
+    alignItems: 'center',
+  },
+  sessionTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  sessionTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'white',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   courseSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     marginBottom: 32,
+  },
+  courseSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+    letterSpacing: -0.3,
   },
   courseList: {
     flexDirection: 'row',
   },
   courseChip: {
-    borderRadius: 24,
+    borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 12,
     marginRight: 12,
     borderWidth: 2,
-    borderColor: 'transparent',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 2,
   },
   courseChipActive: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 4,
   },
   courseChipText: {
@@ -1268,7 +1395,8 @@ const styles = StyleSheet.create({
   },
   controls: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
   },
   playButton: {
     width: 80,
@@ -1296,8 +1424,19 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statsSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     marginTop: 32,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
   dateSelector: {
     flexDirection: 'row',
@@ -1504,45 +1643,52 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  streakCard: {
-    borderRadius: 16,
-    padding: 20,
+  heroStatsCard: {
+    borderRadius: 20,
+    padding: 24,
     marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  streakContent: {
+  heroStatsContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
   },
-  streakItem: {
+  heroStatItem: {
     alignItems: 'center',
     flex: 1,
   },
-  streakNumber: {
-    fontSize: 32,
-    fontWeight: '800',
-    marginTop: 8,
+  heroStatIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  heroStatNumber: {
+    fontSize: 28,
+    fontWeight: '700',
     marginBottom: 4,
     textAlign: 'center',
-    letterSpacing: -1,
+    letterSpacing: -0.5,
     fontFamily: Platform.select({
       ios: 'SF Pro Display',
       android: 'Roboto',
       default: 'system',
     }),
   },
-  streakLabel: {
+  heroStatLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     textAlign: 'center',
     letterSpacing: 0.3,
   },
-  streakDivider: {
+  heroStatDivider: {
     width: 1,
     height: 50,
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
@@ -1579,17 +1725,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 30,
   },
+  mainButtonGradient: {
+    borderRadius: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
   mainButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
   },
   quickActions: {
     flexDirection: 'row',
@@ -1598,9 +1747,14 @@ const styles = StyleSheet.create({
   quickActionButton: {
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 20,
+    borderRadius: 16,
     minWidth: 80,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   quickActionText: {
     fontSize: 14,
@@ -1613,6 +1767,11 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   // Completion Screen Styles
   completionOverlay: {

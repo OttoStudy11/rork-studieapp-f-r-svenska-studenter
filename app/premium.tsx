@@ -10,82 +10,36 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { usePremium } from '@/contexts/PremiumContext';
-import { useToast } from '@/contexts/ToastContext';
 import { 
   Crown, 
   Check, 
-  X, 
-  BookOpen, 
-  FileText, 
-  Users, 
-  Timer, 
   BarChart3, 
-  Download,
-  Palette,
-  Moon,
-  ArrowLeft
+  ArrowLeft,
+  Shield,
+  Clock
 } from 'lucide-react-native';
 
 export default function PremiumScreen() {
-  const { isPremium, subscriptionType, upgradeToPremium } = usePremium();
-  const { showSuccess } = useToast();
+  const { isPremium, upgradeToPremium } = usePremium();
 
   const features = [
     {
-      icon: BookOpen,
-      title: 'Obegränsat antal kurser',
-      free: '3 kurser',
-      premium: 'Obegränsat',
-      color: '#4F46E5'
-    },
-    {
-      icon: FileText,
-      title: 'Obegränsat antal anteckningar',
-      free: '10 anteckningar',
-      premium: 'Obegränsat',
-      color: '#10B981'
-    },
-    {
-      icon: Users,
-      title: 'Obegränsat antal vänner',
-      free: '3 vänner',
-      premium: 'Obegränsat',
-      color: '#F59E0B'
-    },
-    {
-      icon: Timer,
-      title: 'Anpassningsbar Pomodoro-timer',
-      free: 'Standard inställningar',
-      premium: 'Anpassningsbara tider',
-      color: '#EF4444'
-    },
-    {
       icon: BarChart3,
-      title: 'Avancerad statistik',
-      free: 'Grundläggande stats',
-      premium: 'Detaljerad analys',
-      color: '#8B5CF6'
+      title: 'Statistik',
+      description: 'Analysera din produktivitet med detaljerade grafer',
+      gradient: ['#4F46E5', '#7C3AED'] as const
     },
     {
-      icon: Download,
-      title: 'Exportera data',
-      free: false,
-      premium: 'PDF & CSV export',
-      color: '#06B6D4'
+      icon: Shield,
+      title: 'App Blockering',
+      description: 'Blockera appar under fokussessioner',
+      gradient: ['#10B981', '#059669'] as const
     },
     {
-      icon: Palette,
-      title: 'Anpassade färgteman',
-      free: false,
-      premium: 'Flera teman',
-      color: '#EC4899'
-    },
-    {
-      icon: Moon,
-      title: 'Mörkt läge',
-      free: false,
-      premium: 'Mörkt & ljust läge',
-      color: '#6B7280'
+      icon: Clock,
+      title: 'Avancerade Timers',
+      description: 'Få tillgång till pomodoro & stopwatch timers',
+      gradient: ['#F59E0B', '#D97706'] as const
     }
   ];
 
@@ -95,168 +49,130 @@ export default function PremiumScreen() {
 
   if (isPremium) {
     return (
-      <SafeAreaView style={styles.container}>
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.header}
-        >
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color="white" />
-          </TouchableOpacity>
-          <Crown size={60} color="#FFD700" />
-          <Text style={styles.premiumTitle}>Du är Premium!</Text>
-          <Text style={styles.premiumSubtitle}>
-            Tack för att du stödjer Studiestugan
-          </Text>
-        </LinearGradient>
-
-        <ScrollView style={styles.content}>
-          <View style={styles.benefitsSection}>
-            <Text style={styles.sectionTitle}>Dina Premium-fördelar</Text>
-            {features.map((feature, index) => (
-              <View key={index} style={styles.benefitItem}>
-                <View style={[styles.iconContainer, { backgroundColor: `${feature.color}20` }]}>
-                  <feature.icon size={24} color={feature.color} />
-                </View>
-                <View style={styles.benefitContent}>
-                  <Text style={styles.benefitTitle}>{feature.title}</Text>
-                  <Text style={styles.benefitDescription}>
-                    {typeof feature.premium === 'string' ? feature.premium : 'Aktiverad'}
-                  </Text>
-                </View>
-                <Check size={20} color="#10B981" />
-              </View>
-            ))}
+      <View style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <ArrowLeft size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Crown size={60} color="#FFD700" />
+            <Text style={styles.premiumTitle}>Du är Premium!</Text>
+            <Text style={styles.premiumSubtitle}>
+              Tack för att du stödjer Studiestugan
+            </Text>
           </View>
-        </ScrollView>
-      </SafeAreaView>
+
+          <ScrollView style={styles.scrollContent}>
+            <View style={styles.benefitsSection}>
+              <Text style={styles.sectionTitle}>Dina Premium-fördelar</Text>
+              {features.map((feature, index) => (
+                <View key={index} style={styles.benefitItem}>
+                  <LinearGradient
+                    colors={feature.gradient}
+                    style={styles.iconContainer}
+                  >
+                    <feature.icon size={24} color="#FFFFFF" />
+                  </LinearGradient>
+                  <View style={styles.benefitContent}>
+                    <Text style={styles.benefitTitle}>{feature.title}</Text>
+                    <Text style={styles.benefitDescription}>
+                      {feature.description}
+                    </Text>
+                  </View>
+                  <Check size={20} color="#10B981" />
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.header}
-        >
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color="white" />
-          </TouchableOpacity>
-          <Crown size={60} color="#FFD700" />
-          <Text style={styles.title}>Uppgradera till Premium</Text>
-          <Text style={styles.subtitle}>
-            Lås upp alla funktioner och få den bästa studieupplevelsen
-          </Text>
-        </LinearGradient>
-
-        {/* Features Comparison */}
-        <View style={styles.content}>
-          <View style={styles.comparisonHeader}>
-            <View style={styles.comparisonColumn}>
-              <Text style={styles.comparisonTitle}>Funktion</Text>
-            </View>
-            <View style={styles.comparisonColumn}>
-              <Text style={styles.comparisonTitle}>Gratis</Text>
-            </View>
-            <View style={styles.comparisonColumn}>
-              <Text style={[styles.comparisonTitle, styles.premiumText]}>Premium</Text>
-            </View>
+      <View style={styles.safeArea}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <ArrowLeft size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.title}>Studiestugan Pro</Text>
           </View>
 
-          {features.map((feature, index) => (
-            <View key={index} style={styles.featureRow}>
-              <View style={styles.featureInfo}>
-                <View style={[styles.iconContainer, { backgroundColor: `${feature.color}20` }]}>
-                  <feature.icon size={20} color={feature.color} />
-                </View>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-              </View>
-              
-              <View style={styles.comparisonColumn}>
-                {feature.free ? (
-                  <Text style={styles.freeText}>{feature.free}</Text>
-                ) : (
-                  <X size={16} color="#EF4444" />
-                )}
-              </View>
-              
-              <View style={styles.comparisonColumn}>
-                <View style={styles.premiumFeature}>
-                  <Check size={16} color="#10B981" />
-                  <Text style={styles.premiumFeatureText}>
-                    {typeof feature.premium === 'string' ? feature.premium : '✓'}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          ))}
-
-          {/* Pricing */}
-          <View style={styles.pricingSection}>
-            <Text style={styles.sectionTitle}>Välj din plan</Text>
-            
+          {/* Pricing Cards */}
+          <View style={styles.pricingContainer}>
+            {/* Monthly Plan */}
             <View style={styles.pricingCard}>
-              <View style={styles.pricingHeader}>
-                <Crown size={24} color="#FFD700" />
-                <Text style={styles.pricingTitle}>Studiestugan Premium</Text>
-              </View>
-              
               <View style={styles.pricingContent}>
-                <Text style={styles.price}>99 kr</Text>
-                <Text style={styles.pricePeriod}>per månad</Text>
+                <Text style={styles.price}>39,00 kr</Text>
+                <Text style={styles.pricePeriod}>/month</Text>
               </View>
-              
-              <View style={styles.pricingFeatures}>
-                <Text style={styles.pricingFeature}>✓ Alla Premium-funktioner</Text>
-                <Text style={styles.pricingFeature}>✓ Obegränsat antal kurser & anteckningar</Text>
-                <Text style={styles.pricingFeature}>✓ Avancerad statistik & export</Text>
-                <Text style={styles.pricingFeature}>✓ Prioriterad support</Text>
+              <Text style={styles.trialText}>3-day Free trial</Text>
+            </View>
+
+            {/* Yearly Plan - Featured */}
+            <View style={[styles.pricingCard, styles.featuredCard]}>
+              <View style={styles.dealBadge}>
+                <Text style={styles.dealText}>LIMITED DEAL - 50% OFF</Text>
               </View>
-              
-              <TouchableOpacity
-                style={styles.upgradeButton}
-                onPress={handleUpgrade}
-              >
-                <Text style={styles.upgradeButtonText}>Uppgradera nu</Text>
-              </TouchableOpacity>
+              <View style={styles.pricingContent}>
+                <View style={styles.yearlyPriceContainer}>
+                  <Text style={styles.yearlyPrice}>129,00 kr</Text>
+                </View>
+                <Text style={styles.pricePeriod}>/year</Text>
+              </View>
+              <Text style={styles.trialText}>7-day Free trial</Text>
             </View>
           </View>
 
-          {/* FAQ */}
-          <View style={styles.faqSection}>
-            <Text style={styles.sectionTitle}>Vanliga frågor</Text>
-            
-            <View style={styles.faqItem}>
-              <Text style={styles.faqQuestion}>Kan jag avbryta när som helst?</Text>
-              <Text style={styles.faqAnswer}>
-                Ja, du kan avbryta din prenumeration när som helst. Du behåller Premium-funktionerna till slutet av din betalperiod.
-              </Text>
-            </View>
-            
-            <View style={styles.faqItem}>
-              <Text style={styles.faqQuestion}>Vad händer med min data om jag avbryter?</Text>
-              <Text style={styles.faqAnswer}>
-                All din data sparas säkert. Du kan fortfarande komma åt dina kurser och anteckningar, men med begränsningar enligt gratisplanen.
-              </Text>
-            </View>
-            
-            <View style={styles.faqItem}>
-              <Text style={styles.faqQuestion}>Finns det en gratis provperiod?</Text>
-              <Text style={styles.faqAnswer}>
-                Ja! Du får 7 dagar gratis när du uppgraderar till Premium första gången.
-              </Text>
-            </View>
+          {/* Features */}
+          <View style={styles.featuresContainer}>
+            {features.map((feature, index) => (
+              <View key={index} style={styles.featureItem}>
+                <LinearGradient
+                  colors={feature.gradient}
+                  style={styles.featureIcon}
+                >
+                  <feature.icon size={32} color="#FFFFFF" />
+                </LinearGradient>
+                <View style={styles.featureContent}>
+                  <Text style={styles.featureTitle}>{feature.title}</Text>
+                  <Text style={styles.featureDescription}>{feature.description}</Text>
+                </View>
+              </View>
+            ))}
           </View>
-        </View>
-      </ScrollView>
+
+          {/* No Payment Due */}
+          <View style={styles.noPaymentContainer}>
+            <Check size={20} color="#10B981" />
+            <Text style={styles.noPaymentText}>NO PAYMENT DUE NOW</Text>
+          </View>
+
+          {/* CTA Button */}
+          <TouchableOpacity
+            style={styles.ctaButton}
+            onPress={handleUpgrade}
+          >
+            <Text style={styles.ctaButtonText}>TRY FOR FREE</Text>
+          </TouchableOpacity>
+
+          {/* Footer Links */}
+          <View style={styles.footerLinks}>
+            <Text style={styles.footerLink}>Privacy</Text>
+            <Text style={styles.footerLink}>Terms</Text>
+            <Text style={styles.footerLink}>Restore Purchases</Text>
+          </View>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -264,28 +180,172 @@ export default function PremiumScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#1A1B23',
+  },
+  safeArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   header: {
-    padding: 32,
-    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
     alignItems: 'center',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: 'white',
-    marginTop: 16,
-    marginBottom: 8,
+    color: '#FFFFFF',
     textAlign: 'center',
+    marginTop: 20,
   },
-  subtitle: {
+  pricingContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 40,
+  },
+  pricingCard: {
+    backgroundColor: '#2A2B35',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#3A3B47',
+  },
+  featuredCard: {
+    borderColor: '#10B981',
+    borderWidth: 2,
+    position: 'relative',
+  },
+  dealBadge: {
+    position: 'absolute',
+    top: -1,
+    left: -1,
+    right: -1,
+    backgroundColor: '#10B981',
+    paddingVertical: 8,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    alignItems: 'center',
+  },
+  dealText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  pricingContent: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    marginTop: 20,
+  },
+  price: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  yearlyPriceContainer: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  yearlyPrice: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  pricePeriod: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
+    color: '#9CA3AF',
+  },
+  trialText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    textAlign: 'right',
+  },
+  featuresContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 40,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  featureIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  featureContent: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  featureDescription: {
+    fontSize: 16,
+    color: '#9CA3AF',
     lineHeight: 22,
+  },
+  noPaymentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    gap: 8,
+  },
+  noPaymentText: {
+    fontSize: 16,
+    color: '#10B981',
+    fontWeight: '600',
+  },
+  ctaButton: {
+    backgroundColor: '#10B981',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  ctaButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  footerLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 24,
+    paddingHorizontal: 20,
+  },
+  footerLink: {
+    fontSize: 14,
+    color: '#9CA3AF',
   },
   premiumTitle: {
     fontSize: 32,
@@ -299,164 +359,17 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
   },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  comparisonHeader: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  comparisonColumn: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  comparisonTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  premiumText: {
-    color: '#4F46E5',
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 16,
-    marginBottom: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  featureInfo: {
-    flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  featureTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1F2937',
-    flex: 1,
-  },
-  freeText: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  premiumFeature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  premiumFeatureText: {
-    fontSize: 12,
-    color: '#10B981',
-    fontWeight: '500',
-  },
-  pricingSection: {
-    marginTop: 32,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  pricingCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-    borderWidth: 2,
-    borderColor: '#4F46E5',
-  },
-  pricingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    gap: 8,
-  },
-  pricingTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  pricingContent: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  price: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#4F46E5',
-  },
-  pricePeriod: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginTop: -8,
-  },
-  pricingFeatures: {
-    marginBottom: 24,
-  },
-  pricingFeature: {
-    fontSize: 16,
-    color: '#1F2937',
-    marginBottom: 8,
-    lineHeight: 24,
-  },
-  upgradeButton: {
-    backgroundColor: '#4F46E5',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  upgradeButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   benefitsSection: {
     marginTop: 20,
+    paddingHorizontal: 20,
   },
   benefitItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#2A2B35',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
   benefitContent: {
     flex: 1,
@@ -465,49 +378,26 @@ const styles = StyleSheet.create({
   benefitTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   benefitDescription: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#9CA3AF',
   },
-  faqSection: {
-    marginTop: 32,
-    marginBottom: 32,
-  },
-  faqItem: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  faqQuestion: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  faqAnswer: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 16,
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1,
+    marginRight: 16,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 20,
+    textAlign: 'center',
   },
 });

@@ -7,15 +7,16 @@ import {
   Animated,
   Modal,
   ScrollView,
-  Dimensions,
   StatusBar,
   Platform
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Play, Pause, Square, Settings, BellOff, Bell, ChevronLeft, ChevronRight } from 'lucide-react-native';
-import Svg, { Circle } from 'react-native-svg';
+import { useAchievements } from '@/contexts/AchievementContext';
+import { Play, Pause, Square, Settings, BellOff, Bell, Flame, Target, Trophy, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward } from 'lucide-react-native';
+import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import * as Notifications from 'expo-notifications';
 
 
@@ -25,8 +26,9 @@ type SessionType = 'focus' | 'break';
 
 export default function TimerScreen() {
   const { courses, addPomodoroSession, pomodoroSessions } = useStudy();
-  const { showSuccess } = useToast();
+  const { showSuccess, showAchievement } = useToast();
   const { theme, isDark } = useTheme();
+  const { currentStreak } = useAchievements();
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [sessionType, setSessionType] = useState<SessionType>('focus');
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
@@ -38,16 +40,50 @@ export default function TimerScreen() {
   const [isDndActive, setIsDndActive] = useState(false);
   const [dndPermissionGranted, setDndPermissionGranted] = useState(false);
   const [selectedStatView, setSelectedStatView] = useState<'day' | 'week'>('day');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [sessionCount, setSessionCount] = useState(0);
+  const [dailyGoal] = useState(4); // Daily session goal
+  const [motivationalQuote, setMotivationalQuote] = useState('');
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const progressAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
 
   const totalTime = sessionType === 'focus' ? focusTime * 60 : breakTime * 60;
   const progress = timeLeft / totalTime;
 
-  // Check notification permissions on mount
+  const motivationalQuotes = [
+    'Du är fantastisk! Fortsätt så! 💪',
+    'Varje minut räknas! 🌟',
+    'Fokus är din superkraft! 🚀',
+    'Du bygger din framtid just nu! 🏗️',
+    'Kunskap är makt! 📚',
+    'Steg för steg mot målet! 🎯',
+    'Du klarar det här! 💯',
+    'Håll fokus, du är grym! 🔥'
+  ];
+
+  // Check notification permissions on mount and set random quote
   useEffect(() => {
     checkNotificationPermissions();
+    setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
+    
+    // Start pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
   }, []);
 
   const checkNotificationPermissions = async () => {
@@ -170,8 +206,17 @@ export default function TimerScreen() {
         const courseName = selectedCourse 
           ? courses.find(c => c.id === selectedCourse)?.title || 'Okänd kurs'
           : 'Allmän session';
+        
+        // Update session count
+        setSessionCount(prev => prev + 1);
+        
+        // Show achievement if daily goal reached
+        if (sessionCount + 1 === dailyGoal) {
+          showAchievement('Dagsmål uppnått! 🎯', `Du har slutfört ${dailyGoal} sessioner idag!`);
+        }
+        
         showSuccess(
-          'Session slutförd',
+          'Session slutförd! 🎉',
           `${focusTime} minuter ${courseName}`
         );
       } catch (error) {
@@ -182,12 +227,15 @@ export default function TimerScreen() {
     if (sessionType === 'focus') {
       setSessionType('break');
       setTimeLeft(breakTime * 60);
-      showSuccess('Bra jobbat', 'Tid för en paus');
+      showSuccess('Bra jobbat! ☕', 'Tid för en välförtjänt paus');
     } else {
       setSessionType('focus');
       setTimeLeft(focusTime * 60);
-      showSuccess('Pausen är över', 'Dags att fokusera igen');
+      showSuccess('Pausen är över! 💪', 'Dags att fokusera igen');
     }
+    
+    // Update motivational quote
+    setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
   };
 
   const startTimer = async () => {
@@ -360,67 +408,104 @@ export default function TimerScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-              {sessionType === 'focus' ? 'Fokustid' : 'Paus'}
-            </Text>
-            <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
-              {getSelectedCourseTitle()}
-            </Text>
-          </View>
-          <View style={styles.headerActions}>
-            {Platform.OS !== 'web' && dndPermissionGranted && (
+        {/* Header with gradient */}
+        <LinearGradient
+          colors={theme.colors.gradient as any}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <Text style={styles.headerTitle}>
+                {sessionType === 'focus' ? '🎯 Fokustid' : '☕ Pausläge'}
+              </Text>
+              <Text style={styles.headerSubtitle}>
+                {getSelectedCourseTitle()}
+              </Text>
+            </View>
+            <View style={styles.headerActions}>
               <TouchableOpacity
                 style={[
                   styles.headerButton, 
-                  { backgroundColor: theme.colors.card }
+                  { backgroundColor: 'rgba(255, 255, 255, 0.2)' }
                 ]}
-                onPress={isDndActive ? disableDoNotDisturb : enableDoNotDisturb}
+                onPress={() => setSoundEnabled(!soundEnabled)}
                 activeOpacity={0.8}
               >
-                {isDndActive ? (
-                  <BellOff size={20} color={theme.colors.primary} />
+                {soundEnabled ? (
+                  <Volume2 size={20} color="white" />
                 ) : (
-                  <Bell size={20} color={theme.colors.textSecondary} />
+                  <VolumeX size={20} color="white" />
                 )}
               </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
-              onPress={() => setShowSettings(true)}
-              activeOpacity={0.8}
-            >
-              <Settings size={20} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
+              {Platform.OS !== 'web' && dndPermissionGranted && (
+                <TouchableOpacity
+                  style={[
+                    styles.headerButton, 
+                    { backgroundColor: 'rgba(255, 255, 255, 0.2)' }
+                  ]}
+                  onPress={isDndActive ? disableDoNotDisturb : enableDoNotDisturb}
+                  activeOpacity={0.8}
+                >
+                  {isDndActive ? (
+                    <BellOff size={20} color="white" />
+                  ) : (
+                    <Bell size={20} color="white" />
+                  )}
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.headerButton, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}
+                onPress={() => setShowSettings(true)}
+                activeOpacity={0.8}
+              >
+                <Settings size={20} color="white" />
+              </TouchableOpacity>
+            </View>
           </View>
+        </LinearGradient>
+
+        {/* Motivational Quote */}
+        <View style={[styles.quoteCard, { backgroundColor: theme.colors.card }]}>
+          <Zap size={16} color={theme.colors.warning} />
+          <Text style={[styles.quoteText, { color: theme.colors.text }]}>{motivationalQuote}</Text>
         </View>
 
-        {/* Timer Circle */}
-        <View style={styles.timerContainer}>
-          <Svg width={260} height={260} style={styles.timerSvg}>
+        {/* Timer Circle with Gradient */}
+        <Animated.View style={[
+          styles.timerContainer,
+          timerState === 'running' && { transform: [{ scale: pulseAnim }] }
+        ]}>
+          <Svg width={280} height={280} style={styles.timerSvg}>
+            <Defs>
+              <SvgLinearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor={theme.colors.primary} stopOpacity="1" />
+                <Stop offset="100%" stopColor={theme.colors.secondary} stopOpacity="1" />
+              </SvgLinearGradient>
+            </Defs>
             {/* Background circle */}
             <Circle
-              cx={130}
-              cy={130}
+              cx={140}
+              cy={140}
               r={120}
               stroke={theme.colors.border}
-              strokeWidth={8}
+              strokeWidth={12}
               fill="none"
+              opacity={0.3}
             />
-            {/* Progress circle */}
+            {/* Progress circle with gradient */}
             <Circle
-              cx={130}
-              cy={130}
+              cx={140}
+              cy={140}
               r={120}
-              stroke={theme.colors.primary}
-              strokeWidth={8}
+              stroke="url(#grad)"
+              strokeWidth={12}
               fill="none"
               strokeDasharray={circumference}
               strokeDashoffset={circumference * (1 - progress)}
               strokeLinecap="round"
-              transform={`rotate(-90 130 130)`}
+              transform={`rotate(-90 140 140)`}
             />
           </Svg>
           
@@ -428,11 +513,26 @@ export default function TimerScreen() {
             <Text style={[styles.timerText, { color: theme.colors.text }]}>
               {formatTime(timeLeft)}
             </Text>
-            <Text style={[styles.sessionLabel, { color: theme.colors.textSecondary }]}>
-              {sessionType === 'focus' ? 'Fokus' : 'Paus'}
-            </Text>
+            <View style={styles.sessionTypeContainer}>
+              {sessionType === 'focus' ? (
+                <Brain size={24} color={theme.colors.primary} />
+              ) : (
+                <Coffee size={24} color={theme.colors.secondary} />
+              )}
+              <Text style={[styles.sessionLabel, { color: theme.colors.text }]}>
+                {sessionType === 'focus' ? 'Fokusläge' : 'Pausläge'}
+              </Text>
+            </View>
+            
+            {/* Session counter */}
+            <View style={[styles.sessionCounter, { backgroundColor: theme.colors.primary + '20' }]}>
+              <Trophy size={16} color={theme.colors.primary} />
+              <Text style={[styles.sessionCounterText, { color: theme.colors.primary }]}>
+                {sessionCount}/{dailyGoal} sessioner idag
+              </Text>
+            </View>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Course Selection */}
         {sessionType === 'focus' && timerState === 'idle' && (
@@ -481,96 +581,184 @@ export default function TimerScreen() {
           </View>
         )}
 
-        {/* Controls */}
+        {/* Enhanced Controls */}
         <View style={styles.controls}>
           {timerState === 'idle' ? (
-            <TouchableOpacity 
-              style={[styles.playButton, { backgroundColor: theme.colors.primary }]} 
-              onPress={startTimer}
-              activeOpacity={0.8}
+            <LinearGradient
+              colors={theme.colors.gradient as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.playButtonGradient}
             >
-              <Play size={28} color="#FFFFFF" fill="#FFFFFF" />
-            </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.playButton} 
+                onPress={startTimer}
+                activeOpacity={0.8}
+              >
+                <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
+                <Text style={styles.playButtonText}>Starta</Text>
+              </TouchableOpacity>
+            </LinearGradient>
           ) : (
             <View style={styles.activeControls}>
               <TouchableOpacity 
-                style={[styles.secondaryButton, { backgroundColor: theme.colors.card }]} 
+                style={[styles.secondaryButton, { backgroundColor: theme.colors.error + '20' }]} 
                 onPress={stopTimer}
                 activeOpacity={0.8}
               >
-                <Square size={20} color={theme.colors.text} fill={theme.colors.text} />
+                <Square size={22} color={theme.colors.error} fill={theme.colors.error} />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.playButton, { backgroundColor: theme.colors.primary }]}
-                onPress={timerState === 'running' ? pauseTimer : startTimer}
+              
+              <LinearGradient
+                colors={timerState === 'running' 
+                  ? [theme.colors.warning, theme.colors.warning + 'DD'] as any
+                  : theme.colors.gradient as any
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.playButtonGradient}
+              >
+                <TouchableOpacity
+                  style={styles.playButton}
+                  onPress={timerState === 'running' ? pauseTimer : startTimer}
+                  activeOpacity={0.8}
+                >
+                  {timerState === 'running' ? (
+                    <>
+                      <Pause size={32} color="#FFFFFF" fill="#FFFFFF" />
+                      <Text style={styles.playButtonText}>Pausa</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
+                      <Text style={styles.playButtonText}>Fortsätt</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </LinearGradient>
+              
+              <TouchableOpacity 
+                style={[styles.secondaryButton, { backgroundColor: theme.colors.secondary + '20' }]} 
+                onPress={() => {
+                  setSessionType(sessionType === 'focus' ? 'break' : 'focus');
+                  setTimeLeft(sessionType === 'focus' ? breakTime * 60 : focusTime * 60);
+                  setTimerState('idle');
+                }}
                 activeOpacity={0.8}
               >
-                {timerState === 'running' ? (
-                  <Pause size={28} color="#FFFFFF" fill="#FFFFFF" />
-                ) : (
-                  <Play size={28} color="#FFFFFF" fill="#FFFFFF" />
-                )}
+                <SkipForward size={22} color={theme.colors.secondary} />
               </TouchableOpacity>
             </View>
           )}
         </View>
 
-        {/* Statistics Section */}
+        {/* Enhanced Statistics Section */}
         <View style={styles.statsSection}>
-          {/* Date Selector */}
-          <View style={styles.dateSelector}>
-            <TouchableOpacity style={styles.dateArrow} activeOpacity={0.7}>
-              <ChevronLeft size={20} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
-            <Text style={[styles.dateText, { color: theme.colors.text }]}>
-              {new Date().toLocaleDateString('sv-SE', { month: 'long', day: 'numeric', year: 'numeric' })}
-            </Text>
-            <TouchableOpacity style={styles.dateArrow} activeOpacity={0.7}>
-              <ChevronRight size={20} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
+          <Text style={[styles.statsSectionTitle, { color: theme.colors.text }]}>📊 Din statistik</Text>
+          
+          {/* Streak and Goal Card */}
+          <LinearGradient
+            colors={[theme.colors.primary + '15', theme.colors.secondary + '15'] as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.streakCard}
+          >
+            <View style={styles.streakContent}>
+              <View style={styles.streakItem}>
+                <Flame size={24} color={theme.colors.warning} />
+                <Text style={[styles.streakNumber, { color: theme.colors.text }]}>{currentStreak}</Text>
+                <Text style={[styles.streakLabel, { color: theme.colors.textSecondary }]}>Dagars streak</Text>
+              </View>
+              <View style={styles.streakDivider} />
+              <View style={styles.streakItem}>
+                <Target size={24} color={theme.colors.primary} />
+                <Text style={[styles.streakNumber, { color: theme.colors.text }]}>
+                  {Math.round((sessionCount / dailyGoal) * 100)}%
+                </Text>
+                <Text style={[styles.streakLabel, { color: theme.colors.textSecondary }]}>Av dagsmål</Text>
+              </View>
+            </View>
+          </LinearGradient>
 
-          {/* View Toggle */}
-          <View style={[styles.viewToggle, { backgroundColor: theme.colors.card }]}>
+          {/* View Toggle with gradient */}
+          <LinearGradient
+            colors={[theme.colors.card, theme.colors.card + 'DD'] as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.viewToggle}
+          >
             <TouchableOpacity 
               style={[
                 styles.viewButton,
-                selectedStatView === 'day' && [styles.viewButtonActive, { backgroundColor: theme.colors.primary }]
+                selectedStatView === 'day' && styles.viewButtonActive
               ]}
               onPress={() => setSelectedStatView('day')}
               activeOpacity={0.8}
             >
+              {selectedStatView === 'day' && (
+                <LinearGradient
+                  colors={theme.colors.gradient as any}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
               <Text style={[
                 styles.viewButtonText,
                 { color: selectedStatView === 'day' ? '#FFFFFF' : theme.colors.textSecondary }
-              ]}>Dag</Text>
+              ]}>Idag</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[
                 styles.viewButton,
-                selectedStatView === 'week' && [styles.viewButtonActive, { backgroundColor: theme.colors.primary }]
+                selectedStatView === 'week' && styles.viewButtonActive
               ]}
               onPress={() => setSelectedStatView('week')}
               activeOpacity={0.8}
             >
+              {selectedStatView === 'week' && (
+                <LinearGradient
+                  colors={theme.colors.gradient as any}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
               <Text style={[
                 styles.viewButtonText,
                 { color: selectedStatView === 'week' ? '#FFFFFF' : theme.colors.textSecondary }
               ]}>Vecka</Text>
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
 
-          {/* Stats Cards */}
+          {/* Enhanced Stats Cards with gradients */}
           <View style={styles.statsGrid}>
-            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+            <LinearGradient
+              colors={[theme.colors.primary + '20', theme.colors.primary + '10'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.statCard}
+            >
+              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.primary + '30' }]}>
+                <Brain size={20} color={theme.colors.primary} />
+              </View>
               <Text style={[styles.statValue, { color: theme.colors.text }]}>
                 {selectedStatView === 'day' ? todayStats.sessions : weekStats.sessions}
               </Text>
               <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
                 Sessioner
               </Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+            </LinearGradient>
+            
+            <LinearGradient
+              colors={[theme.colors.secondary + '20', theme.colors.secondary + '10'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.statCard}
+            >
+              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.secondary + '30' }]}>
+                <Zap size={20} color={theme.colors.secondary} />
+              </View>
               <Text style={[styles.statValue, { color: theme.colors.text }]}>
                 {selectedStatView === 'day' 
                   ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m`
@@ -580,21 +768,35 @@ export default function TimerScreen() {
               <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
                 Total tid
               </Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+            </LinearGradient>
+            
+            <LinearGradient
+              colors={[theme.colors.warning + '20', theme.colors.warning + '10'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.statCard}
+            >
+              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.warning + '30' }]}>
+                <Flame size={20} color={theme.colors.warning} />
+              </View>
               <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {streakStats.current}
+                {streakStats.longest}
               </Text>
               <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                Streak 🔥
+                Bästa streak
               </Text>
-            </View>
+            </LinearGradient>
           </View>
 
-          {/* Weekly Graph */}
+          {/* Enhanced Weekly Graph */}
           {selectedStatView === 'week' && (
-            <View style={[styles.weeklyGraph, { backgroundColor: theme.colors.card }]}>
-              <Text style={[styles.graphTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
+            <LinearGradient
+              colors={[theme.colors.card, theme.colors.card + 'EE'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.weeklyGraph}
+            >
+              <Text style={[styles.graphTitle, { color: theme.colors.text }]}>📈 Veckoöversikt</Text>
               <View style={styles.graphBars}>
                 {weekStats.dailyStats.map((day, i) => {
                   const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
@@ -605,25 +807,36 @@ export default function TimerScreen() {
                   return (
                     <View key={i} style={styles.dayColumn}>
                       <View style={styles.barContainer}>
-                        <View 
+                        <LinearGradient
+                          colors={isToday 
+                            ? theme.colors.gradient as any
+                            : [theme.colors.border, theme.colors.border + 'AA'] as any
+                          }
+                          start={{ x: 0, y: 1 }}
+                          end={{ x: 0, y: 0 }}
                           style={[
                             styles.dayBar, 
-                            { 
-                              height: `${barHeight}%`, 
-                              backgroundColor: isToday ? theme.colors.primary : theme.colors.border
-                            }
+                            { height: `${barHeight}%` }
                           ]} 
                         />
+                        {day.minutes > 0 && (
+                          <Text style={[styles.barValue, { color: theme.colors.text }]}>
+                            {Math.round(day.minutes / 60)}h
+                          </Text>
+                        )}
                       </View>
                       <Text style={[
                         styles.dayLabel, 
-                        { color: isToday ? theme.colors.primary : theme.colors.textSecondary }
+                        { 
+                          color: isToday ? theme.colors.primary : theme.colors.textSecondary,
+                          fontWeight: isToday ? '700' : '500'
+                        }
                       ]}>{dayName}</Text>
                     </View>
                   );
                 })}
               </View>
-            </View>
+            </LinearGradient>
           )}
         </View>
       </ScrollView>
@@ -739,12 +952,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 4,
+    color: '#FFFFFF',
   },
   headerSubtitle: {
     fontSize: 14,
-    fontWeight: '400',
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   headerActions: {
     flexDirection: 'row',
@@ -766,8 +981,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   timerContent: {
-    width: 260,
-    height: 260,
+    width: 280,
+    height: 280,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -804,16 +1019,12 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    flexDirection: 'column',
   },
   activeControls: {
     flexDirection: 'row',
@@ -821,11 +1032,16 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   secondaryButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   statsSection: {
     paddingHorizontal: 20,
@@ -986,5 +1202,117 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  headerGradient: {
+    borderRadius: 0,
+  },
+  quoteCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 24,
+    padding: 16,
+    borderRadius: 12,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  quoteText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  sessionTypeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  sessionCounter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+    marginTop: 12,
+  },
+  sessionCounterText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  playButtonGradient: {
+    borderRadius: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  playButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  statsSectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 20,
+    letterSpacing: -0.5,
+  },
+  streakCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  streakContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  streakItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  streakNumber: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  streakLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  streakDivider: {
+    width: 1,
+    height: 50,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    marginHorizontal: 20,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  barValue: {
+    position: 'absolute',
+    bottom: '105%',
+    fontSize: 10,
+    fontWeight: '600',
   },
 });

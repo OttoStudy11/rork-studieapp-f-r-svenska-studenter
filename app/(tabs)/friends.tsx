@@ -12,11 +12,14 @@ import {
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award } from 'lucide-react-native';
+import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as db from '@/lib/database';
 import Avatar from '@/components/Avatar';
 import type { AvatarConfig } from '@/components/AvatarCustomizer';
+import * as Clipboard from 'expo-clipboard';
+import { Platform, Share } from 'react-native';
+import { supabase } from '@/lib/supabase';
 
 interface Friend {
   id: string;
@@ -40,6 +43,7 @@ export default function FriendsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'friends' | 'requests'>('friends');
   const [friends, setFriends] = useState<Friend[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
@@ -121,6 +125,81 @@ export default function FriendsScreen() {
 
   const handleAddFriend = () => {
     setShowAddModal(true);
+  };
+
+  const handleShareUsername = () => {
+    setShowShareModal(true);
+  };
+
+  const copyUsernameToClipboard = async () => {
+    if (!user) return;
+    
+    try {
+      const userProfile = await db.getUser(user.id);
+      if (userProfile) {
+        await Clipboard.setStringAsync(userProfile.name);
+        showSuccess('Användarnamn kopierat! 📋');
+      }
+    } catch (error) {
+      console.error('Error copying username:', error);
+      showError('Kunde inte kopiera användarnamn');
+    }
+  };
+
+  const shareUsername = async () => {
+    if (!user) return;
+    
+    try {
+      const userProfile = await db.getUser(user.id);
+      if (userProfile) {
+        if (Platform.OS === 'web') {
+          // On web, copy to clipboard
+          await Clipboard.setStringAsync(userProfile.name);
+          showSuccess('Användarnamn kopierat! 📋');
+        } else {
+          // On mobile, use native sharing
+          await Share.share({
+            message: `Lägg till mig som vän på StudieStugan! Mitt användarnamn är: ${userProfile.name}`,
+            title: 'Lägg till mig som vän'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error sharing username:', error);
+      showError('Kunde inte dela användarnamn');
+    }
+  };
+
+  const searchByUsername = async (username: string) => {
+    if (!username.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    
+    try {
+      setIsSearching(true);
+      // Search for exact username match
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, level, program, avatar_url')
+        .eq('name', username.trim())
+        .limit(1);
+      
+      if (error) throw error;
+      
+      // Filter out current user and existing friends
+      const filteredResults = (data || []).filter((result: any) => 
+        result.id !== user?.id && 
+        !friends.some(friend => friend.id === result.id)
+      );
+      
+      setSearchResults(filteredResults);
+    } catch (error) {
+      console.error('Error searching by username:', error);
+      showError('Kunde inte söka efter användarnamn');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const sendFriendRequest = async (friendId: string) => {
@@ -222,6 +301,12 @@ export default function FriendsScreen() {
             onPress={() => setShowLeaderboard(true)}
           >
             <Trophy size={20} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={handleShareUsername}
+          >
+            <Share2 size={20} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerButton}
@@ -390,13 +475,15 @@ export default function FriendsScreen() {
               <View style={styles.searchInputContainer}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Namn..."
+                  placeholder="Skriv exakt användarnamn..."
                   value={addFriendQuery}
                   onChangeText={(text) => {
                     setAddFriendQuery(text);
-                    searchUsers(text);
+                    // Use exact username search instead of fuzzy search
+                    searchByUsername(text);
                   }}
-                  autoCapitalize="words"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                 />
                 {isSearching && (
                   <ActivityIndicator size="small" color="#4F46E5" style={styles.searchSpinner} />
@@ -444,7 +531,7 @@ export default function FriendsScreen() {
               <View style={styles.suggestionSection}>
                 <Text style={styles.suggestionTitle}>Tips</Text>
                 <Text style={styles.suggestionText}>
-                  Sök efter vänner genom att skriva deras namn
+                  Skriv det exakta användarnamnet för att hitta vänner. Du kan också dela ditt eget användarnamn genom att trycka på delningsknappen.
                 </Text>
               </View>
             )}
@@ -556,6 +643,72 @@ export default function FriendsScreen() {
                 </Text>
               </View>
             )}
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Share Username Modal */}
+      <Modal
+        visible={showShareModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Dela användarnamn</Text>
+            <TouchableOpacity onPress={() => setShowShareModal(false)}>
+              <X size={24} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.modalContent}>
+            <View style={styles.shareSection}>
+              <Text style={styles.shareTitle}>Ditt användarnamn</Text>
+              <View style={styles.usernameCard}>
+                <View style={styles.usernameInfo}>
+                  {user && (
+                    <>
+                      <Text style={styles.usernameText}>{user.email ? user.email.split('@')[0] : 'Användarnamn'}</Text>
+                      <Text style={styles.usernameSubtext}>Andra kan söka efter detta namn för att lägga till dig som vän</Text>
+                    </>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={copyUsernameToClipboard}
+                >
+                  <Copy size={20} color="#4F46E5" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.shareActions}>
+              <TouchableOpacity
+                style={styles.shareActionButton}
+                onPress={shareUsername}
+              >
+                <Share2 size={20} color="white" />
+                <Text style={styles.shareActionText}>Dela användarnamn</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.copyActionButton}
+                onPress={copyUsernameToClipboard}
+              >
+                <Copy size={20} color="#4F46E5" />
+                <Text style={styles.copyActionText}>Kopiera användarnamn</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.instructionsSection}>
+              <Text style={styles.instructionsTitle}>Så här fungerar det</Text>
+              <Text style={styles.instructionsText}>
+                • Dela ditt användarnamn med vänner{"\n"}
+                • De kan söka efter ditt exakta användarnamn{"\n"}
+                • När de hittar dig kan de skicka en vänförfrågan{"\n"}
+                • Du får en notifikation och kan acceptera förfrågan
+              </Text>
+            </View>
           </View>
         </SafeAreaView>
       </Modal>
@@ -1002,6 +1155,95 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  // Share modal styles
+  shareSection: {
+    marginBottom: 24,
+  },
+  shareTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  usernameCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  usernameInfo: {
+    flex: 1,
+  },
+  usernameText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  usernameSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  copyButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  shareActions: {
+    gap: 12,
+    marginBottom: 24,
+  },
+  shareActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4F46E5',
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+  },
+  shareActionText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  copyActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#4F46E5',
+  },
+  copyActionText: {
+    color: '#4F46E5',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  instructionsSection: {
+    backgroundColor: '#F8FAFF',
+    borderRadius: 12,
+    padding: 16,
+  },
+  instructionsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  instructionsText: {
+    fontSize: 14,
+    color: '#6B7280',
     lineHeight: 20,
   },
 

@@ -17,7 +17,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAchievements } from '@/contexts/AchievementContext';
 import { Play, Pause, Square, Settings, BellOff, Bell, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, Timer, Activity, X, Star } from 'lucide-react-native';
-import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop as SvgStop } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
@@ -675,7 +675,7 @@ export default function TimerScreen() {
   const weekStats = getWeekStats();
   const streakStats = getStreakStats();
 
-  const circumference = 2 * Math.PI * 130;
+  const circumference = 2 * Math.PI * 120;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -689,158 +689,74 @@ export default function TimerScreen() {
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        {/* Enhanced Header with gradient */}
-        <LinearGradient
-          colors={theme.colors.gradient as any}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.headerGradient}
-        >
-          <View style={styles.header}>
-            <View style={styles.headerTop}>
-              <View style={styles.headerContent}>
-                <Text style={styles.headerTitle}>
-                  {sessionType === 'focus' ? 'Fokusläge' : 'Pausläge'}
-                </Text>
-                <Text style={styles.headerSubtitle}>
-                  {getSelectedCourseTitle()}
-                </Text>
-              </View>
-              <View style={styles.headerActions}>
-                <TouchableOpacity
-                  style={styles.headerButton}
-                  onPress={() => setSoundEnabled(!soundEnabled)}
-                  activeOpacity={0.7}
-                >
-                  {soundEnabled ? (
-                    <Volume2 size={20} color="white" />
-                  ) : (
-                    <VolumeX size={20} color="white" />
-                  )}
-                </TouchableOpacity>
-                {Platform.OS !== 'web' && dndPermissionGranted && (
-                  <TouchableOpacity
-                    style={styles.headerButton}
-                    onPress={isDndActive ? disableDoNotDisturb : enableDoNotDisturb}
-                    activeOpacity={0.7}
-                  >
-                    {isDndActive ? (
-                      <BellOff size={20} color="white" />
-                    ) : (
-                      <Bell size={20} color="white" />
-                    )}
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={styles.headerButton}
-                  onPress={() => setShowSettings(true)}
-                  activeOpacity={0.7}
-                >
-                  <Settings size={20} color="white" />
-                </TouchableOpacity>
-              </View>
-            </View>
+        {/* Simplified Header */}
+        <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+          <View style={styles.headerTop}>
+            <TouchableOpacity
+              style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
+              onPress={() => setShowSettings(true)}
+              activeOpacity={0.7}
+            >
+              <Settings size={20} color={theme.colors.text} />
+            </TouchableOpacity>
             
-            {/* Quick Stats Bar */}
-            <View style={styles.headerStats}>
-              <View style={styles.headerStatItem}>
-                <Timer size={16} color="rgba(255,255,255,0.9)" />
-                <Text style={styles.headerStatValue}>{Math.floor(totalFocusToday / 60)}h {totalFocusToday % 60}m</Text>
-                <Text style={styles.headerStatLabel}>Idag</Text>
-              </View>
-              <View style={styles.headerStatDivider} />
-              <View style={styles.headerStatItem}>
-                <Activity size={16} color="rgba(255,255,255,0.9)" />
-                <Text style={styles.headerStatValue}>{sessionCount}/{dailyGoal}</Text>
-                <Text style={styles.headerStatLabel}>Sessioner</Text>
-              </View>
-              <View style={styles.headerStatDivider} />
-              <View style={styles.headerStatItem}>
-                <Flame size={16} color="rgba(255,255,255,0.9)" />
-                <Text style={styles.headerStatValue}>{currentStreak}</Text>
-                <Text style={styles.headerStatLabel}>Streak</Text>
-              </View>
-            </View>
+            <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
+              {sessionType === 'focus' ? 'Fokus' : 'Paus'}
+            </Text>
+            
+            <TouchableOpacity
+              style={[styles.headerButton, { backgroundColor: theme.colors.card }]}
+              onPress={() => setSoundEnabled(!soundEnabled)}
+              activeOpacity={0.7}
+            >
+              {soundEnabled ? (
+                <Volume2 size={20} color={theme.colors.text} />
+              ) : (
+                <VolumeX size={20} color={theme.colors.text} />
+              )}
+            </TouchableOpacity>
           </View>
-        </LinearGradient>
+        </View>
 
-        {/* Enhanced Motivational Quote Card */}
-        <LinearGradient
-          colors={[theme.colors.primary + '10', theme.colors.secondary + '10'] as any}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.quoteCard}
-        >
-          <View style={[styles.quoteIcon, { backgroundColor: theme.colors.primary + '20' }]}>
-            <Zap size={20} color={theme.colors.primary} />
-          </View>
-          <Text style={[styles.quoteText, { color: theme.colors.text }]}>{motivationalQuote}</Text>
-        </LinearGradient>
 
-        {/* Enhanced Timer Circle with Gradient */}
-        <Animated.View style={[
-          styles.timerContainer,
-          { transform: [{ scale: timerState === 'running' ? pulseAnim : scaleAnim }] }
-        ]}>
-          <Svg width={320} height={320} style={styles.timerSvg}>
-            <Defs>
-              <SvgLinearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <SvgStop offset="0%" stopColor={theme.colors.primary} stopOpacity="1" />
-                <SvgStop offset="100%" stopColor={theme.colors.secondary} stopOpacity="1" />
-              </SvgLinearGradient>
-            </Defs>
-            {/* Outer decorative circle */}
+
+        {/* Simplified Timer Circle */}
+        <View style={styles.timerContainer}>
+          <Svg width={280} height={280} style={styles.timerSvg}>
+            {/* Background circle */}
             <Circle
-              cx={160}
-              cy={160}
-              r={145}
+              cx={140}
+              cy={140}
+              r={120}
               stroke={theme.colors.border}
-              strokeWidth={2}
+              strokeWidth={8}
               fill="none"
               opacity={0.2}
             />
-            {/* Background circle */}
+            {/* Progress circle */}
             <Circle
-              cx={160}
-              cy={160}
-              r={130}
-              stroke={theme.colors.border}
-              strokeWidth={16}
-              fill="none"
-              opacity={0.3}
-            />
-            {/* Progress circle with gradient */}
-            <Circle
-              cx={160}
-              cy={160}
-              r={130}
-              stroke="url(#grad)"
-              strokeWidth={16}
+              cx={140}
+              cy={140}
+              r={120}
+              stroke={theme.colors.primary}
+              strokeWidth={8}
               fill="none"
               strokeDasharray={circumference}
               strokeDashoffset={circumference * (1 - progress)}
               strokeLinecap="round"
-              transform={`rotate(-90 160 160)`}
+              transform={`rotate(-90 140 140)`}
             />
           </Svg>
           
           <View style={styles.timerContent}>
-            <View style={[styles.sessionTypeIcon, { backgroundColor: sessionType === 'focus' ? theme.colors.primary + '15' : theme.colors.secondary + '15' }]}>
-              {sessionType === 'focus' ? (
-                <Brain size={32} color={theme.colors.primary} />
-              ) : (
-                <Coffee size={32} color={theme.colors.secondary} />
-              )}
-            </View>
             <Text style={[styles.timerText, { color: theme.colors.text }]}>
               {formatTime(timeLeft)}
             </Text>
             <Text style={[styles.sessionLabel, { color: theme.colors.textSecondary }]}>
-              {sessionType === 'focus' ? 'FOKUSLÄGE' : 'PAUSLÄGE'}
+              {getSelectedCourseTitle()}
             </Text>
-
           </View>
-        </Animated.View>
+        </View>
 
         {/* Course Selection */}
         {sessionType === 'focus' && timerState === 'idle' && (
@@ -881,25 +797,17 @@ export default function TimerScreen() {
           </View>
         )}
 
-        {/* Enhanced Controls with Better Design */}
+        {/* Simplified Controls */}
         <View style={styles.controls}>
           {timerState === 'idle' ? (
             <View style={styles.idleControls}>
-              <LinearGradient
-                colors={theme.colors.gradient as any}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.mainButtonGradient}
+              <TouchableOpacity 
+                style={[styles.mainButton, { backgroundColor: theme.colors.primary }]} 
+                onPress={startTimer}
+                activeOpacity={0.8}
               >
-                <TouchableOpacity 
-                  style={styles.mainButton} 
-                  onPress={startTimer}
-                  activeOpacity={0.7}
-                >
-                  <Play size={42} color="#FFFFFF" fill="#FFFFFF" />
-                  <Text style={styles.mainButtonText}>STARTA SESSION</Text>
-                </TouchableOpacity>
-              </LinearGradient>
+                <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
+              </TouchableOpacity>
               
               <View style={styles.quickActions}>
                 <TouchableOpacity
@@ -907,14 +815,21 @@ export default function TimerScreen() {
                   onPress={() => {
                     setFocusTime(15);
                     setTimeLeft(15 * 60);
-                    showSuccess('Snabbläge', '15 minuters fokus aktiverat');
                   }}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.quickActionIcon, { backgroundColor: theme.colors.warning + '20' }]}>
-                    <Zap size={22} color={theme.colors.warning} />
-                  </View>
                   <Text style={[styles.quickActionText, { color: theme.colors.text }]}>15 min</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.quickActionButton, { backgroundColor: theme.colors.card }]}
+                  onPress={() => {
+                    setFocusTime(25);
+                    setTimeLeft(25 * 60);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.quickActionText, { color: theme.colors.text }]}>25 min</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity
@@ -922,75 +837,37 @@ export default function TimerScreen() {
                   onPress={() => {
                     setFocusTime(45);
                     setTimeLeft(45 * 60);
-                    showSuccess('Djupfokus', '45 minuters fokus aktiverat');
                   }}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.quickActionIcon, { backgroundColor: theme.colors.primary + '20' }]}>
-                    <Brain size={22} color={theme.colors.primary} />
-                  </View>
                   <Text style={[styles.quickActionText, { color: theme.colors.text }]}>45 min</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.quickActionButton, { backgroundColor: theme.colors.card }]}
-                  onPress={() => {
-                    setFocusTime(60);
-                    setTimeLeft(60 * 60);
-                    showSuccess('Maratonläge', '60 minuters fokus aktiverat');
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.quickActionIcon, { backgroundColor: theme.colors.secondary + '20' }]}>
-                    <Target size={22} color={theme.colors.secondary} />
-                  </View>
-                  <Text style={[styles.quickActionText, { color: theme.colors.text }]}>60 min</Text>
                 </TouchableOpacity>
               </View>
             </View>
           ) : (
             <View style={styles.activeControls}>
               <TouchableOpacity 
-                style={[styles.controlButton, { backgroundColor: theme.colors.error + '15' }]} 
+                style={[styles.controlButton, { backgroundColor: theme.colors.card }]} 
                 onPress={stopTimer}
                 activeOpacity={0.7}
               >
-                <View style={[styles.controlButtonIcon, { backgroundColor: theme.colors.error + '20' }]}>
-                  <Square size={24} color={theme.colors.error} fill={theme.colors.error} />
-                </View>
-                <Text style={[styles.controlButtonText, { color: theme.colors.error }]}>Stoppa</Text>
+                <Square size={24} color={theme.colors.error} />
               </TouchableOpacity>
               
-              <LinearGradient
-                colors={timerState === 'running' 
-                  ? [theme.colors.warning, theme.colors.warning + 'DD'] as any
-                  : theme.colors.gradient as any
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.mainButtonGradient}
+              <TouchableOpacity
+                style={[styles.mainButton, { backgroundColor: timerState === 'running' ? theme.colors.warning : theme.colors.primary }]}
+                onPress={timerState === 'running' ? pauseTimer : startTimer}
+                activeOpacity={0.8}
               >
-                <TouchableOpacity
-                  style={styles.mainButton}
-                  onPress={timerState === 'running' ? pauseTimer : startTimer}
-                  activeOpacity={0.7}
-                >
-                  {timerState === 'running' ? (
-                    <>
-                      <Pause size={38} color="#FFFFFF" fill="#FFFFFF" />
-                      <Text style={styles.mainButtonText}>PAUSA</Text>
-                    </>
-                  ) : (
-                    <>
-                      <Play size={38} color="#FFFFFF" fill="#FFFFFF" />
-                      <Text style={styles.mainButtonText}>FORTSÄTT</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </LinearGradient>
+                {timerState === 'running' ? (
+                  <Pause size={32} color="#FFFFFF" fill="#FFFFFF" />
+                ) : (
+                  <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
+                )}
+              </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.controlButton, { backgroundColor: theme.colors.secondary + '15' }]} 
+                style={[styles.controlButton, { backgroundColor: theme.colors.card }]} 
                 onPress={() => {
                   setSessionType(sessionType === 'focus' ? 'break' : 'focus');
                   setTimeLeft(sessionType === 'focus' ? breakTime * 60 : focusTime * 60);
@@ -998,18 +875,15 @@ export default function TimerScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <View style={[styles.controlButtonIcon, { backgroundColor: theme.colors.secondary + '20' }]}>
-                  <SkipForward size={24} color={theme.colors.secondary} />
-                </View>
-                <Text style={[styles.controlButtonText, { color: theme.colors.secondary }]}>Hoppa</Text>
+                <SkipForward size={24} color={theme.colors.text} />
               </TouchableOpacity>
             </View>
           )}
         </View>
 
-        {/* Enhanced Statistics Section */}
+        {/* Simplified Statistics Section */}
         <View style={styles.statsSection}>
-          <Text style={[styles.statsSectionTitle, { color: theme.colors.text }]}>📊 Din statistik</Text>
+          <Text style={[styles.statsSectionTitle, { color: theme.colors.text }]}>Statistik</Text>
           
           {/* Streak and Goal Card */}
           <LinearGradient
@@ -1135,7 +1009,7 @@ export default function TimerScreen() {
               end={{ x: 0, y: 1 }}
               style={styles.weeklyGraph}
             >
-              <Text style={[styles.graphTitle, { color: theme.colors.text }]}>📈 Veckoöversikt</Text>
+              <Text style={[styles.graphTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
               <View style={styles.graphBars}>
                 {weekStats.dailyStats.map((day, i) => {
                   const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
@@ -1311,81 +1185,53 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 24,
+    paddingBottom: 20,
   },
-  headerContent: {
-    flex: 1,
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 4,
-    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '600',
     textAlign: 'center',
-    letterSpacing: -0.5,
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 12,
+    letterSpacing: 0.5,
   },
   headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   timerContainer: {
     alignItems: 'center',
-    marginVertical: 40,
+    marginVertical: 50,
     position: 'relative',
   },
   timerSvg: {
     position: 'absolute',
   },
   timerContent: {
-    width: 320,
-    height: 320,
+    width: 280,
+    height: 280,
     justifyContent: 'center',
     alignItems: 'center',
   },
   timerText: {
-    fontSize: 64,
-    fontWeight: '200',
+    fontSize: 72,
+    fontWeight: '300',
     marginBottom: 8,
     fontVariant: ['tabular-nums'],
     textAlign: 'center',
     letterSpacing: -2,
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
   },
   sessionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     textAlign: 'center',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
+    opacity: 0.7,
   },
   courseSection: {
     paddingHorizontal: 20,
@@ -1435,7 +1281,7 @@ const styles = StyleSheet.create({
   activeControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 24,
+    gap: 20,
   },
   secondaryButton: {
     width: 56,
@@ -1616,32 +1462,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  headerGradient: {
-    borderRadius: 0,
-  },
-  quoteCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 24,
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  quoteText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 22,
-    textAlign: 'left',
-    letterSpacing: 0.1,
-  },
+
   sessionTypeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1678,10 +1499,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   statsSectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 20,
-    letterSpacing: -0.5,
+    textAlign: 'center',
   },
   streakCard: {
     borderRadius: 16,
@@ -1741,65 +1562,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  headerStatItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  headerStatValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginVertical: 4,
-    textAlign: 'center',
-    letterSpacing: -0.3,
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
-  },
-  headerStatLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    textAlign: 'center',
-  },
-  headerStatDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  quoteIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sessionTypeIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+
+
   sessionProgressBar: {
     width: 100,
     height: 4,
@@ -1813,101 +1577,42 @@ const styles = StyleSheet.create({
   },
   idleControls: {
     alignItems: 'center',
-    gap: 20,
-  },
-  mainButtonGradient: {
-    borderRadius: 60,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 12,
+    gap: 30,
   },
   mainButton: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'column',
-    gap: 6,
-  },
-  mainButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   quickActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
   },
   quickActionButton: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    paddingHorizontal: 22,
-    paddingVertical: 18,
-    borderRadius: 18,
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    minWidth: 85,
-  },
-  quickActionIcon: {
-    width: 40,
-    height: 40,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: 20,
-    justifyContent: 'center',
+    minWidth: 80,
     alignItems: 'center',
   },
   quickActionText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     textAlign: 'center',
-    letterSpacing: 0.3,
   },
   controlButton: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  controlButtonIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  controlButtonText: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
   },
   // Completion Screen Styles
   completionOverlay: {

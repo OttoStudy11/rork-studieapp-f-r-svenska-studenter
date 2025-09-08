@@ -20,6 +20,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="program-selection" options={{ title: 'Välj Program', presentation: 'modal' }} />
+      <Stack.Screen name="settings" options={{ title: 'Inställningar', presentation: 'modal' }} />
     </Stack>
   );
 }

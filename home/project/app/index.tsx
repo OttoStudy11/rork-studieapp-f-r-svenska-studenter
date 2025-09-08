@@ -5,17 +5,17 @@ import { useCourses } from '@/contexts/CourseContext';
 
 export default function Index() {
   const router = useRouter();
-  const { userProfile, isLoading } = useCourses();
+  const { userProfile, isLoading, onboardingCompleted } = useCourses();
 
   useEffect(() => {
     if (!isLoading) {
-      if (!userProfile || !userProfile.program || !userProfile.year) {
+      if (!onboardingCompleted || !userProfile || !userProfile.program || !userProfile.year) {
         router.replace('/onboarding');
       } else {
         router.replace('/(tabs)/home');
       }
     }
-  }, [isLoading, userProfile, router]);
+  }, [isLoading, onboardingCompleted, userProfile, router]);
 
   return (
     <View style={styles.container}>

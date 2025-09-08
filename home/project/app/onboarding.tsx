@@ -9,7 +9,7 @@ import { gymnasiumPrograms } from '@/constants/gymnasium-programs';
 
 export default function Onboarding() {
   const router = useRouter();
-  const { updateUserProfile } = useCourses();
+  const { updateUserProfile, completeOnboarding } = useCourses();
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [gymnasium, setGymnasium] = useState('');
@@ -33,6 +33,7 @@ export default function Onboarding() {
       program,
       year,
     });
+    await completeOnboarding();
     router.replace('/(tabs)/home');
   };
 

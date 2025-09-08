@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCourses } from '@/contexts/CourseContext';
-import { BookOpen, Clock, Trophy, TrendingUp } from 'lucide-react-native';
+import { BookOpen, Clock, Trophy, TrendingUp, Settings } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function Home() {
@@ -20,10 +20,20 @@ export default function Home() {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>Hej {userProfile?.name || 'Student'}! 👋</Text>
-        <Text style={styles.subGreeting}>
-          {userProfile?.gymnasium} • {userProfile?.program} • År {userProfile?.year}
-        </Text>
+        <View style={styles.headerTop}>
+          <View style={styles.headerText}>
+            <Text style={styles.greeting}>Hej {userProfile?.name || 'Student'}! 👋</Text>
+            <Text style={styles.subGreeting}>
+              {userProfile?.gymnasium} • {userProfile?.program} • År {userProfile?.year}
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.settingsButton}
+            onPress={() => router.push('/settings')}
+          >
+            <Settings size={24} color="#666" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.statsContainer}>
@@ -121,6 +131,19 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 10,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerText: {
+    flex: 1,
+  },
+  settingsButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
   },
   greeting: {
     fontSize: 28,

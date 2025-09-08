@@ -1,29 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
-// Temporary mock function until we fix the import
-function getCoursesForProgramAndYear(program: string, year: 1 | 2 | 3) {
-  const baseCourses = [
-    { name: 'Svenska', code: 'SVE01', points: 100, year, mandatory: true, category: 'gymnasiegemensam' as const },
-    { name: 'Engelska', code: 'ENG05', points: 100, year, mandatory: true, category: 'gymnasiegemensam' as const },
-    { name: 'Matematik', code: 'MAT01a', points: 100, year, mandatory: true, category: 'gymnasiegemensam' as const },
-    { name: 'Historia', code: 'HIS01a1', points: 50, year, mandatory: true, category: 'gymnasiegemensam' as const },
-    { name: 'Samhällskunskap', code: 'SAM01a1', points: 50, year, mandatory: true, category: 'gymnasiegemensam' as const },
-    { name: 'Religionskunskap', code: 'REL01', points: 50, year, mandatory: true, category: 'gymnasiegemensam' as const },
-    { name: 'Naturkunskap', code: 'NAT01a1', points: 50, year, mandatory: true, category: 'gymnasiegemensam' as const },
-    { name: 'Idrott och hälsa', code: 'IDH01', points: 100, year, mandatory: true, category: 'gymnasiegemensam' as const },
-  ];
-  return baseCourses;
-}
+import { getCoursesForProgramAndYear } from '@/constants/gymnasium-courses';
 
-type ProgramCourse = {
-  name: string;
-  code: string;
-  points: number;
-  year: 1 | 2 | 3;
-  mandatory: boolean;
-  category: 'gymnasiegemensam' | 'programgemensam' | 'inriktning' | 'programfördjupning' | 'individuellt val';
-};
+import type { Course as ProgramCourse } from '@/constants/gymnasium-courses';
 
 export interface Course {
   id: string;
@@ -49,11 +29,13 @@ export interface UserProfile {
   year?: 1 | 2 | 3;
   email?: string;
   name?: string;
+  onboardingCompleted?: boolean;
 }
 
 const STORAGE_KEYS = {
   COURSES: '@courses',
   USER_PROFILE: '@user_profile',
+  ONBOARDING_COMPLETED: '@onboarding_completed',
 };
 
 const courseColors = [
@@ -72,6 +54,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
 
   // Load data from AsyncStorage
   useEffect(() => {
@@ -81,6 +64,10 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
   const loadData = async () => {
     try {
       setIsLoading(true);
+      
+      // Load onboarding status
+      const onboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+      setOnboardingCompleted(onboardingStatus === 'true');
       
       // Load user profile
       const profileData = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
@@ -98,9 +85,6 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
             createdAt: new Date(c.createdAt),
             updatedAt: new Date(c.updatedAt),
           })));
-        } else if (profile.program && profile.year) {
-          // Auto-assign courses if none exist
-          await assignCoursesForYear(profile.program, profile.year);
         }
       }
     } catch (error) {
@@ -167,6 +151,22 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     if ((updates.program || updates.year) && updatedProfile.program && updatedProfile.year) {
       await assignCoursesForYear(updatedProfile.program, updatedProfile.year);
     }
+  };
+
+  const completeOnboarding = async () => {
+    await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
+    setOnboardingCompleted(true);
+  };
+
+  const resetOnboarding = async () => {
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.ONBOARDING_COMPLETED,
+      STORAGE_KEYS.USER_PROFILE,
+      STORAGE_KEYS.COURSES
+    ]);
+    setOnboardingCompleted(false);
+    setUserProfile(null);
+    setCourses([]);
   };
 
   const addCourse = async (course: Omit<Course, 'id' | 'createdAt' | 'updatedAt' | 'studiedHours'>) => {
@@ -251,6 +251,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     courses,
     userProfile,
     isLoading,
+    onboardingCompleted,
     
     // Actions
     updateUserProfile,
@@ -259,6 +260,8 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     updateCourse,
     deleteCourse,
     logStudyTime,
+    completeOnboarding,
+    resetOnboarding,
     
     // Computed
     coursesByYear,

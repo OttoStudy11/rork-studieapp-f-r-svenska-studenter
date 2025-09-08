@@ -481,41 +481,35 @@ export default function TimerScreen() {
               </View>
               <View style={styles.headerActions}>
                 <TouchableOpacity
-                  style={[
-                    styles.headerButton, 
-                    { backgroundColor: 'rgba(255, 255, 255, 0.25)' }
-                  ]}
+                  style={styles.headerButton}
                   onPress={() => setSoundEnabled(!soundEnabled)}
                   activeOpacity={0.7}
                 >
                   {soundEnabled ? (
-                    <Volume2 size={22} color="white" />
+                    <Volume2 size={20} color="white" />
                   ) : (
-                    <VolumeX size={22} color="white" />
+                    <VolumeX size={20} color="white" />
                   )}
                 </TouchableOpacity>
                 {Platform.OS !== 'web' && dndPermissionGranted && (
                   <TouchableOpacity
-                    style={[
-                      styles.headerButton, 
-                      { backgroundColor: 'rgba(255, 255, 255, 0.25)' }
-                    ]}
+                    style={styles.headerButton}
                     onPress={isDndActive ? disableDoNotDisturb : enableDoNotDisturb}
                     activeOpacity={0.7}
                   >
                     {isDndActive ? (
-                      <BellOff size={22} color="white" />
+                      <BellOff size={20} color="white" />
                     ) : (
-                      <Bell size={22} color="white" />
+                      <Bell size={20} color="white" />
                     )}
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
-                  style={[styles.headerButton, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}
+                  style={styles.headerButton}
                   onPress={() => setShowSettings(true)}
                   activeOpacity={0.7}
                 >
-                  <Settings size={22} color="white" />
+                  <Settings size={20} color="white" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -649,19 +643,15 @@ export default function TimerScreen() {
               <TouchableOpacity
                 style={[
                   styles.courseChip,
-                  { 
-                    backgroundColor: !selectedCourse ? theme.colors.primary : theme.colors.card,
-                    borderColor: theme.colors.border
-                  }
+                  !selectedCourse && styles.courseChipActive,
+                  { backgroundColor: !selectedCourse ? theme.colors.primary : theme.colors.card }
                 ]}
                 onPress={() => setSelectedCourse('')}
                 activeOpacity={0.8}
               >
                 <Text style={[
                   styles.courseChipText,
-                  { 
-                    color: !selectedCourse ? '#FFFFFF' : theme.colors.textSecondary
-                  }
+                  { color: !selectedCourse ? '#FFFFFF' : theme.colors.textSecondary }
                 ]}>Allmänt</Text>
               </TouchableOpacity>
               {courses.map((course) => (
@@ -669,19 +659,15 @@ export default function TimerScreen() {
                   key={course.id}
                   style={[
                     styles.courseChip,
-                    { 
-                      backgroundColor: selectedCourse === course.id ? theme.colors.primary : theme.colors.card,
-                      borderColor: theme.colors.border
-                    }
+                    selectedCourse === course.id && styles.courseChipActive,
+                    { backgroundColor: selectedCourse === course.id ? theme.colors.primary : theme.colors.card }
                   ]}
                   onPress={() => setSelectedCourse(course.id)}
                   activeOpacity={0.8}
                 >
                   <Text style={[
                     styles.courseChipText,
-                    { 
-                      color: selectedCourse === course.id ? '#FFFFFF' : theme.colors.textSecondary
-                    }
+                    { color: selectedCourse === course.id ? '#FFFFFF' : theme.colors.textSecondary }
                   ]}>{course.title}</Text>
                 </TouchableOpacity>
               ))}
@@ -719,7 +705,9 @@ export default function TimerScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Zap size={20} color={theme.colors.warning} />
+                  <View style={[styles.quickActionIcon, { backgroundColor: theme.colors.warning + '20' }]}>
+                    <Zap size={18} color={theme.colors.warning} />
+                  </View>
                   <Text style={[styles.quickActionText, { color: theme.colors.text }]}>15 min</Text>
                 </TouchableOpacity>
                 
@@ -732,7 +720,9 @@ export default function TimerScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Brain size={20} color={theme.colors.primary} />
+                  <View style={[styles.quickActionIcon, { backgroundColor: theme.colors.primary + '20' }]}>
+                    <Brain size={18} color={theme.colors.primary} />
+                  </View>
                   <Text style={[styles.quickActionText, { color: theme.colors.text }]}>45 min</Text>
                 </TouchableOpacity>
                 
@@ -745,7 +735,9 @@ export default function TimerScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Target size={20} color={theme.colors.secondary} />
+                  <View style={[styles.quickActionIcon, { backgroundColor: theme.colors.secondary + '20' }]}>
+                    <Target size={18} color={theme.colors.secondary} />
+                  </View>
                   <Text style={[styles.quickActionText, { color: theme.colors.text }]}>60 min</Text>
                 </TouchableOpacity>
               </View>
@@ -757,7 +749,9 @@ export default function TimerScreen() {
                 onPress={stopTimer}
                 activeOpacity={0.7}
               >
-                <Square size={24} color={theme.colors.error} fill={theme.colors.error} />
+                <View style={[styles.controlButtonIcon, { backgroundColor: theme.colors.error + '20' }]}>
+                  <Square size={20} color={theme.colors.error} fill={theme.colors.error} />
+                </View>
                 <Text style={[styles.controlButtonText, { color: theme.colors.error }]}>Stoppa</Text>
               </TouchableOpacity>
               
@@ -777,12 +771,12 @@ export default function TimerScreen() {
                 >
                   {timerState === 'running' ? (
                     <>
-                      <Pause size={36} color="#FFFFFF" fill="#FFFFFF" />
+                      <Pause size={32} color="#FFFFFF" fill="#FFFFFF" />
                       <Text style={styles.mainButtonText}>PAUSA</Text>
                     </>
                   ) : (
                     <>
-                      <Play size={36} color="#FFFFFF" fill="#FFFFFF" />
+                      <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
                       <Text style={styles.mainButtonText}>FORTSÄTT</Text>
                     </>
                   )}
@@ -798,7 +792,9 @@ export default function TimerScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <SkipForward size={24} color={theme.colors.secondary} />
+                <View style={[styles.controlButtonIcon, { backgroundColor: theme.colors.secondary + '20' }]}>
+                  <SkipForward size={20} color={theme.colors.secondary} />
+                </View>
                 <Text style={[styles.controlButtonText, { color: theme.colors.secondary }]}>Hoppa</Text>
               </TouchableOpacity>
             </View>
@@ -843,19 +839,11 @@ export default function TimerScreen() {
             <TouchableOpacity 
               style={[
                 styles.viewButton,
-                selectedStatView === 'day' && styles.viewButtonActive
+                selectedStatView === 'day' && { backgroundColor: theme.colors.primary }
               ]}
               onPress={() => setSelectedStatView('day')}
               activeOpacity={0.8}
             >
-              {selectedStatView === 'day' && (
-                <LinearGradient
-                  colors={theme.colors.gradient as any}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFillObject}
-                />
-              )}
               <Text style={[
                 styles.viewButtonText,
                 { color: selectedStatView === 'day' ? '#FFFFFF' : theme.colors.textSecondary }
@@ -864,19 +852,11 @@ export default function TimerScreen() {
             <TouchableOpacity 
               style={[
                 styles.viewButton,
-                selectedStatView === 'week' && styles.viewButtonActive
+                selectedStatView === 'week' && { backgroundColor: theme.colors.primary }
               ]}
               onPress={() => setSelectedStatView('week')}
               activeOpacity={0.8}
             >
-              {selectedStatView === 'week' && (
-                <LinearGradient
-                  colors={theme.colors.gradient as any}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFillObject}
-                />
-              )}
               <Text style={[
                 styles.viewButtonText,
                 { color: selectedStatView === 'week' ? '#FFFFFF' : theme.colors.textSecondary }
@@ -1017,8 +997,11 @@ export default function TimerScreen() {
                     key={time}
                     style={[
                       styles.timeOption,
-                      { backgroundColor: theme.colors.card },
-                      focusTime === time && [styles.timeOptionActive, { backgroundColor: theme.colors.primary }]
+                      { 
+                        backgroundColor: focusTime === time ? theme.colors.primary : theme.colors.card,
+                        borderWidth: 2,
+                        borderColor: focusTime === time ? theme.colors.primary : 'transparent'
+                      }
                     ]}
                     onPress={() => {
                       setFocusTime(time);
@@ -1027,10 +1010,11 @@ export default function TimerScreen() {
                       }
                       showSuccess('Inställning sparad', `Fokustid: ${time} minuter`);
                     }}
+                    activeOpacity={0.8}
                   >
                     <Text style={[
                       styles.timeOptionText,
-                      { color: focusTime === time ? '#FFFFFF' : theme.colors.textSecondary }
+                      { color: focusTime === time ? '#FFFFFF' : theme.colors.text }
                     ]}>{time}</Text>
                   </TouchableOpacity>
                 ))}
@@ -1045,8 +1029,11 @@ export default function TimerScreen() {
                     key={time}
                     style={[
                       styles.timeOption,
-                      { backgroundColor: theme.colors.card },
-                      breakTime === time && [styles.timeOptionActive, { backgroundColor: theme.colors.primary }]
+                      { 
+                        backgroundColor: breakTime === time ? theme.colors.primary : theme.colors.card,
+                        borderWidth: 2,
+                        borderColor: breakTime === time ? theme.colors.primary : 'transparent'
+                      }
                     ]}
                     onPress={() => {
                       setBreakTime(time);
@@ -1055,10 +1042,11 @@ export default function TimerScreen() {
                       }
                       showSuccess('Inställning sparad', `Paustid: ${time} minuter`);
                     }}
+                    activeOpacity={0.8}
                   >
                     <Text style={[
                       styles.timeOptionText,
-                      { color: breakTime === time ? '#FFFFFF' : theme.colors.textSecondary }
+                      { color: breakTime === time ? '#FFFFFF' : theme.colors.text }
                     ]}>{time}</Text>
                   </TouchableOpacity>
                 ))}
@@ -1116,11 +1104,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   timerContainer: {
     alignItems: 'center',
@@ -1154,11 +1148,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   courseChip: {
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginRight: 10,
-    borderWidth: 1,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  courseChipActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   courseChipText: {
     fontSize: 14,
@@ -1219,16 +1226,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   viewButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  viewButtonActive: {
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   viewButtonText: {
     fontSize: 14,
@@ -1327,16 +1332,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   timeOption: {
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  timeOptionActive: {
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 4,
+    elevation: 2,
+    minWidth: 60,
+    alignItems: 'center',
   },
   timeOptionText: {
     fontSize: 14,
@@ -1530,17 +1535,17 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   mainButtonGradient: {
-    borderRadius: 50,
+    borderRadius: 55,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 10,
   },
   mainButton: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'column',
@@ -1558,17 +1563,25 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   quickActionButton: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
     gap: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    minWidth: 80,
+  },
+  quickActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   quickActionText: {
     fontSize: 14,
@@ -1578,15 +1591,22 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    gap: 4,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    gap: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  controlButtonIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   controlButtonText: {
     fontSize: 11,

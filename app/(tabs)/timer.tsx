@@ -611,28 +611,7 @@ export default function TimerScreen() {
             <Text style={[styles.sessionLabel, { color: theme.colors.textSecondary }]}>
               {sessionType === 'focus' ? 'FOKUSLÄGE' : 'PAUSLÄGE'}
             </Text>
-            
-            {/* Enhanced Session Progress */}
-            <LinearGradient
-              colors={[theme.colors.primary + '20', theme.colors.secondary + '20'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.sessionCounter}
-            >
-              <Trophy size={18} color={theme.colors.primary} />
-              <Text style={[styles.sessionCounterText, { color: theme.colors.text }]}>
-                {sessionCount}/{dailyGoal} sessioner
-              </Text>
-              <View style={[styles.sessionProgressBar, { backgroundColor: theme.colors.border + '40' }]}>
-                <View style={[
-                  styles.sessionProgressFill,
-                  { 
-                    width: `${Math.min(100, (sessionCount / dailyGoal) * 100)}%`,
-                    backgroundColor: theme.colors.primary
-                  }
-                ]} />
-              </View>
-            </LinearGradient>
+
           </View>
         </Animated.View>
 
@@ -690,7 +669,7 @@ export default function TimerScreen() {
                   onPress={startTimer}
                   activeOpacity={0.7}
                 >
-                  <Play size={36} color="#FFFFFF" fill="#FFFFFF" />
+                  <Play size={42} color="#FFFFFF" fill="#FFFFFF" />
                   <Text style={styles.mainButtonText}>STARTA SESSION</Text>
                 </TouchableOpacity>
               </LinearGradient>
@@ -706,7 +685,7 @@ export default function TimerScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={[styles.quickActionIcon, { backgroundColor: theme.colors.warning + '20' }]}>
-                    <Zap size={18} color={theme.colors.warning} />
+                    <Zap size={22} color={theme.colors.warning} />
                   </View>
                   <Text style={[styles.quickActionText, { color: theme.colors.text }]}>15 min</Text>
                 </TouchableOpacity>
@@ -721,7 +700,7 @@ export default function TimerScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={[styles.quickActionIcon, { backgroundColor: theme.colors.primary + '20' }]}>
-                    <Brain size={18} color={theme.colors.primary} />
+                    <Brain size={22} color={theme.colors.primary} />
                   </View>
                   <Text style={[styles.quickActionText, { color: theme.colors.text }]}>45 min</Text>
                 </TouchableOpacity>
@@ -736,7 +715,7 @@ export default function TimerScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={[styles.quickActionIcon, { backgroundColor: theme.colors.secondary + '20' }]}>
-                    <Target size={18} color={theme.colors.secondary} />
+                    <Target size={22} color={theme.colors.secondary} />
                   </View>
                   <Text style={[styles.quickActionText, { color: theme.colors.text }]}>60 min</Text>
                 </TouchableOpacity>
@@ -750,7 +729,7 @@ export default function TimerScreen() {
                 activeOpacity={0.7}
               >
                 <View style={[styles.controlButtonIcon, { backgroundColor: theme.colors.error + '20' }]}>
-                  <Square size={20} color={theme.colors.error} fill={theme.colors.error} />
+                  <Square size={24} color={theme.colors.error} fill={theme.colors.error} />
                 </View>
                 <Text style={[styles.controlButtonText, { color: theme.colors.error }]}>Stoppa</Text>
               </TouchableOpacity>
@@ -771,12 +750,12 @@ export default function TimerScreen() {
                 >
                   {timerState === 'running' ? (
                     <>
-                      <Pause size={32} color="#FFFFFF" fill="#FFFFFF" />
+                      <Pause size={38} color="#FFFFFF" fill="#FFFFFF" />
                       <Text style={styles.mainButtonText}>PAUSA</Text>
                     </>
                   ) : (
                     <>
-                      <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
+                      <Play size={38} color="#FFFFFF" fill="#FFFFFF" />
                       <Text style={styles.mainButtonText}>FORTSÄTT</Text>
                     </>
                   )}
@@ -793,7 +772,7 @@ export default function TimerScreen() {
                 activeOpacity={0.7}
               >
                 <View style={[styles.controlButtonIcon, { backgroundColor: theme.colors.secondary + '20' }]}>
-                  <SkipForward size={20} color={theme.colors.secondary} />
+                  <SkipForward size={24} color={theme.colors.secondary} />
                 </View>
                 <Text style={[styles.controlButtonText, { color: theme.colors.secondary }]}>Hoppa</Text>
               </TouchableOpacity>

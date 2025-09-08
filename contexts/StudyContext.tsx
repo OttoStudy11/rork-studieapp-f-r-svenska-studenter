@@ -5,6 +5,8 @@ import * as db from '@/lib/database';
 import { Database } from '@/lib/database.types';
 import type { Gymnasium } from '@/constants/gymnasiums';
 import type { AvatarConfig } from '@/components/AvatarCustomizer';
+import { getSelectedCoursesData } from '@/constants/gymnasium-courses';
+import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 
 type DbUser = Database['public']['Tables']['profiles']['Row'];
 
@@ -63,7 +65,7 @@ export interface StudyContextType {
   isAuthenticated: boolean;
   
   // User actions
-  completeOnboarding: (userData: Omit<User, 'id' | 'onboardingCompleted'>) => Promise<void>;
+  completeOnboarding: (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[] }) => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   
   // Course actions
@@ -318,7 +320,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     };
   }, [authUser, isAuthenticated, authLoading, loadUserData]);
 
-  const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'>) => {
+  const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[] }) => {
     try {
       if (!authUser) throw new Error('No authenticated user');
 
@@ -342,10 +344,45 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           const existingCourses = await db.getUserCourses(authUser.id);
           
           if (existingCourses.length === 0) {
-            console.log('Creating sample courses for new user');
+            console.log('Creating courses for new user');
             
-            // Create sample courses
-            const sampleCourses = userData.studyLevel === 'gymnasie' ? [
+            // If user selected specific courses during onboarding, use those
+            if (userData.selectedCourses && userData.selectedCourses.length > 0 && userData.gymnasium) {
+              console.log('Using selected courses from onboarding:', userData.selectedCourses.length);
+              
+              // Get the actual course data based on selected course IDs
+              const selectedCoursesData = getSelectedCoursesData(
+                userData.selectedCourses, 
+                userData.gymnasium,
+                // Try to find the program from the user data
+                userData.program ? { 
+                  id: userData.program.toLowerCase().includes('natur') ? 'na' : 
+                      userData.program.toLowerCase().includes('teknik') ? 'te' :
+                      userData.program.toLowerCase().includes('samhäll') ? 'sa' :
+                      userData.program.toLowerCase().includes('ekonomi') ? 'ek' :
+                      userData.program.toLowerCase().includes('estet') ? 'es' :
+                      userData.program.toLowerCase().includes('human') ? 'hu' : 'na',
+                  name: userData.program,
+                  abbreviation: 'NA',
+                  category: 'högskoleförberedande'
+                } as GymnasiumProgram : undefined
+              );
+              
+              // Create courses and add user to them
+              for (let i = 0; i < selectedCoursesData.length; i++) {
+                const courseData = selectedCoursesData[i];
+                try {
+                  console.log('Creating selected course:', courseData.title);
+                  const course = await db.createCourse(courseData);
+                  await db.addUserToCourse(authUser.id, course.id, i === 0); // First course is active
+                  console.log('Created selected course successfully:', course.title);
+                } catch (courseError: any) {
+                  console.error('Error creating selected course:', courseData.title, courseError);
+                }
+              }
+            } else {
+              // Create default sample courses
+              const sampleCourses = userData.studyLevel === 'gymnasie' ? [
               {
                 title: 'Matematik 3c',
                 description: 'Avancerad matematik för naturvetenskapsprogrammet',
@@ -385,28 +422,29 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
               }
             ];
             
-            // Create courses and add user to them
-            for (let i = 0; i < sampleCourses.length; i++) {
-              const courseData = sampleCourses[i];
-              try {
-                console.log('Creating course:', courseData.title);
-                const course = await db.createCourse(courseData);
-                await db.addUserToCourse(authUser.id, course.id, i === 0); // First course is active
-                console.log('Created course successfully:', course.title);
-              } catch (courseError: any) {
-                console.error('Error creating course:', courseData.title);
-                console.error('Course error details:', courseError?.message || courseError?.toString() || 'Unknown error');
-                if (courseError?.code) {
-                  console.error('Course error code:', courseError.code);
+              // Create courses and add user to them
+              for (let i = 0; i < sampleCourses.length; i++) {
+                const courseData = sampleCourses[i];
+                try {
+                  console.log('Creating course:', courseData.title);
+                  const course = await db.createCourse(courseData);
+                  await db.addUserToCourse(authUser.id, course.id, i === 0); // First course is active
+                  console.log('Created course successfully:', course.title);
+                } catch (courseError: any) {
+                  console.error('Error creating course:', courseData.title);
+                  console.error('Course error details:', courseError?.message || courseError?.toString() || 'Unknown error');
+                  if (courseError?.code) {
+                    console.error('Course error code:', courseError.code);
+                  }
+                  if (courseError?.details) {
+                    console.error('Course error details:', courseError.details);
+                  }
+                  if (courseError?.hint) {
+                    console.error('Course error hint:', courseError.hint);
+                  }
+                  console.error('Full course error object:', JSON.stringify(courseError, null, 2));
+                  // Continue with other courses even if one fails
                 }
-                if (courseError?.details) {
-                  console.error('Course error details:', courseError.details);
-                }
-                if (courseError?.hint) {
-                  console.error('Course error hint:', courseError.hint);
-                }
-                console.error('Full course error object:', JSON.stringify(courseError, null, 2));
-                // Continue with other courses even if one fails
               }
             }
             
@@ -434,8 +472,31 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
             
             setUser(localUser);
             
-            // Create local sample courses
-            const localCourses: Course[] = userData.studyLevel === 'gymnasie' ? [
+            // Create local courses based on selection or defaults
+            let localCourses: Course[];
+            
+            if (userData.selectedCourses && userData.selectedCourses.length > 0 && userData.gymnasium) {
+              // Use selected courses
+              const selectedCoursesData = getSelectedCoursesData(
+                userData.selectedCourses, 
+                userData.gymnasium
+              );
+              
+              localCourses = selectedCoursesData.map((courseData, index) => ({
+                id: `local-selected-${index}`,
+                title: courseData.title,
+                description: courseData.description,
+                subject: courseData.subject,
+                level: 'gymnasie',
+                progress: 0,
+                isActive: index === 0,
+                resources: courseData.resources,
+                tips: courseData.tips,
+                relatedCourses: []
+              }));
+            } else {
+              // Use default sample courses
+              localCourses = userData.studyLevel === 'gymnasie' ? [
               {
                 id: 'local-math-3c',
                 title: 'Matematik 3c',
@@ -485,7 +546,8 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
                 tips: ['Öva dagligen - kod varje dag', 'Bygg egna projekt'],
                 relatedCourses: []
               }
-            ];
+              ];
+            }
             
             setCourses(localCourses);
             setNotes([]);

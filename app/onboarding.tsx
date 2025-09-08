@@ -17,6 +17,7 @@ import { GraduationCap, Target, Users, BookOpen, MapPin } from 'lucide-react-nat
 import GymnasiumAndProgramPicker from '@/components/GymnasiumAndProgramPicker';
 import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
 import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
+import { getGymnasiumCourses, type GymnasiumCourse } from '@/constants/gymnasium-courses';
 
 interface OnboardingData {
   name: string;
@@ -27,6 +28,7 @@ interface OnboardingData {
   program: string;
   goals: string[];
   purpose: string[];
+  selectedCourses: Set<string>;
 }
 
 const goalOptions = [
@@ -61,11 +63,14 @@ export default function OnboardingScreen() {
     gymnasiumGrade: null,
     program: '',
     goals: [],
-    purpose: []
+    purpose: [],
+    selectedCourses: new Set()
   });
+  
+  const [availableCourses, setAvailableCourses] = useState<GymnasiumCourse[]>([]);
 
   const handleNext = () => {
-    if (step < 4) {
+    if (step < 5) {
       setStep(step + 1);
     } else {
       handleComplete();
@@ -75,7 +80,7 @@ export default function OnboardingScreen() {
   const handleComplete = async () => {
     if (data.studyLevel && data.name) {
       try {
-        console.log('Completing basic onboarding with data:', data);
+        console.log('Completing onboarding with data:', data);
         const finalName = data.name || user?.email?.split('@')[0] || '';
         const programName = data.gymnasiumProgram ? 
           `${data.gymnasiumProgram.name} - År ${data.gymnasiumGrade}` : 
@@ -89,10 +94,11 @@ export default function OnboardingScreen() {
           purpose: [...data.goals, ...data.purpose].join(', ') || 'Allmän studiehjälp',
           subscriptionType: 'free',
           gymnasium: data.gymnasium,
-          avatar: { emoji: '😊' }
+          avatar: { emoji: '😊' },
+          selectedCourses: Array.from(data.selectedCourses)
         });
-        console.log('Basic onboarding completed, redirecting to program selection');
-        router.replace('/program-selection');
+        console.log('Onboarding completed successfully');
+        router.replace('/(tabs)/home');
       } catch (error) {
         console.error('Onboarding error:', error);
         showError('Något gick fel. Försök igen.');
@@ -114,6 +120,7 @@ export default function OnboardingScreen() {
       case 2: return data.studyLevel !== 'gymnasie' || (data.gymnasium !== null && data.gymnasiumProgram !== null);
       case 3: return true; // Make goals optional
       case 4: return true; // Make purpose optional
+      case 5: return data.studyLevel !== 'gymnasie' || data.selectedCourses.size > 0; // Require course selection for gymnasium
       default: return false;
     }
   };
@@ -187,9 +194,29 @@ export default function OnboardingScreen() {
                     selectedGymnasium={data.gymnasium}
                     selectedProgram={data.gymnasiumProgram}
                     selectedGrade={data.gymnasiumGrade}
-                    onSelect={(gymnasium, program, grade) => 
-                      setData({ ...data, gymnasium, gymnasiumProgram: program, gymnasiumGrade: grade })
-                    }
+                    onSelect={(gymnasium, program, grade) => {
+                      setData({ ...data, gymnasium, gymnasiumProgram: program, gymnasiumGrade: grade });
+                      
+                      // Update available courses when selection changes
+                      if (gymnasium && program && grade) {
+                        const courses = getGymnasiumCourses(gymnasium, program, grade);
+                        setAvailableCourses(courses);
+                        // Auto-select all mandatory courses
+                        const mandatoryCourseIds = courses
+                          .filter(course => course.mandatory)
+                          .map(course => course.id);
+                        setData(prev => ({ 
+                          ...prev, 
+                          gymnasium, 
+                          gymnasiumProgram: program, 
+                          gymnasiumGrade: grade,
+                          selectedCourses: new Set(mandatoryCourseIds)
+                        }));
+                      } else {
+                        setAvailableCourses([]);
+                        setData(prev => ({ ...prev, selectedCourses: new Set() }));
+                      }
+                    }}
                     placeholder="Välj gymnasium, årskurs och program"
                   />
                 </View>
@@ -263,6 +290,99 @@ export default function OnboardingScreen() {
           </View>
         );
 
+      case 5:
+        if (data.studyLevel !== 'gymnasie') {
+          // Skip course selection for university students
+          handleComplete();
+          return null;
+        }
+        
+        return (
+          <View style={styles.stepContainer}>
+            <BookOpen size={80} color="#4F46E5" style={styles.icon} />
+            <Text style={styles.title}>Välj dina kurser</Text>
+            <Text style={styles.subtitle}>
+              {data.gymnasiumProgram?.name} - År {data.gymnasiumGrade}
+            </Text>
+            <ScrollView style={styles.coursesScrollView} showsVerticalScrollIndicator={false}>
+              <View style={styles.coursesContainer}>
+                {availableCourses.map((course) => {
+                  const isSelected = data.selectedCourses.has(course.id);
+                  const isMandatory = course.mandatory;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={course.id}
+                      style={[
+                        styles.courseItem,
+                        isSelected && styles.selectedCourseItem,
+                        isMandatory && styles.mandatoryCourseItem
+                      ]}
+                      onPress={() => {
+                        if (isMandatory) return; // Can't deselect mandatory courses
+                        
+                        const newSelectedCourses = new Set(data.selectedCourses);
+                        if (isSelected) {
+                          newSelectedCourses.delete(course.id);
+                        } else {
+                          newSelectedCourses.add(course.id);
+                        }
+                        setData({ ...data, selectedCourses: newSelectedCourses });
+                      }}
+                      disabled={isMandatory}
+                    >
+                      <View style={styles.courseHeader}>
+                        <Text style={[
+                          styles.courseName,
+                          isSelected && styles.selectedCourseName
+                        ]}>
+                          {course.name}
+                        </Text>
+                        <View style={styles.courseInfo}>
+                          <Text style={[
+                            styles.coursePoints,
+                            isSelected && styles.selectedCoursePoints
+                          ]}>
+                            {course.points}p
+                          </Text>
+                          {isMandatory && (
+                            <View style={styles.mandatoryBadge}>
+                              <Text style={styles.mandatoryText}>Obligatorisk</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                      <Text style={[
+                        styles.courseDetails,
+                        isSelected && styles.selectedCourseDetails
+                      ]}>
+                        År {course.year} • {course.category}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                
+                {availableCourses.length === 0 && (
+                  <View style={styles.noCoursesContainer}>
+                    <Text style={styles.noCoursesText}>
+                      Välj gymnasium och program för att se tillgängliga kurser
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+            
+            <View style={styles.coursesSummary}>
+              <Text style={styles.summaryText}>
+                {data.selectedCourses.size} kurser valda • {' '}
+                {availableCourses
+                  .filter(c => data.selectedCourses.has(c.id))
+                  .reduce((sum, c) => sum + c.points, 0)} poäng
+              </Text>
+            </View>
+          </View>
+        );
+
       default:
         return null;
     }
@@ -277,9 +397,9 @@ export default function OnboardingScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${((step + 1) / 5) * 100}%` }]} />
+              <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 6 : 5)) * 100}%` }]} />
             </View>
-            <Text style={styles.progressText}>{step + 1} av 5</Text>
+            <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '6' : '5'}</Text>
           </View>
 
           {renderStep()}
@@ -303,7 +423,7 @@ export default function OnboardingScreen() {
               disabled={!canProceed()}
             >
               <Text style={styles.nextButtonText}>
-                {step === 4 ? 'Välj kurser' : 'Nästa'}
+                {step === (data.studyLevel === 'gymnasie' ? 5 : 4) ? 'Slutför' : 'Nästa'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -463,5 +583,100 @@ const styles = StyleSheet.create({
   gymnasiumPickerContainer: {
     width: '100%',
     marginTop: 20,
+  },
+  coursesScrollView: {
+    maxHeight: 400,
+    width: '100%',
+    marginVertical: 20,
+  },
+  coursesContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  courseItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedCourseItem: {
+    backgroundColor: 'white',
+    borderColor: '#4F46E5',
+  },
+  mandatoryCourseItem: {
+    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+    borderColor: '#4F46E5',
+  },
+  courseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  courseName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    flex: 1,
+    marginRight: 12,
+  },
+  selectedCourseName: {
+    color: '#1f2937',
+  },
+  courseInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  coursePoints: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  selectedCoursePoints: {
+    color: '#6b7280',
+  },
+  mandatoryBadge: {
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  mandatoryText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'white',
+    textTransform: 'uppercase',
+  },
+  courseDetails: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  selectedCourseDetails: {
+    color: '#6b7280',
+  },
+  noCoursesContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  noCoursesText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+  },
+  coursesSummary: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+  },
+  summaryText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'white',
+    textAlign: 'center',
   },
 });

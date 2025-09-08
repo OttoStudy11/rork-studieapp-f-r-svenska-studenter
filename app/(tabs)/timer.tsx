@@ -16,16 +16,213 @@ import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAchievements } from '@/contexts/AchievementContext';
-import { Play, Pause, Square, Settings, BellOff, Bell, Flame, Target, Trophy, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, BookOpen, Clock, TrendingUp, Award, Star, CheckCircle, Timer, Activity } from 'lucide-react-native';
+import { Play, Pause, Square, Settings, BellOff, Bell, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, Timer, Activity, X, Star } from 'lucide-react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop as SvgStop } from 'react-native-svg';
 
-const { width } = Dimensions.get('window');
 import * as Notifications from 'expo-notifications';
+import * as Haptics from 'expo-haptics';
 
 
 
 type TimerState = 'idle' | 'running' | 'paused';
 type SessionType = 'focus' | 'break';
+
+interface CompletionScreenProps {
+  data: {
+    duration: number;
+    sessionType: SessionType;
+    courseName: string;
+    coinsEarned: number;
+  } | null;
+  onSave: () => void;
+  onDiscard: () => void;
+  dailyGoal: number;
+  currentSessions: number;
+}
+
+function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions }: CompletionScreenProps) {
+  const { theme } = useTheme();
+  const [starsVisible, setStarsVisible] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const starsAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Animate entrance
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Show stars after a delay
+    setTimeout(() => {
+      setStarsVisible(true);
+      Animated.timing(starsAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start();
+    }, 500);
+  }, []);
+
+  if (!data) return null;
+
+  const progressPercentage = Math.round((currentSessions / dailyGoal) * 100);
+  const isBreak = data.sessionType === 'break';
+
+  // Generate random star positions
+  const stars = Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    left: Math.random() * 100,
+    top: Math.random() * 100,
+    size: Math.random() * 20 + 10,
+    delay: Math.random() * 1000,
+  }));
+
+  return (
+    <Animated.View 
+      style={[
+        styles.completionOverlay,
+        {
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }]
+        }
+      ]}
+    >
+      <View style={[styles.completionContainer, { backgroundColor: '#1a1a2e' }]}>
+        {/* Close button */}
+        <TouchableOpacity 
+          style={styles.completionCloseButton} 
+          onPress={onDiscard}
+          activeOpacity={0.7}
+        >
+          <X size={24} color="#8e8e93" />
+        </TouchableOpacity>
+
+        {/* Animated stars background */}
+        {starsVisible && (
+          <Animated.View 
+            style={[
+              styles.starsContainer,
+              { opacity: starsAnim }
+            ]}
+          >
+            {stars.map((star) => (
+              <Animated.View
+                key={star.id}
+                style={[
+                  styles.star,
+                  {
+                    left: `${star.left}%`,
+                    top: `${star.top}%`,
+                    width: star.size,
+                    height: star.size,
+                  }
+                ]}
+              >
+                <Star 
+                  size={star.size} 
+                  color="white" 
+                  fill="white" 
+                  opacity={0.6}
+                />
+              </Animated.View>
+            ))}
+          </Animated.View>
+        )}
+
+        {/* Main content */}
+        <View style={styles.completionContent}>
+          <Text style={styles.completionTitle}>Come on...</Text>
+          
+          {/* Progress circle */}
+          <View style={styles.progressContainer}>
+            <Svg width={200} height={200}>
+              <Circle
+                cx={100}
+                cy={100}
+                r={80}
+                stroke="#2c2c54"
+                strokeWidth={8}
+                fill="none"
+              />
+              <Circle
+                cx={100}
+                cy={100}
+                r={80}
+                stroke="#40407a"
+                strokeWidth={8}
+                fill="none"
+                strokeDasharray={2 * Math.PI * 80}
+                strokeDashoffset={2 * Math.PI * 80 * (1 - progressPercentage / 100)}
+                strokeLinecap="round"
+                transform="rotate(-90 100 100)"
+              />
+            </Svg>
+            <View style={styles.progressContent}>
+              <Text style={styles.progressPercentage}>{progressPercentage}%</Text>
+              <Text style={styles.progressLabel}>of daily goal</Text>
+            </View>
+          </View>
+
+          {/* Session info */}
+          <View style={styles.sessionInfo}>
+            <Text style={styles.sessionText}>
+              You completed {data.duration}{isBreak ? 's' : 'm'}
+            </Text>
+            <Text style={styles.sessionText}>
+              of {data.courseName} and
+            </Text>
+            <Text style={styles.sessionText}>
+              earned {data.coinsEarned} coins.
+            </Text>
+          </View>
+
+          {/* Challenges section */}
+          <View style={styles.challengesSection}>
+            <Text style={styles.challengesTitle}>Challenges worked on</Text>
+            <Text style={styles.challengesSubtitle}>You don&apos;t have any active challenges</Text>
+          </View>
+        </View>
+
+        {/* Action buttons */}
+        <View style={styles.actionButtons}>
+          <LinearGradient
+            colors={['#40E0D0', '#48CAE4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.saveButtonGradient}
+          >
+            <TouchableOpacity 
+              style={styles.saveButton} 
+              onPress={onSave}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+          
+          <TouchableOpacity 
+            style={styles.discardButton} 
+            onPress={onDiscard}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.discardButtonText}>Discard</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
 
 export default function TimerScreen() {
   const { courses, addPomodoroSession, pomodoroSessions } = useStudy();
@@ -50,6 +247,13 @@ export default function TimerScreen() {
   const [totalFocusToday, setTotalFocusToday] = useState(0);
   const [weeklyAverage, setWeeklyAverage] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+  const [showCompletionScreen, setShowCompletionScreen] = useState(false);
+  const [completedSessionData, setCompletedSessionData] = useState<{
+    duration: number;
+    sessionType: SessionType;
+    courseName: string;
+    coinsEarned: number;
+  } | null>(null);
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const progressAnim = useRef(new Animated.Value(1)).current;
@@ -243,6 +447,15 @@ export default function TimerScreen() {
   const handleTimerComplete = async () => {
     setTimerState('idle');
     
+    // Add haptic feedback
+    if (Platform.OS !== 'web') {
+      try {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (error) {
+        console.log('Haptic feedback not available:', error);
+      }
+    }
+    
     if (isDndActive && sessionType === 'focus') {
       await disableDoNotDisturb();
     }
@@ -263,28 +476,42 @@ export default function TimerScreen() {
         // Update session count
         setSessionCount(prev => prev + 1);
         
+        // Calculate coins earned (1 coin per minute)
+        const coinsEarned = focusTime;
+        
+        // Set completion data and show completion screen
+        setCompletedSessionData({
+          duration: focusTime,
+          sessionType: 'focus',
+          courseName,
+          coinsEarned
+        });
+        setShowCompletionScreen(true);
+        
         // Show achievement if daily goal reached
         if (sessionCount + 1 === dailyGoal) {
           showAchievement('Dagsmål uppnått! 🎯', `Du har slutfört ${dailyGoal} sessioner idag!`);
         }
-        
-        showSuccess(
-          'Session slutförd! 🎉',
-          `${focusTime} minuter ${courseName}`
-        );
       } catch (error) {
         console.error('Failed to save pomodoro session:', error);
       }
+    } else {
+      // For break completion, just show a simple completion
+      setCompletedSessionData({
+        duration: breakTime,
+        sessionType: 'break',
+        courseName: 'Paus',
+        coinsEarned: 0
+      });
+      setShowCompletionScreen(true);
     }
 
     if (sessionType === 'focus') {
       setSessionType('break');
       setTimeLeft(breakTime * 60);
-      showSuccess('Bra jobbat! ☕', 'Tid för en välförtjänt paus');
     } else {
       setSessionType('focus');
       setTimeLeft(focusTime * 60);
-      showSuccess('Pausen är över! 💪', 'Dags att fokusera igen');
     }
     
     // Update motivational quote
@@ -953,6 +1180,28 @@ export default function TimerScreen() {
         </View>
       </ScrollView>
 
+      {/* Completion Screen Modal */}
+      <Modal
+        visible={showCompletionScreen}
+        animationType="fade"
+        presentationStyle="overFullScreen"
+        transparent={true}
+      >
+        <CompletionScreen
+          data={completedSessionData}
+          onSave={() => {
+            setShowCompletionScreen(false);
+            setCompletedSessionData(null);
+          }}
+          onDiscard={() => {
+            setShowCompletionScreen(false);
+            setCompletedSessionData(null);
+          }}
+          dailyGoal={dailyGoal}
+          currentSessions={sessionCount}
+        />
+      </Modal>
+
       {/* Settings Modal */}
       <Modal
         visible={showSettings}
@@ -963,7 +1212,7 @@ export default function TimerScreen() {
           <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
             <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Inställningar</Text>
             <TouchableOpacity onPress={() => setShowSettings(false)}>
-              <Text style={[styles.closeButton, { color: theme.colors.primary }]}>Stäng</Text>
+              <Text style={[styles.modalCloseButton, { color: theme.colors.primary }]}>Stäng</Text>
             </TouchableOpacity>
           </View>
           
@@ -1319,7 +1568,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
   },
-  closeButton: {
+  modalCloseButton: {
     fontSize: 16,
     fontWeight: '500',
   },
@@ -1653,6 +1902,170 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    textAlign: 'center',
+    fontFamily: Platform.select({
+      ios: 'SF Pro Display',
+      android: 'Roboto',
+      default: 'system',
+    }),
+  },
+  // Completion Screen Styles
+  completionOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  completionContainer: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  completionCloseButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(142, 142, 147, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  starsContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  star: {
+    position: 'absolute',
+  },
+  completionContent: {
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  completionTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#8e8e93',
+    marginBottom: 40,
+    textAlign: 'center',
+    fontFamily: Platform.select({
+      ios: 'SF Pro Display',
+      android: 'Roboto',
+      default: 'system',
+    }),
+  },
+  progressContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 40,
+  },
+  progressContent: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressPercentage: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: 'white',
+    textAlign: 'center',
+    fontFamily: Platform.select({
+      ios: 'SF Pro Display',
+      android: 'Roboto',
+      default: 'system',
+    }),
+  },
+  progressLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#8e8e93',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  sessionInfo: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  sessionText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
+    textAlign: 'center',
+    lineHeight: 26,
+    fontFamily: Platform.select({
+      ios: 'SF Pro Display',
+      android: 'Roboto',
+      default: 'system',
+    }),
+  },
+  challengesSection: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  challengesTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  challengesSubtitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#8e8e93',
+    textAlign: 'center',
+  },
+  actionButtons: {
+    width: '100%',
+    gap: 16,
+    zIndex: 2,
+  },
+  saveButtonGradient: {
+    borderRadius: 25,
+    shadowColor: '#40E0D0',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  saveButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 25,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: 'white',
+    textAlign: 'center',
+    fontFamily: Platform.select({
+      ios: 'SF Pro Display',
+      android: 'Roboto',
+      default: 'system',
+    }),
+  },
+  discardButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+  },
+  discardButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#ff6b6b',
     textAlign: 'center',
     fontFamily: Platform.select({
       ios: 'SF Pro Display',

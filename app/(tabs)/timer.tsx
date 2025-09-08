@@ -742,19 +742,105 @@ export default function TimerScreen() {
 
         {/* Statistics Section */}
         <View style={styles.statsMainSection}>
-          {/* Today's Quick Stats */}
-          <View style={styles.statsSection}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Idag</Text>
-            <View style={styles.statsRow}>
-              <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-                <Text style={[styles.statNumber, { color: theme.colors.primary }]}>{todayStats.sessions}</Text>
-                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Sessioner</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-                <Text style={[styles.statNumber, { color: theme.colors.primary }]}>{todayStats.minutes}</Text>
-                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Minuter</Text>
+          {/* Productivity Score Circle */}
+          <View style={styles.productivitySection}>
+            <View style={styles.dateSelector}>
+              <TouchableOpacity style={styles.dateArrow} activeOpacity={0.7}>
+                <Text style={styles.dateArrowText}>‹</Text>
+              </TouchableOpacity>
+              <Text style={[styles.dateText, { color: theme.colors.text }]}>Sep 8, 2025</Text>
+              <TouchableOpacity style={styles.dateArrow} activeOpacity={0.7}>
+                <Text style={styles.dateArrowText}>›</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.viewToggle}>
+              <TouchableOpacity 
+                style={[styles.viewButton, styles.viewButtonActive]}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.viewButtonTextActive}>Day</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.viewButton}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.viewButtonText}>Week</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.productivityCircleContainer}>
+              <Svg width={280} height={280} style={styles.productivitySvg}>
+                {/* Background circle */}
+                <Circle
+                  cx={140}
+                  cy={140}
+                  r={100}
+                  stroke="#334155"
+                  strokeWidth={20}
+                  fill="none"
+                />
+                {/* Progress arc */}
+                <Circle
+                  cx={140}
+                  cy={140}
+                  r={100}
+                  stroke="url(#gradient)"
+                  strokeWidth={20}
+                  fill="none"
+                  strokeDasharray={`${2 * Math.PI * 100 * 0.5} ${2 * Math.PI * 100}`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 140 140)"
+                />
+                <defs>
+                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#06B6D4" />
+                    <stop offset="50%" stopColor="#10B981" />
+                    <stop offset="100%" stopColor="#10B981" />
+                  </linearGradient>
+                </defs>
+                {/* Scale markers */}
+                <text x="140" y="50" fill="#94A3B8" fontSize="14" textAnchor="middle">100</text>
+                <text x="230" y="145" fill="#94A3B8" fontSize="14" textAnchor="middle">75</text>
+                <text x="140" y="240" fill="#94A3B8" fontSize="14" textAnchor="middle">50</text>
+                <text x="50" y="145" fill="#94A3B8" fontSize="14" textAnchor="middle">25</text>
+                <text x="35" y="210" fill="#94A3B8" fontSize="14" textAnchor="middle">0</text>
+              </Svg>
+              <View style={styles.productivityContent}>
+                <Text style={styles.productivityIcon}>🔒</Text>
+                <Text style={styles.productivityTitle}>Productivity</Text>
+                <Text style={styles.productivitySubtitle}>Score</Text>
               </View>
             </View>
+
+            <View style={styles.quickStatsRow}>
+              <View style={styles.quickStatItem}>
+                <Text style={styles.quickStatLabel}>Streak</Text>
+                <View style={styles.quickStatValue}>
+                  <Text style={styles.quickStatNumber}>{streakStats.current}</Text>
+                  <Text style={styles.quickStatEmoji}>🔥</Text>
+                </View>
+              </View>
+              <View style={styles.quickStatItem}>
+                <Text style={styles.quickStatLabel}>Focus</Text>
+                <Text style={styles.quickStatTime}>{Math.floor(todayStats.minutes / 60)}h</Text>
+              </View>
+              <View style={styles.quickStatItem}>
+                <Text style={styles.quickStatLabel}>Breaks</Text>
+                <Text style={styles.quickStatTime}>0h</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.showOffButton} activeOpacity={0.8}>
+              <LinearGradient
+                colors={['#10B981', '#059669']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.showOffGradient}
+              >
+                <Text style={styles.showOffText}>Show Off Your Work</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
 
           {/* Streaks & Goals */}
@@ -1726,5 +1812,129 @@ const styles = StyleSheet.create({
   statsMainSection: {
     paddingHorizontal: 24,
     marginTop: 20,
+  },
+  productivitySection: {
+    marginBottom: 32,
+  },
+  dateSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    gap: 16,
+  },
+  dateArrow: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dateArrowText: {
+    fontSize: 24,
+    color: '#94A3B8',
+    fontWeight: '300',
+  },
+  dateText: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#334155',
+    borderRadius: 24,
+    padding: 4,
+    marginBottom: 32,
+    alignSelf: 'center',
+  },
+  viewButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  viewButtonActive: {
+    backgroundColor: '#F9FAFB',
+  },
+  viewButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  viewButtonTextActive: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  productivityCircleContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+    position: 'relative',
+  },
+  productivitySvg: {
+    position: 'absolute',
+  },
+  productivityContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 280,
+  },
+  productivityIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  productivityTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#F9FAFB',
+    marginBottom: 4,
+  },
+  productivitySubtitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#F9FAFB',
+  },
+  quickStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 32,
+  },
+  quickStatItem: {
+    alignItems: 'center',
+  },
+  quickStatLabel: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  quickStatValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  quickStatNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#F9FAFB',
+  },
+  quickStatEmoji: {
+    fontSize: 20,
+  },
+  quickStatTime: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#F9FAFB',
+  },
+  showOffButton: {
+    marginBottom: 32,
+  },
+  showOffGradient: {
+    paddingVertical: 16,
+    borderRadius: 24,
+    alignItems: 'center',
+  },
+  showOffText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

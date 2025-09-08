@@ -261,7 +261,7 @@ export default function TimerScreen() {
     coinsEarned: number;
   } | null>(null);
   
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const progressAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -501,7 +501,7 @@ export default function TimerScreen() {
         });
         
         const courseName = selectedCourse 
-          ? courses.find((c: any) => c.id === selectedCourse)?.title || 'Okänd kurs'
+          ? courses.find((c) => c.id === selectedCourse)?.title || 'Okänd kurs'
           : 'Allmän session';
         
         // Update session count
@@ -559,7 +559,7 @@ export default function TimerScreen() {
           }
           return prev - 1;
         });
-      }, 1000) as any;
+      }, 1000);
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -630,7 +630,7 @@ export default function TimerScreen() {
 
   const getSelectedCourseTitle = useCallback(() => {
     if (!selectedCourse) return 'Allmän session';
-    const course = courses.find((c: any) => c.id === selectedCourse);
+    const course = courses.find((c) => c.id === selectedCourse);
     return course ? course.title : 'Okänd kurs';
   }, [selectedCourse, courses]);
 
@@ -823,7 +823,7 @@ export default function TimerScreen() {
                   { color: !selectedCourse ? '#FFFFFF' : theme.colors.text }
                 ]}>Allmänt</Text>
               </TouchableOpacity>
-              {courses.map((course: any) => (
+              {courses.map((course) => (
                 <TouchableOpacity
                   key={course.id}
                   style={[
@@ -948,13 +948,8 @@ export default function TimerScreen() {
           )}
         </View>
 
-        {/* Statistics Section */}
-        <View style={styles.statsSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
-          </View>
-          
-          {/* Hero Stats Card */}
+        {/* Hero Stats Card */}
+        <View style={styles.section}>
           <LinearGradient
             colors={[theme.colors.primary + '20', theme.colors.secondary + '20'] as any}
             start={{ x: 0, y: 0 }}
@@ -981,6 +976,13 @@ export default function TimerScreen() {
               </View>
             </View>
           </LinearGradient>
+        </View>
+
+        {/* Statistics Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
+          </View>
 
           {/* View Toggle with gradient */}
           <LinearGradient
@@ -1423,9 +1425,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  statsSection: {
+  section: {
     paddingHorizontal: 24,
-    marginTop: 32,
+    marginBottom: 32,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1646,7 +1648,6 @@ const styles = StyleSheet.create({
   heroStatsCard: {
     borderRadius: 20,
     padding: 24,
-    marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -1691,7 +1692,7 @@ const styles = StyleSheet.create({
   heroStatDivider: {
     width: 1,
     height: 50,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     marginHorizontal: 20,
   },
   statIconContainer: {

@@ -738,55 +738,53 @@ export default function TimerScreen() {
 
         {/* Hero Timer Card */}
         <View style={styles.timerSection}>
-          <View style={[styles.timerCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.timerContainer}>
-              <Svg width={280} height={280} style={styles.timerSvg}>
-                {/* Background circle */}
-                <Circle
-                  cx={140}
-                  cy={140}
-                  r={120}
-                  stroke={theme.colors.border}
-                  strokeWidth={8}
-                  fill="none"
-                />
-                {/* Progress circle */}
-                <Circle
-                  cx={140}
-                  cy={140}
-                  r={120}
-                  stroke={sessionType === 'focus' ? theme.colors.primary : theme.colors.secondary}
-                  strokeWidth={8}
-                  fill="none"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={circumference * (1 - progress)}
-                  strokeLinecap="round"
-                  transform={`rotate(-90 140 140)`}
-                />
-              </Svg>
-              
-              <View style={styles.timerContent}>
-                <Text style={[styles.timerText, { color: theme.colors.text }]}>
-                  {formatTime(timeLeft)}
-                </Text>
-                <Text style={[styles.sessionLabel, { color: theme.colors.textSecondary }]}>
-                  {getSelectedCourseTitle()}
-                </Text>
-                <View style={styles.sessionTypeIndicator}>
-                  <View style={[styles.sessionTypeBadge, { 
-                    backgroundColor: sessionType === 'focus' 
-                      ? theme.colors.primary + '20' 
-                      : theme.colors.secondary + '20'
-                  }]}>
-                    {sessionType === 'focus' ? (
-                      <Brain size={16} color={theme.colors.primary} />
-                    ) : (
-                      <Coffee size={16} color={theme.colors.secondary} />
-                    )}
-                    <Text style={[styles.sessionTypeText, { color: theme.colors.text }]}>
-                      {sessionType === 'focus' ? 'Fokus' : 'Paus'}
-                    </Text>
-                  </View>
+          <View style={styles.timerContainer}>
+            <Svg width={280} height={280} style={styles.timerSvg}>
+              {/* Background circle */}
+              <Circle
+                cx={140}
+                cy={140}
+                r={120}
+                stroke={theme.colors.border}
+                strokeWidth={8}
+                fill="none"
+              />
+              {/* Progress circle with gradient fill */}
+              <Circle
+                cx={140}
+                cy={140}
+                r={120}
+                stroke={sessionType === 'focus' ? theme.colors.primary : theme.colors.secondary}
+                strokeWidth={8}
+                fill={sessionType === 'focus' ? theme.colors.primary + '10' : theme.colors.secondary + '10'}
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference * (1 - progress)}
+                strokeLinecap="round"
+                transform={`rotate(-90 140 140)`}
+              />
+            </Svg>
+            
+            <View style={styles.timerContent}>
+              <Text style={[styles.timerText, { color: theme.colors.text }]}>
+                {formatTime(timeLeft)}
+              </Text>
+              <Text style={[styles.sessionLabel, { color: theme.colors.textSecondary }]}>
+                {getSelectedCourseTitle()}
+              </Text>
+              <View style={styles.sessionTypeIndicator}>
+                <View style={[styles.sessionTypeBadge, { 
+                  backgroundColor: sessionType === 'focus' 
+                    ? theme.colors.primary + '20' 
+                    : theme.colors.secondary + '20'
+                }]}>
+                  {sessionType === 'focus' ? (
+                    <Brain size={16} color={theme.colors.primary} />
+                  ) : (
+                    <Coffee size={16} color={theme.colors.secondary} />
+                  )}
+                  <Text style={[styles.sessionTypeText, { color: theme.colors.text }]}>
+                    {sessionType === 'focus' ? 'Fokus' : 'Paus'}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -1288,18 +1286,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginBottom: 32,
   },
-  timerCard: {
-    borderRadius: 24,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
-  },
+
   timerContainer: {
     alignItems: 'center',
     position: 'relative',
+    paddingVertical: 24,
   },
   timerSvg: {
     position: 'absolute',

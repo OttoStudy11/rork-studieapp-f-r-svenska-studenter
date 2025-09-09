@@ -146,7 +146,31 @@ const dbSessionToSession = (dbSession: DbPomodoroSession): PomodoroSession => ({
 });
 
 export const [StudyProvider, useStudy] = createContextHook(() => {
-  const { user: authUser, isAuthenticated, isLoading: authLoading, setOnboardingCompleted } = useAuth();
+  const authContext = useAuth();
+  
+  // Add safety check for auth context
+  if (!authContext) {
+    console.error('StudyContext: AuthContext is not available');
+    // Return a minimal context to prevent crashes
+    return {
+      user: null,
+      courses: [],
+      notes: [],
+      pomodoroSessions: [],
+      isLoading: false,
+      isAuthenticated: false,
+      completeOnboarding: async () => {},
+      updateUser: async () => {},
+      addCourse: async () => {},
+      updateCourse: async () => {},
+      addNote: async () => {},
+      updateNote: async () => {},
+      deleteNote: async () => {},
+      addPomodoroSession: async () => {}
+    };
+  }
+  
+  const { user: authUser, isAuthenticated, isLoading: authLoading, setOnboardingCompleted } = authContext;
   const [user, setUser] = useState<User | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -50,13 +50,14 @@ const purposeOptions = [
 ];
 
 export default function OnboardingScreen() {
-  const { user } = useAuth();
-  const { completeOnboarding } = useStudy();
-  const { showError } = useToast();
+  const authContext = useAuth();
+  const studyContext = useStudy();
+  const toastContext = useToast();
   
+  // Initialize hooks first
   const [step, setStep] = useState(0);
   const [data, setData] = useState<OnboardingData>({
-    name: user?.email?.split('@')[0] || '',
+    name: '',
     studyLevel: '',
     gymnasium: null,
     gymnasiumProgram: null,
@@ -66,8 +67,33 @@ export default function OnboardingScreen() {
     purpose: [],
     selectedCourses: new Set()
   });
-  
   const [availableCourses, setAvailableCourses] = useState<GymnasiumCourse[]>([]);
+  
+  // Update data with user info when available
+  useEffect(() => {
+    if (authContext?.user?.email && !data.name) {
+      setData(prev => ({
+        ...prev,
+        name: authContext.user!.email.split('@')[0] || ''
+      }));
+    }
+  }, [authContext?.user?.email, data.name]);
+  
+  // Safety checks for contexts
+  if (!authContext || !studyContext || !toastContext) {
+    console.error('OnboardingScreen: Required contexts are not available');
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  const { user } = authContext;
+  const { completeOnboarding } = studyContext;
+  const { showError } = toastContext;
 
   const handleNext = () => {
     if (step < 5) {
@@ -796,5 +822,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: 'white',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#667eea',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: 'white',
+    fontWeight: '600',
   },
 });

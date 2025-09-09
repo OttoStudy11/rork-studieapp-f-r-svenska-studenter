@@ -1,5 +1,8 @@
+-- Drop existing table if it exists
+DROP TABLE IF EXISTS public.friendships CASCADE;
+
 -- Create friendships table
-CREATE TABLE IF NOT EXISTS public.friendships (
+CREATE TABLE public.friendships (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user1_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     user2_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -7,19 +10,23 @@ CREATE TABLE IF NOT EXISTS public.friendships (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     
     -- Ensure users can't friend themselves
-    CONSTRAINT no_self_friendship CHECK (user1_id != user2_id),
-    
-    -- Ensure unique friendship pairs (prevent duplicate friendships)
-    CONSTRAINT unique_friendship UNIQUE (LEAST(user1_id, user2_id), GREATEST(user1_id, user2_id))
+    CONSTRAINT no_self_friendship CHECK (user1_id != user2_id)
 );
 
 -- Enable RLS
 ALTER TABLE public.friendships ENABLE ROW LEVEL SECURITY;
 
+-- Create unique index to prevent duplicate friendships
+-- This ensures that (A,B) and (B,A) are treated as the same friendship
+CREATE UNIQUE INDEX friendships_unique_pair_idx ON public.friendships (
+    LEAST(user1_id, user2_id), 
+    GREATEST(user1_id, user2_id)
+);
+
 -- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS friendships_user1_id_idx ON public.friendships(user1_id);
-CREATE INDEX IF NOT EXISTS friendships_user2_id_idx ON public.friendships(user2_id);
-CREATE INDEX IF NOT EXISTS friendships_status_idx ON public.friendships(status);
+CREATE INDEX friendships_user1_id_idx ON public.friendships(user1_id);
+CREATE INDEX friendships_user2_id_idx ON public.friendships(user2_id);
+CREATE INDEX friendships_status_idx ON public.friendships(status);
 
 -- Create RLS policies
 DROP POLICY IF EXISTS "Users can view their friendships" ON public.friendships;

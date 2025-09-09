@@ -1,7 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { getCoursesForProgramAndYear } from '@/constants/gymnasium-courses';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 import type { Course as ProgramCourse } from '@/constants/gymnasium-courses';
 
@@ -32,11 +34,11 @@ export interface UserProfile {
   onboardingCompleted?: boolean;
 }
 
-const STORAGE_KEYS = {
-  COURSES: '@courses',
-  USER_PROFILE: '@user_profile',
-  ONBOARDING_COMPLETED: '@onboarding_completed',
-};
+const getStorageKeys = (userId: string) => ({
+  COURSES: `@courses_${userId}`,
+  USER_PROFILE: `@user_profile_${userId}`,
+  ONBOARDING_COMPLETED: `@onboarding_completed_${userId}`,
+});
 
 const courseColors = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
@@ -51,68 +53,232 @@ const courseIcons = [
 ];
 
 export const [CourseProvider, useCourses] = createContextHook(() => {
+  const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
 
-  // Load data from AsyncStorage
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       setIsLoading(true);
+      const STORAGE_KEYS = getStorageKeys(user.id);
       
-      // Load onboarding status
-      const onboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
-      setOnboardingCompleted(onboardingStatus === 'true');
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Course data loading timeout')), 5000);
+      });
       
-      // Load user profile
-      const profileData = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
-      if (profileData) {
-        const profile = JSON.parse(profileData);
-        setUserProfile(profile);
+      const loadPromise = (async () => {
+        // Load onboarding status
+        const onboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+        console.log('Loading onboarding status for user:', user.id, 'Status:', onboardingStatus);
+        setOnboardingCompleted(onboardingStatus === 'true');
         
-        // Load courses
-        const coursesData = await AsyncStorage.getItem(STORAGE_KEYS.COURSES);
-        if (coursesData) {
-          const savedCourses = JSON.parse(coursesData);
-          setCourses(savedCourses.map((c: any) => ({
-            ...c,
-            lastStudied: c.lastStudied ? new Date(c.lastStudied) : undefined,
-            createdAt: new Date(c.createdAt),
-            updatedAt: new Date(c.updatedAt),
-          })));
+        // Load user profile
+        const profileData = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+        console.log('Loading profile for user:', user.id, 'Has profile:', !!profileData);
+        if (profileData) {
+          const profile = JSON.parse(profileData);
+          setUserProfile(profile);
+          
+          // Load courses
+          const coursesData = await AsyncStorage.getItem(STORAGE_KEYS.COURSES);
+          if (coursesData) {
+            const savedCourses = JSON.parse(coursesData);
+            setCourses(savedCourses.map((c: any) => ({
+              ...c,
+              lastStudied: c.lastStudied ? new Date(c.lastStudied) : undefined,
+              createdAt: new Date(c.createdAt),
+              updatedAt: new Date(c.updatedAt),
+            })));
+            console.log('Loaded', savedCourses.length, 'courses for user:', user.id);
+          }
         }
-      }
+      })();
+      
+      await Promise.race([loadPromise, timeoutPromise]);
     } catch (error) {
       console.error('Error loading data:', error);
+      // Set default values on error
+      setOnboardingCompleted(false);
+      setUserProfile(null);
+      setCourses([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
 
-  const saveCourses = async (newCourses: Course[]) => {
+  // Load data from AsyncStorage when user changes
+  useEffect(() => {
+    if (user?.id) {
+      loadData();
+    } else {
+      // Clear data if no user
+      setCourses([]);
+      setUserProfile(null);
+      setOnboardingCompleted(false);
+      setIsLoading(false);
+    }
+    
+    // Fallback timeout to ensure loading doesn't get stuck
+    const fallbackTimeout = setTimeout(() => {
+      console.log('Course context loading timeout - forcing loading to false');
+      setIsLoading(false);
+    }, 6000); // 6 second timeout
+    
+    return () => clearTimeout(fallbackTimeout);
+  }, [user?.id, loadData]);
+
+  const saveCourses = useCallback(async (newCourses: Course[]) => {
+    if (!user?.id) return;
+    
     try {
+      const STORAGE_KEYS = getStorageKeys(user.id);
       await AsyncStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(newCourses));
       setCourses(newCourses);
+      console.log('Saved', newCourses.length, 'courses for user:', user.id);
     } catch (error) {
       console.error('Error saving courses:', error);
     }
-  };
+  }, [user?.id]);
 
-  const saveProfile = async (profile: UserProfile) => {
+  const saveProfile = useCallback(async (profile: UserProfile) => {
+    if (!user?.id) return;
+    
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
-      setUserProfile(profile);
+      const STORAGE_KEYS = getStorageKeys(user.id);
+      // Ensure profile has the correct user ID
+      const profileWithUserId = { ...profile, id: user.id };
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profileWithUserId));
+      setUserProfile(profileWithUserId);
+      console.log('Saved profile for user:', user.id, 'Profile:', profileWithUserId);
     } catch (error) {
       console.error('Error saving profile:', error);
     }
+  }, [user?.id]);
+
+  // Helper function to extract subject from course name
+  const extractSubjectFromName = (name: string): string => {
+    const subjectKeywords: Record<string, string> = {
+      'Engelska': 'Engelska',
+      'Historia': 'Historia',
+      'Idrott': 'Idrott och hälsa',
+      'Matematik': 'Matematik',
+      'Naturkunskap': 'Naturkunskap',
+      'Religionskunskap': 'Religionskunskap',
+      'Samhällskunskap': 'Samhällskunskap',
+      'Svenska': 'Svenska',
+      'Biologi': 'Biologi',
+      'Fysik': 'Fysik',
+      'Kemi': 'Kemi',
+      'Teknik': 'Teknik',
+      'Filosofi': 'Filosofi',
+      'Psykologi': 'Psykologi',
+      'Företagsekonomi': 'Företagsekonomi',
+      'Juridik': 'Juridik',
+      'Programmering': 'Teknik',
+      'Webbutveckling': 'Teknik',
+      'Spanska': 'Moderna språk',
+      'Franska': 'Moderna språk',
+      'Tyska': 'Moderna språk',
+    };
+    
+    for (const [keyword, subject] of Object.entries(subjectKeywords)) {
+      if (name.includes(keyword)) {
+        return subject;
+      }
+    }
+    
+    return 'Övrigt';
   };
 
-  const assignCoursesForYear = async (program: string, year: 1 | 2 | 3) => {
+  // Sync courses to Supabase
+  const syncCoursesToSupabase = useCallback(async (coursesToSync: Course[]) => {
+    if (!user?.id) return;
+    
+    try {
+      console.log('Syncing courses to Supabase for user:', user.id);
+      
+      // First, ensure all courses exist in the courses table
+      for (const course of coursesToSync) {
+        if (course.code) {
+          // Check if course exists in database
+          const { data: existingCourse } = await supabase
+            .from('courses')
+            .select('id')
+            .eq('id', course.code)
+            .single();
+          
+          if (!existingCourse) {
+            // Insert course if it doesn't exist
+            const { error: insertError } = await supabase
+              .from('courses')
+              .insert({
+                id: course.code,
+                title: course.name,
+                description: `${course.name} - ${course.points || 0} poäng`,
+                subject: extractSubjectFromName(course.name),
+                level: 'gymnasie',
+                resources: ['Kursmaterial', 'Övningsuppgifter'],
+                tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+                related_courses: [],
+                progress: 0
+              });
+            
+            if (insertError) {
+              console.error('Error inserting course:', insertError);
+            }
+          }
+        }
+      }
+      
+      // Then, create user_courses entries
+      const userCourses = coursesToSync
+        .filter(course => course.code)
+        .map(course => ({
+          user_id: user.id,
+          course_id: course.code!,
+          progress: Math.round((course.studiedHours / course.totalHours) * 100) || 0,
+          is_active: true
+        }));
+      
+      if (userCourses.length > 0) {
+        // First, deactivate all existing courses for this user
+        await supabase
+          .from('user_courses')
+          .update({ is_active: false })
+          .eq('user_id', user.id);
+        
+        // Then insert or update the new courses
+        for (const userCourse of userCourses) {
+          const { error } = await supabase
+            .from('user_courses')
+            .upsert({
+              ...userCourse,
+              id: `${userCourse.user_id}-${userCourse.course_id}`
+            }, {
+              onConflict: 'id'
+            });
+          
+          if (error) {
+            console.error('Error syncing user course:', error);
+          }
+        }
+        
+        console.log('Successfully synced', userCourses.length, 'courses to Supabase');
+      }
+    } catch (error) {
+      console.error('Error syncing courses to Supabase:', error);
+    }
+  }, [user?.id]);
+
+  const assignCoursesForYear = useCallback(async (program: string, year: 1 | 2 | 3) => {
     try {
       const programCourses = getCoursesForProgramAndYear(program, year);
       
@@ -133,17 +299,25 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
       }));
       
       await saveCourses(newCourses);
+      
+      // Sync selected courses with Supabase
+      if (user?.id) {
+        await syncCoursesToSupabase(newCourses);
+      }
+      
       return newCourses;
     } catch (error) {
       console.error('Error assigning courses:', error);
       return [];
     }
-  };
+  }, [saveCourses, user?.id, syncCoursesToSupabase]);
 
-  const updateUserProfile = async (updates: Partial<UserProfile>) => {
+  const updateUserProfile = useCallback(async (updates: Partial<UserProfile>) => {
+    if (!user?.id) return;
+    
     const updatedProfile = userProfile 
-      ? { ...userProfile, ...updates }
-      : { id: `user-${Date.now()}`, ...updates } as UserProfile;
+      ? { ...userProfile, ...updates, id: user.id }
+      : { id: user.id, ...updates } as UserProfile;
     
     await saveProfile(updatedProfile);
     
@@ -151,14 +325,21 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     if ((updates.program || updates.year) && updatedProfile.program && updatedProfile.year) {
       await assignCoursesForYear(updatedProfile.program, updatedProfile.year);
     }
-  };
+  }, [user?.id, userProfile, saveProfile, assignCoursesForYear]);
 
-  const completeOnboarding = async () => {
+  const completeOnboarding = useCallback(async () => {
+    if (!user?.id) return;
+    
+    const STORAGE_KEYS = getStorageKeys(user.id);
     await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
     setOnboardingCompleted(true);
-  };
+    console.log('Onboarding completed for user:', user.id);
+  }, [user?.id]);
 
-  const resetOnboarding = async () => {
+  const resetOnboarding = useCallback(async () => {
+    if (!user?.id) return;
+    
+    const STORAGE_KEYS = getStorageKeys(user.id);
     await AsyncStorage.multiRemove([
       STORAGE_KEYS.ONBOARDING_COMPLETED,
       STORAGE_KEYS.USER_PROFILE,
@@ -167,9 +348,10 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     setOnboardingCompleted(false);
     setUserProfile(null);
     setCourses([]);
-  };
+    console.log('Reset onboarding for user:', user.id);
+  }, [user?.id]);
 
-  const addCourse = async (course: Omit<Course, 'id' | 'createdAt' | 'updatedAt' | 'studiedHours'>) => {
+  const addCourse = useCallback(async (course: Omit<Course, 'id' | 'createdAt' | 'updatedAt' | 'studiedHours'>) => {
     const newCourse: Course = {
       ...course,
       id: `custom-${Date.now()}`,
@@ -180,23 +362,23 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     
     const updatedCourses = [...courses, newCourse];
     await saveCourses(updatedCourses);
-  };
+  }, [courses, saveCourses]);
 
-  const updateCourse = async (id: string, updates: Partial<Course>) => {
+  const updateCourse = useCallback(async (id: string, updates: Partial<Course>) => {
     const updatedCourses = courses.map(course =>
       course.id === id
         ? { ...course, ...updates, updatedAt: new Date() }
         : course
     );
     await saveCourses(updatedCourses);
-  };
+  }, [courses, saveCourses]);
 
-  const deleteCourse = async (id: string) => {
+  const deleteCourse = useCallback(async (id: string) => {
     const updatedCourses = courses.filter(course => course.id !== id);
     await saveCourses(updatedCourses);
-  };
+  }, [courses, saveCourses]);
 
-  const logStudyTime = async (courseId: string, hours: number) => {
+  const logStudyTime = useCallback(async (courseId: string, hours: number) => {
     const updatedCourses = courses.map(course =>
       course.id === courseId
         ? {
@@ -208,7 +390,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
         : course
     );
     await saveCourses(updatedCourses);
-  };
+  }, [courses, saveCourses]);
 
   // Computed values
   const coursesByYear = useMemo(() => {
@@ -246,7 +428,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     [totalStudyHours, totalRequiredHours]
   );
 
-  return {
+  return useMemo(() => ({
     // State
     courses,
     userProfile,
@@ -270,5 +452,24 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     totalStudyHours,
     totalRequiredHours,
     completionPercentage,
-  };
+  }), [
+    courses,
+    userProfile,
+    isLoading,
+    onboardingCompleted,
+    updateUserProfile,
+    assignCoursesForYear,
+    addCourse,
+    updateCourse,
+    deleteCourse,
+    logStudyTime,
+    completeOnboarding,
+    resetOnboarding,
+    coursesByYear,
+    mandatoryCourses,
+    electiveCourses,
+    totalStudyHours,
+    totalRequiredHours,
+    completionPercentage,
+  ]);
 });

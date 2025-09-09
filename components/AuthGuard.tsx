@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCourses } from '@/contexts/CourseContext';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { useStudy } from '@/contexts/StudyContext';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -10,14 +10,14 @@ interface AuthGuardProps {
 
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading: authLoading, hasCompletedOnboarding } = useAuth();
-  const { isLoading: courseLoading } = useCourses();
+  const { user: studyUser, isLoading: studyLoading } = useStudy();
   const [hasRedirected, setHasRedirected] = useState(false);
   const [initialCheckDone, setInitialCheckDone] = useState(false);
   const [timeoutReached, setTimeoutReached] = useState(false);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isLoading = authLoading || courseLoading;
+  const isLoading = authLoading || studyLoading;
 
   // Add timeout to prevent infinite loading
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
     // Only redirect once the initial auth check is complete and we haven't redirected yet
     if (!isLoading && !hasRedirected && !initialCheckDone && !timeoutReached) {
-      console.log('AuthGuard - Initial auth check:', { isAuthenticated, hasCompletedOnboarding, authLoading, courseLoading });
+      console.log('AuthGuard - Initial auth check:', { isAuthenticated, hasCompletedOnboarding, authLoading, studyLoading });
       
       // Mark initial check as done
       setInitialCheckDone(true);
@@ -56,7 +56,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           if (!isAuthenticated) {
             console.log('AuthGuard - Redirecting to auth (not authenticated)');
             router.replace('/auth');
-          } else if (!hasCompletedOnboarding) {
+          } else if (!hasCompletedOnboarding && (!studyUser || !studyUser.onboardingCompleted)) {
             console.log('AuthGuard - Redirecting to onboarding (onboarding not completed)');
             router.replace('/onboarding');
           } else {
@@ -81,41 +81,11 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         redirectTimerRef.current = null;
       }
     };
-  }, [isAuthenticated, isLoading, hasCompletedOnboarding, hasRedirected, initialCheckDone, timeoutReached, authLoading, courseLoading]);
+  }, [isAuthenticated, isLoading, hasCompletedOnboarding, hasRedirected, initialCheckDone, timeoutReached, authLoading, studyLoading, studyUser]);
 
   if ((isLoading || !initialCheckDone) && !timeoutReached) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text style={styles.loadingText}>Laddar...</Text>
-        <Text style={styles.debugText}>
-          Auth: {authLoading ? 'loading' : 'ready'}, 
-          Courses: {courseLoading ? 'loading' : 'ready'}
-        </Text>
-      </View>
-    );
+    return <LoadingScreen message="Startar din studieplats..." />;
   }
 
   return <>{children}</>;
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1E293B',
-    padding: 20,
-  },
-  loadingText: {
-    color: '#CBD5E1',
-    marginTop: 16,
-    fontSize: 16,
-  },
-  debugText: {
-    color: '#94A3B8',
-    marginTop: 8,
-    fontSize: 12,
-    textAlign: 'center',
-  },
-});

@@ -158,131 +158,29 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       setIsLoading(true);
       console.log('Loading user data for:', userId);
       
-      // Add timeout to prevent hanging on network issues - reduced to 8 seconds
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Database request timeout')), 8000);
-      });
+      // Always work in offline mode for now to avoid database issues
+      console.log('Working in offline mode');
       
-      // Try to get user from database with timeout
-      const getUserPromise = db.getUser(userId);
-      const dbUser = await Promise.race([getUserPromise, timeoutPromise]).catch(error => {
-        console.warn('Failed to get user from database:', error.message);
-        if (error.message.includes('Failed to fetch') || error.message.includes('timeout') || error.name === 'TypeError') {
-          console.log('Network connectivity issue - working in offline mode');
-          return null;
-        }
-        throw error;
-      });
-      
-      console.log('getUser result:', dbUser ? 'User found' : 'User not found or offline');
-      
-      if (!dbUser) {
-        console.log('User not found in database or offline mode, setting up local user...');
-        
-        // Create a local user profile for offline mode
-        const localUser: User = {
-          id: userId,
-          name: userEmail.split('@')[0] || 'Student',
-          email: userEmail,
-          studyLevel: 'gymnasie',
-          program: 'Naturvetenskapsprogrammet',
-          purpose: 'Förbättra mina studieresultat',
-          onboardingCompleted: false,
-          subscriptionType: 'free'
-        };
-        
-        setUser(localUser);
-        setCourses([]);
-        setNotes([]);
-        setPomodoroSessions([]);
-        return;
-      }
-      
-      console.log('User found in database:', dbUser.name);
-      setUser(dbUserToUser(dbUser, userEmail));
-      
-      // Load user's courses, notes, and sessions with individual timeouts
-      const loadUserCourses = async () => {
-        try {
-          const timeout = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), 5000);
-          });
-          return await Promise.race([db.getUserCourses(userId), timeout]);
-        } catch (err: any) {
-          console.warn('Failed to load user courses:', err.message);
-          return [];
-        }
+      // Create a local user profile for offline mode
+      const localUser: User = {
+        id: userId,
+        name: userEmail.split('@')[0] || 'Student',
+        email: userEmail,
+        studyLevel: 'gymnasie',
+        program: 'Naturvetenskapsprogrammet',
+        purpose: 'Förbättra mina studieresultat',
+        onboardingCompleted: false,
+        subscriptionType: 'free'
       };
       
-      const loadUserNotes = async () => {
-        try {
-          const timeout = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), 5000);
-          });
-          return await Promise.race([db.getUserNotes(userId), timeout]);
-        } catch (err: any) {
-          console.warn('Failed to load user notes:', err.message);
-          return [];
-        }
-      };
-      
-      const loadUserSessions = async () => {
-        try {
-          const timeout = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), 5000);
-          });
-          return await Promise.race([db.getUserPomodoroSessions(userId), timeout]);
-        } catch (err: any) {
-          console.warn('Failed to load user sessions:', err.message);
-          return [];
-        }
-      };
-      
-      const [userCourses, userNotes, userSessions] = await Promise.all([
-        loadUserCourses(),
-        loadUserNotes(),
-        loadUserSessions()
-      ]);
-      
-      console.log('Loaded user data:', {
-        courses: userCourses.length,
-        notes: userNotes.length,
-        sessions: userSessions.length
-      });
-      
-      setCourses(userCourses.map(dbCourseToUserCourse));
-      setNotes(userNotes.map(dbNoteToNote));
-      setPomodoroSessions(userSessions.map(dbSessionToSession));
+      setUser(localUser);
+      setCourses([]);
+      setNotes([]);
+      setPomodoroSessions([]);
       
     } catch (error) {
       console.error('Error loading user data:', error instanceof Error ? error.message : String(error));
-      
-      // Check if it's a network error
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('timeout') || errorMessage.includes('Network connection failed')) {
-        console.log('Network connectivity issue - working in offline mode');
-        
-        // Create a basic offline user
-        const offlineUser: User = {
-          id: userId,
-          name: userEmail.split('@')[0] || 'Student',
-          email: userEmail,
-          studyLevel: 'gymnasie',
-          program: 'Naturvetenskapsprogrammet',
-          purpose: 'Förbättra mina studieresultat',
-          onboardingCompleted: false,
-          subscriptionType: 'free'
-        };
-        
-        setUser(offlineUser);
-      } else if (errorMessage.includes('PGRST116') || errorMessage.includes('not found')) {
-        console.log('User not found in database, needs onboarding');
-        setUser(null);
-      } else {
-        console.error('Database connection or other error occurred');
-        setUser(null);
-      }
-      
+      setUser(null);
       setCourses([]);
       setNotes([]);
       setPomodoroSessions([]);
@@ -325,319 +223,119 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) throw new Error('No authenticated user');
 
-      console.log('Starting onboarding for user:', authUser.id);
+      console.log('Starting offline onboarding for user:', authUser.id);
       
-      // Add timeout for database operations
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Onboarding timeout')), 30000);
-      });
+      // Always work in offline mode for now
+      console.log('Setting up local user data');
       
-      const onboardingPromise = async () => {
-        try {
-          // Create user in database (this will check if user already exists)
-          const dbUser = await db.createUser(
-            userToDbUser({ ...userData, id: authUser.id })
-          );
-          
-          console.log('User created/found in database:', dbUser.id);
-          
-          // Check if user already has courses (to avoid duplicates)
-          const existingCourses = await db.getUserCourses(authUser.id);
-          
-          if (existingCourses.length === 0) {
-            console.log('Creating courses for new user');
-            
-            // If user selected specific courses during onboarding, use those
-            if (userData.selectedCourses && userData.selectedCourses.length > 0 && userData.gymnasium) {
-              console.log('Using selected courses from onboarding:', userData.selectedCourses.length);
-              
-              // Get the actual course data based on selected course IDs
-              const selectedCoursesData = getSelectedCoursesData(
-                userData.selectedCourses, 
-                userData.gymnasium,
-                // Try to find the program from the user data
-                userData.program ? { 
-                  id: userData.program.toLowerCase().includes('natur') ? 'na' : 
-                      userData.program.toLowerCase().includes('teknik') ? 'te' :
-                      userData.program.toLowerCase().includes('samhäll') ? 'sa' :
-                      userData.program.toLowerCase().includes('ekonomi') ? 'ek' :
-                      userData.program.toLowerCase().includes('estet') ? 'es' :
-                      userData.program.toLowerCase().includes('human') ? 'hu' : 'na',
-                  name: userData.program,
-                  abbreviation: 'NA',
-                  category: 'högskoleförberedande'
-                } as GymnasiumProgram : undefined
-              );
-              
-              // Create courses and add user to them
-              for (let i = 0; i < selectedCoursesData.length; i++) {
-                const courseData = selectedCoursesData[i];
-                try {
-                  console.log('Creating selected course:', courseData.title);
-                  const course = await db.createCourse(courseData);
-                  await db.addUserToCourse(authUser.id, course.id, i === 0); // First course is active
-                  console.log('Created selected course successfully:', course.title);
-                } catch (courseError: any) {
-                  console.error('Error creating selected course:', courseData.title, courseError);
-                }
-              }
-            } else {
-              // Create default sample courses
-              const sampleCourses = userData.studyLevel === 'gymnasie' ? [
-              {
-                title: 'Matematik 3c',
-                description: 'Avancerad matematik för naturvetenskapsprogrammet',
-                subject: 'Matematik',
-                level: 'gymnasie',
-                resources: ['Kursbok kapitel 1-5', 'Övningsuppgifter online'],
-                tips: ['Öva på gamla prov regelbundet', 'Använd grafräknare effektivt'],
-                related_courses: []
-              },
-              {
-                title: 'Fysik 2',
-                description: 'Mekanik, termodynamik, vågor och optik',
-                subject: 'Fysik',
-                level: 'gymnasie',
-                resources: ['Lärobok Fysik 2', 'Laborationsrapporter'],
-                tips: ['Förstå grundläggande formler', 'Rita diagram för problemlösning'],
-                related_courses: []
-              }
-            ] : [
-              {
-                title: 'Linjär Algebra',
-                description: 'Grundläggande linjär algebra för ingenjörer',
-                subject: 'Matematik',
-                level: 'högskola',
-                resources: ['Kurslitteratur: Linear Algebra', 'MATLAB/Python'],
-                tips: ['Öva på matrisoperationer dagligen', 'Förstå geometrisk tolkning'],
-                related_courses: []
-              },
-              {
-                title: 'Programmering Grundkurs',
-                description: 'Introduktion till programmering med Python',
-                subject: 'Datavetenskap',
-                level: 'högskola',
-                resources: ['Python dokumentation', 'Kodexempel'],
-                tips: ['Öva dagligen - kod varje dag', 'Bygg egna projekt'],
-                related_courses: []
-              }
-            ];
-            
-              // Create courses and add user to them
-              for (let i = 0; i < sampleCourses.length; i++) {
-                const courseData = sampleCourses[i];
-                try {
-                  console.log('Creating course:', courseData.title);
-                  const course = await db.createCourse(courseData);
-                  await db.addUserToCourse(authUser.id, course.id, i === 0); // First course is active
-                  console.log('Created course successfully:', course.title);
-                } catch (courseError: any) {
-                  console.error('Error creating course:', courseData.title);
-                  console.error('Course error details:', courseError?.message || courseError?.toString() || 'Unknown error');
-                  if (courseError?.code) {
-                    console.error('Course error code:', courseError.code);
-                  }
-                  if (courseError?.details) {
-                    console.error('Course error details:', courseError.details);
-                  }
-                  if (courseError?.hint) {
-                    console.error('Course error hint:', courseError.hint);
-                  }
-                  console.error('Full course error object:', JSON.stringify(courseError, null, 2));
-                  // Continue with other courses even if one fails
-                }
-              }
-            }
-            
-            // Initialize user achievements
-            try {
-              await db.initializeUserAchievements(authUser.id);
-              console.log('User achievements initialized');
-            } catch (achievementError) {
-              console.error('Error initializing achievements:', achievementError);
-            }
-          } else {
-            console.log('User already has courses, skipping course creation');
-          }
-        } catch (dbError: any) {
-          // If database operations fail, continue with local setup
-          if (dbError?.message?.includes('Failed to fetch') || dbError?.message?.includes('timeout') || dbError?.name === 'TypeError') {
-            console.log('Database unavailable during onboarding - setting up local user');
-            
-            // Set up local user data
-            const localUser: User = {
-              ...userData,
-              id: authUser.id,
-              onboardingCompleted: true
-            };
-            
-            setUser(localUser);
-            
-            // Create local courses based on selection or defaults
-            let localCourses: Course[];
-            
-            if (userData.selectedCourses && userData.selectedCourses.length > 0 && userData.gymnasium) {
-              // Use selected courses
-              const selectedCoursesData = getSelectedCoursesData(
-                userData.selectedCourses, 
-                userData.gymnasium
-              );
-              
-              localCourses = selectedCoursesData.map((courseData, index) => ({
-                id: `local-selected-${index}`,
-                title: courseData.title,
-                description: courseData.description,
-                subject: courseData.subject,
-                level: 'gymnasie',
-                progress: 0,
-                isActive: index === 0,
-                resources: courseData.resources,
-                tips: courseData.tips,
-                relatedCourses: []
-              }));
-            } else {
-              // Use default sample courses
-              localCourses = userData.studyLevel === 'gymnasie' ? [
-              {
-                id: 'local-math-3c',
-                title: 'Matematik 3c',
-                description: 'Avancerad matematik för naturvetenskapsprogrammet',
-                subject: 'Matematik',
-                level: 'gymnasie',
-                progress: 0,
-                isActive: true,
-                resources: ['Kursbok kapitel 1-5', 'Övningsuppgifter online'],
-                tips: ['Öva på gamla prov regelbundet', 'Använd grafräknare effektivt'],
-                relatedCourses: []
-              },
-              {
-                id: 'local-physics-2',
-                title: 'Fysik 2',
-                description: 'Mekanik, termodynamik, vågor och optik',
-                subject: 'Fysik',
-                level: 'gymnasie',
-                progress: 0,
-                isActive: false,
-                resources: ['Lärobok Fysik 2', 'Laborationsrapporter'],
-                tips: ['Förstå grundläggande formler', 'Rita diagram för problemlösning'],
-                relatedCourses: []
-              }
-            ] : [
-              {
-                id: 'local-linear-algebra',
-                title: 'Linjär Algebra',
-                description: 'Grundläggande linjär algebra för ingenjörer',
-                subject: 'Matematik',
-                level: 'högskola',
-                progress: 0,
-                isActive: true,
-                resources: ['Kurslitteratur: Linear Algebra', 'MATLAB/Python'],
-                tips: ['Öva på matrisoperationer dagligen', 'Förstå geometrisk tolkning'],
-                relatedCourses: []
-              },
-              {
-                id: 'local-programming',
-                title: 'Programmering Grundkurs',
-                description: 'Introduktion till programmering med Python',
-                subject: 'Datavetenskap',
-                level: 'högskola',
-                progress: 0,
-                isActive: false,
-                resources: ['Python dokumentation', 'Kodexempel'],
-                tips: ['Öva dagligen - kod varje dag', 'Bygg egna projekt'],
-                relatedCourses: []
-              }
-              ];
-            }
-            
-            setCourses(localCourses);
-            setNotes([]);
-            setPomodoroSessions([]);
-            
-            // Mark onboarding as completed locally
-            await setOnboardingCompleted();
-            console.log('Local onboarding completed');
-            return;
-          }
-          
-          throw dbError;
-        }
-      };
-      
-      await Promise.race([onboardingPromise(), timeoutPromise]);
-      
-      // Mark onboarding as completed first
-      await setOnboardingCompleted();
-      console.log('Onboarding marked as completed');
-      
-      // Update local user state immediately
-      const completedUser: User = {
+      // Set up local user data
+      const localUser: User = {
         ...userData,
         id: authUser.id,
         onboardingCompleted: true
       };
-      setUser(completedUser);
       
-      // Try to create remember me session if user had requested it during login
-      try {
-        const { createRememberMeSession } = await import('@/lib/supabase');
-        const { error: rememberError } = await createRememberMeSession(authUser.id);
-        if (!rememberError) {
-          console.log('Remember me session created after onboarding');
+      setUser(localUser);
+      
+      // Create local courses based on selection or defaults
+      let localCourses: Course[];
+      
+      if (userData.selectedCourses && userData.selectedCourses.length > 0 && userData.gymnasium) {
+        // Use selected courses
+        const selectedCoursesData = getSelectedCoursesData(
+          userData.selectedCourses, 
+          userData.gymnasium
+        );
+        
+        localCourses = selectedCoursesData.map((courseData, index) => ({
+          id: `local-selected-${index}`,
+          title: courseData.title,
+          description: courseData.description,
+          subject: courseData.subject,
+          level: 'gymnasie',
+          progress: 0,
+          isActive: index === 0,
+          resources: courseData.resources,
+          tips: courseData.tips,
+          relatedCourses: []
+        }));
+      } else {
+        // Use default sample courses
+        localCourses = userData.studyLevel === 'gymnasie' ? [
+        {
+          id: 'local-math-3c',
+          title: 'Matematik 3c',
+          description: 'Avancerad matematik för naturvetenskapsprogrammet',
+          subject: 'Matematik',
+          level: 'gymnasie',
+          progress: 0,
+          isActive: true,
+          resources: ['Kursbok kapitel 1-5', 'Övningsuppgifter online'],
+          tips: ['Öva på gamla prov regelbundet', 'Använd grafräknare effektivt'],
+          relatedCourses: []
+        },
+        {
+          id: 'local-physics-2',
+          title: 'Fysik 2',
+          description: 'Mekanik, termodynamik, vågor och optik',
+          subject: 'Fysik',
+          level: 'gymnasie',
+          progress: 0,
+          isActive: false,
+          resources: ['Lärobok Fysik 2', 'Laborationsrapporter'],
+          tips: ['Förstå grundläggande formler', 'Rita diagram för problemlösning'],
+          relatedCourses: []
         }
-      } catch (rememberError) {
-        console.log('Could not create remember me session after onboarding:', rememberError);
+      ] : [
+        {
+          id: 'local-linear-algebra',
+          title: 'Linjär Algebra',
+          description: 'Grundläggande linjär algebra för ingenjörer',
+          subject: 'Matematik',
+          level: 'högskola',
+          progress: 0,
+          isActive: true,
+          resources: ['Kurslitteratur: Linear Algebra', 'MATLAB/Python'],
+          tips: ['Öva på matrisoperationer dagligen', 'Förstå geometrisk tolkning'],
+          relatedCourses: []
+        },
+        {
+          id: 'local-programming',
+          title: 'Programmering Grundkurs',
+          description: 'Introduktion till programmering med Python',
+          subject: 'Datavetenskap',
+          level: 'högskola',
+          progress: 0,
+          isActive: false,
+          resources: ['Python dokumentation', 'Kodexempel'],
+          tips: ['Öva dagligen - kod varje dag', 'Bygg egna projekt'],
+          relatedCourses: []
+        }
+        ];
       }
       
-      // Load user data to get courses and other data
-      await loadUserData(authUser.id, authUser.email);
-      console.log('User data loaded successfully');
+      setCourses(localCourses);
+      setNotes([]);
+      setPomodoroSessions([]);
+      
+      // Mark onboarding as completed locally
+      await setOnboardingCompleted();
+      console.log('Local onboarding completed successfully');
       
     } catch (error: any) {
       console.error('Error completing onboarding:', error?.message || error?.toString() || 'Unknown error');
-      
-      // If it's a network error, still complete onboarding locally
-      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
-        console.log('Network error during onboarding - completing locally');
-        
-        // Set up local user data
-        if (authUser) {
-          const localUser: User = {
-            ...userData,
-            id: authUser.id,
-            onboardingCompleted: true
-          };
-          setUser(localUser);
-        }
-        
-        await setOnboardingCompleted();
-        console.log('Local onboarding completed due to network error');
-        return;
-      }
-      
       throw error;
     }
-  }, [authUser, setOnboardingCompleted, loadUserData]);
+  }, [authUser, setOnboardingCompleted]);
 
   const updateUser = useCallback(async (updates: Partial<User>) => {
     try {
       if (!authUser || !user) return;
       
-      // Create a separate function for updates that doesn't require id
-      const updateData: Database['public']['Tables']['profiles']['Update'] = {};
-      if (updates.name) updateData.name = updates.name;
-      if (updates.studyLevel) updateData.level = updates.studyLevel;
-      if (updates.program) updateData.program = updates.program;
-      if (updates.purpose) updateData.purpose = updates.purpose;
-      if (updates.avatar !== undefined) updateData.avatar_url = updates.avatar ? JSON.stringify(updates.avatar) : null;
-      if (updates.subscriptionType) updateData.subscription_type = updates.subscriptionType;
-      if (updates.email !== undefined) updateData.email = updates.email;
-      if (updates.subscriptionExpiresAt !== undefined) {
-        updateData.subscription_expires_at = updates.subscriptionExpiresAt?.toISOString() || null;
-      }
-      
-      const updatedDbUser = await db.updateUser(authUser.id, updateData);
-      setUser(dbUserToUser(updatedDbUser, authUser.email));
+      // Update user locally
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+      console.log('User updated locally:', updatedUser.name);
     } catch (error) {
       console.error('Error updating user:', error);
       throw error;
@@ -648,56 +346,20 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) return;
       
-      console.log('Creating course:', course.title);
-      console.log('Creating course with data:', {
-        title: course.title,
-        subject: course.subject,
-        level: course.level,
-        hasResources: course.resources?.length > 0,
-        hasTips: course.tips?.length > 0
-      });
+      console.log('Creating local course:', course.title);
       
-      // Create course in database
-      const dbCourse = await db.createCourse({
-        title: course.title,
-        description: course.description,
-        subject: course.subject,
-        level: course.level,
-        resources: course.resources,
-        tips: course.tips,
-        related_courses: course.relatedCourses
-      });
+      // Create course locally
+      const localCourse: Course = {
+        ...course,
+        id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      };
       
-      console.log('Course created successfully:', dbCourse.title);
-      
-      // Add user to course
-      await db.addUserToCourse(authUser.id, dbCourse.id, course.isActive);
-      
-      // Reload courses
-      const userCourses = await db.getUserCourses(authUser.id);
-      setCourses(userCourses.map(dbCourseToUserCourse));
-      
-      // Check for achievements after adding a course
-      try {
-        await db.checkAndUpdateAchievements(authUser.id);
-      } catch (achievementError) {
-        console.error('Error checking achievements after adding course:', achievementError);
-      }
+      setCourses(prev => [...prev, localCourse]);
+      console.log('Course created locally:', localCourse.title);
       
     } catch (error: any) {
-      console.error('Error adding course:', course.title);
-      console.error('Course error details:', error?.message || error?.toString() || 'Unknown error');
-      console.error('Course error code:', error?.code);
-      console.error('Full course error object:', JSON.stringify(error, null, 2));
-      
-      // Re-throw with more context
-      if (error?.message?.includes('Row Level Security')) {
-        throw new Error(`Database security error: ${error.message}. Please contact support to fix the database configuration.`);
-      } else if (error?.code === '42501') {
-        throw new Error('Database permission error. Please contact support to fix the database configuration.');
-      } else {
-        throw new Error(`Failed to create course "${course.title}": ${error?.message || 'Unknown database error'}`);
-      }
+      console.error('Error adding course:', course.title, error);
+      throw error;
     }
   }, [authUser]);
 
@@ -705,18 +367,12 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) return;
       
-      // Update user-course relationship
-      if (updates.progress !== undefined) {
-        await db.updateUserCourseProgress(authUser.id, id, updates.progress);
-      }
+      // Update course locally
+      setCourses(prev => prev.map(course => 
+        course.id === id ? { ...course, ...updates } : course
+      ));
       
-      if (updates.isActive !== undefined) {
-        await db.setActiveCourse(authUser.id, id, updates.isActive);
-      }
-      
-      // Reload courses
-      const userCourses = await db.getUserCourses(authUser.id);
-      setCourses(userCourses.map(dbCourseToUserCourse));
+      console.log('Course updated locally:', id);
       
     } catch (error) {
       console.error('Error updating course:', error);
@@ -728,40 +384,17 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) return;
       
-      // Try to save to database, but fallback to local storage if it fails
-      try {
-        const dbNote = await db.createNote({
-          user_id: authUser.id,
-          course_id: note.courseId || null,
-          content: note.content
-        });
-        
-        setNotes(prev => [dbNoteToNote(dbNote), ...prev]);
-        
-        // Check for achievements after adding a note
-        try {
-          await db.checkAndUpdateAchievements(authUser.id);
-        } catch (achievementError) {
-          console.error('Error checking achievements after adding note:', achievementError);
-        }
-      } catch (dbError: any) {
-        // If database fails, create local note
-        if (dbError?.message?.includes('Failed to fetch') || dbError?.message?.includes('timeout') || dbError?.name === 'TypeError') {
-          console.log('Database unavailable - creating local note');
-          
-          const localNote: Note = {
-            id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            courseId: note.courseId,
-            content: note.content,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          
-          setNotes(prev => [localNote, ...prev]);
-        } else {
-          throw dbError;
-        }
-      }
+      // Create local note
+      const localNote: Note = {
+        id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        courseId: note.courseId,
+        content: note.content,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      setNotes(prev => [localNote, ...prev]);
+      console.log('Note created locally');
       
     } catch (error) {
       console.error('Error adding note:', error);
@@ -771,14 +404,12 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
 
   const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
     try {
-      const dbNote = await db.updateNote(id, {
-        content: updates.content,
-        course_id: updates.courseId || null
-      });
-      
+      // Update note locally
       setNotes(prev => prev.map(note => 
-        note.id === id ? dbNoteToNote(dbNote) : note
+        note.id === id ? { ...note, ...updates, updatedAt: new Date().toISOString() } : note
       ));
+      
+      console.log('Note updated locally:', id);
       
     } catch (error) {
       console.error('Error updating note:', error);
@@ -788,8 +419,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
 
   const deleteNote = useCallback(async (id: string) => {
     try {
-      await db.deleteNote(id);
+      // Delete note locally
       setNotes(prev => prev.filter(note => note.id !== id));
+      console.log('Note deleted locally:', id);
     } catch (error) {
       console.error('Error deleting note:', error);
       throw error;
@@ -800,42 +432,17 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) return;
       
-      // Try to save to database, but fallback to local storage if it fails
-      try {
-        const dbSession = await db.createPomodoroSession({
-          user_id: authUser.id,
-          course_id: session.courseId || null,
-          start_time: session.startTime,
-          end_time: session.endTime,
-          duration: session.duration
-        });
-        
-        setPomodoroSessions(prev => [dbSessionToSession(dbSession), ...prev]);
-        
-        // Check for achievements after completing a pomodoro session
-        try {
-          await db.checkAndUpdateAchievements(authUser.id);
-        } catch (achievementError) {
-          console.error('Error checking achievements after pomodoro session:', achievementError);
-        }
-      } catch (dbError: any) {
-        // If database fails, create local session
-        if (dbError?.message?.includes('Failed to fetch') || dbError?.message?.includes('timeout') || dbError?.name === 'TypeError') {
-          console.log('Database unavailable - creating local pomodoro session');
-          
-          const localSession: PomodoroSession = {
-            id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            courseId: session.courseId,
-            duration: session.duration,
-            startTime: session.startTime,
-            endTime: session.endTime
-          };
-          
-          setPomodoroSessions(prev => [localSession, ...prev]);
-        } else {
-          throw dbError;
-        }
-      }
+      // Create local pomodoro session
+      const localSession: PomodoroSession = {
+        id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        courseId: session.courseId,
+        duration: session.duration,
+        startTime: session.startTime,
+        endTime: session.endTime
+      };
+      
+      setPomodoroSessions(prev => [localSession, ...prev]);
+      console.log('Pomodoro session created locally');
       
     } catch (error) {
       console.error('Error adding pomodoro session:', error);

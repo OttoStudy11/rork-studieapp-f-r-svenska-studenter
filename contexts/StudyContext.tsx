@@ -1,12 +1,11 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import * as db from '@/lib/database';
+import { supabase, testDatabaseConnection } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import type { Gymnasium } from '@/constants/gymnasiums';
 import type { AvatarConfig } from '@/components/AvatarCustomizer';
 import { getSelectedCoursesData } from '@/constants/gymnasium-courses';
-import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 
 type DbUser = Database['public']['Tables']['profiles']['Row'];
 
@@ -182,29 +181,132 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       setIsLoading(true);
       console.log('Loading user data for:', userId);
       
-      // Always work in offline mode for now to avoid database issues
-      console.log('Working in offline mode');
+      // Test database connection first
+      const dbConnected = await testDatabaseConnection();
+      if (!dbConnected) {
+        console.warn('Database not available, working in offline mode');
+        
+        // Create a local user profile for offline mode
+        const localUser: User = {
+          id: userId,
+          name: userEmail.split('@')[0] || 'Student',
+          email: userEmail,
+          studyLevel: 'gymnasie',
+          program: 'Naturvetenskapsprogrammet',
+          purpose: 'Förbättra mina studieresultat',
+          onboardingCompleted: false,
+          subscriptionType: 'free'
+        };
+        
+        setUser(localUser);
+        setCourses([]);
+        setNotes([]);
+        setPomodoroSessions([]);
+        return;
+      }
       
-      // Create a local user profile for offline mode
+      // Try to load user data from database
+      console.log('Loading user data from database');
+      
+      // Load user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (profileError || !profile) {
+        console.warn('Could not load user profile from database, using local data');
+        
+        // Create a basic user profile
+        const localUser: User = {
+          id: userId,
+          name: userEmail.split('@')[0] || 'Student',
+          email: userEmail,
+          studyLevel: 'gymnasie',
+          program: '',
+          purpose: '',
+          onboardingCompleted: false,
+          subscriptionType: 'free'
+        };
+        
+        setUser(localUser);
+        setCourses([]);
+        setNotes([]);
+        setPomodoroSessions([]);
+        return;
+      }
+      
+      // Convert database profile to user
+      const user = dbUserToUser(profile, userEmail);
+      setUser(user);
+      
+      // Load user courses
+      const { data: userCourses, error: coursesError } = await supabase
+        .from('user_courses')
+        .select(`
+          *,
+          courses (*)
+        `)
+        .eq('user_id', userId);
+      
+      if (!coursesError && userCourses) {
+        const courses = userCourses.map(dbCourseToUserCourse);
+        setCourses(courses);
+      } else {
+        console.warn('Could not load courses:', coursesError?.message);
+        setCourses([]);
+      }
+      
+      // Load user notes
+      const { data: userNotes, error: notesError } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (!notesError && userNotes) {
+        const notes = userNotes.map(dbNoteToNote);
+        setNotes(notes);
+      } else {
+        console.warn('Could not load notes:', notesError?.message);
+        setNotes([]);
+      }
+      
+      // Load pomodoro sessions
+      const { data: sessions, error: sessionsError } = await supabase
+        .from('pomodoro_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('start_time', { ascending: false })
+        .limit(50);
+      
+      if (!sessionsError && sessions) {
+        const pomodoroSessions = sessions.map(dbSessionToSession);
+        setPomodoroSessions(pomodoroSessions);
+      } else {
+        console.warn('Could not load pomodoro sessions:', sessionsError?.message);
+        setPomodoroSessions([]);
+      }
+      
+      console.log('User data loaded successfully from database');
+      
+    } catch (error) {
+      console.error('Error loading user data:', error instanceof Error ? error.message : String(error));
+      
+      // Fallback to local user
       const localUser: User = {
         id: userId,
         name: userEmail.split('@')[0] || 'Student',
         email: userEmail,
         studyLevel: 'gymnasie',
-        program: 'Naturvetenskapsprogrammet',
-        purpose: 'Förbättra mina studieresultat',
+        program: '',
+        purpose: '',
         onboardingCompleted: false,
         subscriptionType: 'free'
       };
       
       setUser(localUser);
-      setCourses([]);
-      setNotes([]);
-      setPomodoroSessions([]);
-      
-    } catch (error) {
-      console.error('Error loading user data:', error instanceof Error ? error.message : String(error));
-      setUser(null);
       setCourses([]);
       setNotes([]);
       setPomodoroSessions([]);
@@ -247,22 +349,50 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) throw new Error('No authenticated user');
 
-      console.log('Starting offline onboarding for user:', authUser.id);
+      console.log('Starting onboarding for user:', authUser.id);
       
-      // Always work in offline mode for now
-      console.log('Setting up local user data');
+      // Test database connection
+      const dbConnected = await testDatabaseConnection();
       
-      // Set up local user data
-      const localUser: User = {
+      if (dbConnected) {
+        console.log('Saving onboarding data to database');
+        
+        // Update user profile in database
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authUser.id,
+            name: userData.name,
+            email: userData.email,
+            level: userData.studyLevel,
+            program: userData.program,
+            purpose: userData.purpose,
+            avatar_url: userData.avatar ? JSON.stringify(userData.avatar) : null,
+            subscription_type: userData.subscriptionType || 'free',
+            gymnasium_id: userData.gymnasium?.id || null,
+            gymnasium_name: userData.gymnasium?.name || null,
+            gymnasium_grade: userData.gymnasium ? '1' : null // Default grade
+          });
+        
+        if (profileError) {
+          console.warn('Could not save profile to database:', profileError.message);
+          // Continue with local storage
+        } else {
+          console.log('Profile saved to database successfully');
+        }
+      }
+      
+      // Set up user data locally
+      const completedUser: User = {
         ...userData,
         id: authUser.id,
         onboardingCompleted: true
       };
       
-      setUser(localUser);
+      setUser(completedUser);
       
-      // Create local courses based on selection or defaults
-      let localCourses: Course[];
+      // Create courses based on selection or defaults
+      let courses: Course[];
       
       if (userData.selectedCourses && userData.selectedCourses.length > 0 && userData.gymnasium) {
         // Use selected courses
@@ -271,8 +401,8 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           userData.gymnasium
         );
         
-        localCourses = selectedCoursesData.map((courseData, index) => ({
-          id: `local-selected-${index}`,
+        courses = selectedCoursesData.map((courseData, index) => ({
+          id: `course-${Date.now()}-${index}`,
           title: courseData.title,
           description: courseData.description,
           subject: courseData.subject,
@@ -285,9 +415,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         }));
       } else {
         // Use default sample courses
-        localCourses = userData.studyLevel === 'gymnasie' ? [
+        courses = userData.studyLevel === 'gymnasie' ? [
         {
-          id: 'local-math-3c',
+          id: 'course-math-3c',
           title: 'Matematik 3c',
           description: 'Avancerad matematik för naturvetenskapsprogrammet',
           subject: 'Matematik',
@@ -299,7 +429,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           relatedCourses: []
         },
         {
-          id: 'local-physics-2',
+          id: 'course-physics-2',
           title: 'Fysik 2',
           description: 'Mekanik, termodynamik, vågor och optik',
           subject: 'Fysik',
@@ -312,7 +442,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         }
       ] : [
         {
-          id: 'local-linear-algebra',
+          id: 'course-linear-algebra',
           title: 'Linjär Algebra',
           description: 'Grundläggande linjär algebra för ingenjörer',
           subject: 'Matematik',
@@ -324,7 +454,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           relatedCourses: []
         },
         {
-          id: 'local-programming',
+          id: 'course-programming',
           title: 'Programmering Grundkurs',
           description: 'Introduktion till programmering med Python',
           subject: 'Datavetenskap',
@@ -338,13 +468,13 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         ];
       }
       
-      setCourses(localCourses);
+      setCourses(courses);
       setNotes([]);
       setPomodoroSessions([]);
       
-      // Mark onboarding as completed locally
+      // Mark onboarding as completed
       await setOnboardingCompleted();
-      console.log('Local onboarding completed successfully');
+      console.log('Onboarding completed successfully');
       
     } catch (error: any) {
       console.error('Error completing onboarding:', error?.message || error?.toString() || 'Unknown error');

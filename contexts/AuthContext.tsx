@@ -33,11 +33,21 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const checkOnboardingStatus = useCallback(async (userId: string) => {
     try {
+      console.log('Checking onboarding status for user:', userId);
+      
       // First check AsyncStorage for faster loading
       const storedStatus = await AsyncStorage.getItem(`${ONBOARDING_KEY}_${userId}`);
       if (storedStatus === 'true') {
         console.log('Onboarding status found in AsyncStorage: completed');
         setHasCompletedOnboarding(true);
+        return;
+      }
+      
+      // Test database connection first
+      const dbConnected = await testDatabaseConnection();
+      if (!dbConnected) {
+        console.warn('Database not available, using AsyncStorage fallback');
+        setHasCompletedOnboarding(storedStatus === 'true');
         return;
       }
       
@@ -48,7 +58,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         .eq('id', userId)
         .single();
       
-      if (!error && profile && profile.name && profile.program) {
+      if (!error && profile && profile.name && profile.program && profile.level) {
         // User has a complete profile, mark onboarding as completed
         console.log('User has complete profile, onboarding completed:', profile.name);
         setHasCompletedOnboarding(true);
@@ -293,9 +303,37 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       console.log('Sign up successful:', data.user?.email);
       
-      // Profile will be created automatically by the database trigger
+      // Create profile automatically after successful signup
       if (data.user) {
-        console.log('User signed up successfully, profile will be created automatically:', data.user.id);
+        console.log('User signed up successfully, creating profile:', data.user.id);
+        
+        // Try to create a basic profile entry
+        try {
+          const dbConnected = await testDatabaseConnection();
+          if (dbConnected) {
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                id: data.user.id,
+                name: email.split('@')[0] || 'Student',
+                email: email.trim(),
+                level: 'gymnasie', // Default level
+                program: '', // Will be set during onboarding
+                purpose: '', // Will be set during onboarding
+                subscription_type: 'free'
+              });
+            
+            if (profileError) {
+              console.warn('Could not create profile automatically:', profileError.message);
+              // Don't fail signup if profile creation fails
+            } else {
+              console.log('Basic profile created successfully');
+            }
+          }
+        } catch (profileCreationError) {
+          console.warn('Profile creation failed, will be handled during onboarding:', profileCreationError);
+          // Don't fail signup if profile creation fails
+        }
       }
       
       return { error: null };
@@ -358,8 +396,43 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         setUser(authUser);
         await checkOnboardingStatus(data.user.id);
         
-        // Profile should exist automatically due to database trigger
-        console.log('User signed in successfully, profile should exist automatically');
+        // Check if profile exists, create if needed
+        try {
+          const dbConnected = await testDatabaseConnection();
+          if (dbConnected) {
+            const { error: profileCheckError } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', data.user.id)
+              .single();
+            
+            if (profileCheckError && profileCheckError.code === 'PGRST116') {
+              // Profile doesn't exist, create it
+              console.log('Profile does not exist, creating basic profile');
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: data.user.id,
+                  name: email.split('@')[0] || 'Student',
+                  email: email.trim(),
+                  level: 'gymnasie',
+                  program: '',
+                  purpose: '',
+                  subscription_type: 'free'
+                });
+              
+              if (profileError) {
+                console.warn('Could not create profile on signin:', profileError.message);
+              } else {
+                console.log('Basic profile created on signin');
+              }
+            } else if (!profileCheckError) {
+              console.log('Profile already exists for user');
+            }
+          }
+        } catch (profileError) {
+          console.warn('Profile check/creation failed on signin:', profileError);
+        }
         
         // Create remember me session if requested (only after profile exists)
         if (rememberMe) {

@@ -45,12 +45,12 @@ export const programCourses: { [key: string]: Course[] } = {
     { name: 'Matematik 3c', code: 'MATMAT03c', points: 100, year: 2, mandatory: true, category: 'programgemensam' },
     { name: 'Matematik 4', code: 'MATMAT04', points: 100, year: 2, mandatory: true, category: 'inriktning' },
     { name: 'Biologi 2', code: 'BIOBIO02', points: 100, year: 2, mandatory: true, category: 'inriktning' },
-    { name: 'Fysik 2', code: 'FYSFYS02', points: 100, year: 2, mandatory: true, category: 'inriktning' },
+    { name: 'Fysik 1', code: 'FYSFYS02', points: 100, year: 2, mandatory: true, category: 'inriktning' },
     { name: 'Kemi 2', code: 'KEMKEM02', points: 100, year: 2, mandatory: true, category: 'inriktning' },
     
     // År 3 - Fördjupning och individuellt val
     { name: 'Matematik 5', code: 'MATMAT05', points: 100, year: 3, mandatory: false, category: 'programfördjupning' },
-    { name: 'Fysik 3', code: 'FYSFYS03', points: 100, year: 3, mandatory: false, category: 'programfördjupning' },
+    { name: 'Fysik 2', code: 'FYSFYS03', points: 100, year: 3, mandatory: false, category: 'programfördjupning' },
     { name: 'Programmering 1', code: 'PRRPRR01', points: 100, year: 3, mandatory: false, category: 'individuellt val' },
     { name: 'Filosofi 1', code: 'FIOFIO01', points: 50, year: 3, mandatory: false, category: 'individuellt val' },
   ],

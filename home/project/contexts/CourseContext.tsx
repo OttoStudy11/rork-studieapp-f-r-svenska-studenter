@@ -71,34 +71,64 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
       
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Course data loading timeout')), 5000);
+        setTimeout(() => reject(new Error('Course data loading timeout')), 8000);
       });
       
       const loadPromise = (async () => {
-        // Load onboarding status
-        const onboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
-        console.log('Loading onboarding status for user:', user.id, 'Status:', onboardingStatus);
-        setOnboardingCompleted(onboardingStatus === 'true');
-        
-        // Load user profile
-        const profileData = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
-        console.log('Loading profile for user:', user.id, 'Has profile:', !!profileData);
-        if (profileData) {
-          const profile = JSON.parse(profileData);
-          setUserProfile(profile);
+        // First try to load from database
+        let profileFromDb = null;
+        try {
+          const { data: dbProfile, error } = await supabase
+            .from('profiles')
+            .select('id, email, name')
+            .eq('id', user.id)
+            .single();
           
-          // Load courses
-          const coursesData = await AsyncStorage.getItem(STORAGE_KEYS.COURSES);
-          if (coursesData) {
-            const savedCourses = JSON.parse(coursesData);
-            setCourses(savedCourses.map((c: any) => ({
-              ...c,
-              lastStudied: c.lastStudied ? new Date(c.lastStudied) : undefined,
-              createdAt: new Date(c.createdAt),
-              updatedAt: new Date(c.updatedAt),
-            })));
-            console.log('Loaded', savedCourses.length, 'courses for user:', user.id);
+          if (!error && dbProfile) {
+            profileFromDb = {
+              id: dbProfile.id,
+              email: dbProfile.email || undefined,
+              name: dbProfile.name || undefined
+            };
+            console.log('Loaded profile from database for user:', user.id);
           }
+        } catch (dbError) {
+          console.log('Could not load profile from database:', dbError);
+        }
+        
+        // Load onboarding status - check AsyncStorage for now
+        let onboardingStatus = false;
+        const localOnboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+        onboardingStatus = localOnboardingStatus === 'true';
+        console.log('Loading onboarding status from AsyncStorage:', onboardingStatus);
+        setOnboardingCompleted(onboardingStatus);
+        
+        // Use database profile if available, otherwise load from AsyncStorage
+        if (profileFromDb) {
+          setUserProfile(profileFromDb);
+          // Also save to AsyncStorage for offline access
+          await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profileFromDb));
+        } else {
+          // Fallback to AsyncStorage
+          const profileData = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+          console.log('Loading profile from AsyncStorage for user:', user.id, 'Has profile:', !!profileData);
+          if (profileData) {
+            const profile = JSON.parse(profileData);
+            setUserProfile(profile);
+          }
+        }
+        
+        // Load courses
+        const coursesData = await AsyncStorage.getItem(STORAGE_KEYS.COURSES);
+        if (coursesData) {
+          const savedCourses = JSON.parse(coursesData);
+          setCourses(savedCourses.map((c: any) => ({
+            ...c,
+            lastStudied: c.lastStudied ? new Date(c.lastStudied) : undefined,
+            createdAt: new Date(c.createdAt),
+            updatedAt: new Date(c.updatedAt),
+          })));
+          console.log('Loaded', savedCourses.length, 'courses for user:', user.id);
         }
       })();
       
@@ -155,9 +185,15 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
       const STORAGE_KEYS = getStorageKeys(user.id);
       // Ensure profile has the correct user ID
       const profileWithUserId = { ...profile, id: user.id };
+      
+      // Save to AsyncStorage first for immediate UI update
       await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profileWithUserId));
       setUserProfile(profileWithUserId);
-      console.log('Saved profile for user:', user.id, 'Profile:', profileWithUserId);
+      console.log('Saved profile locally for user:', user.id);
+      
+      // TODO: Sync with Supabase database once schema is fixed
+      // For now, just save locally to ensure user data persists
+      console.log('Profile saved locally, database sync disabled temporarily');
     } catch (error) {
       console.error('Error saving profile:', error);
     }

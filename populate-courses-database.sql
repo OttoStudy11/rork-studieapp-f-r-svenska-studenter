@@ -14,13 +14,13 @@ CREATE OR REPLACE FUNCTION insert_course_if_not_exists(
   p_resources JSONB,
   p_tips JSONB,
   p_related_courses JSONB
-) RETURNS VOID AS $
+) RETURNS VOID AS $$
 BEGIN
   INSERT INTO courses (title, description, subject, level, resources, tips, related_courses, progress)
   VALUES (p_title, p_description, p_subject, p_level, p_resources, p_tips, p_related_courses, 0)
   ON CONFLICT (title) DO NOTHING;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Gymnasiegemensamma ämnen (för yrkesförberedande program)
 SELECT insert_course_if_not_exists('ENGENG05', 'Engelska 5', 'Engelska 5 - 100 poäng', 'Engelska', 'gymnasie', '["Kursmaterial", "Övningsuppgifter", "Grammatikövningar"]'::jsonb, '["Öva på att tala engelska dagligen", "Läs engelska texter regelbundet"]'::jsonb, '["ENGENG06"]'::jsonb);
@@ -63,7 +63,7 @@ SELECT insert_course_if_not_exists('TEKTEO01', 'Teknik 1', 'Teknik 1 - 150 poän
 -- Teknikprogrammet - Inriktning Informations- och medieteknik
 SELECT insert_course_if_not_exists('DAODAT01', 'Dator- och nätverksteknik', 'Dator- och nätverksteknik - 100 poäng', 'Teknik', 'gymnasie', '["Kursmaterial", "Nätverksutrustning"]'::jsonb, '["Bygg nätverk", "Lär dig protokoll"]'::jsonb, '[]'::jsonb);
 SELECT insert_course_if_not_exists('PRRPRR01', 'Programmering 1', 'Programmering 1 - 100 poäng', 'Teknik', 'gymnasie', '["Kursmaterial", "Programmeringsövningar"]'::jsonb, '["Koda dagligen", "Bygg egna projekt"]'::jsonb, '["PRRPRR02"]'::jsonb);
-SELECT insert_course_if_not_exists('PRRPRR02', 'Programmering 2', 'Programmering 2 - 100 poäng', 'Teknik', 'gymnasie', '["Kursmaterial", "Avancerade projekt"]'::jsonb, '["Utveckla större projekt", "Lär dig designm��nster"]'::jsonb, '[]'::jsonb);
+SELECT insert_course_if_not_exists('PRRPRR02', 'Programmering 2', 'Programmering 2 - 100 poäng', 'Teknik', 'gymnasie', '["Kursmaterial", "Avancerade projekt"]'::jsonb, '["Utveckla större projekt", "Lär dig designmönster"]'::jsonb, '[]'::jsonb);
 SELECT insert_course_if_not_exists('WEBWEB01', 'Webbutveckling 1', 'Webbutveckling 1 - 100 poäng', 'Teknik', 'gymnasie', '["Kursmaterial", "HTML/CSS/JS"]'::jsonb, '["Bygg webbsidor", "Lär dig responsiv design"]'::jsonb, '["WEBWEB02"]'::jsonb);
 SELECT insert_course_if_not_exists('WEBWEB02', 'Webbutveckling 2', 'Webbutveckling 2 - 100 poäng', 'Teknik', 'gymnasie', '["Kursmaterial", "Ramverk"]'::jsonb, '["Använd moderna ramverk", "Bygg fullstack-applikationer"]'::jsonb, '[]'::jsonb);
 

@@ -283,25 +283,52 @@ export default function ProgramPicker() {
           </View>
 
           <View style={styles.coursesList}>
-            {courses.map(course => (
-              <TouchableOpacity
-                key={course.id}
-                style={styles.courseItem}
-                onPress={() => toggleCourse(course.id)}
-              >
-                <View style={styles.courseCheckbox}>
-                  {pickedCourseIds.has(course.id) && (
-                    <Check size={16} color="#4F46E5" />
-                  )}
-                </View>
-                <View style={styles.courseInfo}>
-                  <Text style={styles.courseTitle}>{course.title}</Text>
-                  <Text style={styles.courseDetails}>
-                    {(course.course_code ? course.course_code + ' · ' : '')}{course.points ?? '-'}p · {course.subject} · {course.level}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+            {courses
+              .sort((a, b) => {
+                // Sort by subject first, then by title
+                if (a.subject !== b.subject) {
+                  return a.subject.localeCompare(b.subject);
+                }
+                return a.title.localeCompare(b.title);
+              })
+              .reduce((acc, course, index, array) => {
+                const prevCourse = array[index - 1];
+                const showSubjectHeader = !prevCourse || prevCourse.subject !== course.subject;
+                
+                if (showSubjectHeader) {
+                  acc.push(
+                    <View key={`header-${course.subject}`} style={styles.subjectHeader}>
+                      <Text style={styles.subjectHeaderText}>{course.subject}</Text>
+                    </View>
+                  );
+                }
+                
+                acc.push(
+                  <TouchableOpacity
+                    key={course.id}
+                    style={styles.courseItem}
+                    onPress={() => toggleCourse(course.id)}
+                  >
+                    <View style={styles.courseCheckbox}>
+                      {pickedCourseIds.has(course.id) && (
+                        <Check size={16} color="#4F46E5" />
+                      )}
+                    </View>
+                    <View style={styles.courseInfo}>
+                      <Text style={styles.courseTitle} numberOfLines={2}>{course.title}</Text>
+                      <View style={styles.courseMetadata}>
+                        {course.course_code && (
+                          <Text style={styles.courseCode}>{course.course_code}</Text>
+                        )}
+                        <Text style={styles.coursePoints}>{course.points ?? '-'}p</Text>
+                        <Text style={styles.courseLevel}>{course.level}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+                
+                return acc;
+              }, [] as React.ReactNode[])}
             
             {courses.length === 0 && (
               <View style={styles.noCourses}>
@@ -428,12 +455,27 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
     overflow: 'hidden',
   },
+  subjectHeader: {
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  subjectHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4F46E5',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   courseItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
+    minHeight: 70,
   },
   courseCheckbox: {
     width: 24,
@@ -442,22 +484,55 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#4F46E5',
     marginRight: 12,
+    marginTop: 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'white',
+    flexShrink: 0,
   },
   courseInfo: {
     flex: 1,
+    minWidth: 0,
   },
   courseTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
     color: '#1f2937',
-    marginBottom: 2,
+    marginBottom: 6,
+    lineHeight: 20,
   },
-  courseDetails: {
-    fontSize: 14,
-    color: '#6b7280',
+  courseMetadata: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  courseCode: {
+    fontSize: 12,
+    color: '#4F46E5',
+    fontWeight: '600',
+    backgroundColor: '#eef2ff',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  coursePoints: {
+    fontSize: 12,
+    color: '#059669',
+    fontWeight: '600',
+    backgroundColor: '#ecfdf5',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  courseLevel: {
+    fontSize: 12,
+    color: '#7c3aed',
+    fontWeight: '600',
+    backgroundColor: '#f3e8ff',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   noCourses: {
     padding: 20,

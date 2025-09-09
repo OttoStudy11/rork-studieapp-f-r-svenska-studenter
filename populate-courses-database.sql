@@ -1,10 +1,10 @@
 -- Populate courses table with all gymnasium courses
 -- This script ensures all courses from the initial selection are available in the database
 
--- First, clear existing courses to avoid duplicates (optional - comment out if you want to keep existing data)
--- DELETE FROM courses;
+-- Ensure natural key exists for idempotent upserts
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_code TEXT UNIQUE;
 
--- Function to insert courses if they don't exist
+-- Function to insert or update courses by course_code
 CREATE OR REPLACE FUNCTION insert_course_if_not_exists(
   p_course_code TEXT,
   p_title TEXT,
@@ -16,9 +16,16 @@ CREATE OR REPLACE FUNCTION insert_course_if_not_exists(
   p_related_courses JSONB
 ) RETURNS VOID AS $$
 BEGIN
-  INSERT INTO courses (title, description, subject, level, resources, tips, related_courses, progress)
-  VALUES (p_title, p_description, p_subject, p_level, p_resources, p_tips, p_related_courses, 0)
-  ON CONFLICT (title) DO NOTHING;
+  INSERT INTO courses (course_code, title, description, subject, level, resources, tips, related_courses, progress)
+  VALUES (p_course_code, p_title, p_description, p_subject, p_level, p_resources, p_tips, p_related_courses, 0)
+  ON CONFLICT (course_code) DO UPDATE
+    SET title = EXCLUDED.title,
+        description = EXCLUDED.description,
+        subject = EXCLUDED.subject,
+        level = EXCLUDED.level,
+        resources = EXCLUDED.resources,
+        tips = EXCLUDED.tips,
+        related_courses = EXCLUDED.related_courses;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -128,22 +135,3 @@ DROP FUNCTION IF EXISTS insert_course_if_not_exists;
 CREATE INDEX IF NOT EXISTS idx_courses_subject ON courses(subject);
 CREATE INDEX IF NOT EXISTS idx_courses_level ON courses(level);
 CREATE INDEX IF NOT EXISTS idx_courses_title ON courses(title);
-
--- Grant appropriate permissions
-GRANT ALL ON courses TO authenticated;
-GRANT SELECT ON courses TO anon;
-
--- Add RLS policies (drop existing ones first to avoid conflicts)
-DROP POLICY IF EXISTS "Enable read access for all users" ON courses;
-DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON courses;
-DROP POLICY IF EXISTS "Enable update for authenticated users only" ON courses;
-
--- Create RLS policies
-CREATE POLICY "Enable read access for all users" ON courses
-  FOR SELECT USING (true);
-
-CREATE POLICY "Enable insert for authenticated users only" ON courses
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-CREATE POLICY "Enable update for authenticated users only" ON courses
-  FOR UPDATE USING (auth.role() = 'authenticated');

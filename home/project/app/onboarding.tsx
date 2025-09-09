@@ -4,8 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useCourses } from '@/contexts/CourseContext';
 import { ChevronRight, School, BookOpen, User } from 'lucide-react-native';
-import { gymnasiums } from '@/constants/gymnasiums';
-import { gymnasiumPrograms } from '@/constants/gymnasium-programs';
+import { SWEDISH_GYMNASIUMS, searchGymnasiums } from '@/constants/gymnasiums';
+import { GYMNASIUM_PROGRAMS, GYMNASIUM_PROGRAM_MAPPING } from '@/constants/gymnasium-programs';
 
 export default function Onboarding() {
   const router = useRouter();
@@ -17,13 +17,15 @@ export default function Onboarding() {
   const [year, setYear] = useState<1 | 2 | 3>(1);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredGymnasiums = gymnasiums.filter(g => 
-    g.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredGymnasiums = searchQuery 
+    ? searchGymnasiums(searchQuery)
+    : SWEDISH_GYMNASIUMS;
 
-  const availablePrograms = gymnasium ? 
-    gymnasiumPrograms[gymnasium] || gymnasiumPrograms['default'] : 
-    [];
+  const selectedGym = SWEDISH_GYMNASIUMS.find(g => g.id === gymnasium);
+  const programIds = gymnasium ? GYMNASIUM_PROGRAM_MAPPING[gymnasium] || [] : [];
+  const availablePrograms = programIds.length > 0 
+    ? GYMNASIUM_PROGRAMS.filter(p => programIds.includes(p.id))
+    : GYMNASIUM_PROGRAMS;
 
   const handleComplete = async () => {
     await updateUserProfile({
@@ -77,16 +79,21 @@ export default function Onboarding() {
             <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
               {filteredGymnasiums.map((gym) => (
                 <TouchableOpacity
-                  key={gym}
-                  style={[styles.listItem, gymnasium === gym && styles.listItemSelected]}
+                  key={gym.id}
+                  style={[styles.listItem, gymnasium === gym.id && styles.listItemSelected]}
                   onPress={() => {
-                    setGymnasium(gym);
+                    setGymnasium(gym.id);
                     setStep(3);
                   }}
                 >
-                  <Text style={[styles.listItemText, gymnasium === gym && styles.listItemTextSelected]}>
-                    {gym}
-                  </Text>
+                  <View>
+                    <Text style={[styles.listItemText, gymnasium === gym.id && styles.listItemTextSelected]}>
+                      {gym.name}
+                    </Text>
+                    <Text style={[styles.listItemSubtext, gymnasium === gym.id && styles.listItemTextSelected]}>
+                      {gym.city}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -102,13 +109,18 @@ export default function Onboarding() {
             <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
               {availablePrograms.map((prog) => (
                 <TouchableOpacity
-                  key={prog}
-                  style={[styles.listItem, program === prog && styles.listItemSelected]}
-                  onPress={() => setProgram(prog)}
+                  key={prog.id}
+                  style={[styles.listItem, program === prog.id && styles.listItemSelected]}
+                  onPress={() => setProgram(prog.id)}
                 >
-                  <Text style={[styles.listItemText, program === prog && styles.listItemTextSelected]}>
-                    {prog}
-                  </Text>
+                  <View>
+                    <Text style={[styles.listItemText, program === prog.id && styles.listItemTextSelected]}>
+                      {prog.name}
+                    </Text>
+                    <Text style={[styles.listItemSubtext, program === prog.id && styles.listItemTextSelected]}>
+                      {prog.category === 'högskoleförberedande' ? 'Högskoleförberedande' : 'Yrkesprogram'}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -163,13 +175,14 @@ export default function Onboarding() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
   },
   progressContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     paddingVertical: 20,
     gap: 10,
+    backgroundColor: '#f8f9fa',
   },
   progressDot: {
     width: 10,
@@ -183,51 +196,55 @@ const styles = StyleSheet.create({
   },
   stepContainer: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   icon: {
     alignSelf: 'center',
     marginBottom: 20,
+    marginTop: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold' as const,
-    color: '#333',
+    color: '#1a1a1a',
     textAlign: 'center',
     marginBottom: 10,
+    paddingHorizontal: 20,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#666',
     textAlign: 'center',
     marginBottom: 20,
+    paddingHorizontal: 20,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    padding: 15,
-    fontSize: 16,
+    padding: 16,
+    fontSize: 17,
     marginBottom: 20,
+    marginHorizontal: 20,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   searchInput: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    padding: 15,
-    fontSize: 16,
+    padding: 16,
+    fontSize: 17,
     marginBottom: 15,
+    marginHorizontal: 20,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   list: {
     flex: 1,
-    marginBottom: 20,
+    paddingHorizontal: 20,
   },
   listItem: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    padding: 15,
+    padding: 18,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#e0e0e0',
@@ -237,23 +254,29 @@ const styles = StyleSheet.create({
     borderColor: '#4ECDC4',
   },
   listItemText: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#333',
   },
   listItemTextSelected: {
     color: '#fff',
     fontWeight: '600' as const,
   },
+  listItemSubtext: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 2,
+  },
   yearContainer: {
     flexDirection: 'row',
     gap: 10,
     marginBottom: 30,
+    paddingHorizontal: 20,
   },
   yearButton: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    padding: 15,
+    padding: 16,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e0e0e0',
@@ -273,12 +296,13 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#4ECDC4',
     borderRadius: 12,
-    padding: 15,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 'auto',
-    marginBottom: 20,
+    marginBottom: 30,
+    marginHorizontal: 20,
   },
   buttonDisabled: {
     backgroundColor: '#ccc',

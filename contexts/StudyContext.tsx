@@ -85,7 +85,7 @@ export interface StudyContextType {
 const dbUserToUser = (dbUser: DbUser, email: string): User => ({
   id: dbUser.id,
   name: dbUser.name,
-  email: email,
+  email: dbUser.email ?? email,
   studyLevel: dbUser.level as 'gymnasie' | 'högskola',
   program: dbUser.program,
   purpose: dbUser.purpose,
@@ -103,8 +103,9 @@ const dbUserToUser = (dbUser: DbUser, email: string): User => ({
 });
 
 const userToDbUser = (user: Partial<User> & { id: string }): Database['public']['Tables']['profiles']['Insert'] => ({
-  id: user.id, // Use the demo auth UUID directly
+  id: user.id,
   name: user.name!,
+  email: user.email ?? null,
   level: user.studyLevel!,
   program: user.program!,
   purpose: user.purpose!,
@@ -630,6 +631,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       if (updates.purpose) updateData.purpose = updates.purpose;
       if (updates.avatar !== undefined) updateData.avatar_url = updates.avatar ? JSON.stringify(updates.avatar) : null;
       if (updates.subscriptionType) updateData.subscription_type = updates.subscriptionType;
+      if (updates.email !== undefined) updateData.email = updates.email;
       if (updates.subscriptionExpiresAt !== undefined) {
         updateData.subscription_expires_at = updates.subscriptionExpiresAt?.toISOString() || null;
       }

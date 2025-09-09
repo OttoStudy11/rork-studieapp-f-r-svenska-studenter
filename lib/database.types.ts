@@ -13,6 +13,7 @@ export interface Database {
         Row: {
           id: string
           name: string
+          email: string | null
           avatar_url: string | null
           level: string
           program: string
@@ -28,6 +29,7 @@ export interface Database {
         Insert: {
           id: string
           name: string
+          email?: string | null
           avatar_url?: string | null
           level: string
           program: string
@@ -43,6 +45,7 @@ export interface Database {
         Update: {
           id?: string
           name?: string
+          email?: string | null
           avatar_url?: string | null
           level?: string
           program?: string

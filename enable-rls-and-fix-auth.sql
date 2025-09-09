@@ -36,6 +36,7 @@ CREATE TABLE programs (
 CREATE TABLE profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
+    email TEXT,
     avatar_url TEXT,
     level TEXT NOT NULL CHECK (level IN ('gymnasie', 'högskola')),
     program TEXT NOT NULL,
@@ -195,6 +196,7 @@ CREATE INDEX idx_remember_me_sessions_expires ON remember_me_sessions(expires_at
 CREATE INDEX idx_remember_me_sessions_active ON remember_me_sessions(is_active, expires_at);
 CREATE INDEX idx_programs_name ON programs (name);
 CREATE INDEX idx_profiles_program_id ON profiles (program_id);
+CREATE INDEX idx_profiles_email ON profiles (email);
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -367,10 +369,11 @@ CREATE POLICY "Users can delete their own remember me sessions" ON remember_me_s
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, name, level, program, purpose)
+  INSERT INTO public.profiles (id, name, email, level, program, purpose)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
+    NEW.email,
     'gymnasie',
     'Ej valt',
     'Förbättra mina studieresultat'

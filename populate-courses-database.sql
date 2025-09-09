@@ -133,33 +133,17 @@ CREATE INDEX IF NOT EXISTS idx_courses_title ON courses(title);
 GRANT ALL ON courses TO authenticated;
 GRANT SELECT ON courses TO anon;
 
--- Add RLS policies if not exists
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies 
-    WHERE tablename = 'courses' 
-    AND policyname = 'Enable read access for all users'
-  ) THEN
-    CREATE POLICY "Enable read access for all users" ON courses
-      FOR SELECT USING (true);
-  END IF;
-  
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies 
-    WHERE tablename = 'courses' 
-    AND policyname = 'Enable insert for authenticated users only'
-  ) THEN
-    CREATE POLICY "Enable insert for authenticated users only" ON courses
-      FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-  END IF;
-  
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies 
-    WHERE tablename = 'courses' 
-    AND policyname = 'Enable update for authenticated users only'
-  ) THEN
-    CREATE POLICY "Enable update for authenticated users only" ON courses
-      FOR UPDATE USING (auth.role() = 'authenticated');
-  END IF;
-END $$;
+-- Add RLS policies (drop existing ones first to avoid conflicts)
+DROP POLICY IF EXISTS "Enable read access for all users" ON courses;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON courses;
+DROP POLICY IF EXISTS "Enable update for authenticated users only" ON courses;
+
+-- Create RLS policies
+CREATE POLICY "Enable read access for all users" ON courses
+  FOR SELECT USING (true);
+
+CREATE POLICY "Enable insert for authenticated users only" ON courses
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Enable update for authenticated users only" ON courses
+  FOR UPDATE USING (auth.role() = 'authenticated');

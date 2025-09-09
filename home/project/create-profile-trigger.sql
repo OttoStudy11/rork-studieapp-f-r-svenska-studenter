@@ -2,8 +2,26 @@
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, created_at, updated_at)
-  VALUES (NEW.id, NEW.email, NOW(), NOW());
+  INSERT INTO public.profiles (
+    id, 
+    email, 
+    premium_status,
+    achievements,
+    friends,
+    selected_courses,
+    created_at, 
+    updated_at
+  )
+  VALUES (
+    NEW.id, 
+    NEW.email, 
+    false,
+    '[]'::json,
+    '[]'::json,
+    '[]'::json,
+    NOW(), 
+    NOW()
+  );
   RETURN NEW;
 EXCEPTION
   WHEN others THEN
@@ -30,7 +48,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     gymnasium TEXT,
     program TEXT,
     year INTEGER CHECK (year IN (1, 2, 3)),
+    level TEXT,
     avatar_url TEXT,
+    premium_status BOOLEAN DEFAULT false,
+    achievements JSON DEFAULT '[]'::json,
+    friends JSON DEFAULT '[]'::json,
+    selected_courses JSON DEFAULT '[]'::json,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );

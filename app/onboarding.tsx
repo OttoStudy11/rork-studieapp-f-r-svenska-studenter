@@ -13,7 +13,7 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
-import { GraduationCap, Target, Users, BookOpen, MapPin } from 'lucide-react-native';
+import { GraduationCap, Target, Users, BookOpen, MapPin, Calculator, Zap, Globe, Palette, Building, Heart, Car, ShoppingBag, Scissors, Coffee, Factory, Leaf, ChefHat, Home, Stethoscope, Wrench } from 'lucide-react-native';
 import GymnasiumAndProgramPicker from '@/components/GymnasiumAndProgramPicker';
 import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
 import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
@@ -203,9 +203,9 @@ export default function OnboardingScreen() {
                         setAvailableCourses(courses);
                         // Auto-select all mandatory courses
                         const mandatoryCourseIds = courses
-                          .filter(course => course.mandatory)
-                          .map(course => course.id);
-                        setData(prev => ({ 
+                          .filter((course: GymnasiumCourse) => course.mandatory)
+                          .map((course: GymnasiumCourse) => course.id);
+                        setData((prev: OnboardingData) => ({ 
                           ...prev, 
                           gymnasium, 
                           gymnasiumProgram: program, 
@@ -214,7 +214,7 @@ export default function OnboardingScreen() {
                         }));
                       } else {
                         setAvailableCourses([]);
-                        setData(prev => ({ ...prev, selectedCourses: new Set() }));
+                        setData((prev: OnboardingData) => ({ ...prev, selectedCourses: new Set() }));
                       }
                     }}
                     placeholder="Välj gymnasium, årskurs och program"
@@ -306,59 +306,146 @@ export default function OnboardingScreen() {
             </Text>
             <ScrollView style={styles.coursesScrollView} showsVerticalScrollIndicator={false}>
               <View style={styles.coursesContainer}>
-                {availableCourses.map((course) => {
-                  const isSelected = data.selectedCourses.has(course.id);
-                  const isMandatory = course.mandatory;
+                {/* Group courses by category */}
+                {['gymnasiegemensam', 'programgemensam', 'inriktning', 'programfördjupning', 'individuellt val'].map(category => {
+                  const coursesInCategory = availableCourses.filter(course => course.category === category);
+                  if (coursesInCategory.length === 0) return null;
+                  
+                  const getCategoryTitle = (cat: string) => {
+                    switch (cat) {
+                      case 'gymnasiegemensam': return 'Gymnasiegemensamma ämnen';
+                      case 'programgemensam': return 'Programgemensamma ämnen';
+                      case 'inriktning': return 'Inriktningsämnen';
+                      case 'programfördjupning': return 'Programfördjupning';
+                      case 'individuellt val': return 'Individuellt val';
+                      default: return cat;
+                    }
+                  };
+                  
+                  const getCategoryColor = (cat: string) => {
+                    switch (cat) {
+                      case 'gymnasiegemensam': return '#3B82F6';
+                      case 'programgemensam': return '#10B981';
+                      case 'inriktning': return '#F59E0B';
+                      case 'programfördjupning': return '#8B5CF6';
+                      case 'individuellt val': return '#6B7280';
+                      default: return '#6B7280';
+                    }
+                  };
+                  
+                  const getCourseIcon = (courseCode: string) => {
+                    const prefix = courseCode.substring(0, 3).toUpperCase();
+                    const iconMap: Record<string, any> = {
+                      'MAT': Calculator,
+                      'FYS': Zap,
+                      'KEM': Zap,
+                      'BIO': Leaf,
+                      'ENG': Globe,
+                      'SVE': BookOpen,
+                      'HIS': BookOpen,
+                      'SAM': Users,
+                      'REL': BookOpen,
+                      'IDR': Heart,
+                      'NAK': Leaf,
+                      'FÖR': Building,
+                      'JUR': Building,
+                      'PSK': Users,
+                      'FIL': BookOpen,
+                      'EST': Palette,
+                      'MUS': Palette,
+                      'BIL': Palette,
+                      'DAN': Palette,
+                      'TEA': Palette,
+                      'TEK': Zap,
+                      'PRR': Zap,
+                      'WEB': Zap,
+                      'DAT': Zap,
+                      'ELE': Zap,
+                      'VVS': Wrench,
+                      'BYG': Home,
+                      'FOR': Car,
+                      'HAN': ShoppingBag,
+                      'HTV': Scissors,
+                      'HOT': Coffee,
+                      'IND': Factory,
+                      'NAT': Leaf,
+                      'RES': ChefHat,
+                      'VÅR': Stethoscope,
+                    };
+                    return iconMap[prefix] || BookOpen;
+                  };
                   
                   return (
-                    <TouchableOpacity
-                      key={course.id}
-                      style={[
-                        styles.courseItem,
-                        isSelected && styles.selectedCourseItem,
-                        isMandatory && styles.mandatoryCourseItem
-                      ]}
-                      onPress={() => {
-                        if (isMandatory) return; // Can't deselect mandatory courses
-                        
-                        const newSelectedCourses = new Set(data.selectedCourses);
-                        if (isSelected) {
-                          newSelectedCourses.delete(course.id);
-                        } else {
-                          newSelectedCourses.add(course.id);
-                        }
-                        setData({ ...data, selectedCourses: newSelectedCourses });
-                      }}
-                      disabled={isMandatory}
-                    >
-                      <View style={styles.courseHeader}>
-                        <Text style={[
-                          styles.courseName,
-                          isSelected && styles.selectedCourseName
-                        ]}>
-                          {course.name}
+                    <View key={category} style={styles.categorySection}>
+                      <View style={[styles.categoryHeader, { backgroundColor: getCategoryColor(category) + '20' }]}>
+                        <View style={[styles.categoryDot, { backgroundColor: getCategoryColor(category) }]} />
+                        <Text style={[styles.categoryTitle, { color: getCategoryColor(category) }]}>
+                          {getCategoryTitle(category)}
                         </Text>
-                        <View style={styles.courseInfo}>
-                          <Text style={[
-                            styles.coursePoints,
-                            isSelected && styles.selectedCoursePoints
-                          ]}>
-                            {course.points}p
-                          </Text>
-                          {isMandatory && (
-                            <View style={styles.mandatoryBadge}>
-                              <Text style={styles.mandatoryText}>Obligatorisk</Text>
-                            </View>
-                          )}
-                        </View>
                       </View>
-                      <Text style={[
-                        styles.courseDetails,
-                        isSelected && styles.selectedCourseDetails
-                      ]}>
-                        År {course.year} • {course.category}
-                      </Text>
-                    </TouchableOpacity>
+                      
+                      <View style={styles.coursesGrid}>
+                        {coursesInCategory.map((course) => {
+                          const isSelected = data.selectedCourses.has(course.id);
+                          const isMandatory = course.mandatory;
+                          const IconComponent = getCourseIcon(course.code);
+                          const categoryColor = getCategoryColor(category);
+                          
+                          return (
+                            <TouchableOpacity
+                              key={course.id}
+                              style={[
+                                styles.courseCard,
+                                isSelected && styles.selectedCourseCard,
+                                isMandatory && styles.mandatoryCourseCard,
+                                { borderColor: isSelected ? categoryColor : '#E5E7EB' }
+                              ]}
+                              onPress={() => {
+                                if (isMandatory) return;
+                                
+                                const newSelectedCourses = new Set(data.selectedCourses);
+                                if (isSelected) {
+                                  newSelectedCourses.delete(course.id);
+                                } else {
+                                  newSelectedCourses.add(course.id);
+                                }
+                                setData({ ...data, selectedCourses: newSelectedCourses });
+                              }}
+                              disabled={isMandatory}
+                            >
+                              <View style={[styles.courseIconContainer, { backgroundColor: categoryColor + '20' }]}>
+                                <IconComponent size={20} color={categoryColor} />
+                              </View>
+                              
+                              <Text style={[
+                                styles.courseCardName,
+                                isSelected && { color: categoryColor }
+                              ]} numberOfLines={2}>
+                                {course.name}
+                              </Text>
+                              
+                              <View style={styles.courseCardFooter}>
+                                <Text style={[
+                                  styles.courseCardPoints,
+                                  isSelected && { color: categoryColor }
+                                ]}>
+                                  {course.points}p
+                                </Text>
+                                <Text style={styles.courseCardYear}>
+                                  År {course.year}
+                                </Text>
+                              </View>
+                              
+                              {isMandatory && (
+                                <View style={[styles.mandatoryBadge, { backgroundColor: categoryColor }]}>
+                                  <Text style={styles.mandatoryText}>Obligatorisk</Text>
+                                </View>
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
                   );
                 })}
                 
@@ -592,71 +679,102 @@ const styles = StyleSheet.create({
   coursesContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
-    overflow: 'hidden',
-  },
-  courseItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 8,
     padding: 16,
-    marginBottom: 8,
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
-  selectedCourseItem: {
-    backgroundColor: 'white',
-    borderColor: '#4F46E5',
+  categorySection: {
+    marginBottom: 24,
   },
-  mandatoryCourseItem: {
-    backgroundColor: 'rgba(79, 70, 229, 0.1)',
-    borderColor: '#4F46E5',
-  },
-  courseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 4,
-  },
-  courseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    flex: 1,
-    marginRight: 12,
-  },
-  selectedCourseName: {
-    color: '#1f2937',
-  },
-  courseInfo: {
+  categoryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 12,
   },
-  coursePoints: {
+  categoryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  categoryTitle: {
     fontSize: 14,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  selectedCoursePoints: {
-    color: '#6b7280',
+  coursesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  courseCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 12,
+    width: '48%',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    position: 'relative',
+  },
+  selectedCourseCard: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 2,
+  },
+  mandatoryCourseCard: {
+    opacity: 0.8,
+  },
+  courseIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  courseCardName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+    minHeight: 32,
+  },
+  courseCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  courseCardPoints: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  courseCardYear: {
+    fontSize: 11,
+    color: '#6B7280',
   },
   mandatoryBadge: {
-    backgroundColor: '#4F46E5',
-    paddingHorizontal: 8,
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   mandatoryText: {
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: '600',
     color: 'white',
     textTransform: 'uppercase',
-  },
-  courseDetails: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  selectedCourseDetails: {
-    color: '#6b7280',
   },
   noCoursesContainer: {
     padding: 40,

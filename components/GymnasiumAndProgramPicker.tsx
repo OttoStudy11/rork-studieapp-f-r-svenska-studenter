@@ -9,9 +9,9 @@ import {
   Modal,
   SafeAreaView,
 } from 'react-native';
-import { Search, X, ChevronRight, School, MapPin } from 'lucide-react-native';
+import { Search, X, ChevronRight, School, MapPin, BookOpen, Zap, Users, Calculator, Palette, Globe, Wrench, Heart, Building, Car, ShoppingBag, Scissors, Coffee, Factory, Leaf, ChefHat, Home, Stethoscope, GraduationCap } from 'lucide-react-native';
 import { SWEDISH_GYMNASIUMS, type Gymnasium, type GymnasiumGrade } from '@/constants/gymnasiums';
-import { getGymnasiumPrograms, type GymnasiumProgram } from '@/constants/gymnasium-programs';
+import { type GymnasiumProgram } from '@/constants/gymnasium-programs';
 
 interface GymnasiumAndProgramPickerProps {
   selectedGymnasium: Gymnasium | null;
@@ -30,7 +30,7 @@ export default function GymnasiumAndProgramPicker({
 }: GymnasiumAndProgramPickerProps) {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [step, setStep] = useState<'gymnasium' | 'program'>('gymnasium');
+  const [step, setStep] = useState<'program' | 'gymnasium' | 'grade'>('program');
   const [tempGymnasium, setTempGymnasium] = useState<Gymnasium | null>(selectedGymnasium);
   const [tempProgram, setTempProgram] = useState<GymnasiumProgram | null>(selectedProgram);
   const [tempGrade, setTempGrade] = useState<GymnasiumGrade | null>(selectedGrade);
@@ -57,31 +57,38 @@ export default function GymnasiumAndProgramPicker({
     return grouped;
   }, [filteredGymnasiums]);
 
-  const availablePrograms = useMemo(() => {
-    if (!tempGymnasium) return [];
-    return getGymnasiumPrograms(tempGymnasium.id);
-  }, [tempGymnasium]);
+  // Remove unused variable
+  // const availablePrograms = useMemo(() => {
+  //   if (!tempGymnasium) return [];
+  //   return getGymnasiumPrograms(tempGymnasium.id);
+  // }, [tempGymnasium]);
 
-  const handleGymnasiumSelect = (gymnasium: Gymnasium) => {
-    setTempGymnasium(gymnasium);
-    setTempProgram(null); // Reset program when changing gymnasium
-    setStep('program');
+  const handleProgramSelect = (program: GymnasiumProgram) => {
+    setTempProgram(program);
+    setStep('gymnasium');
     setSearchQuery('');
   };
 
-  const handleProgramSelect = (program: GymnasiumProgram, grade: GymnasiumGrade) => {
-    setTempProgram(program);
+  const handleGymnasiumSelect = (gymnasium: Gymnasium) => {
+    setTempGymnasium(gymnasium);
+    setStep('grade');
+    setSearchQuery('');
+  };
+
+  const handleGradeSelect = (grade: GymnasiumGrade) => {
     setTempGrade(grade);
-    onSelect(tempGymnasium, program, grade);
+    onSelect(tempGymnasium, tempProgram, grade);
     setModalVisible(false);
-    setStep('gymnasium');
+    setStep('program');
   };
 
   const handleBack = () => {
-    if (step === 'program') {
+    if (step === 'grade') {
       setStep('gymnasium');
-      setTempProgram(null);
       setTempGrade(null);
+    } else if (step === 'gymnasium') {
+      setStep('program');
+      setTempGymnasium(null);
     } else {
       setModalVisible(false);
     }
@@ -89,12 +96,188 @@ export default function GymnasiumAndProgramPicker({
 
   const handleClose = () => {
     setModalVisible(false);
-    setStep('gymnasium');
+    setStep('program');
     setSearchQuery('');
     setTempGymnasium(selectedGymnasium);
     setTempProgram(selectedProgram);
     setTempGrade(selectedGrade);
   };
+
+  // Program icons mapping
+  const getProgramIcon = (programId: string) => {
+    const iconMap: Record<string, any> = {
+      'na': Calculator,
+      'te': Zap,
+      'sa': Users,
+      'ek': Building,
+      'es': Palette,
+      'hu': Globe,
+      'ib': GraduationCap,
+      'ba': Home,
+      'bf': Heart,
+      'ee': Zap,
+      'ft': Car,
+      'ha': ShoppingBag,
+      'hv': Scissors,
+      'ht': Coffee,
+      'in': Factory,
+      'nb': Leaf,
+      'rl': ChefHat,
+      'vf': Wrench,
+      'vo': Stethoscope,
+      'fs': Zap,
+      'sx': Zap,
+      'mp': Palette,
+      'id': Heart,
+    };
+    return iconMap[programId] || BookOpen;
+  };
+
+  // Program colors mapping
+  const getProgramColor = (programId: string) => {
+    const colorMap: Record<string, string> = {
+      'na': '#10B981', // Green for science
+      'te': '#F59E0B', // Orange for technology
+      'sa': '#3B82F6', // Blue for social sciences
+      'ek': '#8B5CF6', // Purple for economics
+      'es': '#EC4899', // Pink for aesthetics
+      'hu': '#06B6D4', // Cyan for humanities
+      'ib': '#6366F1', // Indigo for IB
+      'ba': '#F97316', // Orange for construction
+      'bf': '#EF4444', // Red for child care
+      'ee': '#FBBF24', // Yellow for electrical
+      'ft': '#6B7280', // Gray for vehicles
+      'ha': '#10B981', // Green for business
+      'hv': '#F59E0B', // Orange for crafts
+      'ht': '#8B5CF6', // Purple for hospitality
+      'in': '#6B7280', // Gray for industrial
+      'nb': '#22C55E', // Green for nature
+      'rl': '#F97316', // Orange for restaurant
+      'vf': '#0EA5E9', // Blue for HVAC
+      'vo': '#EF4444', // Red for healthcare
+      'fs': '#6366F1', // Indigo for aviation
+      'sx': '#0EA5E9', // Blue for maritime
+      'mp': '#EC4899', // Pink for music
+      'id': '#EF4444', // Red for sports
+    };
+    return colorMap[programId] || '#6B7280';
+  };
+
+  const renderProgramStep = () => (
+    <>
+      <View style={styles.searchContainer}>
+        <Search size={20} color="#9CA3AF" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Sök program..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholderTextColor="#9CA3AF"
+          autoFocus
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <X size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.programGrid}>
+          <Text style={styles.sectionTitle}>Högskoleförberedande program</Text>
+          <View style={styles.programRow}>
+            {[
+              { id: 'na', name: 'Naturvetenskap', abbr: 'NA' },
+              { id: 'te', name: 'Teknik', abbr: 'TE' },
+              { id: 'sa', name: 'Samhällsvetenskap', abbr: 'SA' },
+              { id: 'ek', name: 'Ekonomi', abbr: 'EK' },
+              { id: 'es', name: 'Estetiska', abbr: 'ES' },
+              { id: 'hu', name: 'Humanistiska', abbr: 'HU' },
+              { id: 'ib', name: 'International Baccalaureate', abbr: 'IB' },
+            ].filter(p => !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(program => {
+              const IconComponent = getProgramIcon(program.id);
+              const color = getProgramColor(program.id);
+              const isSelected = tempProgram?.id === program.id;
+              
+              return (
+                <TouchableOpacity
+                  key={program.id}
+                  style={[
+                    styles.programCard,
+                    isSelected && styles.selectedProgramCard,
+                    { borderColor: color }
+                  ]}
+                  onPress={() => handleProgramSelect({ 
+                    id: program.id, 
+                    name: program.name + 'programmet', 
+                    abbreviation: program.abbr, 
+                    category: 'högskoleförberedande' 
+                  })}
+                >
+                  <View style={[styles.programIconContainer, { backgroundColor: color + '20' }]}>
+                    <IconComponent size={24} color={color} />
+                  </View>
+                  <Text style={[styles.programCardName, isSelected && { color }]}>
+                    {program.name}
+                  </Text>
+                  <Text style={styles.programCardAbbr}>{program.abbr}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          
+          <Text style={[styles.sectionTitle, styles.sectionTitleSpacing]}>Yrkesprogram</Text>
+          <View style={styles.programRow}>
+            {[
+              { id: 'ba', name: 'Bygg & Anläggning', abbr: 'BA' },
+              { id: 'bf', name: 'Barn & Fritid', abbr: 'BF' },
+              { id: 'ee', name: 'El & Energi', abbr: 'EE' },
+              { id: 'ft', name: 'Fordon & Transport', abbr: 'FT' },
+              { id: 'ha', name: 'Handel & Administration', abbr: 'HA' },
+              { id: 'hv', name: 'Hantverk', abbr: 'HV' },
+              { id: 'ht', name: 'Hotell & Turism', abbr: 'HT' },
+              { id: 'in', name: 'Industritekniska', abbr: 'IN' },
+              { id: 'nb', name: 'Naturbruk', abbr: 'NB' },
+              { id: 'rl', name: 'Restaurang & Livsmedel', abbr: 'RL' },
+              { id: 'vf', name: 'VVS & Fastighet', abbr: 'VF' },
+              { id: 'vo', name: 'Vård & Omsorg', abbr: 'VO' },
+            ].filter(p => !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(program => {
+              const IconComponent = getProgramIcon(program.id);
+              const color = getProgramColor(program.id);
+              const isSelected = tempProgram?.id === program.id;
+              
+              return (
+                <TouchableOpacity
+                  key={program.id}
+                  style={[
+                    styles.programCard,
+                    isSelected && styles.selectedProgramCard,
+                    { borderColor: color }
+                  ]}
+                  onPress={() => handleProgramSelect({ 
+                    id: program.id, 
+                    name: program.name + 'programmet', 
+                    abbreviation: program.abbr, 
+                    category: 'yrkesprogram' 
+                  })}
+                >
+                  <View style={[styles.programIconContainer, { backgroundColor: color + '20' }]}>
+                    <IconComponent size={24} color={color} />
+                  </View>
+                  <Text style={[styles.programCardName, isSelected && { color }]}>
+                    {program.name}
+                  </Text>
+                  <Text style={styles.programCardAbbr}>{program.abbr}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </ScrollView>
+    </>
+  );
 
   const renderGymnasiumStep = () => (
     <>
@@ -152,8 +335,18 @@ export default function GymnasiumAndProgramPicker({
     </>
   );
 
-  const renderProgramStep = () => (
+  const renderGradeStep = () => (
     <>
+      <View style={styles.selectedProgramHeader}>
+        <View style={[styles.programIconContainer, { backgroundColor: getProgramColor(tempProgram?.id || '') + '20' }]}>
+          {React.createElement(getProgramIcon(tempProgram?.id || ''), { size: 24, color: getProgramColor(tempProgram?.id || '') })}
+        </View>
+        <View style={styles.selectedProgramInfo}>
+          <Text style={styles.selectedProgramName}>{tempProgram?.name}</Text>
+          <Text style={styles.selectedProgramAbbr}>{tempProgram?.abbreviation}</Text>
+        </View>
+      </View>
+
       <View style={styles.selectedGymnasiumHeader}>
         <School size={24} color="#4F46E5" />
         <View style={styles.selectedGymnasiumInfo}>
@@ -163,69 +356,33 @@ export default function GymnasiumAndProgramPicker({
       </View>
 
       <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Välj årskurs och program</Text>
+        <Text style={styles.sectionTitle}>Välj årskurs</Text>
         
-        {(['1', '2', '3'] as GymnasiumGrade[]).map(grade => (
-          <View key={grade} style={styles.gradeSection}>
-            <Text style={styles.gradeTitle}>Årskurs {grade}</Text>
-            
-            <View style={styles.programCategories}>
-              <Text style={styles.categoryTitle}>Högskoleförberedande program</Text>
-              {availablePrograms
-                .filter(p => p.category === 'högskoleförberedande')
-                .map(program => (
-                  <TouchableOpacity
-                    key={`${grade}-${program.id}`}
-                    style={[
-                      styles.programItem,
-                      tempProgram?.id === program.id && tempGrade === grade && styles.selectedItem
-                    ]}
-                    onPress={() => handleProgramSelect(program, grade)}
-                  >
-                    <View style={styles.programInfo}>
-                      <Text style={[
-                        styles.programName,
-                        tempProgram?.id === program.id && tempGrade === grade && styles.selectedText
-                      ]}>
-                        {program.name}
-                      </Text>
-                      <Text style={styles.programAbbr}>{program.abbreviation}</Text>
-                    </View>
-                    <ChevronRight size={20} color="#9CA3AF" />
-                  </TouchableOpacity>
-                ))}
-              
-              {availablePrograms.some(p => p.category === 'yrkesprogram') && (
-                <>
-                  <Text style={[styles.categoryTitle, styles.categoryTitleSpacing]}>Yrkesprogram</Text>
-                  {availablePrograms
-                    .filter(p => p.category === 'yrkesprogram')
-                    .map(program => (
-                      <TouchableOpacity
-                        key={`${grade}-${program.id}`}
-                        style={[
-                          styles.programItem,
-                          tempProgram?.id === program.id && tempGrade === grade && styles.selectedItem
-                        ]}
-                        onPress={() => handleProgramSelect(program, grade)}
-                      >
-                        <View style={styles.programInfo}>
-                          <Text style={[
-                            styles.programName,
-                            tempProgram?.id === program.id && tempGrade === grade && styles.selectedText
-                          ]}>
-                            {program.name}
-                          </Text>
-                          <Text style={styles.programAbbr}>{program.abbreviation}</Text>
-                        </View>
-                        <ChevronRight size={20} color="#9CA3AF" />
-                      </TouchableOpacity>
-                    ))}
-                </>
-              )}
-            </View>
-          </View>
-        ))}
+        <View style={styles.gradeGrid}>
+          {(['1', '2', '3'] as GymnasiumGrade[]).map(grade => (
+            <TouchableOpacity
+              key={grade}
+              style={[
+                styles.gradeCard,
+                tempGrade === grade && styles.selectedGradeCard
+              ]}
+              onPress={() => handleGradeSelect(grade)}
+            >
+              <Text style={[
+                styles.gradeNumber,
+                tempGrade === grade && styles.selectedGradeNumber
+              ]}>
+                {grade}
+              </Text>
+              <Text style={[
+                styles.gradeLabel,
+                tempGrade === grade && styles.selectedGradeLabel
+              ]}>
+                Årskurs {grade}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
     </>
   );
@@ -263,12 +420,16 @@ export default function GymnasiumAndProgramPicker({
               <X size={24} color="#374151" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>
-              {step === 'gymnasium' ? 'Välj gymnasium' : 'Välj program och årskurs'}
+              {step === 'program' ? 'Välj program' : 
+               step === 'gymnasium' ? 'Välj gymnasium' : 
+               'Välj årskurs'}
             </Text>
             <View style={styles.backButton} />
           </View>
 
-          {step === 'gymnasium' ? renderGymnasiumStep() : renderProgramStep()}
+          {step === 'program' ? renderProgramStep() : 
+           step === 'gymnasium' ? renderGymnasiumStep() : 
+           renderGradeStep()}
         </SafeAreaView>
       </Modal>
     </>
@@ -468,5 +629,128 @@ const styles = StyleSheet.create({
   programAbbr: {
     fontSize: 14,
     color: '#6B7280',
+  },
+  programGrid: {
+    padding: 16,
+  },
+  programRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  programCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    minWidth: 100,
+    flex: 1,
+    maxWidth: '48%',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  selectedProgramCard: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 2,
+  },
+  programIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  programCardName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  programCardAbbr: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  sectionTitleSpacing: {
+    marginTop: 8,
+  },
+  selectedProgramHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  selectedProgramInfo: {
+    marginLeft: 12,
+  },
+  selectedProgramName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  selectedProgramAbbr: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  gradeGrid: {
+    flexDirection: 'row',
+    gap: 16,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  gradeCard: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    flex: 1,
+    maxWidth: 100,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  selectedGradeCard: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#4F46E5',
+  },
+  gradeNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  selectedGradeNumber: {
+    color: '#4F46E5',
+  },
+  gradeLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  selectedGradeLabel: {
+    color: '#4F46E5',
   },
 });

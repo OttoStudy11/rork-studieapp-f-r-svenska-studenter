@@ -33,30 +33,50 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const checkOnboardingStatus = useCallback(async (userId: string) => {
     try {
-      // Check if user has selected a program in the database
+      // First check AsyncStorage for faster loading
+      const storedStatus = await AsyncStorage.getItem(`${ONBOARDING_KEY}_${userId}`);
+      if (storedStatus === 'true') {
+        console.log('Onboarding status found in AsyncStorage: completed');
+        setHasCompletedOnboarding(true);
+        return;
+      }
+      
+      // Check if user has a profile in the database (indicating onboarding was completed)
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('program_id, program')
+        .select('id, name, program, level')
         .eq('id', userId)
         .single();
       
-      if (!error && profile && profile.program_id) {
-        // User has selected a program, mark onboarding as completed
-        console.log('User has selected program, onboarding completed:', profile.program || 'Unknown program');
+      if (!error && profile && profile.name && profile.program) {
+        // User has a complete profile, mark onboarding as completed
+        console.log('User has complete profile, onboarding completed:', profile.name);
         setHasCompletedOnboarding(true);
-        // Also store in AsyncStorage for faster future checks
+        // Store in AsyncStorage for faster future checks
         await AsyncStorage.setItem(`${ONBOARDING_KEY}_${userId}`, 'true');
         return;
       }
       
-      // If no program selected, onboarding is not completed
-      console.log('User has not selected program yet, onboarding not completed');
+      // If no complete profile, onboarding is not completed
+      console.log('User profile incomplete or not found, onboarding not completed');
       setHasCompletedOnboarding(false);
       // Remove from AsyncStorage if it exists
       await AsyncStorage.removeItem(`${ONBOARDING_KEY}_${userId}`);
     } catch (error) {
       console.error('Error checking onboarding status:', error);
-      setHasCompletedOnboarding(false);
+      // If database check fails, check AsyncStorage as fallback
+      try {
+        const storedStatus = await AsyncStorage.getItem(`${ONBOARDING_KEY}_${userId}`);
+        if (storedStatus === 'true') {
+          console.log('Using AsyncStorage fallback: onboarding completed');
+          setHasCompletedOnboarding(true);
+        } else {
+          setHasCompletedOnboarding(false);
+        }
+      } catch (storageError) {
+        console.error('Error checking AsyncStorage:', storageError);
+        setHasCompletedOnboarding(false);
+      }
     }
   }, []);
 
@@ -380,9 +400,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         console.error('Sign out error:', error);
       }
       
-      // Clear onboarding status
+      // Clear onboarding status from AsyncStorage
       if (user) {
-        await AsyncStorage.removeItem(`${ONBOARDING_KEY}_${user.id}`);
+        try {
+          await AsyncStorage.removeItem(`${ONBOARDING_KEY}_${user.id}`);
+          console.log('Onboarding status cleared from AsyncStorage');
+        } catch (error) {
+          console.error('Error clearing onboarding status:', error);
+        }
       }
       
       setUser(null);
@@ -445,8 +470,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const setOnboardingCompleted = useCallback(async () => {
     if (user) {
       try {
+        console.log('Marking onboarding as completed for user:', user.id);
         await AsyncStorage.setItem(`${ONBOARDING_KEY}_${user.id}`, 'true');
         setHasCompletedOnboarding(true);
+        console.log('Onboarding completion stored successfully');
       } catch (error) {
         console.error('Error setting onboarding completed:', error);
       }

@@ -565,9 +565,17 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       
       await Promise.race([onboardingPromise(), timeoutPromise]);
       
-      // Mark onboarding as completed
+      // Mark onboarding as completed first
       await setOnboardingCompleted();
       console.log('Onboarding marked as completed');
+      
+      // Update local user state immediately
+      const completedUser: User = {
+        ...userData,
+        id: authUser.id,
+        onboardingCompleted: true
+      };
+      setUser(completedUser);
       
       // Try to create remember me session if user had requested it during login
       try {
@@ -580,7 +588,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         console.log('Could not create remember me session after onboarding:', rememberError);
       }
       
-      // Load user data
+      // Load user data to get courses and other data
       await loadUserData(authUser.id, authUser.email);
       console.log('User data loaded successfully');
       
@@ -590,7 +598,19 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       // If it's a network error, still complete onboarding locally
       if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
         console.log('Network error during onboarding - completing locally');
+        
+        // Set up local user data
+        if (authUser) {
+          const localUser: User = {
+            ...userData,
+            id: authUser.id,
+            onboardingCompleted: true
+          };
+          setUser(localUser);
+        }
+        
         await setOnboardingCompleted();
+        console.log('Local onboarding completed due to network error');
         return;
       }
       

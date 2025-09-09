@@ -6,7 +6,7 @@
 
 -- Function to insert courses if they don't exist
 CREATE OR REPLACE FUNCTION insert_course_if_not_exists(
-  p_id TEXT,
+  p_course_code TEXT,
   p_title TEXT,
   p_description TEXT,
   p_subject TEXT,
@@ -14,13 +14,13 @@ CREATE OR REPLACE FUNCTION insert_course_if_not_exists(
   p_resources JSONB,
   p_tips JSONB,
   p_related_courses JSONB
-) RETURNS VOID AS $$
+) RETURNS VOID AS $
 BEGIN
-  INSERT INTO courses (id, title, description, subject, level, resources, tips, related_courses, progress)
-  VALUES (p_id, p_title, p_description, p_subject, p_level, p_resources, p_tips, p_related_courses, 0)
-  ON CONFLICT (id) DO NOTHING;
+  INSERT INTO courses (title, description, subject, level, resources, tips, related_courses, progress)
+  VALUES (p_title, p_description, p_subject, p_level, p_resources, p_tips, p_related_courses, 0)
+  ON CONFLICT (title) DO NOTHING;
 END;
-$$ LANGUAGE plpgsql;
+$ LANGUAGE plpgsql;
 
 -- Gymnasiegemensamma ämnen (för yrkesförberedande program)
 SELECT insert_course_if_not_exists('ENGENG05', 'Engelska 5', 'Engelska 5 - 100 poäng', 'Engelska', 'gymnasie', '["Kursmaterial", "Övningsuppgifter", "Grammatikövningar"]'::jsonb, '["Öva på att tala engelska dagligen", "Läs engelska texter regelbundet"]'::jsonb, '["ENGENG06"]'::jsonb);

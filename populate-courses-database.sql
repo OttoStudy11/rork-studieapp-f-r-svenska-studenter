@@ -16,7 +16,7 @@ CREATE OR REPLACE FUNCTION insert_course_if_not_exists(
   p_resources JSONB DEFAULT '[]'::jsonb,
   p_tips JSONB DEFAULT '[]'::jsonb,
   p_related_courses JSONB DEFAULT '[]'::jsonb
-) RETURNS VOID AS $
+) RETURNS void LANGUAGE plpgsql AS $func$
 BEGIN
   INSERT INTO courses (course_code, title, description, subject, level, points, resources, tips, related_courses, progress)
   VALUES (
@@ -41,7 +41,7 @@ BEGIN
         tips = EXCLUDED.tips,
         related_courses = EXCLUDED.related_courses;
 END;
-$ LANGUAGE plpgsql;
+$func$;
 
 -- Gymnasiegemensamma ämnen (för yrkesförberedande program)
 SELECT insert_course_if_not_exists('ENGENG05', 'Engelska 5', 'Engelska 5 - 100 poäng', 'Engelska', 'gymnasie', 100, '["Kursmaterial", "Övningsuppgifter", "Grammatikövningar"]'::jsonb, '["Öva på att tala engelska dagligen", "Läs engelska texter regelbundet"]'::jsonb, '["ENGENG06"]'::jsonb);

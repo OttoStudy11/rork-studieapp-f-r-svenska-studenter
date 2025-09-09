@@ -49,6 +49,94 @@ const purposeOptions = [
   'Organisera material'
 ];
 
+// Helper function to format course names for better display
+const formatCourseName = (name: string): string => {
+  // Remove redundant words and shorten common terms
+  let formatted = name
+    .replace(/och /g, '& ')
+    .replace(/Matematik /g, 'Mat ')
+    .replace(/Svenska /g, 'Sve ')
+    .replace(/Engelska /g, 'Eng ')
+    .replace(/Historia /g, 'His ')
+    .replace(/Samhällskunskap /g, 'Samhälle ')
+    .replace(/Naturkunskap /g, 'Natur ')
+    .replace(/Religionskunskap /g, 'Religion ')
+    .replace(/Idrott och hälsa /g, 'Idrott ')
+    .replace(/Företagsekonomi /g, 'Företag ')
+    .replace(/Programmering /g, 'Prog ')
+    .replace(/Webbutveckling /g, 'Webb ')
+    .replace(/Dator- och nätverksteknik/g, 'Datornätverk')
+    .replace(/Estetisk kommunikation /g, 'Estetik ')
+    .replace(/Ledarskap och organisation/g, 'Ledarskap')
+    .replace(/Entreprenörskap och företagande/g, 'Entreprenörskap')
+    .replace(/Livsmedels- och näringskunskap /g, 'Livsmedel ')
+    .replace(/Service och bemötande /g, 'Service ')
+    .replace(/Information och kommunikation /g, 'Info & komm ')
+    .replace(/Hälso- och sjukvård /g, 'Hälsovård ')
+    .replace(/Bygg och anläggning /g, 'Bygg ')
+    .replace(/Fordons- och transportbranschens villkor och arbetsområden/g, 'Fordonsbranschen')
+    .replace(/Fordonsteknik - introduktion/g, 'Fordonsteknik intro')
+    .replace(/Industritekniska processer /g, 'Industriprocesser ')
+    .replace(/Produktionsutrustning /g, 'Produktionsutrust. ')
+    .replace(/Datorstyrd produktion /g, 'CNC-produktion ')
+    .replace(/Personbilar - /g, 'Personbil ')
+    .replace(/verkstad och elteknik/g, 'verkstad & el')
+    .replace(/motor och kraftöverföring/g, 'motor & kraft')
+    .replace(/chassi och bromsar/g, 'chassi & broms')
+    .replace(/el- och hybridfordon/g, 'el & hybrid')
+    .replace(/Handel och hållbar utveckling/g, 'Handel & hållbarhet')
+    .replace(/Praktisk marknadsföring /g, 'Praktisk markn. ')
+    .replace(/Personlig försäljning /g, 'Pers. försäljning ')
+    .replace(/Intern och extern kommunikation/g, 'Intern & extern komm')
+    .replace(/Hantverk - introduktion/g, 'Hantverk intro')
+    .replace(/Tradition och utveckling/g, 'Tradition & utveckling')
+    .replace(/Konferens och evenemang/g, 'Konferens & event')
+    .replace(/Aktiviteter och upplevelser/g, 'Aktiviteter & upplevelser')
+    .replace(/Resmål och resvägar/g, 'Resmål & resvägar')
+    .replace(/Reseproduktion och försäljning/g, 'Reseproduktion')
+    .replace(/Guide och reseledare/g, 'Guide & reseledare')
+    .replace(/Frukost och bufféservering/g, 'Frukost & buffé')
+    .replace(/Människan i industrin /g, 'Människan i industri ')
+    .replace(/Marken och växternas biologi/g, 'Mark & växtbiologi')
+    .replace(/Djuren i naturbruket/g, 'Djur i naturbruk')
+    .replace(/Mångbruk av skog/g, 'Mångbruk skog')
+    .replace(/Motor- och röjmotorsåg/g, 'Motor & röjsåg')
+    .replace(/Trädgårdsanläggning /g, 'Trädgårdsanlägg. ')
+    .replace(/Verktygs- och materialhantering/g, 'Verktyg & material')
+    .replace(/VVS svets och lödning rör/g, 'VVS svets & lödning')
+    .replace(/Fastighetsservice - /g, 'Fastighetsservice ')
+    .replace(/Fastighetstekniska system/g, 'Fastighetssystem')
+    .replace(/Informationsteknik i fastigheter/g, 'IT i fastigheter')
+    .replace(/Etik och människans livsvillkor/g, 'Etik & livsvillkor')
+    .replace(/Gerontologi och geriatrik/g, 'Gerontologi')
+    .replace(/Kultur- och idéhistoria/g, 'Kultur & idéhistoria')
+    .replace(/Latin - språk och kultur /g, 'Latin ')
+    .replace(/Konstarterna och samhället/g, 'Konst & samhälle')
+    .replace(/Gehörs- och musiklära /g, 'Gehör & musiklära ')
+    .replace(/Instrument eller sång /g, 'Instrument/sång ')
+    .replace(/Ensemble med körsång/g, 'Ensemble & kör')
+    .replace(/Scenisk gestaltning /g, 'Scenisk gest. ')
+    .replace(/Bild och form /g, 'Bild & form ')
+    .replace(/Dansteknik /g, 'Danstekn. ')
+    .replace(/Dansgestaltning /g, 'Dansgest. ');
+
+  // If still too long, truncate intelligently
+  if (formatted.length > 28) {
+    // Try to break at word boundaries
+    const words = formatted.split(' ');
+    let result = '';
+    for (const word of words) {
+      if ((result + word).length > 25) {
+        break;
+      }
+      result += (result ? ' ' : '') + word;
+    }
+    formatted = result + (result.length < formatted.length ? '...' : '');
+  }
+
+  return formatted;
+};
+
 export default function OnboardingScreen() {
   const authContext = useAuth();
   const studyContext = useStudy();
@@ -339,10 +427,10 @@ export default function OnboardingScreen() {
                   
                   const getCategoryTitle = (cat: string) => {
                     switch (cat) {
-                      case 'gymnasiegemensam': return 'Gymnasiegemensamma ämnen';
-                      case 'programgemensam': return 'Programgemensamma ämnen';
-                      case 'inriktning': return 'Inriktningsämnen';
-                      case 'programfördjupning': return 'Programfördjupning';
+                      case 'gymnasiegemensam': return 'Gymnasiegemensamma';
+                      case 'programgemensam': return 'Programgemensamma';
+                      case 'inriktning': return 'Inriktning';
+                      case 'programfördjupning': return 'Fördjupning';
                       case 'individuellt val': return 'Individuellt val';
                       default: return cat;
                     }
@@ -446,8 +534,8 @@ export default function OnboardingScreen() {
                               <Text style={[
                                 styles.courseCardName,
                                 isSelected && { color: categoryColor }
-                              ]} numberOfLines={2}>
-                                {course.name}
+                              ]} numberOfLines={3}>
+                                {formatCourseName(course.name)}
                               </Text>
                               
                               <View style={styles.courseCardFooter}>
@@ -712,15 +800,15 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   categorySection: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   categoryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginBottom: 8,
   },
   categoryDot: {
     width: 8,
@@ -729,21 +817,23 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   categoryTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   coursesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
+    justifyContent: 'space-between',
   },
   courseCard: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 12,
     width: '48%',
+    minHeight: 120,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -755,6 +845,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
     position: 'relative',
+    justifyContent: 'space-between',
   },
   selectedCourseCard: {
     backgroundColor: '#F8FAFC',
@@ -772,11 +863,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   courseCardName: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 8,
-    minHeight: 32,
+    minHeight: 36,
+    lineHeight: 16,
+    flex: 1,
   },
   courseCardFooter: {
     flexDirection: 'row',

@@ -80,7 +80,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
         try {
           const { data: dbProfile, error } = await supabase
             .from('profiles')
-            .select('id, email, name')
+            .select('*')
             .eq('id', user.id)
             .single();
           
@@ -88,7 +88,11 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
             profileFromDb = {
               id: dbProfile.id,
               email: dbProfile.email || undefined,
-              name: dbProfile.name || undefined
+              name: dbProfile.name || undefined,
+              gymnasium: (dbProfile as any).gymnasium || undefined,
+              program: (dbProfile as any).program || undefined,
+              year: (dbProfile as any).year as (1 | 2 | 3) || undefined,
+              onboardingCompleted: (dbProfile as any).onboarding_completed || false
             };
             console.log('Loaded profile from database for user:', user.id);
           }
@@ -96,11 +100,16 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
           console.log('Could not load profile from database:', dbError);
         }
         
-        // Load onboarding status - check AsyncStorage for now
+        // Load onboarding status - prioritize database, fallback to AsyncStorage
         let onboardingStatus = false;
-        const localOnboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
-        onboardingStatus = localOnboardingStatus === 'true';
-        console.log('Loading onboarding status from AsyncStorage:', onboardingStatus);
+        if (profileFromDb && profileFromDb.onboardingCompleted !== undefined) {
+          onboardingStatus = profileFromDb.onboardingCompleted;
+          console.log('Loading onboarding status from database:', onboardingStatus);
+        } else {
+          const localOnboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+          onboardingStatus = localOnboardingStatus === 'true';
+          console.log('Loading onboarding status from AsyncStorage:', onboardingStatus);
+        }
         setOnboardingCompleted(onboardingStatus);
         
         // Use database profile if available, otherwise load from AsyncStorage
@@ -191,9 +200,44 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
       setUserProfile(profileWithUserId);
       console.log('Saved profile locally for user:', user.id);
       
-      // TODO: Sync with Supabase database once schema is fixed
-      // For now, just save locally to ensure user data persists
-      console.log('Profile saved locally, database sync disabled temporarily');
+      // Sync with Supabase database
+      try {
+        console.log('Syncing profile to database for user:', user.id);
+        const updateData: any = {
+          id: user.id,
+          name: profileWithUserId.name || null,
+          email: profileWithUserId.email || null,
+          updated_at: new Date().toISOString()
+        };
+        
+        // Add optional columns if they exist in the profile
+        if (profileWithUserId.gymnasium !== undefined) {
+          updateData.gymnasium = profileWithUserId.gymnasium;
+        }
+        if (profileWithUserId.program !== undefined) {
+          updateData.program = profileWithUserId.program;
+        }
+        if (profileWithUserId.year !== undefined) {
+          updateData.year = profileWithUserId.year;
+        }
+        if (profileWithUserId.onboardingCompleted !== undefined) {
+          updateData.onboarding_completed = profileWithUserId.onboardingCompleted;
+        }
+        
+        const { error: dbError } = await supabase
+          .from('profiles')
+          .upsert(updateData, {
+            onConflict: 'id'
+          });
+        
+        if (dbError) {
+          console.error('Error syncing profile to database:', dbError);
+        } else {
+          console.log('Profile successfully synced to database');
+        }
+      } catch (syncError) {
+        console.error('Exception syncing profile to database:', syncError);
+      }
     } catch (error) {
       console.error('Error saving profile:', error);
     }
@@ -366,11 +410,25 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
   const completeOnboarding = useCallback(async () => {
     if (!user?.id) return;
     
-    const STORAGE_KEYS = getStorageKeys(user.id);
-    await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
-    setOnboardingCompleted(true);
-    console.log('Onboarding completed for user:', user.id);
-  }, [user?.id]);
+    try {
+      const STORAGE_KEYS = getStorageKeys(user.id);
+      
+      // Save to AsyncStorage first for immediate UI update
+      await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
+      setOnboardingCompleted(true);
+      console.log('Onboarding completed locally for user:', user.id);
+      
+      // Update profile in database to mark onboarding as completed
+      const updatedProfile = userProfile 
+        ? { ...userProfile, onboardingCompleted: true }
+        : { id: user.id, onboardingCompleted: true } as UserProfile;
+      
+      await saveProfile(updatedProfile);
+      console.log('Onboarding completion synced to database for user:', user.id);
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+    }
+  }, [user?.id, userProfile, saveProfile]);
 
   const resetOnboarding = useCallback(async () => {
     if (!user?.id) return;

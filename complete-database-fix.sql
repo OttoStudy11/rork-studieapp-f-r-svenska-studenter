@@ -362,8 +362,8 @@ INSERT INTO achievements (achievement_key, title, description, icon, category, r
 
 -- Streak Achievements
 ('consistency_starter', 'Konsekvensstartare', 'Plugga 3 dagar i rad', '🔥', 'streak', 'streak', 3, NULL, 30, NULL),
-('week_warrior', 'Veckokriger', 'Plugga 7 dagar i rad', '🔥🔥', 'streak', 'streak', 7, NULL, 75, NULL),
-('unstoppable', 'Ostoppbar', 'Plugga 30 dagar i rad', '🔥🔥🔥', 'streak', 'streak', 30, NULL, 200, 'unstoppable'),
+('week_warrior', 'Veckokriger', 'Plugga 7 dagar i rad', '🔥', 'streak', 'streak', 7, NULL, 75, NULL),
+('unstoppable', 'Ostoppbar', 'Plugga 30 dagar i rad', '🔥', 'streak', 'streak', 30, NULL, 200, 'unstoppable'),
 
 -- Course Achievements
 ('course_collector', 'Kurssamlare', 'Lägg till 5 kurser', '📚', 'milestone', 'courses', 5, 'total', 20, NULL),

@@ -1,6 +1,12 @@
-   // In app/onboarding.tsx
-   import ModernOnboarding from '@/components/ModernOnboarding';
-   export default ModernOnboarding;
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  ScrollView,
+  SafeAreaView
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';

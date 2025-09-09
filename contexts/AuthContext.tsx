@@ -237,8 +237,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (mounted) {
         console.log('Auth initialization timeout - forcing loading to false');
         setIsLoading(false);
+        setUser(null);
+        setHasCompletedOnboarding(false);
       }
-    }, 5000); // 5 second timeout
+    }, 8000); // 8 second timeout
 
     return () => {
       mounted = false;

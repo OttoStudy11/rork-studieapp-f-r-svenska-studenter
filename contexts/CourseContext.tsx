@@ -60,39 +60,55 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
     
     try {
       setIsLoading(true);
       const STORAGE_KEYS = getStorageKeys(user.id);
       
-      // Load onboarding status
-      const onboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
-      console.log('Loading onboarding status for user:', user.id, 'Status:', onboardingStatus);
-      setOnboardingCompleted(onboardingStatus === 'true');
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Course data loading timeout')), 5000);
+      });
       
-      // Load user profile
-      const profileData = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
-      console.log('Loading profile for user:', user.id, 'Has profile:', !!profileData);
-      if (profileData) {
-        const profile = JSON.parse(profileData);
-        setUserProfile(profile);
+      const loadPromise = (async () => {
+        // Load onboarding status
+        const onboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+        console.log('Loading onboarding status for user:', user.id, 'Status:', onboardingStatus);
+        setOnboardingCompleted(onboardingStatus === 'true');
         
-        // Load courses
-        const coursesData = await AsyncStorage.getItem(STORAGE_KEYS.COURSES);
-        if (coursesData) {
-          const savedCourses = JSON.parse(coursesData);
-          setCourses(savedCourses.map((c: any) => ({
-            ...c,
-            lastStudied: c.lastStudied ? new Date(c.lastStudied) : undefined,
-            createdAt: new Date(c.createdAt),
-            updatedAt: new Date(c.updatedAt),
-          })));
-          console.log('Loaded', savedCourses.length, 'courses for user:', user.id);
+        // Load user profile
+        const profileData = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+        console.log('Loading profile for user:', user.id, 'Has profile:', !!profileData);
+        if (profileData) {
+          const profile = JSON.parse(profileData);
+          setUserProfile(profile);
+          
+          // Load courses
+          const coursesData = await AsyncStorage.getItem(STORAGE_KEYS.COURSES);
+          if (coursesData) {
+            const savedCourses = JSON.parse(coursesData);
+            setCourses(savedCourses.map((c: any) => ({
+              ...c,
+              lastStudied: c.lastStudied ? new Date(c.lastStudied) : undefined,
+              createdAt: new Date(c.createdAt),
+              updatedAt: new Date(c.updatedAt),
+            })));
+            console.log('Loaded', savedCourses.length, 'courses for user:', user.id);
+          }
         }
-      }
+      })();
+      
+      await Promise.race([loadPromise, timeoutPromise]);
     } catch (error) {
       console.error('Error loading data:', error);
+      // Set default values on error
+      setOnboardingCompleted(false);
+      setUserProfile(null);
+      setCourses([]);
     } finally {
       setIsLoading(false);
     }
@@ -109,6 +125,14 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
       setOnboardingCompleted(false);
       setIsLoading(false);
     }
+    
+    // Fallback timeout to ensure loading doesn't get stuck
+    const fallbackTimeout = setTimeout(() => {
+      console.log('Course context loading timeout - forcing loading to false');
+      setIsLoading(false);
+    }, 6000); // 6 second timeout
+    
+    return () => clearTimeout(fallbackTimeout);
   }, [user?.id, loadData]);
 
   const saveCourses = useCallback(async (newCourses: Course[]) => {

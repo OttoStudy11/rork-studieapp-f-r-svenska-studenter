@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   TextInput,
   ScrollView,
   SafeAreaView
@@ -14,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { GraduationCap, Target, Users, BookOpen, MapPin, Calculator, Zap, Globe, Palette, Building, Heart, Car, ShoppingBag, Scissors, Coffee, Factory, Leaf, ChefHat, Home, Stethoscope, Wrench } from 'lucide-react-native';
+import { AnimatedPressable, PressableCard, RippleButton, FadeInView } from '@/components/Animations';
 import GymnasiumAndProgramPicker from '@/components/GymnasiumAndProgramPicker';
 import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
 import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
@@ -175,7 +175,7 @@ export default function OnboardingScreen() {
             <BookOpen size={80} color="#4F46E5" style={styles.icon} />
             <Text style={styles.title}>Vad studerar du?</Text>
             <View style={styles.optionsContainer}>
-              <TouchableOpacity
+              <AnimatedPressable
                 style={[
                   styles.optionButton,
                   data.studyLevel === 'gymnasie' && styles.selectedOption
@@ -188,8 +188,8 @@ export default function OnboardingScreen() {
                 ]}>
                   Gymnasie
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </AnimatedPressable>
+              <AnimatedPressable
                 style={[
                   styles.optionButton,
                   data.studyLevel === 'högskola' && styles.selectedOption
@@ -202,7 +202,7 @@ export default function OnboardingScreen() {
                 ]}>
                   Högskola/Universitet
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressable>
             </View>
           </View>
         );
@@ -268,7 +268,7 @@ export default function OnboardingScreen() {
             <Text style={styles.subtitle}>Välj alla som passar dig</Text>
             <View style={styles.multiSelectContainer}>
               {goalOptions.map((goal) => (
-                <TouchableOpacity
+                <AnimatedPressable
                   key={goal}
                   style={[
                     styles.multiSelectOption,
@@ -282,7 +282,7 @@ export default function OnboardingScreen() {
                   ]}>
                     {goal}
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressable>
               ))}
             </View>
           </View>
@@ -296,7 +296,7 @@ export default function OnboardingScreen() {
             <Text style={styles.subtitle}>Välj dina huvudintressen</Text>
             <View style={styles.multiSelectContainer}>
               {purposeOptions.map((purpose) => (
-                <TouchableOpacity
+                <AnimatedPressable
                   key={purpose}
                   style={[
                     styles.multiSelectOption,
@@ -310,7 +310,7 @@ export default function OnboardingScreen() {
                   ]}>
                     {purpose}
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressable>
               ))}
             </View>
           </View>
@@ -418,7 +418,7 @@ export default function OnboardingScreen() {
                           const categoryColor = getCategoryColor(category);
                           
                           return (
-                            <TouchableOpacity
+                            <PressableCard
                               key={course.id}
                               style={[
                                 styles.courseCard,
@@ -467,7 +467,7 @@ export default function OnboardingScreen() {
                                   <Text style={styles.mandatoryText}>Obligatorisk</Text>
                                 </View>
                               )}
-                            </TouchableOpacity>
+                            </PressableCard>
                           );
                         })}
                       </View>
@@ -515,30 +515,34 @@ export default function OnboardingScreen() {
             <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '6' : '5'}</Text>
           </View>
 
-          {renderStep()}
+          <FadeInView key={step} duration={300}>
+            {renderStep()}
+          </FadeInView>
 
           <View style={styles.buttonContainer}>
             {step > 0 && (
-              <TouchableOpacity
+              <AnimatedPressable
                 style={styles.backButton}
                 onPress={() => setStep(step - 1)}
               >
                 <Text style={styles.backButtonText}>Tillbaka</Text>
-              </TouchableOpacity>
+              </AnimatedPressable>
             )}
             
-            <TouchableOpacity
+            <RippleButton
               style={[
                 styles.nextButton,
                 !canProceed() && styles.disabledButton
               ]}
               onPress={handleNext}
               disabled={!canProceed()}
+              rippleColor="#4F46E5"
+              rippleOpacity={0.2}
             >
               <Text style={styles.nextButtonText}>
                 {step === (data.studyLevel === 'gymnasie' ? 5 : 4) ? 'Slutför' : 'Nästa'}
               </Text>
-            </TouchableOpacity>
+            </RippleButton>
           </View>
         </ScrollView>
       </LinearGradient>

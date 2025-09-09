@@ -3,13 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   TextInput,
   ScrollView,
   Modal,
   SafeAreaView,
 } from 'react-native';
 import { Search, X, ChevronRight, School, MapPin, BookOpen, Zap, Users, Calculator, Palette, Globe, Wrench, Heart, Building, Car, ShoppingBag, Scissors, Coffee, Factory, Leaf, ChefHat, Home, Stethoscope, GraduationCap } from 'lucide-react-native';
+import { AnimatedPressable, PressableCard } from '@/components/Animations';
 import { SWEDISH_GYMNASIUMS, type Gymnasium, type GymnasiumGrade } from '@/constants/gymnasiums';
 import { type GymnasiumProgram } from '@/constants/gymnasium-programs';
 
@@ -176,9 +176,9 @@ export default function GymnasiumAndProgramPicker({
           autoFocus
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <AnimatedPressable onPress={() => setSearchQuery('')}>
             <X size={20} color="#9CA3AF" />
-          </TouchableOpacity>
+          </AnimatedPressable>
         )}
       </View>
 
@@ -201,7 +201,7 @@ export default function GymnasiumAndProgramPicker({
               const isSelected = tempProgram?.id === program.id;
               
               return (
-                <TouchableOpacity
+                <PressableCard
                   key={program.id}
                   style={[
                     styles.programCard,
@@ -222,7 +222,7 @@ export default function GymnasiumAndProgramPicker({
                     {program.name}
                   </Text>
                   <Text style={styles.programCardAbbr}>{program.abbr}</Text>
-                </TouchableOpacity>
+                </PressableCard>
               );
             })}
           </View>
@@ -249,7 +249,7 @@ export default function GymnasiumAndProgramPicker({
               const isSelected = tempProgram?.id === program.id;
               
               return (
-                <TouchableOpacity
+                <PressableCard
                   key={program.id}
                   style={[
                     styles.programCard,
@@ -270,7 +270,7 @@ export default function GymnasiumAndProgramPicker({
                     {program.name}
                   </Text>
                   <Text style={styles.programCardAbbr}>{program.abbr}</Text>
-                </TouchableOpacity>
+                </PressableCard>
               );
             })}
           </View>
@@ -292,9 +292,9 @@ export default function GymnasiumAndProgramPicker({
           autoFocus
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <AnimatedPressable onPress={() => setSearchQuery('')}>
             <X size={20} color="#9CA3AF" />
-          </TouchableOpacity>
+          </AnimatedPressable>
         )}
       </View>
 
@@ -306,7 +306,7 @@ export default function GymnasiumAndProgramPicker({
               <Text style={styles.cityTitle}>{city}</Text>
             </View>
             {groupedGymnasiums[city].map(gymnasium => (
-              <TouchableOpacity
+              <AnimatedPressable
                 key={gymnasium.id}
                 style={[
                   styles.gymnasiumItem,
@@ -327,7 +327,7 @@ export default function GymnasiumAndProgramPicker({
                   </Text>
                 </View>
                 <ChevronRight size={20} color="#9CA3AF" />
-              </TouchableOpacity>
+              </AnimatedPressable>
             ))}
           </View>
         ))}
@@ -360,7 +360,7 @@ export default function GymnasiumAndProgramPicker({
         
         <View style={styles.gradeGrid}>
           {(['1', '2', '3'] as GymnasiumGrade[]).map(grade => (
-            <TouchableOpacity
+            <PressableCard
               key={grade}
               style={[
                 styles.gradeCard,
@@ -380,7 +380,7 @@ export default function GymnasiumAndProgramPicker({
               ]}>
                 Årskurs {grade}
               </Text>
-            </TouchableOpacity>
+            </PressableCard>
           ))}
         </View>
       </ScrollView>
@@ -389,7 +389,7 @@ export default function GymnasiumAndProgramPicker({
 
   return (
     <>
-      <TouchableOpacity
+      <AnimatedPressable
         style={styles.selector}
         onPress={() => setModalVisible(true)}
       >
@@ -406,7 +406,7 @@ export default function GymnasiumAndProgramPicker({
           )}
         </View>
         <ChevronRight size={20} color="#9CA3AF" />
-      </TouchableOpacity>
+      </AnimatedPressable>
 
       <Modal
         visible={modalVisible}
@@ -416,9 +416,9 @@ export default function GymnasiumAndProgramPicker({
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <AnimatedPressable onPress={handleBack} style={styles.backButton}>
               <X size={24} color="#374151" />
-            </TouchableOpacity>
+            </AnimatedPressable>
             <Text style={styles.modalTitle}>
               {step === 'program' ? 'Välj program' : 
                step === 'gymnasium' ? 'Välj gymnasium' : 

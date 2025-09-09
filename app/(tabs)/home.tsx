@@ -1,7 +1,14 @@
-   // In app/(tabs)/home.tsx
-   import EnhancedHomeScreen from '@/components/EnhancedHomeScreen';
-   export default EnhancedHomeScreen;import React from 'react';
-
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  ActivityIndicator,
+  StatusBar
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
 import { useAchievements } from '@/contexts/AchievementContext';

@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { getCoursesForProgramAndYear } from '@/constants/gymnasium-courses';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 import type { Course as ProgramCourse } from '@/constants/gymnasium-courses';
 
@@ -138,6 +139,121 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     }
   }, [user?.id]);
 
+  // Helper function to extract subject from course name
+  const extractSubjectFromName = (name: string): string => {
+    const subjectKeywords: Record<string, string> = {
+      'Engelska': 'Engelska',
+      'Historia': 'Historia',
+      'Idrott': 'Idrott och hälsa',
+      'Matematik': 'Matematik',
+      'Naturkunskap': 'Naturkunskap',
+      'Religionskunskap': 'Religionskunskap',
+      'Samhällskunskap': 'Samhällskunskap',
+      'Svenska': 'Svenska',
+      'Biologi': 'Biologi',
+      'Fysik': 'Fysik',
+      'Kemi': 'Kemi',
+      'Teknik': 'Teknik',
+      'Filosofi': 'Filosofi',
+      'Psykologi': 'Psykologi',
+      'Företagsekonomi': 'Företagsekonomi',
+      'Juridik': 'Juridik',
+      'Programmering': 'Teknik',
+      'Webbutveckling': 'Teknik',
+      'Spanska': 'Moderna språk',
+      'Franska': 'Moderna språk',
+      'Tyska': 'Moderna språk',
+    };
+    
+    for (const [keyword, subject] of Object.entries(subjectKeywords)) {
+      if (name.includes(keyword)) {
+        return subject;
+      }
+    }
+    
+    return 'Övrigt';
+  };
+
+  // Sync courses to Supabase
+  const syncCoursesToSupabase = useCallback(async (coursesToSync: Course[]) => {
+    if (!user?.id) return;
+    
+    try {
+      console.log('Syncing courses to Supabase for user:', user.id);
+      
+      // First, ensure all courses exist in the courses table
+      for (const course of coursesToSync) {
+        if (course.code) {
+          // Check if course exists in database
+          const { data: existingCourse } = await supabase
+            .from('courses')
+            .select('id')
+            .eq('id', course.code)
+            .single();
+          
+          if (!existingCourse) {
+            // Insert course if it doesn't exist
+            const { error: insertError } = await supabase
+              .from('courses')
+              .insert({
+                id: course.code,
+                title: course.name,
+                description: `${course.name} - ${course.points || 0} poäng`,
+                subject: extractSubjectFromName(course.name),
+                level: 'gymnasie',
+                resources: ['Kursmaterial', 'Övningsuppgifter'],
+                tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+                related_courses: [],
+                progress: 0
+              });
+            
+            if (insertError) {
+              console.error('Error inserting course:', insertError);
+            }
+          }
+        }
+      }
+      
+      // Then, create user_courses entries
+      const userCourses = coursesToSync
+        .filter(course => course.code)
+        .map(course => ({
+          user_id: user.id,
+          course_id: course.code!,
+          progress: Math.round((course.studiedHours / course.totalHours) * 100) || 0,
+          is_active: true
+        }));
+      
+      if (userCourses.length > 0) {
+        // First, deactivate all existing courses for this user
+        await supabase
+          .from('user_courses')
+          .update({ is_active: false })
+          .eq('user_id', user.id);
+        
+        // Then insert or update the new courses
+        for (const userCourse of userCourses) {
+          const { error } = await supabase
+            .from('user_courses')
+            .upsert({
+              ...userCourse,
+              id: `${userCourse.user_id}-${userCourse.course_id}`
+            }, {
+              onConflict: 'id'
+            });
+          
+          if (error) {
+            console.error('Error syncing user course:', error);
+          }
+        }
+        
+        console.log('Successfully synced', userCourses.length, 'courses to Supabase');
+      }
+    } catch (error) {
+      console.error('Error syncing courses to Supabase:', error);
+    }
+  }, [user?.id]);
+
   const assignCoursesForYear = useCallback(async (program: string, year: 1 | 2 | 3) => {
     try {
       const programCourses = getCoursesForProgramAndYear(program, year);
@@ -159,12 +275,18 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
       }));
       
       await saveCourses(newCourses);
+      
+      // Sync selected courses with Supabase
+      if (user?.id) {
+        await syncCoursesToSupabase(newCourses);
+      }
+      
       return newCourses;
     } catch (error) {
       console.error('Error assigning courses:', error);
       return [];
     }
-  }, [saveCourses]);
+  }, [saveCourses, user?.id, syncCoursesToSupabase]);
 
   const updateUserProfile = useCallback(async (updates: Partial<UserProfile>) => {
     if (!user?.id) return;

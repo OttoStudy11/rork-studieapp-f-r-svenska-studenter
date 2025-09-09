@@ -1,6 +1,8 @@
 import { GYMNASIUM_PROGRAM_MAPPING, GYMNASIUM_PROGRAMS, type GymnasiumProgram } from './gymnasium-programs';
-import { programCourses, type Course } from '../home/project/constants/program-courses';
+import { programCourses } from '../home/project/constants/program-courses';
 import type { Gymnasium } from './gymnasiums';
+
+export type { Course } from '../home/project/constants/program-courses';
 
 export interface GymnasiumCourse {
   id: string;
@@ -161,6 +163,49 @@ export function getGymnasiumSubjects(gymnasium: Gymnasium, selectedProgram?: Gym
   const courses = getGymnasiumCourses(gymnasium, selectedProgram);
   const subjects = [...new Set(courses.map(course => extractSubjectFromCode(course.code)))];
   return subjects.sort();
+}
+
+// Helper function to get courses for a specific program and year
+export function getCoursesForProgramAndYear(programName: string, year: 1 | 2 | 3) {
+  // Find the program in our course data
+  const programData = programCourses.find(p => 
+    p.program.toLowerCase() === programName.toLowerCase() ||
+    p.program === programName
+  );
+  
+  if (!programData) {
+    console.log('Program not found:', programName);
+    // Return default courses if program not found
+    return [
+      {
+        code: 'SVE01',
+        name: 'Svenska 1',
+        points: 100,
+        year,
+        mandatory: true,
+        category: 'gymnasiegemensam' as const
+      },
+      {
+        code: 'ENG05',
+        name: 'Engelska 5',
+        points: 100,
+        year,
+        mandatory: true,
+        category: 'gymnasiegemensam' as const
+      },
+      {
+        code: 'MAT01a',
+        name: 'Matematik 1a',
+        points: 100,
+        year,
+        mandatory: true,
+        category: 'gymnasiegemensam' as const
+      }
+    ];
+  }
+  
+  // Filter courses by year
+  return programData.courses.filter(course => course.year === year);
 }
 
 // Helper function to get course statistics for a gymnasium

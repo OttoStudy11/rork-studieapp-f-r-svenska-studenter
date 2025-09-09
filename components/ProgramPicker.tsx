@@ -22,9 +22,11 @@ type Program = {
 
 type Course = { 
   id: string; 
+  course_code: string | null;
   title: string; 
   subject: string; 
   level: string;
+  points: number | null;
 };
 
 export default function ProgramPicker() {
@@ -87,9 +89,11 @@ export default function ProgramPicker() {
         .select(`
           courses!inner (
             id,
+            course_code,
             title,
             subject,
-            level
+            level,
+            points
           )
         `)
         .eq('program_id', programId);
@@ -103,9 +107,11 @@ export default function ProgramPicker() {
       const courseList: Course[] = (data ?? [])
         .map((row: any) => ({
           id: row.courses.id,
+          course_code: row.courses.course_code ?? null,
           title: row.courses.title,
           subject: row.courses.subject,
-          level: row.courses.level
+          level: row.courses.level,
+          points: row.courses.points ?? null,
         }));
 
       setCourses(courseList);
@@ -291,7 +297,7 @@ export default function ProgramPicker() {
                 <View style={styles.courseInfo}>
                   <Text style={styles.courseTitle}>{course.title}</Text>
                   <Text style={styles.courseDetails}>
-                    {course.subject} · {course.level}
+                    {(course.course_code ? course.course_code + ' · ' : '')}{course.points ?? '-'}p · {course.subject} · {course.level}
                   </Text>
                 </View>
               </TouchableOpacity>

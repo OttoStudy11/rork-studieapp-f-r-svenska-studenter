@@ -122,10 +122,12 @@ export interface Database {
       courses: {
         Row: {
           id: string
+          course_code: string | null
           title: string
           description: string
           subject: string
           level: string
+          points: number | null
           resources: Json
           tips: Json
           progress: number
@@ -134,10 +136,12 @@ export interface Database {
         }
         Insert: {
           id?: string
+          course_code?: string | null
           title: string
           description: string
           subject: string
           level: string
+          points?: number | null
           resources?: Json
           tips?: Json
           progress?: number
@@ -146,10 +150,12 @@ export interface Database {
         }
         Update: {
           id?: string
+          course_code?: string | null
           title?: string
           description?: string
           subject?: string
           level?: string
+          points?: number | null
           resources?: Json
           tips?: Json
           progress?: number

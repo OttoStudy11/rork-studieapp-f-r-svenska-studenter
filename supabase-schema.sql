@@ -42,10 +42,12 @@ CREATE TABLE profiles (
 -- Courses table
 CREATE TABLE courses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    course_code TEXT UNIQUE,
     title TEXT NOT NULL,
     description TEXT NOT NULL,
     subject TEXT NOT NULL,
     level TEXT NOT NULL CHECK (level IN ('gymnasie', 'högskola')),
+    points INTEGER,
     resources JSONB DEFAULT '[]'::jsonb,
     tips JSONB DEFAULT '[]'::jsonb,
     progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
@@ -262,12 +264,26 @@ INSERT INTO courses (title, description, subject, level, resources, tips, progre
  '["Läs forskningsartiklar kritiskt", "Förstå statistiska metoder", "Koppla teori till praktik", "Reflektera över egna erfarenheter"]'::jsonb,
  0, '[]'::jsonb);
 
--- Seed programs
+-- Seed programs (complete Swedish gymnasium program list)
 INSERT INTO programs (name, level) VALUES
-  ('Teknikprogrammet', 'gymnasie'),
-  ('Industritekniska programmet', 'gymnasie'),
   ('Ekonomiprogrammet', 'gymnasie'),
+  ('Estetiska programmet', 'gymnasie'),
+  ('Humanistiska programmet', 'gymnasie'),
   ('Naturvetenskapsprogrammet', 'gymnasie'),
+  ('Samhällsvetenskapsprogrammet', 'gymnasie'),
+  ('Teknikprogrammet', 'gymnasie'),
+  ('International Baccalaureate', 'gymnasie'),
+  ('Bygg- och anläggningsprogrammet', 'gymnasie'),
+  ('Barn- och fritidsprogrammet', 'gymnasie'),
+  ('El- och energiprogrammet', 'gymnasie'),
+  ('Fordons- och transportprogrammet', 'gymnasie'),
+  ('Handels- och administrationsprogrammet', 'gymnasie'),
+  ('Hantverksprogrammet', 'gymnasie'),
+  ('Hotell- och turismprogrammet', 'gymnasie'),
+  ('Industritekniska programmet', 'gymnasie'),
+  ('Naturbruksprogrammet', 'gymnasie'),
+  ('Restaurang- och livsmedelsprogrammet', 'gymnasie'),
+  ('VVS- och fastighetsprogrammet', 'gymnasie'),
   ('Vård- och omsorgsprogrammet', 'gymnasie')
 ON CONFLICT (name) DO NOTHING;
 

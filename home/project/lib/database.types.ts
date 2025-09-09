@@ -251,6 +251,60 @@ export type Database = {
           },
         ]
       }
+      study_tips: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          id: string
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          title: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      study_techniques: {
+        Row: {
+          created_at: string
+          description: string
+          difficulty_level: string | null
+          duration_minutes: number | null
+          id: string
+          instructions: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          difficulty_level?: string | null
+          duration_minutes?: number | null
+          id?: string
+          instructions?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          difficulty_level?: string | null
+          duration_minutes?: number | null
+          id?: string
+          instructions?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       user_achievements: {
         Row: {
           achievement_id: string

@@ -133,7 +133,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
           }
         }
         
-        // Load courses
+        // Load courses from AsyncStorage first
         const coursesData = await AsyncStorage.getItem(STORAGE_KEYS.COURSES);
         if (coursesData) {
           const savedCourses = JSON.parse(coursesData);
@@ -143,7 +143,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
             createdAt: new Date(c.createdAt),
             updatedAt: new Date(c.updatedAt),
           })));
-          console.log('Loaded', savedCourses.length, 'courses for user:', user.id);
+          console.log('Loaded', savedCourses.length, 'courses from AsyncStorage for user:', user.id);
         }
       })();
       
@@ -179,6 +179,128 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     
     return () => clearTimeout(fallbackTimeout);
   }, [user?.id, loadData]);
+
+  // Generate courses if profile exists but no courses are loaded
+  useEffect(() => {
+    const generateCoursesIfNeeded = async () => {
+      if (
+        !isLoading && 
+        userProfile && 
+        userProfile.program && 
+        userProfile.year && 
+        courses.length === 0 &&
+        user?.id
+      ) {
+        console.log('Profile exists but no courses found, generating courses:', {
+          program: userProfile.program,
+          year: userProfile.year,
+          selectedCourses: userProfile.selectedCourses?.length || 0
+        });
+        
+        try {
+          // Generate courses directly here to avoid circular dependency
+          const programCourses = getCoursesForProgramAndYear(userProfile.program, userProfile.year);
+          
+          // Filter courses based on selection if provided
+          const coursesToAssign = userProfile.selectedCourses 
+            ? programCourses.filter(course => 
+                course.mandatory || userProfile.selectedCourses!.includes(course.code)
+              )
+            : programCourses;
+          
+          const newCourses: Course[] = coursesToAssign.map((course: ProgramCourse, index: number) => ({
+            id: `${course.code}-${Date.now()}-${index}`,
+            name: course.name,
+            code: course.code,
+            color: courseColors[index % courseColors.length],
+            icon: courseIcons[index % courseIcons.length],
+            totalHours: Math.ceil(course.points / 10),
+            studiedHours: 0,
+            year: course.year,
+            points: course.points,
+            mandatory: course.mandatory,
+            category: course.category,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }));
+          
+          // Save courses locally
+          const STORAGE_KEYS = getStorageKeys(user.id);
+          await AsyncStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(newCourses));
+          setCourses(newCourses);
+          console.log('Generated and saved', newCourses.length, 'courses from profile data');
+          
+          // Sync to Supabase in background
+          try {
+            // First, ensure all courses exist in the courses table
+            for (const course of newCourses) {
+              if (course.code) {
+                const { data: existingCourse } = await supabase
+                  .from('courses')
+                  .select('id')
+                  .eq('id', course.code)
+                  .single();
+                
+                if (!existingCourse) {
+                  await supabase
+                    .from('courses')
+                    .insert({
+                      id: course.code,
+                      title: course.name,
+                      description: `${course.name} - ${course.points || 0} poäng`,
+                      subject: extractSubjectFromName(course.name),
+                      level: 'gymnasie',
+                      resources: ['Kursmaterial', 'Övningsuppgifter'],
+                      tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+                      related_courses: [],
+                      progress: 0
+                    });
+                }
+              }
+            }
+            
+            // Create user_courses entries
+            const userCourses = newCourses
+              .filter(course => course.code)
+              .map(course => ({
+                user_id: user.id,
+                course_id: course.code!,
+                progress: 0,
+                is_active: true
+              }));
+            
+            if (userCourses.length > 0) {
+              // Deactivate existing courses
+              await supabase
+                .from('user_courses')
+                .update({ is_active: false })
+                .eq('user_id', user.id);
+              
+              // Insert new courses
+              for (const userCourse of userCourses) {
+                await supabase
+                  .from('user_courses')
+                  .upsert({
+                    ...userCourse,
+                    id: `${userCourse.user_id}-${userCourse.course_id}`
+                  }, {
+                    onConflict: 'id'
+                  });
+              }
+              
+              console.log('Successfully synced', userCourses.length, 'courses to Supabase');
+            }
+          } catch (syncError) {
+            console.error('Error syncing courses to Supabase:', syncError);
+          }
+        } catch (error) {
+          console.error('Error generating courses from profile:', error);
+        }
+      }
+    };
+    
+    generateCoursesIfNeeded();
+  }, [isLoading, userProfile, courses.length, user?.id]);
 
   const saveCourses = useCallback(async (newCourses: Course[]) => {
     if (!user?.id) return;
@@ -364,11 +486,18 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     }
   }, [user?.id]);
 
-  const assignCoursesForYear = useCallback(async (program: string, year: 1 | 2 | 3) => {
+  const assignCoursesForYear = useCallback(async (program: string, year: 1 | 2 | 3, selectedCourseCodes?: string[]) => {
     try {
       const programCourses = getCoursesForProgramAndYear(program, year);
       
-      const newCourses: Course[] = programCourses.map((course: ProgramCourse, index: number) => ({
+      // Filter courses based on selection if provided
+      const coursesToAssign = selectedCourseCodes 
+        ? programCourses.filter(course => 
+            course.mandatory || selectedCourseCodes.includes(course.code)
+          )
+        : programCourses;
+      
+      const newCourses: Course[] = coursesToAssign.map((course: ProgramCourse, index: number) => ({
         id: `${course.code}-${Date.now()}-${index}`,
         name: course.name,
         code: course.code,
@@ -391,6 +520,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
         await syncCoursesToSupabase(newCourses);
       }
       
+      console.log('Assigned', newCourses.length, 'courses for', program, 'year', year);
       return newCourses;
     } catch (error) {
       console.error('Error assigning courses:', error);
@@ -407,9 +537,14 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     
     await saveProfile(updatedProfile);
     
-    // If program or year changed, update courses
-    if ((updates.program || updates.year) && updatedProfile.program && updatedProfile.year) {
-      await assignCoursesForYear(updatedProfile.program, updatedProfile.year);
+    // If program, year, or selectedCourses changed, update courses
+    if ((updates.program || updates.year || updates.selectedCourses) && updatedProfile.program && updatedProfile.year) {
+      console.log('Updating courses based on profile changes:', {
+        program: updatedProfile.program,
+        year: updatedProfile.year,
+        selectedCourses: updatedProfile.selectedCourses?.length || 0
+      });
+      await assignCoursesForYear(updatedProfile.program, updatedProfile.year, updatedProfile.selectedCourses);
     }
   }, [user?.id, userProfile, saveProfile, assignCoursesForYear]);
 

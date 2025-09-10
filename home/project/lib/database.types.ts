@@ -16,14 +16,16 @@ export type Database = {
           icon: string | null
           id: string
           name: string
+          requirement: number
           type: string
         }
         Insert: {
           created_at?: string
           description?: string | null
           icon?: string | null
-          id?: string
+          id: string
           name: string
+          requirement?: number
           type: string
         }
         Update: {
@@ -32,6 +34,7 @@ export type Database = {
           icon?: string | null
           id?: string
           name?: string
+          requirement?: number
           type?: string
         }
         Relationships: []

@@ -1,5 +1,7 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { Users, Trophy, Clock, TrendingUp, UserPlus } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { Users, Trophy, Clock, TrendingUp, UserPlus, Crown, Lock } from 'lucide-react-native';
+import { usePremium } from '@/contexts/PremiumContext';
+import { router } from 'expo-router';
 
 const mockFriends = [
   { id: '1', name: 'Emma Andersson', studyHours: 156, streak: 12, avatar: null, status: 'online' },
@@ -10,13 +12,48 @@ const mockFriends = [
 ];
 
 export default function Friends() {
+  const { isPremium, canAddFriend, limits } = usePremium();
+  const currentFriends = mockFriends.length;
+  const canAddMoreFriends = canAddFriend(currentFriends);
+
+  const handleAddFriend = () => {
+    if (!canAddMoreFriends) {
+      Alert.alert(
+        'Premium krävs',
+        `Du har nått gränsen för vänner (${limits.maxFriends}). Uppgradera till Premium för obegränsade vänner!`,
+        [
+          { text: 'Avbryt', style: 'cancel' },
+          { text: 'Uppgradera', onPress: () => router.push('/premium') }
+        ]
+      );
+      return;
+    }
+    // Handle adding friend logic here
+    console.log('Add friend functionality would go here');
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>Vänner & Topplistor</Text>
-        <TouchableOpacity style={styles.addButton}>
-          <UserPlus size={24} color="#4ECDC4" />
-        </TouchableOpacity>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Vänner & Topplistor</Text>
+          {isPremium && <Crown size={24} color="#FFD700" />}
+        </View>
+        <View style={styles.headerRight}>
+          <Text style={styles.friendsCount}>
+            {currentFriends}/{limits.maxFriends === Infinity ? '∞' : limits.maxFriends}
+          </Text>
+          <TouchableOpacity 
+            style={[styles.addButton, !canAddMoreFriends && styles.addButtonDisabled]}
+            onPress={handleAddFriend}
+          >
+            {canAddMoreFriends ? (
+              <UserPlus size={24} color="#4ECDC4" />
+            ) : (
+              <Lock size={24} color="#95a5a6" />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.leaderboardCard}>
@@ -87,10 +124,33 @@ export default function Friends() {
         ))}
       </View>
 
-      <TouchableOpacity style={styles.inviteButton}>
+      <TouchableOpacity 
+        style={[styles.inviteButton, !canAddMoreFriends && styles.inviteButtonDisabled]}
+        onPress={handleAddFriend}
+      >
         <Users size={20} color="#fff" />
-        <Text style={styles.inviteButtonText}>Bjud in vänner</Text>
+        <Text style={styles.inviteButtonText}>
+          {canAddMoreFriends ? 'Bjud in vänner' : 'Premium krävs för fler vänner'}
+        </Text>
       </TouchableOpacity>
+      
+      {!isPremium && (
+        <View style={styles.premiumPromo}>
+          <View style={styles.premiumPromoContent}>
+            <Crown size={32} color="#FFD700" />
+            <Text style={styles.premiumPromoTitle}>Uppgradera till Premium</Text>
+            <Text style={styles.premiumPromoText}>
+              Få obegränsade vänner, avancerad statistik och mycket mer!
+            </Text>
+            <TouchableOpacity 
+              style={styles.premiumPromoButton}
+              onPress={() => router.push('/premium')}
+            >
+              <Text style={styles.premiumPromoButtonText}>Läs mer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -116,6 +176,21 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 10,
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  friendsCount: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    fontWeight: '500',
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold' as const,
@@ -133,6 +208,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+  addButtonDisabled: {
+    opacity: 0.5,
   },
   leaderboardCard: {
     marginHorizontal: 20,
@@ -302,5 +380,50 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  inviteButtonDisabled: {
+    opacity: 0.7,
+  },
+  premiumPromo: {
+    marginHorizontal: 20,
+    marginBottom: 30,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  premiumPromoContent: {
+    alignItems: 'center',
+  },
+  premiumPromoTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  premiumPromoText: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  premiumPromoButton: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  premiumPromoButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

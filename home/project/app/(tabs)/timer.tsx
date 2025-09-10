@@ -1,23 +1,62 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Vibration, Platform, ScrollView } from 'react-native';
-import { Play, Pause, RotateCcw, Coffee, BookOpen } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Vibration, Platform, ScrollView, Alert } from 'react-native';
+import { Play, Pause, RotateCcw, Coffee, BookOpen, Crown, Lock, Settings } from 'lucide-react-native';
 import { useCourses } from '@/contexts/CourseContext';
+import { usePremium } from '@/contexts/PremiumContext';
 import { Picker } from '@react-native-picker/picker';
+import { router } from 'expo-router';
 
 export default function Timer() {
   const { courses, logStudyTime } = useCourses();
+  const { isPremium, limits } = usePremium();
   const [selectedCourse, setSelectedCourse] = useState(courses[0]?.id || '');
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [timerMode, setTimerMode] = useState<'pomodoro' | 'custom' | 'stopwatch'>('pomodoro');
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
 
   const WORK_TIME = 25;
   const SHORT_BREAK = 5;
   const LONG_BREAK = 15;
+
+  const canUseAdvancedTimers = isPremium; // For now, all advanced features require premium
+  const canCustomizeTimer = isPremium;
+
+  const handleTimerModeChange = (mode: 'pomodoro' | 'custom' | 'stopwatch') => {
+    if (mode !== 'pomodoro' && !canUseAdvancedTimers) {
+      Alert.alert(
+        'Premium krävs',
+        'Avancerade timers är endast tillgängliga för Premium-användare.',
+        [
+          { text: 'Avbryt', style: 'cancel' },
+          { text: 'Uppgradera', onPress: () => router.push('/premium') }
+        ]
+      );
+      return;
+    }
+    setTimerMode(mode);
+    resetTimer();
+  };
+
+  const handleCustomizeTimer = () => {
+    if (!canCustomizeTimer) {
+      Alert.alert(
+        'Premium krävs',
+        'Anpassning av timer-inställningar kräver Premium.',
+        [
+          { text: 'Avbryt', style: 'cancel' },
+          { text: 'Uppgradera', onPress: () => router.push('/premium') }
+        ]
+      );
+      return;
+    }
+    // Handle timer customization
+    console.log('Timer customization would go here');
+  };
 
   useEffect(() => {
     if (isRunning) {
@@ -107,9 +146,43 @@ export default function Timer() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
-        <Text style={styles.title}>
-          {isBreak ? 'Paus' : 'Fokusläge'}
-        </Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>
+            {isBreak ? 'Paus' : 'Fokusläge'}
+          </Text>
+          {isPremium && <Crown size={24} color="#FFD700" />}
+        </View>
+        
+        {/* Timer Mode Selector */}
+        <View style={styles.modeSelector}>
+          <TouchableOpacity 
+            style={[styles.modeButton, timerMode === 'pomodoro' && styles.modeButtonActive]}
+            onPress={() => handleTimerModeChange('pomodoro')}
+          >
+            <Text style={[styles.modeButtonText, timerMode === 'pomodoro' && styles.modeButtonTextActive]}>
+              Pomodoro
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.modeButton, timerMode === 'custom' && styles.modeButtonActive, !canUseAdvancedTimers && styles.modeButtonDisabled]}
+            onPress={() => handleTimerModeChange('custom')}
+          >
+            {!canUseAdvancedTimers && <Lock size={14} color="#95a5a6" />}
+            <Text style={[styles.modeButtonText, timerMode === 'custom' && styles.modeButtonTextActive, !canUseAdvancedTimers && styles.modeButtonTextDisabled]}>
+              Anpassad
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.modeButton, timerMode === 'stopwatch' && styles.modeButtonActive, !canUseAdvancedTimers && styles.modeButtonDisabled]}
+            onPress={() => handleTimerModeChange('stopwatch')}
+          >
+            {!canUseAdvancedTimers && <Lock size={14} color="#95a5a6" />}
+            <Text style={[styles.modeButtonText, timerMode === 'stopwatch' && styles.modeButtonTextActive, !canUseAdvancedTimers && styles.modeButtonTextDisabled]}>
+              Stoppur
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {!isBreak && (
           <View style={styles.courseSelector}>
             <BookOpen size={20} color="#4ECDC4" />
@@ -161,11 +234,17 @@ export default function Timer() {
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.secondaryButton, !isBreak && styles.disabledButton]}
-          onPress={skipBreak}
-          disabled={!isBreak}
+          style={[styles.secondaryButton, (!isBreak || !canCustomizeTimer) && styles.disabledButton]}
+          onPress={isBreak ? skipBreak : handleCustomizeTimer}
+          disabled={!isBreak && !canCustomizeTimer}
         >
-          <Coffee size={24} color={isBreak ? '#7f8c8d' : '#d0d0d0'} />
+          {isBreak ? (
+            <Coffee size={24} color="#7f8c8d" />
+          ) : canCustomizeTimer ? (
+            <Settings size={24} color="#7f8c8d" />
+          ) : (
+            <Lock size={24} color="#d0d0d0" />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -189,10 +268,27 @@ export default function Timer() {
       )}
 
       <View style={styles.techniqueCard}>
-        <Text style={styles.techniqueTitle}>Pomodoro-tekniken</Text>
+        <View style={styles.techniqueHeader}>
+          <Text style={styles.techniqueTitle}>
+            {timerMode === 'pomodoro' ? 'Pomodoro-tekniken' : 
+             timerMode === 'custom' ? 'Anpassad Timer' : 'Stoppur-läge'}
+          </Text>
+          {!isPremium && timerMode !== 'pomodoro' && (
+            <TouchableOpacity 
+              style={styles.upgradeButton}
+              onPress={() => router.push('/premium')}
+            >
+              <Crown size={16} color="#FFFFFF" />
+              <Text style={styles.upgradeButtonText}>Premium</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <Text style={styles.techniqueDescription}>
-          25 minuter fokuserat arbete följt av 5 minuters paus. 
-          Efter 4 sessioner, ta en längre paus på 15 minuter.
+          {timerMode === 'pomodoro' ? 
+            '25 minuter fokuserat arbete följt av 5 minuters paus. Efter 4 sessioner, ta en längre paus på 15 minuter.' :
+           timerMode === 'custom' ? 
+            'Skapa dina egna timer-inställningar och anpassa längden på arbets- och pausperioder.' :
+            'Använd stoppur för flexibel tidstagning av dina studiesessioner.'}
         </Text>
       </View>
     </ScrollView>
@@ -210,6 +306,51 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     alignItems: 'center',
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 15,
+  },
+  modeSelector: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  modeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 4,
+  },
+  modeButtonActive: {
+    backgroundColor: '#4ECDC4',
+  },
+  modeButtonDisabled: {
+    opacity: 0.5,
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#7f8c8d',
+  },
+  modeButtonTextActive: {
+    color: '#fff',
+  },
+  modeButtonTextDisabled: {
+    color: '#95a5a6',
   },
   title: {
     fontSize: 24,
@@ -345,6 +486,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+  techniqueHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  upgradeButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   techniqueTitle: {
     fontSize: 18,

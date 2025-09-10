@@ -1,23 +1,61 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useCourses } from '@/contexts/CourseContext';
-import { BookOpen, Clock, TrendingUp, Plus } from 'lucide-react-native';
+import { usePremium } from '@/contexts/PremiumContext';
+import { BookOpen, Clock, TrendingUp, Plus, Crown, Lock } from 'lucide-react-native';
 import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
 export default function Courses() {
   const { coursesByYear, userProfile } = useCourses();
+  const { isPremium, canAddCourse, limits, showPremiumModal } = usePremium();
   const [selectedYear, setSelectedYear] = useState<1 | 2 | 3>(userProfile?.year || 1);
 
   const yearCourses = coursesByYear[selectedYear] || [];
+  const totalCourses = Object.values(coursesByYear).flat().length;
+  const canAddMoreCourses = canAddCourse(totalCourses);
+
+  const handleAddCourse = () => {
+    if (!canAddMoreCourses) {
+      Alert.alert(
+        'Premium krävs',
+        `Du har nått gränsen för kurser (${limits.maxCourses}). Uppgradera till Premium för obegränsade kurser!`,
+        [
+          { text: 'Avbryt', style: 'cancel' },
+          { text: 'Uppgradera', onPress: () => router.push('/premium') }
+        ]
+      );
+      return;
+    }
+    // Handle adding course logic here
+    console.log('Add course functionality would go here');
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>Mina Kurser</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Mina Kurser</Text>
+          {isPremium && <Crown size={24} color="#FFD700" />}
+        </View>
         <Text style={styles.subtitle}>
           {userProfile?.program} • År {userProfile?.year}
         </Text>
+        <View style={styles.limitsContainer}>
+          <Text style={styles.limitsText}>
+            {totalCourses}/{limits.maxCourses === Infinity ? '∞' : limits.maxCourses} kurser
+          </Text>
+          {!isPremium && (
+            <TouchableOpacity 
+              style={styles.upgradeButton}
+              onPress={() => router.push('/premium')}
+            >
+              <Crown size={16} color="#FFFFFF" />
+              <Text style={styles.upgradeButtonText}>Uppgradera</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <View style={styles.yearTabs}>
@@ -97,9 +135,18 @@ export default function Courses() {
             );
           })}
 
-          <TouchableOpacity style={styles.addButton}>
-            <Plus size={24} color="#4ECDC4" />
-            <Text style={styles.addButtonText} numberOfLines={2}>Lägg till kurs</Text>
+          <TouchableOpacity 
+            style={[styles.addButton, !canAddMoreCourses && styles.addButtonDisabled]}
+            onPress={handleAddCourse}
+          >
+            {canAddMoreCourses ? (
+              <Plus size={24} color="#4ECDC4" />
+            ) : (
+              <Lock size={24} color="#95a5a6" />
+            )}
+            <Text style={[styles.addButtonText, !canAddMoreCourses && styles.addButtonTextDisabled]} numberOfLines={2}>
+              {canAddMoreCourses ? 'Lägg till kurs' : 'Premium krävs'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -141,6 +188,37 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 10,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 5,
+  },
+  limitsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  limitsText: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    fontWeight: '500',
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  upgradeButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   title: {
     fontSize: 28,
@@ -303,6 +381,13 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#4ECDC4',
     textAlign: 'center',
+  },
+  addButtonDisabled: {
+    borderColor: '#95a5a6',
+    opacity: 0.6,
+  },
+  addButtonTextDisabled: {
+    color: '#95a5a6',
   },
   summaryCard: {
     margin: 20,

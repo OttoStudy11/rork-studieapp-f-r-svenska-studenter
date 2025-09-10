@@ -546,9 +546,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
             code: usernameCheckError?.code,
             details: usernameCheckError?.details,
             hint: usernameCheckError?.hint,
-            error: usernameCheckError
+            error: JSON.stringify(usernameCheckError, null, 2)
           });
-          return { error: { message: 'Kunde inte kontrollera användarnamn' } };
+          
+          // Handle specific error cases
+          if (usernameCheckError?.code === 'PGRST116') {
+            // No rows found - username is available
+            console.log('Username is available (no existing user found)');
+          } else if (usernameCheckError?.message) {
+            return { error: { message: `Fel vid kontroll av användarnamn: ${usernameCheckError.message}` } };
+          } else {
+            return { error: { message: 'Kunde inte kontrollera användarnamn' } };
+          }
         }
       }
       

@@ -15,7 +15,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { User, AtSign, Save, RefreshCw } from 'lucide-react-native';
 
 export default function ProfileManagement() {
-  const { user, updateProfile, refreshUser } = useAuth();
+  const auth = useAuth();
+  const { user } = auth;
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +54,7 @@ export default function ProfileManagement() {
 
     setIsLoading(true);
     try {
-      const { error } = await updateProfile({
+      const { error } = await auth.updateProfile({
         displayName: displayName.trim(),
         username: username.trim().toLowerCase(),
         name: displayName.trim()
@@ -74,7 +75,7 @@ export default function ProfileManagement() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refreshUser();
+      await auth.refreshUser();
     } catch (error) {
       console.error('Error refreshing user:', error);
     } finally {

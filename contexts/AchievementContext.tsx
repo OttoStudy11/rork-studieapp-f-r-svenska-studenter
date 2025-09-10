@@ -52,7 +52,7 @@ const dbAchievementToAchievement = (dbUserAchievement: DbUserAchievement): Achie
       badge: dbAch.reward_badge || undefined
     },
     unlockedAt: dbUserAchievement.unlocked_at || undefined,
-    progress: dbUserAchievement.progress
+    progress: dbUserAchievement.progress || 0
   };
 };
 

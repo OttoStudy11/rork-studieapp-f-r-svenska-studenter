@@ -663,6 +663,11 @@ export const getUserAchievements = async (userId: string) => {
         console.warn('User achievements table does not exist. Returning empty array.');
         return [];
       }
+      // If progress column doesn't exist, handle gracefully
+      if (error.message?.includes('column "progress" does not exist')) {
+        console.warn('Progress column does not exist in user_achievements table. Please run the database migration.');
+        return [];
+      }
       throw error;
     }
     return data || [];
@@ -670,6 +675,9 @@ export const getUserAchievements = async (userId: string) => {
     // Handle network errors silently to avoid console spam
     if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
       console.warn('Network connectivity issue - user achievements unavailable');
+    } else if (error?.message?.includes('column "progress" does not exist')) {
+      console.error('Error loading achievements: Database error: Could not find the \'progress\' column of \'user_achievements\' in the schema cache');
+      console.error('Error details:', JSON.stringify(error, null, 2));
     } else {
       console.error('Exception in getUserAchievements:', error instanceof Error ? error.message : String(error));
     }
@@ -724,6 +732,13 @@ export const initializeUserAchievements = async (userId: string) => {
       // If table doesn't exist, return empty array
       if (error.code === '42P01' || error.message?.includes('relation "user_achievements" does not exist')) {
         console.warn('User achievements table does not exist. Skipping initialization.');
+        return [];
+      }
+      
+      // If progress column doesn't exist, handle gracefully
+      if (error.message?.includes('column "progress" does not exist')) {
+        console.error('Error initializing user achievements: Database error: Could not find the \'progress\' column of \'user_achievements\' in the schema cache');
+        console.error('Error details:', JSON.stringify(error, null, 2));
         return [];
       }
       

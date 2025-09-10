@@ -11,30 +11,54 @@ export type Database = {
     Tables: {
       achievements: {
         Row: {
+          achievement_key: string | null
+          category: string | null
           created_at: string
           description: string | null
           icon: string | null
           id: string
           name: string
           requirement: number
+          requirement_target: number | null
+          requirement_timeframe: string | null
+          requirement_type: string | null
+          reward_badge: string | null
+          reward_points: number | null
+          title: string | null
           type: string
         }
         Insert: {
+          achievement_key?: string | null
+          category?: string | null
           created_at?: string
           description?: string | null
           icon?: string | null
           id: string
           name: string
           requirement?: number
+          requirement_target?: number | null
+          requirement_timeframe?: string | null
+          requirement_type?: string | null
+          reward_badge?: string | null
+          reward_points?: number | null
+          title?: string | null
           type: string
         }
         Update: {
+          achievement_key?: string | null
+          category?: string | null
           created_at?: string
           description?: string | null
           icon?: string | null
           id?: string
           name?: string
           requirement?: number
+          requirement_target?: number | null
+          requirement_timeframe?: string | null
+          requirement_type?: string | null
+          reward_badge?: string | null
+          reward_points?: number | null
+          title?: string | null
           type?: string
         }
         Relationships: []
@@ -318,18 +342,27 @@ export type Database = {
           achievement_id: string
           created_at: string
           id: string
+          progress: number | null
+          unlocked_at: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           achievement_id: string
           created_at?: string
           id?: string
+          progress?: number | null
+          unlocked_at?: string | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           achievement_id?: string
           created_at?: string
           id?: string
+          progress?: number | null
+          unlocked_at?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [

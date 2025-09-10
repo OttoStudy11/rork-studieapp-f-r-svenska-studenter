@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CourseProvider } from '@/contexts/CourseContext';
 import { PremiumProvider } from '@/contexts/PremiumContext';
+import { ProgressProvider } from '../contexts/ProgressContext';
 
 const queryClient = new QueryClient();
 
@@ -12,7 +13,9 @@ export default function RootLayout() {
       <AuthProvider>
         <PremiumProvider>
           <CourseProvider>
-            <RootLayoutNav />
+            <ProgressProvider>
+              <RootLayoutNav />
+            </ProgressProvider>
           </CourseProvider>
         </PremiumProvider>
       </AuthProvider>
@@ -30,6 +33,7 @@ function RootLayoutNav() {
       <Stack.Screen name="program-selection" options={{ title: 'Välj Program', presentation: 'modal' }} />
       <Stack.Screen name="settings" options={{ title: 'Inställningar', presentation: 'modal' }} />
       <Stack.Screen name="premium" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="progress" options={{ headerShown: false, presentation: 'modal' }} />
     </Stack>
   );
 }

@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, Vibration, Platform, ScrollVi
 import { Play, Pause, RotateCcw, Coffee, BookOpen, Crown, Lock, Settings } from 'lucide-react-native';
 import { useCourses } from '@/contexts/CourseContext';
 import { usePremium } from '@/contexts/PremiumContext';
+import { useProgress } from '../../contexts/ProgressContext';
 import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
 
 export default function Timer() {
   const { courses, logStudyTime } = useCourses();
   const { isPremium, limits } = usePremium();
+  const { addStudySession, userProgress, todayStats } = useProgress();
   const [selectedCourse, setSelectedCourse] = useState(courses[0]?.id || '');
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
@@ -96,7 +98,22 @@ export default function Timer() {
 
     if (!isBreak && selectedCourse) {
       const elapsedMinutes = (Date.now() - startTimeRef.current) / 60000;
+      
+      // Log to courses context
       await logStudyTime(selectedCourse, elapsedMinutes / 60);
+      
+      // Log to progress context
+      const currentCourse = courses.find(c => c.id === selectedCourse);
+      await addStudySession({
+        courseId: selectedCourse,
+        courseName: currentCourse?.name || 'Okänd kurs',
+        duration: elapsedMinutes,
+        date: new Date(),
+        technique: timerMode,
+        completed: true,
+        notes: `${timerMode} session - ${Math.round(elapsedMinutes)} minuter`
+      });
+      
       setSessionsCompleted((prev) => prev + 1);
     }
 
@@ -252,17 +269,21 @@ export default function Timer() {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Dagens sessioner</Text>
-            <Text style={styles.statValue}>{sessionsCompleted}</Text>
+            <Text style={styles.statValue}>{todayStats.sessionsCompleted}</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Total tid</Text>
+            <Text style={styles.statLabel}>Dagens tid</Text>
             <Text style={styles.statValue}>
-              {Math.round(currentCourse.studiedHours)}h
+              {Math.round(todayStats.totalMinutes)}min
             </Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Framsteg</Text>
-            <Text style={styles.statValue}>{Math.round(progress)}%</Text>
+            <Text style={styles.statLabel}>Streak</Text>
+            <Text style={styles.statValue}>{userProgress.currentStreak} dagar</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Level</Text>
+            <Text style={styles.statValue}>Lvl {userProgress.level}</Text>
           </View>
         </View>
       )}

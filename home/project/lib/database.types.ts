@@ -217,37 +217,36 @@ export type Database = {
       }
       study_sessions: {
         Row: {
+          completed: boolean | null
           course_id: string
           created_at: string
           duration_minutes: number
           id: string
           notes: string | null
+          technique: string | null
           user_id: string
         }
         Insert: {
+          completed?: boolean | null
           course_id: string
           created_at?: string
           duration_minutes: number
-          id?: string
+          id: string
           notes?: string | null
+          technique?: string | null
           user_id: string
         }
         Update: {
+          completed?: boolean | null
           course_id?: string
           created_at?: string
           duration_minutes?: number
           id?: string
           notes?: string | null
+          technique?: string | null
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "study_sessions_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "study_sessions_user_id_fkey"
             columns: ["user_id"]
@@ -387,6 +386,56 @@ export type Database = {
             foreignKeyName: "user_courses_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_progress: {
+        Row: {
+          achievements_unlocked: number | null
+          courses_completed: number | null
+          current_streak: number | null
+          last_study_date: string | null
+          level: number | null
+          longest_streak: number | null
+          total_sessions: number | null
+          total_study_time: number | null
+          updated_at: string | null
+          user_id: string
+          xp: number | null
+        }
+        Insert: {
+          achievements_unlocked?: number | null
+          courses_completed?: number | null
+          current_streak?: number | null
+          last_study_date?: string | null
+          level?: number | null
+          longest_streak?: number | null
+          total_sessions?: number | null
+          total_study_time?: number | null
+          updated_at?: string | null
+          user_id: string
+          xp?: number | null
+        }
+        Update: {
+          achievements_unlocked?: number | null
+          courses_completed?: number | null
+          current_streak?: number | null
+          last_study_date?: string | null
+          level?: number | null
+          longest_streak?: number | null
+          total_sessions?: number | null
+          total_study_time?: number | null
+          updated_at?: string | null
+          user_id?: string
+          xp?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },

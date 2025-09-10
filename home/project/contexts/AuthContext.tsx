@@ -540,7 +540,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
             return { error: { message: 'Användarnamnet är redan taget' } };
           }
         } catch (usernameCheckError: any) {
-          console.error('Error checking username:', usernameCheckError?.message || JSON.stringify(usernameCheckError));
+          console.error('Error checking username:', {
+            message: usernameCheckError?.message,
+            code: usernameCheckError?.code,
+            details: usernameCheckError?.details,
+            hint: usernameCheckError?.hint,
+            error: usernameCheckError
+          });
           return { error: { message: 'Kunde inte kontrollera användarnamn' } };
         }
       }
@@ -581,7 +587,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log('Profile updated successfully:', data);
       return { error: null };
     } catch (error: any) {
-      console.error('Profile update exception:', error?.message || JSON.stringify(error));
+      console.error('Profile update exception:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        error: error
+      });
       return { error: { message: error?.message || 'Ett oväntat fel inträffade' } };
     }
   }, [user]);

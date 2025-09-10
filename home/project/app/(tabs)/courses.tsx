@@ -2,15 +2,17 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useCourses } from '@/contexts/CourseContext';
 import { BookOpen, Clock, TrendingUp, Plus } from 'lucide-react-native';
 import { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Courses() {
-  const { courses, coursesByYear, userProfile } = useCourses();
+  const { coursesByYear, userProfile } = useCourses();
   const [selectedYear, setSelectedYear] = useState<1 | 2 | 3>(userProfile?.year || 1);
 
   const yearCourses = coursesByYear[selectedYear] || [];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Mina Kurser</Text>
         <Text style={styles.subtitle}>
@@ -33,65 +35,73 @@ export default function Courses() {
       </View>
 
       <View style={styles.coursesContainer}>
-        {yearCourses.map((course) => {
-          const progress = (course.studiedHours / course.totalHours) * 100;
-          
-          return (
-            <TouchableOpacity key={course.id} style={styles.courseCard}>
-              <View style={styles.courseHeader}>
-                <View style={[styles.courseIcon, { backgroundColor: course.color }]}>
-                  <BookOpen size={20} color="#fff" />
-                </View>
-                <View style={styles.courseInfo}>
-                  <Text style={styles.courseName}>{course.name}</Text>
-                  {course.code && (
-                    <Text style={styles.courseCode}>{course.code}</Text>
+        <View style={styles.coursesGrid}>
+          {yearCourses.map((course) => {
+            const progress = (course.studiedHours / course.totalHours) * 100;
+            
+            return (
+              <TouchableOpacity key={course.id} style={styles.courseCard}>
+                <View style={styles.courseHeader}>
+                  <View style={[styles.courseIcon, { backgroundColor: course.color }]}>
+                    <BookOpen size={18} color="#fff" />
+                  </View>
+                  {course.mandatory && (
+                    <View style={styles.mandatoryBadge}>
+                      <Text style={styles.mandatoryText}>Obligatorisk</Text>
+                    </View>
                   )}
                 </View>
-                {course.mandatory && (
-                  <View style={styles.mandatoryBadge}>
-                    <Text style={styles.mandatoryText}>Obligatorisk</Text>
-                  </View>
-                )}
-              </View>
 
-              <View style={styles.courseStats}>
-                <View style={styles.stat}>
-                  <Clock size={16} color="#7f8c8d" />
-                  <Text style={styles.statText}>
-                    {Math.round(course.studiedHours)}h / {course.totalHours}h
+                <View style={styles.courseInfo}>
+                  <Text style={styles.courseName} numberOfLines={2} ellipsizeMode="tail">
+                    {course.name}
                   </Text>
+                  {course.code && (
+                    <Text style={styles.courseCode} numberOfLines={1}>
+                      {course.code}
+                    </Text>
+                  )}
                 </View>
-                <View style={styles.stat}>
-                  <TrendingUp size={16} color="#7f8c8d" />
-                  <Text style={styles.statText}>{Math.round(progress)}%</Text>
-                </View>
-                {course.points && (
+
+                <View style={styles.courseStats}>
                   <View style={styles.stat}>
-                    <Text style={styles.statText}>{course.points}p</Text>
+                    <Clock size={14} color="#7f8c8d" />
+                    <Text style={styles.statText} numberOfLines={1}>
+                      {Math.round(course.studiedHours)}h/{course.totalHours}h
+                    </Text>
+                  </View>
+                  <View style={styles.stat}>
+                    <TrendingUp size={14} color="#7f8c8d" />
+                    <Text style={styles.statText}>{Math.round(progress)}%</Text>
+                  </View>
+                </View>
+
+                {course.points && (
+                  <View style={styles.pointsBadge}>
+                    <Text style={styles.pointsText}>{course.points}p</Text>
                   </View>
                 )}
-              </View>
 
-              <View style={styles.progressBar}>
-                <View 
-                  style={[
-                    styles.progressFill, 
-                    { 
-                      width: `${progress}%`,
-                      backgroundColor: course.color 
-                    }
-                  ]} 
-                />
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { 
+                        width: `${progress}%`,
+                        backgroundColor: course.color 
+                      }
+                    ]} 
+                  />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
 
-        <TouchableOpacity style={styles.addButton}>
-          <Plus size={24} color="#4ECDC4" />
-          <Text style={styles.addButtonText}>Lägg till kurs</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.addButton}>
+            <Plus size={24} color="#4ECDC4" />
+            <Text style={styles.addButtonText} numberOfLines={2}>Lägg till kurs</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.summaryCard}>
@@ -103,7 +113,7 @@ export default function Courses() {
           </View>
           <View style={styles.summaryStat}>
             <Text style={styles.summaryValue}>
-              {yearCourses.reduce((sum, c) => sum + c.points, 0)}p
+              {yearCourses.reduce((sum, c) => sum + (c.points || 0), 0)}p
             </Text>
             <Text style={styles.summaryLabel}>Poäng</Text>
           </View>
@@ -115,7 +125,8 @@ export default function Courses() {
           </View>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -123,6 +134,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     padding: 20,
@@ -168,95 +182,127 @@ const styles = StyleSheet.create({
   coursesContainer: {
     paddingHorizontal: 20,
   },
+  coursesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   courseCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 18,
-    marginBottom: 12,
+    padding: 16,
+    width: '48%',
+    minWidth: 160,
+    height: 200,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    justifyContent: 'space-between',
   },
   courseHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   courseIcon: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   courseInfo: {
     flex: 1,
+    marginBottom: 8,
   },
   courseName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600' as const,
     color: '#2c3e50',
+    lineHeight: 20,
+    marginBottom: 4,
   },
   courseCode: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#95a5a6',
-    marginTop: 2,
+    fontWeight: '500' as const,
   },
   mandatoryBadge: {
     backgroundColor: '#FFE5B4',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     borderRadius: 6,
+    alignSelf: 'flex-start',
   },
   mandatoryText: {
-    fontSize: 11,
+    fontSize: 9,
     color: '#FF8C00',
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
   },
   courseStats: {
-    flexDirection: 'row',
-    gap: 15,
-    marginBottom: 12,
+    flexDirection: 'column',
+    gap: 6,
+    marginBottom: 8,
   },
   stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   statText: {
-    fontSize: 13,
+    fontSize: 11,
     color: '#7f8c8d',
+    fontWeight: '500' as const,
+  },
+  pointsBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  pointsText: {
+    fontSize: 10,
+    color: '#2c3e50',
+    fontWeight: '600' as const,
   },
   progressBar: {
-    height: 6,
+    height: 4,
     backgroundColor: '#ecf0f1',
-    borderRadius: 3,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 2,
   },
   addButton: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 18,
-    marginBottom: 20,
+    width: '48%',
+    minWidth: 160,
+    height: 200,
     borderWidth: 2,
     borderColor: '#4ECDC4',
     borderStyle: 'dashed',
     gap: 8,
   },
   addButtonText: {
-    fontSize: 16,
-    fontWeight: '500' as const,
+    fontSize: 14,
+    fontWeight: '600' as const,
     color: '#4ECDC4',
+    textAlign: 'center',
   },
   summaryCard: {
     margin: 20,

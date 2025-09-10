@@ -46,6 +46,7 @@ export default function TabLayout() {
         name="courses"
         options={{
           title: 'Kurser',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <BookOpen size={size} color={color} />,
         }}
       />

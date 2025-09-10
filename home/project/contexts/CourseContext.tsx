@@ -32,6 +32,7 @@ export interface UserProfile {
   email?: string;
   name?: string;
   onboardingCompleted?: boolean;
+  selectedCourses?: string[];
 }
 
 const getStorageKeys = (userId: string) => ({

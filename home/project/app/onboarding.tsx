@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useCourses } from '@/contexts/CourseContext';
-import { ChevronRight, School, BookOpen, User } from 'lucide-react-native';
+import { ChevronRight, School, BookOpen, User, GraduationCap } from 'lucide-react-native';
 import { SWEDISH_GYMNASIUMS, searchGymnasiums } from '@/constants/gymnasiums';
 import { GYMNASIUM_PROGRAMS, GYMNASIUM_PROGRAM_MAPPING } from '@/constants/gymnasium-programs';
+import { getCoursesForProgramAndYear } from '@/constants/gymnasium-courses';
 
 export default function Onboarding() {
   const router = useRouter();
@@ -15,17 +16,22 @@ export default function Onboarding() {
   const [gymnasium, setGymnasium] = useState('');
   const [program, setProgram] = useState('');
   const [year, setYear] = useState<1 | 2 | 3>(1);
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredGymnasiums = searchQuery 
     ? searchGymnasiums(searchQuery)
     : SWEDISH_GYMNASIUMS;
 
-  const selectedGym = SWEDISH_GYMNASIUMS.find(g => g.id === gymnasium);
+
   const programIds = gymnasium ? GYMNASIUM_PROGRAM_MAPPING[gymnasium] || [] : [];
   const availablePrograms = programIds.length > 0 
     ? GYMNASIUM_PROGRAMS.filter(p => programIds.includes(p.id))
     : GYMNASIUM_PROGRAMS;
+  
+  const availableCourses = program ? getCoursesForProgramAndYear(program, year) : [];
+  const mandatoryCourses = availableCourses.filter(course => course.mandatory);
+  const electiveCourses = availableCourses.filter(course => !course.mandatory);
 
   const handleComplete = async () => {
     await updateUserProfile({
@@ -34,9 +40,18 @@ export default function Onboarding() {
       gymnasium,
       program,
       year,
-    });
+      selectedCourses,
+    } as any);
     await completeOnboarding();
     router.replace('/(tabs)/home');
+  };
+
+  const toggleCourse = (courseCode: string) => {
+    setSelectedCourses(prev => 
+      prev.includes(courseCode) 
+        ? prev.filter(code => code !== courseCode)
+        : [...prev, courseCode]
+    );
   };
 
   const renderStep = () => {
@@ -146,8 +161,83 @@ export default function Onboarding() {
             
             <TouchableOpacity
               style={[styles.button, (!program || !year) && styles.buttonDisabled]}
-              onPress={handleComplete}
+              onPress={() => program && year && setStep(4)}
               disabled={!program || !year}
+            >
+              <Text style={styles.buttonText}>Välj kurser</Text>
+              <ChevronRight size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        );
+
+      case 4:
+        return (
+          <View style={styles.stepContainer}>
+            <GraduationCap size={48} color="#4ECDC4" style={styles.icon} />
+            <Text style={styles.title}>Välj dina kurser</Text>
+            <Text style={styles.subtitle}>År {year} - {program}</Text>
+            
+            <ScrollView style={styles.coursesList} showsVerticalScrollIndicator={false}>
+              {mandatoryCourses.length > 0 && (
+                <>
+                  <Text style={styles.courseCategoryTitle}>Obligatoriska kurser</Text>
+                  {mandatoryCourses.map((course) => (
+                    <View key={course.code} style={styles.courseItem}>
+                      <View style={styles.courseInfo}>
+                        <Text style={styles.courseName}>{course.name}</Text>
+                        <Text style={styles.courseDetails}>
+                          {course.code} • {course.points}p • {course.category}
+                        </Text>
+                      </View>
+                      <View style={styles.mandatoryBadge}>
+                        <Text style={styles.mandatoryText}>Obligatorisk</Text>
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+              
+              {electiveCourses.length > 0 && (
+                <>
+                  <Text style={[styles.courseCategoryTitle, { marginTop: 30 }]}>Valbara kurser</Text>
+                  <Text style={styles.electiveSubtitle}>Välj de kurser du är intresserad av</Text>
+                  {electiveCourses.map((course) => (
+                    <TouchableOpacity
+                      key={course.code}
+                      style={[
+                        styles.courseItem,
+                        styles.electiveCourse,
+                        selectedCourses.includes(course.code) && styles.selectedCourse
+                      ]}
+                      onPress={() => toggleCourse(course.code)}
+                    >
+                      <View style={styles.courseInfo}>
+                        <Text style={[
+                          styles.courseName,
+                          selectedCourses.includes(course.code) && styles.selectedCourseName
+                        ]}>
+                          {course.name}
+                        </Text>
+                        <Text style={[
+                          styles.courseDetails,
+                          selectedCourses.includes(course.code) && styles.selectedCourseDetails
+                        ]}>
+                          {course.code} • {course.points}p • {course.category}
+                        </Text>
+                      </View>
+                      <View style={[
+                        styles.selectionIndicator,
+                        selectedCourses.includes(course.code) && styles.selectedIndicator
+                      ]} />
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
+            </ScrollView>
+            
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleComplete}
             >
               <Text style={styles.buttonText}>Kom igång!</Text>
               <ChevronRight size={20} color="#fff" />
@@ -160,7 +250,7 @@ export default function Onboarding() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.progressContainer}>
-        {[1, 2, 3].map((s) => (
+        {[1, 2, 3, 4].map((s) => (
           <View
             key={s}
             style={[styles.progressDot, s <= step && styles.progressDotActive]}
@@ -243,9 +333,9 @@ const styles = StyleSheet.create({
   },
   listItem: {
     backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 18,
-    marginBottom: 10,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
@@ -254,7 +344,8 @@ const styles = StyleSheet.create({
     borderColor: '#4ECDC4',
   },
   listItemText: {
-    fontSize: 17,
+    fontSize: 18,
+    fontWeight: '600' as const,
     color: '#333',
   },
   listItemTextSelected: {
@@ -262,9 +353,9 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   listItemSubtext: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 2,
+    fontSize: 15,
+    color: '#666',
+    marginTop: 4,
   },
   yearContainer: {
     flexDirection: 'row',
@@ -312,5 +403,87 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600' as const,
     marginRight: 5,
+  },
+  coursesList: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  courseCategoryTitle: {
+    fontSize: 22,
+    fontWeight: 'bold' as const,
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  electiveSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 20,
+  },
+  courseItem: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#f0f0f0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  electiveCourse: {
+    borderColor: '#e0e0e0',
+  },
+  selectedCourse: {
+    backgroundColor: '#f0fffe',
+    borderColor: '#4ECDC4',
+  },
+  courseInfo: {
+    flex: 1,
+  },
+  courseName: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  selectedCourseName: {
+    color: '#2d7a73',
+  },
+  courseDetails: {
+    fontSize: 14,
+    color: '#666',
+  },
+  selectedCourseDetails: {
+    color: '#4ECDC4',
+  },
+  mandatoryBadge: {
+    backgroundColor: '#e8f4f8',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  mandatoryText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#2d7a73',
+  },
+  selectionIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+  },
+  selectedIndicator: {
+    backgroundColor: '#4ECDC4',
+    borderColor: '#4ECDC4',
   },
 });

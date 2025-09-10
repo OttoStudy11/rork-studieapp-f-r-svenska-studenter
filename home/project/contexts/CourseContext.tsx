@@ -93,25 +93,30 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
               gymnasium: (dbProfile as any).gymnasium || undefined,
               program: (dbProfile as any).program || undefined,
               year: (dbProfile as any).year as (1 | 2 | 3) || undefined,
-              onboardingCompleted: (dbProfile as any).onboarding_completed || false
+              selectedCourses: (dbProfile as any).selected_courses ? JSON.parse((dbProfile as any).selected_courses as string) : undefined
             };
-            console.log('Loaded profile from database for user:', user.id);
+            console.log('Loaded profile from database for user:', user.id, profileFromDb);
           }
         } catch (dbError) {
           console.log('Could not load profile from database:', dbError);
         }
         
-        // Load onboarding status - prioritize database, fallback to AsyncStorage
-        let onboardingStatus = false;
-        if (profileFromDb && profileFromDb.onboardingCompleted !== undefined) {
-          onboardingStatus = profileFromDb.onboardingCompleted;
-          console.log('Loading onboarding status from database:', onboardingStatus);
-        } else {
-          const localOnboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
-          onboardingStatus = localOnboardingStatus === 'true';
-          console.log('Loading onboarding status from AsyncStorage:', onboardingStatus);
+        // Load onboarding status from AsyncStorage (since it's not in database)
+        const localOnboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+        const onboardingStatus = localOnboardingStatus === 'true';
+        console.log('Loading onboarding status from AsyncStorage:', onboardingStatus);
+        
+        // If we have a complete profile from database, consider onboarding completed
+        const hasCompleteProfile = profileFromDb && profileFromDb.name && profileFromDb.gymnasium && profileFromDb.program && profileFromDb.year;
+        const finalOnboardingStatus = onboardingStatus || hasCompleteProfile;
+        
+        setOnboardingCompleted(finalOnboardingStatus);
+        
+        // Update AsyncStorage if database profile indicates completion but local storage doesn't
+        if (hasCompleteProfile && !onboardingStatus) {
+          await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
+          console.log('Updated onboarding status to completed based on complete database profile');
         }
-        setOnboardingCompleted(onboardingStatus);
         
         // Use database profile if available, otherwise load from AsyncStorage
         if (profileFromDb) {
@@ -221,8 +226,8 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
         if (profileWithUserId.year !== undefined) {
           updateData.year = profileWithUserId.year;
         }
-        if (profileWithUserId.onboardingCompleted !== undefined) {
-          updateData.onboarding_completed = profileWithUserId.onboardingCompleted;
+        if (profileWithUserId.selectedCourses !== undefined) {
+          updateData.selected_courses = JSON.stringify(profileWithUserId.selectedCourses);
         }
         
         const { error: dbError } = await supabase
@@ -414,22 +419,20 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     try {
       const STORAGE_KEYS = getStorageKeys(user.id);
       
-      // Save to AsyncStorage first for immediate UI update
+      // Save to AsyncStorage for onboarding completion
       await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
       setOnboardingCompleted(true);
-      console.log('Onboarding completed locally for user:', user.id);
+      console.log('Onboarding completed for user:', user.id);
       
-      // Update profile in database to mark onboarding as completed
-      const updatedProfile = userProfile 
-        ? { ...userProfile, onboardingCompleted: true }
-        : { id: user.id, onboardingCompleted: true } as UserProfile;
-      
-      await saveProfile(updatedProfile);
-      console.log('Onboarding completion synced to database for user:', user.id);
+      // The profile data is already saved through updateUserProfile during onboarding
+      // No need to save again here, just ensure the profile is complete
+      if (userProfile) {
+        console.log('Profile already exists and will be synced to database:', userProfile);
+      }
     } catch (error) {
       console.error('Error completing onboarding:', error);
     }
-  }, [user?.id, userProfile, saveProfile]);
+  }, [user?.id, userProfile]);
 
   const resetOnboarding = useCallback(async () => {
     if (!user?.id) return;

@@ -52,6 +52,31 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         return;
       }
       
+      // Check if user has a complete profile in database
+      try {
+        const { data: dbProfile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        
+        if (!error && dbProfile) {
+          const hasCompleteProfile = dbProfile.name && 
+            (dbProfile as any).gymnasium && 
+            (dbProfile as any).program && 
+            (dbProfile as any).year;
+          
+          if (hasCompleteProfile) {
+            console.log('Complete profile found in database, marking onboarding as completed');
+            await AsyncStorage.setItem(`@onboarding_completed_${userId}`, 'true');
+            setHasCompletedOnboarding(true);
+            return;
+          }
+        }
+      } catch (dbError) {
+        console.log('Could not check profile in database:', dbError);
+      }
+      
       // If no onboarding status found, it's not completed
       console.log('No onboarding status found, onboarding not completed');
       setHasCompletedOnboarding(false);

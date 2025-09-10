@@ -34,14 +34,22 @@ export default function Onboarding() {
   const electiveCourses = availableCourses.filter(course => !course.mandatory);
 
   const handleComplete = async () => {
+    console.log('Completing onboarding with data:', {
+      name,
+      gymnasium,
+      program,
+      year,
+      selectedCourses: selectedCourses.length
+    });
+    
     await updateUserProfile({
-      id: `user-${Date.now()}`,
       name,
       gymnasium,
       program,
       year,
       selectedCourses,
     } as any);
+    
     await completeOnboarding();
     router.replace('/(tabs)/home');
   };

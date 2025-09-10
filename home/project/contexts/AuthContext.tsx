@@ -521,6 +521,30 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       console.log('Updating profile for user:', user.id, updates);
       
+      // Check if username is already taken before updating
+      if (updates.username && updates.username !== user.username) {
+        try {
+          const { data: existingUser, error: checkError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('username', updates.username)
+            .neq('id', user.id)
+            .single();
+          
+          if (checkError && checkError.code !== 'PGRST116') {
+            console.error('Error checking username availability:', checkError);
+            return { error: { message: 'Kunde inte kontrollera användarnamn' } };
+          }
+          
+          if (existingUser) {
+            return { error: { message: 'Användarnamnet är redan taget' } };
+          }
+        } catch (usernameCheckError: any) {
+          console.error('Error checking username:', usernameCheckError?.message || JSON.stringify(usernameCheckError));
+          return { error: { message: 'Kunde inte kontrollera användarnamn' } };
+        }
+      }
+      
       const { data, error } = await supabase
         .from('profiles')
         .update({
@@ -557,7 +581,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log('Profile updated successfully:', data);
       return { error: null };
     } catch (error: any) {
-      console.error('Profile update exception:', error);
+      console.error('Profile update exception:', error?.message || JSON.stringify(error));
       return { error: { message: error?.message || 'Ett oväntat fel inträffade' } };
     }
   }, [user]);

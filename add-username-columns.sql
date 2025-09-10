@@ -11,7 +11,7 @@ UPDATE public.profiles
 SET 
   username = CASE 
     WHEN username IS NULL THEN 
-      LOWER(REPLACE(REPLACE(name, ' ', ''), 'å', 'a')) || '_' || SUBSTRING(id, 1, 6)
+      LOWER(REPLACE(REPLACE(name, ' ', ''), 'å', 'a')) || '_' || SUBSTRING(id::text, 1, 6)
     ELSE username 
   END,
   display_name = CASE 

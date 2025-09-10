@@ -122,6 +122,7 @@ export type Database = {
           achievements: Json | null
           avatar_url: string | null
           created_at: string
+          display_name: string | null
           email: string | null
           friends: Json | null
           gymnasium: string | null
@@ -132,12 +133,14 @@ export type Database = {
           program: string | null
           selected_courses: Json | null
           updated_at: string
+          username: string | null
           year: number | null
         }
         Insert: {
           achievements?: Json | null
           avatar_url?: string | null
           created_at?: string
+          display_name?: string | null
           email?: string | null
           friends?: Json | null
           gymnasium?: string | null
@@ -148,12 +151,14 @@ export type Database = {
           program?: string | null
           selected_courses?: Json | null
           updated_at?: string
+          username?: string | null
           year?: number | null
         }
         Update: {
           achievements?: Json | null
           avatar_url?: string | null
           created_at?: string
+          display_name?: string | null
           email?: string | null
           friends?: Json | null
           gymnasium?: string | null
@@ -164,6 +169,7 @@ export type Database = {
           program?: string | null
           selected_courses?: Json | null
           updated_at?: string
+          username?: string | null
           year?: number | null
         }
         Relationships: []

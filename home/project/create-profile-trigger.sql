@@ -76,21 +76,24 @@ CREATE POLICY "Users can update their own profile" ON public.profiles
 CREATE POLICY "Users can insert their own profile" ON public.profiles
     FOR INSERT WITH CHECK (id = (SELECT auth.uid()));
 
--- Create function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
+-- Create specific function for profiles updated_at timestamp
+CREATE OR REPLACE FUNCTION public.update_profiles_updated_at()
+RETURNS TRIGGER AS $
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$ LANGUAGE plpgsql;
 
--- Create trigger to automatically update updated_at
+-- Create trigger to automatically update updated_at for profiles
 DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
 CREATE TRIGGER update_profiles_updated_at
     BEFORE UPDATE ON public.profiles
     FOR EACH ROW
-    EXECUTE FUNCTION public.update_updated_at_column();
+    EXECUTE FUNCTION public.update_profiles_updated_at();
+
+-- Grant necessary permissions
+GRANT EXECUTE ON FUNCTION public.update_profiles_updated_at() TO anon, authenticated;
 
 -- Create index for better performance
 CREATE INDEX IF NOT EXISTS profiles_id_idx ON public.profiles(id);

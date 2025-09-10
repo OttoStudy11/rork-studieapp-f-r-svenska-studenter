@@ -16,26 +16,6 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {
       'X-Client-Info': 'studiestugan-app'
-    },
-    fetch: (url, options = {}) => {
-      // Create a timeout controller
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // Reduced timeout
-      
-      return fetch(url, {
-        ...options,
-        signal: controller.signal
-      }).catch(error => {
-        clearTimeout(timeoutId);
-        // Only log network errors once to avoid spam
-        if (!error.logged) {
-          console.warn('Network request failed:', error.name || 'NetworkError');
-          error.logged = true;
-        }
-        throw new Error('Network connection failed. Please check your internet connection.');
-      }).finally(() => {
-        clearTimeout(timeoutId);
-      });
     }
   }
 });
@@ -47,7 +27,7 @@ export const testDatabaseConnection = async () => {
     
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Database connection timeout')), 10000);
+      setTimeout(() => reject(new Error('Database connection timeout')), 15000); // Increased timeout
     });
     
     const queryPromise = supabase
@@ -58,26 +38,26 @@ export const testDatabaseConnection = async () => {
     const { error } = await Promise.race([queryPromise, timeoutPromise]);
     
     if (error) {
-      console.error('Database connection test failed:', error.message);
-      console.error('Error details:', {
-        message: error.message,
+      console.error('Database connection test failed:', error.message || 'Unknown error');
+      console.error('Error details:', JSON.stringify({
+        message: error.message || 'Unknown error',
         details: error.details || 'No additional details',
-        hint: error.hint || '',
-        code: error.code || ''
-      });
+        hint: error.hint || 'No hint',
+        code: error.code || 'No code'
+      }, null, 2));
       return false;
     }
     
     console.log('Database connection test successful');
     return true;
   } catch (error: any) {
-    console.error('Database connection test failed:', error?.name || 'TypeError');
-    console.error('Error details:', {
-      message: error?.message || 'Failed to fetch',
-      details: error?.stack || 'TypeError: Failed to fetch\\n at https://po0ae94-anonymous-8081.exp.direct/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:182155:25\\n at https://po0ae94-anonymous-8081.exp.direct/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:182178:14\\n at Generator.next (<anonymous>)\\n at fulfilled (https://po0ae94-anonymous-8081.exp.direct/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:182126:26)',
-      hint: '',
-      code: ''
-    });
+    const errorMessage = error?.message || error?.toString() || 'Unknown error';
+    console.error('Database connection test failed:', errorMessage);
+    console.error('Error details:', JSON.stringify({
+      message: errorMessage,
+      name: error?.name || 'Unknown',
+      stack: error?.stack ? error.stack.substring(0, 200) + '...' : 'No stack trace'
+    }, null, 2));
     return false;
   }
 };
@@ -97,7 +77,7 @@ export const getCurrentUser = async () => {
     
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('getCurrentUser timeout')), 5000);
+      setTimeout(() => reject(new Error('getCurrentUser timeout')), 10000); // Increased timeout
     });
     
     const userPromise = supabase.auth.getUser();
@@ -249,7 +229,7 @@ export const createRememberMeSession = async (userId: string): Promise<{ token?:
     
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Remember me session creation timeout')), 10000);
+      setTimeout(() => reject(new Error('Remember me session creation timeout')), 15000); // Increased timeout
     });
     
     const insertPromise = supabase
@@ -329,7 +309,7 @@ export const validateRememberMeSession = async (): Promise<{ userId?: string; er
     
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Remember me validation timeout')), 10000);
+      setTimeout(() => reject(new Error('Remember me validation timeout')), 15000); // Increased timeout
     });
     
     const queryPromise = supabase

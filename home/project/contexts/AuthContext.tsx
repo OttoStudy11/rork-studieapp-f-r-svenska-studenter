@@ -138,7 +138,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       // Test database connection first
       const dbConnected = await testDatabaseConnection();
       if (!dbConnected) {
-        console.warn('Database connection failed, but continuing with auth initialization');
+        console.warn('Database connection failed, continuing with limited functionality');
+        // Still try to get session from local storage
       }
       
       // First check if we have a session
@@ -243,10 +244,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (mounted) {
         console.log('Auth initialization timeout - forcing loading to false');
         setIsLoading(false);
-        setUser(null);
-        setHasCompletedOnboarding(false);
+        // Don't clear user state on timeout, might have valid remember me session
       }
-    }, 8000); // 8 second timeout
+    }, 12000); // Increased timeout to 12 seconds
 
     return () => {
       mounted = false;

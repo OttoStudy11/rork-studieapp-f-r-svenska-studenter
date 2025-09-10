@@ -7,6 +7,8 @@ export interface AuthUser {
   id: string;
   email: string;
   createdAt: string;
+  username?: string;
+  displayName?: string;
 }
 
 export interface AuthContextType {
@@ -14,12 +16,14 @@ export interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   hasCompletedOnboarding: boolean;
-  signUp: (email: string, password: string) => Promise<{ error?: any }>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ error?: any }>;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
   setOnboardingCompleted: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: any }>;
   resendConfirmation: (email: string) => Promise<{ error?: any }>;
+  updateProfile: (updates: { displayName?: string; username?: string; name?: string }) => Promise<{ error?: any }>;
+  refreshUser: () => Promise<void>;
 }
 
 const ONBOARDING_KEY = 'hasCompletedOnboarding';
@@ -116,8 +120,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       // Create a mock auth user from profile data
       const authUser: AuthUser = {
         id: profile.id,
-        email: `${profile.name}@studiestugan.app`, // Temporary email format
-        createdAt: profile.created_at
+        email: profile.email || `${profile.name}@studiestugan.app`, // Use actual email or fallback
+        createdAt: profile.created_at,
+        username: profile.username,
+        displayName: profile.display_name || profile.name
       };
       
       console.log('Remember me login successful for user:', authUser.id);
@@ -175,10 +181,19 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       if (supabaseUser) {
         console.log('Found authenticated user:', supabaseUser.email);
+        // Get profile data to include username and display name
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, display_name, name')
+          .eq('id', supabaseUser.id)
+          .single();
+        
         const authUser: AuthUser = {
           id: supabaseUser.id,
           email: supabaseUser.email!,
-          createdAt: supabaseUser.created_at
+          createdAt: supabaseUser.created_at,
+          username: profile?.username,
+          displayName: profile?.display_name || profile?.name
         };
         setUser(authUser);
         await checkOnboardingStatus(supabaseUser.id);
@@ -223,10 +238,19 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (!mounted) return;
         
         if (event === 'SIGNED_IN' && session?.user) {
+          // Get profile data to include username and display name
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username, display_name, name')
+            .eq('id', session.user.id)
+            .single();
+          
           const authUser: AuthUser = {
             id: session.user.id,
             email: session.user.email!,
-            createdAt: session.user.created_at
+            createdAt: session.user.created_at,
+            username: profile?.username,
+            displayName: profile?.display_name || profile?.name
           };
           setUser(authUser);
           await checkOnboardingStatus(session.user.id);
@@ -257,7 +281,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const RATE_LIMIT_DELAY = 60000; // 60 seconds
 
-  const handleSignUp = useCallback(async (email: string, password: string) => {
+  const handleSignUp = useCallback(async (email: string, password: string, displayName?: string) => {
     try {
       // Check rate limiting
       const now = Date.now();
@@ -273,7 +297,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
-        password
+        password,
+        options: {
+          data: {
+            display_name: displayName
+          }
+        }
       });
       
       if (error) {
@@ -355,10 +384,19 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       // Immediately update the user state to ensure UI updates
       if (data.user) {
+        // Get profile data after sign in
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, display_name, name')
+          .eq('id', data.user.id)
+          .single();
+        
         const authUser: AuthUser = {
           id: data.user.id,
           email: data.user.email!,
-          createdAt: data.user.created_at
+          createdAt: data.user.created_at,
+          username: profile?.username,
+          displayName: profile?.display_name || profile?.name
         };
         console.log('Setting user state after successful login:', authUser.email);
         setUser(authUser);
@@ -475,6 +513,74 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   }, []);
 
+  const updateProfile = useCallback(async (updates: { displayName?: string; username?: string; name?: string }) => {
+    try {
+      if (!user) {
+        return { error: { message: 'Ingen användare inloggad' } };
+      }
+
+      console.log('Updating profile for user:', user.id, updates);
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: updates.displayName,
+          username: updates.username,
+          name: updates.name,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Profile update error:', error);
+        
+        if (error.message.includes('duplicate key')) {
+          return { error: { message: 'Användarnamnet är redan taget' } };
+        }
+        
+        return { error };
+      }
+      
+      // Update local user state
+      setUser(prev => prev ? {
+        ...prev,
+        username: data.username,
+        displayName: data.display_name || data.name
+      } : null);
+      
+      console.log('Profile updated successfully:', data);
+      return { error: null };
+    } catch (error) {
+      console.error('Profile update exception:', error);
+      return { error };
+    }
+  }, [user]);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, display_name, name, email')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile) {
+        setUser(prev => prev ? {
+          ...prev,
+          username: profile.username,
+          displayName: profile.display_name || profile.name,
+          email: profile.email || prev.email
+        } : null);
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  }, [user]);
+
   const setOnboardingCompleted = useCallback(async () => {
     if (user) {
       try {
@@ -498,7 +604,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     signOut: handleSignOut,
     setOnboardingCompleted,
     resetPassword: handleResetPassword,
-    resendConfirmation: handleResendConfirmation
+    resendConfirmation: handleResendConfirmation,
+    updateProfile,
+    refreshUser
   }), [
     user,
     isLoading,
@@ -508,7 +616,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     handleSignOut,
     setOnboardingCompleted,
     handleResetPassword,
-    handleResendConfirmation
+    handleResendConfirmation,
+    updateProfile,
+    refreshUser
   ]);
 
   return contextValue;

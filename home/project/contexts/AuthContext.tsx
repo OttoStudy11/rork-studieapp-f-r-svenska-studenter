@@ -536,11 +536,15 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (error) {
         console.error('Profile update error:', error);
         
-        if (error.message.includes('duplicate key')) {
+        if (error.message && error.message.includes('duplicate key')) {
           return { error: { message: 'Användarnamnet är redan taget' } };
         }
         
-        return { error };
+        if (error.message && error.message.includes('violates unique constraint')) {
+          return { error: { message: 'Användarnamnet är redan taget' } };
+        }
+        
+        return { error: { message: error.message || 'Ett fel inträffade vid uppdatering av profilen' } };
       }
       
       // Update local user state
@@ -552,9 +556,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       console.log('Profile updated successfully:', data);
       return { error: null };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Profile update exception:', error);
-      return { error };
+      return { error: { message: error?.message || 'Ett oväntat fel inträffade' } };
     }
   }, [user]);
 

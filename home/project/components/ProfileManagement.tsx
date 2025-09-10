@@ -63,12 +63,14 @@ export default function ProfileManagement() {
       });
 
       if (error) {
-        Alert.alert('Fel', error.message || 'Kunde inte uppdatera profilen');
+        const errorMessage = typeof error === 'string' ? error : error?.message || 'Kunde inte uppdatera profilen';
+        Alert.alert('Fel', errorMessage);
       } else {
         Alert.alert('Framgång', 'Profilen har uppdaterats!');
       }
-    } catch {
-      Alert.alert('Fel', 'Ett oväntat fel inträffade');
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Ett oväntat fel inträffade';
+      Alert.alert('Fel', errorMessage);
     } finally {
       setIsLoading(false);
     }

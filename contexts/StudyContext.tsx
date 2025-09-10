@@ -15,6 +15,8 @@ type DbPomodoroSession = Database['public']['Tables']['pomodoro_sessions']['Row'
 export interface User {
   id: string;
   name: string;
+  username: string;
+  displayName: string;
   email: string;
   studyLevel: 'gymnasie' | 'högskola';
   program: string;
@@ -84,6 +86,8 @@ export interface StudyContextType {
 const dbUserToUser = (dbUser: DbUser, email: string): User => ({
   id: dbUser.id,
   name: dbUser.name,
+  username: dbUser.username,
+  displayName: dbUser.display_name,
   email: dbUser.email ?? email,
   studyLevel: dbUser.level as 'gymnasie' | 'högskola',
   program: dbUser.program,
@@ -104,6 +108,8 @@ const dbUserToUser = (dbUser: DbUser, email: string): User => ({
 const userToDbUser = (user: Partial<User> & { id: string }): Database['public']['Tables']['profiles']['Insert'] => ({
   id: user.id,
   name: user.name!,
+  username: user.username!,
+  display_name: user.displayName!,
   email: user.email ?? null,
   level: user.studyLevel!,
   program: user.program!,
@@ -187,9 +193,12 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         console.warn('Database not available, working in offline mode');
         
         // Create a local user profile for offline mode
+        const emailPrefix = userEmail.split('@')[0] || 'Student';
         const localUser: User = {
           id: userId,
-          name: userEmail.split('@')[0] || 'Student',
+          name: emailPrefix,
+          username: emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+          displayName: emailPrefix,
           email: userEmail,
           studyLevel: 'gymnasie',
           program: 'Naturvetenskapsprogrammet',
@@ -219,9 +228,12 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         console.warn('Could not load user profile from database, using local data');
         
         // Create a basic user profile
+        const emailPrefix = userEmail.split('@')[0] || 'Student';
         const localUser: User = {
           id: userId,
-          name: userEmail.split('@')[0] || 'Student',
+          name: emailPrefix,
+          username: emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+          displayName: emailPrefix,
           email: userEmail,
           studyLevel: 'gymnasie',
           program: '',
@@ -295,9 +307,12 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       console.error('Error loading user data:', error instanceof Error ? error.message : String(error));
       
       // Fallback to local user
+      const emailPrefix = userEmail.split('@')[0] || 'Student';
       const localUser: User = {
         id: userId,
-        name: userEmail.split('@')[0] || 'Student',
+        name: emailPrefix,
+        username: emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+        displayName: emailPrefix,
         email: userEmail,
         studyLevel: 'gymnasie',
         program: '',
@@ -363,6 +378,8 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           .upsert({
             id: authUser.id,
             name: userData.name,
+            username: userData.username,
+            display_name: userData.displayName,
             email: userData.email,
             level: userData.studyLevel,
             program: userData.program,

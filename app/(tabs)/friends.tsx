@@ -11,11 +11,12 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
-import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy } from 'lucide-react-native';
+import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy, User } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as db from '@/lib/database';
 import Avatar from '@/components/Avatar';
+import FriendSearch from '@/components/FriendSearch';
 import type { AvatarConfig } from '@/components/AvatarCustomizer';
 import * as Clipboard from 'expo-clipboard';
 import { Platform, Share } from 'react-native';
@@ -23,7 +24,8 @@ import { supabase } from '@/lib/supabase';
 
 interface Friend {
   id: string;
-  name: string;
+  username: string;
+  display_name: string;
   program: string;
   level: 'gymnasie' | 'högskola';
   avatar?: AvatarConfig;
@@ -31,14 +33,17 @@ interface Friend {
 
 interface FriendRequest {
   id: string;
-  name: string;
+  username: string;
+  display_name: string;
   program: string;
   level: 'gymnasie' | 'högskola';
   avatar?: AvatarConfig;
+  request_id: string;
 }
 
 export default function FriendsScreen() {
   const { user } = useAuth();
+  const { user: studyUser } = useStudy();
   const { showError, showSuccess } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -48,15 +53,10 @@ export default function FriendsScreen() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [addFriendQuery, setAddFriendQuery] = useState('');
-  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
-  const [leaderboardTimeframe, setLeaderboardTimeframe] = useState<'week' | 'month' | 'all'>('week');
-  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
 
   const filteredFriends = friends.filter(friend =>
-    friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    friend.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    friend.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     friend.program.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -65,25 +65,66 @@ export default function FriendsScreen() {
     
     try {
       setIsLoading(true);
-      const [friendsData, requestsData] = await Promise.all([
-        db.getUserFriends(user.id),
-        db.getFriendRequests(user.id)
-      ]);
       
-      const mappedFriends: Friend[] = friendsData.map((f: any) => ({
+      // Load accepted friends
+      const { data: friendsData, error: friendsError } = await supabase
+        .from('friends')
+        .select(`
+          id,
+          friend:profiles!friends_friend_id_fkey(
+            id,
+            username,
+            display_name,
+            program,
+            level,
+            avatar_url
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'accepted');
+      
+      // Load pending friend requests (received)
+      const { data: requestsData, error: requestsError } = await supabase
+        .from('friends')
+        .select(`
+          id,
+          requester:profiles!friends_user_id_fkey(
+            id,
+            username,
+            display_name,
+            program,
+            level,
+            avatar_url
+          )
+        `)
+        .eq('friend_id', user.id)
+        .eq('status', 'pending');
+      
+      if (friendsError) {
+        console.error('Error loading friends:', friendsError);
+      }
+      
+      if (requestsError) {
+        console.error('Error loading friend requests:', requestsError);
+      }
+      
+      const mappedFriends: Friend[] = (friendsData || []).map((f: any) => ({
         id: f.friend.id,
-        name: f.friend.name,
+        username: f.friend.username,
+        display_name: f.friend.display_name,
         program: f.friend.program,
         level: f.friend.level,
         avatar: f.friend.avatar_url ? JSON.parse(f.friend.avatar_url) : undefined
       }));
       
-      const mappedRequests: FriendRequest[] = requestsData.map((r: any) => ({
-        id: r.id,
-        name: r.requester.name,
+      const mappedRequests: FriendRequest[] = (requestsData || []).map((r: any) => ({
+        id: r.requester.id,
+        username: r.requester.username,
+        display_name: r.requester.display_name,
         program: r.requester.program,
         level: r.requester.level,
-        avatar: r.requester.avatar_url ? JSON.parse(r.requester.avatar_url) : undefined
+        avatar: r.requester.avatar_url ? JSON.parse(r.requester.avatar_url) : undefined,
+        request_id: r.id
       }));
       
       setFriends(mappedFriends);
@@ -100,28 +141,7 @@ export default function FriendsScreen() {
     loadFriends();
   }, [loadFriends]);
 
-  const searchUsers = useCallback(async (query: string) => {
-    if (!query.trim() || query.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    
-    try {
-      setIsSearching(true);
-      const results = await db.searchUsers(query);
-      // Filter out current user and existing friends
-      const filteredResults = results.filter(result => 
-        result.id !== user?.id && 
-        !friends.some(friend => friend.id === result.id)
-      );
-      setSearchResults(filteredResults);
-    } catch (error) {
-      console.error('Error searching users:', error);
-      showError('Kunde inte söka användare');
-    } finally {
-      setIsSearching(false);
-    }
-  }, [user?.id, friends, showError]);
+
 
   const handleAddFriend = () => {
     setShowAddModal(true);
@@ -132,14 +152,11 @@ export default function FriendsScreen() {
   };
 
   const copyUsernameToClipboard = async () => {
-    if (!user) return;
+    if (!studyUser?.username) return;
     
     try {
-      const userProfile = await db.getUser(user.id);
-      if (userProfile) {
-        await Clipboard.setStringAsync(userProfile.name);
-        showSuccess('Användarnamn kopierat! 📋');
-      }
+      await Clipboard.setStringAsync(`@${studyUser.username}`);
+      showSuccess('Användarnamn kopierat! 📋');
     } catch (error) {
       console.error('Error copying username:', error);
       showError('Kunde inte kopiera användarnamn');
@@ -147,22 +164,19 @@ export default function FriendsScreen() {
   };
 
   const shareUsername = async () => {
-    if (!user) return;
+    if (!studyUser?.username) return;
     
     try {
-      const userProfile = await db.getUser(user.id);
-      if (userProfile) {
-        if (Platform.OS === 'web') {
-          // On web, copy to clipboard
-          await Clipboard.setStringAsync(userProfile.name);
-          showSuccess('Användarnamn kopierat! 📋');
-        } else {
-          // On mobile, use native sharing
-          await Share.share({
-            message: `Lägg till mig som vän på StudieStugan! Mitt användarnamn är: ${userProfile.name}`,
-            title: 'Lägg till mig som vän'
-          });
-        }
+      if (Platform.OS === 'web') {
+        // On web, copy to clipboard
+        await Clipboard.setStringAsync(`@${studyUser.username}`);
+        showSuccess('Användarnamn kopierat! 📋');
+      } else {
+        // On mobile, use native sharing
+        await Share.share({
+          message: `Lägg till mig som vän på StudieStugan! Mitt användarnamn är: @${studyUser.username}`,
+          title: 'Lägg till mig som vän'
+        });
       }
     } catch (error) {
       console.error('Error sharing username:', error);
@@ -170,54 +184,17 @@ export default function FriendsScreen() {
     }
   };
 
-  const searchByUsername = async (username: string) => {
-    if (!username.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    
-    try {
-      setIsSearching(true);
-      // Search for exact username match
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, name, level, program, avatar_url')
-        .eq('name', username.trim())
-        .limit(1);
-      
-      if (error) throw error;
-      
-      // Filter out current user and existing friends
-      const filteredResults = (data || []).filter((result: any) => 
-        result.id !== user?.id && 
-        !friends.some(friend => friend.id === result.id)
-      );
-      
-      setSearchResults(filteredResults);
-    } catch (error) {
-      console.error('Error searching by username:', error);
-      showError('Kunde inte söka efter användarnamn');
-    } finally {
-      setIsSearching(false);
-    }
-  };
 
-  const sendFriendRequest = async (friendId: string) => {
-    if (!user) return;
-    
-    try {
-      await db.sendFriendRequest(user.id, friendId);
-      showSuccess('Vänförfrågan skickad!');
-      setSearchResults(prev => prev.filter(result => result.id !== friendId));
-    } catch (error) {
-      console.error('Error sending friend request:', error);
-      showError('Kunde inte skicka vänförfrågan');
-    }
-  };
 
   const handleAcceptRequest = async (requestId: string) => {
     try {
-      await db.acceptFriendRequest(requestId);
+      const { error } = await supabase
+        .from('friends')
+        .update({ status: 'accepted' })
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      
       showSuccess('Vänförfrågan accepterad! 🎉');
       await loadFriends();
     } catch (error) {
@@ -228,7 +205,13 @@ export default function FriendsScreen() {
 
   const handleRejectRequest = async (requestId: string) => {
     try {
-      await db.rejectFriendRequest(requestId);
+      const { error } = await supabase
+        .from('friends')
+        .delete()
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      
       showSuccess('Vänförfrågan avvisad');
       await loadFriends();
     } catch (error) {
@@ -237,26 +220,7 @@ export default function FriendsScreen() {
     }
   };
 
-  const loadLeaderboard = useCallback(async () => {
-    if (!user) return;
-    
-    try {
-      setIsLoadingLeaderboard(true);
-      const data = await db.getFriendsLeaderboard(user.id, leaderboardTimeframe);
-      setLeaderboardData(data);
-    } catch (error) {
-      console.error('Error loading leaderboard:', error);
-      showError('Kunde inte ladda topplistan');
-    } finally {
-      setIsLoadingLeaderboard(false);
-    }
-  }, [user, leaderboardTimeframe, showError]);
 
-  useEffect(() => {
-    if (showLeaderboard) {
-      loadLeaderboard();
-    }
-  }, [showLeaderboard, loadLeaderboard]);
 
   const getPositionIcon = (position: number) => {
     switch (position) {
@@ -369,13 +333,12 @@ export default function FriendsScreen() {
                         <Avatar config={friend.avatar} size={50} />
                       ) : (
                         <View style={styles.friendAvatar}>
-                          <Text style={styles.avatarText}>
-                            {friend.name.charAt(0).toUpperCase()}
-                          </Text>
+                          <User size={24} color="#6B7280" />
                         </View>
                       )}
                       <View style={styles.friendInfo}>
-                        <Text style={styles.friendName}>{friend.name}</Text>
+                        <Text style={styles.friendName}>{friend.display_name}</Text>
+                        <Text style={styles.friendUsername}>@{friend.username}</Text>
                         <Text style={styles.friendProgram}>
                           {friend.program} • {friend.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
                         </Text>
@@ -413,13 +376,12 @@ export default function FriendsScreen() {
                     <Avatar config={request.avatar} size={50} />
                   ) : (
                     <View style={styles.friendAvatar}>
-                      <Text style={styles.avatarText}>
-                        {request.name.charAt(0).toUpperCase()}
-                      </Text>
+                      <User size={24} color="#6B7280" />
                     </View>
                   )}
                   <View style={styles.friendInfo}>
-                    <Text style={styles.friendName}>{request.name}</Text>
+                    <Text style={styles.friendName}>{request.display_name}</Text>
+                    <Text style={styles.friendUsername}>@{request.username}</Text>
                     <Text style={styles.friendProgram}>
                       {request.program} • {request.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
                     </Text>
@@ -428,13 +390,13 @@ export default function FriendsScreen() {
                 <View style={styles.requestActions}>
                   <TouchableOpacity
                     style={styles.rejectButton}
-                    onPress={() => handleRejectRequest(request.id)}
+                    onPress={() => handleRejectRequest(request.request_id)}
                   >
                     <Text style={styles.rejectButtonText}>Avvisa</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.acceptButton}
-                    onPress={() => handleAcceptRequest(request.id)}
+                    onPress={() => handleAcceptRequest(request.request_id)}
                   >
                     <Text style={styles.acceptButtonText}>Acceptera</Text>
                   </TouchableOpacity>
@@ -470,71 +432,10 @@ export default function FriendsScreen() {
           </View>
           
           <View style={styles.modalContent}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Sök efter vänner</Text>
-              <View style={styles.searchInputContainer}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Skriv exakt användarnamn..."
-                  value={addFriendQuery}
-                  onChangeText={(text) => {
-                    setAddFriendQuery(text);
-                    // Use exact username search instead of fuzzy search
-                    searchByUsername(text);
-                  }}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                {isSearching && (
-                  <ActivityIndicator size="small" color="#4F46E5" style={styles.searchSpinner} />
-                )}
-              </View>
-            </View>
-
-            {searchResults.length > 0 && (
-              <View style={styles.searchResultsSection}>
-                <Text style={styles.suggestionTitle}>Sökresultat</Text>
-                {searchResults.map((result) => (
-                  <View key={result.id} style={styles.searchResultItem}>
-                    <View style={styles.friendAvatar}>
-                      <Text style={styles.avatarText}>
-                        {result.name.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={styles.friendInfo}>
-                      <Text style={styles.friendName}>{result.name}</Text>
-                      <Text style={styles.friendProgram}>
-                        {result.program} • {result.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.addButton}
-                      onPress={() => sendFriendRequest(result.id)}
-                    >
-                      <UserPlus size={16} color="white" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {addFriendQuery.length > 0 && searchResults.length === 0 && !isSearching && (
-              <View style={styles.suggestionSection}>
-                <Text style={styles.suggestionTitle}>Inga resultat</Text>
-                <Text style={styles.suggestionText}>
-                  Inga användare hittades med det namnet
-                </Text>
-              </View>
-            )}
-
-            {addFriendQuery.length === 0 && (
-              <View style={styles.suggestionSection}>
-                <Text style={styles.suggestionTitle}>Tips</Text>
-                <Text style={styles.suggestionText}>
-                  Skriv det exakta användarnamnet för att hitta vänner. Du kan också dela ditt eget användarnamn genom att trycka på delningsknappen.
-                </Text>
-              </View>
-            )}
+            <FriendSearch onFriendAdded={() => {
+              loadFriends();
+              setShowAddModal(false);
+            }} />
           </View>
         </SafeAreaView>
       </Modal>
@@ -554,95 +455,13 @@ export default function FriendsScreen() {
           </View>
           
           <View style={styles.modalContent}>
-            {/* Timeframe Selector */}
-            <View style={styles.timeframeContainer}>
-              {(['week', 'month', 'all'] as const).map((timeframe) => (
-                <TouchableOpacity
-                  key={timeframe}
-                  style={[
-                    styles.timeframeButton,
-                    leaderboardTimeframe === timeframe && styles.activeTimeframeButton
-                  ]}
-                  onPress={() => setLeaderboardTimeframe(timeframe)}
-                >
-                  <Text style={[
-                    styles.timeframeButtonText,
-                    leaderboardTimeframe === timeframe && styles.activeTimeframeButtonText
-                  ]}>
-                    {timeframe === 'week' ? 'Vecka' : timeframe === 'month' ? 'Månad' : 'Totalt'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.comingSoonContainer}>
+              <Trophy size={64} color="#9CA3AF" />
+              <Text style={styles.comingSoonTitle}>Topplista kommer snart!</Text>
+              <Text style={styles.comingSoonText}>
+                Här kommer du kunna se hur du och dina vänner presterar jämfört med varandra.
+              </Text>
             </View>
-
-            {/* Leaderboard */}
-            {isLoadingLeaderboard ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#4F46E5" />
-                <Text style={styles.loadingText}>Laddar topplista...</Text>
-              </View>
-            ) : leaderboardData.length > 0 ? (
-              <ScrollView style={styles.leaderboardContainer} showsVerticalScrollIndicator={false}>
-                {leaderboardData.map((user, index) => (
-                  <View key={user.userId} style={[
-                    styles.leaderboardItem,
-                    user.isCurrentUser && styles.currentUserItem
-                  ]}>
-                    <View style={styles.leaderboardPosition}>
-                      {getPositionIcon(user.position) || (
-                        <Text style={[
-                          styles.positionText,
-                          { color: getPositionColor(user.position) }
-                        ]}>
-                          {user.position}
-                        </Text>
-                      )}
-                    </View>
-                    
-                    <View style={styles.leaderboardUserInfo}>
-                      <View style={styles.friendAvatar}>
-                        <Text style={styles.avatarText}>
-                          {user.name.charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={styles.userDetails}>
-                        <Text style={[
-                          styles.leaderboardUserName,
-                          user.isCurrentUser && styles.currentUserName
-                        ]}>
-                          {user.name} {user.isCurrentUser && '(Du)'}
-                        </Text>
-                        <Text style={styles.leaderboardUserProgram}>
-                          {user.program} • {user.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
-                        </Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.leaderboardStats}>
-                      <Text style={styles.studyTime}>
-                        {user.totalHours}h {user.remainingMinutes}m
-                      </Text>
-                      <Text style={styles.sessionCount}>
-                        {user.totalSessions} sessioner
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </ScrollView>
-            ) : (
-              <View style={styles.emptyLeaderboard}>
-                <Trophy size={64} color="#9CA3AF" />
-                <Text style={styles.emptyLeaderboardTitle}>Ingen data än</Text>
-                <Text style={styles.emptyLeaderboardText}>
-                  {leaderboardTimeframe === 'week' 
-                    ? 'Ingen har pluggat denna vecka än'
-                    : leaderboardTimeframe === 'month'
-                    ? 'Ingen har pluggat denna månad än'
-                    : 'Ingen studiedata hittades'
-                  }
-                </Text>
-              </View>
-            )}
           </View>
         </SafeAreaView>
       </Modal>
@@ -666,9 +485,9 @@ export default function FriendsScreen() {
               <Text style={styles.shareTitle}>Ditt användarnamn</Text>
               <View style={styles.usernameCard}>
                 <View style={styles.usernameInfo}>
-                  {user && (
+                  {studyUser && (
                     <>
-                      <Text style={styles.usernameText}>{user.email ? user.email.split('@')[0] : 'Användarnamn'}</Text>
+                      <Text style={styles.usernameText}>@{studyUser.username}</Text>
                       <Text style={styles.usernameSubtext}>Andra kan söka efter detta namn för att lägga till dig som vän</Text>
                     </>
                   )}
@@ -703,7 +522,7 @@ export default function FriendsScreen() {
             <View style={styles.instructionsSection}>
               <Text style={styles.instructionsTitle}>Så här fungerar det</Text>
               <Text style={styles.instructionsText}>
-                • Dela ditt användarnamn med vänner{"\n"}
+                • Dela ditt användarnamn (@{studyUser?.username || 'användarnamn'}) med vänner{"\n"}
                 • De kan söka efter ditt exakta användarnamn{"\n"}
                 • När de hittar dig kan de skicka en vänförfrågan{"\n"}
                 • Du får en notifikation och kan acceptera förfrågan
@@ -851,7 +670,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatarText: {
-    fontSize: 24,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
   },
 
   friendInfo: {
@@ -861,6 +682,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1F2937',
+    marginBottom: 2,
+  },
+  friendUsername: {
+    fontSize: 12,
+    color: '#4F46E5',
     marginBottom: 2,
   },
   friendProgram: {
@@ -989,15 +815,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  searchSpinner: {
-    marginLeft: 8,
-  },
-  searchResultsSection: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-  },
+
   searchResultItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1007,7 +825,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: '#4F46E5',
-    borderRadius: 20,
+    borderRadius: 8,
     padding: 8,
     marginLeft: 'auto',
   },

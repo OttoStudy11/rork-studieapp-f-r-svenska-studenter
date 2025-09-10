@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
+import { supabase } from '@/lib/supabase';
 import { GraduationCap, Target, Users, BookOpen, MapPin, Calculator, Zap, Globe, Palette, Building, Heart, Car, ShoppingBag, Scissors, Coffee, Factory, Leaf, ChefHat, Home, Stethoscope, Wrench } from 'lucide-react-native';
 import { AnimatedPressable, PressableCard, RippleButton, FadeInView } from '@/components/Animations';
 import GymnasiumAndProgramPicker from '@/components/GymnasiumAndProgramPicker';
@@ -20,7 +21,8 @@ import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 import { getGymnasiumCourses, type GymnasiumCourse } from '@/constants/gymnasium-courses';
 
 interface OnboardingData {
-  name: string;
+  username: string;
+  displayName: string;
   studyLevel: 'gymnasie' | 'högskola' | '';
   gymnasium: Gymnasium | null;
   gymnasiumProgram: GymnasiumProgram | null;
@@ -145,7 +147,8 @@ export default function OnboardingScreen() {
   // Initialize hooks first
   const [step, setStep] = useState(0);
   const [data, setData] = useState<OnboardingData>({
-    name: '',
+    username: '',
+    displayName: '',
     studyLevel: '',
     gymnasium: null,
     gymnasiumProgram: null,
@@ -155,17 +158,9 @@ export default function OnboardingScreen() {
     purpose: [],
     selectedCourses: new Set()
   });
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
   const [availableCourses, setAvailableCourses] = useState<GymnasiumCourse[]>([]);
-  
-  // Update data with user info when available
-  useEffect(() => {
-    if (authContext?.user?.email && !data.name) {
-      setData(prev => ({
-        ...prev,
-        name: authContext.user!.email.split('@')[0] || ''
-      }));
-    }
-  }, [authContext?.user?.email, data.name]);
   
   // Safety checks for contexts
   if (!authContext || !studyContext || !toastContext) {
@@ -179,9 +174,65 @@ export default function OnboardingScreen() {
     );
   }
   
+  // Update data with user info when available
+  useEffect(() => {
+    if (authContext?.user?.email && !data.displayName) {
+      const emailPrefix = authContext.user!.email.split('@')[0] || '';
+      setData(prev => ({
+        ...prev,
+        displayName: emailPrefix,
+        username: emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+      }));
+    }
+  }, [authContext.user?.email, data.displayName]);
+  
   const { user } = authContext;
   const { completeOnboarding } = studyContext;
   const { showError } = toastContext;
+  
+  // Check username availability
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || username.length < 3) {
+      setUsernameAvailable(null);
+      return;
+    }
+    
+    // Validate format
+    if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+      setUsernameAvailable(false);
+      return;
+    }
+    
+    setCheckingUsername(true);
+    try {
+      const { data: result, error } = await supabase.rpc('check_username_available', {
+        username_to_check: username
+      });
+      
+      if (error) {
+        console.error('Error checking username:', error);
+        setUsernameAvailable(null);
+      } else {
+        setUsernameAvailable(result);
+      }
+    } catch (error) {
+      console.error('Error checking username:', error);
+      setUsernameAvailable(null);
+    } finally {
+      setCheckingUsername(false);
+    }
+  };
+  
+  // Debounce username check
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (data.username) {
+        checkUsernameAvailability(data.username);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [data.username]);
 
   const handleNext = () => {
     if (step < 5) {
@@ -192,16 +243,17 @@ export default function OnboardingScreen() {
   };
 
   const handleComplete = async () => {
-    if (data.studyLevel && data.name) {
+    if (data.studyLevel && data.displayName && data.username && usernameAvailable) {
       try {
         console.log('Completing onboarding with data:', data);
-        const finalName = data.name || user?.email?.split('@')[0] || '';
         const programName = data.gymnasiumProgram ? 
           `${data.gymnasiumProgram.name} - År ${data.gymnasiumGrade}` : 
           data.program || 'Ej valt';
         
         await completeOnboarding({
-          name: finalName,
+          name: data.displayName,
+          username: data.username,
+          displayName: data.displayName,
           email: user?.email || '',
           studyLevel: data.studyLevel as 'gymnasie' | 'högskola',
           program: programName,
@@ -229,7 +281,7 @@ export default function OnboardingScreen() {
 
   const canProceed = () => {
     switch (step) {
-      case 0: return data.name.length > 0;
+      case 0: return data.username.length >= 3 && data.displayName.length > 0 && usernameAvailable === true;
       case 1: return data.studyLevel !== '';
       case 2: return data.studyLevel !== 'gymnasie' || (data.gymnasium !== null && data.gymnasiumProgram !== null);
       case 3: return true; // Make goals optional
@@ -246,14 +298,49 @@ export default function OnboardingScreen() {
           <View style={styles.stepContainer}>
             <GraduationCap size={80} color="#4F46E5" style={styles.icon} />
             <Text style={styles.title}>Hej {user?.email?.split('@')[0] || 'där'}!</Text>
-            <Text style={styles.subtitle}>Låt oss anpassa StudieStugan för dig</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ange ditt namn"
-              value={data.name}
-              onChangeText={(text) => setData({ ...data, name: text })}
-              autoFocus
-            />
+            <Text style={styles.subtitle}>Skapa ditt användarnamn och visningsnamn</Text>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Användarnamn (för att lägga till vänner)</Text>
+              <View style={styles.usernameInputContainer}>
+                <Text style={styles.atSymbol}>@</Text>
+                <TextInput
+                  style={styles.usernameInput}
+                  placeholder="användarnamn"
+                  value={data.username}
+                  onChangeText={(text) => {
+                    const cleanText = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    setData({ ...data, username: cleanText });
+                  }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={20}
+                />
+              </View>
+              {checkingUsername && (
+                <Text style={styles.inputHint}>Kontrollerar tillgänglighet...</Text>
+              )}
+              {usernameAvailable === false && (
+                <Text style={[styles.inputHint, { color: '#EF4444' }]}>Användarnamnet är inte tillgängligt eller ogiltigt</Text>
+              )}
+              {usernameAvailable === true && (
+                <Text style={[styles.inputHint, { color: '#10B981' }]}>✓ Användarnamnet är tillgängligt</Text>
+              )}
+              <Text style={styles.inputHint}>
+                3-20 tecken, endast bokstäver, siffror och _
+              </Text>
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Visningsnamn (för- och efternamn)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ditt för- och efternamn"
+                value={data.displayName}
+                onChangeText={(text) => setData({ ...data, displayName: text })}
+                maxLength={50}
+              />
+            </View>
           </View>
         );
 
@@ -776,6 +863,41 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
+  },
+  inputContainer: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 8,
+  },
+  usernameInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  atSymbol: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4F46E5',
+    marginRight: 4,
+  },
+  usernameInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+  },
+
+  inputHint: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginTop: 4,
   },
   disabledButton: {
     opacity: 0.5,

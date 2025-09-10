@@ -13,6 +13,8 @@ export interface Database {
         Row: {
           id: string
           name: string
+          username: string
+          display_name: string
           email: string | null
           avatar_url: string | null
           level: string
@@ -29,6 +31,8 @@ export interface Database {
         Insert: {
           id: string
           name: string
+          username: string
+          display_name: string
           email?: string | null
           avatar_url?: string | null
           level: string
@@ -45,6 +49,8 @@ export interface Database {
         Update: {
           id?: string
           name?: string
+          username?: string
+          display_name?: string
           email?: string | null
           avatar_url?: string | null
           level?: string
@@ -535,7 +541,23 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_username_available: {
+        Args: {
+          username_to_check: string
+        }
+        Returns: boolean
+      }
+      search_users_by_username: {
+        Args: {
+          search_term: string
+        }
+        Returns: {
+          id: string
+          username: string
+          display_name: string
+          avatar_url: string | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

@@ -54,11 +54,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       // Check if user has a profile in the database (indicating onboarding was completed)
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('id, name, program, level')
+        .select('id, name, username, display_name, program, level')
         .eq('id', userId)
         .single();
       
-      if (!error && profile && profile.name && profile.program && profile.level) {
+      if (!error && profile && profile.name && profile.username && profile.display_name && profile.program && profile.level) {
         // User has a complete profile, mark onboarding as completed
         console.log('User has complete profile, onboarding completed:', profile.name);
         setHasCompletedOnboarding(true);
@@ -311,11 +311,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         try {
           const dbConnected = await testDatabaseConnection();
           if (dbConnected) {
+            const emailPrefix = email.split('@')[0] || 'Student';
+            const defaultUsername = emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+            
             const { error: profileError } = await supabase
               .from('profiles')
               .insert({
                 id: data.user.id,
-                name: email.split('@')[0] || 'Student',
+                name: emailPrefix,
+                username: defaultUsername,
+                display_name: emailPrefix,
                 email: email.trim(),
                 level: 'gymnasie', // Default level
                 program: '', // Will be set during onboarding
@@ -409,11 +414,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
             if (profileCheckError && profileCheckError.code === 'PGRST116') {
               // Profile doesn't exist, create it
               console.log('Profile does not exist, creating basic profile');
+              const emailPrefix = email.split('@')[0] || 'Student';
+              const defaultUsername = emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+              
               const { error: profileError } = await supabase
                 .from('profiles')
                 .insert({
                   id: data.user.id,
-                  name: email.split('@')[0] || 'Student',
+                  name: emailPrefix,
+                  username: defaultUsername,
+                  display_name: emailPrefix,
                   email: email.trim(),
                   level: 'gymnasie',
                   program: '',

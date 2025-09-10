@@ -482,7 +482,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_users_by_username: {
+        Args: {
+          search_term: string
+        }
+        Returns: {
+          id: string
+          username: string
+          display_name: string
+          avatar_url: string | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

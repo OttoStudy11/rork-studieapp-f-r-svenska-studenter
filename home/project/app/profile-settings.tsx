@@ -16,6 +16,9 @@ import { User, AtSign, Save, RefreshCw } from 'lucide-react-native';
 
 export default function ProfileSettings() {
   const auth = useAuth();
+  const user = auth.user;
+  const updateProfile = (auth as any).updateProfile;
+  const refreshUser = (auth as any).refreshUser;
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -23,11 +26,11 @@ export default function ProfileSettings() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (auth.user) {
-      setDisplayName(auth.user.displayName || '');
-      setUsername(auth.user.username || '');
+    if (user) {
+      setDisplayName((user as any).displayName || '');
+      setUsername((user as any).username || '');
     }
-  }, [auth.user]);
+  }, [user]);
 
   const showMessage = (text: string, isError = false) => {
     setMessage(text);
@@ -59,7 +62,7 @@ export default function ProfileSettings() {
 
     setIsLoading(true);
     try {
-      const { error } = await auth.updateProfile({
+      const { error } = await updateProfile({
         displayName: displayName.trim(),
         username: username.trim().toLowerCase(),
         name: displayName.trim()
@@ -70,7 +73,7 @@ export default function ProfileSettings() {
       } else {
         showMessage('Profilen har uppdaterats!');
       }
-    } catch (error) {
+    } catch {
       showMessage('Ett oväntat fel inträffade', true);
     } finally {
       setIsLoading(false);
@@ -80,7 +83,7 @@ export default function ProfileSettings() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await auth.refreshUser();
+      await refreshUser();
       showMessage('Profil uppdaterad');
     } catch (error) {
       console.error('Error refreshing user:', error);
@@ -90,7 +93,7 @@ export default function ProfileSettings() {
     }
   };
 
-  if (!auth.user) {
+  if (!user) {
     return (
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ title: 'Profilinställningar' }} />
@@ -174,16 +177,16 @@ export default function ProfileSettings() {
             <View style={styles.currentInfo}>
               <Text style={styles.currentInfoTitle}>Nuvarande information:</Text>
               <Text style={styles.currentInfoText}>
-                E-post: {auth.user.email}
+                E-post: {user.email}
               </Text>
-              {auth.user.username && (
+              {(user as any).username && (
                 <Text style={styles.currentInfoText}>
-                  Användarnamn: @{auth.user.username}
+                  Användarnamn: @{(user as any).username}
                 </Text>
               )}
-              {auth.user.displayName && (
+              {(user as any).displayName && (
                 <Text style={styles.currentInfoText}>
-                  Visningsnamn: {auth.user.displayName}
+                  Visningsnamn: {(user as any).displayName}
                 </Text>
               )}
             </View>

@@ -16,7 +16,9 @@ import { User, AtSign, Save, RefreshCw } from 'lucide-react-native';
 
 export default function ProfileManagement() {
   const auth = useAuth();
-  const { user } = auth;
+  const user = auth.user;
+  const updateProfile = (auth as any).updateProfile;
+  const refreshUser = (auth as any).refreshUser;
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,8 +26,8 @@ export default function ProfileManagement() {
 
   useEffect(() => {
     if (user) {
-      setDisplayName(user.displayName || '');
-      setUsername(user.username || '');
+      setDisplayName((user as any).displayName || '');
+      setUsername((user as any).username || '');
     }
   }, [user]);
 
@@ -54,7 +56,7 @@ export default function ProfileManagement() {
 
     setIsLoading(true);
     try {
-      const { error } = await auth.updateProfile({
+      const { error } = await updateProfile({
         displayName: displayName.trim(),
         username: username.trim().toLowerCase(),
         name: displayName.trim()
@@ -65,7 +67,7 @@ export default function ProfileManagement() {
       } else {
         Alert.alert('Framgång', 'Profilen har uppdaterats!');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Fel', 'Ett oväntat fel inträffade');
     } finally {
       setIsLoading(false);
@@ -75,7 +77,7 @@ export default function ProfileManagement() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await auth.refreshUser();
+      await refreshUser();
     } catch (error) {
       console.error('Error refreshing user:', error);
     } finally {
@@ -158,14 +160,14 @@ export default function ProfileManagement() {
               <Text style={styles.currentInfoText}>
                 E-post: {user.email}
               </Text>
-              {user.username && (
+              {(user as any).username && (
                 <Text style={styles.currentInfoText}>
-                  Användarnamn: @{user.username}
+                  Användarnamn: @{(user as any).username}
                 </Text>
               )}
-              {user.displayName && (
+              {(user as any).displayName && (
                 <Text style={styles.currentInfoText}>
-                  Visningsnamn: {user.displayName}
+                  Visningsnamn: {(user as any).displayName}
                 </Text>
               )}
             </View>

@@ -41,43 +41,54 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 });
 
 // Test database connection
-export const testDatabaseConnection = async () => {
+export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
     console.log('Testing database connection...');
-    
-    // Add timeout to prevent hanging
+
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('Database connection timeout')), 10000);
     });
-    
+
     const queryPromise = supabase
       .from('profiles')
-      .select('count')
+      .select('id', { count: 'exact', head: true })
       .limit(1);
-    
-    const { error } = await Promise.race([queryPromise, timeoutPromise]);
-    
+
+    const result = (await Promise.race([queryPromise, timeoutPromise])) as { error?: any };
+    const { error } = result ?? {};
+
     if (error) {
-      console.error('Database connection test failed:', error.message);
-      console.error('Error details:', {
-        message: error.message,
-        details: error.details || 'No additional details',
-        hint: error.hint || '',
-        code: error.code || ''
-      });
+      const safeError = {
+        message:
+          typeof error?.message === 'string'
+            ? error.message
+            : (() => {
+                try {
+                  return JSON.stringify(error);
+                } catch (_) {
+                  return 'Unknown error';
+                }
+              })(),
+        details: error?.details ?? undefined,
+        hint: error?.hint ?? undefined,
+        code: error?.code ?? undefined,
+      };
+      console.error('Database connection test failed:', safeError.message);
+      console.error('Error details:', safeError);
       return false;
     }
-    
+
     console.log('Database connection test successful');
     return true;
-  } catch (error: any) {
-    console.error('Database connection test failed:', error?.name || 'TypeError');
-    console.error('Error details:', {
-      message: error?.message || 'Failed to fetch',
-      details: error?.stack || 'TypeError: Failed to fetch\n at https://po0ae94-anonymous-8081.exp.direct/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:182155:25\n at https://po0ae94-anonymous-8081.exp.direct/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:182178:14\n at Generator.next (<anonymous>)\n at fulfilled (https://po0ae94-anonymous-8081.exp.direct/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:182126:26)',
+  } catch (err: any) {
+    const fallback = {
+      message: err?.message ?? String(err),
+      details: err?.stack ?? undefined,
       hint: '',
-      code: ''
-    });
+      code: err?.code ?? '',
+    };
+    console.error('Database connection test failed:', fallback.message);
+    console.error('Error details:', fallback);
     return false;
   }
 };

@@ -498,7 +498,7 @@ export default function OnboardingScreen() {
                         </Text>
                       </View>
                       
-                      <View style={styles.coursesGrid}>
+                      <View style={styles.coursesGrid} testID="courses-grid">
                         {coursesInCategory.map((course) => {
                           const isSelected = data.selectedCourses.has(course.id);
                           const isMandatory = course.mandatory;
@@ -508,6 +508,7 @@ export default function OnboardingScreen() {
                           return (
                             <PressableCard
                               key={course.id}
+                              testID={`course-card-${course.code}`}
                               style={[
                                 styles.courseCard,
                                 isSelected && styles.selectedCourseCard,
@@ -534,7 +535,7 @@ export default function OnboardingScreen() {
                               <Text style={[
                                 styles.courseCardName,
                                 isSelected && { color: categoryColor }
-                              ]} numberOfLines={2} ellipsizeMode="tail">
+                              ]} numberOfLines={1} ellipsizeMode="tail">
                                 {formatCourseName(course.name)}
                               </Text>
                               
@@ -826,15 +827,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
   },
   courseCard: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 10,
-    width: '48%',
-    minHeight: 110,
-    maxHeight: 110,
+    width: '32%',
+    minHeight: 120,
+    maxHeight: 120,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -863,14 +864,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
+    alignSelf: 'flex-start',
   },
   courseCardName: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 6,
-    minHeight: 28,
-    lineHeight: 14,
+    minHeight: 16,
+    lineHeight: 16,
     flex: 1,
   },
   courseCardFooter: {

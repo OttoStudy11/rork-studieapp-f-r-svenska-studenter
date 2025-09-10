@@ -203,6 +203,7 @@ export default function GymnasiumAndProgramPicker({
               return (
                 <PressableCard
                   key={program.id}
+                  testID={`program-card-${program.id}`}
                   style={[
                     styles.programCard,
                     isSelected && styles.selectedProgramCard,
@@ -218,10 +219,10 @@ export default function GymnasiumAndProgramPicker({
                   <View style={[styles.programIconContainer, { backgroundColor: color + '20' }]}>
                     <IconComponent size={24} color={color} />
                   </View>
-                  <Text style={[styles.programCardName, isSelected && { color }]}>
+                  <Text style={[styles.programCardName, isSelected && { color }]} numberOfLines={1} ellipsizeMode="tail">
                     {program.name}
                   </Text>
-                  <Text style={styles.programCardAbbr}>{program.abbr}</Text>
+                  <Text style={styles.programCardAbbr} numberOfLines={1} ellipsizeMode="clip">{program.abbr}</Text>
                 </PressableCard>
               );
             })}
@@ -251,6 +252,7 @@ export default function GymnasiumAndProgramPicker({
               return (
                 <PressableCard
                   key={program.id}
+                  testID={`program-card-${program.id}`}
                   style={[
                     styles.programCard,
                     isSelected && styles.selectedProgramCard,
@@ -266,10 +268,10 @@ export default function GymnasiumAndProgramPicker({
                   <View style={[styles.programIconContainer, { backgroundColor: color + '20' }]}>
                     <IconComponent size={24} color={color} />
                   </View>
-                  <Text style={[styles.programCardName, isSelected && { color }]}>
+                  <Text style={[styles.programCardName, isSelected && { color }]} numberOfLines={1} ellipsizeMode="tail">
                     {program.name}
                   </Text>
-                  <Text style={styles.programCardAbbr}>{program.abbr}</Text>
+                  <Text style={styles.programCardAbbr} numberOfLines={1} ellipsizeMode="clip">{program.abbr}</Text>
                 </PressableCard>
               );
             })}
@@ -638,16 +640,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginBottom: 24,
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
   },
   programCard: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
-    width: '48%',
-    minHeight: 100,
-    maxHeight: 100,
+    width: '32%',
+    minHeight: 110,
+    maxHeight: 110,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     shadowColor: '#000',

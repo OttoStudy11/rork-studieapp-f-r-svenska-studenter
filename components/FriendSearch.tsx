@@ -46,7 +46,7 @@ export default function FriendSearch({ onFriendAdded }: FriendSearchProps) {
       });
 
       if (error) {
-        console.error('Error searching users:', error);
+        console.error('Error searching users:', error.message || error);
         showError('Kunde inte söka efter användare');
         return;
       }
@@ -54,8 +54,8 @@ export default function FriendSearch({ onFriendAdded }: FriendSearchProps) {
       // Filter out current user from results
       const filteredResults = data?.filter((result: SearchResult) => result.id !== user?.id) || [];
       setSearchResults(filteredResults);
-    } catch (error) {
-      console.error('Error searching users:', error);
+    } catch (error: any) {
+      console.error('Error searching users:', error?.message || error);
       showError('Något gick fel vid sökning');
     } finally {
       setIsSearching(false);
@@ -104,7 +104,7 @@ export default function FriendSearch({ onFriendAdded }: FriendSearchProps) {
         });
 
       if (error) {
-        console.error('Error adding friend:', error);
+        console.error('Error adding friend:', error.message || error);
         showError('Kunde inte skicka vänförfrågan');
         return;
       }
@@ -114,8 +114,8 @@ export default function FriendSearch({ onFriendAdded }: FriendSearchProps) {
       
       // Remove from search results
       setSearchResults(prev => prev.filter(result => result.id !== friendId));
-    } catch (error) {
-      console.error('Error adding friend:', error);
+    } catch (error: any) {
+      console.error('Error adding friend:', error?.message || error);
       showError('Något gick fel');
     } finally {
       setAddingFriendId(null);

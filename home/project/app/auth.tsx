@@ -13,11 +13,13 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, Check } from 'lucide-react-native';
+import { GraduationCap, Mail, Lock, Eye, EyeOff, Check, User, AtSign } from 'lucide-react-native';
 
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -69,11 +71,31 @@ export default function AuthScreen() {
       return;
     }
 
+    if (isSignUp && !displayName.trim()) {
+      showError('Ange ditt namn');
+      return;
+    }
+
+    if (isSignUp && !username.trim()) {
+      showError('Ange ett användarnamn');
+      return;
+    }
+
+    if (isSignUp && username.length < 3) {
+      showError('Användarnamnet måste vara minst 3 tecken');
+      return;
+    }
+
+    if (isSignUp && !/^[a-z0-9_]+$/.test(username)) {
+      showError('Användarnamnet får endast innehålla små bokstäver, siffror och understreck');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const { error } = isSignUp 
-        ? await signUp(email, password)
+        ? await signUp(email, password, displayName, username)
         : await signIn(email, password, rememberMe);
       
       if (error) {
@@ -233,6 +255,34 @@ export default function AuthScreen() {
                         autoFocus
                       />
                     </View>
+
+                    {isSignUp && (
+                      <>
+                        <View style={styles.inputContainer}>
+                          <User size={20} color="#666" style={styles.inputIcon} />
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Ditt namn"
+                            value={displayName}
+                            onChangeText={setDisplayName}
+                            autoCapitalize="words"
+                            autoCorrect={false}
+                          />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                          <AtSign size={20} color="#666" style={styles.inputIcon} />
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Användarnamn"
+                            value={username}
+                            onChangeText={(text) => setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                          />
+                        </View>
+                      </>
+                    )}
 
                     {!showForgotPassword && (
                       <View style={styles.inputContainer}>

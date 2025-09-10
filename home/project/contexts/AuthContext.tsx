@@ -16,7 +16,7 @@ export interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   hasCompletedOnboarding: boolean;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error?: any }>;
+  signUp: (email: string, password: string, displayName?: string, username?: string) => Promise<{ error?: any }>;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
   setOnboardingCompleted: () => Promise<void>;
@@ -281,7 +281,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const RATE_LIMIT_DELAY = 60000; // 60 seconds
 
-  const handleSignUp = useCallback(async (email: string, password: string, displayName?: string) => {
+  const handleSignUp = useCallback(async (email: string, password: string, displayName?: string, username?: string) => {
     try {
       // Check rate limiting
       const now = Date.now();
@@ -300,7 +300,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         password,
         options: {
           data: {
-            display_name: displayName
+            display_name: displayName,
+            username: username
           }
         }
       });

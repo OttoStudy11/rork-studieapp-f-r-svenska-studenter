@@ -145,10 +145,39 @@ CREATE POLICY "Everyone can view study techniques" ON public.study_techniques
 
 -- Create function to handle new user profile creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER AS $
+DECLARE
+  user_display_name TEXT;
+  user_username TEXT;
 BEGIN
-  INSERT INTO public.profiles (id, email, created_at, updated_at)
-  VALUES (NEW.id, NEW.email, NOW(), NOW());
+  -- Extract display_name and username from raw_user_meta_data
+  user_display_name := COALESCE(
+    NEW.raw_user_meta_data->>'display_name',
+    NEW.raw_user_meta_data->>'name'
+  );
+  
+  user_username := NEW.raw_user_meta_data->>'username';
+  
+  -- Insert profile with extracted metadata
+  INSERT INTO public.profiles (
+    id, 
+    email, 
+    display_name, 
+    name,
+    username,
+    created_at, 
+    updated_at
+  )
+  VALUES (
+    NEW.id, 
+    NEW.email, 
+    user_display_name,
+    user_display_name,
+    user_username,
+    NOW(), 
+    NOW()
+  );
+  
   RETURN NEW;
 EXCEPTION
   WHEN others THEN
@@ -156,7 +185,7 @@ EXCEPTION
     RAISE WARNING 'Could not create profile for user %: %', NEW.id, SQLERRM;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create trigger to automatically create profile when user signs up
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

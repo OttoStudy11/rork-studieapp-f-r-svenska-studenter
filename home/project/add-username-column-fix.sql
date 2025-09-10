@@ -32,7 +32,14 @@ SET
 WHERE username IS NULL OR display_name IS NULL;
 
 -- Add unique constraint to username
-ALTER TABLE public.profiles ADD CONSTRAINT IF NOT EXISTS profiles_username_unique UNIQUE (username);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                   WHERE constraint_name = 'profiles_username_unique' AND table_name = 'profiles') THEN
+        ALTER TABLE public.profiles 
+        ADD CONSTRAINT profiles_username_unique UNIQUE (username);
+    END IF;
+END $$;
 
 -- Add constraint to ensure username format is valid
 DO $$

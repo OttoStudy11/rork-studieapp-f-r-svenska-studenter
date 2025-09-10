@@ -128,43 +128,54 @@ export default function Onboarding() {
           <View style={styles.stepContainer}>
             <BookOpen size={48} color="#4ECDC4" style={styles.icon} />
             <Text style={styles.title}>Välj program och årskurs</Text>
-            <Text style={styles.subtitle}>Program</Text>
-            <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-              {availablePrograms.map((prog) => (
-                <TouchableOpacity
-                  key={prog.id}
-                  style={[styles.listItem, program === prog.id && styles.listItemSelected]}
-                  onPress={() => setProgram(prog.id)}
-                >
-                  <View>
-                    <Text style={[styles.listItemText, program === prog.id && styles.listItemTextSelected]}>
-                      {prog.name}
-                    </Text>
-                    <Text style={[styles.listItemSubtext, program === prog.id && styles.listItemTextSelected]}>
-                      {prog.category === 'högskoleförberedande' ? 'Högskoleförberedande' : 'Yrkesprogram'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            
+            <View style={styles.programSelectionContainer}>
+              <Text style={styles.sectionTitle}>Program</Text>
+              <ScrollView style={styles.programList} showsVerticalScrollIndicator={false}>
+                {availablePrograms.map((prog) => (
+                  <TouchableOpacity
+                    key={prog.id}
+                    style={[styles.programItem, program === prog.id && styles.programItemSelected]}
+                    onPress={() => setProgram(prog.id)}
+                  >
+                    <View style={styles.programContent}>
+                      <Text style={[styles.programName, program === prog.id && styles.programNameSelected]}>
+                        {prog.name}
+                      </Text>
+                      <Text style={[styles.programCategory, program === prog.id && styles.programCategorySelected]}>
+                        {prog.category === 'högskoleförberedande' ? 'Högskoleförberedande' : 'Yrkesprogram'}
+                      </Text>
+                    </View>
+                    {program === prog.id && (
+                      <View style={styles.checkmark}>
+                        <Text style={styles.checkmarkText}>✓</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
             
             {program && (
-              <>
-                <Text style={[styles.subtitle, { marginTop: 20 }]}>Årskurs</Text>
-                <View style={styles.yearContainer}>
+              <View style={styles.yearSelectionContainer}>
+                <Text style={styles.sectionTitle}>Årskurs</Text>
+                <View style={styles.yearGrid}>
                   {[1, 2, 3].map((y) => (
                     <TouchableOpacity
                       key={y}
-                      style={[styles.yearButton, year === y && styles.yearButtonSelected]}
+                      style={[styles.yearCard, year === y && styles.yearCardSelected]}
                       onPress={() => setYear(y as 1 | 2 | 3)}
                     >
-                      <Text style={[styles.yearButtonText, year === y && styles.yearButtonTextSelected]}>
+                      <Text style={[styles.yearNumber, year === y && styles.yearNumberSelected]}>
+                        {y}
+                      </Text>
+                      <Text style={[styles.yearLabel, year === y && styles.yearLabelSelected]}>
                         År {y}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
-              </>
+              </View>
             )}
             
             <TouchableOpacity
@@ -183,63 +194,89 @@ export default function Onboarding() {
           <View style={styles.stepContainer}>
             <GraduationCap size={48} color="#4ECDC4" style={styles.icon} />
             <Text style={styles.title}>Välj dina kurser</Text>
-            <Text style={styles.subtitle}>År {year} - {program}</Text>
+            <View style={styles.programSummary}>
+              <Text style={styles.programSummaryText}>År {year} - {GYMNASIUM_PROGRAMS.find(p => p.id === program)?.name}</Text>
+            </View>
             
             <ScrollView style={styles.coursesList} showsVerticalScrollIndicator={false}>
               {mandatoryCourses.length > 0 && (
-                <>
-                  <Text style={styles.courseCategoryTitle}>Obligatoriska kurser</Text>
-                  {mandatoryCourses.map((course) => (
-                    <View key={course.code} style={styles.courseItem}>
-                      <View style={styles.courseInfo}>
-                        <Text style={styles.courseName}>{course.name}</Text>
-                        <Text style={styles.courseDetails}>
-                          {course.code} • {course.points}p • {course.category}
-                        </Text>
-                      </View>
-                      <View style={styles.mandatoryBadge}>
-                        <Text style={styles.mandatoryText}>Obligatorisk</Text>
-                      </View>
+                <View style={styles.coursesSection}>
+                  <View style={styles.courseSectionHeader}>
+                    <Text style={styles.courseCategoryTitle}>Obligatoriska kurser</Text>
+                    <View style={styles.courseBadge}>
+                      <Text style={styles.courseBadgeText}>{mandatoryCourses.length}</Text>
                     </View>
-                  ))}
-                </>
+                  </View>
+                  <View style={styles.coursesGrid}>
+                    {mandatoryCourses.map((course) => (
+                      <View key={course.code} style={styles.mandatoryCourseCard}>
+                        <View style={styles.courseCardHeader}>
+                          <Text style={styles.courseCardName}>{course.name}</Text>
+                          <View style={styles.mandatoryIndicator}>
+                            <Text style={styles.mandatoryIndicatorText}>✓</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.courseCardDetails}>
+                          {course.code} • {course.points}p
+                        </Text>
+                        <Text style={styles.courseCardCategory}>{course.category}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
               )}
               
               {electiveCourses.length > 0 && (
-                <>
-                  <Text style={[styles.courseCategoryTitle, { marginTop: 30 }]}>Valbara kurser</Text>
+                <View style={styles.coursesSection}>
+                  <View style={styles.courseSectionHeader}>
+                    <Text style={styles.courseCategoryTitle}>Valbara kurser</Text>
+                    <View style={styles.courseBadge}>
+                      <Text style={styles.courseBadgeText}>{selectedCourses.length}/{electiveCourses.length}</Text>
+                    </View>
+                  </View>
                   <Text style={styles.electiveSubtitle}>Välj de kurser du är intresserad av</Text>
-                  {electiveCourses.map((course) => (
-                    <TouchableOpacity
-                      key={course.code}
-                      style={[
-                        styles.courseItem,
-                        styles.electiveCourse,
-                        selectedCourses.includes(course.code) && styles.selectedCourse
-                      ]}
-                      onPress={() => toggleCourse(course.code)}
-                    >
-                      <View style={styles.courseInfo}>
+                  <View style={styles.coursesGrid}>
+                    {electiveCourses.map((course) => (
+                      <TouchableOpacity
+                        key={course.code}
+                        style={[
+                          styles.electiveCourseCard,
+                          selectedCourses.includes(course.code) && styles.selectedCourseCard
+                        ]}
+                        onPress={() => toggleCourse(course.code)}
+                      >
+                        <View style={styles.courseCardHeader}>
+                          <Text style={[
+                            styles.courseCardName,
+                            selectedCourses.includes(course.code) && styles.selectedCourseCardName
+                          ]}>
+                            {course.name}
+                          </Text>
+                          <View style={[
+                            styles.selectionCircle,
+                            selectedCourses.includes(course.code) && styles.selectedCircle
+                          ]}>
+                            {selectedCourses.includes(course.code) && (
+                              <Text style={styles.selectedCircleText}>✓</Text>
+                            )}
+                          </View>
+                        </View>
                         <Text style={[
-                          styles.courseName,
-                          selectedCourses.includes(course.code) && styles.selectedCourseName
+                          styles.courseCardDetails,
+                          selectedCourses.includes(course.code) && styles.selectedCourseCardDetails
                         ]}>
-                          {course.name}
+                          {course.code} • {course.points}p
                         </Text>
                         <Text style={[
-                          styles.courseDetails,
-                          selectedCourses.includes(course.code) && styles.selectedCourseDetails
+                          styles.courseCardCategory,
+                          selectedCourses.includes(course.code) && styles.selectedCourseCardCategory
                         ]}>
-                          {course.code} • {course.points}p • {course.category}
+                          {course.category}
                         </Text>
-                      </View>
-                      <View style={[
-                        styles.selectionIndicator,
-                        selectedCourses.includes(course.code) && styles.selectedIndicator
-                      ]} />
-                    </TouchableOpacity>
-                  ))}
-                </>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
               )}
             </ScrollView>
             
@@ -365,32 +402,264 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
-  yearContainer: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 30,
+  programSelectionContainer: {
+    flex: 1,
     paddingHorizontal: 20,
   },
-  yearButton: {
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold' as const,
+    color: '#1a1a1a',
+    marginBottom: 16,
+  },
+  programList: {
     flex: 1,
+  },
+  programItem: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#f0f0f0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  programItemSelected: {
+    backgroundColor: '#f0fffe',
+    borderColor: '#4ECDC4',
+    shadowColor: '#4ECDC4',
+    shadowOpacity: 0.15,
+  },
+  programContent: {
+    flex: 1,
+  },
+  programName: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  programNameSelected: {
+    color: '#2d7a73',
+  },
+  programCategory: {
+    fontSize: 14,
+    color: '#666',
+  },
+  programCategorySelected: {
+    color: '#4ECDC4',
+  },
+  checkmark: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#4ECDC4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkmarkText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold' as const,
+  },
+  yearSelectionContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     backgroundColor: '#f8f9fa',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    marginBottom: 20,
+  },
+  yearGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  yearCard: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  yearCardSelected: {
+    backgroundColor: '#4ECDC4',
+    borderColor: '#4ECDC4',
+    shadowColor: '#4ECDC4',
+    shadowOpacity: 0.2,
+  },
+  yearNumber: {
+    fontSize: 32,
+    fontWeight: 'bold' as const,
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  yearNumberSelected: {
+    color: '#fff',
+  },
+  yearLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500' as const,
+  },
+  yearLabelSelected: {
+    color: '#fff',
+  },
+  programSummary: {
+    backgroundColor: '#f0fffe',
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#4ECDC4',
   },
-  yearButtonSelected: {
+  programSummaryText: {
+    fontSize: 16,
+    color: '#2d7a73',
+    fontWeight: '600' as const,
+    textAlign: 'center',
+  },
+  coursesSection: {
+    marginBottom: 32,
+  },
+  courseSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  courseBadge: {
+    backgroundColor: '#4ECDC4',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  courseBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold' as const,
+  },
+  coursesGrid: {
+    gap: 12,
+  },
+  mandatoryCourseCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#e8f4f8',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  electiveCourseCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  selectedCourseCard: {
+    backgroundColor: '#f0fffe',
+    borderColor: '#4ECDC4',
+    shadowColor: '#4ECDC4',
+    shadowOpacity: 0.15,
+  },
+  courseCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  courseCardName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+    flex: 1,
+    marginRight: 12,
+  },
+  selectedCourseCardName: {
+    color: '#2d7a73',
+  },
+  courseCardDetails: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  selectedCourseCardDetails: {
+    color: '#4ECDC4',
+  },
+  courseCardCategory: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '500' as const,
+  },
+  selectedCourseCardCategory: {
+    color: '#4ECDC4',
+  },
+  mandatoryIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#e8f4f8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mandatoryIndicatorText: {
+    color: '#2d7a73',
+    fontSize: 12,
+    fontWeight: 'bold' as const,
+  },
+  selectionCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedCircle: {
     backgroundColor: '#4ECDC4',
     borderColor: '#4ECDC4',
   },
-  yearButtonText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  yearButtonTextSelected: {
+  selectedCircleText: {
     color: '#fff',
-    fontWeight: '600' as const,
+    fontSize: 12,
+    fontWeight: 'bold' as const,
   },
   button: {
     backgroundColor: '#4ECDC4',

@@ -110,7 +110,7 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
       // Get user profile with premium status from database
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('premium_status')
+        .select('*')
         .eq('id', authUser.id)
         .single();
       
@@ -122,7 +122,8 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
       }
       
       // Set subscription based on database value
-      const isPremiumUser = profile?.premium_status === true;
+      // Handle case where premium_status column might not exist yet
+      const isPremiumUser = (profile as any)?.premium_status === true;
       setSubscriptionType(isPremiumUser ? 'premium' : 'free');
       setSubscriptionExpiresAt(null); // For now, no expiration dates
       
@@ -200,7 +201,7 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
       
       const { error } = await supabase
         .from('profiles')
-        .update({ premium_status: newPremiumStatus })
+        .update({ premium_status: newPremiumStatus } as any)
         .eq('id', authUser.id);
       
       if (error) {

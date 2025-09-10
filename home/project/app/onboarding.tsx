@@ -34,24 +34,47 @@ export default function Onboarding() {
   const electiveCourses = availableCourses.filter(course => !course.mandatory);
 
   const handleComplete = async () => {
-    console.log('Completing onboarding with data:', {
+    console.log('🎯 Starting onboarding completion with data:', {
       name,
       gymnasium,
       program,
       year,
-      selectedCourses: selectedCourses.length
+      selectedCourses: selectedCourses.length,
+      mandatoryCourses: mandatoryCourses.length
     });
     
-    await updateUserProfile({
-      name,
-      gymnasium,
-      program,
-      year,
-      selectedCourses,
-    } as any);
-    
-    await completeOnboarding();
-    router.replace('/(tabs)/home');
+    try {
+      // Include all mandatory courses automatically
+      const allSelectedCourses = [
+        ...mandatoryCourses.map(course => course.code),
+        ...selectedCourses
+      ];
+      
+      console.log('📚 Final course selection:', {
+        mandatory: mandatoryCourses.length,
+        elective: selectedCourses.length,
+        total: allSelectedCourses.length
+      });
+      
+      // Update profile with all data
+      await updateUserProfile({
+        name,
+        gymnasium,
+        program,
+        year,
+        selectedCourses: allSelectedCourses,
+      } as any);
+      
+      // Complete onboarding process
+      await completeOnboarding();
+      
+      console.log('✅ Onboarding completed successfully, navigating to home');
+      router.replace('/(tabs)/home');
+    } catch (error) {
+      console.error('❌ Error completing onboarding:', error);
+      // Still navigate to home even if there's an error
+      router.replace('/(tabs)/home');
+    }
   };
 
   const toggleCourse = (courseCode: string) => {
@@ -279,6 +302,16 @@ export default function Onboarding() {
                 </View>
               )}
             </ScrollView>
+            
+            <View style={styles.completionSummary}>
+              <Text style={styles.summaryTitle}>Sammanfattning</Text>
+              <Text style={styles.summaryText}>
+                {mandatoryCourses.length} obligatoriska kurser + {selectedCourses.length} valbara kurser
+              </Text>
+              <Text style={styles.summarySubtext}>
+                Totalt: {mandatoryCourses.length + selectedCourses.length} kurser
+              </Text>
+            </View>
             
             <TouchableOpacity
               style={styles.button}
@@ -762,5 +795,33 @@ const styles = StyleSheet.create({
   selectedIndicator: {
     backgroundColor: '#4ECDC4',
     borderColor: '#4ECDC4',
+  },
+  completionSummary: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold' as const,
+    color: '#1a1a1a',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  summaryText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  summarySubtext: {
+    fontSize: 14,
+    color: '#4ECDC4',
+    fontWeight: '600' as const,
+    textAlign: 'center',
   },
 });

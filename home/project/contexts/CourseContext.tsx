@@ -316,25 +316,37 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
   }, [user?.id]);
 
   const saveProfile = useCallback(async (profile: UserProfile) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.error('No user ID available for profile save');
+      return;
+    }
     
     try {
       const STORAGE_KEYS = getStorageKeys(user.id);
       // Ensure profile has the correct user ID
       const profileWithUserId = { ...profile, id: user.id };
       
+      console.log('Saving profile for user:', user.id, profileWithUserId);
+      
       // Save to AsyncStorage first for immediate UI update
       await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profileWithUserId));
       setUserProfile(profileWithUserId);
-      console.log('Saved profile locally for user:', user.id);
+      console.log('✅ Profile saved locally for user:', user.id);
       
-      // Sync with Supabase database
+      // Sync with Supabase database - this is critical for persistence
       try {
-        console.log('Syncing profile to database for user:', user.id);
+        console.log('🔄 Syncing profile to database for user:', user.id);
+        
+        // First check if profile exists
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+        
         const updateData: any = {
-          id: user.id,
           name: profileWithUserId.name || null,
-          email: profileWithUserId.email || null,
+          email: profileWithUserId.email || user.email || null,
           updated_at: new Date().toISOString()
         };
         
@@ -352,24 +364,61 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
           updateData.selected_courses = JSON.stringify(profileWithUserId.selectedCourses);
         }
         
-        const { error: dbError } = await supabase
-          .from('profiles')
-          .upsert(updateData, {
-            onConflict: 'id'
-          });
+        let dbError;
+        
+        if (existingProfile) {
+          // Update existing profile
+          console.log('📝 Updating existing profile with data:', updateData);
+          const result = await supabase
+            .from('profiles')
+            .update(updateData)
+            .eq('id', user.id);
+          dbError = result.error;
+        } else {
+          // Insert new profile
+          console.log('➕ Creating new profile with data:', { id: user.id, ...updateData });
+          const result = await supabase
+            .from('profiles')
+            .insert({ id: user.id, ...updateData });
+          dbError = result.error;
+        }
         
         if (dbError) {
-          console.error('Error syncing profile to database:', dbError);
+          console.error('❌ Error syncing profile to database:', {
+            message: dbError.message,
+            details: dbError.details,
+            hint: dbError.hint,
+            code: dbError.code
+          });
         } else {
-          console.log('Profile successfully synced to database');
+          console.log('✅ Profile successfully synced to database');
+          
+          // Verify the save by reading it back
+          const { data: verifyProfile, error: verifyError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          
+          if (!verifyError && verifyProfile) {
+            console.log('✅ Profile verification successful:', {
+              name: verifyProfile.name,
+              gymnasium: (verifyProfile as any).gymnasium,
+              program: (verifyProfile as any).program,
+              year: (verifyProfile as any).year,
+              selectedCourses: (verifyProfile as any).selected_courses ? 'present' : 'null'
+            });
+          } else {
+            console.error('❌ Profile verification failed:', verifyError);
+          }
         }
       } catch (syncError) {
-        console.error('Exception syncing profile to database:', syncError);
+        console.error('❌ Exception syncing profile to database:', syncError);
       }
     } catch (error) {
-      console.error('Error saving profile:', error);
+      console.error('❌ Error saving profile:', error);
     }
-  }, [user?.id]);
+  }, [user?.id, user?.email]);
 
   // Helper function to extract subject from course name
   const extractSubjectFromName = (name: string): string => {
@@ -529,12 +578,20 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
   }, [saveCourses, user?.id, syncCoursesToSupabase]);
 
   const updateUserProfile = useCallback(async (updates: Partial<UserProfile>) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.error('No user ID available for profile update');
+      return;
+    }
+    
+    console.log('Updating user profile with:', updates);
     
     const updatedProfile = userProfile 
       ? { ...userProfile, ...updates, id: user.id }
       : { id: user.id, ...updates } as UserProfile;
     
+    console.log('Complete updated profile:', updatedProfile);
+    
+    // Save profile to both AsyncStorage and database
     await saveProfile(updatedProfile);
     
     // If program, year, or selectedCourses changed, update courses
@@ -546,28 +603,46 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
       });
       await assignCoursesForYear(updatedProfile.program, updatedProfile.year, updatedProfile.selectedCourses);
     }
+    
+    console.log('Profile update completed successfully');
   }, [user?.id, userProfile, saveProfile, assignCoursesForYear]);
 
   const completeOnboarding = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.error('No user ID available for onboarding completion');
+      return;
+    }
     
     try {
       const STORAGE_KEYS = getStorageKeys(user.id);
       
+      console.log('🎯 Completing onboarding for user:', user.id);
+      console.log('📋 Current profile state:', userProfile);
+      
       // Save to AsyncStorage for onboarding completion
       await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
       setOnboardingCompleted(true);
-      console.log('Onboarding completed for user:', user.id);
+      console.log('✅ Onboarding marked as completed locally');
       
-      // The profile data is already saved through updateUserProfile during onboarding
-      // No need to save again here, just ensure the profile is complete
+      // Ensure the profile is properly saved to database one more time
       if (userProfile) {
-        console.log('Profile already exists and will be synced to database:', userProfile);
+        console.log('🔄 Final profile sync to database during onboarding completion');
+        await saveProfile(userProfile);
+        
+        // Also sync courses if they exist
+        if (courses.length > 0) {
+          console.log('🔄 Syncing courses to database during onboarding completion');
+          await syncCoursesToSupabase(courses);
+        }
+      } else {
+        console.warn('⚠️ No profile data available during onboarding completion');
       }
+      
+      console.log('🎉 Onboarding completion process finished');
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error('❌ Error completing onboarding:', error);
     }
-  }, [user?.id, userProfile]);
+  }, [user?.id, userProfile, saveProfile, courses, syncCoursesToSupabase]);
 
   const resetOnboarding = useCallback(async () => {
     if (!user?.id) return;

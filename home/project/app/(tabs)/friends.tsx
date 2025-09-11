@@ -1,19 +1,27 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
-import { Users, Trophy, Clock, TrendingUp, UserPlus, Crown, Lock } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, RefreshControl } from 'react-native';
+import { Users, Trophy, Clock, TrendingUp, UserPlus, Crown, Lock, Check, X, Bell } from 'lucide-react-native';
 import { usePremium } from '@/contexts/PremiumContext';
+import { useFriends } from '../../contexts/FriendsContext';
 import { router } from 'expo-router';
+import { useState } from 'react';
+import FriendSearch from '../../components/FriendSearch';
 
-const mockFriends = [
-  { id: '1', name: 'Emma Andersson', studyHours: 156, streak: 12, avatar: null, status: 'online' },
-  { id: '2', name: 'Oscar Nilsson', studyHours: 142, streak: 8, avatar: null, status: 'studying' },
-  { id: '3', name: 'Maja Eriksson', studyHours: 138, streak: 15, avatar: null, status: 'offline' },
-  { id: '4', name: 'Lucas Johansson', studyHours: 125, streak: 6, avatar: null, status: 'online' },
-  { id: '5', name: 'Alva Larsson', studyHours: 118, streak: 10, avatar: null, status: 'studying' },
-];
+
 
 export default function Friends() {
   const { isPremium, canAddFriend, limits } = usePremium();
-  const currentFriends = mockFriends.length;
+  const { 
+    friends, 
+    friendRequests, 
+    isLoading, 
+    acceptFriendRequest, 
+    rejectFriendRequest, 
+    refreshFriends 
+  } = useFriends();
+  const [showSearch, setShowSearch] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  const currentFriends = friends.length;
   const canAddMoreFriends = canAddFriend(currentFriends);
 
   const handleAddFriend = () => {
@@ -28,18 +36,52 @@ export default function Friends() {
       );
       return;
     }
-    // Handle adding friend logic here
-    console.log('Add friend functionality would go here');
+    setShowSearch(true);
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refreshFriends();
+    setRefreshing(false);
+  };
+
+  const handleAcceptRequest = async (requestId: string) => {
+    const { error } = await acceptFriendRequest(requestId);
+    if (error) {
+      Alert.alert('Fel', error.message || 'Kunde inte acceptera vänförfrågan');
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    const { error } = await rejectFriendRequest(requestId);
+    if (error) {
+      Alert.alert('Fel', error.message || 'Kunde inte avvisa vänförfrågan');
+    }
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <>
+    <ScrollView 
+      style={styles.container} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }
+    >
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>Vänner & Topplistor</Text>
           {isPremium && <Crown size={24} color="#FFD700" />}
         </View>
         <View style={styles.headerRight}>
+          {friendRequests.length > 0 && (
+            <View style={styles.notificationBadge}>
+              <Bell size={20} color="#4ECDC4" />
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{friendRequests.length}</Text>
+              </View>
+            </View>
+          )}
           <Text style={styles.friendsCount}>
             {currentFriends}/{limits.maxFriends === Infinity ? '∞' : limits.maxFriends}
           </Text>
@@ -56,73 +98,125 @@ export default function Friends() {
         </View>
       </View>
 
-      <View style={styles.leaderboardCard}>
-        <View style={styles.leaderboardHeader}>
-          <Trophy size={24} color="#FFD93D" />
-          <Text style={styles.leaderboardTitle}>Veckans topplista</Text>
-        </View>
-        
-        {mockFriends.slice(0, 3).map((friend, index) => (
-          <View key={friend.id} style={styles.leaderboardItem}>
-            <View style={styles.rank}>
-              <Text style={[styles.rankText, index === 0 && styles.goldRank]}>
-                {index + 1}
-              </Text>
-            </View>
-            <View style={styles.friendInfo}>
-              <View style={[styles.avatar, { backgroundColor: getAvatarColor(friend.name) }]}>
-                <Text style={styles.avatarText}>
-                  {friend.name.split(' ').map(n => n[0]).join('')}
-                </Text>
-              </View>
-              <View style={styles.friendDetails}>
-                <Text style={styles.friendName}>{friend.name}</Text>
-                <View style={styles.friendStats}>
-                  <Clock size={12} color="#7f8c8d" />
-                  <Text style={styles.friendStatText}>{friend.studyHours}h</Text>
-                </View>
-              </View>
-            </View>
-            {index === 0 && <Trophy size={20} color="#FFD93D" />}
-            {index === 1 && <Trophy size={20} color="#C0C0C0" />}
-            {index === 2 && <Trophy size={20} color="#CD7F32" />}
+      {friendRequests.length > 0 && (
+        <View style={styles.requestsCard}>
+          <View style={styles.requestsHeader}>
+            <Bell size={24} color="#4ECDC4" />
+            <Text style={styles.requestsTitle}>Vänförfrågningar ({friendRequests.length})</Text>
           </View>
-        ))}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Alla vänner</Text>
-        {mockFriends.map((friend) => (
-          <TouchableOpacity key={friend.id} style={styles.friendCard}>
-            <View style={styles.friendCardContent}>
-              <View style={[styles.avatar, { backgroundColor: getAvatarColor(friend.name) }]}>
+          
+          {friendRequests.map((request) => (
+            <View key={request.id} style={styles.requestItem}>
+              <View style={[styles.avatar, { backgroundColor: getAvatarColor(request.fromUser.displayName) }]}>
                 <Text style={styles.avatarText}>
-                  {friend.name.split(' ').map(n => n[0]).join('')}
-                </Text>
-                {friend.status === 'online' && <View style={styles.onlineIndicator} />}
-                {friend.status === 'studying' && <View style={styles.studyingIndicator} />}
-              </View>
-              <View style={styles.friendCardInfo}>
-                <Text style={styles.friendName}>{friend.name}</Text>
-                <Text style={styles.statusText}>
-                  {friend.status === 'online' ? 'Online' : 
-                   friend.status === 'studying' ? 'Studerar' : 'Offline'}
+                  {request.fromUser.displayName.charAt(0).toUpperCase()}
                 </Text>
               </View>
-              <View style={styles.friendCardStats}>
-                <View style={styles.statItem}>
-                  <Clock size={14} color="#7f8c8d" />
-                  <Text style={styles.statValue}>{friend.studyHours}h</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <TrendingUp size={14} color="#7f8c8d" />
-                  <Text style={styles.statValue}>{friend.streak}d</Text>
-                </View>
+              <View style={styles.requestInfo}>
+                <Text style={styles.friendName}>{request.fromUser.displayName}</Text>
+                <Text style={styles.requestUsername}>@{request.fromUser.username}</Text>
+              </View>
+              <View style={styles.requestActions}>
+                <TouchableOpacity 
+                  style={styles.acceptButton}
+                  onPress={() => handleAcceptRequest(request.id)}
+                >
+                  <Check size={18} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.rejectButton}
+                  onPress={() => handleRejectRequest(request.id)}
+                >
+                  <X size={18} color="#fff" />
+                </TouchableOpacity>
               </View>
             </View>
-          </TouchableOpacity>
-        ))}
-      </View>
+          ))}
+        </View>
+      )}
+
+      {friends.length > 0 && (
+        <View style={styles.leaderboardCard}>
+          <View style={styles.leaderboardHeader}>
+            <Trophy size={24} color="#FFD93D" />
+            <Text style={styles.leaderboardTitle}>Veckans topplista</Text>
+          </View>
+          
+          {friends
+            .sort((a, b) => b.studyHours - a.studyHours)
+            .slice(0, 3)
+            .map((friend, index) => (
+            <View key={friend.id} style={styles.leaderboardItem}>
+              <View style={styles.rank}>
+                <Text style={[styles.rankText, index === 0 && styles.goldRank]}>
+                  {index + 1}
+                </Text>
+              </View>
+              <View style={styles.friendInfo}>
+                <View style={[styles.avatar, { backgroundColor: getAvatarColor(friend.displayName) }]}>
+                  <Text style={styles.avatarText}>
+                    {friend.displayName.split(' ').map(n => n[0]).join('')}
+                  </Text>
+                </View>
+                <View style={styles.friendDetails}>
+                  <Text style={styles.friendName}>{friend.displayName}</Text>
+                  <View style={styles.friendStats}>
+                    <Clock size={12} color="#7f8c8d" />
+                    <Text style={styles.friendStatText}>{friend.studyHours}h</Text>
+                  </View>
+                </View>
+              </View>
+              {index === 0 && <Trophy size={20} color="#FFD93D" />}
+              {index === 1 && <Trophy size={20} color="#C0C0C0" />}
+              {index === 2 && <Trophy size={20} color="#CD7F32" />}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {friends.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Alla vänner ({friends.length})</Text>
+          {friends.map((friend) => (
+            <TouchableOpacity key={friend.id} style={styles.friendCard}>
+              <View style={styles.friendCardContent}>
+                <View style={[styles.avatar, { backgroundColor: getAvatarColor(friend.displayName) }]}>
+                  <Text style={styles.avatarText}>
+                    {friend.displayName.split(' ').map(n => n[0]).join('')}
+                  </Text>
+                  {friend.status === 'online' && <View style={styles.onlineIndicator} />}
+                  {friend.status === 'studying' && <View style={styles.studyingIndicator} />}
+                </View>
+                <View style={styles.friendCardInfo}>
+                  <Text style={styles.friendName}>{friend.displayName}</Text>
+                  <Text style={styles.statusText}>
+                    {friend.status === 'online' ? 'Online' : 
+                     friend.status === 'studying' ? 'Studerar' : 'Offline'}
+                  </Text>
+                </View>
+                <View style={styles.friendCardStats}>
+                  <View style={styles.statItem}>
+                    <Clock size={14} color="#7f8c8d" />
+                    <Text style={styles.statValue}>{friend.studyHours}h</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <TrendingUp size={14} color="#7f8c8d" />
+                    <Text style={styles.statValue}>{friend.streak}d</Text>
+                  </View>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.emptyState}>
+          <Users size={64} color="#bdc3c7" />
+          <Text style={styles.emptyTitle}>Inga vänner än</Text>
+          <Text style={styles.emptyText}>
+            Börja bygga ditt studienätverk genom att lägga till vänner!
+          </Text>
+        </View>
+      )}
 
       <TouchableOpacity 
         style={[styles.inviteButton, !canAddMoreFriends && styles.inviteButtonDisabled]}
@@ -152,6 +246,15 @@ export default function Friends() {
         </View>
       )}
     </ScrollView>
+    
+    <Modal
+      visible={showSearch}
+      animationType="slide"
+      presentationStyle="pageSheet"
+    >
+      <FriendSearch onClose={() => setShowSearch(false)} />
+    </Modal>
+    </>
   );
 }
 
@@ -425,5 +528,104 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  notificationBadge: {
+    position: 'relative',
+    marginRight: 8,
+  },
+  badge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#e74c3c',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  requestsCard: {
+    marginHorizontal: 20,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 2,
+    borderColor: '#4ECDC4',
+  },
+  requestsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 20,
+  },
+  requestsTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: '#2c3e50',
+  },
+  requestItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  requestInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  requestUsername: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginTop: 2,
+  },
+  requestActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  acceptButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#2ecc71',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rejectButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e74c3c',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
+    marginHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });

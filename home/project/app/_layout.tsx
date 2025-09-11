@@ -4,6 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { CourseProvider } from '@/contexts/CourseContext';
 import { PremiumProvider } from '@/contexts/PremiumContext';
 import { ProgressProvider } from '../contexts/ProgressContext';
+import { FriendsProvider } from '../contexts/FriendsContext';
 
 const queryClient = new QueryClient();
 
@@ -14,7 +15,9 @@ export default function RootLayout() {
         <PremiumProvider>
           <CourseProvider>
             <ProgressProvider>
-              <RootLayoutNav />
+              <FriendsProvider>
+                <RootLayoutNav />
+              </FriendsProvider>
             </ProgressProvider>
           </CourseProvider>
         </PremiumProvider>

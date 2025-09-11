@@ -242,47 +242,7 @@ export type Database = {
           },
         ]
       }
-      study_sessions: {
-        Row: {
-          completed: boolean | null
-          course_id: string
-          created_at: string
-          duration_minutes: number
-          id: string
-          notes: string | null
-          technique: string | null
-          user_id: string
-        }
-        Insert: {
-          completed?: boolean | null
-          course_id: string
-          created_at?: string
-          duration_minutes: number
-          id: string
-          notes?: string | null
-          technique?: string | null
-          user_id: string
-        }
-        Update: {
-          completed?: boolean | null
-          course_id?: string
-          created_at?: string
-          duration_minutes?: number
-          id?: string
-          notes?: string | null
-          technique?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "study_sessions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+
       study_tips: {
         Row: {
           category: string | null
@@ -472,6 +432,47 @@ export type Database = {
             foreignKeyName: "user_progress_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_sessions: {
+        Row: {
+          completed: boolean | null
+          course_id: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          technique: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          course_id: string
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          notes?: string | null
+          technique?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          course_id?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          technique?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },

@@ -3,10 +3,40 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useCourses } from '@/contexts/CourseContext';
-import { ChevronRight, School, BookOpen, User, GraduationCap } from 'lucide-react-native';
-import { SWEDISH_GYMNASIUMS, searchGymnasiums } from '@/constants/gymnasiums';
-import { GYMNASIUM_PROGRAMS, GYMNASIUM_PROGRAM_MAPPING } from '@/constants/gymnasium-programs';
+import { ChevronRight, School, BookOpen, User, GraduationCap, MapPin, Award } from 'lucide-react-native';
 import { getCoursesForProgramAndYear } from '@/constants/gymnasium-courses';
+
+// Temporary hardcoded data for testing
+const gymnasiums = [
+  'Kungsholmens gymnasium',
+  'Norra Real',
+  'Södra Latin',
+  'Östra Real',
+  'Viktor Rydberg gymnasium',
+  'Hvitfeldtska gymnasiet',
+  'Katrinelundsgymnasiet',
+  'Malmö Borgarskola',
+  'Malmö latinskola',
+  'Katedralskolan',
+  'Lundellska skolan',
+  'Berzeliusskolan',
+  'Folkungaskolan'
+];
+
+const allPrograms = [
+  'Naturvetenskapsprogrammet',
+  'Teknikprogrammet', 
+  'Samhällsvetenskapsprogrammet',
+  'Ekonomiprogrammet',
+  'Estetiska programmet',
+  'Humanistiska programmet',
+  'Barn- och fritidsprogrammet',
+  'Vård- och omsorgsprogrammet'
+];
+
+const getProgramsForGymnasium = (gymnasium: string): string[] => {
+  return allPrograms; // Return all programs for now
+};
 
 export default function Onboarding() {
   const router = useRouter();
@@ -19,19 +49,51 @@ export default function Onboarding() {
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Filter gymnasiums based on search
   const filteredGymnasiums = searchQuery 
-    ? searchGymnasiums(searchQuery)
-    : SWEDISH_GYMNASIUMS;
+    ? gymnasiums.filter((gym: string) => 
+        gym.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : gymnasiums;
 
-
-  const programIds = gymnasium ? GYMNASIUM_PROGRAM_MAPPING[gymnasium] || [] : [];
-  const availablePrograms = programIds.length > 0 
-    ? GYMNASIUM_PROGRAMS.filter(p => programIds.includes(p.id))
-    : GYMNASIUM_PROGRAMS;
+  // Get available programs for selected gymnasium
+  const availablePrograms = gymnasium ? getProgramsForGymnasium(gymnasium) : [];
   
+  // Get courses for selected program and year
   const availableCourses = program ? getCoursesForProgramAndYear(program, year) : [];
   const mandatoryCourses = availableCourses.filter(course => course.mandatory);
   const electiveCourses = availableCourses.filter(course => !course.mandatory);
+
+  // Get gymnasium info for display
+  const selectedGymnasiumInfo = gymnasium ? {
+    name: gymnasium,
+    city: gymnasium.includes('Stockholm') ? 'Stockholm' : 
+          gymnasium.includes('Göteborg') ? 'Göteborg' :
+          gymnasium.includes('Malmö') ? 'Malmö' :
+          gymnasium.includes('Uppsala') ? 'Uppsala' :
+          gymnasium.includes('Lund') ? 'Lund' : 'Sverige'
+  } : null;
+
+  // Get program category
+  const getProgramCategory = (programName: string) => {
+    if (!programName?.trim() || programName.length > 100) return 'Okänt program';
+    const sanitizedName = programName.trim();
+    const yrkesProgram = [
+      'Barn- och fritidsprogrammet',
+      'Bygg- och anläggningsprogrammet', 
+      'El- och energiprogrammet',
+      'Fordons- och transportprogrammet',
+      'Handels- och administrationsprogrammet',
+      'Hantverksprogrammet',
+      'Hotell- och turismprogrammet',
+      'Industritekniska programmet',
+      'Naturbruksprogrammet',
+      'Restaurang- och livsmedelsprogrammet',
+      'VVS- och fastighetsprogrammet',
+      'Vård- och omsorgsprogrammet'
+    ];
+    return yrkesProgram.includes(sanitizedName) ? 'Yrkesprogram' : 'Högskoleförberedande';
+  };
 
   const handleComplete = async () => {
     console.log('🎯 Starting onboarding completion with data:', {
@@ -92,14 +154,17 @@ export default function Onboarding() {
           <View style={styles.stepContainer}>
             <User size={48} color="#4ECDC4" style={styles.icon} />
             <Text style={styles.title}>Välkommen till StudieStugan!</Text>
-            <Text style={styles.subtitle}>Vad heter du?</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ditt namn"
-              value={name}
-              onChangeText={setName}
-              autoFocus
-            />
+            <Text style={styles.subtitle}>Låt oss börja med att lära känna dig</Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Vad heter du?</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ditt förnamn"
+                value={name}
+                onChangeText={setName}
+                autoFocus
+              />
+            </View>
             <TouchableOpacity
               style={[styles.button, !name && styles.buttonDisabled]}
               onPress={() => name && setStep(2)}
@@ -115,31 +180,48 @@ export default function Onboarding() {
         return (
           <View style={styles.stepContainer}>
             <School size={48} color="#4ECDC4" style={styles.icon} />
-            <Text style={styles.title}>Välj ditt gymnasium</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Sök gymnasium..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
+            <Text style={styles.title}>Hej {name}! 👋</Text>
+            <Text style={styles.subtitle}>Vilket gymnasium går du på?</Text>
+            <View style={styles.searchContainer}>
+              <MapPin size={20} color="#666" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Sök efter ditt gymnasium..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
             <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-              {filteredGymnasiums.map((gym) => (
+              {filteredGymnasiums.slice(0, 50).map((gym: string) => (
                 <TouchableOpacity
-                  key={gym.id}
-                  style={[styles.listItem, gymnasium === gym.id && styles.listItemSelected]}
+                  key={gym}
+                  style={[styles.listItem, gymnasium === gym && styles.listItemSelected]}
                   onPress={() => {
-                    setGymnasium(gym.id);
-                    setStep(3);
+                    if (gym?.trim() && gym.length <= 200) {
+                      setGymnasium(gym.trim());
+                      setProgram(''); // Reset program when changing gymnasium
+                      setStep(3);
+                    }
                   }}
                 >
-                  <View>
-                    <Text style={[styles.listItemText, gymnasium === gym.id && styles.listItemTextSelected]}>
-                      {gym.name}
+                  <View style={styles.listItemContent}>
+                    <Text style={[styles.listItemText, gymnasium === gym && styles.listItemTextSelected]}>
+                      {gym}
                     </Text>
-                    <Text style={[styles.listItemSubtext, gymnasium === gym.id && styles.listItemTextSelected]}>
-                      {gym.city}
+                    <Text style={[styles.listItemSubtext, gymnasium === gym && styles.listItemTextSelected]}>
+                      {!gym?.trim() ? 'Sverige' :
+                       gym.includes('Stockholm') ? 'Stockholm' : 
+                       gym.includes('Göteborg') ? 'Göteborg' :
+                       gym.includes('Malmö') ? 'Malmö' :
+                       gym.includes('Uppsala') ? 'Uppsala' :
+                       gym.includes('Lund') ? 'Lund' : 'Sverige'}
                     </Text>
                   </View>
+                  {gymnasium === gym && (
+                    <View style={styles.selectedIndicator}>
+                      <Text style={styles.selectedIndicatorText}>✓</Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -150,63 +232,44 @@ export default function Onboarding() {
         return (
           <View style={styles.stepContainer}>
             <BookOpen size={48} color="#4ECDC4" style={styles.icon} />
-            <Text style={styles.title}>Välj program och årskurs</Text>
+            <Text style={styles.title}>Välj ditt program</Text>
+            <Text style={styles.subtitle}>Vilket program läser du på {selectedGymnasiumInfo?.name}?</Text>
             
-            <View style={styles.programSelectionContainer}>
-              <Text style={styles.sectionTitle}>Program</Text>
-              <ScrollView style={styles.programList} showsVerticalScrollIndicator={false}>
-                {availablePrograms.map((prog) => (
-                  <TouchableOpacity
-                    key={prog.id}
-                    style={[styles.programItem, program === prog.id && styles.programItemSelected]}
-                    onPress={() => setProgram(prog.id)}
-                  >
-                    <View style={styles.programContent}>
-                      <Text style={[styles.programName, program === prog.id && styles.programNameSelected]}>
-                        {prog.name}
-                      </Text>
-                      <Text style={[styles.programCategory, program === prog.id && styles.programCategorySelected]}>
-                        {prog.category === 'högskoleförberedande' ? 'Högskoleförberedande' : 'Yrkesprogram'}
-                      </Text>
+            <ScrollView style={styles.programList} showsVerticalScrollIndicator={false}>
+              {availablePrograms.map((programName: string) => (
+                <TouchableOpacity
+                  key={programName}
+                  style={[styles.programItem, program === programName && styles.programItemSelected]}
+                  onPress={() => {
+                    if (programName?.trim() && programName.length <= 100) {
+                      setProgram(programName.trim());
+                      setSelectedCourses([]); // Reset courses when changing program
+                    }
+                  }}
+                >
+                  <View style={styles.programContent}>
+                    <Text style={[styles.programName, program === programName && styles.programNameSelected]}>
+                      {programName}
+                    </Text>
+                    <Text style={[styles.programCategory, program === programName && styles.programCategorySelected]}>
+                      {getProgramCategory(programName)}
+                    </Text>
+                  </View>
+                  {program === programName && (
+                    <View style={styles.checkmark}>
+                      <Text style={styles.checkmarkText}>✓</Text>
                     </View>
-                    {program === prog.id && (
-                      <View style={styles.checkmark}>
-                        <Text style={styles.checkmarkText}>✓</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-            
-            {program && (
-              <View style={styles.yearSelectionContainer}>
-                <Text style={styles.sectionTitle}>Årskurs</Text>
-                <View style={styles.yearGrid}>
-                  {[1, 2, 3].map((y) => (
-                    <TouchableOpacity
-                      key={y}
-                      style={[styles.yearCard, year === y && styles.yearCardSelected]}
-                      onPress={() => setYear(y as 1 | 2 | 3)}
-                    >
-                      <Text style={[styles.yearNumber, year === y && styles.yearNumberSelected]}>
-                        {y}
-                      </Text>
-                      <Text style={[styles.yearLabel, year === y && styles.yearLabelSelected]}>
-                        År {y}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
             
             <TouchableOpacity
-              style={[styles.button, (!program || !year) && styles.buttonDisabled]}
-              onPress={() => program && year && setStep(4)}
-              disabled={!program || !year}
+              style={[styles.button, !program && styles.buttonDisabled]}
+              onPress={() => program && setStep(4)}
+              disabled={!program}
             >
-              <Text style={styles.buttonText}>Välj kurser</Text>
+              <Text style={styles.buttonText}>Fortsätt</Text>
               <ChevronRight size={20} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -215,10 +278,62 @@ export default function Onboarding() {
       case 4:
         return (
           <View style={styles.stepContainer}>
+            <Award size={48} color="#4ECDC4" style={styles.icon} />
+            <Text style={styles.title}>Välj årskurs</Text>
+            <Text style={styles.subtitle}>Vilken årskurs går du i?</Text>
+            
+            <View style={styles.yearSelectionContainer}>
+              <View style={styles.yearGrid}>
+                {[1, 2, 3].map((y) => (
+                  <TouchableOpacity
+                    key={y}
+                    style={[styles.yearCard, year === y && styles.yearCardSelected]}
+                    onPress={() => setYear(y as 1 | 2 | 3)}
+                  >
+                    <Text style={[styles.yearNumber, year === y && styles.yearNumberSelected]}>
+                      {y}
+                    </Text>
+                    <Text style={[styles.yearLabel, year === y && styles.yearLabelSelected]}>
+                      År {y}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            
+            <View style={styles.selectionSummary}>
+              <Text style={styles.summaryTitle}>Din utbildning</Text>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Gymnasium:</Text>
+                <Text style={styles.summaryValue}>{selectedGymnasiumInfo?.name}</Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Program:</Text>
+                <Text style={styles.summaryValue}>{program}</Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Årskurs:</Text>
+                <Text style={styles.summaryValue}>År {year}</Text>
+              </View>
+            </View>
+            
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => setStep(5)}
+            >
+              <Text style={styles.buttonText}>Välj kurser</Text>
+              <ChevronRight size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        );
+
+      case 5:
+        return (
+          <View style={styles.stepContainer}>
             <GraduationCap size={48} color="#4ECDC4" style={styles.icon} />
             <Text style={styles.title}>Välj dina kurser</Text>
             <View style={styles.programSummary}>
-              <Text style={styles.programSummaryText}>År {year} - {GYMNASIUM_PROGRAMS.find(p => p.id === program)?.name}</Text>
+              <Text style={styles.programSummaryText}>År {year} - {program}</Text>
             </View>
             
             <ScrollView style={styles.coursesList} showsVerticalScrollIndicator={false}>
@@ -322,13 +437,16 @@ export default function Onboarding() {
             </TouchableOpacity>
           </View>
         );
+      
+      default:
+        return null;
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.progressContainer}>
-        {[1, 2, 3, 4].map((s) => (
+        {[1, 2, 3, 4, 5].map((s) => (
           <View
             key={s}
             style={[styles.progressDot, s <= step && styles.progressDotActive]}
@@ -385,25 +503,42 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 20,
   },
+  inputContainer: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#333',
+    marginBottom: 8,
+  },
   input: {
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
     padding: 16,
     fontSize: 17,
-    marginBottom: 20,
-    marginHorizontal: 20,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  searchInput: {
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    padding: 16,
-    fontSize: 17,
-    marginBottom: 15,
     marginHorizontal: 20,
+    marginBottom: 15,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    paddingHorizontal: 16,
+  },
+  searchIcon: {
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    padding: 16,
+    fontSize: 17,
   },
   list: {
     flex: 1,
@@ -416,10 +551,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   listItemSelected: {
     backgroundColor: '#4ECDC4',
     borderColor: '#4ECDC4',
+  },
+  listItemContent: {
+    flex: 1,
   },
   listItemText: {
     fontSize: 18,
@@ -435,18 +575,22 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
-  programSelectionContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
+  selectedIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sectionTitle: {
-    fontSize: 20,
+  selectedIndicatorText: {
+    color: '#4ECDC4',
+    fontSize: 12,
     fontWeight: 'bold' as const,
-    color: '#1a1a1a',
-    marginBottom: 16,
   },
   programList: {
     flex: 1,
+    paddingHorizontal: 20,
   },
   programItem: {
     backgroundColor: '#ffffff',
@@ -506,10 +650,8 @@ const styles = StyleSheet.create({
   },
   yearSelectionContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: '#f8f9fa',
+    paddingVertical: 30,
     marginHorizontal: 20,
-    borderRadius: 16,
     marginBottom: 20,
   },
   yearGrid: {
@@ -556,6 +698,34 @@ const styles = StyleSheet.create({
   yearLabelSelected: {
     color: '#fff',
   },
+  selectionSummary: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  summaryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  summaryLabel: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500' as const,
+  },
+  summaryValue: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '600' as const,
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 10,
+  },
   programSummary: {
     backgroundColor: '#f0fffe',
     borderRadius: 12,
@@ -571,6 +741,10 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     textAlign: 'center',
   },
+  coursesList: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
   coursesSection: {
     marginBottom: 32,
   },
@@ -578,6 +752,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  courseCategoryTitle: {
+    fontSize: 22,
+    fontWeight: 'bold' as const,
+    color: '#1a1a1a',
     marginBottom: 8,
   },
   courseBadge: {
@@ -590,6 +770,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold' as const,
+  },
+  electiveSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 20,
   },
   coursesGrid: {
     gap: 12,
@@ -694,108 +879,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold' as const,
   },
-  button: {
-    backgroundColor: '#4ECDC4',
-    borderRadius: 12,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 'auto',
-    marginBottom: 30,
-    marginHorizontal: 20,
-  },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600' as const,
-    marginRight: 5,
-  },
-  coursesList: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  courseCategoryTitle: {
-    fontSize: 22,
-    fontWeight: 'bold' as const,
-    color: '#1a1a1a',
-    marginBottom: 8,
-  },
-  electiveSubtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
-  },
-  courseItem: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#f0f0f0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  electiveCourse: {
-    borderColor: '#e0e0e0',
-  },
-  selectedCourse: {
-    backgroundColor: '#f0fffe',
-    borderColor: '#4ECDC4',
-  },
-  courseInfo: {
-    flex: 1,
-  },
-  courseName: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  selectedCourseName: {
-    color: '#2d7a73',
-  },
-  courseDetails: {
-    fontSize: 14,
-    color: '#666',
-  },
-  selectedCourseDetails: {
-    color: '#4ECDC4',
-  },
-  mandatoryBadge: {
-    backgroundColor: '#e8f4f8',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  mandatoryText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#2d7a73',
-  },
-  selectionIndicator: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
-  },
-  selectedIndicator: {
-    backgroundColor: '#4ECDC4',
-    borderColor: '#4ECDC4',
-  },
   completionSummary: {
     backgroundColor: '#f8f9fa',
     borderRadius: 16,
@@ -823,5 +906,25 @@ const styles = StyleSheet.create({
     color: '#4ECDC4',
     fontWeight: '600' as const,
     textAlign: 'center',
+  },
+  button: {
+    backgroundColor: '#4ECDC4',
+    borderRadius: 12,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 'auto',
+    marginBottom: 30,
+    marginHorizontal: 20,
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600' as const,
+    marginRight: 5,
   },
 });

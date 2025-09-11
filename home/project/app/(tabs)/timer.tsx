@@ -99,20 +99,31 @@ export default function Timer() {
     if (!isBreak && selectedCourse) {
       const elapsedMinutes = (Date.now() - startTimeRef.current) / 60000;
       
+      console.log('Timer completed - logging study time:', {
+        courseId: selectedCourse,
+        duration: elapsedMinutes,
+        technique: timerMode
+      });
+      
       // Log to courses context
       await logStudyTime(selectedCourse, elapsedMinutes / 60);
       
-      // Log to progress context
+      // Log to progress context - this will sync to database
       const currentCourse = courses.find(c => c.id === selectedCourse);
-      await addStudySession({
-        courseId: selectedCourse,
-        courseName: currentCourse?.name || 'Okänd kurs',
-        duration: elapsedMinutes,
-        date: new Date(),
-        technique: timerMode,
-        completed: true,
-        notes: `${timerMode} session - ${Math.round(elapsedMinutes)} minuter`
-      });
+      try {
+        await addStudySession({
+          courseId: selectedCourse,
+          courseName: currentCourse?.name || 'Okänd kurs',
+          duration: elapsedMinutes,
+          date: new Date(),
+          technique: timerMode,
+          completed: true,
+          notes: `${timerMode} session - ${Math.round(elapsedMinutes)} minuter`
+        });
+        console.log('Study session successfully logged to database');
+      } catch (error) {
+        console.error('Error logging study session:', error);
+      }
       
       setSessionsCompleted((prev) => prev + 1);
     }

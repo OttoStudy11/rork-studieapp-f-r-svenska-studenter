@@ -2,6 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export interface StudySession {
   id: string;
@@ -164,12 +165,138 @@ export const [ProgressProvider, useProgress] = createContextHook(() => {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Sync with Supabase (simplified for now)
+  // Sync with Supabase
   const syncWithSupabase = useCallback(async () => {
     if (!user?.id) return;
     
-    // For now, we'll focus on AsyncStorage and add Supabase sync later
-    console.log('Supabase sync placeholder for user:', user.id);
+    try {
+      console.log('Syncing progress data with Supabase for user:', user.id);
+      
+      // Fetch user progress from Supabase
+      const { data: progressData, error: progressError } = await (supabase as any)
+        .from('user_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (progressError && progressError.code !== 'PGRST116') {
+        console.error('Error fetching user progress:', progressError);
+        return;
+      }
+      
+      // Fetch study sessions from Supabase
+      const { data: sessionsData, error: sessionsError } = await (supabase as any)
+        .from('study_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (sessionsError) {
+        console.error('Error fetching study sessions:', sessionsError);
+        return;
+      }
+      
+      // Fetch user achievements from Supabase
+      const { data: userAchievementsData, error: achievementsError } = await supabase
+        .from('user_achievements')
+        .select(`
+          *,
+          achievements (
+            id,
+            name,
+            description,
+            icon,
+            type,
+            requirement
+          )
+        `)
+        .eq('user_id', user.id);
+      
+      if (achievementsError) {
+        console.error('Error fetching user achievements:', achievementsError);
+        return;
+      }
+      
+      // Convert Supabase data to local format
+      if (sessionsData) {
+        const convertedSessions: StudySession[] = sessionsData.map((session: any) => ({
+          id: session.id,
+          courseId: session.course_id,
+          courseName: `Course ${session.course_id}`, // We'll need to fetch course names separately
+          duration: session.duration_minutes,
+          date: new Date(session.created_at),
+          notes: session.notes || undefined,
+          technique: (session.technique as 'pomodoro' | 'custom' | 'stopwatch') || 'pomodoro',
+          completed: session.completed || true,
+        }));
+        setSessions(convertedSessions);
+        
+        // Save to AsyncStorage for offline access
+        await AsyncStorage.setItem(
+          getStorageKey(user.id, STORAGE_KEYS.SESSIONS),
+          JSON.stringify(convertedSessions)
+        );
+      }
+      
+      // Convert achievements data
+      if (userAchievementsData) {
+        const convertedAchievements: Achievement[] = userAchievementsData.map((ua: any) => ({
+          id: ua.achievement_id,
+          name: (ua.achievements as any)?.name || 'Unknown Achievement',
+          description: (ua.achievements as any)?.description || '',
+          icon: (ua.achievements as any)?.icon || 'Award',
+          type: (ua.achievements as any)?.type as Achievement['type'] || 'special',
+          requirement: (ua.achievements as any)?.requirement || 1,
+          unlocked: !!ua.unlocked_at,
+          unlockedAt: ua.unlocked_at ? new Date(ua.unlocked_at) : undefined,
+          progress: ua.progress || 0,
+        }));
+        
+        // Merge with default achievements
+        const allAchievements = DEFAULT_ACHIEVEMENTS.map(defaultAch => {
+          const userAch = convertedAchievements.find(ua => ua.id === defaultAch.id);
+          return userAch || {
+            ...defaultAch,
+            unlocked: false,
+            progress: 0,
+          };
+        });
+        
+        setAchievements(allAchievements);
+        
+        // Save to AsyncStorage
+        await AsyncStorage.setItem(
+          getStorageKey(user.id, STORAGE_KEYS.ACHIEVEMENTS),
+          JSON.stringify(allAchievements)
+        );
+      }
+      
+      // Update user progress if we have data from Supabase
+      if (progressData) {
+        const supabaseProgress: UserProgress = {
+          totalStudyTime: (progressData as any).total_study_time || 0,
+          totalSessions: (progressData as any).total_sessions || 0,
+          currentStreak: (progressData as any).current_streak || 0,
+          longestStreak: (progressData as any).longest_streak || 0,
+          coursesCompleted: (progressData as any).courses_completed || 0,
+          achievementsUnlocked: (progressData as any).achievements_unlocked || 0,
+          level: (progressData as any).level || 1,
+          xp: (progressData as any).xp || 0,
+          lastStudyDate: (progressData as any).last_study_date ? new Date((progressData as any).last_study_date) : undefined,
+        };
+        setUserProgress(supabaseProgress);
+        
+        // Save to AsyncStorage
+        await AsyncStorage.setItem(
+          getStorageKey(user.id, STORAGE_KEYS.USER_PROGRESS),
+          JSON.stringify(supabaseProgress)
+        );
+      }
+      
+      console.log('Successfully synced progress data with Supabase');
+    } catch (error) {
+      console.error('Error syncing with Supabase:', error);
+    }
   }, [user?.id]);
 
   // Load data from storage
@@ -310,10 +437,40 @@ export const [ProgressProvider, useProgress] = createContextHook(() => {
     setUserProgress(newProgress);
     
     if (user?.id) {
+      // Save to AsyncStorage
       AsyncStorage.setItem(
         getStorageKey(user.id, STORAGE_KEYS.USER_PROGRESS),
         JSON.stringify(newProgress)
       );
+      
+      // Sync to Supabase
+      (async () => {
+        try {
+          const { error } = await (supabase as any)
+            .from('user_progress')
+            .upsert({
+              user_id: user.id,
+              total_study_time: newProgress.totalStudyTime,
+              total_sessions: newProgress.totalSessions,
+              current_streak: newProgress.currentStreak,
+              longest_streak: newProgress.longestStreak,
+              courses_completed: newProgress.coursesCompleted,
+              achievements_unlocked: newProgress.achievementsUnlocked,
+              level: newProgress.level,
+              xp: newProgress.xp,
+              last_study_date: newProgress.lastStudyDate?.toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+          
+          if (error) {
+            console.error('Error syncing user progress to Supabase:', error);
+          } else {
+            console.log('Successfully synced user progress to Supabase');
+          }
+        } catch (error) {
+          console.error('Exception syncing user progress to Supabase:', error);
+        }
+      })();
     }
   }, [sessions, calculateProgress, user?.id]);
 
@@ -378,8 +535,26 @@ export const [ProgressProvider, useProgress] = createContextHook(() => {
         achievement.unlockedAt = new Date();
         hasNewAchievements = true;
 
-        // Sync to Supabase (placeholder for now)
-        console.log('Would sync achievement to Supabase:', achievement.id);
+        // Sync to Supabase
+        try {
+          const { error: achievementError } = await supabase
+            .from('user_achievements')
+            .upsert({
+              user_id: user.id,
+              achievement_id: achievement.id,
+              progress: achievement.progress,
+              unlocked_at: achievement.unlockedAt?.toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+          
+          if (achievementError) {
+            console.error('Error syncing achievement to Supabase:', achievementError);
+          } else {
+            console.log('Successfully synced achievement to Supabase:', achievement.id);
+          }
+        } catch (error) {
+          console.error('Exception syncing achievement to Supabase:', error);
+        }
       }
     }
 
@@ -412,8 +587,29 @@ export const [ProgressProvider, useProgress] = createContextHook(() => {
       JSON.stringify(updatedSessions)
     );
 
-    // Sync to Supabase (placeholder for now)
-    console.log('Would sync session to Supabase:', newSession.id);
+    // Sync to Supabase
+    try {
+      const { error: sessionError } = await (supabase as any)
+        .from('study_sessions')
+        .insert({
+          id: newSession.id,
+          user_id: user.id,
+          course_id: session.courseId,
+          duration_minutes: session.duration,
+          notes: session.notes,
+          technique: session.technique,
+          completed: session.completed,
+          created_at: session.date.toISOString(),
+        });
+      
+      if (sessionError) {
+        console.error('Error syncing session to Supabase:', sessionError);
+      } else {
+        console.log('Successfully synced session to Supabase:', newSession.id);
+      }
+    } catch (error) {
+      console.error('Exception syncing session to Supabase:', error);
+    }
 
     // Check for new achievements
     await checkAchievements(newSession);

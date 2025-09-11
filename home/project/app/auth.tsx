@@ -262,11 +262,12 @@ export default function AuthScreen() {
                           <User size={20} color="#666" style={styles.inputIcon} />
                           <TextInput
                             style={styles.input}
-                            placeholder="Ditt namn"
+                            placeholder="Ditt för- och efternamn"
                             value={displayName}
                             onChangeText={setDisplayName}
                             autoCapitalize="words"
                             autoCorrect={false}
+                            autoComplete="name"
                           />
                         </View>
 

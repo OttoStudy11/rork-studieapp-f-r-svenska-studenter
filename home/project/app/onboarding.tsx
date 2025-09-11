@@ -168,9 +168,12 @@ export default function Onboarding() {
               <Text style={styles.inputLabel}>Vad heter du?</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Ditt förnamn"
+                placeholder="Ditt för- och efternamn"
                 value={name}
                 onChangeText={setName}
+                autoCapitalize="words"
+                autoCorrect={false}
+                autoComplete="name"
                 autoFocus
               />
             </View>

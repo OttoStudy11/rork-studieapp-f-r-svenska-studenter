@@ -115,10 +115,12 @@ export default function Onboarding() {
       console.log('📚 Final course selection:', {
         mandatory: mandatoryCourses.length,
         elective: selectedCourses.length,
-        total: allSelectedCourses.length
+        total: allSelectedCourses.length,
+        courses: allSelectedCourses
       });
       
-      // Update profile with all data
+      // Update profile with all data - this will save to database
+      console.log('📝 Updating user profile with complete data...');
       await updateUserProfile({
         name,
         gymnasium,
@@ -127,8 +129,15 @@ export default function Onboarding() {
         selectedCourses: allSelectedCourses,
       } as any);
       
-      // Complete onboarding process
+      // Wait a moment for profile to be saved
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Complete onboarding process - this will sync everything
+      console.log('🎯 Completing onboarding process...');
       await completeOnboarding();
+      
+      // Wait another moment for completion to be processed
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       console.log('✅ Onboarding completed successfully, navigating to home');
       router.replace('/(tabs)/home');

@@ -618,6 +618,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
       
       console.log('🎯 Completing onboarding for user:', user.id);
       console.log('📋 Current profile state:', userProfile);
+      console.log('📚 Current courses count:', courses.length);
       
       // Save to AsyncStorage for onboarding completion
       await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
@@ -629,20 +630,55 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
         console.log('🔄 Final profile sync to database during onboarding completion');
         await saveProfile(userProfile);
         
-        // Also sync courses if they exist
-        if (courses.length > 0) {
-          console.log('🔄 Syncing courses to database during onboarding completion');
+        // Generate and sync courses if profile has program/year but no courses exist
+        if (userProfile.program && userProfile.year && courses.length === 0) {
+          console.log('📚 Generating courses from profile during onboarding completion');
+          const newCourses = await assignCoursesForYear(
+            userProfile.program, 
+            userProfile.year, 
+            userProfile.selectedCourses
+          );
+          console.log('📚 Generated', newCourses.length, 'courses during onboarding completion');
+        } else if (courses.length > 0) {
+          console.log('🔄 Syncing existing courses to database during onboarding completion');
           await syncCoursesToSupabase(courses);
         }
+        
+        // Verify the data was saved correctly
+        console.log('🔍 Verifying onboarding completion data...');
+        const { data: verifyProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (verifyProfile) {
+          console.log('✅ Profile verification successful:', {
+            name: verifyProfile.name,
+            gymnasium: (verifyProfile as any).gymnasium,
+            program: (verifyProfile as any).program,
+            year: (verifyProfile as any).year,
+            selectedCourses: (verifyProfile as any).selected_courses ? 'saved' : 'missing'
+          });
+        }
+        
+        // Verify courses were saved
+        const { data: userCourses } = await supabase
+          .from('user_courses')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_active', true);
+        
+        console.log('✅ User courses verification:', userCourses?.length || 0, 'active courses found');
       } else {
         console.warn('⚠️ No profile data available during onboarding completion');
       }
       
-      console.log('🎉 Onboarding completion process finished');
+      console.log('🎉 Onboarding completion process finished successfully');
     } catch (error) {
       console.error('❌ Error completing onboarding:', error);
     }
-  }, [user?.id, userProfile, saveProfile, courses, syncCoursesToSupabase]);
+  }, [user?.id, userProfile, saveProfile, courses, syncCoursesToSupabase, assignCoursesForYear]);
 
   const resetOnboarding = useCallback(async () => {
     if (!user?.id) return;

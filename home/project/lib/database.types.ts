@@ -112,6 +112,18 @@ export type Database = {
           status: string
           user1_id: string
           user2_id: string
+          user1?: {
+            id: string
+            username: string
+            display_name: string
+            avatar_url: string | null
+          }
+          user2?: {
+            id: string
+            username: string
+            display_name: string
+            avatar_url: string | null
+          }
         }
         Insert: {
           created_at?: string

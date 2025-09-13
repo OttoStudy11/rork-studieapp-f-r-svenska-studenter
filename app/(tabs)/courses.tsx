@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,16 @@ import {
   Modal,
   Alert
 } from 'react-native';
-import { useStudy } from '@/contexts/StudyContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { router } from 'expo-router';
 import { BookOpen, Plus, Search, Star, TrendingUp, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function CoursesScreen() {
-  const { courses, addCourse, updateCourse } = useStudy();
+  const { user } = useAuth();
+  const [courses, setCourses] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCourse, setNewCourse] = useState({
@@ -24,6 +28,55 @@ export default function CoursesScreen() {
     subject: '',
     level: 'gymnasie' as 'gymnasie' | 'högskola'
   });
+
+  useEffect(() => {
+    if (user?.id) {
+      loadCourses();
+    }
+  }, [user?.id]);
+
+  const loadCourses = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Loading courses for user:', user?.id);
+
+      // Load user's active courses
+      const { data: userCoursesData, error: userCoursesError } = await supabase
+        .from('user_courses')
+        .select(`
+          *,
+          courses (
+            *
+          )
+        `)
+        .eq('user_id', user!.id)
+        .eq('is_active', true);
+
+      if (userCoursesError) {
+        console.error('Error loading user courses:', userCoursesError);
+        return;
+      }
+
+      const coursesWithProgress = userCoursesData?.map(userCourse => ({
+        id: userCourse.courses.id,
+        title: userCourse.courses.title,
+        description: userCourse.courses.description,
+        subject: userCourse.courses.subject,
+        level: userCourse.courses.level,
+        progress: userCourse.progress,
+        isActive: userCourse.is_active,
+        resources: userCourse.courses.resources || [],
+        tips: userCourse.courses.tips || [],
+        relatedCourses: userCourse.courses.related_courses || []
+      })) || [];
+
+      setCourses(coursesWithProgress);
+    } catch (error) {
+      console.error('Error in loadCourses:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -37,35 +90,97 @@ export default function CoursesScreen() {
     }
 
     try {
-      await addCourse({
-        ...newCourse,
-        progress: 0,
-        isActive: false,
-        resources: [],
-        tips: [],
-        relatedCourses: []
-      });
+      // Create course in database
+      const { data: courseData, error: courseError } = await supabase
+        .from('courses')
+        .insert({
+          title: newCourse.title,
+          description: newCourse.description,
+          subject: newCourse.subject,
+          level: newCourse.level,
+          resources: [],
+          tips: [],
+          related_courses: [],
+          progress: 0
+        })
+        .select()
+        .single();
+
+      if (courseError) {
+        console.error('Error creating course:', courseError);
+        Alert.alert('Fel', 'Kunde inte skapa kurs');
+        return;
+      }
+
+      // Add user course relationship
+      const { error: userCourseError } = await supabase
+        .from('user_courses')
+        .insert({
+          user_id: user!.id,
+          course_id: courseData.id,
+          progress: 0,
+          is_active: true
+        });
+
+      if (userCourseError) {
+        console.error('Error creating user course:', userCourseError);
+        Alert.alert('Fel', 'Kunde inte lägga till kurs till användare');
+        return;
+      }
+
       setNewCourse({ title: '', description: '', subject: '', level: 'gymnasie' });
       setShowAddModal(false);
+      loadCourses(); // Reload courses
     } catch (error) {
+      console.error('Error in handleAddCourse:', error);
       Alert.alert('Fel', 'Kunde inte lägga till kurs');
     }
   };
 
   const toggleCourseActive = async (courseId: string, isActive: boolean) => {
     try {
-      await updateCourse(courseId, { isActive: !isActive });
+      const { error } = await supabase
+        .from('user_courses')
+        .update({ is_active: !isActive })
+        .eq('user_id', user!.id)
+        .eq('course_id', courseId);
+
+      if (error) {
+        console.error('Error updating course active status:', error);
+        Alert.alert('Fel', 'Kunde inte uppdatera kurs');
+        return;
+      }
+
+      loadCourses(); // Reload courses
     } catch (error) {
+      console.error('Error in toggleCourseActive:', error);
       Alert.alert('Fel', 'Kunde inte uppdatera kurs');
     }
   };
 
   const updateProgress = async (courseId: string, progress: number) => {
     try {
-      await updateCourse(courseId, { progress });
+      const { error } = await supabase
+        .from('user_courses')
+        .update({ progress })
+        .eq('user_id', user!.id)
+        .eq('course_id', courseId);
+
+      if (error) {
+        console.error('Error updating course progress:', error);
+        Alert.alert('Fel', 'Kunde inte uppdatera framsteg');
+        return;
+      }
+
+      loadCourses(); // Reload courses
     } catch (error) {
+      console.error('Error in updateProgress:', error);
       Alert.alert('Fel', 'Kunde inte uppdatera framsteg');
     }
+  };
+
+  const navigateToCourse = (courseId: string) => {
+    router.push(`/course/${courseId}` as any);
   };
 
   return (
@@ -101,7 +216,11 @@ export default function CoursesScreen() {
       {/* Course List */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {filteredCourses.map((course) => (
-          <TouchableOpacity key={course.id} style={styles.courseCard}>
+          <TouchableOpacity 
+            key={course.id} 
+            style={styles.courseCard}
+            onPress={() => navigateToCourse(course.id)}
+          >
             <View style={styles.courseHeader}>
               <View style={styles.courseInfo}>
                 <Text style={styles.courseTitle}>{course.title}</Text>
@@ -155,18 +274,22 @@ export default function CoursesScreen() {
               </View>
             </View>
 
-            {course.tips.length > 0 && (
+            {Array.isArray(course.tips) && course.tips.length > 0 && (
               <View style={styles.tipsContainer}>
                 <Text style={styles.tipsTitle}>💡 Tips:</Text>
                 <Text style={styles.tipsText} numberOfLines={1}>
-                  {course.tips[0]}
+                  {Array.isArray(course.tips) ? course.tips[0] : ''}
                 </Text>
               </View>
             )}
           </TouchableOpacity>
         ))}
 
-        {filteredCourses.length === 0 && (
+        {isLoading ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Laddar kurser...</Text>
+          </View>
+        ) : filteredCourses.length === 0 ? (
           <View style={styles.emptyState}>
             <BookOpen size={64} color="#9CA3AF" />
             <Text style={styles.emptyTitle}>
@@ -179,7 +302,7 @@ export default function CoursesScreen() {
               }
             </Text>
           </View>
-        )}
+        ) : null}
       </ScrollView>
 
       {/* Add Course Modal */}

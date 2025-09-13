@@ -1,42 +1,41 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Trophy, Medal, Crown, Clock, TrendingUp, Users, Star, Award, Target } from 'lucide-react-native';
+import { Trophy, Medal, Crown, Clock, TrendingUp, Users, Star, Award, Target, Zap } from 'lucide-react-native';
 import { useFriends } from '../../contexts/FriendsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useState, useMemo } from 'react';
 import { usePremium } from '../../contexts/PremiumContext';
+import { useProgress } from '../../contexts/ProgressContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
 type LeaderboardPeriod = 'daily' | 'weekly' | 'monthly' | 'alltime';
 type LeaderboardCategory = 'studyTime' | 'streak' | 'sessions';
 
 export default function Leaderboard() {
-  const { friends, refreshFriends } = useFriends();
+  const { friends } = useFriends();
   const { user } = useAuth();
   const { isPremium } = usePremium();
+  const { userProgress } = useProgress();
   const insets = useSafeAreaInsets();
   const [selectedPeriod, setSelectedPeriod] = useState<LeaderboardPeriod>('weekly');
   const [selectedCategory, setSelectedCategory] = useState<LeaderboardCategory>('studyTime');
-
-  const handleRefresh = async () => {
-    await refreshFriends();
-  };
 
   // Create leaderboard data including current user
   const leaderboardData = useMemo(() => {
     const allUsers = [...friends];
     
     // Add current user if they have progress data
-    if (user) {
-      // Get actual user progress data from database
+    if (user && userProgress) {
       const currentUserData = {
         id: user.id,
         username: 'Du',
         displayName: 'Du',
         avatarUrl: undefined,
         status: 'online' as const,
-        studyHours: 0, // Will be populated from actual user progress
-        streak: 0, // Will be populated from actual user progress
-        lastActive: new Date().toISOString()
+        studyHours: Math.floor(userProgress.totalStudyTime / 60), // Convert minutes to hours
+        streak: userProgress.currentStreak,
+        sessions: userProgress.totalSessions,
+        lastActive: userProgress.lastStudyDate?.toISOString() || new Date().toISOString()
       };
       allUsers.push(currentUserData);
     }
@@ -45,14 +44,14 @@ export default function Leaderboard() {
     const sortedUsers = allUsers.sort((a, b) => {
       switch (selectedCategory) {
         case 'studyTime':
-          return b.studyHours - a.studyHours;
-        case 'streak':
-          return b.streak - a.streak;
-        case 'sessions':
-          // Calculate sessions from actual study data
           return (b.studyHours || 0) - (a.studyHours || 0);
+        case 'streak':
+          return (b.streak || 0) - (a.streak || 0);
+        case 'sessions':
+          return ((b as any).sessions || Math.floor((b.studyHours || 0) / 2)) - 
+                 ((a as any).sessions || Math.floor((a.studyHours || 0) / 2));
         default:
-          return b.studyHours - a.studyHours;
+          return (b.studyHours || 0) - (a.studyHours || 0);
       }
     });
 
@@ -61,7 +60,7 @@ export default function Leaderboard() {
       rank: index + 1,
       isCurrentUser: userData.id === user?.id
     }));
-  }, [friends, user, selectedCategory]);
+  }, [friends, user, userProgress, selectedCategory]);
 
   const periods = [
     { key: 'daily' as const, label: 'Idag', premium: false },
@@ -71,9 +70,9 @@ export default function Leaderboard() {
   ];
 
   const categories = [
-    { key: 'studyTime' as const, label: 'Studietid', icon: Clock },
-    { key: 'streak' as const, label: 'Streak', icon: TrendingUp },
-    { key: 'sessions' as const, label: 'Sessioner', icon: Target }
+    { key: 'studyTime' as const, label: 'Studietid', icon: Clock, unit: 'h' },
+    { key: 'streak' as const, label: 'Streak', icon: TrendingUp, unit: 'd' },
+    { key: 'sessions' as const, label: 'Sessioner', icon: Target, unit: '' }
   ];
 
   const getRankIcon = (rank: number) => {
@@ -103,25 +102,42 @@ export default function Leaderboard() {
   };
 
   const getStatValue = (userData: any) => {
-    if (!userData) return '0';
+    if (!userData || typeof userData !== 'object') return '0';
+    
+    // Validate and sanitize input
+    const studyHours = typeof userData.studyHours === 'number' ? userData.studyHours : 0;
+    const streak = typeof userData.streak === 'number' ? userData.streak : 0;
+    const sessions = typeof userData.sessions === 'number' ? userData.sessions : Math.floor(studyHours / 2);
     
     switch (selectedCategory) {
       case 'studyTime':
-        return `${userData.studyHours || 0}h`;
+        return `${studyHours}h`;
       case 'streak':
-        return `${userData.streak || 0}d`;
+        return `${streak}d`;
       case 'sessions':
-        return `${Math.floor((userData.studyHours || 0) / 2)}`; // Estimate sessions from study hours
+        return `${sessions}`;
       default:
-        return `${userData.studyHours || 0}h`;
+        return `${studyHours}h`;
     }
   };
+
+  const handlePremiumUpgrade = () => {
+    router.push('/premium');
+  };
+
+  const getCurrentUserRank = () => {
+    const currentUserEntry = leaderboardData.find(entry => entry.isCurrentUser);
+    return currentUserEntry?.rank || null;
+  };
+
+  // Removed unused function getTopPerformers
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+
       >
         <View style={styles.header}>
           <View style={styles.titleContainer}>
@@ -130,6 +146,15 @@ export default function Leaderboard() {
             {isPremium && <Crown size={24} color="#FFD700" />}
           </View>
           <Text style={styles.subtitle}>Tävla med dina vänner och se vem som studerar mest!</Text>
+          
+          {getCurrentUserRank() && (
+            <View style={styles.userRankBadge}>
+              <Text style={styles.userRankText}>
+                Din placering: #{getCurrentUserRank()}
+              </Text>
+              <Zap size={16} color="#4ECDC4" />
+            </View>
+          )}
         </View>
 
         {/* Period Selector */}
@@ -151,6 +176,9 @@ export default function Leaderboard() {
                   onPress={() => {
                     if (!isLocked) {
                       setSelectedPeriod(period.key);
+                    } else {
+                      // Navigate directly to premium for locked features
+                      handlePremiumUpgrade();
                     }
                   }}
                   disabled={isLocked}
@@ -268,6 +296,13 @@ export default function Leaderboard() {
               <Text style={styles.emptyText}>
                 Lägg till vänner för att se topplistor och tävla!
               </Text>
+              <TouchableOpacity 
+                style={styles.addFriendsButton}
+                onPress={() => router.push('/(tabs)/friends')}
+              >
+                <Users size={16} color="#fff" />
+                <Text style={styles.addFriendsButtonText}>Lägg till vänner</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             leaderboardData.map((userData, index) => (
@@ -330,8 +365,11 @@ export default function Leaderboard() {
               <Text style={styles.premiumPromoText}>
                 Få tillgång till månads- och totaltopplistor, avancerad statistik och mycket mer!
               </Text>
-              <TouchableOpacity style={styles.premiumPromoButton}>
-                <Text style={styles.premiumPromoButtonText}>Läs mer</Text>
+              <TouchableOpacity 
+                style={styles.premiumPromoButton}
+                onPress={handlePremiumUpgrade}
+              >
+                <Text style={styles.premiumPromoButtonText}>Uppgradera nu</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -342,7 +380,7 @@ export default function Leaderboard() {
 }
 
 function getAvatarColor(name: string): string {
-  if (!name) return '#4ECDC4';
+  if (!name || typeof name !== 'string' || name.length === 0) return '#4ECDC4';
   
   const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
   let hash = 0;
@@ -684,6 +722,41 @@ const styles = StyleSheet.create({
   },
   premiumPromoButtonText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  userRankBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 12,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  userRankText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#2c3e50',
+  },
+  addFriendsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4ECDC4',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 20,
+    gap: 8,
+  },
+  addFriendsButtonText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600' as const,
   },

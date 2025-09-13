@@ -170,6 +170,7 @@ export type Database = {
           name: string | null
           premium_status: boolean | null
           program: string | null
+          program_id: string | null
           selected_courses: Json | null
           updated_at: string
           username: string | null
@@ -188,6 +189,7 @@ export type Database = {
           name?: string | null
           premium_status?: boolean | null
           program?: string | null
+          program_id?: string | null
           selected_courses?: Json | null
           updated_at?: string
           username?: string | null
@@ -206,12 +208,21 @@ export type Database = {
           name?: string | null
           premium_status?: boolean | null
           program?: string | null
+          program_id?: string | null
           selected_courses?: Json | null
           updated_at?: string
           username?: string | null
           year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       remember_me_sessions: {
         Row: {

@@ -4,6 +4,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { getCoursesForProgramAndYear } from '@/constants/gymnasium-courses';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { getProgramId } from '../lib/program-utils';
 
 import type { Course as ProgramCourse } from '@/constants/gymnasium-courses';
 
@@ -28,6 +29,7 @@ export interface UserProfile {
   id: string;
   gymnasium?: string;
   program?: string;
+  program_id?: string;
   year?: 1 | 2 | 3;
   email?: string;
   name?: string;
@@ -155,6 +157,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
           name: dbProfile.name || undefined,
           gymnasium: (dbProfile as any).gymnasium || undefined,
           program: (dbProfile as any).program || undefined,
+          program_id: (dbProfile as any).program_id || undefined,
           year: (dbProfile as any).year as (1 | 2 | 3) || undefined,
           selectedCourses: (dbProfile as any).selected_courses ? 
             JSON.parse((dbProfile as any).selected_courses as string) : undefined
@@ -492,6 +495,17 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
         }
         if (profileWithUserId.program !== undefined) {
           updateData.program = profileWithUserId.program;
+          // Automatically set program_id when program is set
+          const programId = getProgramId(profileWithUserId.program);
+          if (programId) {
+            updateData.program_id = programId;
+            console.log('🔗 Setting program_id:', programId, 'for program:', profileWithUserId.program);
+          } else {
+            console.warn('⚠️ No program_id found for program:', profileWithUserId.program);
+          }
+        }
+        if (profileWithUserId.program_id !== undefined) {
+          updateData.program_id = profileWithUserId.program_id;
         }
         if (profileWithUserId.year !== undefined) {
           updateData.year = profileWithUserId.year;
@@ -541,6 +555,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
               name: verifyProfile.name,
               gymnasium: (verifyProfile as any).gymnasium,
               program: (verifyProfile as any).program,
+              program_id: (verifyProfile as any).program_id,
               year: (verifyProfile as any).year,
               selectedCourses: (verifyProfile as any).selected_courses ? 'present' : 'null'
             });
@@ -795,6 +810,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
             name: verifyProfile.name,
             gymnasium: (verifyProfile as any).gymnasium,
             program: (verifyProfile as any).program,
+            program_id: (verifyProfile as any).program_id,
             year: (verifyProfile as any).year,
             selectedCourses: (verifyProfile as any).selected_courses ? 'saved' : 'missing'
           });

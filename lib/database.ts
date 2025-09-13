@@ -632,7 +632,7 @@ export const getAllAchievements = async () => {
     if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
       console.warn('Network connectivity issue - achievements unavailable');
     } else {
-      console.error('Exception in getAllAchievements:', error instanceof Error ? error.message : String(error));
+      console.error('Exception in getAllAchievements:', error instanceof Error ? error.message : JSON.stringify(error, null, 2));
     }
     
     // Return empty array if achievements system is not available
@@ -679,7 +679,7 @@ export const getUserAchievements = async (userId: string) => {
       console.error('Error loading achievements: Database error: Could not find the \'progress\' column of \'user_achievements\' in the schema cache');
       console.error('Error details:', JSON.stringify(error, null, 2));
     } else {
-      console.error('Exception in getUserAchievements:', error instanceof Error ? error.message : String(error));
+      console.error('Exception in getUserAchievements:', error instanceof Error ? error.message : JSON.stringify(error, null, 2));
     }
     
     // Return empty array if achievements system is not available
@@ -758,7 +758,7 @@ export const initializeUserAchievements = async (userId: string) => {
       throw new Error('Network connection failed. Please check your internet connection.');
     }
     
-    console.error('Error initializing user achievements:', error instanceof Error ? error.message : String(error));
+    console.error('Error initializing user achievements:', error instanceof Error ? error.message : JSON.stringify(error, null, 2));
     console.error('Error details:', JSON.stringify(error, null, 2));
     throw error;
   }
@@ -883,7 +883,7 @@ export const calculateUserStreak = async (userId: string) => {
     if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
       console.warn('Network connectivity issue - streak calculation unavailable');
     } else {
-      console.error('Exception in calculateUserStreak:', error instanceof Error ? error.message : String(error));
+      console.error('Exception in calculateUserStreak:', error instanceof Error ? error.message : JSON.stringify(error, null, 2));
     }
     
     // Return 0 if we can't calculate streak
@@ -1192,7 +1192,7 @@ export const checkAndUpdateAchievements = async (userId: string) => {
     
     return newlyUnlocked;
   } catch (error) {
-    console.error('Error checking achievements:', error instanceof Error ? error.message : String(error));
+    console.error('Error checking achievements:', error instanceof Error ? error.message : JSON.stringify(error, null, 2));
     console.error('Full error object:', JSON.stringify(error, null, 2));
     return [];
   }

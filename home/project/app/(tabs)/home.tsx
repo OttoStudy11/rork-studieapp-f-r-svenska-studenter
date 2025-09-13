@@ -11,11 +11,60 @@ export default function Home() {
     courses, 
     totalStudyHours, 
     completionPercentage,
-    mandatoryCourses 
+    isLoading
   } = useCourses();
 
   const todaysCourses = courses.slice(0, 3);
   const recentCourse = courses.find(c => c.lastStudied) || courses[0];
+  
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.loadingText}>Laddar dina kurser...</Text>
+      </View>
+    );
+  }
+  
+
+  
+  // Show empty state if no courses
+  if (courses.length === 0) {
+    return (
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View style={styles.headerText}>
+              <Text style={styles.greeting}>Hej {userProfile?.name || 'Student'}! 👋</Text>
+              <Text style={styles.subGreeting}>
+                {userProfile?.gymnasium} • {userProfile?.program} • År {userProfile?.year}
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.settingsButton}
+              onPress={() => router.push('/settings')}
+            >
+              <Settings size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        <View style={styles.emptyState}>
+          <BookOpen size={64} color="#ccc" style={styles.emptyIcon} />
+          <Text style={styles.emptyTitle}>Inga kurser valda ännu</Text>
+          <Text style={styles.emptySubtitle}>
+            Välj dina kurser för att komma igång med dina studier
+          </Text>
+          <TouchableOpacity 
+            style={styles.setupButton}
+            onPress={() => router.push('/onboarding')}
+          >
+            <Text style={styles.setupButtonText}>Välj kurser</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -299,5 +348,72 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
     color: '#2c3e50',
     marginTop: 8,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#666',
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#e74c3c',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#4ECDC4',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+    marginTop: 60,
+  },
+  emptyIcon: {
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold' as const,
+    color: '#2c3e50',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 22,
+  },
+  setupButton: {
+    backgroundColor: '#4ECDC4',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 12,
+    shadowColor: '#4ECDC4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  setupButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600' as const,
   },
 });

@@ -59,7 +59,151 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Load user data from database and AsyncStorage
+  const loadCourses = useCallback(async (userId: string) => {
+    try {
+      console.log('🔄 Loading courses for user:', userId);
+      
+      // Load from database first
+      const { data: userCourses, error: coursesError } = await supabase
+        .from('user_courses')
+        .select(`
+          *,
+          courses!inner(*)
+        `)
+        .eq('user_id', userId)
+        .eq('is_active', true);
+      
+      if (coursesError) {
+        console.error('Error loading courses from database:', coursesError);
+        throw coursesError;
+      }
+      
+      if (userCourses && userCourses.length > 0) {
+        console.log('📚 Found', userCourses.length, 'courses in database');
+        
+        const loadedCourses: Course[] = userCourses.map((uc: any, index: number) => ({
+          id: uc.course_id,
+          name: uc.courses.title,
+          code: uc.course_id,
+          color: courseColors[index % courseColors.length],
+          icon: courseIcons[index % courseIcons.length],
+          totalHours: Math.ceil((uc.courses.progress || 100) / 10),
+          studiedHours: Math.round((uc.progress || 0) / 10),
+          year: 1, // Default year
+          points: 100, // Default points
+          mandatory: true,
+          category: 'programgemensam' as const,
+          createdAt: new Date(uc.created_at),
+          updatedAt: new Date(uc.updated_at),
+        }));
+        
+        setCourses(loadedCourses);
+        
+        // Save to AsyncStorage for offline access
+        const STORAGE_KEYS = getStorageKeys(userId);
+        await AsyncStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(loadedCourses));
+        
+        return loadedCourses;
+      } else {
+        console.log('📚 No courses found in database, checking AsyncStorage');
+        
+        // Fallback to AsyncStorage
+        const STORAGE_KEYS = getStorageKeys(userId);
+        const coursesData = await AsyncStorage.getItem(STORAGE_KEYS.COURSES);
+        
+        if (coursesData) {
+          const savedCourses = JSON.parse(coursesData);
+          const loadedCourses = savedCourses.map((c: any) => ({
+            ...c,
+            lastStudied: c.lastStudied ? new Date(c.lastStudied) : undefined,
+            createdAt: new Date(c.createdAt),
+            updatedAt: new Date(c.updatedAt),
+          }));
+          
+          setCourses(loadedCourses);
+          console.log('📚 Loaded', loadedCourses.length, 'courses from AsyncStorage');
+          return loadedCourses;
+        }
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('❌ Error loading courses:', error);
+      setError('Failed to load courses');
+      return [];
+    }
+  }, []);
+  
+  const loadUserProfile = useCallback(async (userId: string) => {
+    try {
+      console.log('🔄 Loading profile for user:', userId);
+      
+      // Load from database first
+      const { data: dbProfile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (!error && dbProfile) {
+        const profileFromDb: UserProfile = {
+          id: dbProfile.id,
+          email: dbProfile.email || undefined,
+          name: dbProfile.name || undefined,
+          gymnasium: (dbProfile as any).gymnasium || undefined,
+          program: (dbProfile as any).program || undefined,
+          year: (dbProfile as any).year as (1 | 2 | 3) || undefined,
+          selectedCourses: (dbProfile as any).selected_courses ? 
+            JSON.parse((dbProfile as any).selected_courses as string) : undefined
+        };
+        
+        console.log('👤 Loaded profile from database:', profileFromDb);
+        setUserProfile(profileFromDb);
+        
+        // Save to AsyncStorage for offline access
+        const STORAGE_KEYS = getStorageKeys(userId);
+        await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profileFromDb));
+        
+        // Check if onboarding is completed
+        const hasCompleteProfile = profileFromDb.name && profileFromDb.gymnasium && 
+                                 profileFromDb.program && profileFromDb.year;
+        
+        if (hasCompleteProfile) {
+          setOnboardingCompleted(true);
+          await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
+        }
+        
+        return profileFromDb;
+      } else {
+        console.log('👤 No profile found in database, checking AsyncStorage');
+        
+        // Fallback to AsyncStorage
+        const STORAGE_KEYS = getStorageKeys(userId);
+        const profileData = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+        const onboardingData = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+        
+        if (profileData) {
+          const profile = JSON.parse(profileData);
+          setUserProfile(profile);
+          console.log('👤 Loaded profile from AsyncStorage:', profile);
+        }
+        
+        if (onboardingData === 'true') {
+          setOnboardingCompleted(true);
+        }
+        
+        return profileData ? JSON.parse(profileData) : null;
+      }
+    } catch (error) {
+      console.error('❌ Error loading profile:', error);
+      setError('Failed to load profile');
+      return null;
+    }
+  }, []);
+  
   const loadData = useCallback(async () => {
     if (!user?.id) {
       setIsLoading(false);
@@ -68,96 +212,29 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     
     try {
       setIsLoading(true);
-      const STORAGE_KEYS = getStorageKeys(user.id);
+      setError(null);
       
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Course data loading timeout')), 8000);
+      console.log('🚀 Starting data load for user:', user.id);
+      
+      // Load profile and courses in parallel
+      const [profile, loadedCourses] = await Promise.all([
+        loadUserProfile(user.id),
+        loadCourses(user.id)
+      ]);
+      
+      console.log('✅ Data loading completed:', {
+        profile: !!profile,
+        courses: loadedCourses.length,
+        onboardingCompleted
       });
       
-      const loadPromise = (async () => {
-        // First try to load from database
-        let profileFromDb = null;
-        try {
-          const { data: dbProfile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-          
-          if (!error && dbProfile) {
-            profileFromDb = {
-              id: dbProfile.id,
-              email: dbProfile.email || undefined,
-              name: dbProfile.name || undefined,
-              gymnasium: (dbProfile as any).gymnasium || undefined,
-              program: (dbProfile as any).program || undefined,
-              year: (dbProfile as any).year as (1 | 2 | 3) || undefined,
-              selectedCourses: (dbProfile as any).selected_courses ? JSON.parse((dbProfile as any).selected_courses as string) : undefined
-            };
-            console.log('Loaded profile from database for user:', user.id, profileFromDb);
-          }
-        } catch (dbError) {
-          console.log('Could not load profile from database:', dbError);
-        }
-        
-        // Load onboarding status from AsyncStorage (since it's not in database)
-        const localOnboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
-        const onboardingStatus = localOnboardingStatus === 'true';
-        console.log('Loading onboarding status from AsyncStorage:', onboardingStatus);
-        
-        // If we have a complete profile from database, consider onboarding completed
-        const hasCompleteProfile = profileFromDb && profileFromDb.name && profileFromDb.gymnasium && profileFromDb.program && profileFromDb.year;
-        const finalOnboardingStatus = onboardingStatus || hasCompleteProfile;
-        
-        setOnboardingCompleted(finalOnboardingStatus);
-        
-        // Update AsyncStorage if database profile indicates completion but local storage doesn't
-        if (hasCompleteProfile && !onboardingStatus) {
-          await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
-          console.log('Updated onboarding status to completed based on complete database profile');
-        }
-        
-        // Use database profile if available, otherwise load from AsyncStorage
-        if (profileFromDb) {
-          setUserProfile(profileFromDb);
-          // Also save to AsyncStorage for offline access
-          await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profileFromDb));
-        } else {
-          // Fallback to AsyncStorage
-          const profileData = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
-          console.log('Loading profile from AsyncStorage for user:', user.id, 'Has profile:', !!profileData);
-          if (profileData) {
-            const profile = JSON.parse(profileData);
-            setUserProfile(profile);
-          }
-        }
-        
-        // Load courses from AsyncStorage first
-        const coursesData = await AsyncStorage.getItem(STORAGE_KEYS.COURSES);
-        if (coursesData) {
-          const savedCourses = JSON.parse(coursesData);
-          setCourses(savedCourses.map((c: any) => ({
-            ...c,
-            lastStudied: c.lastStudied ? new Date(c.lastStudied) : undefined,
-            createdAt: new Date(c.createdAt),
-            updatedAt: new Date(c.updatedAt),
-          })));
-          console.log('Loaded', savedCourses.length, 'courses from AsyncStorage for user:', user.id);
-        }
-      })();
-      
-      await Promise.race([loadPromise, timeoutPromise]);
     } catch (error) {
-      console.error('Error loading data:', error);
-      // Set default values on error
-      setOnboardingCompleted(false);
-      setUserProfile(null);
-      setCourses([]);
+      console.error('❌ Error in loadData:', error);
+      setError('Failed to load data');
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, loadUserProfile, loadCourses, onboardingCompleted]);
 
   // Load data from AsyncStorage when user changes
   useEffect(() => {
@@ -302,18 +379,77 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     generateCoursesIfNeeded();
   }, [isLoading, userProfile, courses.length, user?.id]);
 
-  const saveCourses = useCallback(async (newCourses: Course[]) => {
-    if (!user?.id) return;
-    
+  // Save courses to both AsyncStorage and Supabase
+  const saveCourses = useCallback(async (userId: string, selectedCourses: string[]) => {
     try {
-      const STORAGE_KEYS = getStorageKeys(user.id);
-      await AsyncStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(newCourses));
-      setCourses(newCourses);
-      console.log('Saved', newCourses.length, 'courses for user:', user.id);
+      console.log('💾 Saving courses for user:', userId, 'Courses:', selectedCourses.length);
+      
+      // Update profile with selected courses
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq('id', userId);
+      
+      if (profileError) {
+        console.error('❌ Error updating profile with courses:', profileError);
+        throw profileError;
+      }
+      
+      // Deactivate all existing user courses
+      await supabase
+        .from('user_courses')
+        .update({ is_active: false })
+        .eq('user_id', userId);
+      
+      // Insert/activate selected courses
+      for (const courseCode of selectedCourses) {
+        // Ensure course exists in courses table
+        const { data: existingCourse } = await supabase
+          .from('courses')
+          .select('id')
+          .eq('id', courseCode)
+          .single();
+        
+        if (!existingCourse) {
+          // Create course if it doesn't exist
+          await supabase
+            .from('courses')
+            .insert({
+              id: courseCode,
+              title: courseCode, // Will be updated with proper name later
+              description: `Course ${courseCode}`,
+              subject: 'General',
+              level: 'gymnasie'
+            });
+        }
+        
+        // Insert or update user_course
+        await supabase
+          .from('user_courses')
+          .upsert({
+            id: `${userId}-${courseCode}`,
+            user_id: userId,
+            course_id: courseCode,
+            progress: 0,
+            is_active: true
+          }, {
+            onConflict: 'id'
+          });
+      }
+      
+      console.log('✅ Successfully saved courses to database');
+      
+      // Reload courses to get updated data
+      await loadCourses(userId);
+      
     } catch (error) {
-      console.error('Error saving courses:', error);
+      console.error('❌ Error saving courses:', error);
+      setError('Failed to save courses');
+      throw error;
     }
-  }, [user?.id]);
+  }, [loadCourses]);
 
   const saveProfile = useCallback(async (profile: UserProfile) => {
     if (!user?.id) {
@@ -361,7 +497,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
           updateData.year = profileWithUserId.year;
         }
         if (profileWithUserId.selectedCourses !== undefined) {
-          updateData.selected_courses = JSON.stringify(profileWithUserId.selectedCourses);
+          (updateData as any).selected_courses = JSON.stringify(profileWithUserId.selectedCourses);
         }
         
         let dbError;
@@ -562,7 +698,9 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
         updatedAt: new Date(),
       }));
       
-      await saveCourses(newCourses);
+      if (user?.id) {
+        await saveCourses(user.id, newCourses.map(c => c.code!).filter(Boolean));
+      }
       
       // Sync selected courses with Supabase
       if (user?.id) {
@@ -705,8 +843,10 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     };
     
     const updatedCourses = [...courses, newCourse];
-    await saveCourses(updatedCourses);
-  }, [courses, saveCourses]);
+    if (user?.id) {
+      await saveCourses(user.id, updatedCourses.map(c => c.code!).filter(Boolean));
+    }
+  }, [courses, saveCourses, user?.id]);
 
   const updateCourse = useCallback(async (id: string, updates: Partial<Course>) => {
     const updatedCourses = courses.map(course =>
@@ -714,13 +854,17 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
         ? { ...course, ...updates, updatedAt: new Date() }
         : course
     );
-    await saveCourses(updatedCourses);
-  }, [courses, saveCourses]);
+    if (user?.id) {
+      await saveCourses(user.id, updatedCourses.map(c => c.code!).filter(Boolean));
+    }
+  }, [courses, saveCourses, user?.id]);
 
   const deleteCourse = useCallback(async (id: string) => {
     const updatedCourses = courses.filter(course => course.id !== id);
-    await saveCourses(updatedCourses);
-  }, [courses, saveCourses]);
+    if (user?.id) {
+      await saveCourses(user.id, updatedCourses.map(c => c.code!).filter(Boolean));
+    }
+  }, [courses, saveCourses, user?.id]);
 
   const logStudyTime = useCallback(async (courseId: string, hours: number) => {
     const updatedCourses = courses.map(course =>
@@ -733,8 +877,10 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
           }
         : course
     );
-    await saveCourses(updatedCourses);
-  }, [courses, saveCourses]);
+    if (user?.id) {
+      await saveCourses(user.id, updatedCourses.map(c => c.code!).filter(Boolean));
+    }
+  }, [courses, saveCourses, user?.id]);
 
   // Computed values
   const coursesByYear = useMemo(() => {
@@ -778,6 +924,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     userProfile,
     isLoading,
     onboardingCompleted,
+    error,
     
     // Actions
     updateUserProfile,
@@ -788,6 +935,8 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     logStudyTime,
     completeOnboarding,
     resetOnboarding,
+    saveCourses,
+    loadCourses,
     
     // Computed
     coursesByYear,
@@ -801,6 +950,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     userProfile,
     isLoading,
     onboardingCompleted,
+    error,
     updateUserProfile,
     assignCoursesForYear,
     addCourse,
@@ -809,6 +959,8 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     logStudyTime,
     completeOnboarding,
     resetOnboarding,
+    saveCourses,
+    loadCourses,
     coursesByYear,
     mandatoryCourses,
     electiveCourses,

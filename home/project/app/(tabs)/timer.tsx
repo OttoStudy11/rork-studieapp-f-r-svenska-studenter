@@ -57,7 +57,6 @@ export default function Timer() {
       return;
     }
     // Handle timer customization
-    console.log('Timer customization would go here');
   };
 
   useEffect(() => {

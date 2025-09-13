@@ -28,7 +28,6 @@ export default function Courses() {
       return;
     }
     // Handle adding course logic here
-    console.log('Add course functionality would go here');
   };
 
   return (

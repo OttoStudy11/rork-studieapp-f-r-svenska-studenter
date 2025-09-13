@@ -94,8 +94,8 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
           icon: courseIcons[index % courseIcons.length],
           totalHours: Math.ceil((uc.courses.progress || 100) / 10),
           studiedHours: Math.round((uc.progress || 0) / 10),
-          year: 1, // Default year
-          points: 100, // Default points
+          year: 1,
+          points: 100,
           mandatory: true,
           category: 'programgemensam' as const,
           createdAt: new Date(uc.created_at),
@@ -330,8 +330,8 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
                       description: `${course.name} - ${course.points || 0} poäng`,
                       subject: extractSubjectFromName(course.name),
                       level: 'gymnasie',
-                      resources: ['Kursmaterial', 'Övningsuppgifter'],
-                      tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+                      resources: [],
+                      tips: [],
                       related_courses: [],
                       progress: 0
                     });
@@ -633,8 +633,8 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
                 description: `${course.name} - ${course.points || 0} poäng`,
                 subject: extractSubjectFromName(course.name),
                 level: 'gymnasie',
-                resources: ['Kursmaterial', 'Övningsuppgifter'],
-                tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+                resources: [],
+                tips: [],
                 related_courses: [],
                 progress: 0
               });

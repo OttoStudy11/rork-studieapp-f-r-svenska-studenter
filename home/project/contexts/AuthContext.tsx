@@ -117,10 +117,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         return;
       }
       
-      // Create a mock auth user from profile data
+      // Create auth user from profile data
       const authUser: AuthUser = {
         id: profile.id,
-        email: profile.email || `${profile.name}@studiestugan.app`, // Use actual email or fallback
+        email: profile.email || '',
         createdAt: profile.created_at,
         username: profile.username,
         displayName: profile.display_name || profile.name

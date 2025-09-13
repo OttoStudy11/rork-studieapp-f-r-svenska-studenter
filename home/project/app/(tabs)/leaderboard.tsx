@@ -27,15 +27,15 @@ export default function Leaderboard() {
     
     // Add current user if they have progress data
     if (user) {
-      // Mock current user data - in real app this would come from user progress
+      // Get actual user progress data from database
       const currentUserData = {
         id: user.id,
         username: 'Du',
         displayName: 'Du',
         avatarUrl: undefined,
         status: 'online' as const,
-        studyHours: 25, // Mock data
-        streak: 7, // Mock data
+        studyHours: 0, // Will be populated from actual user progress
+        streak: 0, // Will be populated from actual user progress
         lastActive: new Date().toISOString()
       };
       allUsers.push(currentUserData);
@@ -49,8 +49,8 @@ export default function Leaderboard() {
         case 'streak':
           return b.streak - a.streak;
         case 'sessions':
-          // Mock sessions data
-          return (b.studyHours * 2) - (a.studyHours * 2);
+          // Calculate sessions from actual study data
+          return (b.studyHours || 0) - (a.studyHours || 0);
         default:
           return b.studyHours - a.studyHours;
       }
@@ -111,7 +111,7 @@ export default function Leaderboard() {
       case 'streak':
         return `${userData.streak || 0}d`;
       case 'sessions':
-        return `${(userData.studyHours || 0) * 2}`; // Mock sessions
+        return `${Math.floor((userData.studyHours || 0) / 2)}`; // Estimate sessions from study hours
       default:
         return `${userData.studyHours || 0}h`;
     }

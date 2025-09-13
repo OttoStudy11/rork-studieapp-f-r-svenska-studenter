@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, Clock, BookOpen, Users, Settings } from 'lucide-react-native';
+import { Home, Clock, BookOpen, Users, Trophy } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -55,6 +55,13 @@ export default function TabLayout() {
         options={{
           title: 'Vänner',
           tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: 'Topplista',
+          tabBarIcon: ({ color, size }) => <Trophy size={size} color={color} />,
         }}
       />
     </Tabs>

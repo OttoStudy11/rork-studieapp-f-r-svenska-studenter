@@ -77,7 +77,11 @@ export default function Courses() {
             const progress = (course.studiedHours / course.totalHours) * 100;
             
             return (
-              <TouchableOpacity key={course.id} style={styles.courseCard}>
+              <TouchableOpacity 
+                key={course.id} 
+                style={styles.courseCard}
+                onPress={() => router.push(`/course/${course.id}`)}
+              >
                 <View style={styles.courseHeader}>
                   <View style={[styles.courseIcon, { backgroundColor: course.color }]}>
                     <BookOpen size={18} color="#fff" />

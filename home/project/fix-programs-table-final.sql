@@ -1,8 +1,35 @@
 -- Fix programs table structure and populate with all gymnasium programs
+-- This script is idempotent and safe to run multiple times
+
 BEGIN;
 
--- Ensure description column exists
+-- First, ensure the programs table has the correct structure
+-- Add missing columns if they don't exist
 ALTER TABLE programs ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS gymnasium TEXT;
+
+-- If gymnasium column was just added, set a default value
+-- Check if gymnasium column has a constraint and handle accordingly
+DO $$
+BEGIN
+    -- Try to set a default value for gymnasium if it's NULL
+    UPDATE programs SET gymnasium = 'Alla gymnasier' WHERE gymnasium IS NULL;
+    
+    -- If there's no constraint, add one
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'programs'::regclass 
+        AND contype = 'c' 
+        AND pg_get_constraintdef(oid) LIKE '%gymnasium%'
+    ) THEN
+        ALTER TABLE programs ADD CONSTRAINT programs_gymnasium_check 
+        CHECK (gymnasium IN ('Alla gymnasier'));
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- If constraint already exists or other error, continue
+        NULL;
+END$$;
 
 -- Clear existing programs to avoid conflicts
 DELETE FROM programs;

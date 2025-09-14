@@ -1,5 +1,7 @@
--- Fix programs table structure and create program entries
--- First, ensure the table has the correct structure
+-- Fix programs table structure and populate with all gymnasium programs
+BEGIN;
+
+-- Ensure description column exists
 ALTER TABLE programs ADD COLUMN IF NOT EXISTS description TEXT;
 
 -- Clear existing programs to avoid conflicts
@@ -100,6 +102,8 @@ INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES
 ('550e8400-e29b-41d4-a716-446655440024', 'Preparandutbildning', 'Förberedelse för nationella program', 'Alla gymnasier', NOW()),
 ('550e8400-e29b-41d4-a716-446655440025', 'Programinriktat individuellt val', 'Förberedelse för specifikt program', 'Alla gymnasier', NOW());
 
+COMMIT;
+
 -- Verify the programs were created
 SELECT COUNT(*) as total_programs FROM programs;
-SELECT name, gymnasium FROM programs ORDER BY name;
+SELECT id, name, gymnasium FROM programs ORDER BY name LIMIT 10;

@@ -1,56 +1,22 @@
--- Fix programs table structure and populate with all gymnasium programs
+-- Simple fix for programs table - populate with all gymnasium programs
 BEGIN;
-
--- First, let's check what constraints exist on the programs table
--- and fix the level column issue
 
 -- Add description column if it doesn't exist
 ALTER TABLE programs ADD COLUMN IF NOT EXISTS description TEXT;
 
--- Check if level column has a NOT NULL constraint and what the allowed values are
--- If level is required, we need to set a default value
+-- Set a default value for level column if it has NOT NULL constraint
+-- We'll use 'gymnasie' as the default since these are gymnasium programs
+ALTER TABLE programs ALTER COLUMN level SET DEFAULT 'gymnasie';
 
--- Get the check constraint for level to see allowed values
-DO $
-DECLARE
-    constraint_def text;
-    allowed_values text[];
-    default_value text := 'gymnasie'; -- Default to gymnasie since these are gymnasium programs
-BEGIN
-    -- Try to get constraint definition
-    SELECT pg_get_constraintdef(oid) INTO constraint_def
-    FROM pg_constraint 
-    WHERE conrelid = 'programs'::regclass 
-    AND contype = 'c' 
-    AND pg_get_constraintdef(oid) LIKE '%level%';
-    
-    -- If we found a constraint, try to extract allowed values
-    IF constraint_def IS NOT NULL THEN
-        RAISE NOTICE 'Found level constraint: %', constraint_def;
-        
-        -- Extract values between single quotes
-        SELECT array_agg(matches[1]) INTO allowed_values
-        FROM regexp_matches(constraint_def, '''([^'']+)''', 'g') AS matches;
-        
-        IF allowed_values IS NOT NULL AND array_length(allowed_values, 1) > 0 THEN
-            default_value := allowed_values[1];
-            RAISE NOTICE 'Using first allowed value as default: %', default_value;
-        END IF;
-    END IF;
-    
-    -- Set default for level column
-    EXECUTE format('ALTER TABLE programs ALTER COLUMN level SET DEFAULT %L', default_value);
-    
-    -- Update any existing NULL values
-    EXECUTE format('UPDATE programs SET level = %L WHERE level IS NULL', default_value);
-    
-    RAISE NOTICE 'Set level default to % and updated NULL values', default_value;
-END$;
+-- Update any existing NULL values in level column
+UPDATE programs SET level = 'gymnasie' WHERE level IS NULL;
 
 -- Clear existing programs to avoid conflicts
 DELETE FROM programs;
 
 -- Insert all gymnasium programs with proper UUIDs
+-- Note: level will use the default 'gymnasie' value
+
 -- Naturvetenskapsprogrammet
 INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES
 ('550e8400-e29b-41d4-a716-446655440001', 'Naturvetenskapsprogrammet', 'Naturvetenskap och teknik med fokus på matematik, fysik, kemi och biologi', 'Alla gymnasier', NOW()),
@@ -147,6 +113,6 @@ INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES
 
 COMMIT;
 
--- Verify the programs were created
+-- Verify the programs were created successfully
 SELECT COUNT(*) as total_programs FROM programs;
-SELECT id, name, gymnasium FROM programs ORDER BY name LIMIT 10;
+SELECT id, name, level, gymnasium FROM programs ORDER BY name LIMIT 10;

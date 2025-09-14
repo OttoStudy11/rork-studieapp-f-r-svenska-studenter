@@ -1,183 +1,105 @@
--- Fix programs table structure and populate with all programs from the app
+-- Fix programs table structure and create program entries
+-- First, ensure the table has the correct structure
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS description TEXT;
 
--- First, ensure the programs table has the correct structure
--- The table should already exist based on database.types.ts, but let's make sure it has all columns
-
--- Create programs table if it doesn't exist (it should exist based on types)
-CREATE TABLE IF NOT EXISTS programs (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  description TEXT,
-  gymnasium TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Clear existing data to avoid conflicts
+-- Clear existing programs to avoid conflicts
 DELETE FROM programs;
 
--- Insert all unique programs with proper UUIDs
--- We'll create program entries for each gymnasium-program combination
+-- Insert all gymnasium programs with proper UUIDs
+-- Naturvetenskapsprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-446655440001', 'Naturvetenskapsprogrammet', 'Naturvetenskap och teknik med fokus på matematik, fysik, kemi och biologi', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440002', 'Naturvetenskapsprogrammet - Naturvetenskap', 'Fördjupning inom naturvetenskap', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440003', 'Naturvetenskapsprogrammet - Teknik', 'Fördjupning inom teknik och ingenjörsvetenskap', 'Alla gymnasier', NOW());
 
--- Generate UUIDs for each program-gymnasium combination
-INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES
+-- Teknikprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-446655440004', 'Teknikprogrammet', 'Teknik och ingenjörsvetenskap', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440005', 'Teknikprogrammet - Datateknik', 'Fördjupning inom datateknik och programmering', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440006', 'Teknikprogrammet - Elektroteknik', 'Fördjupning inom elektroteknik', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440007', 'Teknikprogrammet - Maskin- och fordonsteknik', 'Fördjupning inom maskin- och fordonsteknik', 'Alla gymnasier', NOW());
 
--- Kungsholmens gymnasium
-('kungsholmens-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Kungsholmens gymnasium', 'Kungsholmens gymnasium', NOW()),
-('kungsholmens-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Kungsholmens gymnasium', 'Kungsholmens gymnasium', NOW()),
-('kungsholmens-humanistiska', 'Humanistiska programmet', 'Humanistiska programmet vid Kungsholmens gymnasium', 'Kungsholmens gymnasium', NOW()),
+-- Samhällsvetenskapsprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-446655440008', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskap och humaniora', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440009', 'Samhällsvetenskapsprogrammet - Beteendevetenskap', 'Fördjupning inom psykologi och sociologi', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-44665544000a', 'Samhällsvetenskapsprogrammet - Samhällsvetenskap', 'Fördjupning inom samhällsvetenskap', 'Alla gymnasier', NOW());
 
--- Norra Real
-('norra-real-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Norra Real', 'Norra Real', NOW()),
-('norra-real-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Norra Real', 'Norra Real', NOW()),
-('norra-real-teknik', 'Teknikprogrammet', 'Teknikprogrammet vid Norra Real', 'Norra Real', NOW()),
+-- Ekonomiprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-44665544000b', 'Ekonomiprogrammet', 'Ekonomi och företagande', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-44665544000c', 'Ekonomiprogrammet - Ekonomi', 'Fördjupning inom ekonomi', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-44665544000d', 'Ekonomiprogrammet - Juridik', 'Fördjupning inom juridik', 'Alla gymnasier', NOW());
 
--- Södra Latin
-('sodra-latin-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Södra Latin', 'Södra Latin', NOW()),
-('sodra-latin-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Södra Latin', 'Södra Latin', NOW()),
-('sodra-latin-ekonomi', 'Ekonomiprogrammet', 'Ekonomiprogrammet vid Södra Latin', 'Södra Latin', NOW()),
-('sodra-latin-humanistiska', 'Humanistiska programmet', 'Humanistiska programmet vid Södra Latin', 'Södra Latin', NOW()),
+-- Humanistiska programmet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-44665544000e', 'Humanistiska programmet', 'Språk, kultur och kommunikation', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-44665544000f', 'Humanistiska programmet - Språk', 'Fördjupning inom språk', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440010', 'Humanistiska programmet - Kultur', 'Fördjupning inom kultur och historia', 'Alla gymnasier', NOW());
 
--- Östra Real
-('ostra-real-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Östra Real', 'Östra Real', NOW()),
-('ostra-real-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Östra Real', 'Östra Real', NOW()),
-('ostra-real-ekonomi', 'Ekonomiprogrammet', 'Ekonomiprogrammet vid Östra Real', 'Östra Real', NOW()),
+-- Estetiska programmet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-446655440011', 'Estetiska programmet', 'Konst, musik och design', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440012', 'Estetiska programmet - Bild och form', 'Fördjupning inom bild och form', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440013', 'Estetiska programmet - Musik', 'Fördjupning inom musik', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440014', 'Estetiska programmet - Teater', 'Fördjupning inom teater och drama', 'Alla gymnasier', NOW());
 
--- Viktor Rydberg gymnasium
-('viktor-rydberg-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Viktor Rydberg gymnasium', 'Viktor Rydberg gymnasium', NOW()),
-('viktor-rydberg-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Viktor Rydberg gymnasium', 'Viktor Rydberg gymnasium', NOW()),
-('viktor-rydberg-humanistiska', 'Humanistiska programmet', 'Humanistiska programmet vid Viktor Rydberg gymnasium', 'Viktor Rydberg gymnasium', NOW()),
+-- Barn- och fritidsprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-446655440015', 'Barn- och fritidsprogrammet', 'Pedagogik och fritidsverksamhet', 'Alla gymnasier', NOW());
 
--- NTI-gymnasiet Umeå
-('nti-umea-teknik', 'Teknikprogrammet', 'Teknikprogrammet vid NTI-gymnasiet Umeå', 'NTI-gymnasiet Umeå', NOW()),
-('nti-umea-el-energi', 'El- och energiprogrammet', 'El- och energiprogrammet vid NTI-gymnasiet Umeå', 'NTI-gymnasiet Umeå', NOW()),
+-- Vård- och omsorgsprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-446655440016', 'Vård- och omsorgsprogrammet', 'Vård, omsorg och hälsa', 'Alla gymnasier', NOW());
 
--- Stockholms estetiska gymnasium
-('stockholm-estetiska-estetiska', 'Estetiska programmet', 'Estetiska programmet vid Stockholms estetiska gymnasium', 'Stockholms estetiska gymnasium', NOW()),
+-- Hotell- och turismprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-446655440017', 'Hotell- och turismprogrammet', 'Hotell, restaurang och turism', 'Alla gymnasier', NOW());
 
--- International High School of the Gothenburg Region
-('ihsgr-ib', 'International Baccalaureate', 'International Baccalaureate vid International High School of the Gothenburg Region', 'International High School of the Gothenburg Region', NOW()),
+-- Handelsprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-446655440018', 'Handelsprogrammet', 'Handel och administration', 'Alla gymnasier', NOW());
 
--- Sigtunaskolan Humanistiska Läroverket
-('sigtuna-ib', 'International Baccalaureate', 'International Baccalaureate vid Sigtunaskolan Humanistiska Läroverket', 'Sigtunaskolan Humanistiska Läroverket', NOW()),
-('sigtuna-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Sigtunaskolan Humanistiska Läroverket', 'Sigtunaskolan Humanistiska Läroverket', NOW()),
-('sigtuna-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Sigtunaskolan Humanistiska Läroverket', 'Sigtunaskolan Humanistiska Läroverket', NOW()),
+-- Fordon- och transportprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-446655440019', 'Fordon- och transportprogrammet', 'Fordon, transport och logistik', 'Alla gymnasier', NOW());
 
--- Hvitfeldtska gymnasiet
-('hvitfeldtska-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Hvitfeldtska gymnasiet', 'Hvitfeldtska gymnasiet', NOW()),
-('hvitfeldtska-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Hvitfeldtska gymnasiet', 'Hvitfeldtska gymnasiet', NOW()),
-('hvitfeldtska-ib', 'International Baccalaureate', 'International Baccalaureate vid Hvitfeldtska gymnasiet', 'Hvitfeldtska gymnasiet', NOW()),
+-- Bygg- och anläggningsprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-44665544001a', 'Bygg- och anläggningsprogrammet', 'Byggnad och anläggning', 'Alla gymnasier', NOW());
 
--- Katrinelundsgymnasiet
-('katrinelunds-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Katrinelundsgymnasiet', 'Katrinelundsgymnasiet', NOW()),
-('katrinelunds-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Katrinelundsgymnasiet', 'Katrinelundsgymnasiet', NOW()),
-('katrinelunds-ekonomi', 'Ekonomiprogrammet', 'Ekonomiprogrammet vid Katrinelundsgymnasiet', 'Katrinelundsgymnasiet', NOW()),
+-- El- och energiprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-44665544001b', 'El- och energiprogrammet', 'Elektricitet och energi', 'Alla gymnasier', NOW());
 
--- Polhemsgymnasiet
-('polhems-gbg-teknik', 'Teknikprogrammet', 'Teknikprogrammet vid Polhemsgymnasiet', 'Polhemsgymnasiet', NOW()),
-('polhems-gbg-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Polhemsgymnasiet', 'Polhemsgymnasiet', NOW()),
-('polhems-gbg-industritekniska', 'Industritekniska programmet', 'Industritekniska programmet vid Polhemsgymnasiet', 'Polhemsgymnasiet', NOW()),
+-- Industritekniska programmet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-44665544001c', 'Industritekniska programmet', 'Industri och produktion', 'Alla gymnasier', NOW());
 
--- Schillerska gymnasiet
-('schillerska-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Schillerska gymnasiet', 'Schillerska gymnasiet', NOW()),
-('schillerska-humanistiska', 'Humanistiska programmet', 'Humanistiska programmet vid Schillerska gymnasiet', 'Schillerska gymnasiet', NOW()),
-('schillerska-estetiska', 'Estetiska programmet', 'Estetiska programmet vid Schillerska gymnasiet', 'Schillerska gymnasiet', NOW()),
+-- VVS- och fastighetsprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-44665544001d', 'VVS- och fastighetsprogrammet', 'VVS och fastighetsförvaltning', 'Alla gymnasier', NOW());
 
--- Malmö Borgarskola
-('malmo-borgarskola-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Malmö Borgarskola', 'Malmö Borgarskola', NOW()),
-('malmo-borgarskola-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Malmö Borgarskola', 'Malmö Borgarskola', NOW()),
-('malmo-borgarskola-ekonomi', 'Ekonomiprogrammet', 'Ekonomiprogrammet vid Malmö Borgarskola', 'Malmö Borgarskola', NOW()),
+-- Hantverksprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-44665544001e', 'Hantverksprogrammet', 'Traditionellt hantverk', 'Alla gymnasier', NOW());
 
--- Malmö latinskola
-('malmo-latin-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Malmö latinskola', 'Malmö latinskola', NOW()),
-('malmo-latin-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Malmö latinskola', 'Malmö latinskola', NOW()),
-('malmo-latin-humanistiska', 'Humanistiska programmet', 'Humanistiska programmet vid Malmö latinskola', 'Malmö latinskola', NOW()),
+-- Restaurang- och livsmedelsprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-44665544001f', 'Restaurang- och livsmedelsprogrammet', 'Restaurang och livsmedelsproduktion', 'Alla gymnasier', NOW());
 
--- Malmö idrottsgymnasium
-('malmo-idrott-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Malmö idrottsgymnasium', 'Malmö idrottsgymnasium', NOW()),
-('malmo-idrott-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Malmö idrottsgymnasium', 'Malmö idrottsgymnasium', NOW()),
-('malmo-idrott-ekonomi', 'Ekonomiprogrammet', 'Ekonomiprogrammet vid Malmö idrottsgymnasium', 'Malmö idrottsgymnasium', NOW()),
+-- Naturbruksprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-446655440020', 'Naturbruksprogrammet', 'Jordbruk, skogsbruk och djurvård', 'Alla gymnasier', NOW());
 
--- Katedralskolan Uppsala
-('katedralskolan-uppsala-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Katedralskolan', 'Katedralskolan', NOW()),
-('katedralskolan-uppsala-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Katedralskolan', 'Katedralskolan', NOW()),
-('katedralskolan-uppsala-humanistiska', 'Humanistiska programmet', 'Humanistiska programmet vid Katedralskolan', 'Katedralskolan', NOW()),
-('katedralskolan-uppsala-estetiska', 'Estetiska programmet', 'Estetiska programmet vid Katedralskolan', 'Katedralskolan', NOW()),
+-- Introduktionsprogrammet
+INSERT INTO programs (id, name, description, gymnasium, created_at) VALUES 
+('550e8400-e29b-41d4-a716-446655440021', 'Introduktionsprogrammet', 'Förberedande utbildning', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440022', 'Språkintroduktion', 'Svenska som andraspråk', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440023', 'Individuellt alternativ', 'Individuellt anpassad utbildning', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440024', 'Preparandutbildning', 'Förberedelse för nationella program', 'Alla gymnasier', NOW()),
+('550e8400-e29b-41d4-a716-446655440025', 'Programinriktat individuellt val', 'Förberedelse för specifikt program', 'Alla gymnasier', NOW());
 
--- Lundellska skolan
-('lundellska-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Lundellska skolan', 'Lundellska skolan', NOW()),
-('lundellska-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Lundellska skolan', 'Lundellska skolan', NOW()),
-('lundellska-ekonomi', 'Ekonomiprogrammet', 'Ekonomiprogrammet vid Lundellska skolan', 'Lundellska skolan', NOW()),
-
--- Fyrisskolan
-('fyrisskolan-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Fyrisskolan', 'Fyrisskolan', NOW()),
-('fyrisskolan-teknik', 'Teknikprogrammet', 'Teknikprogrammet vid Fyrisskolan', 'Fyrisskolan', NOW()),
-('fyrisskolan-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Fyrisskolan', 'Fyrisskolan', NOW()),
-
--- Celsiusskolan
-('celsiusskolan-teknik', 'Teknikprogrammet', 'Teknikprogrammet vid Celsiusskolan', 'Celsiusskolan', NOW()),
-('celsiusskolan-el-energi', 'El- och energiprogrammet', 'El- och energiprogrammet vid Celsiusskolan', 'Celsiusskolan', NOW()),
-('celsiusskolan-industritekniska', 'Industritekniska programmet', 'Industritekniska programmet vid Celsiusskolan', 'Celsiusskolan', NOW()),
-
--- Berzeliusskolan
-('berzeliusskolan-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Berzeliusskolan', 'Berzeliusskolan', NOW()),
-('berzeliusskolan-teknik', 'Teknikprogrammet', 'Teknikprogrammet vid Berzeliusskolan', 'Berzeliusskolan', NOW()),
-
--- Folkungaskolan
-('folkungaskolan-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Folkungaskolan', 'Folkungaskolan', NOW()),
-('folkungaskolan-ekonomi', 'Ekonomiprogrammet', 'Ekonomiprogrammet vid Folkungaskolan', 'Folkungaskolan', NOW()),
-('folkungaskolan-estetiska', 'Estetiska programmet', 'Estetiska programmet vid Folkungaskolan', 'Folkungaskolan', NOW()),
-
--- Katedralskolan Linköping
-('katedralskolan-linkoping-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Katedralskolan Linköping', 'Katedralskolan Linköping', NOW()),
-('katedralskolan-linkoping-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Katedralskolan Linköping', 'Katedralskolan Linköping', NOW()),
-('katedralskolan-linkoping-humanistiska', 'Humanistiska programmet', 'Humanistiska programmet vid Katedralskolan Linköping', 'Katedralskolan Linköping', NOW()),
-
--- Katedralskolan Lund
-('katedralskolan-lund-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Katedralskolan Lund', 'Katedralskolan Lund', NOW()),
-('katedralskolan-lund-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Katedralskolan Lund', 'Katedralskolan Lund', NOW()),
-('katedralskolan-lund-humanistiska', 'Humanistiska programmet', 'Humanistiska programmet vid Katedralskolan Lund', 'Katedralskolan Lund', NOW()),
-('katedralskolan-lund-ib', 'International Baccalaureate', 'International Baccalaureate vid Katedralskolan Lund', 'Katedralskolan Lund', NOW()),
-
--- Polhemskolan Lund
-('polhemskolan-lund-teknik', 'Teknikprogrammet', 'Teknikprogrammet vid Polhemskolan', 'Polhemskolan', NOW()),
-('polhemskolan-lund-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Polhemskolan', 'Polhemskolan', NOW()),
-
--- Spyken
-('spyken-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Spyken', 'Spyken', NOW()),
-('spyken-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Spyken', 'Spyken', NOW()),
-('spyken-estetiska', 'Estetiska programmet', 'Estetiska programmet vid Spyken', 'Spyken', NOW()),
-
--- Bäckängsgymnasiet
-('backangs-bygg-anlaggning', 'Bygg- och anläggningsprogrammet', 'Bygg- och anläggningsprogrammet vid Bäckängsgymnasiet', 'Bäckängsgymnasiet', NOW()),
-('backangs-el-energi', 'El- och energiprogrammet', 'El- och energiprogrammet vid Bäckängsgymnasiet', 'Bäckängsgymnasiet', NOW()),
-('backangs-vvs-fastighet', 'VVS- och fastighetsprogrammet', 'VVS- och fastighetsprogrammet vid Bäckängsgymnasiet', 'Bäckängsgymnasiet', NOW()),
-
--- Sven Eriksonsgymnasiet
-('sven-eriksons-vard-omsorg', 'Vård- och omsorgsprogrammet', 'Vård- och omsorgsprogrammet vid Sven Eriksonsgymnasiet', 'Sven Eriksonsgymnasiet', NOW()),
-('sven-eriksons-barn-fritid', 'Barn- och fritidsprogrammet', 'Barn- och fritidsprogrammet vid Sven Eriksonsgymnasiet', 'Sven Eriksonsgymnasiet', NOW()),
-
--- Burgårdens gymnasium
-('burgardens-restaurang-livsmedel', 'Restaurang- och livsmedelsprogrammet', 'Restaurang- och livsmedelsprogrammet vid Burgårdens gymnasium', 'Burgårdens gymnasium', NOW()),
-('burgardens-hotell-turism', 'Hotell- och turismprogrammet', 'Hotell- och turismprogrammet vid Burgårdens gymnasium', 'Burgårdens gymnasium', NOW()),
-
--- Svenljunga gymnasium
-('svenljunga-naturbruk', 'Naturbruksprogrammet', 'Naturbruksprogrammet vid Svenljunga gymnasium', 'Svenljunga gymnasium', NOW()),
-
--- Öckerö seglande gymnasieskola
-('ockero-naturvetenskap', 'Naturvetenskapsprogrammet', 'Naturvetenskapsprogrammet vid Öckerö seglande gymnasieskola', 'Öckerö seglande gymnasieskola', NOW()),
-('ockero-samhallsvetenskap', 'Samhällsvetenskapsprogrammet', 'Samhällsvetenskapsprogrammet vid Öckerö seglande gymnasieskola', 'Öckerö seglande gymnasieskola', NOW());
-
--- Enable RLS on programs table
-ALTER TABLE programs ENABLE ROW LEVEL SECURITY;
-
--- Create policy to allow all users to read programs
-CREATE POLICY "Allow all users to read programs" ON programs
-  FOR SELECT USING (true);
-
--- Create policy to allow authenticated users to insert programs (for admin purposes)
-CREATE POLICY "Allow authenticated users to insert programs" ON programs
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
--- Create policy to allow authenticated users to update programs (for admin purposes)
-CREATE POLICY "Allow authenticated users to update programs" ON programs
-  FOR UPDATE USING (auth.role() = 'authenticated');
+-- Verify the programs were created
+SELECT COUNT(*) as total_programs FROM programs;
+SELECT name, gymnasium FROM programs ORDER BY name;

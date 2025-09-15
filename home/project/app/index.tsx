@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCourses } from '@/contexts/CourseContext';
 import { testDatabaseConnection } from '@/lib/supabase';
 import { runDatabaseTests } from '../lib/database-test';
+import SplashScreen from '../components/SplashScreen';
+import { useWelcomeStorage } from '../hooks/useWelcomeStorage';
 
 export default function Index() {
   const router = useRouter();
@@ -13,6 +15,8 @@ export default function Index() {
   const { userProfile, isLoading: courseLoading, onboardingCompleted } = useCourses();
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'failed'>('checking');
   const [showDetails, setShowDetails] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const { hasSeenWelcome } = useWelcomeStorage();
 
   const isLoading = authLoading || courseLoading;
 
@@ -33,9 +37,13 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && !showSplash && hasSeenWelcome !== null) {
+      // If user hasn't seen welcome screens, show them first
+      if (!hasSeenWelcome) {
+        router.replace('/welcome');
+      }
       // If no user is authenticated, go to auth screen
-      if (!user) {
+      else if (!user) {
         router.replace('/auth');
       } 
       // If user exists but hasn't completed onboarding
@@ -47,7 +55,16 @@ export default function Index() {
         router.replace('/(tabs)/home');
       }
     }
-  }, [isLoading, user, onboardingCompleted, userProfile, router]);
+  }, [isLoading, user, onboardingCompleted, userProfile, router, showSplash, hasSeenWelcome]);
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+  };
+
+  // Show splash screen first
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
 
   const getStatusColor = () => {
     switch (dbStatus) {
@@ -69,7 +86,7 @@ export default function Index() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
       <ActivityIndicator size="large" color="#4ECDC4" />
-      <Text style={styles.loadingText}>Laddar StudieStugan...</Text>
+      <Text style={styles.loadingText}>Förbereder din studieupplevelse...</Text>
       
       <TouchableOpacity 
         style={styles.statusContainer}

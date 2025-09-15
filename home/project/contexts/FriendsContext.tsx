@@ -58,15 +58,27 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
       setIsLoading(true);
       console.log('Loading friends for user:', user.id);
 
-      // Get accepted friendships
-      const { data: friendships, error: friendshipsError } = await supabase
+      // Get accepted friendships with friend profile data
+      const { data: friendships, error: friendshipsError } = await (supabase as any)
         .from('friendships')
         .select(`
           id,
           user1_id,
           user2_id,
           status,
-          created_at
+          created_at,
+          user1:profiles!friendships_user1_id_fkey(
+            id,
+            username,
+            display_name,
+            avatar_url
+          ),
+          user2:profiles!friendships_user2_id_fkey(
+            id,
+            username,
+            display_name,
+            avatar_url
+          )
         `)
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .eq('status', 'accepted');
@@ -82,26 +94,26 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
         return;
       }
 
-      // Get friend user IDs
-      const friendIds = friendships.map(f => 
-        f.user1_id === user.id ? f.user2_id : f.user1_id
-      );
+      // Extract friend profiles and IDs
+      const friendProfiles: any[] = [];
+      const friendIds: string[] = [];
+      
+      friendships.forEach((friendship: any) => {
+        if (friendship.user1_id === user.id) {
+          // Current user is user1, so friend is user2
+          friendProfiles.push(friendship.user2);
+          friendIds.push(friendship.user2_id);
+        } else {
+          // Current user is user2, so friend is user1
+          friendProfiles.push(friendship.user1);
+          friendIds.push(friendship.user1_id);
+        }
+      });
 
       console.log('Friend IDs:', friendIds);
 
-      // Get friend profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url')
-        .in('id', friendIds);
-
-      if (profilesError) {
-        console.error('Error loading friend profiles:', profilesError);
-        return;
-      }
-
-      // Get friend progress data
-      const { data: progressData, error: progressError } = await supabase
+      // Get friend progress data from user_progress table
+      const { data: progressData, error: progressError } = await (supabase as any)
         .from('user_progress')
         .select('user_id, total_study_time, current_streak, last_study_date')
         .in('user_id', friendIds);
@@ -111,8 +123,8 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
       }
 
       // Combine data into Friend objects
-      const friendsData: Friend[] = profiles?.map(profile => {
-        const progress = progressData?.find(p => p.user_id === profile.id);
+      const friendsData: Friend[] = friendProfiles.map(profile => {
+        const progress = progressData?.find((p: any) => p.user_id === profile.id);
         const lastStudyDate = progress?.last_study_date ? new Date(progress.last_study_date) : null;
         const now = new Date();
         const hoursSinceLastStudy = lastStudyDate ? 
@@ -138,7 +150,7 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
           streak: progress?.current_streak || 0,
           lastActive: lastStudyDate?.toISOString()
         };
-      }) || [];
+      });
 
       console.log('Loaded friends:', friendsData);
       setFriends(friendsData);
@@ -158,7 +170,7 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
 
     try {
       // Get incoming friend requests
-      const { data: incoming, error: incomingError } = await supabase
+      const { data: incoming, error: incomingError } = await (supabase as any)
         .from('friendships')
         .select(`
           id,
@@ -179,15 +191,15 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
       if (incomingError) {
         console.error('Error loading incoming requests:', incomingError);
       } else {
-        const incomingRequests: FriendRequest[] = incoming?.map(req => ({
+        const incomingRequests: FriendRequest[] = incoming?.map((req: any) => ({
           id: req.id,
           fromUserId: req.user1_id,
           toUserId: req.user2_id,
           fromUser: {
-            id: (req.user1 as any).id,
-            username: (req.user1 as any).username || 'Unknown',
-            displayName: (req.user1 as any).display_name || (req.user1 as any).username || 'Unknown User',
-            avatarUrl: (req.user1 as any).avatar_url
+            id: req.user1?.id,
+            username: req.user1?.username || 'Unknown',
+            displayName: req.user1?.display_name || req.user1?.username || 'Unknown User',
+            avatarUrl: req.user1?.avatar_url
           },
           status: req.status as 'pending',
           createdAt: req.created_at
@@ -197,7 +209,7 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
       }
 
       // Get sent friend requests
-      const { data: sent, error: sentError } = await supabase
+      const { data: sent, error: sentError } = await (supabase as any)
         .from('friendships')
         .select(`
           id,
@@ -218,15 +230,15 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
       if (sentError) {
         console.error('Error loading sent requests:', sentError);
       } else {
-        const sentRequestsData: FriendRequest[] = sent?.map(req => ({
+        const sentRequestsData: FriendRequest[] = sent?.map((req: any) => ({
           id: req.id,
           fromUserId: req.user1_id,
           toUserId: req.user2_id,
           fromUser: {
-            id: (req.user2 as any).id,
-            username: (req.user2 as any).username || 'Unknown',
-            displayName: (req.user2 as any).display_name || (req.user2 as any).username || 'Unknown User',
-            avatarUrl: (req.user2 as any).avatar_url
+            id: req.user2?.id,
+            username: req.user2?.username || 'Unknown',
+            displayName: req.user2?.display_name || req.user2?.username || 'Unknown User',
+            avatarUrl: req.user2?.avatar_url
           },
           status: req.status as 'pending',
           createdAt: req.created_at
@@ -240,7 +252,7 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
   }, [user]);
 
   const searchUsers = useCallback(async (query: string) => {
-    if (!query.trim() || query.length < 2) {
+    if (!query?.trim() || query.length < 2) {
       return [];
     }
 
@@ -279,7 +291,7 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
       console.log('Sending friend request to:', userId);
       
       // Check if friendship already exists
-      const { data: existing } = await supabase
+      const { data: existing } = await (supabase as any)
         .from('friendships')
         .select('id, status')
         .or(`and(user1_id.eq.${user.id},user2_id.eq.${userId}),and(user1_id.eq.${userId},user2_id.eq.${user.id})`)
@@ -293,7 +305,7 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
         }
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('friendships')
         .insert({
           user1_id: user.id,
@@ -323,7 +335,7 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
     try {
       console.log('Accepting friend request:', requestId);
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('friendships')
         .update({ status: 'accepted' })
         .eq('id', requestId)
@@ -351,7 +363,7 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
     try {
       console.log('Rejecting friend request:', requestId);
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('friendships')
         .delete()
         .eq('id', requestId)
@@ -379,7 +391,7 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
     try {
       console.log('Removing friend:', friendId);
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('friendships')
         .delete()
         .or(`and(user1_id.eq.${user.id},user2_id.eq.${friendId}),and(user1_id.eq.${friendId},user2_id.eq.${user.id})`);
@@ -430,7 +442,7 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
           table: 'friendships',
           filter: `user1_id=eq.${user.id},user2_id=eq.${user.id}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Friendship change detected:', payload);
           refreshFriends();
         }

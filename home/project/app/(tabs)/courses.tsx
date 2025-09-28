@@ -84,7 +84,7 @@ export default function Courses() {
               >
                 <View style={styles.courseHeader}>
                   <View style={[styles.courseIcon, { backgroundColor: course.color }]}>
-                    <BookOpen size={18} color="#fff" />
+                    <BookOpen size={24} color="#fff" />
                   </View>
                   {course.mandatory && (
                     <View style={styles.mandatoryBadge}>
@@ -106,13 +106,13 @@ export default function Courses() {
 
                 <View style={styles.courseStats}>
                   <View style={styles.stat}>
-                    <Clock size={14} color="#7f8c8d" />
+                    <Clock size={16} color="#4ECDC4" />
                     <Text style={styles.statText} numberOfLines={1}>
                       {Math.round(course.studiedHours)}h/{course.totalHours}h
                     </Text>
                   </View>
                   <View style={styles.stat}>
-                    <TrendingUp size={14} color="#7f8c8d" />
+                    <TrendingUp size={16} color="#4ECDC4" />
                     <Text style={styles.statText}>{Math.round(progress)}%</Text>
                   </View>
                 </View>
@@ -264,123 +264,122 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   coursesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 12,
+    gap: 16,
   },
   courseCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    width: '48%',
-    minWidth: 160,
-    height: 200,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    justifyContent: 'space-between',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   courseHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   courseIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
   courseInfo: {
     flex: 1,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   courseName: {
-    fontSize: 15,
-    fontWeight: '600' as const,
+    fontSize: 18,
+    fontWeight: '700' as const,
     color: '#2c3e50',
-    lineHeight: 20,
-    marginBottom: 4,
+    lineHeight: 24,
+    marginBottom: 6,
   },
   courseCode: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#95a5a6',
     fontWeight: '500' as const,
   },
   mandatoryBadge: {
     backgroundColor: '#FFE5B4',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     alignSelf: 'flex-start',
   },
   mandatoryText: {
-    fontSize: 9,
+    fontSize: 11,
     color: '#FF8C00',
     fontWeight: '600' as const,
   },
   courseStats: {
-    flexDirection: 'column',
-    gap: 6,
-    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    flex: 0.48,
+    justifyContent: 'center',
   },
   statText: {
-    fontSize: 11,
-    color: '#7f8c8d',
-    fontWeight: '500' as const,
-  },
-  pointsBadge: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  pointsText: {
-    fontSize: 10,
+    fontSize: 13,
     color: '#2c3e50',
     fontWeight: '600' as const,
   },
+  pointsBadge: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    backgroundColor: '#4ECDC4',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  pointsText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '700' as const,
+  },
   progressBar: {
-    height: 4,
+    height: 6,
     backgroundColor: '#ecf0f1',
-    borderRadius: 2,
+    borderRadius: 3,
     overflow: 'hidden',
+    marginTop: 4,
   },
   progressFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 3,
   },
   addButton: {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
-    borderRadius: 16,
-    width: '48%',
-    minWidth: 160,
-    height: 200,
+    borderRadius: 20,
+    marginBottom: 16,
+    paddingVertical: 40,
     borderWidth: 2,
     borderColor: '#4ECDC4',
     borderStyle: 'dashed',
-    gap: 8,
+    gap: 12,
   },
   addButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600' as const,
     color: '#4ECDC4',
     textAlign: 'center',

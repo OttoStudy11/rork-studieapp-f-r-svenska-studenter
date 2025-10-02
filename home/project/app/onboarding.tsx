@@ -603,11 +603,12 @@ const styles = StyleSheet.create({
   programList: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   programItem: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
-    padding: 24,
+    padding: 28,
     marginBottom: 16,
     borderWidth: 2,
     borderColor: '#f0f0f0',
@@ -621,7 +622,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 4,
-    minHeight: 80,
+    minHeight: 100,
   },
   programItemSelected: {
     backgroundColor: '#f0fffe',
@@ -631,29 +632,31 @@ const styles = StyleSheet.create({
   },
   programContent: {
     flex: 1,
+    paddingRight: 12,
   },
   programName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700' as const,
     color: '#1a1a1a',
-    marginBottom: 6,
-    lineHeight: 26,
+    marginBottom: 8,
+    lineHeight: 28,
   },
   programNameSelected: {
     color: '#2d7a73',
   },
   programCategory: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#666',
     fontWeight: '500' as const,
+    lineHeight: 22,
   },
   programCategorySelected: {
     color: '#4ECDC4',
   },
   checkmark: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#4ECDC4',
     alignItems: 'center',
     justifyContent: 'center',
@@ -668,7 +671,7 @@ const styles = StyleSheet.create({
   },
   checkmarkText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold' as const,
   },
   yearSelectionContainer: {

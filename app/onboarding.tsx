@@ -616,13 +616,13 @@ export default function OnboardingScreen() {
                               disabled={isMandatory}
                             >
                               <View style={[styles.courseIconContainer, { backgroundColor: categoryColor + '20' }]}>
-                                <IconComponent size={18} color={categoryColor} />
+                                <IconComponent size={16} color={categoryColor} />
                               </View>
                               
                               <Text style={[
                                 styles.courseCardName,
                                 isSelected && { color: categoryColor }
-                              ]} numberOfLines={1} ellipsizeMode="tail">
+                              ]} numberOfLines={2} ellipsizeMode="middle">
                                 {formatCourseName(course.name)}
                               </Text>
                               
@@ -949,15 +949,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    justifyContent: 'space-between',
   },
   courseCard: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 10,
-    width: '32%',
-    minHeight: 120,
-    maxHeight: 120,
+    width: '31.5%',
+    height: 110,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -970,7 +968,6 @@ const styles = StyleSheet.create({
     elevation: 2,
     position: 'relative',
     justifyContent: 'space-between',
-    marginBottom: 8,
   },
   selectedCourseCard: {
     backgroundColor: '#F8FAFC',
@@ -980,22 +977,21 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   courseIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
     alignSelf: 'flex-start',
   },
   courseCardName: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 6,
-    minHeight: 16,
-    lineHeight: 16,
-    flex: 1,
+    marginBottom: 4,
+    height: 28,
+    lineHeight: 14,
   },
   courseCardFooter: {
     flexDirection: 'row',
@@ -1003,24 +999,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   courseCardPoints: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: '#374151',
   },
   courseCardYear: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#6B7280',
   },
   mandatoryBadge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
+    top: -4,
+    right: -4,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 6,
   },
   mandatoryText: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: '600',
     color: 'white',
     textTransform: 'uppercase',

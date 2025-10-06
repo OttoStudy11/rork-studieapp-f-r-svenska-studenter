@@ -217,9 +217,9 @@ export default function GymnasiumAndProgramPicker({
                   })}
                 >
                   <View style={[styles.programIconContainer, { backgroundColor: color + '20' }]}>
-                    <IconComponent size={28} color={color} />
+                    <IconComponent size={20} color={color} />
                   </View>
-                  <Text style={[styles.programCardName, isSelected && { color }]} numberOfLines={2} ellipsizeMode="tail">
+                  <Text style={[styles.programCardName, isSelected && { color }]} numberOfLines={2} ellipsizeMode="middle">
                     {program.name}
                   </Text>
                   <Text style={styles.programCardAbbr}>{program.abbr}</Text>
@@ -266,9 +266,9 @@ export default function GymnasiumAndProgramPicker({
                   })}
                 >
                   <View style={[styles.programIconContainer, { backgroundColor: color + '20' }]}>
-                    <IconComponent size={28} color={color} />
+                    <IconComponent size={20} color={color} />
                   </View>
-                  <Text style={[styles.programCardName, isSelected && { color }]} numberOfLines={2} ellipsizeMode="tail">
+                  <Text style={[styles.programCardName, isSelected && { color }]} numberOfLines={2} ellipsizeMode="middle">
                     {program.name}
                   </Text>
                   <Text style={styles.programCardAbbr}>{program.abbr}</Text>
@@ -638,16 +638,16 @@ const styles = StyleSheet.create({
   programRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
     marginBottom: 24,
   },
   programCard: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     alignItems: 'center',
-    width: '48%',
-    minHeight: 140,
+    width: '31.5%',
+    height: 120,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -659,37 +659,36 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
     justifyContent: 'space-between',
-    marginBottom: 8,
   },
   selectedProgramCard: {
     backgroundColor: '#F8FAFC',
     borderWidth: 2,
   },
   programIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   programCardName: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
     color: '#111827',
     textAlign: 'center',
-    marginBottom: 8,
-    lineHeight: 18,
-    flex: 1,
+    marginBottom: 6,
+    lineHeight: 14,
+    height: 28,
   },
   programCardAbbr: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#6B7280',
     fontWeight: '600',
     backgroundColor: '#F3F4F6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   sectionTitleSpacing: {
     marginTop: 8,

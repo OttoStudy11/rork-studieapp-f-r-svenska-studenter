@@ -616,7 +616,7 @@ export default function OnboardingScreen() {
                               disabled={isMandatory}
                             >
                               <View style={[styles.courseIconContainer, { backgroundColor: categoryColor + '20' }]}>
-                                <IconComponent size={16} color={categoryColor} />
+                                <IconComponent size={18} color={categoryColor} />
                               </View>
                               
                               <Text style={[
@@ -948,14 +948,14 @@ const styles = StyleSheet.create({
   coursesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
   },
   courseCard: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 10,
-    width: '31.5%',
-    height: 110,
+    padding: 12,
+    width: '31%',
+    aspectRatio: 1,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -977,20 +977,20 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   courseIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
     alignSelf: 'flex-start',
   },
   courseCardName: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 4,
-    height: 28,
+    marginBottom: 6,
+    flex: 1,
     lineHeight: 14,
   },
   courseCardFooter: {
@@ -999,25 +999,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   courseCardPoints: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     color: '#374151',
   },
   courseCardYear: {
-    fontSize: 9,
+    fontSize: 10,
     color: '#6B7280',
   },
   mandatoryBadge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 6,
+    top: -6,
+    right: -6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
   mandatoryText: {
-    fontSize: 7,
-    fontWeight: '600',
+    fontSize: 8,
+    fontWeight: '700',
     color: 'white',
     textTransform: 'uppercase',
   },

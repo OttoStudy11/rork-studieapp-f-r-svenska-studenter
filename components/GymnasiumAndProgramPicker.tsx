@@ -217,12 +217,12 @@ export default function GymnasiumAndProgramPicker({
                   })}
                 >
                   <View style={[styles.programIconContainer, { backgroundColor: color + '20' }]}>
-                    <IconComponent size={24} color={color} />
+                    <IconComponent size={28} color={color} />
                   </View>
-                  <Text style={[styles.programCardName, isSelected && { color }]} numberOfLines={1} ellipsizeMode="tail">
+                  <Text style={[styles.programCardName, isSelected && { color }]} numberOfLines={2} ellipsizeMode="tail">
                     {program.name}
                   </Text>
-                  <Text style={styles.programCardAbbr} numberOfLines={1} ellipsizeMode="clip">{program.abbr}</Text>
+                  <Text style={styles.programCardAbbr}>{program.abbr}</Text>
                 </PressableCard>
               );
             })}
@@ -266,12 +266,12 @@ export default function GymnasiumAndProgramPicker({
                   })}
                 >
                   <View style={[styles.programIconContainer, { backgroundColor: color + '20' }]}>
-                    <IconComponent size={24} color={color} />
+                    <IconComponent size={28} color={color} />
                   </View>
-                  <Text style={[styles.programCardName, isSelected && { color }]} numberOfLines={1} ellipsizeMode="tail">
+                  <Text style={[styles.programCardName, isSelected && { color }]} numberOfLines={2} ellipsizeMode="tail">
                     {program.name}
                   </Text>
-                  <Text style={styles.programCardAbbr} numberOfLines={1} ellipsizeMode="clip">{program.abbr}</Text>
+                  <Text style={styles.programCardAbbr}>{program.abbr}</Text>
                 </PressableCard>
               );
             })}
@@ -638,18 +638,16 @@ const styles = StyleSheet.create({
   programRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
     marginBottom: 24,
-    justifyContent: 'space-between',
   },
   programCard: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 12,
+    padding: 16,
     alignItems: 'center',
-    width: '32%',
-    minHeight: 110,
-    maxHeight: 110,
+    width: '48%',
+    minHeight: 140,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -668,26 +666,30 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   programIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 12,
   },
   programCardName: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#111827',
     textAlign: 'center',
-    marginBottom: 4,
-    lineHeight: 14,
+    marginBottom: 8,
+    lineHeight: 18,
     flex: 1,
   },
   programCardAbbr: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#6B7280',
-    fontWeight: '500',
+    fontWeight: '600',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   sectionTitleSpacing: {
     marginTop: 8,

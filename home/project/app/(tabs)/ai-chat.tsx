@@ -23,6 +23,7 @@ export default function AIChatScreen() {
   });
 
   const [isSending, setIsSending] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
@@ -30,15 +31,26 @@ export default function AIChatScreen() {
     const userMessage = input.trim();
     setInput('');
     setIsSending(true);
+    setLocalError(null);
 
     try {
+      console.log('Sending message:', userMessage);
       await sendMessage(userMessage);
+      console.log('Message sent successfully');
     } catch (err) {
       console.error('Error sending message:', err);
+      setLocalError(err instanceof Error ? err.message : 'Ett okänt fel uppstod');
     } finally {
       setIsSending(false);
     }
   };
+
+  useEffect(() => {
+    if (error) {
+      console.error('useRorkAgent error:', error);
+      setLocalError(error instanceof Error ? error.message : 'Ett fel uppstod med AI-assistenten');
+    }
+  }, [error]);
 
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -143,9 +155,11 @@ export default function AIChatScreen() {
               </View>
             </View>
           )}
-          {error && (
+          {(error || localError) && (
             <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>Ett fel uppstod. Försök igen.</Text>
+              <Text style={styles.errorText}>
+                {localError || 'Ett fel uppstod. Försök igen.'}
+              </Text>
             </View>
           )}
         </ScrollView>

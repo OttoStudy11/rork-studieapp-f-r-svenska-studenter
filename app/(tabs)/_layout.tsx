@@ -1,12 +1,12 @@
 import { Tabs, useRouter, useSegments } from "expo-router";
 import React, { useRef } from "react";
-import { Home, BookOpen, Timer, Users } from "lucide-react-native";
+import { Home, BookOpen, Timer, Users, MessageCircle } from "lucide-react-native";
 import { Platform, PanResponder, Dimensions, View } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const TAB_ROUTES = ['home', 'courses', 'timer', 'friends'];
+const TAB_ROUTES = ['home', 'courses', 'timer', 'friends', 'ai-chat'];
 
 export default function TabLayout() {
   const { theme, isDark } = useTheme();
@@ -43,7 +43,7 @@ export default function TabLayout() {
         }
         
         if (targetIndex !== currentIndex) {
-          router.push(`/(tabs)/${TAB_ROUTES[targetIndex]}`);
+          router.push(`/(tabs)/${TAB_ROUTES[targetIndex]}` as any);
         }
       },
     })
@@ -126,6 +126,19 @@ export default function TabLayout() {
           title: "Vänner",
           tabBarIcon: ({ color, size, focused }) => (
             <Users 
+              color={color} 
+              size={focused ? 26 : 24} 
+              strokeWidth={focused ? 2.5 : 2}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="ai-chat"
+        options={{
+          title: "AI",
+          tabBarIcon: ({ color, size, focused }) => (
+            <MessageCircle 
               color={color} 
               size={focused ? 26 : 24} 
               strokeWidth={focused ? 2.5 : 2}

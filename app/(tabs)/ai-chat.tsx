@@ -31,18 +31,26 @@ export default function AIChatScreen() {
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
 
+    if (!process.env.EXPO_PUBLIC_TOOLKIT_URL) {
+      setLocalError('AI-funktionen är inte konfigurerad. Kontakta support.');
+      console.error('EXPO_PUBLIC_TOOLKIT_URL is not configured');
+      return;
+    }
+
     const userMessage = input.trim();
     setInput('');
     setIsSending(true);
     setLocalError(null);
 
     console.log('Sending message:', userMessage);
+    console.log('Toolkit URL:', process.env.EXPO_PUBLIC_TOOLKIT_URL);
 
     try {
       await sendMessage(userMessage);
       console.log('Message sent successfully');
     } catch (err) {
       console.error('Error sending message:', err);
+      console.error('Full error details:', JSON.stringify(err, null, 2));
       setLocalError(err instanceof Error ? err.message : 'Ett fel uppstod');
     } finally {
       setIsSending(false);

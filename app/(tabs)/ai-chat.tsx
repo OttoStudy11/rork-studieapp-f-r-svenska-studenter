@@ -66,6 +66,10 @@ export default function AIChatScreen() {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
 
+  const cleanText = (text: string) => {
+    return text.replace(/\*/g, '');
+  };
+
   const renderMessage = (message: any) => {
     const isUser = message.role === 'user';
 
@@ -100,7 +104,7 @@ export default function AIChatScreen() {
                     isUser ? styles.userMessageText : { color: theme.colors.text },
                   ]}
                 >
-                  {part.text}
+                  {cleanText(part.text)}
                 </Text>
               );
             }

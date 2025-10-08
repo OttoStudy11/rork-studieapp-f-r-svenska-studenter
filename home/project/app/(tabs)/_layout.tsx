@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, Clock, BookOpen, Users, Trophy } from 'lucide-react-native';
+import { Home, Clock, BookOpen, Users, Trophy, MessageCircle } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -62,6 +62,13 @@ export default function TabLayout() {
         options={{
           title: 'Topplista',
           tabBarIcon: ({ color, size }) => <Trophy size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="ai-chat"
+        options={{
+          title: 'AI Assistent',
+          tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
         }}
       />
     </Tabs>

@@ -26,6 +26,7 @@ export default function AIChatScreen() {
   });
 
   const [isSending, setIsSending] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
@@ -33,15 +34,25 @@ export default function AIChatScreen() {
     const userMessage = input.trim();
     setInput('');
     setIsSending(true);
+    setLocalError(null);
+
+    console.log('Sending message:', userMessage);
 
     try {
       await sendMessage(userMessage);
+      console.log('Message sent successfully');
     } catch (err) {
       console.error('Error sending message:', err);
+      setLocalError(err instanceof Error ? err.message : 'Ett fel uppstod');
     } finally {
       setIsSending(false);
     }
   };
+
+  useEffect(() => {
+    console.log('Messages updated:', messages.length);
+    console.log('Error:', error);
+  }, [messages, error]);
 
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -153,9 +164,11 @@ export default function AIChatScreen() {
               </View>
             </View>
           )}
-          {error && (
+          {(error || localError) && (
             <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>Ett fel uppstod. Försök igen.</Text>
+              <Text style={styles.errorText}>
+                {localError || 'Ett fel uppstod. Försök igen.'}
+              </Text>
             </View>
           )}
         </ScrollView>

@@ -5,11 +5,13 @@ import { BookOpen, Clock, TrendingUp, Plus, Crown, Lock } from 'lucide-react-nat
 import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import AddCourseModal from '@/components/AddCourseModal';
 
 export default function Courses() {
-  const { coursesByYear, userProfile } = useCourses();
+  const { coursesByYear, userProfile, addCourse } = useCourses();
   const { isPremium, canAddCourse, limits, showPremiumModal } = usePremium();
   const [selectedYear, setSelectedYear] = useState<1 | 2 | 3>(userProfile?.year || 1);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const yearCourses = coursesByYear[selectedYear] || [];
   const totalCourses = Object.values(coursesByYear).flat().length;
@@ -27,7 +29,17 @@ export default function Courses() {
       );
       return;
     }
-    // Handle adding course logic here
+    setShowAddModal(true);
+  };
+
+  const handleAddCourseSubmit = async (courseData: any) => {
+    try {
+      await addCourse(courseData);
+      Alert.alert('Klart!', 'Kursen har lagts till');
+    } catch (error) {
+      console.error('Error adding course:', error);
+      Alert.alert('Fel', 'Kunde inte lägga till kursen');
+    }
   };
 
   return (
@@ -176,6 +188,13 @@ export default function Courses() {
         </View>
       </View>
       </ScrollView>
+
+      <AddCourseModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onAdd={handleAddCourseSubmit}
+        currentYear={selectedYear}
+      />
     </SafeAreaView>
   );
 }

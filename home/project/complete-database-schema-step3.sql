@@ -92,6 +92,30 @@ CREATE INDEX idx_friendships_composite ON friendships(user1_id, user2_id, status
 -- ENABLE REALTIME FOR ALL TABLES
 -- ============================================
 
+-- Remove tables from publication first (ignore errors if not present)
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS profiles;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_courses;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_lesson_progress;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_exercise_attempts;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_assessment_results;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS study_sessions;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS pomodoro_sessions;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS friendships;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_achievements;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_progress;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS courses;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS course_lessons;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS course_modules;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS course_exercises;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS course_assessments;
+    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS study_guides;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+-- Add tables to publication
 ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
 ALTER PUBLICATION supabase_realtime ADD TABLE user_courses;
 ALTER PUBLICATION supabase_realtime ADD TABLE user_lesson_progress;

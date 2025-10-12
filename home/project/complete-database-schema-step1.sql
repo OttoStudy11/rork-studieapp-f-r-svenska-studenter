@@ -172,14 +172,17 @@ CREATE TRIGGER on_auth_user_created
 -- FUNKTIONER FÖR REMEMBER ME SESSIONS
 -- ============================================================================
 
+-- Radera befintlig funktion först
+DROP FUNCTION IF EXISTS cleanup_expired_remember_me_sessions();
+
 -- Funktion för att rensa utgångna sessioner
 CREATE OR REPLACE FUNCTION cleanup_expired_remember_me_sessions()
-RETURNS void AS $$
+RETURNS void AS $
 BEGIN
   DELETE FROM remember_me_sessions
   WHERE expires_at < NOW() OR is_active = FALSE;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================================
 -- KOMMENTARER

@@ -95,22 +95,112 @@ CREATE INDEX idx_friendships_composite ON friendships(user1_id, user2_id, status
 -- Remove tables from publication first (ignore errors if not present)
 DO $$ 
 BEGIN
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS profiles;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_courses;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_lesson_progress;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_exercise_attempts;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_assessment_results;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS study_sessions;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS pomodoro_sessions;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS friendships;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_achievements;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS user_progress;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS courses;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS course_lessons;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS course_modules;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS course_exercises;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS course_assessments;
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS study_guides;
+    ALTER PUBLICATION supabase_realtime DROP TABLE profiles;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE user_courses;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE user_lesson_progress;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE user_exercise_attempts;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE user_assessment_results;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE study_sessions;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE pomodoro_sessions;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE friendships;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE user_achievements;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE user_progress;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE courses;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE course_lessons;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE course_modules;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE course_exercises;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE course_assessments;
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    ALTER PUBLICATION supabase_realtime DROP TABLE study_guides;
 EXCEPTION WHEN OTHERS THEN
     NULL;
 END $$;

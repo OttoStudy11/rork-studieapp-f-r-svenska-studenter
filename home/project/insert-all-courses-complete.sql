@@ -69,38 +69,38 @@ De naturliga talen är de positiva heltalen: 1, 2, 3, 4, 5, ...
 ### Hela tal (ℤ)
 Hela tal inkluderar både positiva och negativa heltal samt noll: ..., -3, -2, -1, 0, 1, 2, 3, ...
 
-**Exempel:**
+Exempel:
 - Temperatur (kan vara negativ)
 - Kontobalans (kan vara negativ vid skuld)
-
-### Rationella tal (ℚ)
+    
+Rationella tal (ℚ)
 Tal som kan skrivas som bråk a/b där a och b är hela tal och b ≠ 0.
 
-**Exempel:**
+Exempel:
 - 1/2, 3/4, -2/5
 - Alla heltal (t.ex. 5 = 5/1)
 - Decimala tal som tar slut eller är periodiska (0.5, 0.333...)
 
-### Irrationella tal
+ Irrationella tal
 Tal som inte kan skrivas som bråk, med oändliga icke-periodiska decimaler.
 
-**Exempel:**
+Exempel:
 - π (pi) ≈ 3.14159...
 - √2 ≈ 1.41421...
 - e ≈ 2.71828...
 
-### Reella tal (ℝ)
+Reella tal (ℝ)
 Alla rationella och irrationella tal tillsammans.
 
-## De fyra räknesätten
+De fyra räknesätten
 
-### Addition (+)
+Addition (+)
 Att lägga ihop tal.
 - 5 + 3 = 8
 - (-2) + 7 = 5
 - 1.5 + 2.3 = 3.8
 
-### Subtraktion (−)
+Subtraktion (−)
 Att ta bort eller minska.
 - 10 − 4 = 6
 - 3 − 8 = −5

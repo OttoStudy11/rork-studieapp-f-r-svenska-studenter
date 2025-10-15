@@ -82,9 +82,10 @@ export default function AddCourseModal({ visible, onClose, onAdd, currentYear }:
       setSelectedColor(courseColors[0]);
       setSelectedCategory('individuellt val');
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding course:', error);
-      Alert.alert('Fel', 'Kunde inte lägga till kursen. Försök igen.');
+      const errorMessage = error?.message || JSON.stringify(error) || 'Okänt fel';
+      Alert.alert('Fel', `Kunde inte lägga till kursen: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }

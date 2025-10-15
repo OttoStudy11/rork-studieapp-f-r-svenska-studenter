@@ -431,13 +431,18 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
             });
           
           if (createError) {
-            console.error('❌ Error creating course:', createError.message, createError);
+            console.error('❌ Error creating course:', {
+              message: createError.message,
+              details: createError.details,
+              hint: createError.hint,
+              code: createError.code
+            });
             throw new Error(`Failed to create course ${courseCode}: ${createError.message}`);
           }
         }
         
         // Insert or update user_course
-        await supabase
+        const { error: upsertError } = await supabase
           .from('user_courses')
           .upsert({
             id: `${userId}-${courseCode}`,
@@ -448,6 +453,16 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
           }, {
             onConflict: 'id'
           });
+        
+        if (upsertError) {
+          console.error('❌ Error upserting user_course:', {
+            message: upsertError.message,
+            details: upsertError.details,
+            hint: upsertError.hint,
+            code: upsertError.code
+          });
+          throw new Error(`Failed to save user course ${courseCode}: ${upsertError.message}`);
+        }
       }
       
       console.log('✅ Successfully saved courses to database');
@@ -861,16 +876,42 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
   }, [user?.id]);
 
   const addCourse = useCallback(async (course: Omit<Course, 'id' | 'createdAt' | 'updatedAt' | 'studiedHours'>) => {
+    // Generate a unique code if not provided
+    const courseCode = course.code || `CUSTOM-${Date.now()}`;
+    
     const newCourse: Course = {
       ...course,
-      id: `custom-${Date.now()}`,
+      id: courseCode,
+      code: courseCode,
       studiedHours: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     
-    const updatedCourses = [...courses, newCourse];
+    // First, create the course in the database
     if (user?.id) {
+      const { error: createError } = await supabase
+        .from('courses')
+        .insert({
+          id: courseCode,
+          title: newCourse.name,
+          description: `${newCourse.name} - ${newCourse.points || 0} poäng`,
+          subject: extractSubjectFromName(newCourse.name),
+          level: 'gymnasie'
+        });
+      
+      if (createError) {
+        console.error('❌ Error creating custom course:', {
+          message: createError.message,
+          details: createError.details,
+          hint: createError.hint,
+          code: createError.code
+        });
+        throw new Error(`Failed to create course: ${createError.message}`);
+      }
+      
+      // Then add it to user_courses
+      const updatedCourses = [...courses, newCourse];
       await saveCourses(user.id, updatedCourses.map(c => c.code!).filter(Boolean));
     }
   }, [courses, saveCourses, user?.id]);

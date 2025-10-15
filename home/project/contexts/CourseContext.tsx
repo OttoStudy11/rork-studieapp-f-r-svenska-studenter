@@ -322,7 +322,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
                   .single();
                 
                 if (!existingCourse) {
-                  await supabase
+                  const { error: insertError } = await supabase
                     .from('courses')
                     .insert({
                       id: course.code,
@@ -330,11 +330,12 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
                       description: `${course.name} - ${course.points || 0} poäng`,
                       subject: extractSubjectFromName(course.name),
                       level: 'gymnasie',
-                      resources: [],
-                      tips: [],
-                      related_courses: [],
                       progress: 0
                     });
+                  
+                  if (insertError) {
+                    console.error('❌ Error creating course in background sync:', insertError.message, insertError);
+                  }
                 }
               }
             }
@@ -370,11 +371,13 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
               
               console.log('Successfully synced', userCourses.length, 'courses to Supabase');
             }
-          } catch (syncError) {
-            console.error('Error syncing courses to Supabase:', syncError);
+          } catch (syncError: any) {
+            console.error('Error syncing courses to Supabase:', syncError?.message || syncError);
+            // Don't throw here, just log - this is background sync
           }
-        } catch (error) {
-          console.error('Error generating courses from profile:', error);
+        } catch (error: any) {
+          console.error('Error generating courses from profile:', error?.message || error);
+          // Don't throw here, just log
         }
       }
     };
@@ -417,15 +420,20 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
         
         if (!existingCourse) {
           // Create course if it doesn't exist
-          await supabase
+          const { error: createError } = await supabase
             .from('courses')
             .insert({
               id: courseCode,
-              title: courseCode, // Will be updated with proper name later
+              title: courseCode,
               description: `Course ${courseCode}`,
               subject: 'General',
               level: 'gymnasie'
             });
+          
+          if (createError) {
+            console.error('❌ Error creating course:', createError.message, createError);
+            throw new Error(`Failed to create course ${courseCode}: ${createError.message}`);
+          }
         }
         
         // Insert or update user_course
@@ -640,7 +648,8 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
               });
             
             if (insertError) {
-              console.error('Error inserting course:', insertError);
+              console.error('Error inserting course:', insertError.message, insertError);
+              throw new Error(`Failed to insert course ${course.code}: ${insertError.message}`);
             }
           }
         }
@@ -675,14 +684,16 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
             });
           
           if (error) {
-            console.error('Error syncing user course:', error);
+            console.error('Error syncing user course:', error.message, error);
+            throw new Error(`Failed to sync user course: ${error.message}`);
           }
         }
         
         console.log('Successfully synced', userCourses.length, 'courses to Supabase');
       }
-    } catch (error) {
-      console.error('Error syncing courses to Supabase:', error);
+    } catch (error: any) {
+      console.error('Error syncing courses to Supabase:', error?.message || error);
+      throw error;
     }
   }, [user?.id]);
 

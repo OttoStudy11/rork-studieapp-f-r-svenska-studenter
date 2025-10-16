@@ -100,6 +100,34 @@ export default function OnboardingScreen() {
       }));
     }
   }, [authContext.user?.email, data.displayName]);
+
+  useEffect(() => {
+    if (data.gymnasiumProgram && step === 5) {
+      console.log('Loading courses for program:', data.gymnasiumProgram.name);
+      const defaultGymnasium: Gymnasium = { 
+        id: 'default', 
+        name: 'Gymnasie', 
+        type: 'kommunal', 
+        city: '', 
+        municipality: '' 
+      };
+      const courses = getGymnasiumCourses(
+        defaultGymnasium,
+        data.gymnasiumProgram,
+        undefined
+      );
+      console.log('Available courses:', courses.length, courses.map(c => c.name));
+      setAvailableCourses(courses);
+      
+      const mandatoryCourseIds = courses
+        .filter((course: GymnasiumCourse) => course.mandatory)
+        .map((course: GymnasiumCourse) => course.id);
+      setData((prev: OnboardingData) => ({ 
+        ...prev,
+        selectedCourses: new Set(mandatoryCourseIds)
+      }));
+    }
+  }, [data.gymnasiumProgram, step]);
   
   const { user } = authContext;
   const { completeOnboarding } = studyContext;
@@ -318,21 +346,8 @@ export default function OnboardingScreen() {
                             isSelected && styles.selectedProgramCard
                           ]}
                           onPress={() => {
+                            console.log('Selected program:', program.name);
                             setData({ ...data, gymnasiumProgram: program });
-                            
-                            // Update available courses when program changes
-                            if (data.gymnasium && data.gymnasiumGrade) {
-                              const courses = getGymnasiumCourses(data.gymnasium, program, data.gymnasiumGrade);
-                              setAvailableCourses(courses);
-                              const mandatoryCourseIds = courses
-                                .filter((course: GymnasiumCourse) => course.mandatory)
-                                .map((course: GymnasiumCourse) => course.id);
-                              setData((prev: OnboardingData) => ({ 
-                                ...prev, 
-                                gymnasiumProgram: program,
-                                selectedCourses: new Set(mandatoryCourseIds)
-                              }));
-                            }
                           }}
                         >
                           <Text style={[

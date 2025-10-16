@@ -412,24 +412,88 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       let courses: Course[];
       
       if (userData.selectedCourses && userData.selectedCourses.length > 0 && userData.gymnasium) {
+        console.log('Creating courses from selected courses:', userData.selectedCourses);
         // Use selected courses
         const selectedCoursesData = getSelectedCoursesData(
           userData.selectedCourses, 
           userData.gymnasium
         );
         
+        console.log('Selected courses data:', selectedCoursesData.length, 'courses');
+        
         courses = selectedCoursesData.map((courseData, index) => ({
-          id: `course-${Date.now()}-${index}`,
+          id: courseData.code,
           title: courseData.title,
           description: courseData.description,
           subject: courseData.subject,
           level: 'gymnasie',
           progress: 0,
-          isActive: index === 0,
+          isActive: true,
           resources: courseData.resources,
           tips: courseData.tips,
           relatedCourses: []
         }));
+        
+        // Sync courses to Supabase
+        if (dbConnected) {
+          console.log('Syncing courses to Supabase...');
+          try {
+            // First, ensure all courses exist in the courses table
+            for (const courseData of selectedCoursesData) {
+              const { data: existingCourse } = await supabase
+                .from('courses')
+                .select('id')
+                .eq('id', courseData.code)
+                .single();
+              
+              if (!existingCourse) {
+                console.log('Creating course in database:', courseData.code);
+                const { error: insertError } = await supabase
+                  .from('courses')
+                  .insert({
+                    id: courseData.code,
+                    course_code: courseData.code,
+                    title: courseData.title,
+                    description: courseData.description,
+                    subject: courseData.subject,
+                    level: 'gymnasie',
+                    points: courseData.points,
+                    resources: courseData.resources,
+                    tips: courseData.tips,
+                    related_courses: [],
+                    progress: 0
+                  });
+                
+                if (insertError) {
+                  console.error('Error inserting course:', insertError);
+                }
+              }
+            }
+            
+            // Then, create user_courses entries
+            for (const courseData of selectedCoursesData) {
+              const { error } = await supabase
+                .from('user_courses')
+                .upsert({
+                  id: `${authUser.id}-${courseData.code}`,
+                  user_id: authUser.id,
+                  course_id: courseData.code,
+                  progress: 0,
+                  is_active: true
+                }, {
+                  onConflict: 'id'
+                });
+              
+              if (error) {
+                console.error('Error syncing user course:', error);
+              }
+            }
+            
+            console.log('Successfully synced', selectedCoursesData.length, 'courses to Supabase');
+          } catch (error) {
+            console.error('Error syncing courses to Supabase:', error);
+          }
+        }
       } else {
         // Use default sample courses
         courses = userData.studyLevel === 'gymnasie' ? [

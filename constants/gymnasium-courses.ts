@@ -98,30 +98,74 @@ export function getElectiveGymnasiumCourses(gymnasium: Gymnasium, selectedProgra
   return getGymnasiumCourses(gymnasium, selectedProgram).filter(course => !course.mandatory);
 }
 
-// Helper function to convert selected course IDs to actual course data for database storage
-export function getSelectedCoursesData(selectedCourseIds: string[], gymnasium: Gymnasium, selectedProgram?: GymnasiumProgram): Array<{
+export interface SelectedCourseData {
+  code: string;
   title: string;
   description: string;
   subject: string;
-  level: string;
+  points: number;
   resources: string[];
   tips: string[];
-  related_courses: string[];
-}> {
-  const allCourses = getGymnasiumCourses(gymnasium, selectedProgram);
+}
+
+export function getSelectedCoursesData(courseIds: string[], gymnasium: Gymnasium): SelectedCourseData[] {
+  const allCourses = getGymnasiumCourses(gymnasium);
+  const selectedCourses = allCourses.filter(course => courseIds.includes(course.id));
   
-  return selectedCourseIds
-    .map(courseId => allCourses.find(course => course.id === courseId))
-    .filter(Boolean)
-    .map(course => ({
-      title: course!.name,
-      description: `${course!.name} - ${course!.points} poäng`,
-      subject: extractSubjectFromCode(course!.code),
-      level: 'gymnasie',
-      resources: ['Kursmaterial', 'Övningsuppgifter'],
-      tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
-      related_courses: []
-    }));
+  return selectedCourses.map(course => {
+    const subject = extractSubjectFromCourseName(course.name);
+    return {
+      code: course.code,
+      title: course.name,
+      description: `${course.name} - ${course.points} poäng`,
+      subject: subject,
+      points: course.points,
+      resources: [
+        'Kursmaterial från läraren',
+        'Övningsuppgifter',
+        'Tidigare prov'
+      ],
+      tips: [
+        'Studera regelbundet',
+        'Fråga läraren vid behov',
+        'Jobba med studiekamrater'
+      ]
+    };
+  });
+}
+
+function extractSubjectFromCourseName(name: string): string {
+  const subjectKeywords: Record<string, string> = {
+    'Engelska': 'Engelska',
+    'Historia': 'Historia',
+    'Idrott': 'Idrott och hälsa',
+    'Matematik': 'Matematik',
+    'Naturkunskap': 'Naturkunskap',
+    'Religionskunskap': 'Religionskunskap',
+    'Samhällskunskap': 'Samhällskunskap',
+    'Svenska': 'Svenska',
+    'Biologi': 'Biologi',
+    'Fysik': 'Fysik',
+    'Kemi': 'Kemi',
+    'Teknik': 'Teknik',
+    'Filosofi': 'Filosofi',
+    'Psykologi': 'Psykologi',
+    'Företagsekonomi': 'Företagsekonomi',
+    'Juridik': 'Juridik',
+    'Programmering': 'Teknik',
+    'Webbutveckling': 'Teknik',
+    'Spanska': 'Moderna språk',
+    'Franska': 'Moderna språk',
+    'Tyska': 'Moderna språk',
+  };
+  
+  for (const [keyword, subject] of Object.entries(subjectKeywords)) {
+    if (name.includes(keyword)) {
+      return subject;
+    }
+  }
+  
+  return 'Övrigt';
 }
 
 // Helper function to extract subject from course code

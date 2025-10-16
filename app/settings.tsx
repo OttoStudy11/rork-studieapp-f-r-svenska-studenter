@@ -4,16 +4,16 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   Switch,
-  Alert
+  Alert,
+  StatusBar
 } from 'react-native';
 import { useTheme, ThemeMode } from '@/contexts/ThemeContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePremium } from '@/contexts/PremiumContext';
-import { Settings, Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star, ChevronRight } from 'lucide-react-native';
+import { router, Stack } from 'expo-router';
 import { AnimatedPressable, FadeInView } from '@/components/Animations';
 
 interface SettingItem {
@@ -27,10 +27,10 @@ interface SettingItem {
 }
 
 export default function SettingsScreen() {
-  const { theme, themeMode, setThemeMode } = useTheme();
+  const { theme, themeMode, setThemeMode, isDark } = useTheme();
   const { showSuccess, showInfo } = useToast();
   const { user, signOut } = useAuth();
-  const { isPremium, upgradeToPremium } = usePremium();
+  const { isPremium } = usePremium();
 
   const themeOptions: { mode: ThemeMode; label: string; icon: React.ReactNode }[] = [
     { mode: 'light', label: 'Ljust', icon: <Sun size={20} color={theme.colors.textSecondary} /> },
@@ -71,14 +71,8 @@ export default function SettingsScreen() {
 
   const settingsSections: { title: string; items: SettingItem[] }[] = [
     {
-      title: 'Konto',
+      title: 'Premium',
       items: [
-        {
-          icon: <User size={20} color={theme.colors.textSecondary} />,
-          title: 'Inloggad som',
-          subtitle: user?.email || 'Okänd användare',
-          onPress: () => {},
-        },
         {
           icon: isPremium ? <Crown size={20} color={theme.colors.warning} /> : <Star size={20} color={theme.colors.primary} />,
           title: isPremium ? 'Premium aktiv' : 'Uppgradera till Premium',
@@ -148,13 +142,47 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Stack.Screen 
+        options={{ 
+          headerShown: true,
+          headerTitle: 'Inställningar',
+          headerTitleStyle: {
+            color: theme.colors.text,
+            fontSize: 18,
+            fontWeight: '600' as const,
+          },
+          headerStyle: {
+            backgroundColor: theme.colors.background,
+          },
+          headerTintColor: theme.colors.primary,
+          headerShadowVisible: false,
+        }} 
+      />
+      <StatusBar 
+        barStyle={isDark ? 'light-content' : 'dark-content'} 
+        backgroundColor={theme.colors.background}
+      />
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         <FadeInView>
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <Settings size={32} color={theme.colors.primary} />
-              <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Inställningar</Text>
+          <View style={styles.userSection}>
+            <View style={[styles.userCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.avatarContainer, { backgroundColor: theme.colors.primary + '15' }]}>
+                <User size={32} color={theme.colors.primary} />
+              </View>
+              <View style={styles.userInfo}>
+                <Text style={[styles.userName, { color: theme.colors.text }]}>{user?.email?.split('@')[0] || 'Användare'}</Text>
+                <Text style={[styles.userEmail, { color: theme.colors.textSecondary }]}>{user?.email || 'Okänd användare'}</Text>
+              </View>
+              {isPremium && (
+                <View style={[styles.premiumBadgeSmall, { backgroundColor: theme.colors.warning + '20' }]}>
+                  <Crown size={14} color={theme.colors.warning} />
+                  <Text style={[styles.premiumBadgeText, { color: theme.colors.warning }]}>Pro</Text>
+                </View>
+              )}
             </View>
           </View>
         </FadeInView>
@@ -172,7 +200,7 @@ export default function SettingsScreen() {
                     {item.isThemeSelector ? (
                       <View>
                         <View style={styles.settingItem}>
-                          <View style={styles.settingIcon}>
+                          <View style={[styles.settingIconCircle, { backgroundColor: theme.colors.primaryLight }]}>
                             {item.icon}
                           </View>
                           <View style={styles.settingContent}>
@@ -223,7 +251,7 @@ export default function SettingsScreen() {
                         style={styles.settingItem}
                         onPress={item.onPress}
                       >
-                        <View style={styles.settingIcon}>
+                        <View style={[styles.settingIconCircle, { backgroundColor: theme.colors.primaryLight }]}>
                           {item.icon}
                         </View>
                         <View style={styles.settingContent}>
@@ -234,13 +262,15 @@ export default function SettingsScreen() {
                             {item.subtitle}
                           </Text>
                         </View>
-                        {item.hasSwitch && (
+                        {item.hasSwitch ? (
                           <Switch
                             value={item.switchValue}
                             onValueChange={() => item.onPress()}
                             trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
                             thumbColor={item.switchValue ? theme.colors.surface : theme.colors.textMuted}
                           />
+                        ) : (
+                          <ChevronRight size={20} color={theme.colors.textMuted} />
                         )}
                       </AnimatedPressable>
                     )}
@@ -255,7 +285,7 @@ export default function SettingsScreen() {
           </FadeInView>
         ))}
 
-        <FadeInView delay={400}>
+        <FadeInView delay={700}>
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: theme.colors.textMuted }]}>
               Studiestugan v1.0.0
@@ -266,7 +296,7 @@ export default function SettingsScreen() {
           </View>
         </FadeInView>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -274,18 +304,57 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    padding: 24,
-    paddingTop: 60,
+  scrollContent: {
+    paddingTop: 16,
+    paddingBottom: 40,
   },
-  headerContent: {
+  userSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+  avatarContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
+    textTransform: 'capitalize' as const,
+  },
+  userEmail: {
+    fontSize: 14,
+  },
+  premiumBadgeSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  premiumBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   section: {
     paddingHorizontal: 20,
@@ -310,14 +379,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    minHeight: 72,
   },
-  settingIcon: {
+  settingIconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   settingContent: {
     flex: 1,
@@ -333,7 +403,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    marginLeft: 68,
+    marginLeft: 72,
   },
   themeOptions: {
     flexDirection: 'row',

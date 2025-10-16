@@ -58,34 +58,16 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
       setIsLoading(true);
       console.log('Loading friends for user:', user.id);
 
-      // Get accepted friendships with friend profile data
+      // Get accepted friendships
       const { data: friendships, error: friendshipsError } = await (supabase as any)
         .from('friendships')
-        .select(`
-          id,
-          user1_id,
-          user2_id,
-          status,
-          created_at,
-          user1:profiles!friendships_user1_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url
-          ),
-          user2:profiles!friendships_user2_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
+        .select('id, user1_id, user2_id, status, created_at')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .eq('status', 'accepted');
 
       if (friendshipsError) {
         console.error('Error loading friendships:', friendshipsError);
-        return;
+        throw new Error(`Failed to load friendships: ${friendshipsError.message || JSON.stringify(friendshipsError)}`);
       }
 
       if (!friendships || friendships.length === 0) {
@@ -94,23 +76,29 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
         return;
       }
 
-      // Extract friend profiles and IDs
-      const friendProfiles: any[] = [];
-      const friendIds: string[] = [];
-      
-      friendships.forEach((friendship: any) => {
-        if (friendship.user1_id === user.id) {
-          // Current user is user1, so friend is user2
-          friendProfiles.push(friendship.user2);
-          friendIds.push(friendship.user2_id);
-        } else {
-          // Current user is user2, so friend is user1
-          friendProfiles.push(friendship.user1);
-          friendIds.push(friendship.user1_id);
-        }
+      // Extract friend IDs
+      const friendIds: string[] = friendships.map((friendship: any) => {
+        return friendship.user1_id === user.id ? friendship.user2_id : friendship.user1_id;
       });
 
       console.log('Friend IDs:', friendIds);
+
+      // Get friend profiles
+      const { data: friendProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', friendIds);
+
+      if (profilesError) {
+        console.error('Error loading friend profiles:', profilesError);
+        throw new Error(`Failed to load friend profiles: ${profilesError.message || JSON.stringify(profilesError)}`);
+      }
+
+      if (!friendProfiles || friendProfiles.length === 0) {
+        console.log('No friend profiles found');
+        setFriends([]);
+        return;
+      }
 
       // Get friend progress data from user_progress table
       const { data: progressData, error: progressError } = await (supabase as any)
@@ -119,11 +107,11 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
         .in('user_id', friendIds);
 
       if (progressError) {
-        console.log('Error loading friend progress (non-critical):', progressError);
+        console.warn('Error loading friend progress (non-critical):', progressError.message || progressError);
       }
 
       // Combine data into Friend objects
-      const friendsData: Friend[] = friendProfiles.map(profile => {
+      const friendsData: Friend[] = (friendProfiles || []).map((profile: any) => {
         const progress = progressData?.find((p: any) => p.user_id === profile.id);
         const lastStudyDate = progress?.last_study_date ? new Date(progress.last_study_date) : null;
         const now = new Date();
@@ -154,8 +142,9 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
 
       console.log('Loaded friends:', friendsData);
       setFriends(friendsData);
-    } catch (error) {
-      console.error('Error in loadFriends:', error);
+    } catch (error: any) {
+      console.error('Error in loadFriends:', error?.message || error);
+      alert(`Error loading friends: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -172,82 +161,87 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
       // Get incoming friend requests
       const { data: incoming, error: incomingError } = await (supabase as any)
         .from('friendships')
-        .select(`
-          id,
-          user1_id,
-          user2_id,
-          status,
-          created_at,
-          user1:profiles!friendships_user1_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
+        .select('id, user1_id, user2_id, status, created_at')
         .eq('user2_id', user.id)
         .eq('status', 'pending');
 
       if (incomingError) {
         console.error('Error loading incoming requests:', incomingError);
-      } else {
-        const incomingRequests: FriendRequest[] = incoming?.map((req: any) => ({
-          id: req.id,
-          fromUserId: req.user1_id,
-          toUserId: req.user2_id,
-          fromUser: {
-            id: req.user1?.id,
-            username: req.user1?.username || 'Unknown',
-            displayName: req.user1?.display_name || req.user1?.username || 'Unknown User',
-            avatarUrl: req.user1?.avatar_url
-          },
-          status: req.status as 'pending',
-          createdAt: req.created_at
-        })) || [];
+        throw new Error(`Failed to load incoming requests: ${incomingError.message || JSON.stringify(incomingError)}`);
+      }
+
+      if (incoming && incoming.length > 0) {
+        const senderIds = incoming.map((req: any) => req.user1_id);
+        const { data: senderProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', senderIds);
+
+        const incomingRequests: FriendRequest[] = incoming.map((req: any) => {
+          const profile = senderProfiles?.find((p: any) => p.id === req.user1_id);
+          return {
+            id: req.id,
+            fromUserId: req.user1_id,
+            toUserId: req.user2_id,
+            fromUser: {
+              id: profile?.id || req.user1_id,
+              username: profile?.username || 'Unknown',
+              displayName: profile?.display_name || profile?.username || 'Unknown User',
+              avatarUrl: profile?.avatar_url || undefined
+            },
+            status: req.status as 'pending',
+            createdAt: req.created_at
+          };
+        });
         
         setFriendRequests(incomingRequests);
+      } else {
+        setFriendRequests([]);
       }
 
       // Get sent friend requests
       const { data: sent, error: sentError } = await (supabase as any)
         .from('friendships')
-        .select(`
-          id,
-          user1_id,
-          user2_id,
-          status,
-          created_at,
-          user2:profiles!friendships_user2_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
+        .select('id, user1_id, user2_id, status, created_at')
         .eq('user1_id', user.id)
         .eq('status', 'pending');
 
       if (sentError) {
         console.error('Error loading sent requests:', sentError);
-      } else {
-        const sentRequestsData: FriendRequest[] = sent?.map((req: any) => ({
-          id: req.id,
-          fromUserId: req.user1_id,
-          toUserId: req.user2_id,
-          fromUser: {
-            id: req.user2?.id,
-            username: req.user2?.username || 'Unknown',
-            displayName: req.user2?.display_name || req.user2?.username || 'Unknown User',
-            avatarUrl: req.user2?.avatar_url
-          },
-          status: req.status as 'pending',
-          createdAt: req.created_at
-        })) || [];
+        throw new Error(`Failed to load sent requests: ${sentError.message || JSON.stringify(sentError)}`);
+      }
+
+      if (sent && sent.length > 0) {
+        const recipientIds = sent.map((req: any) => req.user2_id);
+        const { data: recipientProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', recipientIds);
+
+        const sentRequestsData: FriendRequest[] = sent.map((req: any) => {
+          const profile = recipientProfiles?.find((p: any) => p.id === req.user2_id);
+          return {
+            id: req.id,
+            fromUserId: req.user1_id,
+            toUserId: req.user2_id,
+            fromUser: {
+              id: profile?.id || req.user2_id,
+              username: profile?.username || 'Unknown',
+              displayName: profile?.display_name || profile?.username || 'Unknown User',
+              avatarUrl: profile?.avatar_url || undefined
+            },
+            status: req.status as 'pending',
+            createdAt: req.created_at
+          };
+        });
         
         setSentRequests(sentRequestsData);
+      } else {
+        setSentRequests([]);
       }
-    } catch (error) {
-      console.error('Error loading friend requests:', error);
+    } catch (error: any) {
+      console.error('Error loading friend requests:', error?.message || error);
+      alert(`Error loading friend requests: ${error?.message || 'Unknown error'}`);
     }
   }, [user]);
 

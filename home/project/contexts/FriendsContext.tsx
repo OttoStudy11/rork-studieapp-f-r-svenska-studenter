@@ -67,7 +67,9 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
 
       if (friendshipsError) {
         console.error('Error loading friendships:', friendshipsError);
-        throw new Error(`Failed to load friendships: ${friendshipsError.message || JSON.stringify(friendshipsError)}`);
+        const errorMsg = friendshipsError.message || friendshipsError.details || 'Unknown database error';
+        alert(`Error loading friends: ${errorMsg}`);
+        return;
       }
 
       if (!friendships || friendships.length === 0) {
@@ -91,7 +93,9 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
 
       if (profilesError) {
         console.error('Error loading friend profiles:', profilesError);
-        throw new Error(`Failed to load friend profiles: ${profilesError.message || JSON.stringify(profilesError)}`);
+        const errorMsg = profilesError.message || profilesError.details || 'Unknown database error';
+        alert(`Error loading friend profiles: ${errorMsg}`);
+        return;
       }
 
       if (!friendProfiles || friendProfiles.length === 0) {
@@ -167,7 +171,9 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
 
       if (incomingError) {
         console.error('Error loading incoming requests:', incomingError);
-        throw new Error(`Failed to load incoming requests: ${incomingError.message || JSON.stringify(incomingError)}`);
+        const errorMsg = incomingError.message || incomingError.details || 'Unknown database error';
+        alert(`Error loading friend requests: ${errorMsg}`);
+        return;
       }
 
       if (incoming && incoming.length > 0) {
@@ -208,7 +214,8 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
 
       if (sentError) {
         console.error('Error loading sent requests:', sentError);
-        throw new Error(`Failed to load sent requests: ${sentError.message || JSON.stringify(sentError)}`);
+        const errorMsg = sentError.message || sentError.details || 'Unknown database error';
+        console.warn('Could not load sent requests:', errorMsg);
       }
 
       if (sent && sent.length > 0) {

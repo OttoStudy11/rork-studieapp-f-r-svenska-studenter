@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,86 +6,137 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  Animated,
+  Dimensions
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { usePremium } from '@/contexts/PremiumContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { 
   Crown, 
   Check, 
   BarChart3, 
   ArrowLeft,
   Shield,
-  Clock
+  Clock,
+  Sparkles,
+  Zap,
+  Star
 } from 'lucide-react-native';
+import { FadeInView, SlideInView } from '@/components/Animations';
+
+const { width } = Dimensions.get('window');
 
 export default function PremiumScreen() {
   const { isPremium, upgradeToPremium } = usePremium();
+  const { theme, isDark } = useTheme();
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
 
   const features = [
     {
       icon: BarChart3,
-      title: 'Statistik',
-      description: 'Analysera din produktivitet med detaljerade grafer',
-      gradient: ['#4F46E5', '#7C3AED'] as const
+      title: 'Avancerad Statistik',
+      description: 'Detaljerade grafer och insikter om din studietid',
+      gradient: [theme.colors.primary, '#7C3AED'] as const
     },
     {
       icon: Shield,
-      title: 'App Blockering',
-      description: 'Blockera appar under fokussessioner',
+      title: 'Distraktionsblockerare',
+      description: 'Blockera appar och webbplatser under studiesessioner',
       gradient: ['#10B981', '#059669'] as const
     },
     {
       icon: Clock,
-      title: 'Avancerade Timers',
-      description: 'Få tillgång till pomodoro & stopwatch timers',
+      title: 'Anpassade Timers',
+      description: 'Pomodoro, stoppur och skräddarsydda studietimers',
       gradient: ['#F59E0B', '#D97706'] as const
+    },
+    {
+      icon: Sparkles,
+      title: 'AI-assisterad lärande',
+      description: 'Personliga studietips baserade på dina vanor',
+      gradient: ['#EC4899', '#8B5CF6'] as const
+    },
+    {
+      icon: Zap,
+      title: 'Obegränsad Synkning',
+      description: 'Synka dina data mellan alla enheter',
+      gradient: ['#3B82F6', '#06B6D4'] as const
+    },
+    {
+      icon: Star,
+      title: 'Prioriterad Support',
+      description: 'Få snabb hjälp när du behöver det',
+      gradient: ['#F59E0B', '#EF4444'] as const
     }
   ];
 
   const handleUpgrade = async () => {
+    console.log('Upgrading to premium:', selectedPlan);
     await upgradeToPremium();
   };
 
   if (isPremium) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <SafeAreaView style={styles.safeArea}>
-          <View style={styles.header}>
+          <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
             <TouchableOpacity 
-              style={styles.backButton}
+              style={[styles.backButton, { backgroundColor: theme.colors.card }]}
               onPress={() => router.back()}
             >
-              <ArrowLeft size={24} color="#FFFFFF" />
+              <ArrowLeft size={24} color={theme.colors.text} />
             </TouchableOpacity>
-            <Crown size={60} color="#FFD700" />
-            <Text style={styles.premiumTitle}>Du är Premium!</Text>
-            <Text style={styles.premiumSubtitle}>
-              Tack för att du stödjer Studiestugan
-            </Text>
+            <FadeInView delay={200}>
+              <View style={styles.premiumBadgeContainer}>
+                <LinearGradient
+                  colors={['#FFD700', '#FFA500']}
+                  style={styles.crownGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Crown size={60} color="#FFF" />
+                </LinearGradient>
+              </View>
+            </FadeInView>
+            <SlideInView direction="up" delay={300}>
+              <Text style={[styles.premiumTitle, { color: theme.colors.text }]}>Du är Premium!</Text>
+              <Text style={[styles.premiumSubtitle, { color: theme.colors.textSecondary }]}>
+                Tack för att du stödjer Studiestugan
+              </Text>
+            </SlideInView>
           </View>
 
-          <ScrollView style={styles.scrollContent}>
-            <View style={styles.benefitsSection}>
-              <Text style={styles.sectionTitle}>Dina Premium-fördelar</Text>
-              {features.map((feature, index) => (
-                <View key={index} style={styles.benefitItem}>
-                  <LinearGradient
-                    colors={feature.gradient}
-                    style={styles.iconContainer}
-                  >
-                    <feature.icon size={24} color="#FFFFFF" />
-                  </LinearGradient>
-                  <View style={styles.benefitContent}>
-                    <Text style={styles.benefitTitle}>{feature.title}</Text>
-                    <Text style={styles.benefitDescription}>
-                      {feature.description}
-                    </Text>
-                  </View>
-                  <Check size={20} color="#10B981" />
-                </View>
-              ))}
-            </View>
+          <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <SlideInView direction="up" delay={400}>
+              <View style={styles.benefitsSection}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dina Premium-fördelar</Text>
+                {features.map((feature, index) => (
+                  <FadeInView key={index} delay={500 + index * 100}>
+                    <View style={[styles.benefitItem, { backgroundColor: theme.colors.card }]}>
+                      <LinearGradient
+                        colors={feature.gradient}
+                        style={styles.iconContainer}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                      >
+                        <feature.icon size={24} color="#FFFFFF" />
+                      </LinearGradient>
+                      <View style={styles.benefitContent}>
+                        <Text style={[styles.benefitTitle, { color: theme.colors.text }]}>{feature.title}</Text>
+                        <Text style={[styles.benefitDescription, { color: theme.colors.textSecondary }]}>
+                          {feature.description}
+                        </Text>
+                      </View>
+                      <View style={[styles.checkContainer, { backgroundColor: theme.colors.success + '20' }]}>
+                        <Check size={20} color={theme.colors.success} />
+                      </View>
+                    </View>
+                  </FadeInView>
+                ))}
+              </View>
+            </SlideInView>
           </ScrollView>
         </SafeAreaView>
       </View>
@@ -93,83 +144,142 @@ export default function PremiumScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.safeArea}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
             <TouchableOpacity 
-              style={styles.backButton}
+              style={[styles.backButton, { backgroundColor: theme.colors.card }]}
               onPress={() => router.back()}
             >
-              <ArrowLeft size={24} color="#FFFFFF" />
+              <ArrowLeft size={24} color={theme.colors.text} />
             </TouchableOpacity>
-            <Text style={styles.title}>Studiestugan Pro</Text>
+            <FadeInView delay={100}>
+              <Text style={[styles.title, { color: theme.colors.text }]}>Studiestugan Pro</Text>
+              <Text style={[styles.titleSubtitle, { color: theme.colors.textSecondary }]}>Uppgradera din studiupplevelse</Text>
+            </FadeInView>
           </View>
 
           {/* Pricing Cards */}
-          <View style={styles.pricingContainer}>
-            {/* Monthly Plan */}
-            <View style={styles.pricingCard}>
-              <View style={styles.pricingContent}>
-                <Text style={styles.price}>39,00 kr</Text>
-                <Text style={styles.pricePeriod}>/month</Text>
-              </View>
-              <Text style={styles.trialText}>3-day Free trial</Text>
-            </View>
-
-            {/* Yearly Plan - Featured */}
-            <View style={[styles.pricingCard, styles.featuredCard]}>
-              <View style={styles.dealBadge}>
-                <Text style={styles.dealText}>LIMITED DEAL - 50% OFF</Text>
-              </View>
-              <View style={styles.pricingContent}>
-                <View style={styles.yearlyPriceContainer}>
-                  <Text style={styles.yearlyPrice}>129,00 kr</Text>
+          <SlideInView direction="up" delay={200}>
+            <View style={styles.pricingContainer}>
+              {/* Monthly Plan */}
+              <TouchableOpacity
+                style={[
+                  styles.pricingCard,
+                  { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                  selectedPlan === 'monthly' && { borderColor: theme.colors.primary, borderWidth: 2 }
+                ]}
+                onPress={() => setSelectedPlan('monthly')}
+              >
+                {selectedPlan === 'monthly' && (
+                  <View style={[styles.selectedBadge, { backgroundColor: theme.colors.primary }]}>
+                    <Check size={14} color="#FFF" />
+                  </View>
+                )}
+                <View style={styles.pricingContent}>
+                  <Text style={[styles.price, { color: theme.colors.text }]}>39 kr</Text>
+                  <Text style={[styles.pricePeriod, { color: theme.colors.textSecondary }]}>/månad</Text>
                 </View>
-                <Text style={styles.pricePeriod}>/year</Text>
-              </View>
-              <Text style={styles.trialText}>7-day Free trial</Text>
+                <Text style={[styles.trialText, { color: theme.colors.textMuted }]}>3 dagars gratis provperiod</Text>
+              </TouchableOpacity>
+
+              {/* Yearly Plan - Featured */}
+              <TouchableOpacity
+                style={[
+                  styles.pricingCard, 
+                  styles.featuredCard,
+                  { backgroundColor: theme.colors.card },
+                  selectedPlan === 'yearly' && { borderWidth: 2 }
+                ]}
+                onPress={() => setSelectedPlan('yearly')}
+              >
+                <LinearGradient
+                  colors={[theme.colors.success, '#059669']}
+                  style={[styles.dealBadge, { flexDirection: 'row', gap: 6 }]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Sparkles size={14} color="#FFF" />
+                  <Text style={styles.dealText}>SPARA 50% - POPULÄRT VAL</Text>
+                </LinearGradient>
+                {selectedPlan === 'yearly' && (
+                  <View style={[styles.selectedBadge, { backgroundColor: theme.colors.primary, top: 40 }]}>
+                    <Check size={14} color="#FFF" />
+                  </View>
+                )}
+                <View style={styles.pricingContent}>
+                  <View style={[styles.yearlyPriceContainer, { backgroundColor: theme.colors.primary }]}>
+                    <Text style={styles.yearlyPrice}>129 kr</Text>
+                  </View>
+                  <Text style={[styles.pricePeriod, { color: theme.colors.textSecondary }]}>/år</Text>
+                </View>
+                <Text style={[styles.savingsText, { color: theme.colors.success }]}>Spara 339 kr/år</Text>
+                <Text style={[styles.trialText, { color: theme.colors.textMuted }]}>7 dagars gratis provperiod</Text>
+              </TouchableOpacity>
             </View>
-          </View>
+          </SlideInView>
 
           {/* Features */}
-          <View style={styles.featuresContainer}>
-            {features.map((feature, index) => (
-              <View key={index} style={styles.featureItem}>
-                <LinearGradient
-                  colors={feature.gradient}
-                  style={styles.featureIcon}
-                >
-                  <feature.icon size={32} color="#FFFFFF" />
-                </LinearGradient>
-                <View style={styles.featureContent}>
-                  <Text style={styles.featureTitle}>{feature.title}</Text>
-                  <Text style={styles.featureDescription}>{feature.description}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
+          <SlideInView direction="up" delay={300}>
+            <View style={styles.featuresContainer}>
+              <Text style={[styles.featuresTitle, { color: theme.colors.text }]}>Vad ingår i Premium?</Text>
+              {features.map((feature, index) => (
+                <FadeInView key={index} delay={400 + index * 100}>
+                  <View style={[styles.featureItem, { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginBottom: 12 }]}>
+                    <LinearGradient
+                      colors={feature.gradient}
+                      style={styles.featureIcon}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <feature.icon size={28} color="#FFFFFF" />
+                    </LinearGradient>
+                    <View style={styles.featureContent}>
+                      <Text style={[styles.featureTitle, { color: theme.colors.text }]}>{feature.title}</Text>
+                      <Text style={[styles.featureDescription, { color: theme.colors.textSecondary }]}>{feature.description}</Text>
+                    </View>
+                    <Check size={20} color={theme.colors.success} />
+                  </View>
+                </FadeInView>
+              ))}
+            </View>
+          </SlideInView>
 
           {/* No Payment Due */}
-          <View style={styles.noPaymentContainer}>
-            <Check size={20} color="#10B981" />
-            <Text style={styles.noPaymentText}>NO PAYMENT DUE NOW</Text>
-          </View>
+          <FadeInView delay={800}>
+            <View style={[styles.noPaymentContainer, { backgroundColor: theme.colors.success + '15', borderRadius: 12, marginHorizontal: 20, paddingVertical: 16, paddingHorizontal: 20 }]}>
+              <Shield size={20} color={theme.colors.success} />
+              <Text style={[styles.noPaymentText, { color: theme.colors.success }]}>Ingen betalning nu - avbryt när som helst</Text>
+            </View>
+          </FadeInView>
 
           {/* CTA Button */}
-          <TouchableOpacity
-            style={styles.ctaButton}
-            onPress={handleUpgrade}
-          >
-            <Text style={styles.ctaButtonText}>TRY FOR FREE</Text>
-          </TouchableOpacity>
+          <FadeInView delay={900}>
+            <TouchableOpacity
+              style={[styles.ctaButton, { backgroundColor: theme.colors.primary }]}
+              onPress={handleUpgrade}
+            >
+              <LinearGradient
+                colors={[theme.colors.primary, '#7C3AED']}
+                style={styles.ctaGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Crown size={20} color="#FFF" />
+                <Text style={styles.ctaButtonText}>BÖRJA GRATIS PROVPERIOD</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </FadeInView>
 
           {/* Footer Links */}
           <View style={styles.footerLinks}>
-            <Text style={styles.footerLink}>Privacy</Text>
-            <Text style={styles.footerLink}>Terms</Text>
-            <Text style={styles.footerLink}>Restore Purchases</Text>
+            <TouchableOpacity><Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Sekretesspolicy</Text></TouchableOpacity>
+            <Text style={[styles.footerDivider, { color: theme.colors.textMuted }]}>•</Text>
+            <TouchableOpacity><Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Villkor</Text></TouchableOpacity>
+            <Text style={[styles.footerDivider, { color: theme.colors.textMuted }]}>•</Text>
+            <TouchableOpacity><Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Återställ köp</Text></TouchableOpacity>
           </View>
         </ScrollView>
       </View>
@@ -287,29 +397,28 @@ const styles = StyleSheet.create({
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
   },
   featureIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 20,
+    marginRight: 16,
   },
   featureContent: {
     flex: 1,
   },
   featureTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 4,
   },
   featureDescription: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#9CA3AF',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   noPaymentContainer: {
     flexDirection: 'row',
@@ -399,5 +508,63 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  premiumBadgeContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  crownGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titleSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  savingsText: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  featuresTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 24,
+  },
+  ctaGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    gap: 8,
+    width: '100%',
+  },
+  footerDivider: {
+    fontSize: 14,
   },
 });

@@ -87,6 +87,7 @@ export default function FriendsScreen() {
     
     try {
       setIsLoading(true);
+      console.log('Loading friends for user:', user.id);
       
       const { data: friendsData, error: friendsError } = await supabase
         .from('friends')
@@ -122,32 +123,51 @@ export default function FriendsScreen() {
       
       if (friendsError) {
         console.error('Error loading friends:', friendsError);
+        showError(`Kunde inte ladda vänner: ${friendsError.message}`);
+        return;
       }
       
       if (requestsError) {
         console.error('Error loading friend requests:', requestsError);
+        showError(`Kunde inte ladda vänförfrågningar: ${requestsError.message}`);
+        return;
       }
       
-      const mappedFriends: Friend[] = (friendsData || []).map((f: any) => ({
-        id: f.friend.id,
-        username: f.friend.username,
-        display_name: f.friend.display_name,
-        program: f.friend.program,
-        level: f.friend.level,
-        avatar: f.friend.avatar_url ? JSON.parse(f.friend.avatar_url) : undefined,
-        studyTime: Math.floor(Math.random() * 500) + 100,
-        streak: Math.floor(Math.random() * 30) + 1
-      }));
+      console.log('Friends loaded:', friendsData?.length || 0);
+      console.log('Friend requests loaded:', requestsData?.length || 0);
       
-      const mappedRequests: FriendRequest[] = (requestsData || []).map((r: any) => ({
-        id: r.requester.id,
-        username: r.requester.username,
-        display_name: r.requester.display_name,
-        program: r.requester.program,
-        level: r.requester.level,
-        avatar: r.requester.avatar_url ? JSON.parse(r.requester.avatar_url) : undefined,
-        request_id: r.id
-      }));
+      const mappedFriends: Friend[] = (friendsData || []).map((f: any) => {
+        if (!f.friend) {
+          console.warn('Friend data missing for:', f);
+          return null;
+        }
+        return {
+          id: f.friend.id,
+          username: f.friend.username,
+          display_name: f.friend.display_name,
+          program: f.friend.program,
+          level: f.friend.level,
+          avatar: f.friend.avatar_url ? JSON.parse(f.friend.avatar_url) : undefined,
+          studyTime: Math.floor(Math.random() * 500) + 100,
+          streak: Math.floor(Math.random() * 30) + 1
+        };
+      }).filter(Boolean) as Friend[];
+      
+      const mappedRequests: FriendRequest[] = (requestsData || []).map((r: any) => {
+        if (!r.requester) {
+          console.warn('Requester data missing for:', r);
+          return null;
+        }
+        return {
+          id: r.requester.id,
+          username: r.requester.username,
+          display_name: r.requester.display_name,
+          program: r.requester.program,
+          level: r.requester.level,
+          avatar: r.requester.avatar_url ? JSON.parse(r.requester.avatar_url) : undefined,
+          request_id: r.id
+        };
+      }).filter(Boolean) as FriendRequest[];
       
       setFriends(mappedFriends);
       setFriendRequests(mappedRequests);
@@ -163,9 +183,9 @@ export default function FriendsScreen() {
         .map((entry, index) => ({ ...entry, position: index + 1 }));
       
       setLeaderboard(leaderboardData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading friends:', error);
-      showError('Kunde inte ladda vänner');
+      showError(error?.message || 'Kunde inte ladda vänner');
     } finally {
       setIsLoading(false);
     }

@@ -221,50 +221,57 @@ export default function CoursesScreen() {
     }
 
     try {
-      // Create course in database
+      console.log('Creating course with data:', {
+        title: newCourse.title,
+        description: newCourse.description || 'Ingen beskrivning',
+        subject: newCourse.subject,
+        level: newCourse.level,
+      });
+
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .insert({
           title: newCourse.title,
-          description: newCourse.description,
+          description: newCourse.description || 'Ingen beskrivning',
           subject: newCourse.subject,
           level: newCourse.level,
           resources: [],
           tips: [],
-          related_courses: [],
-          progress: 0
+          related_courses: []
         })
         .select()
         .single();
 
       if (courseError) {
         console.error('Error creating course:', courseError);
-        Alert.alert('Fel', 'Kunde inte skapa kurs');
+        Alert.alert('Fel', `Kunde inte skapa kurs: ${courseError.message}`);
         return;
       }
 
-      // Add user course relationship
+      console.log('Course created successfully:', courseData);
+
       const { error: userCourseError } = await supabase
         .from('user_courses')
         .insert({
           user_id: user!.id,
           course_id: courseData.id,
-          progress: 0,
           is_active: true
         });
 
       if (userCourseError) {
         console.error('Error creating user course:', userCourseError);
-        Alert.alert('Fel', 'Kunde inte lägga till kurs till användare');
+        Alert.alert('Fel', `Kunde inte lägga till kurs till användare: ${userCourseError.message}`);
         return;
       }
 
+      console.log('User course created successfully');
+      Alert.alert('Framgång', 'Kurs tillagd!');
       setNewCourse({ title: '', description: '', subject: '', level: 'gymnasie' });
       setShowAddModal(false);
-      loadAllData(); // Reload all data
-    } catch (error) {
+      loadAllData();
+    } catch (error: any) {
       console.error('Error in handleAddCourse:', error);
-      Alert.alert('Fel', 'Kunde inte lägga till kurs');
+      Alert.alert('Fel', error?.message || 'Kunde inte lägga till kurs');
     }
   };
 

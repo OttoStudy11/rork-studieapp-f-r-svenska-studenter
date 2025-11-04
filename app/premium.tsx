@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
-  Animated,
-  Dimensions
+  Animated
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -22,53 +21,103 @@ import {
   Clock,
   Sparkles,
   Zap,
-  Star
+  Star,
+  TrendingUp,
+  Award,
+  Unlock,
+  Infinity,
+  Users
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
 
-const { width } = Dimensions.get('window');
-
 export default function PremiumScreen() {
   const { isPremium, upgradeToPremium } = usePremium();
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [pulseAnim]);
 
   const features = [
     {
+      icon: Infinity,
+      title: 'Obegränsade Kurser',
+      description: 'Lägg till hur många kurser du vill utan begränsningar',
+      gradient: ['#8B5CF6', '#7C3AED'] as const,
+      badge: 'Populärt'
+    },
+    {
       icon: BarChart3,
       title: 'Avancerad Statistik',
-      description: 'Detaljerade grafer och insikter om din studietid',
-      gradient: [theme.colors.primary, '#7C3AED'] as const
+      description: 'Detaljerade grafer, insikter och trendanalys av din studietid',
+      gradient: ['#06B6D4', '#0891B2'] as const,
+      badge: 'Nytt'
     },
     {
       icon: Shield,
       title: 'Distraktionsblockerare',
-      description: 'Blockera appar och webbplatser under studiesessioner',
+      description: 'Blockera appar och webbplatser under fokuserade studiesessioner',
       gradient: ['#10B981', '#059669'] as const
     },
     {
+      icon: Sparkles,
+      title: 'AI-assisterad Lärande',
+      description: 'Personliga studietips och AI-chatbot som hjälper dig studera smartare',
+      gradient: ['#EC4899', '#DB2777'] as const,
+      badge: 'AI'
+    },
+    {
       icon: Clock,
-      title: 'Anpassade Timers',
-      description: 'Pomodoro, stoppur och skräddarsydda studietimers',
+      title: 'Anpassade Studietimers',
+      description: 'Pomodoro, Deep Work, stoppur och skräddarsydda studietimers',
       gradient: ['#F59E0B', '#D97706'] as const
     },
     {
-      icon: Sparkles,
-      title: 'AI-assisterad lärande',
-      description: 'Personliga studietips baserade på dina vanor',
-      gradient: ['#EC4899', '#8B5CF6'] as const
+      icon: Users,
+      title: 'Obegränsade Studievänner',
+      description: 'Bjud in hur många studiekamrater du vill och tävla i topplistan',
+      gradient: ['#EF4444', '#DC2626'] as const
     },
     {
-      icon: Zap,
-      title: 'Obegränsad Synkning',
-      description: 'Synka dina data mellan alla enheter',
-      gradient: ['#3B82F6', '#06B6D4'] as const
+      icon: Award,
+      title: 'Exklusiva Achievements',
+      description: 'Lås upp speciella premium-badges och achievements',
+      gradient: ['#F59E0B', '#F97316'] as const
+    },
+    {
+      icon: TrendingUp,
+      title: 'Exportera Din Data',
+      description: 'Exportera all din studiedata för backup och analys',
+      gradient: ['#8B5CF6', '#A78BFA'] as const
     },
     {
       icon: Star,
       title: 'Prioriterad Support',
-      description: 'Få snabb hjälp när du behöver det',
+      description: 'Få snabb och personlig hjälp direkt från teamet',
       gradient: ['#F59E0B', '#EF4444'] as const
+    },
+    {
+      icon: Zap,
+      title: 'Allt Framtida Innehåll',
+      description: 'Få tillgång till alla nya premium-funktioner automatiskt',
+      gradient: ['#3B82F6', '#2563EB'] as const,
+      badge: 'Kommande'
     }
   ];
 
@@ -81,7 +130,7 @@ export default function PremiumScreen() {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <SafeAreaView style={styles.safeArea}>
-          <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.heroSection, { backgroundColor: theme.colors.background }]}>
             <TouchableOpacity 
               style={[styles.backButton, { backgroundColor: theme.colors.card }]}
               onPress={() => router.back()}
@@ -143,26 +192,114 @@ export default function PremiumScreen() {
     );
   }
 
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.safeArea}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          {/* Header */}
-          <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <SafeAreaView style={styles.safeArea}>
+        {/* Floating Header */}
+        <Animated.View 
+          style={[
+            styles.floatingHeader, 
+            { 
+              backgroundColor: theme.colors.background,
+              opacity: headerOpacity,
+              borderBottomColor: theme.colors.border
+            }
+          ]}
+        >
+          <TouchableOpacity 
+            style={[styles.headerBackButton, { backgroundColor: theme.colors.card }]}
+            onPress={() => router.back()}
+          >
+            <ArrowLeft size={20} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.floatingHeaderTitle, { color: theme.colors.text }]}>Premium</Text>
+          <View style={{ width: 40 }} />
+        </Animated.View>
+
+        <Animated.ScrollView 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={styles.scrollContent}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
+          scrollEventThrottle={16}
+        >
+          {/* Hero Section */}
+          <View style={styles.heroSection}>
             <TouchableOpacity 
               style={[styles.backButton, { backgroundColor: theme.colors.card }]}
               onPress={() => router.back()}
             >
               <ArrowLeft size={24} color={theme.colors.text} />
             </TouchableOpacity>
+            
             <FadeInView delay={100}>
-              <Text style={[styles.title, { color: theme.colors.text }]}>Studiestugan Pro</Text>
-              <Text style={[styles.titleSubtitle, { color: theme.colors.textSecondary }]}>Uppgradera din studiupplevelse</Text>
+              <Animated.View style={[styles.crownContainer, { transform: [{ scale: pulseAnim }] }]}>
+                <LinearGradient
+                  colors={['#FFD700', '#FFA500', '#FF8C00']}
+                  style={styles.crownGradientLarge}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Crown size={64} color="#FFF" strokeWidth={2.5} />
+                </LinearGradient>
+              </Animated.View>
+            </FadeInView>
+
+            <SlideInView direction="up" delay={200}>
+              <Text style={[styles.heroTitle, { color: theme.colors.text }]}>Studiestugan Pro</Text>
+              <Text style={[styles.heroSubtitle, { color: theme.colors.textSecondary }]}>
+                Lås upp ditt fulla studiepotential
+              </Text>
+            </SlideInView>
+
+            <FadeInView delay={300}>
+              <View style={[styles.trustBadge, { backgroundColor: theme.colors.card }]}>
+                <Check size={16} color={theme.colors.success} />
+                <Text style={[styles.trustText, { color: theme.colors.textSecondary }]}>Över 10,000+ nöjda studenter</Text>
+              </View>
             </FadeInView>
           </View>
 
+          {/* Value Proposition */}
+          <SlideInView direction="up" delay={400}>
+            <View style={styles.valueSection}>
+              <View style={styles.valueGrid}>
+                <View style={[styles.valueCard, { backgroundColor: theme.colors.card }]}>
+                  <View style={[styles.valueIconContainer, { backgroundColor: theme.colors.primary + '15' }]}>
+                    <Unlock size={24} color={theme.colors.primary} />
+                  </View>
+                  <Text style={[styles.valueNumber, { color: theme.colors.text }]}>10+</Text>
+                  <Text style={[styles.valueLabel, { color: theme.colors.textSecondary }]}>Premium Funktioner</Text>
+                </View>
+                <View style={[styles.valueCard, { backgroundColor: theme.colors.card }]}>
+                  <View style={[styles.valueIconContainer, { backgroundColor: theme.colors.success + '15' }]}>
+                    <TrendingUp size={24} color={theme.colors.success} />
+                  </View>
+                  <Text style={[styles.valueNumber, { color: theme.colors.text }]}>2.5x</Text>
+                  <Text style={[styles.valueLabel, { color: theme.colors.textSecondary }]}>Snabbare Framsteg</Text>
+                </View>
+                <View style={[styles.valueCard, { backgroundColor: theme.colors.card }]}>
+                  <View style={[styles.valueIconContainer, { backgroundColor: theme.colors.warning + '15' }]}>
+                    <Award size={24} color={theme.colors.warning} />
+                  </View>
+                  <Text style={[styles.valueNumber, { color: theme.colors.text }]}>98%</Text>
+                  <Text style={[styles.valueLabel, { color: theme.colors.textSecondary }]}>Rekommenderar</Text>
+                </View>
+              </View>
+            </View>
+          </SlideInView>
+
           {/* Pricing Cards */}
-          <SlideInView direction="up" delay={200}>
+          <SlideInView direction="up" delay={500}>
+            <Text style={[styles.pricingSectionTitle, { color: theme.colors.text }]}>Välj din plan</Text>
             <View style={styles.pricingContainer}>
               {/* Monthly Plan */}
               <TouchableOpacity
@@ -222,33 +359,104 @@ export default function PremiumScreen() {
           </SlideInView>
 
           {/* Features */}
-          <SlideInView direction="up" delay={300}>
+          <SlideInView direction="up" delay={700}>
             <View style={styles.featuresContainer}>
-              <Text style={[styles.featuresTitle, { color: theme.colors.text }]}>Vad ingår i Premium?</Text>
+              <Text style={[styles.featuresTitle, { color: theme.colors.text }]}>Allt du får med Premium</Text>
+              <Text style={[styles.featuresSubtitle, { color: theme.colors.textSecondary }]}>Kraftfulla funktioner för seriösa studenter</Text>
+              
               {features.map((feature, index) => (
-                <FadeInView key={index} delay={400 + index * 100}>
-                  <View style={[styles.featureItem, { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginBottom: 12 }]}>
+                <FadeInView key={index} delay={800 + index * 50}>
+                  <View style={[styles.featureItem, { backgroundColor: theme.colors.card }]}>
                     <LinearGradient
                       colors={feature.gradient}
                       style={styles.featureIcon}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                     >
-                      <feature.icon size={28} color="#FFFFFF" />
+                      <feature.icon size={24} color="#FFFFFF" strokeWidth={2} />
                     </LinearGradient>
                     <View style={styles.featureContent}>
-                      <Text style={[styles.featureTitle, { color: theme.colors.text }]}>{feature.title}</Text>
+                      <View style={styles.featureTitleRow}>
+                        <Text style={[styles.featureTitle, { color: theme.colors.text }]}>{feature.title}</Text>
+                        {feature.badge && (
+                          <View style={[styles.featureBadge, { 
+                            backgroundColor: feature.badge === 'Nytt' ? theme.colors.success + '20' :
+                                           feature.badge === 'AI' ? theme.colors.primary + '20' :
+                                           feature.badge === 'Populärt' ? theme.colors.warning + '20' :
+                                           theme.colors.primary + '20'
+                          }]}>
+                            <Text style={[styles.featureBadgeText, { 
+                              color: feature.badge === 'Nytt' ? theme.colors.success :
+                                    feature.badge === 'AI' ? theme.colors.primary :
+                                    feature.badge === 'Populärt' ? theme.colors.warning :
+                                    theme.colors.primary
+                            }]}>{feature.badge}</Text>
+                          </View>
+                        )}
+                      </View>
                       <Text style={[styles.featureDescription, { color: theme.colors.textSecondary }]}>{feature.description}</Text>
                     </View>
-                    <Check size={20} color={theme.colors.success} />
+                    <View style={[styles.featureCheck, { backgroundColor: theme.colors.success + '20' }]}>
+                      <Check size={16} color={theme.colors.success} strokeWidth={3} />
+                    </View>
                   </View>
                 </FadeInView>
               ))}
             </View>
           </SlideInView>
 
+          {/* Comparison */}
+          <SlideInView direction="up" delay={1200}>
+            <View style={styles.comparisonSection}>
+              <Text style={[styles.comparisonTitle, { color: theme.colors.text }]}>Varför välja Premium?</Text>
+              <View style={[styles.comparisonCard, { backgroundColor: theme.colors.card }]}>
+                <View style={styles.comparisonRow}>
+                  <View style={styles.comparisonColumn}>
+                    <Text style={[styles.comparisonLabel, { color: theme.colors.textMuted }]}>Gratis</Text>
+                  </View>
+                  <View style={styles.comparisonColumn}>
+                    <LinearGradient
+                      colors={['#FFD700', '#FFA500']}
+                      style={styles.premiumLabel}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                    >
+                      <Crown size={14} color="#FFF" />
+                      <Text style={styles.premiumLabelText}>Premium</Text>
+                    </LinearGradient>
+                  </View>
+                </View>
+                
+                <View style={[styles.comparisonDivider, { backgroundColor: theme.colors.border }]} />
+                
+                {[
+                  { feature: 'Antal kurser', free: '3 kurser', premium: 'Obegränsat' },
+                  { feature: 'Studievänner', free: '3 vänner', premium: 'Obegränsat' },
+                  { feature: 'AI-assisterad lärning', free: '—', premium: '✓' },
+                  { feature: 'Avancerad statistik', free: '—', premium: '✓' },
+                  { feature: 'Exportera data', free: '—', premium: '✓' },
+                ].map((item, index) => (
+                  <View key={index}>
+                    <View style={styles.comparisonRow}>
+                      <View style={[styles.comparisonColumn, styles.comparisonFeature]}>
+                        <Text style={[styles.comparisonFeatureText, { color: theme.colors.text }]}>{item.feature}</Text>
+                      </View>
+                      <View style={styles.comparisonColumn}>
+                        <Text style={[styles.comparisonValue, { color: theme.colors.textMuted }]}>{item.free}</Text>
+                      </View>
+                      <View style={styles.comparisonColumn}>
+                        <Text style={[styles.comparisonValue, styles.comparisonPremiumValue, { color: theme.colors.primary }]}>{item.premium}</Text>
+                      </View>
+                    </View>
+                    {index < 4 && <View style={[styles.comparisonDivider, { backgroundColor: theme.colors.borderLight }]} />}
+                  </View>
+                ))}
+              </View>
+            </View>
+          </SlideInView>
+
           {/* No Payment Due */}
-          <FadeInView delay={800}>
+          <FadeInView delay={1400}>
             <View style={[styles.noPaymentContainer, { backgroundColor: theme.colors.success + '15', borderRadius: 12, marginHorizontal: 20, paddingVertical: 16, paddingHorizontal: 20 }]}>
               <Shield size={20} color={theme.colors.success} />
               <Text style={[styles.noPaymentText, { color: theme.colors.success }]}>Ingen betalning nu - avbryt när som helst</Text>
@@ -256,7 +464,7 @@ export default function PremiumScreen() {
           </FadeInView>
 
           {/* CTA Button */}
-          <FadeInView delay={900}>
+          <FadeInView delay={1500}>
             <TouchableOpacity
               style={[styles.ctaButton, { backgroundColor: theme.colors.primary }]}
               onPress={handleUpgrade}
@@ -281,26 +489,50 @@ export default function PremiumScreen() {
             <Text style={[styles.footerDivider, { color: theme.colors.textMuted }]}>•</Text>
             <TouchableOpacity><Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Återställ köp</Text></TouchableOpacity>
           </View>
-        </ScrollView>
-      </View>
-    </SafeAreaView>
+        </Animated.ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1B23',
   },
   safeArea: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 60,
   },
-  header: {
+  floatingHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 50,
+    borderBottomWidth: 1,
+    zIndex: 100,
+  },
+  headerBackButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  floatingHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  heroSection: {
+    paddingHorizontal: 20,
+    paddingTop: 60,
     paddingBottom: 40,
     alignItems: 'center',
     position: 'relative',
@@ -317,12 +549,89 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  crownContainer: {
+    marginBottom: 24,
+  },
+  crownGradientLarge: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  heroTitle: {
+    fontSize: 36,
+    fontWeight: '800',
     textAlign: 'center',
-    marginTop: 20,
+    marginBottom: 12,
+    letterSpacing: -1,
+  },
+  heroSubtitle: {
+    fontSize: 18,
+    textAlign: 'center',
+    lineHeight: 26,
+    marginBottom: 24,
+  },
+  trustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    gap: 8,
+  },
+  trustText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  valueSection: {
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
+  valueGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  valueCard: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  valueIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  valueNumber: {
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  valueLabel: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  pricingSectionTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 20,
   },
   pricingContainer: {
     paddingHorizontal: 20,
@@ -397,23 +706,53 @@ const styles = StyleSheet.create({
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   featureIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
   featureContent: {
     flex: 1,
   },
+  featureTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 8,
+  },
   featureTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
+  },
+  featureBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  featureBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  featureCheck: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   featureDescription: {
     fontSize: 14,
@@ -550,9 +889,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   featuresTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 24,
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  featuresSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
   },
   ctaGradient: {
     flexDirection: 'row',
@@ -566,5 +913,73 @@ const styles = StyleSheet.create({
   },
   footerDivider: {
     fontSize: 14,
+  },
+  comparisonSection: {
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
+  comparisonTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  comparisonCard: {
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  comparisonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  comparisonColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  comparisonFeature: {
+    flex: 1.5,
+    alignItems: 'flex-start',
+  },
+  comparisonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  premiumLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  premiumLabelText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  comparisonDivider: {
+    height: 1,
+    marginVertical: 4,
+  },
+  comparisonFeatureText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  comparisonValue: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  comparisonPremiumValue: {
+    fontWeight: '700',
   },
 });

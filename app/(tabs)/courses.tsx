@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Modal,
   Alert,
   ActivityIndicator,
   StatusBar,
@@ -35,7 +34,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { FadeInView, SlideInView } from '@/components/Animations';
+import CoursePickerModal from '@/components/CoursePickerModal';
 import type { Database } from '@/lib/database.types';
+import type { Course as ProgramCourse } from '@/home/project/constants/program-courses';
 
 const { width } = Dimensions.get('window');
 
@@ -71,12 +72,7 @@ export default function CoursesScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newCourse, setNewCourse] = useState({
-    title: '',
-    description: '',
-    subject: '',
-    level: 'gymnasie' as 'gymnasie' | 'högskola'
-  });
+  const [showCoursePickerModal, setShowCoursePickerModal] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -214,65 +210,98 @@ export default function CoursesScreen() {
     course.subject.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddCourse = async () => {
-    if (!newCourse.title || !newCourse.subject) {
-      Alert.alert('Fel', 'Fyll i alla fält');
-      return;
-    }
-
+  const handleAddCourseFromPicker = async (course: ProgramCourse) => {
     try {
-      console.log('Creating course with data:', {
-        title: newCourse.title,
-        description: newCourse.description || 'Ingen beskrivning',
-        subject: newCourse.subject,
-        level: newCourse.level,
-      });
+      console.log('Adding course from picker:', course);
 
-      const { data: courseData, error: courseError } = await supabase
+      const { data: existingCourse } = await supabase
         .from('courses')
-        .insert({
-          title: newCourse.title,
-          description: newCourse.description || 'Ingen beskrivning',
-          subject: newCourse.subject,
-          level: newCourse.level,
-          resources: [],
-          tips: [],
-          related_courses: []
-        })
-        .select()
+        .select('id')
+        .eq('id', course.code)
         .single();
 
-      if (courseError) {
-        console.error('Error creating course:', courseError);
-        Alert.alert('Fel', `Kunde inte skapa kurs: ${courseError.message}`);
-        return;
+      if (!existingCourse) {
+        const { error: insertError } = await supabase
+          .from('courses')
+          .insert({
+            id: course.code,
+            title: course.name,
+            description: `${course.name} - ${course.points} poäng`,
+            subject: extractSubjectFromCourseName(course.name),
+            level: 'gymnasie',
+            resources: ['Kursmaterial', 'Övningsuppgifter'],
+            tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+            related_courses: []
+          });
+
+        if (insertError) {
+          console.error('Error inserting course:', insertError);
+          Alert.alert('Fel', `Kunde inte skapa kurs: ${insertError.message}`);
+          return;
+        }
       }
 
-      console.log('Course created successfully:', courseData);
+      const { data: userCourseExists } = await supabase
+        .from('user_courses')
+        .select('id')
+        .eq('user_id', user!.id)
+        .eq('course_id', course.code)
+        .single();
+
+      if (userCourseExists) {
+        Alert.alert('Info', 'Du har redan lagt till denna kurs');
+        return;
+      }
 
       const { error: userCourseError } = await supabase
         .from('user_courses')
         .insert({
           user_id: user!.id,
-          course_id: courseData.id,
-          is_active: true
+          course_id: course.code,
+          is_active: true,
+          progress: 0
         });
 
       if (userCourseError) {
         console.error('Error creating user course:', userCourseError);
-        Alert.alert('Fel', `Kunde inte lägga till kurs till användare: ${userCourseError.message}`);
+        Alert.alert('Fel', `Kunde inte lägga till kurs: ${userCourseError.message}`);
         return;
       }
 
-      console.log('User course created successfully');
-      Alert.alert('Framgång', 'Kurs tillagd!');
-      setNewCourse({ title: '', description: '', subject: '', level: 'gymnasie' });
-      setShowAddModal(false);
+      console.log('Course added successfully');
+      Alert.alert('Framgång! \u2705', `${course.name} har lagts till i dina kurser`);
       loadAllData();
     } catch (error: any) {
-      console.error('Error in handleAddCourse:', error);
+      console.error('Error in handleAddCourseFromPicker:', error);
       Alert.alert('Fel', error?.message || 'Kunde inte lägga till kurs');
     }
+  };
+
+  const extractSubjectFromCourseName = (name: string): string => {
+    const subjectKeywords: Record<string, string> = {
+      'Engelska': 'Engelska',
+      'Historia': 'Historia',
+      'Idrott': 'Idrott och hälsa',
+      'Matematik': 'Matematik',
+      'Naturkunskap': 'Naturkunskap',
+      'Religionskunskap': 'Religionskunskap',
+      'Samhällskunskap': 'Samhällskunskap',
+      'Svenska': 'Svenska',
+      'Biologi': 'Biologi',
+      'Fysik': 'Fysik',
+      'Kemi': 'Kemi',
+      'Teknik': 'Teknik',
+      'Programmering': 'Teknik',
+      'Webbutveckling': 'Teknik',
+    };
+
+    for (const [keyword, subject] of Object.entries(subjectKeywords)) {
+      if (name.includes(keyword)) {
+        return subject;
+      }
+    }
+
+    return 'Övrigt';
   };
 
   const toggleCourseActive = async (courseId: string, isActive: boolean) => {
@@ -375,7 +404,7 @@ export default function CoursesScreen() {
           </View>
           <TouchableOpacity
             style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
-            onPress={() => setShowAddModal(true)}
+            onPress={() => setShowCoursePickerModal(true)}
           >
             <Plus size={20} color="white" />
           </TouchableOpacity>
@@ -431,7 +460,7 @@ export default function CoursesScreen() {
                 <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>Lägg till kurser för att komma igång</Text>
                 <TouchableOpacity 
                   style={[styles.addButtonLarge, { backgroundColor: theme.colors.primary }]}
-                  onPress={() => setShowAddModal(true)}
+                  onPress={() => setShowCoursePickerModal(true)}
                 >
                   <Plus size={20} color="white" />
                   <Text style={styles.addButtonText}>Lägg till kurs</Text>
@@ -510,134 +539,12 @@ export default function CoursesScreen() {
         </SlideInView>
       </ScrollView>
 
-      {/* Add Course Modal */}
-      <Modal
-        visible={showAddModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Lägg till kurs</Text>
-            <TouchableOpacity onPress={() => setShowAddModal(false)}>
-              <X size={24} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.modalContent}>
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Kurstitel</Text>
-              <TextInput
-                style={[styles.input, { 
-                  borderColor: theme.colors.border, 
-                  color: theme.colors.text,
-                  backgroundColor: theme.colors.card
-                }]}
-                placeholder="T.ex. Matematik 3c"
-                placeholderTextColor={theme.colors.textMuted}
-                value={newCourse.title}
-                onChangeText={(text) => setNewCourse({ ...newCourse, title: text })}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Ämne</Text>
-              <TextInput
-                style={[styles.input, { 
-                  borderColor: theme.colors.border, 
-                  color: theme.colors.text,
-                  backgroundColor: theme.colors.card
-                }]}
-                placeholder="T.ex. Matematik"
-                placeholderTextColor={theme.colors.textMuted}
-                value={newCourse.subject}
-                onChangeText={(text) => setNewCourse({ ...newCourse, subject: text })}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Beskrivning</Text>
-              <TextInput
-                style={[styles.input, styles.textArea, { 
-                  borderColor: theme.colors.border, 
-                  color: theme.colors.text,
-                  backgroundColor: theme.colors.card
-                }]}
-                placeholder="Beskriv kursen..."
-                placeholderTextColor={theme.colors.textMuted}
-                value={newCourse.description}
-                onChangeText={(text) => setNewCourse({ ...newCourse, description: text })}
-                multiline
-                numberOfLines={3}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Nivå</Text>
-              <View style={styles.levelButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.levelButton,
-                    { borderColor: theme.colors.border },
-                    newCourse.level === 'gymnasie' && { 
-                      borderColor: theme.colors.primary,
-                      backgroundColor: theme.colors.primary + '15'
-                    }
-                  ]}
-                  onPress={() => setNewCourse({ ...newCourse, level: 'gymnasie' })}
-                >
-                  <Text style={[
-                    styles.levelButtonText,
-                    { color: theme.colors.textSecondary },
-                    newCourse.level === 'gymnasie' && { color: theme.colors.primary, fontWeight: '600' }
-                  ]}>
-                    Gymnasie
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.levelButton,
-                    { borderColor: theme.colors.border },
-                    newCourse.level === 'högskola' && { 
-                      borderColor: theme.colors.primary,
-                      backgroundColor: theme.colors.primary + '15'
-                    }
-                  ]}
-                  onPress={() => setNewCourse({ ...newCourse, level: 'högskola' })}
-                >
-                  <Text style={[
-                    styles.levelButtonText,
-                    { color: theme.colors.textSecondary },
-                    newCourse.level === 'högskola' && { color: theme.colors.primary, fontWeight: '600' }
-                  ]}>
-                    Högskola
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </ScrollView>
-
-          <View style={[styles.modalFooter, { borderTopColor: theme.colors.border }]}>
-            <TouchableOpacity
-              style={[styles.cancelButton, { borderColor: theme.colors.border }]}
-              onPress={() => setShowAddModal(false)}
-            >
-              <Text style={[styles.cancelButtonText, { color: theme.colors.textSecondary }]}>Avbryt</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.saveButton,
-                { backgroundColor: theme.colors.primary },
-                (!newCourse.title || !newCourse.subject) && styles.saveButtonDisabled
-              ]}
-              onPress={handleAddCourse}
-              disabled={!newCourse.title || !newCourse.subject}
-            >
-              <Text style={styles.saveButtonText}>Lägg till</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {/* Course Picker Modal */}
+      <CoursePickerModal
+        visible={showCoursePickerModal}
+        onClose={() => setShowCoursePickerModal(false)}
+        onSelectCourse={handleAddCourseFromPicker}
+      />
     </View>
   );
 }

@@ -253,9 +253,12 @@ export default function CoursesScreen() {
         return;
       }
 
+      const userCourseId = `${user!.id}-${course.code}`;
+
       const { error: userCourseError } = await supabase
         .from('user_courses')
         .insert({
+          id: userCourseId,
           user_id: user!.id,
           course_id: course.code,
           is_active: true,
@@ -264,6 +267,7 @@ export default function CoursesScreen() {
 
       if (userCourseError) {
         console.error('Error creating user course:', userCourseError);
+        console.error('Full error details:', JSON.stringify(userCourseError, null, 2));
         Alert.alert('Fel', `Kunde inte lägga till kurs: ${userCourseError.message}`);
         return;
       }

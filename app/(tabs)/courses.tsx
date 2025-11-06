@@ -213,14 +213,41 @@ export default function CoursesScreen() {
   const handleAddCourseFromPicker = async (course: ProgramCourse) => {
     try {
       console.log('Adding course from picker:', course);
+      console.log('Current user ID:', user?.id);
 
-      const { data: existingCourse } = await supabase
+      if (!user?.id) {
+        Alert.alert('Fel', 'Du måste vara inloggad för att lägga till kurser');
+        return;
+      }
+
+      // Verify that the profile exists
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profileData) {
+        console.error('Profile not found or error:', profileError);
+        Alert.alert('Fel', 'Din profil kunde inte hittas. Vänligen logga in igen.');
+        return;
+      }
+
+      console.log('Profile verified:', profileData);
+
+      // Check if course exists, if not create it
+      const { data: existingCourse, error: courseCheckError } = await supabase
         .from('courses')
         .select('id')
         .eq('id', course.code)
-        .single();
+        .maybeSingle();
+
+      if (courseCheckError) {
+        console.error('Error checking course:', courseCheckError);
+      }
 
       if (!existingCourse) {
+        console.log('Course does not exist, creating:', course.code);
         const { error: insertError } = await supabase
           .from('courses')
           .insert({
@@ -241,21 +268,28 @@ export default function CoursesScreen() {
         }
       }
 
-      const { data: userCourseExists } = await supabase
+      // Check if user already has this course
+      const { data: userCourseExists, error: userCourseCheckError } = await supabase
         .from('user_courses')
         .select('id')
         .eq('user_id', user!.id)
         .eq('course_id', course.code)
-        .single();
+        .maybeSingle();
+
+      if (userCourseCheckError) {
+        console.error('Error checking user course:', userCourseCheckError);
+      }
 
       if (userCourseExists) {
         Alert.alert('Info', 'Du har redan lagt till denna kurs');
         return;
       }
 
+      console.log('Creating user course record...');
       const userCourseId = `${user!.id}-${course.code}`;
+      console.log('User course ID:', userCourseId);
 
-      const { error: userCourseError } = await supabase
+      const { data: insertedUserCourse, error: userCourseError } = await supabase
         .from('user_courses')
         .insert({
           id: userCourseId,
@@ -263,18 +297,34 @@ export default function CoursesScreen() {
           course_id: course.code,
           is_active: true,
           progress: 0
-        });
+        })
+        .select()
+        .single();
 
       if (userCourseError) {
-        console.error('Error creating user course:', userCourseError);
-        console.error('Full error details:', JSON.stringify(userCourseError, null, 2));
-        Alert.alert('Fel', `Kunde inte lägga till kurs: ${userCourseError.message}`);
+        console.error('=== USER COURSE ERROR ===');
+        console.error('Error message:', userCourseError.message);
+        console.error('Error code:', userCourseError.code);
+        console.error('Error details:', userCourseError.details);
+        console.error('Error hint:', userCourseError.hint);
+        console.error('Full error:', JSON.stringify(userCourseError, null, 2));
+        console.error('=========================');
+        
+        let errorMessage = 'Kunde inte lägga till kurs';
+        if (userCourseError.message) {
+          errorMessage += `: ${userCourseError.message}`;
+        }
+        if (userCourseError.hint) {
+          errorMessage += ` (${userCourseError.hint})`;
+        }
+        
+        Alert.alert('Fel', errorMessage);
         return;
       }
 
-      console.log('Course added successfully');
+      console.log('Course added successfully:', insertedUserCourse);
       Alert.alert('Framgång! \u2705', `${course.name} har lagts till i dina kurser`);
-      loadAllData();
+      await loadAllData();
     } catch (error: any) {
       console.error('Error in handleAddCourseFromPicker:', error);
       Alert.alert('Fel', error?.message || 'Kunde inte lägga till kurs');

@@ -76,7 +76,7 @@ BEGIN
 
     (gen_random_uuid(), 'MATMAT01a', 'Problemlösningsstrategier', 'Tips och tricks för att lösa matematiska problem',
     E'# Problemlösningsstrategier\n\n## Allmänna tips\n\n1. **Läs problemet noga**\n   - Vad är givet?\n   - Vad ska du räkna ut?\n   - Finns det nyckelord?\n\n2. **Rita en bild**\n   - Visualisera problemet\n   - Markera det du vet\n   - Markera det du söker\n\n3. **Välj rätt metod**\n   - Vilken formel behöver du?\n   - Behöver du en ekvation?\n   - Kan du göra en tabell?\n\n4. **Genomför beräkningen**\n   - Visa alla steg\n   - Räkna noga\n   - Använd räknare när det behövs\n\n5. **Kontrollera svaret**\n   - Är svaret rimligt?\n   - Har du rätt enhet?\n   - Kan du kontrollera på annat sätt?\n\n## Strategier för olika typer av problem\n\n### Ekvationer\n1. Förenkla båda sidor\n2. Samla variabeltermer på ena sidan\n3. Isolera variabeln\n4. Kontrollera svaret\n\n### Geometriproblem\n1. Rita en tydlig figur\n2. Markera mått\n3. Identifiera vilken formel du behöver\n4. Sätt in värdena\n5. Räkna ut\n\n### Funktioner\n1. Identifiera funktionstypen\n2. Hitta nyckelvärden (k, m, nollställen)\n3. Rita graf om möjligt\n4. Svara på frågan\n\n## Vanliga misstag att undvika\n\n- Glömma att förenkla först\n- Blanda ihop area och omkrets\n- Glömma enheter\n- Inte kontrollera svaret\n- Göra slarvfel i räkningarna',
-    'tips', 'easy', 15, true);
+    'cheat_sheet', 'easy', 15, true);
 END $$;
 
 -- ============================================================================

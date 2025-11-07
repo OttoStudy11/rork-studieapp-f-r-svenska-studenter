@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,12 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
-  Animated
+  Animated,
+  StatusBar
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import { 
   BookOpen, 
@@ -30,22 +32,76 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Database } from '@/lib/database.types';
 
-
-
 type Course = Database['public']['Tables']['courses']['Row'];
-type CourseModule = Database['public']['Tables']['course_modules']['Row'];
 type CourseLesson = Database['public']['Tables']['course_lessons']['Row'];
 type UserLessonProgress = Database['public']['Tables']['user_lesson_progress']['Row'];
-type StudyGuide = Database['public']['Tables']['study_guides']['Row'];
 
-interface ModuleWithLessons extends Omit<CourseModule, 'description'> {
+interface ModuleWithLessons {
+  id: string;
+  course_id: string;
+  title: string;
   description: string;
+  order_index: number;
+  estimated_hours: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
   lessons: (CourseLesson & { progress?: UserLessonProgress })[];
+}
+
+interface StudyGuide {
+  id: string;
+  course_id: string;
+  title: string;
+  description: string;
+  difficulty_level: string;
+  estimated_read_time: number;
+  is_published: boolean;
+}
+
+interface CourseStyle {
+  emoji: string;
+  gradient: string[];
+  primaryColor: string;
+  lightColor: string;
+}
+
+const courseStyles: Record<string, CourseStyle> = {
+  'Matematik': { emoji: '📐', gradient: ['#3B82F6', '#2563EB'], primaryColor: '#3B82F6', lightColor: '#DBEAFE' },
+  'Svenska': { emoji: '📚', gradient: ['#EC4899', '#DB2777'], primaryColor: '#EC4899', lightColor: '#FCE7F3' },
+  'Engelska': { emoji: '🌍', gradient: ['#10B981', '#059669'], primaryColor: '#10B981', lightColor: '#D1FAE5' },
+  'Biologi': { emoji: '🧬', gradient: ['#14B8A6', '#0D9488'], primaryColor: '#14B8A6', lightColor: '#CCFBF1' },
+  'Fysik': { emoji: '⚡', gradient: ['#F59E0B', '#D97706'], primaryColor: '#F59E0B', lightColor: '#FEF3C7' },
+  'Kemi': { emoji: '🧪', gradient: ['#8B5CF6', '#7C3AED'], primaryColor: '#8B5CF6', lightColor: '#EDE9FE' },
+  'Historia': { emoji: '🏛️', gradient: ['#F97316', '#EA580C'], primaryColor: '#F97316', lightColor: '#FFEDD5' },
+  'Samhällskunskap': { emoji: '🏛️', gradient: ['#06B6D4', '#0891B2'], primaryColor: '#06B6D4', lightColor: '#CFFAFE' },
+  'Idrott och hälsa': { emoji: '⚽', gradient: ['#EF4444', '#DC2626'], primaryColor: '#EF4444', lightColor: '#FEE2E2' },
+  'Religionskunskap': { emoji: '🕊️', gradient: ['#A855F7', '#9333EA'], primaryColor: '#A855F7', lightColor: '#F3E8FF' },
+  'Naturkunskap': { emoji: '🌿', gradient: ['#22C55E', '#16A34A'], primaryColor: '#22C55E', lightColor: '#DCFCE7' },
+  'Geografi': { emoji: '🗺️', gradient: ['#0EA5E9', '#0284C7'], primaryColor: '#0EA5E9', lightColor: '#E0F2FE' },
+  'Filosofi': { emoji: '🤔', gradient: ['#64748B', '#475569'], primaryColor: '#64748B', lightColor: '#F1F5F9' },
+  'Psykologi': { emoji: '🧠', gradient: ['#D946EF', '#C026D3'], primaryColor: '#D946EF', lightColor: '#FAE8FF' },
+  'Företagsekonomi': { emoji: '💼', gradient: ['#84CC16', '#65A30D'], primaryColor: '#84CC16', lightColor: '#ECFCCB' },
+  'Juridik': { emoji: '⚖️', gradient: ['#6366F1', '#4F46E5'], primaryColor: '#6366F1', lightColor: '#E0E7FF' },
+  'Teknik': { emoji: '⚙️', gradient: ['#78716C', '#57534E'], primaryColor: '#78716C', lightColor: '#F5F5F4' },
+  'Programmering': { emoji: '💻', gradient: ['#14B8A6', '#0D9488'], primaryColor: '#14B8A6', lightColor: '#CCFBF1' },
+  'Moderna språk': { emoji: '🗣️', gradient: ['#EC4899', '#DB2777'], primaryColor: '#EC4899', lightColor: '#FCE7F3' },
+  'Estetisk kommunikation': { emoji: '🎨', gradient: ['#F43F5E', '#E11D48'], primaryColor: '#F43F5E', lightColor: '#FFE4E6' },
+  'Musik': { emoji: '🎵', gradient: ['#8B5CF6', '#7C3AED'], primaryColor: '#8B5CF6', lightColor: '#EDE9FE' },
+  'Bild': { emoji: '🖼️', gradient: ['#F59E0B', '#D97706'], primaryColor: '#F59E0B', lightColor: '#FEF3C7' },
+  'Dans': { emoji: '💃', gradient: ['#EC4899', '#DB2777'], primaryColor: '#EC4899', lightColor: '#FCE7F3' },
+  'Teater': { emoji: '🎭', gradient: ['#8B5CF6', '#7C3AED'], primaryColor: '#8B5CF6', lightColor: '#EDE9FE' },
+  'default': { emoji: '📖', gradient: ['#6366F1', '#4F46E5'], primaryColor: '#6366F1', lightColor: '#E0E7FF' }
+};
+
+function getCourseStyle(subject: string): CourseStyle {
+  return courseStyles[subject] || courseStyles.default;
 }
 
 export default function CourseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { theme, isDark } = useTheme();
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<ModuleWithLessons[]>([]);
   const [studyGuides, setStudyGuides] = useState<StudyGuide[]>([]);
@@ -53,6 +109,7 @@ export default function CourseDetailScreen() {
   const [userProgress, setUserProgress] = useState({ completed: 0, total: 0, percentage: 0 });
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
+  const [courseStyle, setCourseStyle] = useState<CourseStyle>(courseStyles.default);
 
   useEffect(() => {
     if (id && user?.id) {
@@ -66,8 +123,7 @@ export default function CourseDetailScreen() {
       setIsLoading(true);
       console.log('Loading course data for ID:', id);
 
-      // Load course details
-      const { data: courseData, error: courseError } = await supabase
+      const { data: courseData, error: courseError} = await supabase
         .from('courses')
         .select('*')
         .eq('id', id)
@@ -80,8 +136,10 @@ export default function CourseDetailScreen() {
       }
 
       setCourse(courseData);
+      if (courseData && courseData.subject) {
+        setCourseStyle(getCourseStyle(courseData.subject));
+      }
 
-      // Load modules with lessons
       const { data: modulesData, error: modulesError } = await supabase
         .from('course_modules')
         .select(`
@@ -100,7 +158,7 @@ export default function CourseDetailScreen() {
       if (modulesError) {
         console.error('Error loading modules:', modulesError);
       } else {
-        const processedModules = modulesData?.map(module => ({
+        const processedModules: ModuleWithLessons[] = (modulesData?.map(module => ({
           ...module,
           description: module.description || '',
           lessons: (module.course_lessons || [])
@@ -112,11 +170,10 @@ export default function CourseDetailScreen() {
                 (p: any) => p.user_id === user?.id
               )
             }))
-        })) || [];
+        })) || []) as ModuleWithLessons[];
         
         setModules(processedModules);
         
-        // Calculate progress
         const totalLessons = processedModules.reduce((sum, module) => sum + module.lessons.length, 0);
         const completedLessons = processedModules.reduce(
           (sum, module) => sum + module.lessons.filter(lesson => lesson.progress?.status === 'completed').length, 
@@ -129,7 +186,6 @@ export default function CourseDetailScreen() {
           percentage: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
         });
         
-        // Animate entrance
         Animated.parallel([
           Animated.timing(fadeAnim, {
             toValue: 1,
@@ -145,7 +201,6 @@ export default function CourseDetailScreen() {
         ]).start();
       }
 
-      // Load study guides
       const { data: guidesData, error: guidesError } = await supabase
         .from('study_guides')
         .select('*')
@@ -155,7 +210,11 @@ export default function CourseDetailScreen() {
       if (guidesError) {
         console.error('Error loading study guides:', guidesError);
       } else {
-        setStudyGuides(guidesData || []);
+        const processedGuides = (guidesData || []).map(guide => ({
+          ...guide,
+          description: guide.description || ''
+        }));
+        setStudyGuides(processedGuides as StudyGuide[]);
       }
 
     } catch (error) {
@@ -176,10 +235,10 @@ export default function CourseDetailScreen() {
 
   const getDifficultyColor = (level: string) => {
     switch (level) {
-      case 'easy': return '#10B981';
-      case 'medium': return '#F59E0B';
-      case 'hard': return '#EF4444';
-      default: return '#6B7280';
+      case 'easy': return theme.colors.success;
+      case 'medium': return theme.colors.warning;
+      case 'hard': return theme.colors.error;
+      default: return theme.colors.textMuted;
     }
   };
 
@@ -189,17 +248,20 @@ export default function CourseDetailScreen() {
       case 'reading': return BookOpen;
       case 'exercise': return Target;
       case 'quiz': return Award;
+      case 'theory': return BookOpen;
+      case 'practical': return Target;
       default: return FileText;
     }
   };
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
         <Stack.Screen options={{ title: 'Laddar...', headerShown: true }} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4F46E5" />
-          <Text style={styles.loadingText}>Laddar kursinnehåll...</Text>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Laddar kursinnehåll...</Text>
         </View>
       </SafeAreaView>
     );
@@ -207,12 +269,13 @@ export default function CourseDetailScreen() {
 
   if (!course) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
         <Stack.Screen options={{ title: 'Kurs ej hittad', headerShown: true }} />
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Kursen kunde inte hittas</Text>
+          <Text style={[styles.errorText, { color: theme.colors.error }]}>Kursen kunde inte hittas</Text>
           <TouchableOpacity 
-            style={styles.backButton}
+            style={[styles.backButton, { backgroundColor: theme.colors.primary }]}
             onPress={() => router.back()}
           >
             <Text style={styles.backButtonText}>Gå tillbaka</Text>
@@ -223,18 +286,18 @@ export default function CourseDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <Stack.Screen 
         options={{ 
           title: course.title,
           headerShown: true,
-          headerStyle: { backgroundColor: '#4F46E5' },
+          headerStyle: { backgroundColor: courseStyle.primaryColor },
           headerTintColor: 'white'
         }} 
       />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Course Header */}
         <Animated.View 
           style={{
             opacity: fadeAnim,
@@ -242,16 +305,20 @@ export default function CourseDetailScreen() {
           }}
         >
         <LinearGradient
-          colors={['#4F46E5', '#7C3AED']}
+          colors={courseStyle.gradient as any}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.courseHeader}
         >
-          <Text style={styles.courseTitle}>{course.title}</Text>
-          <Text style={styles.courseSubject}>{course.subject}</Text>
+          <View style={styles.courseTitleRow}>
+            <Text style={styles.courseEmoji}>{courseStyle.emoji}</Text>
+            <View style={styles.courseTitleContainer}>
+              <Text style={styles.courseTitle}>{course.title}</Text>
+              <Text style={styles.courseSubject}>{course.subject}</Text>
+            </View>
+          </View>
           <Text style={styles.courseDescription}>{course.description}</Text>
           
-          {/* Progress */}
           <View style={styles.progressSection}>
             <View style={styles.progressInfo}>
               <Text style={styles.progressLabel}>Framsteg</Text>
@@ -267,7 +334,6 @@ export default function CourseDetailScreen() {
             </Text>
           </View>
           
-          {/* Quick Stats */}
           <View style={styles.quickStats}>
             <View style={styles.quickStatItem}>
               <TrendingUp size={16} color="rgba(255, 255, 255, 0.9)" />
@@ -287,7 +353,6 @@ export default function CourseDetailScreen() {
         </LinearGradient>
         </Animated.View>
 
-        {/* Course Stats */}
         <Animated.View 
           style={[
             styles.statsContainer,
@@ -302,38 +367,37 @@ export default function CourseDetailScreen() {
             }
           ]}
         >
-          <View style={styles.statItem}>
-            <BookOpen size={20} color="#4F46E5" />
-            <Text style={styles.statNumber}>{modules.length}</Text>
-            <Text style={styles.statLabel}>Moduler</Text>
+          <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
+            <BookOpen size={20} color={courseStyle.primaryColor} />
+            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{modules.length}</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Moduler</Text>
           </View>
-          <View style={styles.statItem}>
-            <Clock size={20} color="#4F46E5" />
-            <Text style={styles.statNumber}>
+          <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
+            <Clock size={20} color={courseStyle.primaryColor} />
+            <Text style={[styles.statNumber, { color: theme.colors.text }]}>
               {modules.reduce((sum, m) => sum + m.estimated_hours, 0)}h
             </Text>
-            <Text style={styles.statLabel}>Uppskattad tid</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Uppskattad tid</Text>
           </View>
-          <View style={styles.statItem}>
-            <FileText size={20} color="#4F46E5" />
-            <Text style={styles.statNumber}>{studyGuides.length}</Text>
-            <Text style={styles.statLabel}>Studiehjälpmedel</Text>
+          <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
+            <FileText size={20} color={courseStyle.primaryColor} />
+            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{studyGuides.length}</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Studiehjälpmedel</Text>
           </View>
         </Animated.View>
 
-        {/* Study Guides */}
         {studyGuides.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📚 Studiehjälpmedel</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>📚 Studiehjälpmedel</Text>
             {studyGuides.map((guide) => (
               <TouchableOpacity
                 key={guide.id}
-                style={styles.guideCard}
+                style={[styles.guideCard, { backgroundColor: theme.colors.card }]}
                 onPress={() => navigateToStudyGuide(guide)}
               >
                 <View style={styles.guideInfo}>
-                  <Text style={styles.guideTitle}>{guide.title}</Text>
-                  <Text style={styles.guideDescription}>{guide.description}</Text>
+                  <Text style={[styles.guideTitle, { color: theme.colors.text }]}>{guide.title}</Text>
+                  <Text style={[styles.guideDescription, { color: theme.colors.textSecondary }]}>{guide.description}</Text>
                   <View style={styles.guideMetadata}>
                     <View style={[
                       styles.difficultyBadge, 
@@ -344,29 +408,27 @@ export default function CourseDetailScreen() {
                          guide.difficulty_level === 'medium' ? 'Medel' : 'Svår'}
                       </Text>
                     </View>
-                    <Text style={styles.readTime}>{guide.estimated_read_time} min</Text>
+                    <Text style={[styles.readTime, { color: theme.colors.textSecondary }]}>{guide.estimated_read_time} min</Text>
                   </View>
                 </View>
-                <ChevronRight size={20} color="#9CA3AF" />
+                <ChevronRight size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
             ))}
           </View>
         )}
 
-        {/* Course Modules */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📖 Kursinnehåll</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>📖 Kursinnehåll</Text>
           {modules.map((module, moduleIndex) => (
-            <View key={module.id} style={styles.moduleCard}>
-              <View style={styles.moduleHeader}>
-                <Text style={styles.moduleTitle}>
+            <View key={module.id} style={[styles.moduleCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.moduleHeader, { borderBottomColor: theme.colors.border }]}>
+                <Text style={[styles.moduleTitle, { color: theme.colors.text }]}>
                   {moduleIndex + 1}. {module.title}
                 </Text>
-                {module.description && <Text style={styles.moduleDescription}>{module.description}</Text>}
-                <Text style={styles.moduleHours}>{module.estimated_hours}h uppskattad tid</Text>
+                {module.description && <Text style={[styles.moduleDescription, { color: theme.colors.textSecondary }]}>{module.description}</Text>}
+                <Text style={[styles.moduleHours, { color: theme.colors.textMuted }]}>{module.estimated_hours}h uppskattad tid</Text>
               </View>
               
-              {/* Lessons */}
               <View style={styles.lessonsContainer}>
                 {module.lessons.map((lesson, lessonIndex) => {
                   const LessonIcon = getLessonTypeIcon(lesson.lesson_type);
@@ -379,9 +441,10 @@ export default function CourseDetailScreen() {
                       key={lesson.id}
                       style={[
                         styles.lessonCard,
-                        isCompleted && styles.lessonCompleted,
-                        isInProgress && styles.lessonInProgress,
-                        isLocked && styles.lessonLocked
+                        { backgroundColor: theme.colors.surface },
+                        isCompleted && { backgroundColor: courseStyle.lightColor, borderColor: courseStyle.primaryColor, borderLeftWidth: 4 },
+                        isInProgress && { backgroundColor: theme.colors.warning + '15', borderColor: theme.colors.warning, borderLeftWidth: 4 },
+                        isLocked && { backgroundColor: theme.colors.borderLight, opacity: 0.6 }
                       ]}
                       onPress={() => !isLocked && navigateToLesson(lesson)}
                       activeOpacity={isLocked ? 1 : 0.7}
@@ -389,35 +452,36 @@ export default function CourseDetailScreen() {
                       <View style={styles.lessonLeft}>
                         <View style={styles.lessonIconContainer}>
                           {isLocked ? (
-                            <Lock size={20} color="#9CA3AF" />
+                            <Lock size={20} color={theme.colors.textMuted} />
                           ) : isCompleted ? (
-                            <CheckCircle size={20} color="#10B981" />
+                            <CheckCircle size={20} color={courseStyle.primaryColor} />
                           ) : isInProgress ? (
-                            <Circle size={20} color="#F59E0B" />
+                            <Circle size={20} color={theme.colors.warning} />
                           ) : (
-                            <LessonIcon size={20} color="#6B7280" />
+                            <LessonIcon size={20} color={theme.colors.textSecondary} />
                           )}
                         </View>
                         <View style={styles.lessonInfo}>
                           <View style={styles.lessonTitleRow}>
                             <Text style={[
                               styles.lessonTitle,
-                              isCompleted && styles.lessonTitleCompleted,
-                              isLocked && styles.lessonTitleLocked
+                              { color: theme.colors.text },
+                              isCompleted && { color: courseStyle.primaryColor },
+                              isLocked && { color: theme.colors.textMuted }
                             ]}>
                               {lessonIndex + 1}. {lesson.title}
                             </Text>
                             {isLocked && (
-                              <View style={styles.lockedBadge}>
-                                <Text style={styles.lockedBadgeText}>Låst</Text>
+                              <View style={[styles.lockedBadge, { backgroundColor: theme.colors.borderLight }]}>
+                                <Text style={[styles.lockedBadgeText, { color: theme.colors.textMuted }]}>Låst</Text>
                               </View>
                             )}
                           </View>
-                          <Text style={styles.lessonDescription}>
+                          <Text style={[styles.lessonDescription, { color: theme.colors.textSecondary }]}>
                             {lesson.description}
                           </Text>
                           <View style={styles.lessonMetadata}>
-                            <Text style={styles.lessonDuration}>
+                            <Text style={[styles.lessonDuration, { color: theme.colors.textMuted }]}>
                               {lesson.estimated_minutes} min
                             </Text>
                             <View style={[
@@ -432,7 +496,7 @@ export default function CourseDetailScreen() {
                           </View>
                         </View>
                       </View>
-                      <ChevronRight size={20} color="#9CA3AF" />
+                      <ChevronRight size={20} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                   );
                 })}
@@ -443,9 +507,9 @@ export default function CourseDetailScreen() {
 
         {modules.length === 0 && (
           <View style={styles.emptyState}>
-            <BookOpen size={64} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>Inget innehåll tillgängligt</Text>
-            <Text style={styles.emptyText}>
+            <BookOpen size={64} color={theme.colors.textMuted} />
+            <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Inget innehåll tillgängligt</Text>
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
               Det finns inget kursinnehåll tillgängligt för denna kurs än.
             </Text>
           </View>
@@ -458,7 +522,6 @@ export default function CourseDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
   },
   loadingContainer: {
     flex: 1,
@@ -469,7 +532,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#6B7280',
   },
   errorContainer: {
     flex: 1,
@@ -479,12 +541,10 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: '#EF4444',
     marginBottom: 20,
     textAlign: 'center',
   },
   backButton: {
-    backgroundColor: '#4F46E5',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -492,7 +552,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   content: {
     flex: 1,
@@ -502,11 +562,23 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    shadowColor: '#4F46E5',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
+  },
+  courseTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  courseEmoji: {
+    fontSize: 40,
+    marginRight: 16,
+  },
+  courseTitleContainer: {
+    flex: 1,
   },
   quickStats: {
     flexDirection: 'row',
@@ -521,18 +593,17 @@ const styles = StyleSheet.create({
   quickStatText: {
     fontSize: 13,
     color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   courseTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
     color: 'white',
     marginBottom: 4,
   },
   courseSubject: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 8,
   },
   courseDescription: {
     fontSize: 16,
@@ -554,12 +625,12 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
+    fontWeight: '500' as const,
   },
   progressPercent: {
     fontSize: 18,
     color: 'white',
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
   },
   progressBar: {
     height: 8,
@@ -584,7 +655,6 @@ const styles = StyleSheet.create({
   },
   statItem: {
     flex: 1,
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -596,14 +666,12 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontWeight: 'bold' as const,
     marginTop: 8,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#6B7280',
     textAlign: 'center',
   },
   section: {
@@ -612,12 +680,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontWeight: 'bold' as const,
     marginBottom: 16,
   },
   guideCard: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -634,13 +700,11 @@ const styles = StyleSheet.create({
   },
   guideTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontWeight: '600' as const,
     marginBottom: 4,
   },
   guideDescription: {
     fontSize: 14,
-    color: '#6B7280',
     marginBottom: 8,
   },
   guideMetadata: {
@@ -656,15 +720,13 @@ const styles = StyleSheet.create({
   difficultyText: {
     fontSize: 10,
     color: 'white',
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
   },
   readTime: {
     fontSize: 12,
-    color: '#6B7280',
   },
   moduleCard: {
-    backgroundColor: 'white',
     borderRadius: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -676,23 +738,19 @@ const styles = StyleSheet.create({
   moduleHeader: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   moduleTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontWeight: 'bold' as const,
     marginBottom: 4,
   },
   moduleDescription: {
     fontSize: 14,
-    color: '#6B7280',
     marginBottom: 8,
   },
   moduleHours: {
     fontSize: 12,
-    color: '#9CA3AF',
-    fontStyle: 'italic',
+    fontStyle: 'italic' as const,
   },
   lessonsContainer: {
     padding: 16,
@@ -703,23 +761,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
-    backgroundColor: '#F9FAFB',
     borderWidth: 1,
     borderColor: 'transparent',
-  },
-  lessonCompleted: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#10B981',
-    borderLeftWidth: 4,
-  },
-  lessonInProgress: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#F59E0B',
-    borderLeftWidth: 4,
-  },
-  lessonLocked: {
-    backgroundColor: '#F3F4F6',
-    opacity: 0.6,
   },
   lessonLeft: {
     flex: 1,
@@ -734,15 +777,8 @@ const styles = StyleSheet.create({
   },
   lessonTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontWeight: '600' as const,
     marginBottom: 2,
-  },
-  lessonTitleCompleted: {
-    color: '#059669',
-  },
-  lessonTitleLocked: {
-    color: '#9CA3AF',
   },
   lessonTitleRow: {
     flexDirection: 'row',
@@ -752,20 +788,17 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   lockedBadge: {
-    backgroundColor: '#E5E7EB',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
   },
   lockedBadgeText: {
     fontSize: 10,
-    color: '#6B7280',
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
   },
   lessonDescription: {
     fontSize: 12,
-    color: '#6B7280',
     marginBottom: 6,
   },
   lessonMetadata: {
@@ -775,7 +808,6 @@ const styles = StyleSheet.create({
   },
   lessonDuration: {
     fontSize: 10,
-    color: '#9CA3AF',
   },
   emptyState: {
     alignItems: 'center',
@@ -784,14 +816,12 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontWeight: 'bold' as const,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
-    color: '#6B7280',
     textAlign: 'center',
     lineHeight: 24,
   },

@@ -667,7 +667,49 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       if (!authUser) return;
       
-      // Create local pomodoro session
+      console.log('Adding pomodoro session:', session);
+      
+      // Test database connection
+      const dbConnected = await testDatabaseConnection();
+      
+      if (dbConnected) {
+        console.log('Saving pomodoro session to database');
+        
+        // Save to database
+        const { data, error } = await supabase
+          .from('pomodoro_sessions')
+          .insert({
+            user_id: authUser.id,
+            course_id: session.courseId || null,
+            duration: session.duration,
+            start_time: session.startTime,
+            end_time: session.endTime
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error saving pomodoro session to database:', error);
+          throw error;
+        }
+        
+        if (data) {
+          // Add to local state with database ID
+          const dbSession: PomodoroSession = {
+            id: data.id,
+            courseId: data.course_id || undefined,
+            duration: data.duration,
+            startTime: data.start_time,
+            endTime: data.end_time
+          };
+          
+          setPomodoroSessions(prev => [dbSession, ...prev]);
+          console.log('Pomodoro session saved to database successfully');
+          return;
+        }
+      }
+      
+      // Fallback: Create local pomodoro session if database is not available
       const localSession: PomodoroSession = {
         id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         courseId: session.courseId,
@@ -677,7 +719,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       };
       
       setPomodoroSessions(prev => [localSession, ...prev]);
-      console.log('Pomodoro session created locally');
+      console.log('Pomodoro session created locally (database not available)');
       
     } catch (error) {
       console.error('Error adding pomodoro session:', error);

@@ -436,9 +436,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger to update course progress when lesson progress changes
-CREATE TRIGGER update_course_progress_trigger
-  AFTER INSERT OR UPDATE OF status ON user_lesson_progress
+-- Trigger to update course progress when lesson is completed (INSERT)
+CREATE TRIGGER update_course_progress_on_insert
+  AFTER INSERT ON user_lesson_progress
+  FOR EACH ROW
+  WHEN (NEW.status = 'completed')
+  EXECUTE FUNCTION update_course_progress();
+
+-- Trigger to update course progress when lesson status changes (UPDATE)
+CREATE TRIGGER update_course_progress_on_update
+  AFTER UPDATE OF status ON user_lesson_progress
   FOR EACH ROW
   WHEN (NEW.status = 'completed' OR OLD.status = 'completed')
   EXECUTE FUNCTION update_course_progress();

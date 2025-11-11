@@ -189,10 +189,22 @@ export default function OnboardingScreen() {
     if (data.studyLevel && data.displayName && data.username && usernameAvailable) {
       try {
         console.log('Completing onboarding with data:', data);
+        console.log('Selected courses:', Array.from(data.selectedCourses));
+        
         const programName = data.gymnasiumProgram ? 
           `${data.gymnasiumProgram.name} - År ${data.gymnasiumGrade}` : 
           data.program || 'Ej valt';
         
+        // Get the gymnasium for selected courses data
+        const gymnasium: Gymnasium = data.gymnasium || { 
+          id: 'default', 
+          name: 'Gymnasie', 
+          type: 'kommunal', 
+          city: '', 
+          municipality: '' 
+        };
+        
+        // Complete onboarding with user data
         await completeOnboarding({
           name: data.displayName,
           username: data.username,
@@ -202,10 +214,83 @@ export default function OnboardingScreen() {
           program: programName,
           purpose: [...data.goals, ...data.purpose].join(', ') || 'Allmän studiehjälp',
           subscriptionType: 'free',
-          gymnasium: data.gymnasium,
+          gymnasium: gymnasium,
           avatar: { emoji: '😊' },
           selectedCourses: Array.from(data.selectedCourses)
         });
+        
+        // Sync courses to Supabase using the same logic as CoursePickerModal
+        if (data.selectedCourses.size > 0 && user?.id) {
+          console.log('Syncing selected courses to Supabase...');
+          
+          for (const courseId of Array.from(data.selectedCourses)) {
+            // Find the course data from available courses
+            const courseData = availableCourses.find(c => c.id === courseId);
+            if (!courseData) continue;
+            
+            // Extract subject from course name
+            const subject = extractSubjectFromCourseName(courseData.name);
+            
+            // Check if course exists in database
+            const { data: existingCourse } = await supabase
+              .from('courses')
+              .select('id')
+              .eq('id', courseData.code)
+              .maybeSingle();
+            
+            if (!existingCourse) {
+              console.log('Creating course in database:', courseData.code);
+              const { error: insertError } = await supabase
+                .from('courses')
+                .insert({
+                  id: courseData.code,
+                  course_code: courseData.code,
+                  title: courseData.name,
+                  description: `${courseData.name} - ${courseData.points} poäng`,
+                  subject: subject,
+                  level: 'gymnasie',
+                  points: courseData.points,
+                  resources: ['Kursmaterial', 'Övningsuppgifter'],
+                  tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+                  related_courses: [],
+                  progress: 0
+                });
+              
+              if (insertError) {
+                console.error('Error inserting course:', insertError);
+              }
+            }
+            
+            // Check if user already has this course
+            const { data: userCourseExists } = await supabase
+              .from('user_courses')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('course_id', courseData.code)
+              .maybeSingle();
+            
+            if (!userCourseExists) {
+              console.log('Creating user course record:', courseData.code);
+              const userCourseId = `${user.id}-${courseData.code}`;
+              const { error: userCourseError } = await supabase
+                .from('user_courses')
+                .insert({
+                  id: userCourseId,
+                  user_id: user.id,
+                  course_id: courseData.code,
+                  is_active: true,
+                  progress: 0
+                });
+              
+              if (userCourseError) {
+                console.error('Error creating user course:', userCourseError);
+              }
+            }
+          }
+          
+          console.log('Successfully synced courses to Supabase');
+        }
+        
         console.log('Onboarding completed successfully');
         router.replace('/(tabs)/home');
       } catch (error) {
@@ -213,6 +298,40 @@ export default function OnboardingScreen() {
         showError('Något gick fel. Försök igen.');
       }
     }
+  };
+  
+  const extractSubjectFromCourseName = (name: string): string => {
+    const subjectKeywords: Record<string, string> = {
+      'Engelska': 'Engelska',
+      'Historia': 'Historia',
+      'Idrott': 'Idrott och hälsa',
+      'Matematik': 'Matematik',
+      'Naturkunskap': 'Naturkunskap',
+      'Religionskunskap': 'Religionskunskap',
+      'Samhällskunskap': 'Samhällskunskap',
+      'Svenska': 'Svenska',
+      'Biologi': 'Biologi',
+      'Fysik': 'Fysik',
+      'Kemi': 'Kemi',
+      'Teknik': 'Teknik',
+      'Programmering': 'Teknik',
+      'Webbutveckling': 'Teknik',
+      'Filosofi': 'Filosofi',
+      'Psykologi': 'Psykologi',
+      'Företagsekonomi': 'Företagsekonomi',
+      'Juridik': 'Juridik',
+      'Spanska': 'Moderna språk',
+      'Franska': 'Moderna språk',
+      'Tyska': 'Moderna språk',
+    };
+    
+    for (const [keyword, subject] of Object.entries(subjectKeywords)) {
+      if (name.includes(keyword)) {
+        return subject;
+      }
+    }
+    
+    return 'Övrigt';
   };
 
   const toggleSelection = (array: string[], item: string, key: 'goals' | 'purpose') => {

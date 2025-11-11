@@ -28,7 +28,9 @@ import {
   ArrowRight,
   User,
   Crown,
-  Flame
+  Flame,
+  Award,
+  Edit3
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -102,11 +104,13 @@ export default function CoursesScreen() {
       } else {
         const coursesWithProgress = userCoursesData?.map(userCourse => ({
           id: userCourse.courses.id,
+          userCourseId: userCourse.id,
           title: userCourse.courses.title,
           description: userCourse.courses.description,
           subject: userCourse.courses.subject,
           level: userCourse.courses.level,
           progress: userCourse.progress,
+          targetGrade: userCourse.target_grade,
           isActive: userCourse.is_active,
           resources: userCourse.courses.resources || [],
           tips: userCourse.courses.tips || [],
@@ -492,7 +496,13 @@ export default function CoursesScreen() {
                         <Text style={[styles.courseTitle, { color: theme.colors.text }]}>{course.title}</Text>
                         <Text style={[styles.courseSubject, { color: theme.colors.textSecondary }]}>{course.subject}</Text>
                       </View>
-                      <View style={styles.courseProgressContainer}>
+                      <View style={styles.courseMetaContainer}>
+                        {course.targetGrade && (
+                          <View style={[styles.targetGradeBadge, { backgroundColor: theme.colors.success + '20' }]}>
+                            <Award size={14} color={theme.colors.success} />
+                            <Text style={[styles.targetGradeText, { color: theme.colors.success }]}>Mål: {course.targetGrade}</Text>
+                          </View>
+                        )}
                         <Text style={[styles.courseProgress, { color: theme.colors.primary }]}>{course.progress}%</Text>
                       </View>
                     </View>
@@ -755,6 +765,22 @@ const styles = StyleSheet.create({
   },
   courseProgressContainer: {
     alignItems: 'flex-end',
+  },
+  courseMetaContainer: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  targetGradeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  targetGradeText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
   },
   courseProgress: {
     fontSize: 16,

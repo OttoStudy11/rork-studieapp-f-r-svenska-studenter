@@ -176,6 +176,7 @@ export interface Database {
           user_id: string
           course_id: string
           progress: number
+          target_grade: string | null
           is_active: boolean
         }
         Insert: {
@@ -183,6 +184,7 @@ export interface Database {
           user_id: string
           course_id: string
           progress?: number
+          target_grade?: string | null
           is_active?: boolean
         }
         Update: {
@@ -190,6 +192,7 @@ export interface Database {
           user_id?: string
           course_id?: string
           progress?: number
+          target_grade?: string | null
           is_active?: boolean
         }
         Relationships: [

@@ -9,7 +9,11 @@ import {
   Alert,
   ActivityIndicator,
   Animated,
-  StatusBar
+  StatusBar,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,7 +31,10 @@ import {
   TrendingUp,
   Star,
   Lock,
-  Award
+  Award,
+  Edit3,
+  Save,
+  X as CloseIcon
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Database } from '@/lib/database.types';
@@ -110,6 +117,10 @@ export default function CourseDetailScreen() {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
   const [courseStyle, setCourseStyle] = useState<CourseStyle>(courseStyles.default);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editProgress, setEditProgress] = useState<string>('0');
+  const [editTargetGrade, setEditTargetGrade] = useState<string>('');
+  const [userCourseData, setUserCourseData] = useState<any>(null);
 
   useEffect(() => {
     if (id && user?.id) {
@@ -138,6 +149,21 @@ export default function CourseDetailScreen() {
       setCourse(courseData);
       if (courseData && courseData.subject) {
         setCourseStyle(getCourseStyle(courseData.subject));
+      }
+
+      const { data: userCourse, error: userCourseError } = await supabase
+        .from('user_courses')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('course_id', id || '')
+        .single();
+
+      if (userCourseError) {
+        console.error('Error loading user course:', userCourseError);
+      } else {
+        setUserCourseData(userCourse);
+        setEditProgress(userCourse?.progress?.toString() || '0');
+        setEditTargetGrade(userCourse?.target_grade || '');
       }
 
       const { data: modulesData, error: modulesError } = await supabase
@@ -233,6 +259,38 @@ export default function CourseDetailScreen() {
     router.push(`/study-guide/${guide.id}`);
   };
 
+  const handleSaveProgress = async () => {
+    try {
+      const progressValue = parseInt(editProgress, 10);
+      if (isNaN(progressValue) || progressValue < 0 || progressValue > 100) {
+        Alert.alert('Fel', 'Progress måste vara ett tal mellan 0 och 100');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('user_courses')
+        .update({
+          progress: progressValue,
+          target_grade: editTargetGrade || null
+        })
+        .eq('user_id', user!.id)
+        .eq('course_id', id || '');
+
+      if (error) {
+        console.error('Error updating course:', error);
+        Alert.alert('Fel', 'Kunde inte uppdatera kursen');
+        return;
+      }
+
+      Alert.alert('Framgång! ✅', 'Kursinformation har uppdaterats');
+      setShowEditModal(false);
+      await loadCourseData();
+    } catch (error) {
+      console.error('Error in handleSaveProgress:', error);
+      Alert.alert('Fel', 'Ett oväntat fel inträffade');
+    }
+  };
+
   const getDifficultyColor = (level: string) => {
     switch (level) {
       case 'easy': return theme.colors.success;
@@ -304,6 +362,7 @@ export default function CourseDetailScreen() {
             transform: [{ translateY: slideAnim }]
           }}
         >
+        <View>
         <LinearGradient
           colors={courseStyle.gradient as any}
           start={{ x: 0, y: 0 }}
@@ -319,20 +378,22 @@ export default function CourseDetailScreen() {
           </View>
           <Text style={styles.courseDescription}>{course.description}</Text>
           
-          <View style={styles.progressSection}>
-            <View style={styles.progressInfo}>
-              <Text style={styles.progressLabel}>Framsteg</Text>
-              <Text style={styles.progressPercent}>{userProgress.percentage}%</Text>
+          {userCourseData && (
+            <View style={styles.progressSection}>
+              <View style={styles.progressInfo}>
+                <Text style={styles.progressLabel}>Kursframståg</Text>
+                <Text style={styles.progressPercent}>{userCourseData.progress}%</Text>
+              </View>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[styles.progressFill, { width: `${userCourseData.progress}%` }]} 
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {userProgress.completed} av {userProgress.total} lektioner slutförda
+              </Text>
             </View>
-            <View style={styles.progressBar}>
-              <View 
-                style={[styles.progressFill, { width: `${userProgress.percentage}%` }]} 
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {userProgress.completed} av {userProgress.total} lektioner slutförda
-            </Text>
-          </View>
+          )}
           
           <View style={styles.quickStats}>
             <View style={styles.quickStatItem}>
@@ -349,8 +410,24 @@ export default function CourseDetailScreen() {
                 </Text>
               </View>
             )}
+            {userCourseData?.target_grade && (
+              <View style={styles.quickStatItem}>
+                <Award size={16} color="#FCD34D" />
+                <Text style={styles.quickStatText}>
+                  Mål: {userCourseData.target_grade}
+                </Text>
+              </View>
+            )}
           </View>
         </LinearGradient>
+        
+        <TouchableOpacity
+          style={[styles.editButton, { backgroundColor: 'rgba(255, 255, 255, 0.9)' }]}
+          onPress={() => setShowEditModal(true)}
+        >
+          <Edit3 size={20} color={courseStyle.primaryColor} />
+        </TouchableOpacity>
+        </View>
         </Animated.View>
 
         <Animated.View 
@@ -515,6 +592,95 @@ export default function CourseDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContainer}>
+            <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Redigera kursinformation</Text>
+                <TouchableOpacity
+                  style={[styles.modalCloseButton, { backgroundColor: theme.colors.borderLight }]}
+                  onPress={() => setShowEditModal(false)}
+                >
+                  <CloseIcon size={20} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalBody}>
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Framståg (%)</Text>
+                  <TextInput
+                    style={[styles.input, { 
+                      backgroundColor: theme.colors.surface, 
+                      color: theme.colors.text,
+                      borderColor: theme.colors.border
+                    }]}
+                    value={editProgress}
+                    onChangeText={setEditProgress}
+                    keyboardType="numeric"
+                    placeholder="0-100"
+                    placeholderTextColor={theme.colors.textMuted}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Målbetyg</Text>
+                  <View style={styles.gradeButtons}>
+                    {['A', 'B', 'C', 'D', 'E', 'F'].map((grade) => (
+                      <TouchableOpacity
+                        key={grade}
+                        style={[
+                          styles.gradeButton,
+                          { borderColor: theme.colors.border },
+                          editTargetGrade === grade && {
+                            backgroundColor: courseStyle.primaryColor,
+                            borderColor: courseStyle.primaryColor
+                          }
+                        ]}
+                        onPress={() => setEditTargetGrade(grade === editTargetGrade ? '' : grade)}
+                      >
+                        <Text
+                          style={[
+                            styles.gradeButtonText,
+                            { color: theme.colors.text },
+                            editTargetGrade === grade && { color: 'white' }
+                          ]}
+                        >
+                          {grade}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.colors.border }]}
+                  onPress={() => setShowEditModal(false)}
+                >
+                  <Text style={[styles.modalButtonText, { color: theme.colors.text }]}>Avbryt</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalSaveButton, { backgroundColor: courseStyle.primaryColor }]}
+                  onPress={handleSaveProgress}
+                >
+                  <Text style={[styles.modalButtonText, { color: 'white' }]}>Spara</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -824,5 +990,124 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  editButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '90%',
+    maxWidth: 400,
+  },
+  modalContent: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold' as const,
+    flex: 1,
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBody: {
+    padding: 20,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+  },
+  gradeButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  gradeButton: {
+    flex: 1,
+    minWidth: 50,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gradeButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold' as const,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelButton: {
+    borderWidth: 2,
+  },
+  modalSaveButton: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
 });

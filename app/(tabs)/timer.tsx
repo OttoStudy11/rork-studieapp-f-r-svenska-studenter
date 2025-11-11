@@ -8,14 +8,15 @@ import {
   Modal,
   ScrollView,
   StatusBar,
-  Platform
+  Platform,
+  TextInput
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAchievements } from '@/contexts/AchievementContext';
-import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star } from 'lucide-react-native';
+import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import * as Notifications from 'expo-notifications';
@@ -25,6 +26,22 @@ import * as Haptics from 'expo-haptics';
 
 type TimerState = 'idle' | 'running' | 'paused';
 type SessionType = 'focus' | 'break';
+
+interface PlannedSession {
+  id: string;
+  courseId?: string;
+  courseName: string;
+  date: Date;
+  duration: number;
+  notes?: string;
+  completed: boolean;
+}
+
+interface SessionHistoryItem extends PlannedSession {
+  startTime: string;
+  endTime: string;
+  actualDuration: number;
+}
 
 interface CompletionScreenProps {
   data: {
@@ -247,6 +264,14 @@ export default function TimerScreen() {
   const [totalFocusToday, setTotalFocusToday] = useState(0);
   const [weeklyAverage, setWeeklyAverage] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+  const [showPlanner, setShowPlanner] = useState(false);
+  const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([]);
+  const [showAddSession, setShowAddSession] = useState(false);
+  const [newSessionDate, setNewSessionDate] = useState(new Date());
+  const [newSessionDuration, setNewSessionDuration] = useState(25);
+  const [newSessionCourse, setNewSessionCourse] = useState('');
+  const [newSessionNotes, setNewSessionNotes] = useState('');
+  const [expandedSectionPlanner, setExpandedSectionPlanner] = useState<'upcoming' | 'history' | null>('upcoming');
   
   // Suppress unused variable warnings for now
   void motivationalQuote;
@@ -968,6 +993,194 @@ export default function TimerScreen() {
           </LinearGradient>
         </View>
 
+        {/* Study Planner Section */}
+        <View style={styles.section}>
+          <TouchableOpacity 
+            style={styles.sectionHeaderButton}
+            onPress={() => setShowPlanner(!showPlanner)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <Calendar size={24} color={theme.colors.primary} />
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Planering & Historik</Text>
+            </View>
+            {showPlanner ? (
+              <ChevronUp size={24} color={theme.colors.textSecondary} />
+            ) : (
+              <ChevronDown size={24} color={theme.colors.textSecondary} />
+            )}
+          </TouchableOpacity>
+
+          {showPlanner && (
+            <View style={styles.plannerContainer}>
+              {/* Upcoming Sessions */}
+              <TouchableOpacity 
+                style={styles.plannerSectionHeader}
+                onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'upcoming' ? null : 'upcoming')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.plannerSectionLeft}>
+                  <Clock size={20} color={theme.colors.primary} />
+                  <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Kommande Sessioner</Text>
+                </View>
+                <View style={styles.plannerSectionRight}>
+                  <TouchableOpacity
+                    style={[styles.addSessionButton, { backgroundColor: theme.colors.primary }]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setShowAddSession(true);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Plus size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  {expandedSectionPlanner === 'upcoming' ? (
+                    <ChevronUp size={20} color={theme.colors.textSecondary} />
+                  ) : (
+                    <ChevronDown size={20} color={theme.colors.textSecondary} />
+                  )}
+                </View>
+              </TouchableOpacity>
+
+              {expandedSectionPlanner === 'upcoming' && (
+                <View style={styles.sessionsList}>
+                  {plannedSessions.filter(s => !s.completed && new Date(s.date) >= new Date()).length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <Calendar size={48} color={theme.colors.textSecondary} opacity={0.3} />
+                      <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
+                        Inga planerade sessioner än
+                      </Text>
+                      <Text style={[styles.emptyStateSubtext, { color: theme.colors.textSecondary }]}>
+                        Tryck på + för att lägga till en session
+                      </Text>
+                    </View>
+                  ) : (
+                    plannedSessions
+                      .filter(s => !s.completed && new Date(s.date) >= new Date())
+                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                      .map((session) => (
+                        <View key={session.id} style={[styles.sessionCard, { backgroundColor: theme.colors.card }]}>
+                          <View style={styles.sessionCardHeader}>
+                            <BookOpen size={20} color={theme.colors.primary} />
+                            <Text style={[styles.sessionCourseText, { color: theme.colors.text }]}>
+                              {session.courseName}
+                            </Text>
+                          </View>
+                          <View style={styles.sessionCardDetails}>
+                            <View style={styles.sessionDetailRow}>
+                              <Calendar size={16} color={theme.colors.textSecondary} />
+                              <Text style={[styles.sessionDetailText, { color: theme.colors.textSecondary }]}>
+                                {new Date(session.date).toLocaleDateString('sv-SE', { 
+                                  weekday: 'short', 
+                                  month: 'short', 
+                                  day: 'numeric'
+                                })}
+                              </Text>
+                            </View>
+                            <View style={styles.sessionDetailRow}>
+                              <Clock size={16} color={theme.colors.textSecondary} />
+                              <Text style={[styles.sessionDetailText, { color: theme.colors.textSecondary }]}>
+                                {session.duration} min
+                              </Text>
+                            </View>
+                          </View>
+                          {session.notes && (
+                            <Text style={[styles.sessionNotes, { color: theme.colors.textSecondary }]} numberOfLines={2}>
+                              {session.notes}
+                            </Text>
+                          )}
+                          <TouchableOpacity
+                            style={[styles.completeButton, { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }]}
+                            onPress={() => {
+                              setPlannedSessions(prev => 
+                                prev.map(s => s.id === session.id ? { ...s, completed: true } : s)
+                              );
+                              showSuccess('Session markerad', 'Sessionen har markerats som slutförd');
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.completeButtonText, { color: theme.colors.primary }]}>Markera som slutförd</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))
+                  )}
+                </View>
+              )}
+
+              {/* History */}
+              <TouchableOpacity 
+                style={[styles.plannerSectionHeader, { marginTop: 16 }]}
+                onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'history' ? null : 'history')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.plannerSectionLeft}>
+                  <BookOpen size={20} color={theme.colors.secondary} />
+                  <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Historik</Text>
+                </View>
+                {expandedSectionPlanner === 'history' ? (
+                  <ChevronUp size={20} color={theme.colors.textSecondary} />
+                ) : (
+                  <ChevronDown size={20} color={theme.colors.textSecondary} />
+                )}
+              </TouchableOpacity>
+
+              {expandedSectionPlanner === 'history' && (
+                <View style={styles.sessionsList}>
+                  {pomodoroSessions.length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <BookOpen size={48} color={theme.colors.textSecondary} opacity={0.3} />
+                      <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
+                        Ingen historik än
+                      </Text>
+                      <Text style={[styles.emptyStateSubtext, { color: theme.colors.textSecondary }]}>
+                        Slutför en session för att se den här
+                      </Text>
+                    </View>
+                  ) : (
+                    pomodoroSessions
+                      .slice(0, 10)
+                      .map((session) => {
+                        const courseName = session.courseId 
+                          ? courses.find((c) => c.id === session.courseId)?.title || 'Okänd kurs'
+                          : 'Allmän session';
+                        
+                        return (
+                          <View key={session.id} style={[styles.historyCard, { backgroundColor: theme.colors.card }]}>
+                            <View style={styles.historyCardHeader}>
+                              <View style={styles.historyCardLeft}>
+                                <Brain size={20} color={theme.colors.secondary} />
+                                <Text style={[styles.historyCourseText, { color: theme.colors.text }]}>
+                                  {courseName}
+                                </Text>
+                              </View>
+                              <View style={[styles.historyBadge, { backgroundColor: theme.colors.secondary + '20' }]}>
+                                <Text style={[styles.historyBadgeText, { color: theme.colors.secondary }]}>
+                                  {session.duration} min
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={styles.historyCardDetails}>
+                              <Calendar size={14} color={theme.colors.textSecondary} />
+                              <Text style={[styles.historyDetailText, { color: theme.colors.textSecondary }]}>
+                                {new Date(session.endTime).toLocaleDateString('sv-SE', { 
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </Text>
+                            </View>
+                          </View>
+                        );
+                      })
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+
         {/* Statistics Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -1230,6 +1443,154 @@ export default function TimerScreen() {
               <Text style={styles.resetButtonText}>Återställ timer</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </Modal>
+
+      {/* Add Session Modal */}
+      <Modal
+        visible={showAddSession}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Ny Studiesession</Text>
+            <TouchableOpacity onPress={() => {
+              setShowAddSession(false);
+              setNewSessionCourse('');
+              setNewSessionNotes('');
+              setNewSessionDuration(25);
+            }}>
+              <Text style={[styles.modalCloseButton, { color: theme.colors.primary }]}>Stäng</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.settingGroup}>
+              <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Kurs</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseList}>
+                <TouchableOpacity
+                  style={[
+                    styles.courseChip,
+                    !newSessionCourse && styles.courseChipActive,
+                    { 
+                      backgroundColor: !newSessionCourse ? theme.colors.primary : theme.colors.card,
+                      borderColor: !newSessionCourse ? theme.colors.primary : 'transparent'
+                    }
+                  ]}
+                  onPress={() => setNewSessionCourse('')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[
+                    styles.courseChipText,
+                    { color: !newSessionCourse ? '#FFFFFF' : theme.colors.text }
+                  ]}>Allmänt</Text>
+                </TouchableOpacity>
+                {courses.map((course) => (
+                  <TouchableOpacity
+                    key={course.id}
+                    style={[
+                      styles.courseChip,
+                      newSessionCourse === course.id && styles.courseChipActive,
+                      { 
+                        backgroundColor: newSessionCourse === course.id ? theme.colors.primary : theme.colors.card,
+                        borderColor: newSessionCourse === course.id ? theme.colors.primary : 'transparent'
+                      }
+                    ]}
+                    onPress={() => setNewSessionCourse(course.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[
+                      styles.courseChipText,
+                      { color: newSessionCourse === course.id ? '#FFFFFF' : theme.colors.text }
+                    ]}>{course.title}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <View style={styles.settingGroup}>
+              <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Längd (minuter)</Text>
+              <View style={styles.timeSelector}>
+                {[15, 25, 45, 60, 90].map((time) => (
+                  <TouchableOpacity
+                    key={time}
+                    style={[
+                      styles.timeOption,
+                      { 
+                        backgroundColor: newSessionDuration === time ? theme.colors.primary : theme.colors.card,
+                        borderWidth: 2,
+                        borderColor: newSessionDuration === time ? theme.colors.primary : 'transparent'
+                      }
+                    ]}
+                    onPress={() => setNewSessionDuration(time)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[
+                      styles.timeOptionText,
+                      { color: newSessionDuration === time ? '#FFFFFF' : theme.colors.text }
+                    ]}>{time}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.settingGroup}>
+              <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Anteckningar (valfritt)</Text>
+              <TextInput
+                style={[
+                  styles.notesInput,
+                  { 
+                    backgroundColor: theme.colors.card,
+                    color: theme.colors.text,
+                    borderColor: theme.colors.border
+                  }
+                ]}
+                placeholder="Vad ska du plugga?"
+                placeholderTextColor={theme.colors.textSecondary}
+                value={newSessionNotes}
+                onChangeText={setNewSessionNotes}
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
+            <LinearGradient
+              colors={theme.colors.gradient as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.saveButtonGradient}
+            >
+              <TouchableOpacity 
+                style={styles.saveButton} 
+                onPress={() => {
+                  const courseName = newSessionCourse 
+                    ? courses.find((c) => c.id === newSessionCourse)?.title || 'Okänd kurs'
+                    : 'Allmän session';
+                  
+                  const newSession: PlannedSession = {
+                    id: `planned-${Date.now()}`,
+                    courseId: newSessionCourse || undefined,
+                    courseName,
+                    date: newSessionDate,
+                    duration: newSessionDuration,
+                    notes: newSessionNotes || undefined,
+                    completed: false
+                  };
+                  
+                  setPlannedSessions(prev => [...prev, newSession]);
+                  setShowAddSession(false);
+                  setNewSessionCourse('');
+                  setNewSessionNotes('');
+                  setNewSessionDuration(25);
+                  showSuccess('Session planerad', `${courseName} - ${newSessionDuration} min`);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.saveButtonText}>Lägg till session</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -1917,5 +2278,168 @@ const styles = StyleSheet.create({
       android: 'Roboto',
       default: 'system',
     }),
+  },
+  sectionHeaderButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  plannerContainer: {
+    marginTop: 8,
+  },
+  plannerSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+  },
+  plannerSectionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  plannerSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  plannerSectionRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  addSessionButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sessionsList: {
+    marginTop: 12,
+    gap: 12,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: 12,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  sessionCard: {
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sessionCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  sessionCourseText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  sessionCardDetails: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 8,
+  },
+  sessionDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sessionDetailText: {
+    fontSize: 14,
+  },
+  sessionNotes: {
+    fontSize: 14,
+    marginTop: 8,
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  completeButton: {
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    marginTop: 8,
+  },
+  completeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  historyCard: {
+    borderRadius: 12,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  historyCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  historyCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  historyCourseText: {
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+  },
+  historyBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  historyBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  historyCardDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  historyDetailText: {
+    fontSize: 13,
+  },
+  notesInput: {
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    minHeight: 80,
+    textAlignVertical: 'top',
+    borderWidth: 1,
   },
 });

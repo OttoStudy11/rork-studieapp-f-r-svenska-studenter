@@ -13,7 +13,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
-import { GraduationCap, Target, Users, BookOpen, MapPin } from 'lucide-react-native';
+import { GraduationCap, BookOpen, MapPin } from 'lucide-react-native';
+import { SWEDISH_GYMNASIUMS } from '@/constants/gymnasiums';
 import { AnimatedPressable, PressableCard, RippleButton, FadeInView } from '@/components/Animations';
 import GymnasiumAndProgramPicker from '@/components/GymnasiumAndProgramPicker';
 import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
@@ -32,6 +33,7 @@ interface OnboardingData {
   goals: string[];
   purpose: string[];
   selectedCourses: Set<string>;
+  year: 1 | 2 | 3 | null;
 }
 
 const goalOptions = [
@@ -71,7 +73,8 @@ export default function OnboardingScreen() {
     program: '',
     goals: [],
     purpose: [],
-    selectedCourses: new Set()
+    selectedCourses: new Set(),
+    year: null
   });
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
@@ -102,8 +105,8 @@ export default function OnboardingScreen() {
   }, [authContext.user?.email, data.displayName]);
 
   useEffect(() => {
-    if (data.gymnasiumProgram && step === 5) {
-      console.log('Loading courses for program:', data.gymnasiumProgram.name);
+    if (data.gymnasiumProgram && data.year && step === 3) {
+      console.log('Loading courses for program:', data.gymnasiumProgram.name, 'Year:', data.year);
       const defaultGymnasium: Gymnasium = { 
         id: 'default', 
         name: 'Gymnasie', 
@@ -114,7 +117,7 @@ export default function OnboardingScreen() {
       const courses = getGymnasiumCourses(
         defaultGymnasium,
         data.gymnasiumProgram,
-        undefined
+        data.year.toString() as '1' | '2' | '3'
       );
       console.log('Available courses:', courses.length, courses.map(c => c.name));
       setAvailableCourses(courses);
@@ -127,7 +130,7 @@ export default function OnboardingScreen() {
         selectedCourses: new Set(mandatoryCourseIds)
       }));
     }
-  }, [data.gymnasiumProgram, step]);
+  }, [data.gymnasiumProgram, data.year, step]);
   
   const { user } = authContext;
   const { completeOnboarding } = studyContext;
@@ -178,7 +181,7 @@ export default function OnboardingScreen() {
   }, [data.username]);
 
   const handleNext = () => {
-    if (step < 5) {
+    if (step < 3) {
       setStep(step + 1);
     } else {
       handleComplete();
@@ -344,11 +347,17 @@ export default function OnboardingScreen() {
   const canProceed = () => {
     switch (step) {
       case 0: return data.username.length >= 3 && data.displayName.length > 0 && usernameAvailable === true;
-      case 1: return data.studyLevel !== '';
-      case 2: return data.studyLevel !== 'gymnasie' || data.gymnasiumProgram !== null;
-      case 3: return true;
-      case 4: return true;
-      case 5: return data.studyLevel !== 'gymnasie' || data.selectedCourses.size > 0;
+      case 1: 
+        if (data.studyLevel === 'gymnasie') {
+          return data.gymnasiumProgram !== null && data.year !== null;
+        }
+        return data.studyLevel === 'högskola';
+      case 2: 
+        if (data.studyLevel === 'gymnasie') {
+          return data.gymnasium !== null;
+        }
+        return true;
+      case 3: return data.studyLevel !== 'gymnasie' || data.selectedCourses.size > 0;
       default: return false;
     }
   };
@@ -410,7 +419,9 @@ export default function OnboardingScreen() {
         return (
           <View style={styles.stepContainer}>
             <BookOpen size={80} color="#4F46E5" style={styles.icon} />
-            <Text style={styles.title}>Vad studerar du?</Text>
+            <Text style={styles.title}>Välj program och årskurs</Text>
+            <Text style={styles.subtitle}>Vilken nivå studerar du på?</Text>
+            
             <View style={styles.optionsContainer}>
               <AnimatedPressable
                 style={[
@@ -441,17 +452,10 @@ export default function OnboardingScreen() {
                 </Text>
               </AnimatedPressable>
             </View>
-          </View>
-        );
-
-      case 2:
-        return (
-          <View style={styles.stepContainer}>
-            {data.studyLevel === 'gymnasie' ? (
+            
+            {data.studyLevel === 'gymnasie' && (
               <>
-                <MapPin size={60} color="#4F46E5" style={styles.icon} />
-                <Text style={styles.title}>Välj program</Text>
-                <Text style={styles.subtitle}>Välj ditt gymnasieprogram</Text>
+                <Text style={[styles.subtitle, { marginTop: 30 }]}>Välj ditt program</Text>
                 <ScrollView style={styles.programScrollView} showsVerticalScrollIndicator={false}>
                   <View style={styles.programGrid}>
                     {GYMNASIUM_PROGRAMS.map((program) => {
@@ -480,77 +484,85 @@ export default function OnboardingScreen() {
                     })}
                   </View>
                 </ScrollView>
-              </>
-            ) : (
-              <>
-                <Text style={styles.title}>
-                  Nästan klar!
-                </Text>
-                <Text style={styles.subtitle}>
-                  Vi kommer att hjälpa dig välja program och kurser i nästa steg
-                </Text>
+                
+                {data.gymnasiumProgram && (
+                  <>
+                    <Text style={[styles.subtitle, { marginTop: 20 }]}>Välj årskurs</Text>
+                    <View style={styles.yearContainer}>
+                      {[1, 2, 3].map((year) => (
+                        <AnimatedPressable
+                          key={year}
+                          style={[
+                            styles.yearButton,
+                            data.year === year && styles.selectedYearButton
+                          ]}
+                          onPress={() => setData({ ...data, year: year as 1 | 2 | 3 })}
+                        >
+                          <Text style={[
+                            styles.yearButtonText,
+                            data.year === year && styles.selectedYearButtonText
+                          ]}>
+                            År {year}
+                          </Text>
+                        </AnimatedPressable>
+                      ))}
+                    </View>
+                  </>
+                )}
               </>
             )}
           </View>
         );
 
+      case 2:
+        if (data.studyLevel !== 'gymnasie') {
+          handleComplete();
+          return null;
+        }
+        
+        return (
+          <View style={styles.stepContainer}>
+            <MapPin size={60} color="#4F46E5" style={styles.icon} />
+            <Text style={styles.title}>Välj gymnasium</Text>
+            <Text style={styles.subtitle}>Vilket gymnasium går du på?</Text>
+            <ScrollView style={styles.programScrollView} showsVerticalScrollIndicator={false}>
+              <View style={styles.programGrid}>
+                {SWEDISH_GYMNASIUMS.slice(0, 20).map((gym) => {
+                  const isSelected = data.gymnasium?.id === gym.id;
+                  
+                  return (
+                    <AnimatedPressable
+                      key={gym.id}
+                      style={[
+                        styles.programCard,
+                        isSelected && styles.selectedProgramCard
+                      ]}
+                      onPress={() => {
+                        console.log('Selected gymnasium:', gym.name);
+                        setData({ ...data, gymnasium: gym });
+                      }}
+                    >
+                      <Text style={[
+                        styles.programCardText,
+                        isSelected && styles.selectedProgramCardText
+                      ]} numberOfLines={2}>
+                        {gym.name}
+                      </Text>
+                      <Text style={[
+                        styles.programCardCity,
+                        isSelected && styles.selectedProgramCardText
+                      ]} numberOfLines={1}>
+                        {gym.city}
+                      </Text>
+                    </AnimatedPressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        );
+
       case 3:
-        return (
-          <View style={styles.stepContainer}>
-            <Target size={80} color="#4F46E5" style={styles.icon} />
-            <Text style={styles.title}>Vilka är dina mål?</Text>
-            <Text style={styles.subtitle}>Välj alla som passar dig</Text>
-            <View style={styles.multiSelectContainer}>
-              {goalOptions.map((goal) => (
-                <AnimatedPressable
-                  key={goal}
-                  style={[
-                    styles.multiSelectOption,
-                    data.goals.includes(goal) && styles.selectedMultiOption
-                  ]}
-                  onPress={() => toggleSelection(data.goals, goal, 'goals')}
-                >
-                  <Text style={[
-                    styles.multiSelectText,
-                    data.goals.includes(goal) && styles.selectedMultiText
-                  ]}>
-                    {goal}
-                  </Text>
-                </AnimatedPressable>
-              ))}
-            </View>
-          </View>
-        );
-
-      case 4:
-        return (
-          <View style={styles.stepContainer}>
-            <Users size={80} color="#4F46E5" style={styles.icon} />
-            <Text style={styles.title}>Vad vill du fokusera på?</Text>
-            <Text style={styles.subtitle}>Välj dina huvudintressen</Text>
-            <View style={styles.multiSelectContainer}>
-              {purposeOptions.map((purpose) => (
-                <AnimatedPressable
-                  key={purpose}
-                  style={[
-                    styles.multiSelectOption,
-                    data.purpose.includes(purpose) && styles.selectedMultiOption
-                  ]}
-                  onPress={() => toggleSelection(data.purpose, purpose, 'purpose')}
-                >
-                  <Text style={[
-                    styles.multiSelectText,
-                    data.purpose.includes(purpose) && styles.selectedMultiText
-                  ]}>
-                    {purpose}
-                  </Text>
-                </AnimatedPressable>
-              ))}
-            </View>
-          </View>
-        );
-
-      case 5:
         if (data.studyLevel !== 'gymnasie') {
           handleComplete();
           return null;
@@ -561,7 +573,7 @@ export default function OnboardingScreen() {
             <BookOpen size={60} color="#4F46E5" style={styles.icon} />
             <Text style={styles.title}>Välj dina kurser</Text>
             <Text style={styles.subtitle}>
-              {data.gymnasiumProgram?.name}
+              {data.gymnasiumProgram?.name} - År {data.year}
             </Text>
             <ScrollView style={styles.coursesScrollView} showsVerticalScrollIndicator={false}>
               <View style={styles.coursesContainer}>
@@ -608,7 +620,7 @@ export default function OnboardingScreen() {
                 {availableCourses.length === 0 && (
                   <View style={styles.noCoursesContainer}>
                     <Text style={styles.noCoursesText}>
-                      Välj program för att se tillgängliga kurser
+                      Välj program och årskurs för att se tillgängliga kurser
                     </Text>
                   </View>
                 )}
@@ -622,6 +634,8 @@ export default function OnboardingScreen() {
             </View>
           </View>
         );
+
+
 
       default:
         return null;
@@ -637,9 +651,9 @@ export default function OnboardingScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 6 : 5)) * 100}%` }]} />
+              <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 4 : 2)) * 100}%` }]} />
             </View>
-            <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '6' : '5'}</Text>
+            <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '4' : '2'}</Text>
           </View>
 
           <FadeInView key={step} duration={300}>
@@ -667,7 +681,7 @@ export default function OnboardingScreen() {
               rippleOpacity={0.2}
             >
               <Text style={styles.nextButtonText}>
-                {step === (data.studyLevel === 'gymnasie' ? 5 : 4) ? 'Slutför' : 'Nästa'}
+                {step === (data.studyLevel === 'gymnasie' ? 3 : 1) ? 'Slutför' : 'Nästa'}
               </Text>
             </RippleButton>
           </View>
@@ -891,7 +905,40 @@ const styles = StyleSheet.create({
     color: '#374151',
     textAlign: 'center',
   },
+  programCardCity: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 4,
+  },
   selectedProgramCardText: {
+    color: '#4F46E5',
+  },
+  yearContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  yearButton: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedYearButton: {
+    backgroundColor: 'white',
+    borderColor: '#4F46E5',
+  },
+  yearButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    textAlign: 'center',
+  },
+  selectedYearButtonText: {
     color: '#4F46E5',
   },
   coursesScrollView: {

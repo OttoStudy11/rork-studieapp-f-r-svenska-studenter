@@ -11,6 +11,7 @@ import {
   Platform,
   TextInput
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -272,6 +273,8 @@ export default function TimerScreen() {
   const [newSessionCourse, setNewSessionCourse] = useState('');
   const [newSessionNotes, setNewSessionNotes] = useState('');
   const [expandedSectionPlanner, setExpandedSectionPlanner] = useState<'upcoming' | 'history' | null>('upcoming');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   
   // Suppress unused variable warnings for now
   void motivationalQuote;
@@ -1460,6 +1463,9 @@ export default function TimerScreen() {
               setNewSessionCourse('');
               setNewSessionNotes('');
               setNewSessionDuration(25);
+              setNewSessionDate(new Date());
+              setShowDatePicker(false);
+              setShowTimePicker(false);
             }}>
               <Text style={[styles.modalCloseButton, { color: theme.colors.primary }]}>Stäng</Text>
             </TouchableOpacity>
@@ -1536,6 +1542,87 @@ export default function TimerScreen() {
             </View>
 
             <View style={styles.settingGroup}>
+              <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Datum & Tid</Text>
+              <View style={styles.dateTimeContainer}>
+                <TouchableOpacity
+                  style={[styles.dateTimeButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                  onPress={() => setShowDatePicker(true)}
+                  activeOpacity={0.7}
+                >
+                  <Calendar size={20} color={theme.colors.primary} />
+                  <Text style={[styles.dateTimeButtonText, { color: theme.colors.text }]}>
+                    {newSessionDate.toLocaleDateString('sv-SE', { 
+                      weekday: 'short',
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.dateTimeButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                  onPress={() => setShowTimePicker(true)}
+                  activeOpacity={0.7}
+                >
+                  <Clock size={20} color={theme.colors.secondary} />
+                  <Text style={[styles.dateTimeButtonText, { color: theme.colors.text }]}>
+                    {newSessionDate.toLocaleTimeString('sv-SE', { 
+                      hour: '2-digit', 
+                      minute: '2-digit'
+                    })}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              
+              {(Platform.OS === 'ios' || showDatePicker) && showDatePicker && (
+                <DateTimePicker
+                  value={newSessionDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  minimumDate={new Date()}
+                  onChange={(event, selectedDate) => {
+                    if (Platform.OS === 'android') {
+                      setShowDatePicker(false);
+                    }
+                    if (selectedDate) {
+                      setNewSessionDate(selectedDate);
+                    }
+                  }}
+                />
+              )}
+              
+              {(Platform.OS === 'ios' || showTimePicker) && showTimePicker && (
+                <DateTimePicker
+                  value={newSessionDate}
+                  mode="time"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, selectedTime) => {
+                    if (Platform.OS === 'android') {
+                      setShowTimePicker(false);
+                    }
+                    if (selectedTime) {
+                      setNewSessionDate(selectedTime);
+                    }
+                  }}
+                />
+              )}
+              
+              {Platform.OS === 'ios' && (showDatePicker || showTimePicker) && (
+                <TouchableOpacity
+                  style={[styles.doneButton, { backgroundColor: theme.colors.primary }]}
+                  onPress={() => {
+                    setShowDatePicker(false);
+                    setShowTimePicker(false);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.doneButtonText}>Klar</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.settingGroup}>
               <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Anteckningar (valfritt)</Text>
               <TextInput
                 style={[
@@ -1583,7 +1670,19 @@ export default function TimerScreen() {
                   setNewSessionCourse('');
                   setNewSessionNotes('');
                   setNewSessionDuration(25);
+                  setNewSessionDate(new Date());
+                  setShowDatePicker(false);
+                  setShowTimePicker(false);
                   showSuccess('Session planerad', `${courseName} - ${newSessionDuration} min`);
+                  
+                  const scheduledDate = new Date(newSessionDate);
+                  const now = new Date();
+                  if (scheduledDate > now) {
+                    const hours = Math.floor((scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60));
+                    if (hours < 24) {
+                      showAchievement('Planerad! 📅', `Session schemalagd om ${hours}h`);
+                    }
+                  }
                 }}
                 activeOpacity={0.8}
               >
@@ -2441,5 +2540,41 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
     borderWidth: 1,
+  },
+  dateTimeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dateTimeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  dateTimeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  doneButton: {
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  doneButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

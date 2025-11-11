@@ -136,11 +136,30 @@ export default function FriendsScreen() {
       console.log('Friends loaded:', friendsData?.length || 0);
       console.log('Friend requests loaded:', requestsData?.length || 0);
       
+      // Get friend IDs for progress data lookup
+      const friendIds = (friendsData || [])
+        .filter((f: any) => f.friend)
+        .map((f: any) => f.friend.id);
+      
+      // Fetch progress data for all friends
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_progress')
+        .select('user_id, total_study_time, current_streak')
+        .in('user_id', friendIds);
+      
+      if (progressError) {
+        console.warn('Could not load friend progress data:', progressError);
+      }
+      
       const mappedFriends: Friend[] = (friendsData || []).map((f: any) => {
         if (!f.friend) {
           console.warn('Friend data missing for:', f);
           return null;
         }
+        
+        // Find progress data for this friend
+        const progress = progressData?.find((p: any) => p.user_id === f.friend.id);
+        
         return {
           id: f.friend.id,
           username: f.friend.username,
@@ -148,8 +167,8 @@ export default function FriendsScreen() {
           program: f.friend.program,
           level: f.friend.level,
           avatar: f.friend.avatar_url ? JSON.parse(f.friend.avatar_url) : undefined,
-          studyTime: Math.floor(Math.random() * 500) + 100,
-          streak: Math.floor(Math.random() * 30) + 1
+          studyTime: progress?.total_study_time || 0,
+          streak: progress?.current_streak || 0
         };
       }).filter(Boolean) as Friend[];
       
@@ -172,11 +191,27 @@ export default function FriendsScreen() {
       setFriends(mappedFriends);
       setFriendRequests(mappedRequests);
       
+      // Fetch actual session counts for leaderboard
+      const { data: sessionCounts, error: sessionError } = await supabase
+        .from('study_sessions')
+        .select('user_id')
+        .in('user_id', friendIds);
+      
+      if (sessionError) {
+        console.warn('Could not load session counts:', sessionError);
+      }
+      
+      // Count sessions per user
+      const sessionCountMap: Record<string, number> = {};
+      sessionCounts?.forEach((session: any) => {
+        sessionCountMap[session.user_id] = (sessionCountMap[session.user_id] || 0) + 1;
+      });
+      
       const leaderboardData: LeaderboardEntry[] = mappedFriends
         .map((friend, index) => ({
           ...friend,
           studyTime: friend.studyTime || 0,
-          sessionCount: Math.floor(Math.random() * 50) + 10,
+          sessionCount: sessionCountMap[friend.id] || 0,
           position: index + 1
         }))
         .sort((a, b) => b.studyTime - a.studyTime)

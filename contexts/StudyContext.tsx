@@ -705,6 +705,69 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           
           setPomodoroSessions(prev => [dbSession, ...prev]);
           console.log('Pomodoro session saved to database successfully');
+          
+          // Also save to study_sessions table for progress tracking
+          try {
+            const { error: studySessionError } = await supabase
+              .from('study_sessions')
+              .insert({
+                user_id: authUser.id,
+                course_id: session.courseId || null,
+                duration_minutes: session.duration,
+                technique: 'pomodoro',
+                completed: true,
+                created_at: session.endTime
+              });
+            
+            if (studySessionError) {
+              console.warn('Could not save to study_sessions:', studySessionError);
+            } else {
+              console.log('Study session also saved for progress tracking');
+            }
+            
+            // Update user_progress table
+            const { data: existingProgress } = await supabase
+              .from('user_progress')
+              .select('total_study_time, total_sessions, current_streak, last_study_date, longest_streak')
+              .eq('user_id', authUser.id)
+              .single();
+            
+            const today = new Date().toISOString().split('T')[0];
+            const lastStudyDate = existingProgress?.last_study_date?.split('T')[0];
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            let newStreak = 1;
+            if (lastStudyDate === today) {
+              newStreak = existingProgress?.current_streak || 1;
+            } else if (lastStudyDate === yesterdayStr) {
+              newStreak = (existingProgress?.current_streak || 0) + 1;
+            }
+            
+            const { error: progressError } = await supabase
+              .from('user_progress')
+              .upsert({
+                user_id: authUser.id,
+                total_study_time: (existingProgress?.total_study_time || 0) + session.duration,
+                total_sessions: (existingProgress?.total_sessions || 0) + 1,
+                current_streak: newStreak,
+                longest_streak: Math.max(newStreak, existingProgress?.longest_streak || 0),
+                last_study_date: session.endTime,
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'user_id'
+              });
+            
+            if (progressError) {
+              console.warn('Could not update user_progress:', progressError);
+            } else {
+              console.log('User progress updated successfully');
+            }
+          } catch (progressUpdateError) {
+            console.error('Error updating progress:', progressUpdateError);
+          }
+          
           return;
         }
       }

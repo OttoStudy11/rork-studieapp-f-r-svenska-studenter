@@ -390,7 +390,28 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
         : course
     );
     await saveCourses(updatedCourses);
-  }, [courses, saveCourses]);
+    
+    // Also update in Supabase if course has a code
+    const course = courses.find(c => c.id === courseId);
+    if (course?.code && user?.id) {
+      try {
+        const progress = Math.round(((course.studiedHours + hours) / course.totalHours) * 100);
+        const { error } = await supabase
+          .from('user_courses')
+          .update({ progress })
+          .eq('user_id', user.id)
+          .eq('course_id', course.code);
+        
+        if (error) {
+          console.error('Error updating course progress in Supabase:', error);
+        } else {
+          console.log('Course progress updated in Supabase');
+        }
+      } catch (error) {
+        console.error('Exception updating course progress:', error);
+      }
+    }
+  }, [courses, saveCourses, user?.id]);
 
   // Computed values
   const coursesByYear = useMemo(() => {

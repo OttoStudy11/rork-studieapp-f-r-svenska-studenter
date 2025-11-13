@@ -419,31 +419,46 @@ export interface Database {
           id: string
           user_id: string
           course_id: string | null
-          duration_minutes: number
-          start_time: string
-          end_time: string
+          title: string
           notes: string | null
+          start_time: string
+          end_time: string | null
+          duration_minutes: number
+          status: 'planned' | 'in_progress' | 'completed' | 'cancelled'
+          completed: boolean
+          technique: 'pomodoro' | 'deep_work' | 'active_recall' | 'spaced_repetition' | 'other' | null
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
           course_id?: string | null
-          duration_minutes: number
-          start_time: string
-          end_time: string
+          title?: string
           notes?: string | null
+          start_time: string
+          end_time?: string | null
+          duration_minutes: number
+          status?: 'planned' | 'in_progress' | 'completed' | 'cancelled'
+          completed?: boolean
+          technique?: 'pomodoro' | 'deep_work' | 'active_recall' | 'spaced_repetition' | 'other' | null
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
           course_id?: string | null
-          duration_minutes?: number
-          start_time?: string
-          end_time?: string
+          title?: string
           notes?: string | null
+          start_time?: string
+          end_time?: string | null
+          duration_minutes?: number
+          status?: 'planned' | 'in_progress' | 'completed' | 'cancelled'
+          completed?: boolean
+          technique?: 'pomodoro' | 'deep_work' | 'active_recall' | 'spaced_repetition' | 'other' | null
           created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -451,6 +466,13 @@ export interface Database {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           }
         ]

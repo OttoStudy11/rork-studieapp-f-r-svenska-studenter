@@ -953,10 +953,20 @@ export default function TimerScreen() {
               
               <TouchableOpacity 
                 style={[styles.controlButton, { backgroundColor: theme.colors.card }]} 
-                onPress={() => {
+                onPress={async () => {
+                  // Skip session without counting it
                   setSessionType(sessionType === 'focus' ? 'break' : 'focus');
                   setTimeLeft(sessionType === 'focus' ? breakTime * 60 : focusTime * 60);
                   setTimerState('idle');
+                  setSessionStartTime(null);
+                  
+                  // Disable DND if active
+                  if (isDndActive) {
+                    await disableDoNotDisturb();
+                  }
+                  
+                  // Show toast to inform user that session was skipped and not counted
+                  showSuccess('Session skipped', 'Tiden räknas inte i din statistik');
                 }}
                 activeOpacity={0.7}
               >

@@ -263,6 +263,10 @@ CREATE TRIGGER trigger_sync_pomodoro
 -- 8. HELPER FUNCTIONS FOR STATISTICS
 -- ===========================================
 
+-- Drop existing functions first to avoid return type conflicts
+DROP FUNCTION IF EXISTS get_user_study_stats(UUID, TIMESTAMPTZ, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS get_daily_study_stats(UUID, INTEGER);
+
 -- Function to get user study statistics for a date range
 CREATE OR REPLACE FUNCTION get_user_study_stats(
     p_user_id UUID,

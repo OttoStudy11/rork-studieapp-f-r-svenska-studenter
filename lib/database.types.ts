@@ -336,22 +336,25 @@ export interface Database {
           id: string
           user_id: string
           friend_id: string
-          status: string
+          status: 'pending' | 'accepted' | 'blocked'
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
           friend_id: string
-          status?: string
+          status?: 'pending' | 'accepted' | 'blocked'
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
           friend_id?: string
-          status?: string
+          status?: 'pending' | 'accepted' | 'blocked'
           created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -364,6 +367,88 @@ export interface Database {
           {
             foreignKeyName: "friends_friend_id_fkey"
             columns: ["friend_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_progress: {
+        Row: {
+          user_id: string
+          total_study_time: number
+          total_sessions: number
+          current_streak: number
+          longest_streak: number
+          last_study_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          total_study_time?: number
+          total_sessions?: number
+          current_streak?: number
+          longest_streak?: number
+          last_study_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          total_study_time?: number
+          total_sessions?: number
+          current_streak?: number
+          longest_streak?: number
+          last_study_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      study_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string | null
+          duration_minutes: number
+          start_time: string
+          end_time: string
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_id?: string | null
+          duration_minutes: number
+          start_time: string
+          end_time: string
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          course_id?: string | null
+          duration_minutes?: number
+          start_time?: string
+          end_time?: string
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

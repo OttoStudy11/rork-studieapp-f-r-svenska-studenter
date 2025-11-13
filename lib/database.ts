@@ -606,17 +606,10 @@ export const searchUsers = async (query: string) => {
 // Achievement functions
 export const getAllAchievements = async () => {
   try {
-    // Shorter timeout for better UX
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Database request timeout')), 5000);
-    });
-    
-    const queryPromise = supabase
+    const { data, error } = await supabase
       .from('achievements')
       .select('*')
       .order('created_at', { ascending: true });
-    
-    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
     
     if (error) {
       // If achievements table doesn't exist, return empty array
@@ -629,10 +622,17 @@ export const getAllAchievements = async () => {
     return data || [];
   } catch (error: any) {
     // Handle network errors silently to avoid console spam
-    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
+    if (error?.message?.includes('Failed to fetch') || 
+        error?.message?.includes('timeout') || 
+        error?.message?.includes('Network connection failed') || 
+        error?.name === 'TypeError' ||
+        error?.name === 'AbortError') {
       console.warn('Network connectivity issue - achievements unavailable');
     } else {
-      console.error('Exception in getAllAchievements:', error instanceof Error ? error.message : JSON.stringify(error, null, 2));
+      console.error('Exception in getAllAchievements:', {
+        message: error instanceof Error ? error.message : String(error),
+        details: error instanceof Error ? error.stack : JSON.stringify(error, null, 2)
+      });
     }
     
     // Return empty array if achievements system is not available
@@ -642,20 +642,13 @@ export const getAllAchievements = async () => {
 
 export const getUserAchievements = async (userId: string) => {
   try {
-    // Shorter timeout for better UX
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Database request timeout')), 5000);
-    });
-    
-    const queryPromise = supabase
+    const { data, error } = await supabase
       .from('user_achievements')
       .select(`
         *,
         achievements (*)
       `)
       .eq('user_id', userId);
-    
-    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
     
     if (error) {
       // If user_achievements table doesn't exist, return empty array
@@ -673,13 +666,18 @@ export const getUserAchievements = async (userId: string) => {
     return data || [];
   } catch (error: any) {
     // Handle network errors silently to avoid console spam
-    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
+    if (error?.message?.includes('Failed to fetch') || 
+        error?.message?.includes('timeout') || 
+        error?.message?.includes('Network connection failed') || 
+        error?.name === 'TypeError' ||
+        error?.name === 'AbortError') {
       console.warn('Network connectivity issue - user achievements unavailable');
     } else if (error?.message?.includes('column "progress" does not exist')) {
       console.error('Error loading achievements: Database error: Could not find the \'progress\' column of \'user_achievements\' in the schema cache');
-      console.error('Error details:', JSON.stringify(error, null, 2));
     } else {
-      console.error('Exception in getUserAchievements:', error instanceof Error ? error.message : JSON.stringify(error, null, 2));
+      console.error('Exception in getUserAchievements:', {
+        message: error instanceof Error ? error.message : String(error)
+      });
     }
     
     // Return empty array if achievements system is not available
@@ -689,14 +687,8 @@ export const getUserAchievements = async (userId: string) => {
 
 export const initializeUserAchievements = async (userId: string) => {
   try {
-    // Add timeout to prevent hanging
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Network connection failed. Please check your internet connection.')), 5000);
-    });
-    
     // First check if user exists in profiles table
-    const userProfilePromise = getUser(userId);
-    const userProfile = await Promise.race([userProfilePromise, timeoutPromise]);
+    const userProfile = await getUser(userId);
     
     if (!userProfile) {
       console.log('User profile not found, cannot initialize achievements for user:', userId);
@@ -704,8 +696,7 @@ export const initializeUserAchievements = async (userId: string) => {
     }
     
     // Get all achievements
-    const achievementsPromise = getAllAchievements();
-    const achievements = await Promise.race([achievementsPromise, timeoutPromise]);
+    const achievements = await getAllAchievements();
     
     // If no achievements exist, skip initialization
     if (achievements.length === 0) {
@@ -721,12 +712,10 @@ export const initializeUserAchievements = async (userId: string) => {
       unlocked_at: null
     }));
     
-    const queryPromise = supabase
+    const { data, error } = await supabase
       .from('user_achievements')
       .upsert(userAchievements, { onConflict: 'user_id,achievement_id' })
       .select();
-    
-    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
     
     if (error) {
       // If table doesn't exist, return empty array
@@ -738,7 +727,6 @@ export const initializeUserAchievements = async (userId: string) => {
       // If progress column doesn't exist, handle gracefully
       if (error.message?.includes('column "progress" does not exist')) {
         console.error('Error initializing user achievements: Database error: Could not find the \'progress\' column of \'user_achievements\' in the schema cache');
-        console.error('Error details:', JSON.stringify(error, null, 2));
         return [];
       }
       
@@ -753,13 +741,18 @@ export const initializeUserAchievements = async (userId: string) => {
     return data || [];
   } catch (error: any) {
     // Handle network errors gracefully
-    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('Network connection failed') || error?.name === 'TypeError') {
+    if (error?.message?.includes('Failed to fetch') || 
+        error?.message?.includes('Network connection failed') || 
+        error?.message?.includes('timeout') ||
+        error?.name === 'TypeError' ||
+        error?.name === 'AbortError') {
       console.warn('Network connectivity issue - achievements initialization unavailable');
-      throw new Error('Network connection failed. Please check your internet connection.');
+      return [];
     }
     
-    console.error('Error initializing user achievements:', error instanceof Error ? error.message : JSON.stringify(error, null, 2));
-    console.error('Error details:', JSON.stringify(error, null, 2));
+    console.error('Error initializing user achievements:', {
+      message: error instanceof Error ? error.message : String(error)
+    });
     throw error;
   }
 };
@@ -827,18 +820,11 @@ export const getUserAchievementStats = async (userId: string) => {
 // Calculate streak from pomodoro sessions
 export const calculateUserStreak = async (userId: string) => {
   try {
-    // Shorter timeout for better UX
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Database request timeout')), 5000);
-    });
-    
-    const queryPromise = supabase
+    const { data: sessions, error } = await supabase
       .from('pomodoro_sessions')
       .select('end_time')
       .eq('user_id', userId)
       .order('end_time', { ascending: false });
-    
-    const { data: sessions, error } = await Promise.race([queryPromise, timeoutPromise]);
     
     if (error) {
       throw error;
@@ -880,10 +866,16 @@ export const calculateUserStreak = async (userId: string) => {
     return streak;
   } catch (error: any) {
     // Handle network errors silently to avoid console spam
-    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
+    if (error?.message?.includes('Failed to fetch') || 
+        error?.message?.includes('timeout') || 
+        error?.message?.includes('Network connection failed') ||
+        error?.name === 'TypeError' ||
+        error?.name === 'AbortError') {
       console.warn('Network connectivity issue - streak calculation unavailable');
     } else {
-      console.error('Exception in calculateUserStreak:', error instanceof Error ? error.message : JSON.stringify(error, null, 2));
+      console.error('Exception in calculateUserStreak:', {
+        message: error instanceof Error ? error.message : String(error)
+      });
     }
     
     // Return 0 if we can't calculate streak

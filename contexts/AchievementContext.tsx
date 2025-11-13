@@ -82,14 +82,8 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       setIsLoading(true);
       console.log('Loading achievements for user:', authUser.id);
       
-      // Shorter timeout for better UX
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Achievement loading timeout')), 5000);
-      });
-      
       // Check if achievements tables exist by trying to get all achievements first
-      const allAchievementsPromise = db.getAllAchievements();
-      const allAchievements = await Promise.race([allAchievementsPromise, timeoutPromise]);
+      const allAchievements = await db.getAllAchievements();
       
       if (allAchievements.length === 0) {
         console.warn('No achievements found in database. Achievements system may not be set up.');
@@ -101,25 +95,10 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       }
       
       // Initialize user achievements if they don't exist
-      try {
-        const initPromise = db.initializeUserAchievements(authUser.id);
-        await Promise.race([initPromise, timeoutPromise]);
-      } catch (initError: any) {
-        // If initialization fails due to network issues, continue with empty state
-        if (initError?.message?.includes('Network connection failed')) {
-          console.warn('Network issue during achievement initialization - continuing with empty state');
-          setAchievements([]);
-          setTotalPoints(0);
-          setUnlockedBadges([]);
-          setCurrentStreak(0);
-          return;
-        }
-        throw initError;
-      }
+      await db.initializeUserAchievements(authUser.id);
       
       // Get user achievements with progress
-      const userAchievementsPromise = db.getUserAchievements(authUser.id);
-      const userAchievements = await Promise.race([userAchievementsPromise, timeoutPromise]);
+      const userAchievements = await db.getUserAchievements(authUser.id);
       
       // Convert to app format
       const achievements = userAchievements
@@ -138,10 +117,9 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       setTotalPoints(points);
       setUnlockedBadges(badges);
       
-      // Get current streak with timeout
+      // Get current streak
       try {
-        const streakPromise = db.calculateUserStreak(authUser.id);
-        const streak = await Promise.race([streakPromise, timeoutPromise]);
+        const streak = await db.calculateUserStreak(authUser.id);
         setCurrentStreak(streak);
       } catch (streakError) {
         console.warn('Failed to load streak, setting to 0:', streakError);
@@ -182,13 +160,7 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
     try {
       console.log('Checking for new achievements...');
       
-      // Shorter timeout for better UX
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Achievement check timeout')), 3000);
-      });
-      
-      const checkPromise = db.checkAndUpdateAchievements(authUser.id);
-      const newlyUnlocked = await Promise.race([checkPromise, timeoutPromise]);
+      const newlyUnlocked = await db.checkAndUpdateAchievements(authUser.id);
       
       // Show notifications for newly unlocked achievements
       for (const userAchievement of newlyUnlocked) {
@@ -207,7 +179,11 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
       }
     } catch (error: any) {
       // Silently handle network errors to avoid disrupting user experience
-      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('timeout') || error?.name === 'TypeError') {
+      if (error?.message?.includes('Failed to fetch') || 
+          error?.message?.includes('timeout') || 
+          error?.message?.includes('Network connection failed') ||
+          error?.name === 'TypeError' ||
+          error?.name === 'AbortError') {
         console.warn('Network connectivity issue - skipping achievement check');
       } else {
         console.error('Error checking achievements:', error);

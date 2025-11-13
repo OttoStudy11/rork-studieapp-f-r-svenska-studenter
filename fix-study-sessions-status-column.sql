@@ -108,4 +108,8 @@ UPDATE public.study_sessions
 SET completed = (status = 'completed')
 WHERE completed IS NULL;
 
-RAISE NOTICE '✅ Study sessions table fixed! Status column is now available.';
+-- Success message
+DO $
+BEGIN
+    RAISE NOTICE '✅ Study sessions table fixed! Status column is now available.';
+END $;

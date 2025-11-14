@@ -30,7 +30,9 @@ import {
   Save,
   X as CloseIcon,
   Award,
-  TrendingUp
+  TrendingUp,
+  Star,
+  FileText
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import { useAuth } from '@/contexts/AuthContext';
@@ -377,6 +379,7 @@ export default function Religionskunskap1() {
   const [editProgress, setEditProgress] = useState<string>('0');
   const [editTargetGrade, setEditTargetGrade] = useState<string>('');
   const [modules, setModules] = useState<Module[]>(modulesData);
+  const [showGradeCriteria, setShowGradeCriteria] = useState(false);
 
   const storageKey = `@religionskunskap1_progress_${user?.id}`;
 
@@ -575,6 +578,155 @@ export default function Religionskunskap1() {
                 </Text>
               </View>
             </View>
+          </View>
+        </FadeInView>
+
+        <FadeInView delay={250}>
+          <View style={[styles.gradeCriteriaCard, { backgroundColor: theme.colors.card }]}>
+            <TouchableOpacity
+              style={styles.gradeCriteriaHeader}
+              onPress={() => setShowGradeCriteria(!showGradeCriteria)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.gradeCriteriaHeaderLeft}>
+                <Award size={24} color="#A855F7" />
+                <Text style={[styles.gradeCriteriaTitle, { color: theme.colors.text }]}>
+                  Betygskriterier
+                </Text>
+              </View>
+              <View style={{ transform: [{ rotate: showGradeCriteria ? '180deg' : '0deg' }] }}>
+                <Text style={{ fontSize: 20, color: theme.colors.text }}>▼</Text>
+              </View>
+            </TouchableOpacity>
+
+            {showGradeCriteria && (
+              <View style={styles.gradeCriteriaContent}>
+                <Text style={[styles.gradeCriteriaIntro, { color: theme.colors.textSecondary }]}>
+                  För att lyckas i Religionskunskap 1 behöver du visa kunskap om världsreligioner, 
+                  förmåga att analysera religiösa uttryck och reflektera över etiska och existentiella frågor.
+                </Text>
+
+                <View style={styles.gradeLevel}>
+                  <View style={[styles.gradeLevelHeader, { backgroundColor: '#22C55E' }]}>
+                    <Star size={18} color="white" />
+                    <Text style={styles.gradeLevelTitle}>E - Godkänd nivå</Text>
+                  </View>
+                  <View style={styles.gradeLevelContent}>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#22C55E" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Grundläggande kunskaper om de fem världsreligionerna
+                      </Text>
+                    </View>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#22C55E" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Beskriva centrala religiösa begrepp och traditioner
+                      </Text>
+                    </View>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#22C55E" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Diskutera enkla etiska frågeställningar
+                      </Text>
+                    </View>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#22C55E" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Reflektera över existentiella frågor på ett enkelt sätt
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.gradeLevel}>
+                  <View style={[styles.gradeLevelHeader, { backgroundColor: '#3B82F6' }]}>
+                    <Star size={18} color="white" />
+                    <Text style={styles.gradeLevelTitle}>C - God nivå</Text>
+                  </View>
+                  <View style={styles.gradeLevelContent}>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#3B82F6" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Utvecklade kunskaper om världsreligioner och deras utveckling
+                      </Text>
+                    </View>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#3B82F6" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Förklara samband mellan religion och samhälle
+                      </Text>
+                    </View>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#3B82F6" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Resonera välgrundat om etiska dilemman
+                      </Text>
+                    </View>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#3B82F6" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Analysera religiösa uttryck med användning av begrepp
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.gradeLevel}>
+                  <View style={[styles.gradeLevelHeader, { backgroundColor: '#A855F7' }]}>
+                    <Star size={18} color="white" />
+                    <Text style={styles.gradeLevelTitle}>A - Mycket god nivå</Text>
+                  </View>
+                  <View style={styles.gradeLevelContent}>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#A855F7" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Fördjupade kunskaper om religioner i olika kontexter
+                      </Text>
+                    </View>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#A855F7" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Resonera nyanserat om komplexa religiösa och etiska frågor
+                      </Text>
+                    </View>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#A855F7" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Kritiskt granska och värdera olika perspektiv
+                      </Text>
+                    </View>
+                    <View style={styles.criteriaItem}>
+                      <FileText size={16} color="#A855F7" />
+                      <Text style={[styles.criteriaText, { color: theme.colors.textSecondary }]}>
+                        Dra välgrundade slutsatser med teoretiskt stöd
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={[styles.tipsForSuccess, { backgroundColor: theme.colors.surface }]}>
+                  <Text style={[styles.tipsForSuccessTitle, { color: theme.colors.text }]}>
+                    💡 Tips för att lyckas
+                  </Text>
+                  <Text style={[styles.tipsForSuccessText, { color: theme.colors.textSecondary }]}>
+                    • Läs noga och strukturera din kunskap
+                  </Text>
+                  <Text style={[styles.tipsForSuccessText, { color: theme.colors.textSecondary }]}>
+                    • Använd facktermer och begrepp korrekt
+                  </Text>
+                  <Text style={[styles.tipsForSuccessText, { color: theme.colors.textSecondary }]}>
+                    • Koppla teori till konkreta exempel
+                  </Text>
+                  <Text style={[styles.tipsForSuccessText, { color: theme.colors.textSecondary }]}>
+                    • Reflektera djupt och visa olika perspektiv
+                  </Text>
+                  <Text style={[styles.tipsForSuccessText, { color: theme.colors.textSecondary }]}>
+                    • Öva på att argumentera och motivera dina åsikter
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
         </FadeInView>
 
@@ -1260,5 +1412,87 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  gradeCriteriaCard: {
+    marginHorizontal: 24,
+    marginBottom: 24,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  gradeCriteriaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+  },
+  gradeCriteriaHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  gradeCriteriaTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  gradeCriteriaContent: {
+    padding: 20,
+    paddingTop: 0,
+    gap: 16,
+  },
+  gradeCriteriaIntro: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  gradeLevel: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  gradeLevelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+  },
+  gradeLevelTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: 'white',
+  },
+  gradeLevelContent: {
+    padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+    gap: 12,
+  },
+  criteriaItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  criteriaText: {
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
+  },
+  tipsForSuccess: {
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  tipsForSuccessTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+  },
+  tipsForSuccessText: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 6,
   },
 });

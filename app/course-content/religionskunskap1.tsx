@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,11 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -19,15 +24,24 @@ import {
   Users,
   Globe,
   Heart,
-  Brain
+  Brain,
+  Circle,
+  Edit3,
+  Save,
+  X as CloseIcon,
+  Award,
+  TrendingUp
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
+import { useAuth } from '@/contexts/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Module {
   id: number;
   title: string;
   description: string;
   emoji: string;
+  completed?: boolean;
   sections: {
     title: string;
     content: string;
@@ -35,6 +49,12 @@ interface Module {
   }[];
   examples: string[];
   reflectionQuestions: string[];
+}
+
+interface CourseProgress {
+  progress: number;
+  targetGrade: string;
+  completedModules: number[];
 }
 
 const modulesData: Module[] = [
@@ -346,7 +366,98 @@ const modulesData: Module[] = [
 
 export default function Religionskunskap1() {
   const { theme, isDark } = useTheme();
+  const { user } = useAuth();
   const [expandedModule, setExpandedModule] = React.useState<number | null>(null);
+  const [courseProgress, setCourseProgress] = useState<CourseProgress>({
+    progress: 0,
+    targetGrade: '',
+    completedModules: [],
+  });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editProgress, setEditProgress] = useState<string>('0');
+  const [editTargetGrade, setEditTargetGrade] = useState<string>('');
+  const [modules, setModules] = useState<Module[]>(modulesData);
+
+  const storageKey = `@religionskunskap1_progress_${user?.id}`;
+
+  useEffect(() => {
+    loadProgress();
+  }, [user?.id]);
+
+  const loadProgress = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const stored = await AsyncStorage.getItem(storageKey);
+      if (stored) {
+        const progress = JSON.parse(stored);
+        setCourseProgress(progress);
+        setEditProgress(progress.progress.toString());
+        setEditTargetGrade(progress.targetGrade);
+        
+        const updatedModules = modulesData.map(module => ({
+          ...module,
+          completed: progress.completedModules.includes(module.id),
+        }));
+        setModules(updatedModules);
+      }
+    } catch (error) {
+      console.error('Error loading progress:', error);
+    }
+  };
+
+  const saveProgress = async (progress: CourseProgress) => {
+    if (!user?.id) return;
+    
+    try {
+      await AsyncStorage.setItem(storageKey, JSON.stringify(progress));
+      setCourseProgress(progress);
+    } catch (error) {
+      console.error('Error saving progress:', error);
+    }
+  };
+
+  const toggleModuleCompletion = (moduleId: number) => {
+    const updatedModules = modules.map(m => 
+      m.id === moduleId ? { ...m, completed: !m.completed } : m
+    );
+    setModules(updatedModules);
+
+    const completedIds = updatedModules.filter(m => m.completed).map(m => m.id);
+    const autoProgress = Math.round((completedIds.length / modulesData.length) * 100);
+    
+    const newProgress = {
+      ...courseProgress,
+      completedModules: completedIds,
+      progress: autoProgress,
+    };
+    
+    saveProgress(newProgress);
+    setEditProgress(autoProgress.toString());
+  };
+
+  const handleSaveManualProgress = async () => {
+    try {
+      const progressValue = parseInt(editProgress, 10);
+      if (isNaN(progressValue) || progressValue < 0 || progressValue > 100) {
+        Alert.alert('Fel', 'Progress måste vara ett tal mellan 0 och 100');
+        return;
+      }
+
+      const newProgress = {
+        ...courseProgress,
+        progress: progressValue,
+        targetGrade: editTargetGrade,
+      };
+      
+      await saveProgress(newProgress);
+      Alert.alert('Framgång! ✅', 'Kursinformation har uppdaterats');
+      setShowEditModal(false);
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      Alert.alert('Fel', 'Ett oväntat fel inträffade');
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -369,20 +480,69 @@ export default function Religionskunskap1() {
         contentContainerStyle={styles.scrollContent}
       >
         <SlideInView direction="up" delay={100}>
-          <LinearGradient
-            colors={['#A855F7', '#9333EA']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroCard}
-          >
-            <View style={styles.heroContent}>
-              <Text style={styles.heroIcon}>🕊️</Text>
-              <Text style={styles.heroTitle}>Religionskunskap 1</Text>
-              <Text style={styles.heroDescription}>
-                Utforska världsreligioner, etik och existentiella frågor
-              </Text>
-            </View>
-          </LinearGradient>
+          <View>
+            <LinearGradient
+              colors={['#A855F7', '#9333EA']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroCard}
+            >
+              <View style={styles.heroContent}>
+                <Text style={styles.heroIcon}>🕊️</Text>
+                <Text style={styles.heroTitle}>Religionskunskap 1</Text>
+                <Text style={styles.heroDescription}>
+                  Utforska världsreligioner, etik och existentiella frågor
+                </Text>
+              </View>
+
+              <View style={styles.progressSection}>
+                <View style={styles.progressInfo}>
+                  <Text style={styles.progressLabel}>Kursframsteg</Text>
+                  <Text style={styles.progressPercent}>{courseProgress.progress}%</Text>
+                </View>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[styles.progressFill, { width: `${courseProgress.progress}%` }]} 
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {courseProgress.completedModules.length} av {modulesData.length} moduler slutförda
+                </Text>
+              </View>
+
+              <View style={styles.quickStats}>
+                <View style={styles.quickStatItem}>
+                  <TrendingUp size={16} color="rgba(255, 255, 255, 0.9)" />
+                  <Text style={styles.quickStatText}>
+                    {courseProgress.progress}% klar
+                  </Text>
+                </View>
+                {courseProgress.completedModules.length > 0 && (
+                  <View style={styles.quickStatItem}>
+                    <CheckCircle size={16} color="#FCD34D" />
+                    <Text style={styles.quickStatText}>
+                      {courseProgress.completedModules.length} slutförda
+                    </Text>
+                  </View>
+                )}
+                {courseProgress.targetGrade && (
+                  <View style={styles.quickStatItem}>
+                    <Award size={16} color="#FCD34D" />
+                    <Text style={styles.quickStatText}>
+                      Mål: {courseProgress.targetGrade}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </LinearGradient>
+            
+            <TouchableOpacity
+              style={[styles.editButton, { backgroundColor: 'rgba(255, 255, 255, 0.9)' }]}
+              onPress={() => setShowEditModal(true)}
+            >
+              <Edit3 size={20} color="#A855F7" />
+            </TouchableOpacity>
+          </View>
         </SlideInView>
 
         <FadeInView delay={200}>
@@ -421,17 +581,38 @@ export default function Religionskunskap1() {
         <View style={styles.modulesSection}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kursinnehåll</Text>
           
-          {modulesData.map((module, index) => (
+          {modules.map((module, index) => (
             <FadeInView key={module.id} delay={300 + index * 100}>
               <TouchableOpacity
-                style={[styles.moduleCard, { backgroundColor: theme.colors.card }]}
+                style={[
+                  styles.moduleCard, 
+                  { backgroundColor: theme.colors.card },
+                  module.completed && styles.moduleCardCompleted
+                ]}
                 onPress={() => setExpandedModule(expandedModule === module.id ? null : module.id)}
                 activeOpacity={0.7}
               >
                 <View style={styles.moduleHeader}>
+                  <TouchableOpacity
+                    style={styles.checkboxContainer}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      toggleModuleCompletion(module.id);
+                    }}
+                  >
+                    {module.completed ? (
+                      <CheckCircle size={24} color="#A855F7" />
+                    ) : (
+                      <Circle size={24} color={theme.colors.textMuted} />
+                    )}
+                  </TouchableOpacity>
                   <Text style={styles.moduleEmoji}>{module.emoji}</Text>
                   <View style={styles.moduleTitleContainer}>
-                    <Text style={[styles.moduleTitle, { color: theme.colors.text }]}>
+                    <Text style={[
+                      styles.moduleTitle, 
+                      { color: theme.colors.text },
+                      module.completed && { color: '#A855F7' }
+                    ]}>
                       Modul {module.id}: {module.title}
                     </Text>
                     <Text style={[styles.moduleDescription, { color: theme.colors.textSecondary }]}>
@@ -546,6 +727,98 @@ export default function Religionskunskap1() {
           </View>
         </FadeInView>
       </ScrollView>
+
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContainer}>
+            <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Redigera kursinformation</Text>
+                <TouchableOpacity
+                  style={[styles.modalCloseButton, { backgroundColor: theme.colors.borderLight }]}
+                  onPress={() => setShowEditModal(false)}
+                >
+                  <CloseIcon size={20} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalBody}>
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Framsteg (%)</Text>
+                  <TextInput
+                    style={[styles.input, { 
+                      backgroundColor: theme.colors.surface, 
+                      color: theme.colors.text,
+                      borderColor: theme.colors.border
+                    }]}
+                    value={editProgress}
+                    onChangeText={setEditProgress}
+                    keyboardType="numeric"
+                    placeholder="0-100"
+                    placeholderTextColor={theme.colors.textMuted}
+                  />
+                  <Text style={[styles.inputHint, { color: theme.colors.textMuted }]}>
+                    Moduler sätter automatiskt framsteg när du bockar av dem
+                  </Text>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Målbetyg</Text>
+                  <View style={styles.gradeButtons}>
+                    {['A', 'B', 'C', 'D', 'E', 'F'].map((grade) => (
+                      <TouchableOpacity
+                        key={grade}
+                        style={[
+                          styles.gradeButton,
+                          { borderColor: theme.colors.border },
+                          editTargetGrade === grade && {
+                            backgroundColor: '#A855F7',
+                            borderColor: '#A855F7'
+                          }
+                        ]}
+                        onPress={() => setEditTargetGrade(grade === editTargetGrade ? '' : grade)}
+                      >
+                        <Text
+                          style={[
+                            styles.gradeButtonText,
+                            { color: theme.colors.text },
+                            editTargetGrade === grade && { color: 'white' }
+                          ]}
+                        >
+                          {grade}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.colors.border }]}
+                  onPress={() => setShowEditModal(false)}
+                >
+                  <Text style={[styles.modalButtonText, { color: theme.colors.text }]}>Avbryt</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalSaveButton, { backgroundColor: '#A855F7' }]}
+                  onPress={handleSaveManualProgress}
+                >
+                  <Text style={[styles.modalButtonText, { color: 'white' }]}>Spara</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -656,7 +929,15 @@ const styles = StyleSheet.create({
   moduleHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
+  },
+  checkboxContainer: {
+    padding: 4,
+  },
+  moduleCardCompleted: {
+    borderColor: '#A855F7',
+    borderWidth: 2,
+    borderLeftWidth: 4,
   },
   moduleEmoji: {
     fontSize: 40,
@@ -803,5 +1084,181 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     flex: 1,
+  },
+  progressSection: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+  },
+  progressInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressLabel: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500' as const,
+  },
+  progressPercent: {
+    fontSize: 18,
+    color: 'white',
+    fontWeight: 'bold' as const,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: 'white',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  quickStats: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 12,
+  },
+  quickStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  quickStatText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '600' as const,
+  },
+  editButton: {
+    position: 'absolute',
+    top: 20,
+    right: 44,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '90%',
+    maxWidth: 400,
+  },
+  modalContent: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold' as const,
+    flex: 1,
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBody: {
+    padding: 20,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+  },
+  inputHint: {
+    fontSize: 12,
+    marginTop: 6,
+    fontStyle: 'italic' as const,
+  },
+  gradeButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  gradeButton: {
+    flex: 1,
+    minWidth: 50,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gradeButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold' as const,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelButton: {
+    borderWidth: 2,
+  },
+  modalSaveButton: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
 });

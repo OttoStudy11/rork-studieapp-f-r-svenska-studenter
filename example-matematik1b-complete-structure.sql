@@ -580,7 +580,7 @@ INSERT INTO public.study_guides (
     estimated_read_time,
     created_at
 ) VALUES (
-    'g1111111-1111-1111-1111-111111111111',
+    'a1111111-1111-1111-1111-111111111111',
     'c1b2e3f4-1111-2222-3333-444455556666',
     'Algebra och ekvationer - Komplett guide',
     'En omfattande sammanfattning av algebra och ekvationer med tips och tricks.',

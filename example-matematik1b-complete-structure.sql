@@ -39,6 +39,7 @@ INSERT INTO public.course_modules (
     description,
     order_index,
     estimated_hours,
+    is_published,
     created_at
 ) VALUES (
     '11111111-1111-1111-1111-111111111111',
@@ -47,8 +48,12 @@ INSERT INTO public.course_modules (
     'Lär dig att arbeta med algebraiska uttryck, lösa ekvationer och tillämpa dessa kunskaper i praktiska problem.',
     1,
     80,
+    true,
     NOW()
-);
+) ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    description = EXCLUDED.description,
+    is_published = EXCLUDED.is_published;
 
 -- Module 2: Funktioner
 INSERT INTO public.course_modules (
@@ -58,6 +63,7 @@ INSERT INTO public.course_modules (
     description,
     order_index,
     estimated_hours,
+    is_published,
     created_at
 ) VALUES (
     '22222222-2222-2222-2222-222222222222',
@@ -66,8 +72,12 @@ INSERT INTO public.course_modules (
     'Utforska linjära och exponentiella funktioner, hur man tolkar grafer och använder funktioner för att modellera verkliga situationer.',
     2,
     100,
+    true,
     NOW()
-);
+) ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    description = EXCLUDED.description,
+    is_published = EXCLUDED.is_published;
 
 -- Module 3: Geometri
 INSERT INTO public.course_modules (
@@ -77,6 +87,7 @@ INSERT INTO public.course_modules (
     description,
     order_index,
     estimated_hours,
+    is_published,
     created_at
 ) VALUES (
     '33333333-3333-3333-3333-333333333333',
@@ -85,8 +96,12 @@ INSERT INTO public.course_modules (
     'Studera geometriska figurer, beräkna area och volym, samt tillämpa Pythagoras sats och trigonometri.',
     3,
     80,
+    true,
     NOW()
-);
+) ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    description = EXCLUDED.description,
+    is_published = EXCLUDED.is_published;
 
 -- Module 4: Sannolikhet och statistik
 INSERT INTO public.course_modules (
@@ -96,6 +111,7 @@ INSERT INTO public.course_modules (
     description,
     order_index,
     estimated_hours,
+    is_published,
     created_at
 ) VALUES (
     '44444444-4444-4444-4444-444444444444',
@@ -104,8 +120,12 @@ INSERT INTO public.course_modules (
     'Lär dig grundläggande begrepp inom sannolikhetslära och statistik, samt hur man analyserar och tolkar data.',
     4,
     60,
+    true,
     NOW()
-);
+) ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    description = EXCLUDED.description,
+    is_published = EXCLUDED.is_published;
 
 -- ===========================================
 -- 3. LESSONS - Module 1: Algebra och ekvationer
@@ -122,6 +142,8 @@ INSERT INTO public.course_lessons (
     order_index,
     estimated_minutes,
     difficulty_level,
+    lesson_type,
+    is_published,
     created_at
 ) VALUES (
     'a1111111-1111-1111-1111-111111111111',
@@ -213,8 +235,13 @@ Exempel: 5 × (2 + 3) = 5 × 2 + 5 × 3 = 10 + 15 = 25
     1,
     45,
     'easy',
+    'theory',
+    true,
     NOW()
-);
+) ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    content = EXCLUDED.content,
+    is_published = EXCLUDED.is_published;
 
 -- Lesson 1.2: Algebraiska uttryck
 INSERT INTO public.course_lessons (
@@ -227,6 +254,8 @@ INSERT INTO public.course_lessons (
     order_index,
     estimated_minutes,
     difficulty_level,
+    lesson_type,
+    is_published,
     created_at
 ) VALUES (
     'a1111111-2222-1111-1111-111111111111',
@@ -367,8 +396,13 @@ Exempel: (x + 4)(x - 4) = x² - 16
     2,
     60,
     'easy',
+    'theory',
+    true,
     NOW()
-);
+) ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    content = EXCLUDED.content,
+    is_published = EXCLUDED.is_published;
 
 -- Lesson 1.3: Linjära ekvationer
 INSERT INTO public.course_lessons (
@@ -381,6 +415,8 @@ INSERT INTO public.course_lessons (
     order_index,
     estimated_minutes,
     difficulty_level,
+    lesson_type,
+    is_published,
     created_at
 ) VALUES (
     'a1111111-3333-1111-1111-111111111111',
@@ -563,8 +599,13 @@ Svar: Ett paket kostar 65 kr
     3,
     75,
     'medium',
+    'theory',
+    true,
     NOW()
-);
+) ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    content = EXCLUDED.content,
+    is_published = EXCLUDED.is_published;
 
 -- ===========================================
 -- 4. STUDY GUIDES - Module 1
@@ -578,9 +619,11 @@ INSERT INTO public.study_guides (
     description,
     content,
     estimated_read_time,
+    difficulty_level,
+    is_published,
     created_at
 ) VALUES (
-    'a1111111-1111-1111-1111-111111111111',
+    'sg11111-1111-1111-1111-111111111111',
     'c1b2e3f4-1111-2222-3333-444455556666',
     'Algebra och ekvationer - Komplett guide',
     'En omfattande sammanfattning av algebra och ekvationer med tips och tricks.',
@@ -672,8 +715,13 @@ Testa dig själv innan provet:
 ## Lycka till!
 Du klarar det här! Kom ihåg att matematik handlar om träning – ju mer du övar, desto bättre blir du. 💪📐',
     30,
+    'medium',
+    true,
     NOW()
-);
+) ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    content = EXCLUDED.content,
+    is_published = EXCLUDED.is_published;
 
 -- ===========================================
 -- 5. REPEAT FOR OTHER MODULES
@@ -691,6 +739,8 @@ INSERT INTO public.course_lessons (
     order_index,
     estimated_minutes,
     difficulty_level,
+    lesson_type,
+    is_published,
     created_at
 ) VALUES (
     'a2222222-1111-2222-2222-222222222222',
@@ -838,8 +888,13 @@ Givet en linje som går genom (0,3) och (2,7):
     1,
     60,
     'easy',
+    'theory',
+    true,
     NOW()
-);
+) ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    content = EXCLUDED.content,
+    is_published = EXCLUDED.is_published;
 
 -- ===========================================
 -- 6. SUCCESS MESSAGE

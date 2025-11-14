@@ -20,7 +20,7 @@ INSERT INTO public.courses (
     'Matematik 1b',
     'Kursen Matematik 1b omfattar grundläggande matematiska begrepp och metoder. Syftet är att utveckla matematisk kompetens och förmåga att använda matematik i vardagen och kommande studier.',
     'Matematik',
-    'Gymnasium',
+    'gymnasie',
     100,
     NOW()
 ) ON CONFLICT (id) DO UPDATE SET

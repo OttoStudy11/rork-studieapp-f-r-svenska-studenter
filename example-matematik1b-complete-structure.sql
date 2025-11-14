@@ -7,31 +7,21 @@
 
 INSERT INTO public.courses (
     id,
+    course_code,
     title,
     description,
-    code,
+    subject,
     level,
-    credits,
-    category,
-    difficulty,
-    estimated_hours,
-    icon,
-    color,
-    school_type,
+    points,
     created_at
 ) VALUES (
     'c1b2e3f4-1111-2222-3333-444455556666',
+    'MATMAT01b',
     'Matematik 1b',
     'Kursen Matematik 1b omfattar grundläggande matematiska begrepp och metoder. Syftet är att utveckla matematisk kompetens och förmåga att använda matematik i vardagen och kommande studier.',
-    'MATMAT01b',
+    'Matematik',
     'Gymnasium',
     100,
-    'Matematik',
-    'medium',
-    200,
-    '📐',
-    '#FF6B6B',
-    'gymnasium',
     NOW()
 ) ON CONFLICT (id) DO UPDATE SET
     title = EXCLUDED.title,
@@ -48,7 +38,7 @@ INSERT INTO public.course_modules (
     title,
     description,
     order_index,
-    duration_weeks,
+    estimated_hours,
     created_at
 ) VALUES (
     '11111111-1111-1111-1111-111111111111',
@@ -56,7 +46,7 @@ INSERT INTO public.course_modules (
     'Algebra och ekvationer',
     'Lär dig att arbeta med algebraiska uttryck, lösa ekvationer och tillämpa dessa kunskaper i praktiska problem.',
     1,
-    4,
+    80,
     NOW()
 );
 
@@ -67,7 +57,7 @@ INSERT INTO public.course_modules (
     title,
     description,
     order_index,
-    duration_weeks,
+    estimated_hours,
     created_at
 ) VALUES (
     '22222222-2222-2222-2222-222222222222',
@@ -75,7 +65,7 @@ INSERT INTO public.course_modules (
     'Funktioner',
     'Utforska linjära och exponentiella funktioner, hur man tolkar grafer och använder funktioner för att modellera verkliga situationer.',
     2,
-    5,
+    100,
     NOW()
 );
 
@@ -86,7 +76,7 @@ INSERT INTO public.course_modules (
     title,
     description,
     order_index,
-    duration_weeks,
+    estimated_hours,
     created_at
 ) VALUES (
     '33333333-3333-3333-3333-333333333333',
@@ -94,7 +84,7 @@ INSERT INTO public.course_modules (
     'Geometri',
     'Studera geometriska figurer, beräkna area och volym, samt tillämpa Pythagoras sats och trigonometri.',
     3,
-    4,
+    80,
     NOW()
 );
 
@@ -105,7 +95,7 @@ INSERT INTO public.course_modules (
     title,
     description,
     order_index,
-    duration_weeks,
+    estimated_hours,
     created_at
 ) VALUES (
     '44444444-4444-4444-4444-444444444444',
@@ -113,7 +103,7 @@ INSERT INTO public.course_modules (
     'Sannolikhet och statistik',
     'Lär dig grundläggande begrepp inom sannolikhetslära och statistik, samt hur man analyserar och tolkar data.',
     4,
-    3,
+    60,
     NOW()
 );
 
@@ -122,7 +112,7 @@ INSERT INTO public.course_modules (
 -- ===========================================
 
 -- Lesson 1.1: Räkneregler och prioriteringsregler
-INSERT INTO public.lessons (
+INSERT INTO public.course_lessons (
     id,
     course_id,
     module_id,
@@ -130,8 +120,8 @@ INSERT INTO public.lessons (
     description,
     content,
     order_index,
-    duration_minutes,
-    difficulty,
+    estimated_minutes,
+    difficulty_level,
     created_at
 ) VALUES (
     'a1111111-1111-1111-1111-111111111111',
@@ -227,7 +217,7 @@ Exempel: 5 × (2 + 3) = 5 × 2 + 5 × 3 = 10 + 15 = 25
 );
 
 -- Lesson 1.2: Algebraiska uttryck
-INSERT INTO public.lessons (
+INSERT INTO public.course_lessons (
     id,
     course_id,
     module_id,
@@ -235,8 +225,8 @@ INSERT INTO public.lessons (
     description,
     content,
     order_index,
-    duration_minutes,
-    difficulty,
+    estimated_minutes,
+    difficulty_level,
     created_at
 ) VALUES (
     'a1111111-2222-1111-1111-111111111111',
@@ -381,7 +371,7 @@ Exempel: (x + 4)(x - 4) = x² - 16
 );
 
 -- Lesson 1.3: Linjära ekvationer
-INSERT INTO public.lessons (
+INSERT INTO public.course_lessons (
     id,
     course_id,
     module_id,
@@ -389,8 +379,8 @@ INSERT INTO public.lessons (
     description,
     content,
     order_index,
-    duration_minutes,
-    difficulty,
+    estimated_minutes,
+    difficulty_level,
     created_at
 ) VALUES (
     'a1111111-3333-1111-1111-111111111111',
@@ -584,17 +574,14 @@ Svar: Ett paket kostar 65 kr
 INSERT INTO public.study_guides (
     id,
     course_id,
-    module_id,
     title,
     description,
     content,
-    order_index,
-    estimated_time_minutes,
+    estimated_read_time,
     created_at
 ) VALUES (
     'g1111111-1111-1111-1111-111111111111',
     'c1b2e3f4-1111-2222-3333-444455556666',
-    '11111111-1111-1111-1111-111111111111',
     'Algebra och ekvationer - Komplett guide',
     'En omfattande sammanfattning av algebra och ekvationer med tips och tricks.',
     '# Studieplan: Algebra och ekvationer
@@ -684,7 +671,6 @@ Testa dig själv innan provet:
 
 ## Lycka till!
 Du klarar det här! Kom ihåg att matematik handlar om träning – ju mer du övar, desto bättre blir du. 💪📐',
-    1,
     30,
     NOW()
 );
@@ -695,7 +681,7 @@ Du klarar det här! Kom ihåg att matematik handlar om träning – ju mer du ö
 -- For brevity, I''ll show the structure for one more module
 
 -- Module 2: Funktioner - Lesson 2.1
-INSERT INTO public.lessons (
+INSERT INTO public.course_lessons (
     id,
     course_id,
     module_id,
@@ -703,8 +689,8 @@ INSERT INTO public.lessons (
     description,
     content,
     order_index,
-    duration_minutes,
-    difficulty,
+    estimated_minutes,
+    difficulty_level,
     created_at
 ) VALUES (
     'a2222222-1111-2222-2222-222222222222',

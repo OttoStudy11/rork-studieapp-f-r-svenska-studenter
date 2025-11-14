@@ -123,6 +123,12 @@ export default function CourseDetailScreen() {
   const [userCourseData, setUserCourseData] = useState<any>(null);
 
   useEffect(() => {
+    // Redirect to custom course content page for Religionskunskap 1
+    if (id === 'RELREL01') {
+      router.replace('/course-content/religionskunskap1');
+      return;
+    }
+    
     if (id && user?.id) {
       loadCourseData();
     }

@@ -166,6 +166,8 @@ export default function CourseDetailScreen() {
         setEditTargetGrade(userCourse?.target_grade || '');
       }
 
+      console.log('🔍 Fetching modules for course:', id);
+      
       const { data: modulesData, error: modulesError } = await supabase
         .from('course_modules')
         .select(`
@@ -181,8 +183,12 @@ export default function CourseDetailScreen() {
         .eq('is_published', true)
         .order('order_index');
 
+      console.log('📦 Modules data:', modulesData);
+      console.log('❌ Modules error:', modulesError);
+
       if (modulesError) {
         console.error('Error loading modules:', modulesError);
+        Alert.alert('Fel vid laddning av moduler', modulesError.message);
       } else {
         const processedModules: ModuleWithLessons[] = (modulesData?.map(module => ({
           ...module,
@@ -197,6 +203,9 @@ export default function CourseDetailScreen() {
               )
             }))
         })) || []) as ModuleWithLessons[];
+        
+        console.log('✅ Processed modules:', processedModules.length);
+        console.log('📝 Total lessons found:', processedModules.reduce((sum, m) => sum + m.lessons.length, 0));
         
         setModules(processedModules);
         

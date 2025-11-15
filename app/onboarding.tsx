@@ -80,6 +80,7 @@ export default function OnboardingScreen() {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [availableCourses, setAvailableCourses] = useState<GymnasiumCourse[]>([]);
+  const [gymnasiumSearchQuery, setGymnasiumSearchQuery] = useState('');
   
   // Safety checks for contexts
   if (!authContext || !studyContext || !toastContext) {
@@ -527,44 +528,85 @@ export default function OnboardingScreen() {
           return null;
         }
         
+        const filteredGymnasiums = gymnasiumSearchQuery
+          ? SWEDISH_GYMNASIUMS.filter(
+              (gym) =>
+                gym.name.toLowerCase().includes(gymnasiumSearchQuery.toLowerCase()) ||
+                gym.city.toLowerCase().includes(gymnasiumSearchQuery.toLowerCase()) ||
+                gym.municipality.toLowerCase().includes(gymnasiumSearchQuery.toLowerCase())
+            )
+          : SWEDISH_GYMNASIUMS;
+        
+        const groupedGymnasiums: Record<string, typeof SWEDISH_GYMNASIUMS> = {};
+        filteredGymnasiums.forEach((gym) => {
+          if (!groupedGymnasiums[gym.city]) {
+            groupedGymnasiums[gym.city] = [];
+          }
+          groupedGymnasiums[gym.city].push(gym);
+        });
+        
         return (
           <View style={styles.stepContainer}>
             <MapPin size={60} color="#1F2937" style={styles.icon} />
             <Text style={styles.title}>Välj gymnasium</Text>
             <Text style={styles.subtitle}>Vilket gymnasium går du på?</Text>
+            
+            <View style={styles.searchInputContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Sök gymnasium, stad eller kommun..."
+                placeholderTextColor="rgba(255, 255, 255, 0.6)"
+                value={gymnasiumSearchQuery}
+                onChangeText={setGymnasiumSearchQuery}
+              />
+            </View>
+            
             <ScrollView style={styles.programScrollView} showsVerticalScrollIndicator={false}>
-              <View style={styles.programGrid}>
-                {SWEDISH_GYMNASIUMS.slice(0, 20).map((gym) => {
-                  const isSelected = data.gymnasium?.id === gym.id;
-                  
-                  return (
-                    <AnimatedPressable
-                      key={gym.id}
-                      style={[
-                        styles.programCard,
-                        isSelected && styles.selectedProgramCard
-                      ]}
-                      onPress={() => {
-                        console.log('Selected gymnasium:', gym.name);
-                        setData({ ...data, gymnasium: gym });
-                      }}
-                    >
-                      <Text style={[
-                        styles.programCardText,
-                        isSelected && styles.selectedProgramCardText
-                      ]} numberOfLines={2}>
-                        {gym.name}
-                      </Text>
-                      <Text style={[
-                        styles.programCardCity,
-                        isSelected && styles.selectedProgramCardText
-                      ]} numberOfLines={1}>
-                        {gym.city}
-                      </Text>
-                    </AnimatedPressable>
-                  );
-                })}
-              </View>
+              {Object.keys(groupedGymnasiums).sort().map((city) => (
+                <View key={city}>
+                  <View style={styles.cityHeader}>
+                    <MapPin size={16} color="rgba(255, 255, 255, 0.8)" />
+                    <Text style={styles.cityHeaderText}>{city}</Text>
+                  </View>
+                  <View style={styles.programGrid}>
+                    {groupedGymnasiums[city].map((gym) => {
+                      const isSelected = data.gymnasium?.id === gym.id;
+                      
+                      return (
+                        <AnimatedPressable
+                          key={gym.id}
+                          style={[
+                            styles.programCard,
+                            isSelected && styles.selectedProgramCard
+                          ]}
+                          onPress={() => {
+                            console.log('Selected gymnasium:', gym.name);
+                            setData({ ...data, gymnasium: gym });
+                          }}
+                        >
+                          <Text style={[
+                            styles.programCardText,
+                            isSelected && styles.selectedProgramCardText
+                          ]} numberOfLines={2}>
+                            {gym.name}
+                          </Text>
+                          <Text style={[
+                            styles.programCardCity,
+                            isSelected && styles.selectedProgramCardText
+                          ]} numberOfLines={1}>
+                            {gym.city}
+                          </Text>
+                          <View style={styles.gymnasiumTypeBadge}>
+                            <Text style={styles.gymnasiumTypeText}>
+                              {gym.type === 'kommunal' ? 'Kommunal' : gym.type === 'friskola' ? 'Friskola' : 'Privat'}
+                            </Text>
+                          </View>
+                        </AnimatedPressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
             </ScrollView>
           </View>
         );
@@ -918,6 +960,53 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     marginTop: 4,
+  },
+  searchInputContainer: {
+    width: '100%',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  searchInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    color: 'white',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  cityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    marginBottom: 8,
+    marginTop: 8,
+    gap: 8,
+  },
+  cityHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  gymnasiumTypeBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  gymnasiumTypeText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.8)',
+    textTransform: 'uppercase',
   },
   selectedProgramCardText: {
     color: '#1F2937',

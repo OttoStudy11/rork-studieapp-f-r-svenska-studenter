@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { Image } from 'expo-image';
 import { Home, Flame, Mail, Lock, Eye, EyeOff, Check } from 'lucide-react-native';
 
 export default function AuthScreen() {
@@ -171,12 +172,11 @@ export default function AuthScreen() {
             <View style={styles.content}>
               <View style={styles.header}>
                 <View style={styles.logoContainer}>
-                  <View style={styles.houseIcon}>
-                    <Home size={70} color="#1F2937" strokeWidth={3} />
-                    <View style={styles.flameContainer}>
-                      <Flame size={28} color="#FF6B35" fill="#FF6B35" />
-                    </View>
-                  </View>
+                  <Image
+                    source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
+                    style={styles.logo}
+                    contentFit="contain"
+                  />
                 </View>
                 <Text style={styles.title}>StudieStugan</Text>
                 <Text style={styles.subtitle}>
@@ -363,9 +363,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  logo: {
-    marginBottom: 20,
-  },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
@@ -502,19 +499,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     alignItems: 'center',
   },
-  houseIcon: {
-    position: 'relative',
-    width: 90,
-    height: 90,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 10,
-  },
-  flameContainer: {
-    position: 'absolute',
-    top: -2,
-    right: 12,
+  logo: {
+    width: 110,
+    height: 110,
   },
 });

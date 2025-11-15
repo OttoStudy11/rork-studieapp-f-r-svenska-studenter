@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
+import { Image } from 'expo-image';
 import { GraduationCap, BookOpen, MapPin, Home, Flame } from 'lucide-react-native';
 import { SWEDISH_GYMNASIUMS } from '@/constants/gymnasiums';
 import { AnimatedPressable, PressableCard, RippleButton, FadeInView } from '@/components/Animations';
@@ -368,12 +369,11 @@ export default function OnboardingScreen() {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.logoContainer}>
-              <View style={styles.houseIcon}>
-                <Home size={60} color="#1F2937" strokeWidth={3} />
-                <View style={styles.flameContainer}>
-                  <Flame size={24} color="#FF6B35" fill="#FF6B35" />
-                </View>
-              </View>
+              <Image
+                source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
+                style={styles.logo}
+                contentFit="contain"
+              />
             </View>
             <Text style={styles.title}>Hej {user?.email?.split('@')[0] || 'där'}!</Text>
             <Text style={styles.subtitle}>Skapa ditt användarnamn och visningsnamn</Text>
@@ -1034,16 +1034,8 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     alignItems: 'center',
   },
-  houseIcon: {
-    position: 'relative',
-    width: 80,
-    height: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  flameContainer: {
-    position: 'absolute',
-    top: -4,
-    right: 10,
+  logo: {
+    width: 100,
+    height: 100,
   },
 });

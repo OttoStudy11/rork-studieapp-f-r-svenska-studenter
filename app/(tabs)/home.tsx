@@ -15,6 +15,7 @@ import { useAchievements } from '@/contexts/AchievementContext';
 import { useToast } from '@/contexts/ToastContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { Image } from 'expo-image';
 import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
@@ -170,6 +171,13 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+          <View style={styles.headerLogo}>
+            <Image
+              source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
+              style={styles.logo}
+              contentFit="contain"
+            />
+          </View>
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
               <Text style={[styles.greeting, { color: theme.colors.text }]}>Hej, {user?.name}! 👋</Text>
@@ -479,6 +487,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 60,
     paddingBottom: 24,
+  },
+  headerLogo: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logo: {
+    width: 60,
+    height: 60,
   },
   headerTop: {
     flexDirection: 'row',

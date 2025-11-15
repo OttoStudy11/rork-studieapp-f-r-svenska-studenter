@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Send, Sparkles } from 'lucide-react-native';
+import { Send, Sparkles, BookOpen, Lightbulb, Brain, Flame, TrendingUp } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -118,8 +118,15 @@ export default function AIChatScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
       <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
-        <Text style={styles.headerTitle}>AI Assistent</Text>
-        <Text style={styles.headerSubtitle}>Ställ mig frågor om dina studier</Text>
+        <View style={styles.headerContent}>
+          <View style={styles.headerIconContainer}>
+            <Brain size={32} color="#fff" />
+          </View>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>StudieStugan AI</Text>
+            <Text style={styles.headerSubtitle}>Din personliga studieguide</Text>
+          </View>
+        </View>
       </View>
       
       <KeyboardAvoidingView
@@ -136,30 +143,48 @@ export default function AIChatScreen() {
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={[styles.emptyIconContainer, { backgroundColor: `${theme.colors.primary}20` }]}>
-                <Sparkles size={48} color={theme.colors.primary} />
+                <Brain size={48} color={theme.colors.primary} />
               </View>
-              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Hej där! 👋</Text>
+              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Välkommen till StudieStugan AI! 👋</Text>
               <Text style={[styles.emptySubtitle, { color: theme.colors.textMuted }]}>
-                Jag är din AI-assistent. Ställ mig frågor om dina studier, kurser, eller vad som helst!
+                Jag är här för att hjälpa dig med studier, ge studietips, förklara svåra koncept och mycket mer. Ställ mig en fråga!
               </Text>
               <View style={styles.suggestionsContainer}>
                 <TouchableOpacity
-                  style={[styles.suggestionButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                  style={[styles.suggestionButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.primary + '30' }]}
                   onPress={() => setInput('Hur kan jag plugga mer effektivt?')}
                 >
-                  <Text style={[styles.suggestionText, { color: theme.colors.primary }]}>Hur kan jag plugga mer effektivt?</Text>
+                  <View style={[styles.suggestionIcon, { backgroundColor: theme.colors.primary + '15' }]}>
+                    <TrendingUp size={18} color={theme.colors.primary} />
+                  </View>
+                  <Text style={[styles.suggestionText, { color: theme.colors.text }]}>Hur kan jag plugga mer effektivt?</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.suggestionButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                  style={[styles.suggestionButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.secondary + '30' }]}
                   onPress={() => setInput('Ge mig tips för att komma ihåg saker bättre')}
                 >
-                  <Text style={[styles.suggestionText, { color: theme.colors.primary }]}>Ge mig tips för att komma ihåg saker bättre</Text>
+                  <View style={[styles.suggestionIcon, { backgroundColor: theme.colors.secondary + '15' }]}>
+                    <Lightbulb size={18} color={theme.colors.secondary} />
+                  </View>
+                  <Text style={[styles.suggestionText, { color: theme.colors.text }]}>Ge mig tips för att komma ihåg saker bättre</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.suggestionButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-                  onPress={() => setInput('Vad är Pomodoro-tekniken?')}
+                  style={[styles.suggestionButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.warning + '30' }]}
+                  onPress={() => setInput('Förklara Pomodoro-tekniken')}
                 >
-                  <Text style={[styles.suggestionText, { color: theme.colors.primary }]}>Vad är Pomodoro-tekniken?</Text>
+                  <View style={[styles.suggestionIcon, { backgroundColor: theme.colors.warning + '15' }]}>
+                    <Flame size={18} color={theme.colors.warning} />
+                  </View>
+                  <Text style={[styles.suggestionText, { color: theme.colors.text }]}>Förklara Pomodoro-tekniken</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.suggestionButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.success + '30' }]}
+                  onPress={() => setInput('Hjälp mig med matematik')}
+                >
+                  <View style={[styles.suggestionIcon, { backgroundColor: theme.colors.success + '15' }]}>
+                    <BookOpen size={18} color={theme.colors.success} />
+                  </View>
+                  <Text style={[styles.suggestionText, { color: theme.colors.text }]}>Hjälp mig med matematik</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -219,18 +244,41 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingVertical: 24,
     paddingBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  headerIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700' as const,
     color: '#fff',
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.85)',
+    fontWeight: '500' as const,
   },
   keyboardView: {
     flex: 1,
@@ -250,38 +298,56 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
   },
   emptyTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700' as const,
     marginBottom: 12,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   emptySubtitle: {
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 32,
+    marginBottom: 40,
+    paddingHorizontal: 8,
   },
   suggestionsContainer: {
     width: '100%',
     gap: 12,
   },
   suggestionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  suggestionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   suggestionText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '600' as const,
+    flex: 1,
+    lineHeight: 20,
   },
   messageContainer: {
     flexDirection: 'row',
@@ -304,15 +370,25 @@ const styles = StyleSheet.create({
   },
   messageBubble: {
     maxWidth: '75%',
-    padding: 12,
-    borderRadius: 16,
+    padding: 14,
+    borderRadius: 18,
   },
   userBubble: {
     borderBottomRightRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   assistantBubble: {
     borderBottomLeftRadius: 4,
-    borderWidth: 1,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   messageText: {
     fontSize: 15,
@@ -351,21 +427,31 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     fontSize: 15,
     maxHeight: 100,
-    marginRight: 8,
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
   sendButtonDisabled: {
-    backgroundColor: '#ccc',
+    opacity: 0.4,
   },
 });

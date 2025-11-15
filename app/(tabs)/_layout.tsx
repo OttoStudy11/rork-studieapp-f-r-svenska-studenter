@@ -136,7 +136,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="ai-chat"
         options={{
-          title: "AI",
+          title: "StudieStugan AI",
           tabBarIcon: ({ color, size, focused }) => (
             <MessageCircle 
               color={color} 

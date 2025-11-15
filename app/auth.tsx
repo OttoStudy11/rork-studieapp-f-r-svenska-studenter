@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, Check } from 'lucide-react-native';
+import { Home, Flame, Mail, Lock, Eye, EyeOff, Check } from 'lucide-react-native';
 
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -157,7 +157,7 @@ export default function AuthScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#667eea', '#764ba2']}
+        colors={['#06B6D4', '#10B981']}
         style={styles.gradient}
       >
         <KeyboardAvoidingView 
@@ -170,7 +170,14 @@ export default function AuthScreen() {
           >
             <View style={styles.content}>
               <View style={styles.header}>
-                <GraduationCap size={80} color="white" style={styles.logo} />
+                <View style={styles.logoContainer}>
+                  <View style={styles.houseIcon}>
+                    <Home size={70} color="#1F2937" strokeWidth={3} />
+                    <View style={styles.flameContainer}>
+                      <Flame size={28} color="#FF6B35" fill="#FF6B35" />
+                    </View>
+                  </View>
+                </View>
                 <Text style={styles.title}>StudieStugan</Text>
                 <Text style={styles.subtitle}>
                   {showEmailConfirmation
@@ -409,7 +416,7 @@ const styles = StyleSheet.create({
   authButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#4F46E5',
+    color: '#1F2937',
   },
   linkButton: {
     alignItems: 'center',
@@ -490,5 +497,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  logoContainer: {
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  houseIcon: {
+    position: 'relative',
+    width: 90,
+    height: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 10,
+  },
+  flameContainer: {
+    position: 'absolute',
+    top: -2,
+    right: 12,
   },
 });

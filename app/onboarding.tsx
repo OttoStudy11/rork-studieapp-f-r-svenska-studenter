@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
-import { GraduationCap, BookOpen, MapPin } from 'lucide-react-native';
+import { GraduationCap, BookOpen, MapPin, Home, Flame } from 'lucide-react-native';
 import { SWEDISH_GYMNASIUMS } from '@/constants/gymnasiums';
 import { AnimatedPressable, PressableCard, RippleButton, FadeInView } from '@/components/Animations';
 import GymnasiumAndProgramPicker from '@/components/GymnasiumAndProgramPicker';
@@ -367,7 +367,14 @@ export default function OnboardingScreen() {
       case 0:
         return (
           <View style={styles.stepContainer}>
-            <GraduationCap size={80} color="#4F46E5" style={styles.icon} />
+            <View style={styles.logoContainer}>
+              <View style={styles.houseIcon}>
+                <Home size={60} color="#1F2937" strokeWidth={3} />
+                <View style={styles.flameContainer}>
+                  <Flame size={24} color="#FF6B35" fill="#FF6B35" />
+                </View>
+              </View>
+            </View>
             <Text style={styles.title}>Hej {user?.email?.split('@')[0] || 'där'}!</Text>
             <Text style={styles.subtitle}>Skapa ditt användarnamn och visningsnamn</Text>
             
@@ -418,7 +425,7 @@ export default function OnboardingScreen() {
       case 1:
         return (
           <View style={styles.stepContainer}>
-            <BookOpen size={80} color="#4F46E5" style={styles.icon} />
+            <BookOpen size={80} color="#1F2937" style={styles.icon} />
             <Text style={styles.title}>Välj program och årskurs</Text>
             <Text style={styles.subtitle}>Vilken nivå studerar du på?</Text>
             
@@ -522,7 +529,7 @@ export default function OnboardingScreen() {
         
         return (
           <View style={styles.stepContainer}>
-            <MapPin size={60} color="#4F46E5" style={styles.icon} />
+            <MapPin size={60} color="#1F2937" style={styles.icon} />
             <Text style={styles.title}>Välj gymnasium</Text>
             <Text style={styles.subtitle}>Vilket gymnasium går du på?</Text>
             <ScrollView style={styles.programScrollView} showsVerticalScrollIndicator={false}>
@@ -570,7 +577,7 @@ export default function OnboardingScreen() {
         
         return (
           <View style={styles.stepContainer}>
-            <BookOpen size={60} color="#4F46E5" style={styles.icon} />
+            <BookOpen size={60} color="#1F2937" style={styles.icon} />
             <Text style={styles.title}>Välj dina kurser</Text>
             <Text style={styles.subtitle}>
               {data.gymnasiumProgram?.name} - År {data.year}
@@ -645,7 +652,7 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#667eea', '#764ba2']}
+        colors={['#06B6D4', '#10B981']}
         style={styles.gradient}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -677,7 +684,7 @@ export default function OnboardingScreen() {
               ]}
               onPress={handleNext}
               disabled={!canProceed()}
-              rippleColor="#4F46E5"
+              rippleColor="#1F2937"
               rippleOpacity={0.2}
             >
               <Text style={styles.nextButtonText}>
@@ -766,7 +773,7 @@ const styles = StyleSheet.create({
   },
   selectedOption: {
     backgroundColor: 'white',
-    borderColor: '#4F46E5',
+    borderColor: '#1F2937',
   },
   optionText: {
     fontSize: 18,
@@ -775,7 +782,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   selectedOptionText: {
-    color: '#4F46E5',
+    color: '#1F2937',
   },
   multiSelectContainer: {
     width: '100%',
@@ -802,7 +809,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   selectedMultiText: {
-    color: '#4F46E5',
+    color: '#1F2937',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -850,7 +857,7 @@ const styles = StyleSheet.create({
   atSymbol: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#4F46E5',
+    color: '#1F2937',
     marginRight: 4,
   },
   usernameInput: {
@@ -868,7 +875,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   nextButtonText: {
-    color: '#4F46E5',
+    color: '#1F2937',
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -897,7 +904,7 @@ const styles = StyleSheet.create({
   },
   selectedProgramCard: {
     backgroundColor: 'white',
-    borderColor: '#4F46E5',
+    borderColor: '#1F2937',
   },
   programCardText: {
     fontSize: 16,
@@ -913,7 +920,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   selectedProgramCardText: {
-    color: '#4F46E5',
+    color: '#1F2937',
   },
   yearContainer: {
     flexDirection: 'row',
@@ -930,7 +937,7 @@ const styles = StyleSheet.create({
   },
   selectedYearButton: {
     backgroundColor: 'white',
-    borderColor: '#4F46E5',
+    borderColor: '#1F2937',
   },
   yearButtonText: {
     fontSize: 16,
@@ -939,7 +946,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   selectedYearButtonText: {
-    color: '#4F46E5',
+    color: '#1F2937',
   },
   coursesScrollView: {
     maxHeight: 450,
@@ -962,7 +969,7 @@ const styles = StyleSheet.create({
   },
   selectedCourseCardLarge: {
     backgroundColor: 'white',
-    borderColor: '#4F46E5',
+    borderColor: '#1F2937',
   },
   mandatoryCourseCardLarge: {
     opacity: 0.7,
@@ -974,7 +981,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   selectedCourseCardLargeText: {
-    color: '#4F46E5',
+    color: '#1F2937',
   },
   mandatoryBadgeLarge: {
     position: 'absolute',
@@ -1022,5 +1029,21 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: 'white',
     fontWeight: '600',
+  },
+  logoContainer: {
+    marginBottom: 30,
+    alignItems: 'center',
+  },
+  houseIcon: {
+    position: 'relative',
+    width: 80,
+    height: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flameContainer: {
+    position: 'absolute',
+    top: -4,
+    right: 10,
   },
 });

@@ -1035,7 +1035,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 180,
+    height: 180,
   },
 });

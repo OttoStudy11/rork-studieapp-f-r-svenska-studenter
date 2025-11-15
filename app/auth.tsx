@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 110,
-    height: 110,
+    width: 180,
+    height: 180,
   },
 });

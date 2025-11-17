@@ -665,15 +665,19 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
 
   const addPomodoroSession = useCallback(async (session: Omit<PomodoroSession, 'id'>) => {
     try {
-      if (!authUser) return;
+      if (!authUser) {
+        console.error('Cannot add pomodoro session: No authenticated user');
+        return;
+      }
       
-      console.log('Adding pomodoro session:', session);
+      console.log('Adding pomodoro session for user:', authUser.id);
+      console.log('Session details:', { duration: session.duration, courseId: session.courseId });
       
       // Test database connection
       const dbConnected = await testDatabaseConnection();
       
       if (dbConnected) {
-        console.log('Saving pomodoro session to database');
+        console.log('Database connected, saving pomodoro session');
         
         // Save to database
         const { data, error } = await supabase
@@ -689,11 +693,14 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           .single();
         
         if (error) {
-          console.error('Error saving pomodoro session to database:', error);
+          console.error('❌ Error saving pomodoro session to database:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
           throw error;
         }
         
         if (data) {
+          console.log('✅ Pomodoro session saved to database with ID:', data.id);
+          
           // Add to local state with database ID
           const dbSession: PomodoroSession = {
             id: data.id,
@@ -704,11 +711,11 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           };
           
           setPomodoroSessions(prev => [dbSession, ...prev]);
-          console.log('Pomodoro session saved to database successfully');
+          console.log('✅ Pomodoro session added to local state');
           
           // Also save to study_sessions table for progress tracking
           try {
-            const { error: studySessionError } = await supabase
+            const { data: studySessionData, error: studySessionError } = await supabase
               .from('study_sessions')
               .insert({
                 user_id: authUser.id,
@@ -717,20 +724,29 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
                 technique: 'pomodoro',
                 completed: true,
                 created_at: session.endTime
-              });
+              })
+              .select()
+              .single();
             
             if (studySessionError) {
-              console.warn('Could not save to study_sessions:', studySessionError);
+              console.warn('⚠️ Could not save to study_sessions:', studySessionError.message);
             } else {
-              console.log('Study session also saved for progress tracking');
+              console.log('✅ Study session saved with ID:', studySessionData?.id);
             }
             
             // Update user_progress table
-            const { data: existingProgress } = await supabase
+            console.log('Updating user_progress table...');
+            const { data: existingProgress, error: progressFetchError } = await supabase
               .from('user_progress')
               .select('total_study_time, total_sessions, current_streak, last_study_date, longest_streak')
               .eq('user_id', authUser.id)
-              .single();
+              .maybeSingle();
+            
+            if (progressFetchError) {
+              console.warn('⚠️ Could not fetch existing progress:', progressFetchError.message);
+            }
+            
+            console.log('Existing progress:', existingProgress);
             
             const today = new Date().toISOString().split('T')[0];
             const lastStudyDate = existingProgress?.last_study_date?.split('T')[0];
@@ -745,27 +761,51 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
               newStreak = (existingProgress?.current_streak || 0) + 1;
             }
             
-            const { error: progressError } = await supabase
+            console.log('Calculated new streak:', newStreak);
+            
+            const progressUpdate = {
+              user_id: authUser.id,
+              total_study_time: (existingProgress?.total_study_time || 0) + session.duration,
+              total_sessions: (existingProgress?.total_sessions || 0) + 1,
+              current_streak: newStreak,
+              longest_streak: Math.max(newStreak, existingProgress?.longest_streak || 0),
+              last_study_date: session.endTime,
+              updated_at: new Date().toISOString()
+            };
+            
+            console.log('Progress update data:', progressUpdate);
+            
+            const { data: updatedProgress, error: progressError } = await supabase
               .from('user_progress')
-              .upsert({
-                user_id: authUser.id,
-                total_study_time: (existingProgress?.total_study_time || 0) + session.duration,
-                total_sessions: (existingProgress?.total_sessions || 0) + 1,
-                current_streak: newStreak,
-                longest_streak: Math.max(newStreak, existingProgress?.longest_streak || 0),
-                last_study_date: session.endTime,
-                updated_at: new Date().toISOString()
-              }, {
+              .upsert(progressUpdate, {
                 onConflict: 'user_id'
-              });
+              })
+              .select()
+              .single();
             
             if (progressError) {
-              console.warn('Could not update user_progress:', progressError);
+              console.error('❌ Could not update user_progress:', progressError.message);
+              console.error('Progress error details:', JSON.stringify(progressError, null, 2));
             } else {
-              console.log('User progress updated successfully');
+              console.log('✅ User progress updated successfully:', updatedProgress);
+            }
+            
+            // Update course progress if a course was selected
+            if (session.courseId) {
+              console.log('Updating course progress for course:', session.courseId);
+              const { data: userCourseData, error: userCourseError } = await supabase
+                .from('user_courses')
+                .select('progress')
+                .eq('user_id', authUser.id)
+                .eq('course_id', session.courseId)
+                .maybeSingle();
+              
+              if (!userCourseError && userCourseData) {
+                console.log('Current course progress:', userCourseData.progress);
+              }
             }
           } catch (progressUpdateError) {
-            console.error('Error updating progress:', progressUpdateError);
+            console.error('❌ Exception updating progress:', progressUpdateError);
           }
           
           return;
@@ -773,6 +813,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       }
       
       // Fallback: Create local pomodoro session if database is not available
+      console.warn('⚠️ Database not available, creating local session');
       const localSession: PomodoroSession = {
         id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         courseId: session.courseId,
@@ -782,10 +823,10 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       };
       
       setPomodoroSessions(prev => [localSession, ...prev]);
-      console.log('Pomodoro session created locally (database not available)');
+      console.log('✅ Pomodoro session created locally');
       
     } catch (error) {
-      console.error('Error adding pomodoro session:', error);
+      console.error('❌ Error adding pomodoro session:', error);
       throw error;
     }
   }, [authUser]);

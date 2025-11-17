@@ -134,6 +134,22 @@ export default function CourseDetailScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
+  
+  // Reload data when screen becomes focused (e.g., returning from a lesson)
+  useEffect(() => {
+    const unsubscribe = router.subscribe(() => {
+      if (id && user?.id) {
+        console.log('Screen focused, reloading course data');
+        loadCourseData();
+      }
+    });
+    
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [id, user?.id]);
 
   const loadCourseData = async () => {
     try {

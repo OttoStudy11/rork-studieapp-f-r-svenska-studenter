@@ -140,6 +140,9 @@ export default function LessonDetailScreen() {
     try {
       const timeSpent = Math.round((new Date().getTime() - startTime.getTime()) / (1000 * 60));
       
+      console.log('📝 Marking lesson as completed:', lesson.title);
+      console.log('Time spent:', timeSpent, 'minutes');
+      
       const { data, error } = await supabase
         .from('user_lesson_progress')
         .upsert({
@@ -158,14 +161,63 @@ export default function LessonDetailScreen() {
         .single();
 
       if (error) {
-        console.error('Error marking lesson as completed:', error);
+        console.error('❌ Error marking lesson as completed:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         Alert.alert('Fel', 'Kunde inte markera lektionen som slutförd');
-      } else {
-        setProgress(data);
-        Alert.alert('Grattis!', 'Du har slutfört lektionen!');
+        return;
       }
+      
+      console.log('✅ Lesson progress saved:', data);
+      setProgress(data);
+      
+      // Update user_courses progress
+      try {
+        console.log('Updating course progress for course:', lesson.course_id);
+        
+        // Get all lessons in this course
+        const { data: allLessons, error: lessonsError } = await supabase
+          .from('course_lessons')
+          .select('id')
+          .eq('course_id', lesson.course_id);
+        
+        if (lessonsError) {
+          console.warn('Could not fetch all lessons:', lessonsError.message);
+        } else {
+          // Get user progress for all lessons
+          const { data: allProgress, error: progressError } = await supabase
+            .from('user_lesson_progress')
+            .select('lesson_id, status')
+            .eq('user_id', user.id)
+            .eq('course_id', lesson.course_id);
+          
+          if (!progressError && allLessons && allProgress) {
+            const totalLessons = allLessons.length;
+            const completedLessons = allProgress.filter(p => p.status === 'completed').length;
+            const courseProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+            
+            console.log(`Course progress calculated: ${completedLessons}/${totalLessons} = ${courseProgress}%`);
+            
+            // Update user_courses
+            const { error: updateError } = await supabase
+              .from('user_courses')
+              .update({ progress: courseProgress })
+              .eq('user_id', user.id)
+              .eq('course_id', lesson.course_id);
+            
+            if (updateError) {
+              console.error('❌ Could not update course progress:', updateError.message);
+            } else {
+              console.log('✅ Course progress updated to', courseProgress, '%');
+            }
+          }
+        }
+      } catch (courseProgressError) {
+        console.error('❌ Error updating course progress:', courseProgressError);
+      }
+      
+      Alert.alert('Grattis! 🎉', 'Du har slutfört lektionen!');
     } catch (error) {
-      console.error('Error in markLessonCompleted:', error);
+      console.error('❌ Error in markLessonCompleted:', error);
     }
   };
 

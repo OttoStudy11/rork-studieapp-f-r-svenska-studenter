@@ -391,24 +391,39 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     );
     await saveCourses(updatedCourses);
     
+    console.log('⏱️ Logging study time:', hours, 'hours for course:', courseId);
+    
     // Also update in Supabase if course has a code
     const course = courses.find(c => c.id === courseId);
     if (course?.code && user?.id) {
       try {
-        const progress = Math.round(((course.studiedHours + hours) / course.totalHours) * 100);
-        const { error } = await supabase
+        const newStudiedHours = course.studiedHours + hours;
+        const progress = Math.round((newStudiedHours / course.totalHours) * 100);
+        
+        console.log('Updating course progress:', {
+          courseId: course.code,
+          studiedHours: newStudiedHours,
+          totalHours: course.totalHours,
+          progress: progress
+        });
+        
+        const { data: updatedCourse, error } = await supabase
           .from('user_courses')
           .update({ progress })
           .eq('user_id', user.id)
-          .eq('course_id', course.code);
+          .eq('course_id', course.code)
+          .select()
+          .single();
         
         if (error) {
-          console.error('Error updating course progress in Supabase:', error);
+          console.error('❌ Error updating course progress in Supabase:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
         } else {
-          console.log('Course progress updated in Supabase');
+          console.log('✅ Course progress updated in Supabase to', progress, '%');
+          console.log('Updated data:', updatedCourse);
         }
       } catch (error) {
-        console.error('Exception updating course progress:', error);
+        console.error('❌ Exception updating course progress:', error);
       }
     }
   }, [courses, saveCourses, user?.id]);

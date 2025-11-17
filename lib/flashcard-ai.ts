@@ -54,7 +54,7 @@ export async function generateFlashcardsFromContent(
 
     if (lessonId) {
       const { data: lessonData, error: lessonError } = await supabase
-        .from('lessons')
+        .from('course_lessons')
         .select('title, content')
         .eq('id', lessonId)
         .single();
@@ -70,7 +70,7 @@ export async function generateFlashcardsFromContent(
       }
     } else if (moduleId) {
       const { data: lessonsData, error: lessonsError } = await supabase
-        .from('lessons')
+        .from('course_lessons')
         .select('title, content')
         .eq('module_id', moduleId)
         .limit(5);
@@ -88,10 +88,10 @@ export async function generateFlashcardsFromContent(
       }
     } else {
       const { data: modulesData, error: modulesError } = await supabase
-        .from('modules')
+        .from('course_modules')
         .select(`
           title,
-          lessons (title, content)
+          course_lessons (title, content)
         `)
         .eq('course_id', courseId)
         .limit(3);
@@ -104,7 +104,7 @@ export async function generateFlashcardsFromContent(
       if (modulesData && modulesData.length > 0) {
         modulesData.forEach((module: any) => {
           content += `Modul: ${module.title}\n`;
-          module.lessons?.slice(0, 3).forEach((lesson: any) => {
+          module.course_lessons?.slice(0, 3).forEach((lesson: any) => {
             content += `  Lektion: ${lesson.title}\n${lesson.content}\n`;
           });
           content += '\n';

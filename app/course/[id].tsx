@@ -34,7 +34,8 @@ import {
   Award,
   Edit3,
   Save,
-  X as CloseIcon
+  X as CloseIcon,
+  Brain
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Database } from '@/lib/database.types';
@@ -487,6 +488,24 @@ export default function CourseDetailScreen() {
             <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Studiehjälpmedel</Text>
           </View>
         </Animated.View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>🎯 Snabbåtkomst</Text>
+          
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: theme.colors.card }]}
+            onPress={() => router.push(`/flashcards/${id}` as any)}
+          >
+            <View style={[styles.actionIconContainer, { backgroundColor: courseStyle.primaryColor + '20' }]}>
+              <Brain size={24} color={courseStyle.primaryColor} />
+            </View>
+            <View style={styles.actionInfo}>
+              <Text style={[styles.actionTitle, { color: theme.colors.text }]}>Flashcards</Text>
+              <Text style={[styles.actionDescription, { color: theme.colors.textSecondary }]}>Öva med AI-genererade flashcards</Text>
+            </View>
+            <ChevronRight size={20} color={theme.colors.textMuted} />
+          </TouchableOpacity>
+        </View>
 
         {studyGuides.length > 0 && (
           <View style={styles.section}>
@@ -1134,5 +1153,36 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  actionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  actionInfo: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  actionDescription: {
+    fontSize: 14,
   },
 });

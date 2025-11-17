@@ -80,7 +80,8 @@ export default function OnboardingScreen() {
     goals: [],
     purpose: [],
     selectedCourses: new Set(),
-    year: null
+    year: null,
+    avatarConfig: DEFAULT_AVATAR_CONFIG
   });
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
@@ -188,7 +189,8 @@ export default function OnboardingScreen() {
   }, [data.username]);
 
   const handleNext = () => {
-    if (step < 3) {
+    const maxSteps = data.studyLevel === 'gymnasie' ? 4 : 2;
+    if (step < maxSteps) {
       setStep(step + 1);
     } else {
       handleComplete();
@@ -226,7 +228,8 @@ export default function OnboardingScreen() {
           subscriptionType: 'free',
           gymnasium: gymnasium,
           avatar: { emoji: '😊' },
-          selectedCourses: Array.from(data.selectedCourses)
+          selectedCourses: Array.from(data.selectedCourses),
+          avatarConfig: data.avatarConfig
         });
         
         // Sync courses to Supabase using the same logic as CoursePickerModal
@@ -365,6 +368,7 @@ export default function OnboardingScreen() {
         }
         return true;
       case 3: return data.studyLevel !== 'gymnasie' || data.selectedCourses.size > 0;
+      case 4: return true;
       default: return false;
     }
   };
@@ -689,7 +693,21 @@ export default function OnboardingScreen() {
           </View>
         );
 
-
+      case 4:
+        return (
+          <View style={styles.stepContainer}>
+            <Text style={styles.title}>Skapa din avatar</Text>
+            <Text style={styles.subtitle}>Designa din personliga karaktär</Text>
+            <View style={styles.avatarBuilderContainer}>
+              <AvatarBuilder
+                initialConfig={data.avatarConfig}
+                onSave={(config) => {
+                  setData({ ...data, avatarConfig: config });
+                }}
+              />
+            </View>
+          </View>
+        );
 
       default:
         return null;
@@ -705,9 +723,9 @@ export default function OnboardingScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 4 : 2)) * 100}%` }]} />
+              <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 5 : 3)) * 100}%` }]} />
             </View>
-            <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '4' : '2'}</Text>
+            <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '5' : '3'}</Text>
           </View>
 
           <FadeInView key={step} duration={300}>
@@ -735,7 +753,7 @@ export default function OnboardingScreen() {
               rippleOpacity={0.2}
             >
               <Text style={styles.nextButtonText}>
-                {step === (data.studyLevel === 'gymnasie' ? 3 : 1) ? 'Slutför' : 'Nästa'}
+                {step === (data.studyLevel === 'gymnasie' ? 4 : 2) ? 'Slutför' : 'Nästa'}
               </Text>
             </RippleButton>
           </View>
@@ -1131,5 +1149,10 @@ const styles = StyleSheet.create({
   logo: {
     width: 180,
     height: 180,
+  },
+  avatarBuilderContainer: {
+    flex: 1,
+    width: '100%',
+    marginTop: 20,
   },
 });

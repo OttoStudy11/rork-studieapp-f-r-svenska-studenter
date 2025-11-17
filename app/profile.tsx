@@ -8,11 +8,14 @@ import {
   SafeAreaView,
   TextInput,
   Modal,
-  Alert,
+  StatusBar,
+  Dimensions,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { 
   Edit3, 
   Settings, 
@@ -20,20 +23,29 @@ import {
   Clock, 
   Target, 
   TrendingUp,
-  Download,
-  LogOut,
+  Award,
+  Star,
+  Flame,
   X,
-  ArrowLeft
+  ChevronRight,
+  User,
+  Mail,
+  Calendar,
+  Sparkles
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AnimatedPressable } from '@/components/Animations';
+import { AnimatedPressable, FadeInView } from '@/components/Animations';
 import { router } from 'expo-router';
-import AvatarCustomizer, { type AvatarConfig } from '@/components/AvatarCustomizer';
-import Avatar from '@/components/Avatar';
+import CharacterAvatar from '@/components/CharacterAvatar';
+import type { AvatarConfig } from '@/constants/avatar-config';
+import AvatarBuilder from '@/components/AvatarBuilder';
+
+const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const { user, courses, pomodoroSessions, updateUser } = useStudy();
-
+  const { user: authUser } = useAuth();
+  const { theme, isDark } = useTheme();
   const { showSuccess } = useToast();
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -42,14 +54,6 @@ export default function ProfileScreen() {
     purpose: user?.purpose || ''
   });
   const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(user?.avatar || {
-    skinTone: 'medium-light',
-    hairStyle: 'medium',
-    hairColor: 'brown',
-    eyeColor: 'brown',
-    clothingColor: 'blue',
-    accessory: 'none'
-  });
 
   const totalStudyTime = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
   const averageProgress = courses.length > 0 
@@ -93,13 +97,14 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleSaveAvatar = async () => {
+  const handleSaveAvatar = async (config: AvatarConfig) => {
     try {
-      await updateUser({ avatar: avatarConfig });
+      await updateUser({ avatar: config });
       setShowAvatarModal(false);
       showSuccess('Avatar uppdaterad! ✅');
     } catch (error) {
-      Alert.alert('Fel', 'Kunde inte uppdatera avatar');
+      console.error('Error updating avatar:', error);
+      showSuccess('Kunde inte uppdatera avatar');
     }
   };
 
@@ -117,165 +122,206 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <Stack.Screen options={{ 
           title: 'Profil',
-          headerShown: true,
-          headerStyle: { backgroundColor: '#4F46E5' },
-          headerTintColor: 'white',
-          headerTitleStyle: { fontWeight: 'bold' }
+          headerShown: false
         }} />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Laddar profil...</Text>
+          <Text style={[styles.loadingText, { color: theme.colors.text }]}>Laddar profil...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Stack.Screen options={{ 
         title: 'Min Profil',
-        headerShown: true,
-        headerStyle: { backgroundColor: '#4F46E5' },
-        headerTintColor: 'white',
-        headerTitleStyle: { fontWeight: 'bold' },
-        headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color="white" />
-          </TouchableOpacity>
-        )
+        headerShown: false
       }} />
+      <StatusBar 
+        barStyle={isDark ? 'light-content' : 'dark-content'} 
+        backgroundColor={theme.colors.background}
+      />
       
-      {/* Header */}
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.header}
+      {/* Profile Header Card */}
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.profileSection}>
+        <LinearGradient
+          colors={theme.colors.gradient as any}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerCard}
+        >
           <TouchableOpacity 
-            style={styles.avatarContainer}
+            style={styles.avatarWrapper}
             onPress={() => setShowAvatarModal(true)}
+            activeOpacity={0.8}
           >
             {user.avatar ? (
-              <Avatar config={user.avatar} size={80} />
+              <View style={styles.avatarContainer}>
+                <CharacterAvatar config={user.avatar} size={140} showBorder />
+                <View style={styles.editAvatarBadge}>
+                  <Sparkles size={16} color="white" />
+                </View>
+              </View>
             ) : (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {user.name.charAt(0).toUpperCase()}
-                </Text>
+              <View style={styles.avatarContainer}>
+                <View style={styles.avatarPlaceholder}>
+                  <User size={60} color="white" />
+                </View>
+                <View style={styles.editAvatarBadge}>
+                  <Sparkles size={16} color="white" />
+                </View>
               </View>
             )}
-            <View style={styles.editAvatarBadge}>
-              <Edit3 size={12} color="white" />
-            </View>
           </TouchableOpacity>
-          <View style={styles.profileInfo}>
+          
+          <View style={styles.profileHeaderInfo}>
             <Text style={styles.profileName}>{user.name}</Text>
-            <Text style={styles.profileProgram}>
-              {user.program} • {user.studyLevel === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
-            </Text>
-            <Text style={styles.motivationalText}>{getMotivationalMessage()}</Text>
+            <View style={styles.profileMetaRow}>
+              <Mail size={14} color="rgba(255, 255, 255, 0.9)" />
+              <Text style={styles.profileEmail}>{authUser?.email || 'Okänd e-post'}</Text>
+            </View>
+            {user.program && (
+              <View style={styles.profileProgramTag}>
+                <Text style={styles.profileProgramText}>{user.program}</Text>
+              </View>
+            )}
           </View>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => setShowEditModal(true)}
-          >
-            <Edit3 size={20} color="white" />
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Stats Overview */}
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Din statistik</Text>
+        {/* Quick Stats Grid */}
+        <View style={styles.statsContainer}>
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <BookOpen size={24} color="#4F46E5" />
-              <Text style={styles.statNumber}>{courses.length}</Text>
-              <Text style={styles.statLabel}>Kurser</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIconCircle, { backgroundColor: theme.colors.primary + '15' }]}>
+                <BookOpen size={24} color={theme.colors.primary} />
+              </View>
+              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{courses.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Kurser</Text>
             </View>
-            <View style={styles.statCard}>
-              <Target size={24} color="#10B981" />
-              <Text style={styles.statNumber}>{activeCourses}</Text>
-              <Text style={styles.statLabel}>Aktiva</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIconCircle, { backgroundColor: theme.colors.secondary + '15' }]}>
+                <Target size={24} color={theme.colors.secondary} />
+              </View>
+              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{activeCourses}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Aktiva</Text>
             </View>
-            <View style={styles.statCard}>
-              <Clock size={24} color="#F59E0B" />
-              <Text style={styles.statNumber}>{totalStudyTime}</Text>
-              <Text style={styles.statLabel}>Minuter</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIconCircle, { backgroundColor: theme.colors.warning + '15' }]}>
+                <Clock size={24} color={theme.colors.warning} />
+              </View>
+              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{totalStudyTime}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Minuter</Text>
             </View>
-            <View style={styles.statCard}>
-              <TrendingUp size={24} color="#EF4444" />
-              <Text style={styles.statNumber}>{averageProgress}%</Text>
-              <Text style={styles.statLabel}>Genomsnitt</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIconCircle, { backgroundColor: theme.colors.success + '15' }]}>
+                <TrendingUp size={24} color={theme.colors.success} />
+              </View>
+              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{averageProgress}%</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Genomsnitt</Text>
             </View>
           </View>
         </View>
 
         {/* Study Goals */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dina mål</Text>
-          <View style={styles.goalCard}>
-            <Text style={styles.goalText}>{user.purpose}</Text>
+        {user.purpose && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dina mål</Text>
+            <View style={[styles.goalCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.goalIconCircle, { backgroundColor: theme.colors.primary + '15' }]}>
+                <Star size={20} color={theme.colors.primary} />
+              </View>
+              <Text style={[styles.goalText, { color: theme.colors.text }]}>{user.purpose}</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Recent Activity */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Senaste aktivitet</Text>
-          {pomodoroSessions.slice(0, 5).map((session, sessionIndex) => (
-            <View key={`session-${sessionIndex}-${session.id}`} style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Clock size={16} color="#4F46E5" />
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Senaste aktivitet</Text>
+          <View style={[styles.activityCard, { backgroundColor: theme.colors.card }]}>
+            {pomodoroSessions.length > 0 ? (
+              pomodoroSessions.slice(0, 5).map((session, sessionIndex) => (
+                <View key={`session-${sessionIndex}-${session.id}`}>
+                  <View style={styles.activityItem}>
+                    <View style={[styles.activityIconCircle, { backgroundColor: theme.colors.primary + '15' }]}>
+                      <Clock size={18} color={theme.colors.primary} />
+                    </View>
+                    <View style={styles.activityInfo}>
+                      <Text style={[styles.activityTitle, { color: theme.colors.text }]}>
+                        {session.courseId 
+                          ? courses.find(c => c.id === session.courseId)?.title || 'Okänd kurs'
+                          : 'Allmän session'
+                        }
+                      </Text>
+                      <Text style={[styles.activityTime, { color: theme.colors.textSecondary }]}>
+                        {session.duration} minuter • {new Date(session.endTime).toLocaleDateString('sv-SE')}
+                      </Text>
+                    </View>
+                  </View>
+                  {sessionIndex < 4 && sessionIndex < pomodoroSessions.length - 1 && (
+                    <View style={[styles.activityDivider, { backgroundColor: theme.colors.borderLight }]} />
+                  )}
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyActivity}>
+                <Flame size={48} color={theme.colors.textMuted} />
+                <Text style={[styles.emptyActivityText, { color: theme.colors.text }]}>Ingen aktivitet än</Text>
+                <Text style={[styles.emptyActivitySubtext, { color: theme.colors.textSecondary }]}>Starta din första studiesession!</Text>
               </View>
-              <View style={styles.activityInfo}>
-                <Text style={styles.activityTitle}>
-                  {session.courseId 
-                    ? courses.find(c => c.id === session.courseId)?.title || 'Okänd kurs'
-                    : 'Allmän session'
-                  }
-                </Text>
-                <Text style={styles.activityTime}>
-                  {session.duration} minuter • {new Date(session.endTime).toLocaleDateString('sv-SE')}
-                </Text>
-              </View>
-            </View>
-          ))}
-          
-          {pomodoroSessions.length === 0 && (
-            <View style={styles.emptyActivity}>
-              <Text style={styles.emptyActivityText}>Ingen aktivitet än</Text>
-              <Text style={styles.emptyActivitySubtext}>Starta din första studiesession!</Text>
-            </View>
-          )}
+            )}
+          </View>
         </View>
 
-        {/* Settings */}
+        {/* Quick Actions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Inställningar</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Snabblänkar</Text>
           
-          <AnimatedPressable 
-            style={styles.settingItem}
-            onPress={() => {
-              router.push('/settings');
-              showSuccess('Navigerar', 'Öppnar inställningar');
-            }}
-          >
-            <Settings size={20} color="#6B7280" />
-            <Text style={styles.settingText}>Appinställningar</Text>
-          </AnimatedPressable>
+          <View style={[styles.actionsCard, { backgroundColor: theme.colors.card }]}>
+            <AnimatedPressable 
+              style={styles.actionItem}
+              onPress={() => setShowEditModal(true)}
+            >
+              <View style={[styles.actionIconCircle, { backgroundColor: theme.colors.primary + '15' }]}>
+                <Edit3 size={20} color={theme.colors.primary} />
+              </View>
+              <Text style={[styles.actionText, { color: theme.colors.text }]}>Redigera profil</Text>
+              <ChevronRight size={20} color={theme.colors.textMuted} />
+            </AnimatedPressable>
 
-          <AnimatedPressable style={styles.settingItem} onPress={handleExportData}>
-            <Download size={20} color="#6B7280" />
-            <Text style={styles.settingText}>Exportera data</Text>
-          </AnimatedPressable>
+            <View style={[styles.actionDivider, { backgroundColor: theme.colors.borderLight }]} />
 
-          <AnimatedPressable style={styles.settingItem} onPress={handleSignOut}>
-            <LogOut size={20} color="#EF4444" />
-            <Text style={[styles.settingText, { color: '#EF4444' }]}>Logga ut</Text>
-          </AnimatedPressable>
+            <AnimatedPressable 
+              style={styles.actionItem}
+              onPress={() => router.push('/settings')}
+            >
+              <View style={[styles.actionIconCircle, { backgroundColor: theme.colors.secondary + '15' }]}>
+                <Settings size={20} color={theme.colors.secondary} />
+              </View>
+              <Text style={[styles.actionText, { color: theme.colors.text }]}>Inställningar</Text>
+              <ChevronRight size={20} color={theme.colors.textMuted} />
+            </AnimatedPressable>
+
+            <View style={[styles.actionDivider, { backgroundColor: theme.colors.borderLight }]} />
+
+            <AnimatedPressable 
+              style={styles.actionItem}
+              onPress={() => router.push('/achievements')}
+            >
+              <View style={[styles.actionIconCircle, { backgroundColor: theme.colors.warning + '15' }]}>
+                <Award size={20} color={theme.colors.warning} />
+              </View>
+              <Text style={[styles.actionText, { color: theme.colors.text }]}>Prestationer</Text>
+              <ChevronRight size={20} color={theme.colors.textMuted} />
+            </AnimatedPressable>
+          </View>
         </View>
       </ScrollView>
 
@@ -345,66 +391,158 @@ export default function ProfileScreen() {
         </SafeAreaView>
       </Modal>
 
-      {/* Avatar Customizer Modal */}
+      {/* Avatar Builder Modal */}
       <Modal
         visible={showAvatarModal}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
       >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Anpassa din avatar</Text>
-            <TouchableOpacity onPress={() => setShowAvatarModal(false)}>
-              <X size={24} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.avatarModalContent}>
-            <AvatarCustomizer
-              initialConfig={avatarConfig}
-              onAvatarChange={setAvatarConfig}
-            />
-          </View>
-
-          <View style={styles.modalFooter}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => {
-                setAvatarConfig(user?.avatar || {
-                  skinTone: 'medium-light',
-                  hairStyle: 'medium',
-                  hairColor: 'brown',
-                  eyeColor: 'brown',
-                  clothingColor: 'blue',
-                  accessory: 'none'
-                });
-                setShowAvatarModal(false);
-              }}
-            >
-              <Text style={styles.cancelButtonText}>Avbryt</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSaveAvatar}
-            >
-              <Text style={styles.saveButtonText}>Spara avatar</Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
+        <AvatarBuilder
+          initialConfig={user?.avatar}
+          onSave={handleSaveAvatar}
+          onCancel={() => setShowAvatarModal(false)}
+        />
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  headerCard: {
+    paddingTop: 60,
+    paddingBottom: 32,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  avatarWrapper: {
+    marginBottom: 20,
+  },
+  avatarPlaceholder: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileHeaderInfo: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  profileMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  profileEmail: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+  },
+  profileProgramTag: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 4,
+  },
+  profileProgramText: {
+    fontSize: 13,
+    color: 'white',
+    fontWeight: '600',
+  },
+  statsContainer: {
+    paddingHorizontal: 20,
+    marginTop: -32,
+    marginBottom: 24,
+  },
+  statIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  goalIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityCard: {
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  activityIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityDivider: {
+    height: 1,
+    marginVertical: 16,
+  },
+  actionsCard: {
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  actionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 18,
+  },
+  actionIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  actionText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  actionDivider: {
+    height: 1,
+    marginLeft: 72,
+  },
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-  },
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -412,29 +550,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6B7280',
-  },
-  header: {
-    padding: 24,
-    paddingTop: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: 16,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   editAvatarBadge: {
     position: 'absolute',
@@ -449,43 +567,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'white',
   },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  profileInfo: {
-    flex: 1,
-  },
+
   profileName: {
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 4,
   },
-  profileProgram: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 8,
-  },
-  motivationalText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '500',
-  },
-  editButton: {
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  statsSection: {
-    marginTop: -20,
-    marginBottom: 24,
-  },
+
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -523,97 +612,52 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   section: {
+    paddingHorizontal: 20,
     marginBottom: 24,
   },
   goalCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
     padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 4,
   },
   goalText: {
-    fontSize: 16,
-    color: '#1F2937',
-    lineHeight: 24,
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 22,
   },
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  activityIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#EEF2FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
   },
   activityInfo: {
     flex: 1,
   },
   activityTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   activityTime: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 13,
   },
   emptyActivity: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 32,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingVertical: 32,
   },
   emptyActivityText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#1F2937',
+    marginTop: 12,
     marginBottom: 4,
   },
   emptyActivitySubtext: {
     fontSize: 14,
-    color: '#6B7280',
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  settingText: {
-    fontSize: 16,
-    color: '#1F2937',
-    marginLeft: 12,
-    fontWeight: '500',
   },
   // Modal styles
   modalContainer: {
@@ -691,8 +735,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'white',
   },
-  avatarModalContent: {
-    flex: 1,
-    padding: 20,
-  },
+
 });

@@ -2,8 +2,8 @@
 CREATE TABLE IF NOT EXISTS flashcards (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-  module_id TEXT REFERENCES course_modules(id) ON DELETE CASCADE,
-  lesson_id TEXT REFERENCES course_lessons(id) ON DELETE CASCADE,
+  module_id UUID REFERENCES course_modules(id) ON DELETE CASCADE,
+  lesson_id UUID REFERENCES course_lessons(id) ON DELETE CASCADE,
   question TEXT NOT NULL,
   answer TEXT NOT NULL,
   difficulty INTEGER NOT NULL DEFAULT 1 CHECK (difficulty >= 1 AND difficulty <= 3),

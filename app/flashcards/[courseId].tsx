@@ -82,6 +82,16 @@ export default function FlashcardsScreen() {
     },
   });
 
+  const [hasAttemptedGeneration, setHasAttemptedGeneration] = useState(false);
+
+  React.useEffect(() => {
+    if (!isLoading && flashcards.length === 0 && courseId && !generateMutation.isPending && !hasAttemptedGeneration) {
+      console.log('Auto-generating flashcards for course:', courseId);
+      setHasAttemptedGeneration(true);
+      generateMutation.mutate();
+    }
+  }, [isLoading, flashcards.length, courseId, generateMutation.isPending, hasAttemptedGeneration]);
+
   const { data: progressData = [] } = useQuery({
     queryKey: ['flashcard-progress', user?.id, courseId],
     queryFn: async () => {
@@ -121,16 +131,18 @@ export default function FlashcardsScreen() {
 
   const generateMutation = useMutation({
     mutationFn: async () => {
+      console.log('Starting flashcard generation for course:', courseId);
       await generateFlashcardsFromContent({
         courseId: courseId!,
         count: 30,
       });
     },
     onSuccess: () => {
+      console.log('Flashcards generated successfully');
       queryClient.invalidateQueries({ queryKey: ['flashcards', courseId] });
-      Alert.alert('Klart!', 'Flashcards har genererats');
     },
     onError: (error) => {
+      console.error('Failed to generate flashcards:', error);
       Alert.alert('Fel', 'Kunde inte generera flashcards: ' + error.message);
     },
   });

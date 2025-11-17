@@ -89,20 +89,50 @@ export async function generateFlashcardsFromContent(
     messages: [
       {
         role: 'user',
-        content: `Du är en expert på att skapa pedagogiska flashcards för svenska gymnasieelever.
+        content: `Du är en expert på att skapa pedagogiska flashcards för svenska gymnasieelever som förbereder sig för prov och inlärning.
 
-Baserat på följande kursinnehåll, generera ${count} flashcards som:
-1. Täcker de viktigaste koncepten
-2. Har tydliga, konkreta frågor
-3. Ger korrekta och pedagogiska svar
-4. Varierar i svårighetsgrad (lätt, medel, svår)
-5. Inkluderar förklaringar där det behövs
-6. Använder korrekt svenska
+🎯 DITT MÅL:
+Skapa ${count} flashcards som effektivt hjälper elever att lära sig och komma ihåg kursinnehållet.
 
-Kursinnehåll:
+📋 KRAV PÅ FLASHCARDS:
+
+1. FRÅGOR:
+   - Tydliga och konkreta (undvik vaga formuleringar)
+   - Täcker viktiga koncept, definitioner, begrepp och samband
+   - Varierar mellan faktafrågor, förståelsefrågor och tillämpningsfrågor
+   - Använder olika frågetyper: "Vad är...?", "Förklara...", "Varför..?", "Hur..?", "Jämför..."
+   - Undvik ja/nej-frågor
+
+2. SVAR:
+   - Koncisa men kompletta (2-4 meningar)
+   - Pedagogiska och lätta att komma ihåg
+   - Inkluderar konkreta exempel där relevant
+   - Korrekt svenska och facktermer
+
+3. SVÅRIGHETSGRAD:
+   - 1 (Lätt): Grundläggande fakta och definitioner
+   - 2 (Medel): Förståelse och samband mellan koncept
+   - 3 (Svår): Analys, tillämpning och komplexa samband
+   - Fördela jämnt: ~40% lätt, ~40% medel, ~20% svår
+
+4. FÖRKLARINGAR (explanation):
+   - Lägg till fördjupande förklaringar för svårare koncept
+   - Använd analogier och exempel
+   - Hjälp eleven att förstå "varför" inte bara "vad"
+
+5. KONTEXT (context):
+   - Ange var i kursen konceptet dyker upp
+   - Exempel: "Modul 1: Världsreligionernas ursprung"
+
+6. TAGGAR (tags):
+   - Lägg till relevanta nyckelord för kategorisering
+   - Exempel: ["Islam", "Fem pelare", "Grundbegrepp"]
+
+📚 KURSINNEHÅLL:
 ${content}
 
-Skapa flashcards som hjälper eleverna att lära sig och komma ihåg materialet effektivt.`,
+✅ SKAPA NU ${count} FLASHCARDS:
+Fokusera på att täcka hela kursinnehållet jämnt, med betoning på de viktigaste koncepten som eleverna behöver kunna för att klara kursen.`,
       },
     ],
   });

@@ -17,6 +17,7 @@ export interface Database {
           display_name: string
           email: string | null
           avatar_url: string | null
+          avatar_config: Json | null
           level: string
           program: string
           purpose: string
@@ -35,6 +36,7 @@ export interface Database {
           display_name: string
           email?: string | null
           avatar_url?: string | null
+          avatar_config?: Json | null
           level: string
           program: string
           purpose: string
@@ -53,6 +55,7 @@ export interface Database {
           display_name?: string
           email?: string | null
           avatar_url?: string | null
+          avatar_config?: Json | null
           level?: string
           program?: string
           purpose?: string

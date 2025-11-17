@@ -23,6 +23,10 @@ import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 import { getGymnasiumCourses, type GymnasiumCourse } from '@/constants/gymnasium-courses';
 import { GYMNASIUM_PROGRAMS } from '@/constants/gymnasium-programs';
 
+import type { AvatarConfig } from '@/constants/avatar-config';
+import { DEFAULT_AVATAR_CONFIG } from '@/constants/avatar-config';
+import AvatarBuilder from '@/components/AvatarBuilder';
+
 interface OnboardingData {
   username: string;
   displayName: string;
@@ -35,6 +39,7 @@ interface OnboardingData {
   purpose: string[];
   selectedCourses: Set<string>;
   year: 1 | 2 | 3 | null;
+  avatarConfig: AvatarConfig;
 }
 
 const goalOptions = [

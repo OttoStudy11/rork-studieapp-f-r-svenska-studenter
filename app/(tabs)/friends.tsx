@@ -89,11 +89,11 @@ export default function FriendsScreen() {
       setIsLoading(true);
       console.log('Loading friends for user:', user.id);
       
-      const { data: friendsData, error: friendsError } = await supabase
+      const { data: friendsDataSent, error: friendsErrorSent } = await supabase
         .from('friends')
         .select(`
           id,
-          friend:profiles!friends_friend_id_fkey(
+          friend:profiles!friend_id(
             id,
             username,
             display_name,
@@ -105,11 +105,27 @@ export default function FriendsScreen() {
         .eq('user_id', user.id)
         .eq('status', 'accepted');
       
+      const { data: friendsDataReceived, error: friendsErrorReceived } = await supabase
+        .from('friends')
+        .select(`
+          id,
+          friend:profiles!user_id(
+            id,
+            username,
+            display_name,
+            program,
+            level,
+            avatar_url
+          )
+        `)
+        .eq('friend_id', user.id)
+        .eq('status', 'accepted');
+      
       const { data: requestsData, error: requestsError } = await supabase
         .from('friends')
         .select(`
           id,
-          requester:profiles!friends_user_id_fkey(
+          requester:profiles!user_id(
             id,
             username,
             display_name,
@@ -121,9 +137,15 @@ export default function FriendsScreen() {
         .eq('friend_id', user.id)
         .eq('status', 'pending');
       
-      if (friendsError) {
-        console.error('Error loading friends:', friendsError);
-        showError(`Kunde inte ladda vänner: ${friendsError.message}`);
+      if (friendsErrorSent) {
+        console.error('Error loading friends (sent):', friendsErrorSent);
+        showError(`Kunde inte ladda vänner: ${friendsErrorSent.message}`);
+        return;
+      }
+      
+      if (friendsErrorReceived) {
+        console.error('Error loading friends (received):', friendsErrorReceived);
+        showError(`Kunde inte ladda vänner: ${friendsErrorReceived.message}`);
         return;
       }
       
@@ -133,11 +155,24 @@ export default function FriendsScreen() {
         return;
       }
       
-      console.log('Friends loaded:', friendsData?.length || 0);
+      const friendsData = [...(friendsDataSent || []), ...(friendsDataReceived || [])];
+      
+      console.log('Friends loaded (sent):', friendsDataSent?.length || 0);
+      console.log('Friends loaded (received):', friendsDataReceived?.length || 0);
+      console.log('Total friends loaded:', friendsData.length);
       console.log('Friend requests loaded:', requestsData?.length || 0);
       
-      // Get friend IDs for progress data lookup
-      const friendIds = (friendsData || [])
+      const uniqueFriendsMap = new Map();
+      friendsData.forEach((f: any) => {
+        if (f.friend && f.friend.id) {
+          uniqueFriendsMap.set(f.friend.id, f);
+        }
+      });
+      
+      const uniqueFriends = Array.from(uniqueFriendsMap.values());
+      console.log('Unique friends after deduplication:', uniqueFriends.length);
+      
+      const friendIds = uniqueFriends
         .filter((f: any) => f.friend)
         .map((f: any) => f.friend.id);
       
@@ -151,7 +186,7 @@ export default function FriendsScreen() {
         console.warn('Could not load friend progress data:', progressError);
       }
       
-      const mappedFriends: Friend[] = (friendsData || []).map((f: any) => {
+      const mappedFriends: Friend[] = uniqueFriends.map((f: any) => {
         if (!f.friend) {
           console.warn('Friend data missing for:', f);
           return null;

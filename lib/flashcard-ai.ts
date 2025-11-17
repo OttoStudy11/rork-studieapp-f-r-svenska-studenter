@@ -1,19 +1,6 @@
-import { generateObject } from '@rork-ai/toolkit-sdk';
+import { generateObject, generateText } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
 import { supabase } from './supabase';
-
-const flashcardSchema = z.object({
-  flashcards: z.array(
-    z.object({
-      question: z.string().describe('Clear, specific question in Swedish'),
-      answer: z.string().describe('Concise, accurate answer in Swedish'),
-      difficulty: z.number().min(1).max(3).describe('1 = easy, 2 = medium, 3 = hard'),
-      explanation: z.string().optional().describe('Additional context or explanation in Swedish'),
-      context: z.string().optional().describe('Where this concept appears in the curriculum'),
-      tags: z.array(z.string()).optional().describe('Related topics or concepts'),
-    })
-  ),
-});
 
 export interface GenerateFlashcardsOptions {
   courseId: string;
@@ -251,8 +238,19 @@ export async function generateFlashcardsFromContent(
     }
 
     console.log('🤖 Generating flashcards with AI...');
-    const result = await generateObject<typeof flashcardSchema>({
-    schema: flashcardSchema,
+    const result = await generateObject({
+    schema: z.object({
+      flashcards: z.array(
+        z.object({
+          question: z.string().describe('Clear, specific question in Swedish'),
+          answer: z.string().describe('Concise, accurate answer in Swedish'),
+          difficulty: z.number().min(1).max(3).describe('1 = easy, 2 = medium, 3 = hard'),
+          explanation: z.string().optional().describe('Additional context or explanation in Swedish'),
+          context: z.string().optional().describe('Where this concept appears in the curriculum'),
+          tags: z.array(z.string()).optional().describe('Related topics or concepts'),
+        })
+      ),
+    }),
     messages: [
       {
         role: 'user',
@@ -360,12 +358,6 @@ Håll förklaringen koncis men grundlig (max 200 ord).`,
     },
   ];
 
-  const explanation = await generateObject({
-    schema: z.object({
-      explanation: z.string(),
-    }),
-    messages,
-  });
-
-  return explanation.explanation;
+  const textResult = await generateText({ messages });
+  return textResult;
 }

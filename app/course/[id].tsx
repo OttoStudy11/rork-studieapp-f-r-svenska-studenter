@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
-import { useLocalSearchParams, router, Stack } from 'expo-router';
+import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/lib/supabase';
@@ -136,20 +136,14 @@ export default function CourseDetailScreen() {
   }, [id, user?.id]);
   
   // Reload data when screen becomes focused (e.g., returning from a lesson)
-  useEffect(() => {
-    const unsubscribe = router.subscribe(() => {
+  useFocusEffect(
+    useCallback(() => {
       if (id && user?.id) {
         console.log('Screen focused, reloading course data');
         loadCourseData();
       }
-    });
-    
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [id, user?.id]);
+    }, [id, user?.id])
+  );
 
   const loadCourseData = async () => {
     try {

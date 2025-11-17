@@ -8,12 +8,13 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Award, Trophy, Target, Users, Flame, BookOpen } from 'lucide-react-native';
+import { ArrowLeft, Award, Trophy, Target, Users, Flame, BookOpen, Lock } from 'lucide-react-native';
 import { useAchievements, Achievement } from '@/contexts/AchievementContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
 type CategoryFilter = 'all' | 'study' | 'social' | 'streak' | 'milestone';
+type SectionFilter = 'all' | 'unlocked' | 'locked';
 
 const categoryIcons = {
   study: BookOpen,
@@ -133,14 +134,22 @@ export default function AchievementsScreen() {
   } = useAchievements();
   
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
+  const [selectedSection, setSelectedSection] = useState<SectionFilter>('all');
   
   const userLevel = getUserLevel();
   const levelProgress = getProgressToNextLevel();
-  const unlockedCount = getUnlockedAchievements().length;
+  const unlockedAchievements = getUnlockedAchievements();
+  const lockedAchievements = achievements.filter(a => !a.unlockedAt);
   
-  const filteredAchievements = selectedCategory === 'all' 
+  let filteredAchievements = selectedCategory === 'all' 
     ? achievements 
     : getAchievementsByCategory(selectedCategory);
+  
+  if (selectedSection === 'unlocked') {
+    filteredAchievements = filteredAchievements.filter(a => a.unlockedAt);
+  } else if (selectedSection === 'locked') {
+    filteredAchievements = filteredAchievements.filter(a => !a.unlockedAt);
+  }
   
   if (isLoading) {
     return <LoadingScreen />;
@@ -187,7 +196,7 @@ export default function AchievementsScreen() {
               styles.statValue,
               { color: isDark ? '#FFFFFF' : '#111827' }
             ]}>
-              {unlockedCount}/{achievements.length}
+              {unlockedAchievements.length}/{achievements.length}
             </Text>
             <Text style={[
               styles.statLabel,
@@ -266,6 +275,89 @@ export default function AchievementsScreen() {
             </View>
           </View>
         )}
+        
+        {/* Section Filter */}
+        <View style={styles.sectionContainer}>
+          <TouchableOpacity
+            style={[
+              styles.sectionButton,
+              {
+                backgroundColor: selectedSection === 'all'
+                  ? '#4F46E5'
+                  : (isDark ? '#1F2937' : '#FFFFFF'),
+                borderColor: selectedSection === 'all'
+                  ? '#4F46E5'
+                  : (isDark ? '#374151' : '#E5E7EB')
+              }
+            ]}
+            onPress={() => setSelectedSection('all')}
+          >
+            <Text style={[
+              styles.sectionButtonText,
+              {
+                color: selectedSection === 'all'
+                  ? '#FFFFFF'
+                  : (isDark ? '#9CA3AF' : '#6B7280')
+              }
+            ]}>
+              Alla ({achievements.length})
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.sectionButton,
+              {
+                backgroundColor: selectedSection === 'unlocked'
+                  ? '#10B981'
+                  : (isDark ? '#1F2937' : '#FFFFFF'),
+                borderColor: selectedSection === 'unlocked'
+                  ? '#10B981'
+                  : (isDark ? '#374151' : '#E5E7EB')
+              }
+            ]}
+            onPress={() => setSelectedSection('unlocked')}
+          >
+            <Trophy size={16} color={selectedSection === 'unlocked' ? '#FFFFFF' : (isDark ? '#9CA3AF' : '#6B7280')} />
+            <Text style={[
+              styles.sectionButtonText,
+              {
+                color: selectedSection === 'unlocked'
+                  ? '#FFFFFF'
+                  : (isDark ? '#9CA3AF' : '#6B7280')
+              }
+            ]}>
+              Upplåsta ({unlockedAchievements.length})
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.sectionButton,
+              {
+                backgroundColor: selectedSection === 'locked'
+                  ? '#6B7280'
+                  : (isDark ? '#1F2937' : '#FFFFFF'),
+                borderColor: selectedSection === 'locked'
+                  ? '#6B7280'
+                  : (isDark ? '#374151' : '#E5E7EB')
+              }
+            ]}
+            onPress={() => setSelectedSection('locked')}
+          >
+            <Lock size={16} color={selectedSection === 'locked' ? '#FFFFFF' : (isDark ? '#9CA3AF' : '#6B7280')} />
+            <Text style={[
+              styles.sectionButtonText,
+              {
+                color: selectedSection === 'locked'
+                  ? '#FFFFFF'
+                  : (isDark ? '#9CA3AF' : '#6B7280')
+              }
+            ]}>
+              Låsta ({lockedAchievements.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
         
         {/* Category Filter */}
         <View style={styles.categoryContainer}>
@@ -355,9 +447,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backButton: {
-    padding: 12,
-    marginLeft: -4,
+    padding: 8,
+    marginLeft: -8,
     borderRadius: 8,
+  },
+  sectionContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  sectionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 6,
+  },
+  sectionButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,

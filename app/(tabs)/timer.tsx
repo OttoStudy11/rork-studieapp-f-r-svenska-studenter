@@ -17,6 +17,11 @@ import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAchievements } from '@/contexts/AchievementContext';
+import { useTimerSettings } from '@/contexts/TimerSettingsContext';
+import { TimerPersistence } from '@/lib/timer-persistence';
+import { soundManager } from '@/lib/sound-manager';
+import { hapticsManager } from '@/lib/haptics-manager';
+import { AppState } from 'react-native';
 import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -247,6 +252,8 @@ export default function TimerScreen() {
   const { showSuccess, showAchievement } = useToast();
   const { theme, isDark } = useTheme();
   const { currentStreak } = useAchievements();
+  const { settings } = useTimerSettings();
+  const appState = useRef(AppState.currentState);
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [sessionType, setSessionType] = useState<SessionType>('focus');
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
@@ -258,7 +265,7 @@ export default function TimerScreen() {
   const [isDndActive, setIsDndActive] = useState(false);
   const [dndPermissionGranted, setDndPermissionGranted] = useState(false);
   const [selectedStatView, setSelectedStatView] = useState<'day' | 'week'>('day');
-  const [soundEnabled, setSoundEnabled] = useState(true);
+
   const [sessionCount, setSessionCount] = useState(0);
   const [dailyGoal] = useState(4); // Daily session goal
   const [motivationalQuote, setMotivationalQuote] = useState('');
@@ -396,6 +403,30 @@ export default function TimerScreen() {
   useEffect(() => {
     const initializeTimer = async () => {
       await checkNotificationPermissions();
+      await soundManager.initialize();
+      await soundManager.preloadAllSounds();
+      
+      soundManager.setEnabled(settings.soundEnabled);
+      hapticsManager.setEnabled(settings.hapticsEnabled);
+      
+      const savedState = await TimerPersistence.loadTimerState();
+      if (savedState && savedState.status === 'running' && settings.backgroundTimerEnabled) {
+        console.log('Restoring timer from background');
+        setTimerState(savedState.status);
+        setSessionType(savedState.sessionType);
+        setTimeLeft(savedState.remainingTime);
+        setSessionStartTime(new Date(savedState.startTimestamp));
+        setSelectedCourse(savedState.courseId || '');
+        
+        if (savedState.remainingTime > 0) {
+          await TimerPersistence.scheduleCompletionNotification(
+            savedState.remainingTime,
+            savedState.sessionType,
+            savedState.courseName
+          );
+        }
+      }
+      
       setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
       calculateStats();
     };
@@ -506,14 +537,9 @@ export default function TimerScreen() {
   const handleTimerComplete = useCallback(async () => {
     setTimerState('idle');
     
-    // Add haptic feedback
-    if (Platform.OS !== 'web') {
-      try {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch (error) {
-        console.log('Haptic feedback not available:', error);
-      }
-    }
+    await soundManager.playSound('complete');
+    await hapticsManager.triggerHaptic('success');
+    await TimerPersistence.clearTimerState();
     
     if (isDndActive && sessionType === 'focus') {
       await disableDoNotDisturb();
@@ -532,13 +558,10 @@ export default function TimerScreen() {
           ? courses.find((c) => c.id === selectedCourse)?.title || 'Okänd kurs'
           : 'Allmän session';
         
-        // Update session count
         setSessionCount(prev => prev + 1);
         
-        // Calculate coins earned (1 coin per minute)
         const coinsEarned = focusTime;
         
-        // Set completion data and show completion screen
         setCompletedSessionData({
           duration: focusTime,
           sessionType: 'focus',
@@ -547,8 +570,15 @@ export default function TimerScreen() {
         });
         setShowCompletionScreen(true);
         
-        // Show achievement if daily goal reached
+        if (settings.notificationsEnabled) {
+          await TimerPersistence.showImmediateNotification(
+            '🎯 Focus Session Complete!',
+            `Great work on ${courseName}! You earned ${coinsEarned} coins.`
+          );
+        }
+        
         if (sessionCount + 1 === dailyGoal) {
+          await soundManager.playSound('achievement');
           showAchievement('Dagsmål uppnått! 🎯', `Du har slutfört ${dailyGoal} sessioner idag!`);
         }
       } catch (error) {
@@ -617,18 +647,72 @@ export default function TimerScreen() {
       if (sessionType === 'focus' && dndPermissionGranted) {
         await enableDoNotDisturb();
       }
+      
+      await soundManager.playSound('start');
+      await hapticsManager.triggerHaptic('light');
     }
+    
     setTimerState('running');
+    
+    const courseName = selectedCourse 
+      ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
+      : 'Allmän session';
+    
+    await TimerPersistence.saveTimerState({
+      status: 'running',
+      sessionType,
+      totalDuration: sessionType === 'focus' ? focusTime * 60 : breakTime * 60,
+      remainingTime: timeLeft,
+      startTimestamp: Date.now(),
+      courseId: selectedCourse || undefined,
+      courseName,
+    });
+    
+    if (settings.notificationsEnabled) {
+      await TimerPersistence.scheduleCompletionNotification(
+        timeLeft,
+        sessionType,
+        courseName
+      );
+      
+      if (sessionType === 'focus' && timeLeft > 600) {
+        await TimerPersistence.scheduleProgressNotification(
+          600,
+          sessionType,
+          courseName
+        );
+      }
+    }
   };
 
-  const pauseTimer = () => {
+  const pauseTimer = async () => {
     setTimerState('paused');
+    await hapticsManager.triggerHaptic('medium');
+    await TimerPersistence.cancelNotification();
+    
+    const courseName = selectedCourse 
+      ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
+      : 'Allmän session';
+    
+    await TimerPersistence.saveTimerState({
+      status: 'paused',
+      sessionType,
+      totalDuration: sessionType === 'focus' ? focusTime * 60 : breakTime * 60,
+      remainingTime: timeLeft,
+      startTimestamp: Date.now(),
+      pausedAt: Date.now(),
+      courseId: selectedCourse || undefined,
+      courseName,
+    });
   };
 
   const stopTimer = async () => {
     setTimerState('idle');
     setTimeLeft(sessionType === 'focus' ? focusTime * 60 : breakTime * 60);
     setSessionStartTime(null);
+    
+    await TimerPersistence.clearTimerState();
+    await hapticsManager.triggerHaptic('heavy');
     
     if (isDndActive) {
       await disableDoNotDisturb();
@@ -749,10 +833,12 @@ export default function TimerScreen() {
               
               <TouchableOpacity
                 style={[styles.headerButton, { backgroundColor: theme.colors.secondary + '15' }]}
-                onPress={() => setSoundEnabled(!soundEnabled)}
+                onPress={() => {
+                  soundManager.setEnabled(!settings.soundEnabled);
+                }}
                 activeOpacity={0.7}
               >
-                {soundEnabled ? (
+                {settings.soundEnabled ? (
                   <Volume2 size={22} color={theme.colors.secondary} />
                 ) : (
                   <VolumeX size={22} color={theme.colors.secondary} />

@@ -12,7 +12,10 @@ import { useTheme, ThemeMode } from '@/contexts/ThemeContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePremium } from '@/contexts/PremiumContext';
-import { Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star, ChevronRight } from 'lucide-react-native';
+import { useTimerSettings } from '@/contexts/TimerSettingsContext';
+import { soundManager } from '@/lib/sound-manager';
+import { hapticsManager } from '@/lib/haptics-manager';
+import { Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star, ChevronRight, Volume2, Vibrate, Timer as TimerIcon, Battery } from 'lucide-react-native';
 import { router, Stack } from 'expo-router';
 import { AnimatedPressable, FadeInView } from '@/components/Animations';
 
@@ -31,6 +34,7 @@ export default function SettingsScreen() {
   const { showSuccess, showInfo } = useToast();
   const { user, signOut } = useAuth();
   const { isPremium } = usePremium();
+  const { settings, setSoundEnabled, setHapticsEnabled, setNotificationsEnabled, setBackgroundTimerEnabled } = useTimerSettings();
 
   const themeOptions: { mode: ThemeMode; label: string; icon: React.ReactNode }[] = [
     { mode: 'light', label: 'Ljust', icon: <Sun size={20} color={theme.colors.textSecondary} /> },
@@ -94,15 +98,75 @@ export default function SettingsScreen() {
       ],
     },
     {
-      title: 'Notifikationer',
+      title: 'Timer & Notifikationer',
       items: [
         {
           icon: <Bell size={20} color={theme.colors.textSecondary} />,
-          title: 'Push-notifikationer',
-          subtitle: 'Få påminnelser om studiesessioner',
-          onPress: () => showInfo('Kommer snart', 'Notifikationer kommer i nästa uppdatering'),
+          title: 'Timer-notifikationer',
+          subtitle: 'Påminnelser när sessioner är klara',
+          onPress: () => {
+            const newValue = !settings.notificationsEnabled;
+            setNotificationsEnabled(newValue);
+            showSuccess(
+              newValue ? 'Notifikationer aktiverade' : 'Notifikationer inaktiverade',
+              newValue ? 'Du får nu påminnelser när timern är klar' : 'Inga timer-påminnelser visas'
+            );
+          },
           hasSwitch: true,
-          switchValue: false,
+          switchValue: settings.notificationsEnabled,
+        },
+        {
+          icon: <Volume2 size={20} color={theme.colors.textSecondary} />,
+          title: 'Ljud',
+          subtitle: 'Ljudeffekter för timer-händelser',
+          onPress: () => {
+            const newValue = !settings.soundEnabled;
+            setSoundEnabled(newValue);
+            soundManager.setEnabled(newValue);
+            if (newValue) {
+              soundManager.playSound('start');
+            }
+            showSuccess(
+              newValue ? 'Ljud aktiverat' : 'Ljud inaktiverat',
+              newValue ? 'Ljudeffekter spelas nu' : 'Inga ljudeffekter spelas'
+            );
+          },
+          hasSwitch: true,
+          switchValue: settings.soundEnabled,
+        },
+        {
+          icon: <Vibrate size={20} color={theme.colors.textSecondary} />,
+          title: 'Haptisk feedback',
+          subtitle: 'Vibrationer för bekräftelser',
+          onPress: () => {
+            const newValue = !settings.hapticsEnabled;
+            setHapticsEnabled(newValue);
+            hapticsManager.setEnabled(newValue);
+            if (newValue) {
+              hapticsManager.triggerHaptic('medium');
+            }
+            showSuccess(
+              newValue ? 'Haptik aktiverad' : 'Haptik inaktiverad',
+              newValue ? 'Vibrationer är nu aktiverade' : 'Inga vibrationer'
+            );
+          },
+          hasSwitch: true,
+          switchValue: settings.hapticsEnabled,
+        },
+        {
+          icon: <Battery size={20} color={theme.colors.textSecondary} />,
+          title: 'Bakgrundsläge',
+          subtitle: 'Timern fortsätter när appen är stängd',
+          onPress: () => {
+            const newValue = !settings.backgroundTimerEnabled;
+            setBackgroundTimerEnabled(newValue);
+            showSuccess(
+              newValue ? 'Bakgrundsläge aktiverat' : 'Bakgrundsläge inaktiverat',
+              newValue ? 'Timern fortsätter i bakgrunden' : 'Timern pausas när appen stängs'
+            );
+          },
+          hasSwitch: true,
+          switchValue: settings.backgroundTimerEnabled,
         },
       ],
     },

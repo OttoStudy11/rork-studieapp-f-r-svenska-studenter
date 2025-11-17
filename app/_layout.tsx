@@ -9,6 +9,7 @@ import { ToastProvider, useToast, ToastContainer } from "@/contexts/ToastContext
 import { AchievementProvider } from "@/contexts/AchievementContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { TimerSettingsProvider } from "@/contexts/TimerSettingsContext";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
 SplashScreen.preventAutoHideAsync();
@@ -50,11 +51,13 @@ export default function RootLayout() {
           <AuthProvider>
             <PremiumProvider>
               <StudyProvider>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                  <AchievementProvider>
-                    <RootLayoutNav />
-                  </AchievementProvider>
-                </GestureHandlerRootView>
+                <TimerSettingsProvider>
+                  <GestureHandlerRootView style={{ flex: 1 }}>
+                    <AchievementProvider>
+                      <RootLayoutNav />
+                    </AchievementProvider>
+                  </GestureHandlerRootView>
+                </TimerSettingsProvider>
               </StudyProvider>
             </PremiumProvider>
           </AuthProvider>

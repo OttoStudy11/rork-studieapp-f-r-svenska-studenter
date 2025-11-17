@@ -25,66 +25,101 @@ export interface GenerateFlashcardsOptions {
 export async function generateFlashcardsFromContent(
   options: GenerateFlashcardsOptions
 ): Promise<void> {
-  const { courseId, moduleId, lessonId, count = 20 } = options;
+  try {
+    const { courseId, moduleId, lessonId, count = 20 } = options;
 
-  let content = '';
-  let courseName = '';
+    console.log('🎯 Starting flashcard generation with options:', options);
 
-  const { data: courseData, error: courseError } = await supabase
-    .from('courses')
-    .select('name, description')
-    .eq('id', courseId)
-    .single();
+    let content = '';
+    let courseName = '';
 
-  if (courseError) throw courseError;
-  courseName = courseData.name;
-  content += `Kurs: ${courseData.name}\n${courseData.description || ''}\n\n`;
-
-  if (lessonId) {
-    const { data: lessonData, error: lessonError } = await supabase
-      .from('lessons')
-      .select('title, content')
-      .eq('id', lessonId)
+    const { data: courseData, error: courseError } = await supabase
+      .from('courses')
+      .select('name, description')
+      .eq('id', courseId)
       .single();
 
-    if (lessonError) throw lessonError;
-    content += `Lektion: ${lessonData.title}\n${lessonData.content}\n`;
-  } else if (moduleId) {
-    const { data: lessonsData, error: lessonsError } = await supabase
-      .from('lessons')
-      .select('title, content')
-      .eq('module_id', moduleId)
-      .limit(5);
+    if (courseError) {
+      console.error('❌ Error fetching course:', courseError);
+      throw new Error(`Kunde inte hämta kursdata: ${courseError.message}`);
+    }
+    
+    if (!courseData) {
+      throw new Error('Kursen hittades inte');
+    }
+    
+    courseName = courseData.name;
+    content += `Kurs: ${courseData.name}\n${courseData.description || ''}\n\n`;
+    console.log('✅ Course data fetched:', courseName);
 
-    if (lessonsError) throw lessonsError;
-    lessonsData?.forEach((lesson) => {
-      content += `Lektion: ${lesson.title}\n${lesson.content}\n\n`;
-    });
-  } else {
-    const { data: modulesData, error: modulesError } = await supabase
-      .from('modules')
-      .select(`
-        title,
-        lessons (title, content)
-      `)
-      .eq('course_id', courseId)
-      .limit(3);
+    if (lessonId) {
+      const { data: lessonData, error: lessonError } = await supabase
+        .from('lessons')
+        .select('title, content')
+        .eq('id', lessonId)
+        .single();
 
-    if (modulesError) throw modulesError;
-    modulesData?.forEach((module: any) => {
-      content += `Modul: ${module.title}\n`;
-      module.lessons?.slice(0, 3).forEach((lesson: any) => {
-        content += `  Lektion: ${lesson.title}\n${lesson.content}\n`;
-      });
-      content += '\n';
-    });
-  }
+      if (lessonError) {
+        console.error('❌ Error fetching lesson:', lessonError);
+        throw new Error(`Kunde inte hämta lektion: ${lessonError.message}`);
+      }
+      
+      if (lessonData) {
+        content += `Lektion: ${lessonData.title}\n${lessonData.content}\n`;
+        console.log('✅ Lesson data added');
+      }
+    } else if (moduleId) {
+      const { data: lessonsData, error: lessonsError } = await supabase
+        .from('lessons')
+        .select('title, content')
+        .eq('module_id', moduleId)
+        .limit(5);
 
-  if (!content.trim()) {
-    throw new Error('No content available to generate flashcards from');
-  }
+      if (lessonsError) {
+        console.error('❌ Error fetching lessons:', lessonsError);
+        throw new Error(`Kunde inte hämta lektioner: ${lessonsError.message}`);
+      }
+      
+      if (lessonsData && lessonsData.length > 0) {
+        lessonsData.forEach((lesson) => {
+          content += `Lektion: ${lesson.title}\n${lesson.content}\n\n`;
+        });
+        console.log(`✅ ${lessonsData.length} lessons added`);
+      }
+    } else {
+      const { data: modulesData, error: modulesError } = await supabase
+        .from('modules')
+        .select(`
+          title,
+          lessons (title, content)
+        `)
+        .eq('course_id', courseId)
+        .limit(3);
 
-  const result = await generateObject({
+      if (modulesError) {
+        console.error('❌ Error fetching modules:', modulesError);
+        throw new Error(`Kunde inte hämta moduler: ${modulesError.message}`);
+      }
+      
+      if (modulesData && modulesData.length > 0) {
+        modulesData.forEach((module: any) => {
+          content += `Modul: ${module.title}\n`;
+          module.lessons?.slice(0, 3).forEach((lesson: any) => {
+            content += `  Lektion: ${lesson.title}\n${lesson.content}\n`;
+          });
+          content += '\n';
+        });
+        console.log(`✅ ${modulesData.length} modules added`);
+      }
+    }
+
+    if (!content.trim() || content.length < 100) {
+      console.error('❌ Not enough content to generate flashcards');
+      throw new Error('Det finns inte tillräckligt med innehåll i kursen för att generera flashcards. Kontakta support.');
+    }
+
+    console.log('🤖 Generating flashcards with AI...');
+    const result = await generateObject({
     schema: flashcardSchema,
     messages: [
       {
@@ -137,25 +172,40 @@ Fokusera på att täcka hela kursinnehållet jämnt, med betoning på de viktiga
     ],
   });
 
-  const flashcardsToInsert = result.flashcards.map((fc) => ({
-    course_id: courseId,
-    module_id: moduleId || null,
-    lesson_id: lessonId || null,
-    question: fc.question,
-    answer: fc.answer,
-    difficulty: fc.difficulty,
-    explanation: fc.explanation || null,
-    context: fc.context || null,
-    tags: fc.tags || null,
-  }));
+    console.log(`✅ AI generated ${result.flashcards.length} flashcards`);
 
-  const { error: insertError } = await supabase
-    .from('flashcards')
-    .insert(flashcardsToInsert);
+    const flashcardsToInsert = result.flashcards.map((fc) => ({
+      course_id: courseId,
+      module_id: moduleId || null,
+      lesson_id: lessonId || null,
+      question: fc.question,
+      answer: fc.answer,
+      difficulty: fc.difficulty,
+      explanation: fc.explanation || null,
+      context: fc.context || null,
+      tags: fc.tags || null,
+    }));
 
-  if (insertError) throw insertError;
+    console.log('💾 Inserting flashcards to database...');
+    const { error: insertError } = await supabase
+      .from('flashcards')
+      .insert(flashcardsToInsert);
 
-  console.log(`Generated ${flashcardsToInsert.length} flashcards for ${courseName}`);
+    if (insertError) {
+      console.error('❌ Error inserting flashcards:', insertError);
+      throw new Error(`Kunde inte spara flashcards: ${insertError.message}`);
+    }
+
+    console.log(`✅ Successfully generated ${flashcardsToInsert.length} flashcards for ${courseName}`);
+  } catch (error: any) {
+    console.error('❌ Error in generateFlashcardsFromContent:', error);
+    
+    if (error.message) {
+      throw new Error(error.message);
+    }
+    
+    throw new Error('Ett oväntat fel uppstod när flashcards skulle genereras. Försök igen.');
+  }
 }
 
 export async function generateAIExplanation(

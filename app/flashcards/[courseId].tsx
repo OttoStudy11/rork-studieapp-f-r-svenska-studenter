@@ -87,18 +87,35 @@ export default function FlashcardsScreen() {
   const generateMutation = useMutation({
     mutationFn: async () => {
       console.log('Starting flashcard generation for course:', courseId);
+      if (!courseId) {
+        throw new Error('Ingen kurs vald');
+      }
+      
       await generateFlashcardsFromContent({
-        courseId: courseId!,
+        courseId: courseId,
         count: 30,
       });
     },
     onSuccess: () => {
       console.log('Flashcards generated successfully');
       queryClient.invalidateQueries({ queryKey: ['flashcards', courseId] });
+      Alert.alert('Klart! 🎉', 'Flashcards har genererats. Du kan börja träna nu!');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Failed to generate flashcards:', error);
-      Alert.alert('Fel', 'Kunde inte generera flashcards: ' + error.message);
+      
+      let errorMessage = 'Ett okänt fel uppstod';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      console.error('Formatted error message:', errorMessage);
+      Alert.alert('Kunde inte generera flashcards', errorMessage);
     },
   });
 

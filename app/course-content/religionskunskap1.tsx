@@ -556,7 +556,9 @@ export default function Religionskunskap1() {
             activeOpacity={0.7}
           >
             <Sparkles size={24} color="#A855F7" />
-            <Text style={[styles.flashcardsButtonText, { color: theme.colors.text }]}>Öva med Flashcards</Text>
+            <Text style={[styles.flashcardsButtonText, { color: theme.colors.text }]}>
+              Öva med Flashcards
+            </Text>
           </TouchableOpacity>
         </FadeInView>
 

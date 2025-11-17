@@ -234,8 +234,9 @@ export async function generateFlashcardsFromContent(
       if (modulesData && modulesData.length > 0) {
         modulesData.forEach((module: any) => {
           content += `Modul: ${module.title}\n`;
-          module.course_lessons?.slice(0, 3).forEach((lesson: any) => {
-            content += `  Lektion: ${lesson.title}\n${lesson.content}\n`;
+          const lessons = module.course_lessons || [];
+          lessons.slice(0, 3).forEach((lesson: any) => {
+            content += `  Lektion: ${lesson.title}\n${lesson.content || ''}\n`;
           });
           content += '\n';
         });

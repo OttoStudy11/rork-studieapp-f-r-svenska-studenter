@@ -1,0 +1,159 @@
+import { generateObject } from '@rork-ai/toolkit-sdk';
+import { z } from 'zod';
+import { supabase } from './supabase';
+
+const flashcardSchema = z.object({
+  flashcards: z.array(
+    z.object({
+      question: z.string().describe('Clear, specific question in Swedish'),
+      answer: z.string().describe('Concise, accurate answer in Swedish'),
+      difficulty: z.number().min(1).max(3).describe('1 = easy, 2 = medium, 3 = hard'),
+      explanation: z.string().optional().describe('Additional context or explanation in Swedish'),
+      context: z.string().optional().describe('Where this concept appears in the curriculum'),
+      tags: z.array(z.string()).optional().describe('Related topics or concepts'),
+    })
+  ),
+});
+
+export interface GenerateFlashcardsOptions {
+  courseId: string;
+  moduleId?: string;
+  lessonId?: string;
+  count?: number;
+}
+
+export async function generateFlashcardsFromContent(
+  options: GenerateFlashcardsOptions
+): Promise<void> {
+  const { courseId, moduleId, lessonId, count = 20 } = options;
+
+  let content = '';
+  let courseName = '';
+
+  const { data: courseData, error: courseError } = await supabase
+    .from('courses')
+    .select('name, description')
+    .eq('id', courseId)
+    .single();
+
+  if (courseError) throw courseError;
+  courseName = courseData.name;
+  content += `Kurs: ${courseData.name}\n${courseData.description || ''}\n\n`;
+
+  if (lessonId) {
+    const { data: lessonData, error: lessonError } = await supabase
+      .from('lessons')
+      .select('title, content')
+      .eq('id', lessonId)
+      .single();
+
+    if (lessonError) throw lessonError;
+    content += `Lektion: ${lessonData.title}\n${lessonData.content}\n`;
+  } else if (moduleId) {
+    const { data: lessonsData, error: lessonsError } = await supabase
+      .from('lessons')
+      .select('title, content')
+      .eq('module_id', moduleId)
+      .limit(5);
+
+    if (lessonsError) throw lessonsError;
+    lessonsData?.forEach((lesson) => {
+      content += `Lektion: ${lesson.title}\n${lesson.content}\n\n`;
+    });
+  } else {
+    const { data: modulesData, error: modulesError } = await supabase
+      .from('modules')
+      .select(`
+        title,
+        lessons (title, content)
+      `)
+      .eq('course_id', courseId)
+      .limit(3);
+
+    if (modulesError) throw modulesError;
+    modulesData?.forEach((module: any) => {
+      content += `Modul: ${module.title}\n`;
+      module.lessons?.slice(0, 3).forEach((lesson: any) => {
+        content += `  Lektion: ${lesson.title}\n${lesson.content}\n`;
+      });
+      content += '\n';
+    });
+  }
+
+  if (!content.trim()) {
+    throw new Error('No content available to generate flashcards from');
+  }
+
+  const result = await generateObject({
+    schema: flashcardSchema,
+    messages: [
+      {
+        role: 'user',
+        content: `Du är en expert på att skapa pedagogiska flashcards för svenska gymnasieelever.
+
+Baserat på följande kursinnehåll, generera ${count} flashcards som:
+1. Täcker de viktigaste koncepten
+2. Har tydliga, konkreta frågor
+3. Ger korrekta och pedagogiska svar
+4. Varierar i svårighetsgrad (lätt, medel, svår)
+5. Inkluderar förklaringar där det behövs
+6. Använder korrekt svenska
+
+Kursinnehåll:
+${content}
+
+Skapa flashcards som hjälper eleverna att lära sig och komma ihåg materialet effektivt.`,
+      },
+    ],
+  });
+
+  const flashcardsToInsert = result.flashcards.map((fc) => ({
+    course_id: courseId,
+    module_id: moduleId || null,
+    lesson_id: lessonId || null,
+    question: fc.question,
+    answer: fc.answer,
+    difficulty: fc.difficulty,
+    explanation: fc.explanation || null,
+    context: fc.context || null,
+    tags: fc.tags || null,
+  }));
+
+  const { error: insertError } = await supabase
+    .from('flashcards')
+    .insert(flashcardsToInsert);
+
+  if (insertError) throw insertError;
+
+  console.log(`Generated ${flashcardsToInsert.length} flashcards for ${courseName}`);
+}
+
+export async function generateAIExplanation(
+  question: string,
+  answer: string,
+  userConfusion?: string
+): Promise<string> {
+  const messages = [
+    {
+      role: 'user' as const,
+      content: `Du är en tålmodig och pedagogisk lärare för svenska gymnasieelever.
+
+Fråga: ${question}
+Svar: ${answer}
+${userConfusion ? `Eleven undrar: ${userConfusion}` : ''}
+
+Ge en tydlig, steg-för-steg förklaring på svenska som hjälper eleven att förstå svaret bättre.
+Använd exempel och analogier där det är relevant.
+Håll förklaringen koncis men grundlig (max 200 ord).`,
+    },
+  ];
+
+  const explanation = await generateObject({
+    schema: z.object({
+      explanation: z.string(),
+    }),
+    messages,
+  });
+
+  return explanation.explanation;
+}

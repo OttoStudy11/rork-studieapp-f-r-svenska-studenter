@@ -84,6 +84,24 @@ export default function FlashcardsScreen() {
 
   const [hasAttemptedGeneration, setHasAttemptedGeneration] = useState(false);
 
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      console.log('Starting flashcard generation for course:', courseId);
+      await generateFlashcardsFromContent({
+        courseId: courseId!,
+        count: 30,
+      });
+    },
+    onSuccess: () => {
+      console.log('Flashcards generated successfully');
+      queryClient.invalidateQueries({ queryKey: ['flashcards', courseId] });
+    },
+    onError: (error) => {
+      console.error('Failed to generate flashcards:', error);
+      Alert.alert('Fel', 'Kunde inte generera flashcards: ' + error.message);
+    },
+  });
+
   React.useEffect(() => {
     if (!isLoading && flashcards.length === 0 && courseId && !generateMutation.isPending && !hasAttemptedGeneration) {
       console.log('Auto-generating flashcards for course:', courseId);
@@ -128,24 +146,6 @@ export default function FlashcardsScreen() {
       return new Date(progress.next_review_at) <= now;
     });
   }, [flashcards, progressMap]);
-
-  const generateMutation = useMutation({
-    mutationFn: async () => {
-      console.log('Starting flashcard generation for course:', courseId);
-      await generateFlashcardsFromContent({
-        courseId: courseId!,
-        count: 30,
-      });
-    },
-    onSuccess: () => {
-      console.log('Flashcards generated successfully');
-      queryClient.invalidateQueries({ queryKey: ['flashcards', courseId] });
-    },
-    onError: (error) => {
-      console.error('Failed to generate flashcards:', error);
-      Alert.alert('Fel', 'Kunde inte generera flashcards: ' + error.message);
-    },
-  });
 
   const reviewMutation = useMutation({
     mutationFn: async ({ flashcardId, correct }: { flashcardId: string; correct: boolean }) => {

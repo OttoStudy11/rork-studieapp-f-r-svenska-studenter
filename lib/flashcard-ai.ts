@@ -250,7 +250,7 @@ export async function generateFlashcardsFromContent(
     }
 
     console.log('🤖 Generating flashcards with AI...');
-    const result = await generateObject({
+    const result = await generateObject<typeof flashcardSchema>({
     schema: flashcardSchema,
     messages: [
       {

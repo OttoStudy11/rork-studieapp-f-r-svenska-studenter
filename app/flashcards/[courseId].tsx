@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
@@ -57,15 +56,21 @@ export default function FlashcardsScreen() {
   const { data: course } = useQuery({
     queryKey: ['course', courseId],
     queryFn: async () => {
+      if (!courseId) return null;
+      
       const { data, error } = await supabase
         .from('courses')
-        .select('*')
+        .select('title')
         .eq('id', courseId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.log('Course not found in DB, might be hardcoded:', courseId);
+        return null;
+      }
       return data;
     },
+    enabled: !!courseId,
   });
 
   const { data: flashcards = [], isLoading } = useQuery({
@@ -278,7 +283,7 @@ export default function FlashcardsScreen() {
           <BookOpen size={80} color="#6366F1" />
           <Text style={styles.emptyTitle}>Inga flashcards än</Text>
           <Text style={styles.emptyText}>
-            Generera flashcards från {course?.name || 'denna kurs'} med AI
+            Generera flashcards från {course?.title || 'denna kurs'} med AI
           </Text>
           <TouchableOpacity
             style={styles.generateButton}
@@ -370,7 +375,7 @@ export default function FlashcardsScreen() {
           <ArrowLeft size={24} color="#F1F5F9" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>{course?.name}</Text>
+          <Text style={styles.headerTitle}>{course?.title || 'Flashcards'}</Text>
           <Text style={styles.headerSubtitle}>
             {currentIndex + 1} / {dueCards.length}
           </Text>

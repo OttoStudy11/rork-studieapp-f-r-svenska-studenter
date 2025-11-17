@@ -20,6 +20,7 @@ import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNot
 import { router } from 'expo-router';
 import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
 import { Skeleton, SkeletonStats, SkeletonList } from '@/components/Skeleton';
+import CharacterAvatar from '@/components/CharacterAvatar';
 
 const { width } = Dimensions.get('window');
 
@@ -191,10 +192,16 @@ export default function HomeScreen() {
                 </View>
               )}
               <TouchableOpacity 
-                style={[styles.profileButton, { backgroundColor: theme.colors.primary + '15' }]}
+                style={styles.profileButton}
                 onPress={() => router.push('/profile')}
               >
-                <User size={22} color={theme.colors.primary} />
+                {user.avatar ? (
+                  <CharacterAvatar config={user.avatar} size={44} />
+                ) : (
+                  <View style={[styles.profileButtonFallback, { backgroundColor: theme.colors.primary + '15' }]}>
+                    <User size={22} color={theme.colors.primary} />
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -533,6 +540,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   profileButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  profileButtonFallback: {
     width: 44,
     height: 44,
     borderRadius: 22,

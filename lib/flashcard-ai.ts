@@ -35,7 +35,7 @@ export async function generateFlashcardsFromContent(
 
     const { data: courseData, error: courseError } = await supabase
       .from('courses')
-      .select('name, description')
+      .select('title, description')
       .eq('id', courseId)
       .single();
 
@@ -48,8 +48,8 @@ export async function generateFlashcardsFromContent(
       throw new Error('Kursen hittades inte');
     }
     
-    courseName = courseData.name;
-    content += `Kurs: ${courseData.name}\n${courseData.description || ''}\n\n`;
+    courseName = courseData.title;
+    content += `Kurs: ${courseData.title}\n${courseData.description || ''}\n\n`;
     console.log('✅ Course data fetched:', courseName);
 
     if (lessonId) {

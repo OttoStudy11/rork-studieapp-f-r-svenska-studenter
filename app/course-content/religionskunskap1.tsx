@@ -32,7 +32,8 @@ import {
   Award,
   TrendingUp,
   Star,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import { useAuth } from '@/contexts/AuthContext';
@@ -490,6 +491,13 @@ export default function Religionskunskap1() {
               end={{ x: 1, y: 1 }}
               style={styles.heroCard}
             >
+              <TouchableOpacity
+                style={styles.flashcardsButton}
+                onPress={() => router.push('/flashcards/RELREL01')}
+              >
+                <Sparkles size={20} color="white" />
+                <Text style={styles.flashcardsButtonText}>Flashcards</Text>
+              </TouchableOpacity>
               <View style={styles.heroContent}>
                 <Text style={styles.heroIcon}>🕊️</Text>
                 <Text style={styles.heroTitle}>Religionskunskap 1</Text>
@@ -1494,5 +1502,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     marginBottom: 6,
+  },
+  flashcardsButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  flashcardsButtonText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: 'white',
   },
 });

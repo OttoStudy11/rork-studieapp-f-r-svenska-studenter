@@ -22,6 +22,131 @@ export interface GenerateFlashcardsOptions {
   count?: number;
 }
 
+const hardcodedCourseContent: Record<string, string> = {
+  'RELREL01': `Kurs: Religionskunskap 1
+Utforska världsreligioner, etik och existentiella frågor
+
+Modul 1: Världsreligionernas ursprung och utveckling
+Lär dig om de fem världsreligionerna och deras historia
+
+Judendom:
+- Monoteistisk religion - tro på en Gud (JHWH)
+- Heliga skrifter: Tanakh (inklusive Toran)
+- Viktiga profeter: Moses, Abraham, Isak, Jakob
+- Sabbaten (lördagen) är helig vilodag
+- Synagogan är den judiska gudstjänstlokalen
+- Bar/Bat Mitzvah markerar religiös vuxenblivning
+
+Kristendom:
+- Tro på treenigheten: Fader, Son och Helig Ande
+- Heliga skrifter: Bibeln (Gamla och Nya testamentet)
+- Jesus Kristus som central figur
+- Söndagen som vilodag och gudstjänstdag
+- Kyrkan som gudstjänstlokal
+- Sakrament: dop och nattvard
+
+Islam:
+- Fem pelare: Trosbekännelse, bön, allmosor, fasta, pilgrimsfärd
+- Heliga skrifter: Koranen och Hadith
+- Muhammad som den siste profeten
+- Fredagen som böndag
+- Moskén som gudstjänstlokal
+- Ramadan som fastemånad
+
+Hinduism:
+- Många gudar och gudinnor (polyteism)
+- Heliga skrifter: Vedaskrifterna och Bhagavad Gita
+- Tro på reinkarnation och karma
+- Kastsystemet (historiskt)
+- Templet som central gudstjänstplats
+- Yoga och meditation som andliga praktiker
+
+Buddhism:
+- Fyra ädla sanningar om lidandets natur
+- Den åttafaldiga vägen som väg till upplysning
+- Buddha som lärare och förebild
+- Meditation som central praktik
+- Nirvan som slutmål
+- Kloster och tempel som andliga centra
+
+Modul 2: Religiösa ritualer och högtider
+Utforska olika religiösa firanden och deras betydelse
+
+Livscykelritualer:
+- Födelse: Dop (kristendom), Brit Milah (judendom), Aqiqah (islam)
+- Vuxenblivning: Konfirmation, Bar/Bat Mitzvah
+- Äktenskap: Bröllopsritualer i olika religioner
+- Död: Begravningsritualer och sorgepraktiker
+- Ritualer skapar sammanhang och gemenskap
+
+Årliga högtider:
+- Judendom: Pesach (påsken), Jom Kippur, Chanukka
+- Kristendom: Jul, Påsk, Pingst
+- Islam: Eid al-Fitr, Eid al-Adha
+- Hinduism: Diwali, Holi
+- Buddhism: Vesak, Ullambana
+
+Modul 3: Religion och etik
+Undersök hur religion påverkar moraliska värderingar
+
+Etiska grundprinciper:
+- Den gyllene regeln finns i olika former i alla religioner
+- Rättvisa och medkänsla som centrala värden
+- Ansvar för de svaga och utsatta
+- Ärlighet och trovärdighet
+- Respekt för livet
+
+Etiska dilemman:
+- Bioetik: Abort, stamcellsforskning, eutanasi
+- Miljöetik: Människans ansvar för skapelsen
+- Social rättvisa: Ojämlikhet och fattigdom
+- Sexualitet och familj: Äktenskap, samlevnad
+- Krig och fred: Rättfärdigt krig, pacifism
+
+Modul 4: Livsåskådningar och existentiella frågor
+Reflektera över livets stora frågor och olika perspektiv
+
+Existentiella frågor:
+- Livets mening och syfte
+- Lidandets och ondskans problem
+- Döden och livet efter detta
+- Människans natur och värde
+
+Religiösa perspektiv:
+- Monoteistiska perspektiv: Guds plan och vilja
+- Reinkarnation och karma i österländska religioner
+- Teodicéproblemet: Varför finns ondska?
+- Bön och meditation som sätt att söka svar
+
+Sekulära livsåskådningar:
+- Humanism: Människan som måttstock
+- Existentialism: Frihet och ansvar
+- Naturalism: Vetenskaplig världsbild
+- Agnosticism och ateism
+
+Modul 5: Religion och samhällsfrågor
+Undersök religionens roll i moderna samhällsdebatter
+
+Religion och jämställdhet:
+- Olika tolkningar av religiösa texter om kön
+- Kvinnors roller i religiösa samfund
+- Kvinnliga religiösa ledare och präster
+- Klädkoder och deras betydelse
+- Progressiva och konservativa rörelser
+
+Religion och mänskliga rättigheter:
+- Religionsfrihet som mänsklig rättighet
+- HBTQ+-rättigheter ur olika religiösa perspektiv
+- Barnets rättigheter och religiös uppfostran
+- Yttrandefrihet vs. respekt för religioner
+
+Religion i konflikt och fred:
+- Religiösa konflikter i historia och nutid
+- Fundamentalism och extremism
+- Interreligiös dialog och samarbete
+- Religionens roll i fredsprocesser`
+};
+
 export async function generateFlashcardsFromContent(
   options: GenerateFlashcardsOptions
 ): Promise<void> {
@@ -33,26 +158,31 @@ export async function generateFlashcardsFromContent(
     let content = '';
     let courseName = '';
 
-    const { data: courseData, error: courseError } = await supabase
-      .from('courses')
-      .select('title, description')
-      .eq('id', courseId)
-      .single();
+    if (hardcodedCourseContent[courseId]) {
+      console.log('📖 Using hardcoded course content for:', courseId);
+      content = hardcodedCourseContent[courseId];
+      courseName = courseId === 'RELREL01' ? 'Religionskunskap 1' : 'Hardcoded Course';
+    } else {
+      const { data: courseData, error: courseError } = await supabase
+        .from('courses')
+        .select('title, description')
+        .eq('id', courseId)
+        .single();
 
-    if (courseError) {
-      console.error('❌ Error fetching course:', courseError);
-      throw new Error(`Kunde inte hämta kursdata: ${courseError.message}`);
-    }
-    
-    if (!courseData) {
-      throw new Error('Kursen hittades inte');
-    }
-    
-    courseName = courseData.title;
-    content += `Kurs: ${courseData.title}\n${courseData.description || ''}\n\n`;
-    console.log('✅ Course data fetched:', courseName);
+      if (courseError) {
+        console.error('❌ Error fetching course:', courseError);
+        throw new Error(`Kunde inte hämta kursdata: ${courseError.message}`);
+      }
+      
+      if (!courseData) {
+        throw new Error('Kursen hittades inte');
+      }
+      
+      courseName = courseData.title;
+      content += `Kurs: ${courseData.title}\n${courseData.description || ''}\n\n`;
+      console.log('✅ Course data fetched:', courseName);
 
-    if (lessonId) {
+      if (lessonId) {
       const { data: lessonData, error: lessonError } = await supabase
         .from('course_lessons')
         .select('title, content')
@@ -110,6 +240,7 @@ export async function generateFlashcardsFromContent(
           content += '\n';
         });
         console.log(`✅ ${modulesData.length} modules added`);
+      }
       }
     }
 

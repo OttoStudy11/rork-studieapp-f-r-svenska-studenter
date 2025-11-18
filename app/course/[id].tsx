@@ -124,9 +124,20 @@ export default function CourseDetailScreen() {
   const [userCourseData, setUserCourseData] = useState<any>(null);
 
   useEffect(() => {
-    // Redirect to custom course content page for Religionskunskap 1
-    if (id === 'RELREL01') {
-      router.replace('/course-content/religionskunskap1');
+    // Redirect to custom course content pages
+    const courseRedirects: Record<string, string> = {
+      'RELREL01': '/course-content/religionskunskap1',
+      'MATMAT01a': '/course-content/matematik1a',
+      'SVESVE01': '/course-content/svenska1',
+      'ENGENG05': '/course-content/engelska5',
+      'HISHIS01b': '/course-content/historia1b',
+      'SAMSAM01b': '/course-content/samhallskunskap1b',
+      'NAKNAK01a1': '/course-content/naturkunskap1a1',
+      'IDRIDR01': '/course-content/idrott1',
+    };
+
+    if (id && courseRedirects[id]) {
+      router.replace(courseRedirects[id] as any);
       return;
     }
     

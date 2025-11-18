@@ -142,13 +142,13 @@ export async function generateFlashcardsFromContent(
 
     console.log('🎯 Starting flashcard generation with options:', options);
 
-    let content = '';
     let courseName = '';
+    let courseDescription = '';
 
     if (hardcodedCourseContent[courseId]) {
       console.log('📖 Using hardcoded course content for:', courseId);
-      content = hardcodedCourseContent[courseId];
       courseName = courseId === 'RELREL01' ? 'Religionskunskap 1' : 'Hardcoded Course';
+      courseDescription = 'Utforska världsreligioner, etik och existentiella frågor';
     } else {
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
@@ -166,78 +166,11 @@ export async function generateFlashcardsFromContent(
       }
       
       courseName = courseData.title;
-      content += `Kurs: ${courseData.title}\n${courseData.description || ''}\n\n`;
+      courseDescription = courseData.description || '';
       console.log('✅ Course data fetched:', courseName);
-
-      if (lessonId) {
-      const { data: lessonData, error: lessonError } = await supabase
-        .from('course_lessons')
-        .select('title, content')
-        .eq('id', lessonId)
-        .single();
-
-      if (lessonError) {
-        console.error('❌ Error fetching lesson:', lessonError);
-        throw new Error(`Kunde inte hämta lektion: ${lessonError.message}`);
-      }
-      
-      if (lessonData) {
-        content += `Lektion: ${lessonData.title}\n${lessonData.content}\n`;
-        console.log('✅ Lesson data added');
-      }
-    } else if (moduleId) {
-      const { data: lessonsData, error: lessonsError } = await supabase
-        .from('course_lessons')
-        .select('title, content')
-        .eq('module_id', moduleId)
-        .limit(5);
-
-      if (lessonsError) {
-        console.error('❌ Error fetching lessons:', lessonsError);
-        throw new Error(`Kunde inte hämta lektioner: ${lessonsError.message}`);
-      }
-      
-      if (lessonsData && lessonsData.length > 0) {
-        lessonsData.forEach((lesson) => {
-          content += `Lektion: ${lesson.title}\n${lesson.content}\n\n`;
-        });
-        console.log(`✅ ${lessonsData.length} lessons added`);
-      }
-    } else {
-      const { data: modulesData, error: modulesError } = await supabase
-        .from('course_modules')
-        .select(`
-          title,
-          course_lessons (title, content)
-        `)
-        .eq('course_id', courseId)
-        .limit(3);
-
-      if (modulesError) {
-        console.error('❌ Error fetching modules:', modulesError);
-        throw new Error(`Kunde inte hämta moduler: ${modulesError.message}`);
-      }
-      
-      if (modulesData && modulesData.length > 0) {
-        modulesData.forEach((module: any) => {
-          content += `Modul: ${module.title}\n`;
-          const lessons = module.course_lessons || [];
-          lessons.slice(0, 3).forEach((lesson: any) => {
-            content += `  Lektion: ${lesson.title}\n${lesson.content || ''}\n`;
-          });
-          content += '\n';
-        });
-        console.log(`✅ ${modulesData.length} modules added`);
-      }
-      }
     }
 
-    if (!content.trim() || content.length < 100) {
-      console.error('❌ Not enough content to generate flashcards');
-      throw new Error('Det finns inte tillräckligt med innehåll i kursen för att generera flashcards. Kontakta support.');
-    }
-
-    console.log('🤖 Generating flashcards with AI...');
+    console.log('🤖 Generating flashcards with AI based on course name and subject...');
     const result = await generateObject({
     schema: z.object({
       flashcards: z.array(
@@ -257,47 +190,58 @@ export async function generateFlashcardsFromContent(
         content: `Du är en expert på att skapa pedagogiska flashcards för svenska gymnasieelever som förbereder sig för prov och inlärning.
 
 🎯 DITT MÅL:
-Skapa ${count} flashcards som effektivt hjälper elever att lära sig och komma ihåg kursinnehållet.
+Skapa ${count} flashcards för kursen "${courseName}" baserat på kursens innehåll och nationella kursplan.
 
-📋 KRAV PÅ FLASHCARDS:
+📚 KURS:
+${courseName}
+${courseDescription}
 
-1. FRÅGOR:
+📋 INSTRUKTIONER:
+
+1. ANVÄND DIN KUNSKAP:
+   - Du har tillgång till Sveriges nationella kursplaner och läroplan
+   - Basera flashcards på typiskt kursinnehåll för denna kurs
+   - Täck viktiga koncept, teorier, definitioner och samband
+   - Anpassa till gymnasienivå
+
+2. FRÅGOR:
    - Tydliga och konkreta (undvik vaga formuleringar)
    - Täcker viktiga koncept, definitioner, begrepp och samband
    - Varierar mellan faktafrågor, förståelsefrågor och tillämpningsfrågor
    - Använder olika frågetyper: "Vad är...?", "Förklara...", "Varför..?", "Hur..?", "Jämför..."
    - Undvik ja/nej-frågor
 
-2. SVAR:
+3. SVAR:
    - Koncisa men kompletta (2-4 meningar)
    - Pedagogiska och lätta att komma ihåg
    - Inkluderar konkreta exempel där relevant
    - Korrekt svenska och facktermer
 
-3. SVÅRIGHETSGRAD:
-   - 1 (Lätt): Grundläggande fakta och definitioner
-   - 2 (Medel): Förståelse och samband mellan koncept
-   - 3 (Svår): Analys, tillämpning och komplexa samband
-   - Fördela jämnt: ~40% lätt, ~40% medel, ~20% svår
+4. SVÅRIGHETSGRAD:
+   - 1 (Lätt): Grundläggande fakta och definitioner - ~40%
+   - 2 (Medel): Förståelse och samband mellan koncept - ~40%
+   - 3 (Svår): Analys, tillämpning och komplexa samband - ~20%
 
-4. FÖRKLARINGAR (explanation):
+5. FÖRKLARINGAR (explanation):
    - Lägg till fördjupande förklaringar för svårare koncept
    - Använd analogier och exempel
    - Hjälp eleven att förstå "varför" inte bara "vad"
 
-5. KONTEXT (context):
-   - Ange var i kursen konceptet dyker upp
-   - Exempel: "Modul 1: Världsreligionernas ursprung"
+6. KONTEXT (context):
+   - Ange vilket område eller tema konceptet tillhör
+   - Exempel: "Världsreligionernas ursprung", "Etiska dilemman", "Religion i samhället"
 
-6. TAGGAR (tags):
-   - Lägg till relevanta nyckelord för kategorisering
+7. TAGGAR (tags):
+   - Lägg till 2-4 relevanta nyckelord per flashcard
    - Exempel: ["Islam", "Fem pelare", "Grundbegrepp"]
 
-📚 KURSINNEHÅLL:
-${content}
+8. VARIATION:
+   - Täck olika teman och områden inom kursen
+   - Blanda olika typer av frågor (definitioner, förklaringar, jämförelser, tillämpningar)
+   - Se till att flashcards ger en bred täckning av kursens innehåll
 
-✅ SKAPA NU ${count} FLASHCARDS:
-Fokusera på att täcka hela kursinnehållet jämnt, med betoning på de viktigaste koncepten som eleverna behöver kunna för att klara kursen.`,
+✅ SKAPA NU ${count} HÖGKVALITATIVA FLASHCARDS:
+Fokusera på att täcka hela kursens centrala innehåll jämnt, med betoning på de viktigaste koncepten som eleverna behöver kunna för att klara kursen.`,
       },
     ],
   });

@@ -84,11 +84,19 @@ export default function FriendsScreen() {
     myGroups,
     availableGroups,
     isLoading: groupsLoading,
+    error: groupsError,
     joinGroup,
     leaveGroup,
     fetchMyGroups,
     fetchAvailableGroups
   } = useStudyGroups();
+
+  useEffect(() => {
+    if (groupsError) {
+      console.error('Groups error:', groupsError);
+      showError(`Gruppfel: ${groupsError}`);
+    }
+  }, [groupsError, showError]);
 
   const filteredFriends = friends.filter(friend =>
     friend.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||

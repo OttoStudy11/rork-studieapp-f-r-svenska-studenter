@@ -127,7 +127,9 @@ export const [StudyGroupProvider, useStudyGroups] = createContextHook(() => {
 
       if (fetchError) {
         console.error('Error fetching my groups:', fetchError);
-        setError(fetchError.message);
+        const errorMessage = fetchError.message || 'Kunde inte hämta dina grupper';
+        setError(errorMessage);
+        console.log('Error fetching my groups:', errorMessage);
         return;
       }
 
@@ -160,7 +162,9 @@ export const [StudyGroupProvider, useStudyGroups] = createContextHook(() => {
       setMyGroups(groupsWithCounts);
     } catch (err: any) {
       console.error('Exception fetching my groups:', err);
-      setError(err.message || 'Kunde inte hämta dina grupper');
+      const errorMessage = err?.message || JSON.stringify(err) || 'Kunde inte hämta dina grupper';
+      setError(errorMessage);
+      console.log('Error fetching my groups:', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -197,7 +201,9 @@ export const [StudyGroupProvider, useStudyGroups] = createContextHook(() => {
 
       if (fetchError) {
         console.error('Error fetching available groups:', fetchError);
-        setError(fetchError.message);
+        const errorMessage = fetchError.message || 'Kunde inte hämta tillgängliga grupper';
+        setError(errorMessage);
+        console.log('Error fetching available groups:', errorMessage);
         return;
       }
 
@@ -231,7 +237,9 @@ export const [StudyGroupProvider, useStudyGroups] = createContextHook(() => {
       setAvailableGroups(notMyGroups);
     } catch (err: any) {
       console.error('Exception fetching available groups:', err);
-      setError(err.message || 'Kunde inte hämta tillgängliga grupper');
+      const errorMessage = err?.message || JSON.stringify(err) || 'Kunde inte hämta tillgängliga grupper';
+      setError(errorMessage);
+      console.log('Error fetching available groups:', errorMessage);
     } finally {
       setIsLoading(false);
     }

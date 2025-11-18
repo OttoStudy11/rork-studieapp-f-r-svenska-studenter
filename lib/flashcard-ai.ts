@@ -171,7 +171,10 @@ export async function generateFlashcardsFromContent(
     }
 
     console.log('🤖 Generating flashcards with AI based on course name and subject...');
-    const result = await generateObject({
+    
+    let result;
+    try {
+      result = await generateObject({
     schema: z.object({
       flashcards: z.array(
         z.object({
@@ -245,6 +248,15 @@ Fokusera på att täcka hela kursens centrala innehåll jämnt, med betoning på
       },
     ],
   });
+    } catch (genError: any) {
+      console.error('❌ Error generating flashcards with AI:', genError);
+      throw new Error(`AI-generering misslyckades: ${genError?.message || 'Okänt fel'}`);
+    }
+
+    if (!result || !result.flashcards) {
+      console.error('❌ Result is missing flashcards:', result);
+      throw new Error('AI-generering misslyckades: Inget resultat returnerades');
+    }
 
     console.log(`✅ AI generated ${result.flashcards.length} flashcards`);
 
@@ -273,8 +285,10 @@ Fokusera på att täcka hela kursens centrala innehåll jämnt, med betoning på
     console.log(`✅ Successfully generated ${flashcardsToInsert.length} flashcards for ${courseName}`);
   } catch (error: any) {
     console.error('❌ Error in generateFlashcardsFromContent:', error);
+    console.error('Error stack:', error?.stack);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     
-    if (error.message) {
+    if (error?.message) {
       throw new Error(error.message);
     }
     
@@ -287,10 +301,11 @@ export async function generateAIExplanation(
   answer: string,
   userConfusion?: string
 ): Promise<string> {
-  const messages = [
-    {
-      role: 'user' as const,
-      content: `Du är en tålmodig och pedagogisk lärare för svenska gymnasieelever.
+  try {
+    const messages = [
+      {
+        role: 'user' as const,
+        content: `Du är en tålmodig och pedagogisk lärare för svenska gymnasieelever.
 
 Fråga: ${question}
 Svar: ${answer}
@@ -299,9 +314,13 @@ ${userConfusion ? `Eleven undrar: ${userConfusion}` : ''}
 Ge en tydlig, steg-för-steg förklaring på svenska som hjälper eleven att förstå svaret bättre.
 Använd exempel och analogier där det är relevant.
 Håll förklaringen koncis men grundlig (max 200 ord).`,
-    },
-  ];
+      },
+    ];
 
-  const textResult = await generateText({ messages });
-  return textResult;
+    const textResult = await generateText({ messages });
+    return textResult;
+  } catch (error: any) {
+    console.error('❌ Error generating AI explanation:', error);
+    throw new Error(`Kunde inte generera förklaring: ${error?.message || 'Okänt fel'}`);
+  }
 }

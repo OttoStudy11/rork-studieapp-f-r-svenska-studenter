@@ -1,12 +1,12 @@
 import { Tabs, useRouter, useSegments } from "expo-router";
 import React, { useRef } from "react";
-import { Home, BookOpen, Timer, Users, MessageCircle, UsersRound } from "lucide-react-native";
+import { Home, BookOpen, Timer, Users, MessageCircle } from "lucide-react-native";
 import { Platform, PanResponder, Dimensions, View } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const TAB_ROUTES = ['home', 'courses', 'timer', 'groups', 'friends', 'ai-chat'];
+const TAB_ROUTES = ['home', 'courses', 'timer', 'friends', 'ai-chat'];
 
 export default function TabLayout() {
   const { theme, isDark } = useTheme();
@@ -120,19 +120,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="groups"
-        options={{
-          title: "Grupper",
-          tabBarIcon: ({ color, size, focused }) => (
-            <UsersRound 
-              color={color} 
-              size={focused ? 26 : 24} 
-              strokeWidth={focused ? 2.5 : 2}
-            />
-          ),
-        }}
-      />
+
       <Tabs.Screen
         name="friends"
         options={{

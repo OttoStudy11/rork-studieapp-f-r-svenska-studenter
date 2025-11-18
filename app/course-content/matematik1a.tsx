@@ -26,8 +26,6 @@ import {
   X as CloseIcon,
   Award,
   TrendingUp,
-  Star,
-  FileText,
   Sparkles
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
@@ -56,7 +54,219 @@ interface CourseProgress {
 }
 
 const modulesData: Module[] = [
-  // TODO: Lägg till moduler här
+  {
+    id: 1,
+    title: 'Algebra och ekvationer',
+    description: 'Lär dig lösa ekvationer och förenkla algebraiska uttryck',
+    emoji: '🔢',
+    sections: [
+      {
+        title: 'Grundläggande algebra',
+        content: 'Algebra handlar om att arbeta med bokstäver och symboler för att representera tal och samband. Det är ett kraftfullt verktyg för problemlösning i matematik, naturvetenskap och vardagslivet.',
+        keyPoints: [
+          'Förenkla algebraiska uttryck',
+          'Lösa enkla ekvationer av första graden',
+          'Använda parenteser och prioriteringsregler',
+          'Hantera negativa tal i beräkningar',
+          'Lösa ut variabler från formler',
+          'Använda algebra för att lösa praktiska problem'
+        ]
+      },
+      {
+        title: 'Ekvationer',
+        content: 'En ekvation är ett matematiskt påstående där två uttryck är lika med varandra. Genom att lösa ekvationer kan vi hitta okända värden.',
+        keyPoints: [
+          'Lösa enkla ekvationer: x + 5 = 12',
+          'Använda balansprincipen',
+          'Multiplicera och dividera båda led',
+          'Kontrollera lösningar genom att sätta in dem',
+          'Tolka lösningar i problemsammanhang'
+        ]
+      }
+    ],
+    examples: [
+      'Lösa x + 5 = 12 genom att subtrahera 5 från båda sidor',
+      'Förenkla 2(x + 3) till 2x + 6',
+      'Lösa 3x = 15 genom att dividera båda sidor med 3',
+      'Använda algebra för att beräkna kostnader och priser'
+    ],
+    reflectionQuestions: [
+      'Varför är algebra användbart i vardagen?',
+      'Hur kan du använda algebra för att lösa praktiska problem?',
+      'Vad betyder det att "lösa ut" en variabel?',
+      'Varför måste man göra samma operation på båda sidor av ekvationen?'
+    ]
+  },
+  {
+    id: 2,
+    title: 'Procent och förändring',
+    description: 'Beräkna procentuella förändringar och tillämpningar',
+    emoji: '%',
+    sections: [
+      {
+        title: 'Procent i vardagen',
+        content: 'Procent används överallt - från rabatter i butiker till räntor på bankkonton. Att förstå procent är avgörande för ekonomiska beslut och för att tolka statistik.',
+        keyPoints: [
+          'Räkna ut procentuell ökning och minskning',
+          'Förstå räntor och amortering',
+          'Jämföra priser och erbjudanden',
+          'Läsa och tolka statistik i diagram',
+          'Beräkna moms och rabatter',
+          'Använda förändringstaktformeln'
+        ]
+      },
+      {
+        title: 'Procentuell förändring',
+        content: 'När något ökar eller minskar kan vi uttrycka förändringen i procent. Detta gör det lätt att jämföra förändringar av olika storlek.',
+        keyPoints: [
+          'Formel för procentuell förändring',
+          'Skillnad mellan ökning och minskning',
+          'Beräkna slutvärde efter förändring',
+          'Arbetsgång för procentproblem',
+          'Tolka resultat i sammanhang'
+        ]
+      }
+    ],
+    examples: [
+      'En vara kostar 200 kr och ökar med 25% - beräkna nya priset',
+      'Beräkna rabatt på 30% av 500 kr',
+      'Räkna ut ränta på sparkonto',
+      'Jämföra prisökningar i olika butiker'
+    ],
+    reflectionQuestions: [
+      'Varför är procenträkning viktigt i vardagen?',
+      'Hur skiljer sig procent från bråk och decimal?',
+      'När använder man procent istället för konkreta tal?',
+      'Hur kan procent vilseleda i statistik?'
+    ]
+  },
+  {
+    id: 3,
+    title: 'Geometri och mätning',
+    description: 'Utforska geometriska former och beräkna area och volym',
+    emoji: '📐',
+    sections: [
+      {
+        title: 'Area och omkrets',
+        content: 'Att kunna beräkna area och omkrets är viktigt för praktiska situationer som att måla ett rum eller anlägga en trädgård.',
+        keyPoints: [
+          'Area av rektangel: längd × bredd',
+          'Area av triangel: bas × höjd ÷ 2',
+          'Area av cirkel: π × radie²',
+          'Omkrets av olika former',
+          'Enheter: m², cm², dm²',
+          'Omvandla mellan olika enheter'
+        ]
+      },
+      {
+        title: 'Volym och densitet',
+        content: 'Volym beskriver hur mycket utrymme något tar. Det är viktigt vid transport, förvaring och många praktiska situationer.',
+        keyPoints: [
+          'Volym av rätblock: längd × bredd × höjd',
+          'Volym av cylinder: π × radie² × höjd',
+          'Enheter: m³, liter, cm³',
+          'Sambandet mellan dm³ och liter',
+          'Beräkna mängder i praktiska situationer'
+        ]
+      }
+    ],
+    examples: [
+      'Beräkna hur mycket färg som behövs för att måla ett rum',
+      'Räkna ut arean av en trädgård',
+      'Beräkna volymen av en förpackning',
+      'Jämföra förpackningsstorlekar i butiken'
+    ],
+    reflectionQuestions: [
+      'Varför är det viktigt att kunna beräkna area och volym?',
+      'Hur hänger olika enheter ihop?',
+      'När använder man area och när volym?',
+      'Hur kan geometri hjälpa i praktiska situationer?'
+    ]
+  },
+  {
+    id: 4,
+    title: 'Statistik och sannolikhet',
+    description: 'Lär dig tolka data och förstå sannolikhet',
+    emoji: '📊',
+    sections: [
+      {
+        title: 'Läsa och skapa diagram',
+        content: 'Diagram är kraftfulla verktyg för att visualisera data. Att kunna läsa och skapa diagram är en viktig färdighet i dagens samhälle.',
+        keyPoints: [
+          'Olika typer av diagram: stapel, cirkel, linje',
+          'När använder man vilket diagram?',
+          'Tolka information från diagram',
+          'Skapa egna diagram från data',
+          'Källkritik - hur kan diagram vilseleda?'
+        ]
+      },
+      {
+        title: 'Medelvärde och spridning',
+        content: 'Medelvärde och andra statistiska mått hjälper oss att sammanfatta och förstå stora mängder data.',
+        keyPoints: [
+          'Beräkna medelvärde (aritmetiskt medel)',
+          'Median - mittvärdet i en serie',
+          'Typvärde - det vanligaste värdet',
+          'När är vilket mått lämpligast?',
+          'Använda statistik för att beskriva data'
+        ]
+      }
+    ],
+    examples: [
+      'Beräkna medelbetyg',
+      'Tolka statistik om väder och klimat',
+      'Analysera undersökningar och enkäter',
+      'Förstå nyhetsrapportering med statistik'
+    ],
+    reflectionQuestions: [
+      'Hur kan statistik användas på bra och dåliga sätt?',
+      'Varför är källkritik viktigt vid statistik?',
+      'När är medelvärdet ett bra mått?',
+      'Hur påverkar val av diagram hur vi tolkar data?'
+    ]
+  },
+  {
+    id: 5,
+    title: 'Funktioner och grafer',
+    description: 'Introduktion till funktioner och deras grafiska representation',
+    emoji: '📈',
+    sections: [
+      {
+        title: 'Vad är en funktion?',
+        content: 'En funktion beskriver ett samband mellan två storheter. Funktioner är fundamentala i matematik och används för att modellera verkliga fenomen.',
+        keyPoints: [
+          'Funktionsbegreppet: input → output',
+          'Funktionsnotation: f(x) = ...',
+          'Beräkna funktionsvärden',
+          'Linjära funktioner: y = kx + m',
+          'Tolka k-värde (lutning) och m-värde (skärningspunkt)'
+        ]
+      },
+      {
+        title: 'Grafer och koordinatsystem',
+        content: 'Genom att rita funktioner i ett koordinatsystem kan vi visualisera samband och lättare förstå funktionens egenskaper.',
+        keyPoints: [
+          'Koordinatsystemets uppbyggnad',
+          'Rita grafer för hand',
+          'Avläsa information från grafer',
+          'Skärningspunkter med axlar',
+          'Tolka grafiskt information i problemsammanhang'
+        ]
+      }
+    ],
+    examples: [
+      'Beskriva samband mellan tid och sträcka',
+      'Modellera kostnader med funktioner',
+      'Rita grafer för temperaturer över tid',
+      'Använda funktioner för att göra förutsägelser'
+    ],
+    reflectionQuestions: [
+      'Varför är funktioner användbara?',
+      'Vad kan vi läsa av från en graf?',
+      'Hur använder man funktioner för att modellera verkligheten?',
+      'Vad betyder k-värdet och m-värdet i en linjär funktion?'
+    ]
+  }
 ];
 
 export default function Matematik1a() {
@@ -72,12 +282,12 @@ export default function Matematik1a() {
   const [editProgress, setEditProgress] = useState<string>('0');
   const [editTargetGrade, setEditTargetGrade] = useState<string>('');
   const [modules, setModules] = useState<Module[]>(modulesData);
-  const [showGradeCriteria, setShowGradeCriteria] = useState(false);
 
   const storageKey = `@matematik1a_progress_${user?.id}`;
 
   useEffect(() => {
     loadProgress();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const loadProgress = async () => {
@@ -258,9 +468,31 @@ export default function Matematik1a() {
           <View style={[styles.introSection, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.introTitle, { color: theme.colors.text }]}>Om kursen</Text>
             <Text style={[styles.introText, { color: theme.colors.textSecondary }]}>
-              {/* TODO: Lägg till kursbeskrivning här */}
-              Matematik 1a ger dig grundläggande kunskaper i algebra, geometri och statistik.
+              Matematik 1a ger dig grundläggande kunskaper i algebra, geometri, statistik och funktioner. 
+              Kursen fokuserar på att utveckla din problemlösningsförmåga och förmåga att använda matematik 
+              i vardagliga och yrkesmässiga sammanhang.
             </Text>
+            
+            <View style={styles.courseGoals}>
+              <View style={styles.goalItem}>
+                <Text style={{ fontSize: 20 }}>🧮</Text>
+                <Text style={[styles.goalText, { color: theme.colors.textSecondary }]}>
+                  Lösa vardagliga matematiska problem
+                </Text>
+              </View>
+              <View style={styles.goalItem}>
+                <Text style={{ fontSize: 20 }}>📊</Text>
+                <Text style={[styles.goalText, { color: theme.colors.textSecondary }]}>
+                  Förstå och tillämpa procent och statistik
+                </Text>
+              </View>
+              <View style={styles.goalItem}>
+                <Text style={{ fontSize: 20 }}>💡</Text>
+                <Text style={[styles.goalText, { color: theme.colors.textSecondary }]}>
+                  Utveckla logiskt tänkande och problemlösning
+                </Text>
+              </View>
+            </View>
           </View>
         </FadeInView>
 
@@ -321,7 +553,69 @@ export default function Matematik1a() {
 
                 {expandedModule === module.id && (
                   <View style={styles.moduleContent}>
-                    {/* TODO: Lägg till modulinnehåll här */}
+                    {module.sections.map((section, sectionIndex) => (
+                      <View key={sectionIndex} style={styles.sectionCard}>
+                        <View style={styles.sectionHeader}>
+                          <BookOpen size={20} color="#3B82F6" />
+                          <Text style={[styles.sectionTitle2, { color: theme.colors.text }]}>
+                            {section.title}
+                          </Text>
+                        </View>
+                        <Text style={[styles.sectionContent, { color: theme.colors.textSecondary }]}>
+                          {section.content}
+                        </Text>
+                        
+                        <View style={styles.keyPointsContainer}>
+                          <Text style={[styles.keyPointsTitle, { color: theme.colors.text }]}>
+                            Viktiga punkter:
+                          </Text>
+                          {section.keyPoints.map((point, pointIndex) => (
+                            <View key={pointIndex} style={styles.keyPointItem}>
+                              <View style={[styles.bullet, { backgroundColor: '#3B82F6' }]} />
+                              <Text style={[styles.keyPointText, { color: theme.colors.textSecondary }]}>
+                                {point}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    ))}
+
+                    <View style={[styles.examplesSection, { backgroundColor: theme.colors.surface }]}>
+                      <View style={styles.examplesHeader}>
+                        <Target size={20} color="#22C55E" />
+                        <Text style={[styles.examplesTitle, { color: theme.colors.text }]}>
+                          Exempel på tillämpningar
+                        </Text>
+                      </View>
+                      {module.examples.map((example, exampleIndex) => (
+                        <View key={exampleIndex} style={styles.exampleItem}>
+                          <CheckCircle size={16} color="#22C55E" />
+                          <Text style={[styles.exampleText, { color: theme.colors.textSecondary }]}>
+                            {example}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={[styles.reflectionSection, { backgroundColor: theme.colors.surface }]}>
+                      <View style={styles.reflectionHeader}>
+                        <Lightbulb size={20} color="#F59E0B" />
+                        <Text style={[styles.reflectionTitle, { color: theme.colors.text }]}>
+                          Reflektionsfrågor
+                        </Text>
+                      </View>
+                      {module.reflectionQuestions.map((question, questionIndex) => (
+                        <View key={questionIndex} style={styles.questionItem}>
+                          <Text style={[styles.questionNumber, { color: '#F59E0B' }]}>
+                            {questionIndex + 1}.
+                          </Text>
+                          <Text style={[styles.questionText, { color: theme.colors.textSecondary }]}>
+                            {question}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 )}
               </TouchableOpacity>
@@ -748,5 +1042,121 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  courseGoals: {
+    gap: 12,
+    marginTop: 20,
+  },
+  goalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  goalText: {
+    fontSize: 15,
+    flex: 1,
+    lineHeight: 22,
+  },
+  sectionCard: {
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  sectionTitle2: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  sectionContent: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  keyPointsContainer: {
+    marginTop: 8,
+  },
+  keyPointsTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+  },
+  keyPointItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 8,
+  },
+  bullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 8,
+  },
+  keyPointText: {
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
+  },
+  examplesSection: {
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  examplesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  examplesTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  exampleItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 8,
+  },
+  exampleText: {
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
+  },
+  reflectionSection: {
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  reflectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  reflectionTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  questionItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 12,
+  },
+  questionNumber: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    minWidth: 20,
+  },
+  questionText: {
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
   },
 });

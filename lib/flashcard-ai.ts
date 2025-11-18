@@ -175,22 +175,22 @@ export async function generateFlashcardsFromContent(
     let result;
     try {
       result = await generateObject({
-    schema: z.object({
-      flashcards: z.array(
-        z.object({
-          question: z.string().describe('Clear, specific question in Swedish'),
-          answer: z.string().describe('Concise, accurate answer in Swedish'),
-          difficulty: z.number().min(1).max(3).describe('1 = easy, 2 = medium, 3 = hard'),
-          explanation: z.string().optional().describe('Additional context or explanation in Swedish'),
-          context: z.string().optional().describe('Where this concept appears in the curriculum'),
-          tags: z.array(z.string()).optional().describe('Related topics or concepts'),
-        })
-      ),
-    }),
-    messages: [
-      {
-        role: 'user',
-        content: `Du är en expert på att skapa pedagogiska flashcards för svenska gymnasieelever som förbereder sig för prov och inlärning.
+        schema: z.object({
+          flashcards: z.array(
+            z.object({
+              question: z.string().describe('Clear, specific question in Swedish'),
+              answer: z.string().describe('Concise, accurate answer in Swedish'),
+              difficulty: z.number().min(1).max(3).describe('1 = easy, 2 = medium, 3 = hard'),
+              explanation: z.string().optional().describe('Additional context or explanation in Swedish'),
+              context: z.string().optional().describe('Where this concept appears in the curriculum'),
+              tags: z.array(z.string()).optional().describe('Related topics or concepts'),
+            })
+          ),
+        }),
+        messages: [
+          {
+            role: 'user',
+            content: `Du är en expert på att skapa pedagogiska flashcards för svenska gymnasieelever som förbereder sig för prov och inlärning.
 
 🎯 DITT MÅL:
 Skapa ${count} flashcards för kursen "${courseName}" baserat på kursens innehåll och nationella kursplan.
@@ -245,9 +245,9 @@ ${courseDescription}
 
 ✅ SKAPA NU ${count} HÖGKVALITATIVA FLASHCARDS:
 Fokusera på att täcka hela kursens centrala innehåll jämnt, med betoning på de viktigaste koncepten som eleverna behöver kunna för att klara kursen.`,
-      },
-    ],
-  });
+          },
+        ],
+      });
     } catch (genError: any) {
       console.error('❌ Error generating flashcards with AI:', genError);
       throw new Error(`AI-generering misslyckades: ${genError?.message || 'Okänt fel'}`);

@@ -18,7 +18,7 @@ export interface StudyGroup {
   updated_at: string;
   member_count?: number;
   course?: {
-    name: string;
+    title: string;
   };
   creator?: {
     display_name: string;
@@ -117,7 +117,7 @@ export const [StudyGroupProvider, useStudyGroups] = createContextHook(() => {
             created_at,
             updated_at,
             courses (
-              name
+              title
             ),
             profiles!study_groups_created_by_fkey (
               display_name,
@@ -128,7 +128,13 @@ export const [StudyGroupProvider, useStudyGroups] = createContextHook(() => {
         .eq('user_id', user.id);
 
       if (fetchError) {
-        console.error('[StudyGroups] Error fetching my groups:', fetchError);
+        console.error('[StudyGroups] Error fetching my groups:', {
+          message: fetchError.message,
+          details: fetchError.details,
+          hint: fetchError.hint,
+          code: fetchError.code,
+          error: fetchError
+        });
         setError(fetchError.message || 'Failed to fetch groups');
         return;
       }
@@ -162,7 +168,11 @@ export const [StudyGroupProvider, useStudyGroups] = createContextHook(() => {
       setMyGroups(groupsWithCounts);
       setError(null);
     } catch (err: any) {
-      console.error('[StudyGroups] Exception fetching my groups:', err);
+      console.error('[StudyGroups] Exception fetching my groups:', {
+        message: err?.message,
+        stack: err?.stack,
+        error: err
+      });
       setError(err?.message || 'Failed to fetch groups');
     }
   }, [user]);
@@ -181,7 +191,7 @@ export const [StudyGroupProvider, useStudyGroups] = createContextHook(() => {
         .select(`
           *,
           courses (
-            name
+            title
           ),
           profiles!study_groups_created_by_fkey (
             display_name,
@@ -197,7 +207,13 @@ export const [StudyGroupProvider, useStudyGroups] = createContextHook(() => {
       const { data, error: fetchError } = await query;
 
       if (fetchError) {
-        console.error('[StudyGroups] Error fetching available groups:', fetchError);
+        console.error('[StudyGroups] Error fetching available groups:', {
+          message: fetchError.message,
+          details: fetchError.details,
+          hint: fetchError.hint,
+          code: fetchError.code,
+          error: fetchError
+        });
         setError(fetchError.message || 'Failed to fetch available groups');
         return;
       }
@@ -232,7 +248,11 @@ export const [StudyGroupProvider, useStudyGroups] = createContextHook(() => {
       setAvailableGroups(notMyGroups);
       setError(null);
     } catch (err: any) {
-      console.error('[StudyGroups] Exception fetching available groups:', err);
+      console.error('[StudyGroups] Exception fetching available groups:', {
+        message: err?.message,
+        stack: err?.stack,
+        error: err
+      });
       setError(err?.message || 'Failed to fetch available groups');
     }
   }, [user]);

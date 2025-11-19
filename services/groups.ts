@@ -14,7 +14,7 @@ export interface StudyGroup {
   updated_at: string;
   member_count?: number;
   course?: {
-    name: string;
+    title: string;
   };
   creator?: {
     display_name: string;
@@ -208,7 +208,7 @@ export async function getGroup(groupId: string): Promise<StudyGroup | null> {
       .from('study_groups')
       .select(`
         *,
-        courses (name),
+        courses (title),
         profiles!study_groups_created_by_fkey (display_name, username)
       `)
       .eq('id', groupId)

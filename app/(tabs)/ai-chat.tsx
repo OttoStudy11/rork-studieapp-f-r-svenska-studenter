@@ -117,14 +117,11 @@ export default function AIChatScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
-      <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerIconContainer}>
-            <Text style={styles.headerEmoji}>🤖</Text>
-          </View>
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>StudieStugan AI</Text>
-            <Text style={styles.headerSubtitle}>Din personliga studieguide</Text>
+      <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.headerTop}>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.greeting, { color: theme.colors.text }]}>🤖 StudieStugan AI</Text>
+            <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>Din personliga studieguide</Text>
           </View>
         </View>
       </View>
@@ -145,9 +142,9 @@ export default function AIChatScreen() {
               <View style={[styles.emptyIconContainer, { backgroundColor: `${theme.colors.primary}20` }]}>
                 <Brain size={48} color={theme.colors.primary} />
               </View>
-              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>AI-funktionen kommer snart! 🚀</Text>
+              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Hej! Hur kan jag hjälpa dig? 🚀</Text>
               <Text style={[styles.emptySubtitle, { color: theme.colors.textMuted }]}>
-                Vi arbetar på en fantastisk AI-assistent som kommer hjälpa dig med studier, ge tips och förklaringar. Håll utkik!
+                Fråga mig om vad som helst! Jag kan hjälpa dig med studier, ge tips och förklaringar.
               </Text>
               <View style={styles.suggestionsContainer}>
                 <TouchableOpacity
@@ -215,20 +212,20 @@ export default function AIChatScreen() {
             style={[styles.input, { backgroundColor: isDark ? theme.colors.background : '#f5f5f5', color: theme.colors.text }]}
             value={input}
             onChangeText={setInput}
-            placeholder="Kommer snart..."
+            placeholder="Skriv ditt meddelande..."
             placeholderTextColor={theme.colors.textMuted}
             multiline
             maxLength={1000}
-            editable={false}
+            editable={!isSending}
           />
           <TouchableOpacity
             style={[
               styles.sendButton, 
               { backgroundColor: theme.colors.primary },
-              styles.sendButtonDisabled
+              (!input.trim() || isSending) && styles.sendButtonDisabled
             ]}
             onPress={handleSend}
-            disabled={true}
+            disabled={!input.trim() || isSending}
           >
             <Send size={20} color="#fff" />
           </TouchableOpacity>
@@ -243,45 +240,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 24,
   },
-  headerContent: {
+  headerTop: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
-  headerIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerEmoji: {
-    fontSize: 36,
-  },
-  headerTextContainer: {
+  headerLeft: {
     flex: 1,
   },
-  headerTitle: {
-    fontSize: 26,
-    fontWeight: '700' as const,
-    color: '#fff',
+  greeting: {
+    fontSize: 28,
+    fontWeight: '700',
     marginBottom: 4,
     letterSpacing: -0.5,
   },
-  headerSubtitle: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.85)',
-    fontWeight: '500' as const,
+  subtitle: {
+    fontSize: 16,
+    fontWeight: '400',
   },
   keyboardView: {
     flex: 1,

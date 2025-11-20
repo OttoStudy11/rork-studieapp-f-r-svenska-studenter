@@ -23,7 +23,7 @@ import { Platform } from 'react-native';
 import { Share } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useStudyGroups } from '@/contexts/StudyGroupContext';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { FadeInView, SlideInView } from '@/components/Animations';
@@ -73,30 +73,14 @@ export default function FriendsScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'groups'>('friends');
+  const [activeTab, setActiveTab] = useState<'friends' | 'requests'>('friends');
   const [friends, setFriends] = useState<Friend[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('week');
   const router = useRouter();
-  const {
-    myGroups,
-    availableGroups,
-    isLoading: groupsLoading,
-    error: groupsError,
-    joinGroup,
-    leaveGroup,
-    fetchMyGroups,
-    fetchAvailableGroups
-  } = useStudyGroups();
 
-  useEffect(() => {
-    if (groupsError) {
-      console.error('Groups error:', groupsError);
-      showError(`Gruppfel: ${groupsError}`);
-    }
-  }, [groupsError, showError]);
 
   const filteredFriends = friends.filter(friend =>
     friend.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -480,22 +464,7 @@ export default function FriendsScreen() {
             Förfrågningar ({friendRequests.length})
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            { backgroundColor: theme.colors.card },
-            activeTab === 'groups' && { backgroundColor: theme.colors.primary }
-          ]}
-          onPress={() => setActiveTab('groups')}
-        >
-          <Text style={[
-            styles.tabText,
-            { color: theme.colors.textSecondary },
-            activeTab === 'groups' && { color: 'white', fontWeight: '600' }
-          ]}>
-            Grupper ({myGroups.length})
-          </Text>
-        </TouchableOpacity>
+
       </View>
 
       {/* Content */}
@@ -654,179 +623,6 @@ export default function FriendsScreen() {
                     <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Inga vänförfrågningar</Text>
                     <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
                       Du har inga väntande vänförfrågningar just nu
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </SlideInView>
-          </>
-        ) : (
-          <>
-            {/* My Groups */}
-            <SlideInView direction="up" delay={200}>
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mina Grupper</Text>
-                  <TouchableOpacity 
-                    style={[styles.createGroupButton, { backgroundColor: theme.colors.primary }]}
-                    onPress={() => router.push('/group/create' as any)}
-                  >
-                    <Plus size={16} color="white" />
-                    <Text style={styles.createGroupText}>Skapa</Text>
-                  </TouchableOpacity>
-                </View>
-                
-                {myGroups.length > 0 ? (
-                  myGroups.map((group, index) => (
-                    <FadeInView key={group.id} delay={300 + index * 50}>
-                      <TouchableOpacity
-                        style={[styles.groupCard, { backgroundColor: theme.colors.card }]}
-                        onPress={() => router.push(`/group/${group.id}` as any)}
-                        activeOpacity={0.7}
-                      >
-                        <LinearGradient
-                          colors={isDark ? ['#1a1a2e', '#16213e'] : ['#e3f2fd', '#bbdefb']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.groupIcon}
-                        >
-                          <UsersRound size={24} color={theme.colors.primary} strokeWidth={2} />
-                        </LinearGradient>
-
-                        <View style={styles.groupInfo}>
-                          <View style={styles.groupHeader}>
-                            <Text style={[styles.groupName, { color: theme.colors.text }]} numberOfLines={1}>
-                              {group.name}
-                            </Text>
-                            {group.is_private ? (
-                              <Lock size={14} color={theme.colors.textMuted} />
-                            ) : (
-                              <Globe size={14} color={theme.colors.textMuted} />
-                            )}
-                          </View>
-                          
-                          {group.course && (
-                            <View style={styles.courseTag}>
-                              <BookOpen size={12} color={theme.colors.primary} />
-                              <Text style={[styles.courseText, { color: theme.colors.primary }]} numberOfLines={1}>
-                                {group.course.name}
-                              </Text>
-                            </View>
-                          )}
-
-                          <View style={styles.groupMeta}>
-                            <View style={styles.metaItem}>
-                              <Users size={14} color={theme.colors.textMuted} />
-                              <Text style={[styles.metaText, { color: theme.colors.textMuted }]}>
-                                {group.member_count} medlemmar
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-
-                        <TouchableOpacity
-                          style={[styles.leaveGroupButton, { backgroundColor: theme.colors.error + '15' }]}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            leaveGroup(group.id);
-                          }}
-                        >
-                          <Text style={[styles.leaveGroupText, { color: theme.colors.error }]}>Lämna</Text>
-                        </TouchableOpacity>
-                      </TouchableOpacity>
-                    </FadeInView>
-                  ))
-                ) : (
-                  <View style={styles.emptyState}>
-                    <UsersRound size={48} color={theme.colors.textMuted} />
-                    <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Inga grupper än</Text>
-                    <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-                      Skapa en grupp eller gå med i en befintlig
-                    </Text>
-                    <TouchableOpacity 
-                      style={[styles.addButtonLarge, { backgroundColor: theme.colors.primary }]} 
-                      onPress={() => router.push('/group/create' as any)}
-                    >
-                      <Plus size={20} color="white" />
-                      <Text style={styles.addButtonText}>Skapa grupp</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            </SlideInView>
-
-            {/* Available Groups */}
-            <SlideInView direction="up" delay={300}>
-              <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Tillgängliga Grupper</Text>
-                
-                {availableGroups.length > 0 ? (
-                  availableGroups.map((group, index) => (
-                    <FadeInView key={group.id} delay={400 + index * 50}>
-                      <View style={[styles.groupCard, { backgroundColor: theme.colors.card }]}>
-                        <LinearGradient
-                          colors={isDark ? ['#1a1a2e', '#16213e'] : ['#e8f5e9', '#c8e6c9']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.groupIcon}
-                        >
-                          <UsersRound size={24} color={theme.colors.success} strokeWidth={2} />
-                        </LinearGradient>
-
-                        <View style={styles.groupInfo}>
-                          <View style={styles.groupHeader}>
-                            <Text style={[styles.groupName, { color: theme.colors.text }]} numberOfLines={1}>
-                              {group.name}
-                            </Text>
-                            {group.is_private ? (
-                              <Lock size={14} color={theme.colors.textMuted} />
-                            ) : (
-                              <Globe size={14} color={theme.colors.textMuted} />
-                            )}
-                          </View>
-
-                          {group.course && (
-                            <View style={styles.courseTag}>
-                              <BookOpen size={12} color={theme.colors.success} />
-                              <Text style={[styles.courseText, { color: theme.colors.success }]} numberOfLines={1}>
-                                {group.course.name}
-                              </Text>
-                            </View>
-                          )}
-
-                          <View style={styles.groupMeta}>
-                            <View style={styles.metaItem}>
-                              <Users size={14} color={theme.colors.textMuted} />
-                              <Text style={[styles.metaText, { color: theme.colors.textMuted }]}>
-                                {group.member_count}/{group.max_members}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-
-                        <TouchableOpacity
-                          style={[styles.joinGroupButton, { backgroundColor: theme.colors.success + '15' }]}
-                          onPress={() => {
-                            if (group.is_private) {
-                              alert('Privata grupper kräver inbjudningskod');
-                            } else {
-                              joinGroup(group.id);
-                            }
-                          }}
-                        >
-                          <Text style={[styles.joinGroupText, { color: theme.colors.success }]}>
-                            Gå med
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </FadeInView>
-                  ))
-                ) : (
-                  <View style={styles.emptyState}>
-                    <Search size={48} color={theme.colors.textMuted} />
-                    <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Inga tillgängliga grupper</Text>
-                    <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-                      Det finns inga offentliga grupper just nu
                     </Text>
                   </View>
                 )}

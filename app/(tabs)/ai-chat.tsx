@@ -150,9 +150,9 @@ export default function AIChatScreen() {
               <View style={[styles.emptyIconContainer, { backgroundColor: `${theme.colors.primary}20` }]}>
                 <Brain size={48} color={theme.colors.primary} />
               </View>
-              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Välkommen till StudieStugan AI! 👋</Text>
+              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>AI-funktionen kommer snart! 🚀</Text>
               <Text style={[styles.emptySubtitle, { color: theme.colors.textMuted }]}>
-                Jag är här för att hjälpa dig med studier, ge studietips, förklara svåra koncept och mycket mer. Ställ mig en fråga!
+                Vi arbetar på en fantastisk AI-assistent som kommer hjälpa dig med studier, ge tips och förklaringar. Håll utkik!
               </Text>
               <View style={styles.suggestionsContainer}>
                 <TouchableOpacity
@@ -220,20 +220,20 @@ export default function AIChatScreen() {
             style={[styles.input, { backgroundColor: isDark ? theme.colors.background : '#f5f5f5', color: theme.colors.text }]}
             value={input}
             onChangeText={setInput}
-            placeholder="Skriv ditt meddelande..."
+            placeholder="Kommer snart..."
             placeholderTextColor={theme.colors.textMuted}
             multiline
             maxLength={1000}
-            editable={!isSending}
+            editable={false}
           />
           <TouchableOpacity
             style={[
               styles.sendButton, 
               { backgroundColor: theme.colors.primary },
-              (!input.trim() || isSending) && styles.sendButtonDisabled
+              styles.sendButtonDisabled
             ]}
             onPress={handleSend}
-            disabled={!input.trim() || isSending}
+            disabled={true}
           >
             <Send size={20} color="#fff" />
           </TouchableOpacity>

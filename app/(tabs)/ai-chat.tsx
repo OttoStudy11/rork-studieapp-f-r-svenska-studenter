@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
 import { Send, Sparkles, BookOpen, Lightbulb, Brain, Flame, TrendingUp } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -121,11 +120,7 @@ export default function AIChatScreen() {
       <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
         <View style={styles.headerContent}>
           <View style={styles.headerIconContainer}>
-            <Image
-              source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
-              style={styles.headerLogo}
-              contentFit="contain"
-            />
+            <Text style={styles.headerEmoji}>🤖</Text>
           </View>
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>StudieStugan AI</Text>
@@ -269,11 +264,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 6,
   },
-  headerLogo: {
-    width: 52,
-    height: 52,
+  headerEmoji: {
+    fontSize: 36,
   },
   headerTextContainer: {
     flex: 1,

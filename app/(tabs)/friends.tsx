@@ -629,7 +629,7 @@ export default function FriendsScreen() {
               </View>
             </SlideInView>
           </>
-        )}
+        ) : null}
       </ScrollView>
 
       {/* Add Friend Modal */}

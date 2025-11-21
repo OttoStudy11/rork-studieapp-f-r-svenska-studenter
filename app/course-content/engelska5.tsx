@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Modal,
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
-import { ArrowLeft, BookOpen, CheckCircle, Circle, Edit3, X as CloseIcon, Award, TrendingUp, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, CheckCircle, Circle, Edit3, X as CloseIcon, Award, TrendingUp, Sparkles, Lightbulb, Target } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import { useAuth } from '@/contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,6 +14,13 @@ interface Module {
   description: string;
   emoji: string;
   completed?: boolean;
+  sections: {
+    title: string;
+    content: string;
+    keyPoints: string[];
+  }[];
+  examples: string[];
+  reflectionQuestions: string[];
 }
 
 interface CourseProgress {
@@ -22,7 +29,288 @@ interface CourseProgress {
   completedModules: number[];
 }
 
-const modulesData: Module[] = [];
+const modulesData: Module[] = [
+  {
+    id: 1,
+    title: 'Communication and Interaction',
+    description: 'Develop your speaking and listening skills in English',
+    emoji: '💬',
+    sections: [
+      {
+        title: 'Everyday Conversations',
+        content: 'Effective communication in English starts with mastering everyday conversations. Learn to express yourself clearly in various social situations.',
+        keyPoints: [
+          'Greetings and introductions',
+          'Small talk and social interactions',
+          'Asking for and giving directions',
+          'Making plans and arrangements',
+          'Expressing opinions and preferences',
+          'Active listening and turn-taking'
+        ]
+      },
+      {
+        title: 'Formal Communication',
+        content: 'Professional and formal contexts require different communication strategies. Learn to adapt your language to different situations.',
+        keyPoints: [
+          'Email writing and professional correspondence',
+          'Telephone conversations and video calls',
+          'Presentations and public speaking',
+          'Job interviews and applications',
+          'Formal requests and complaints',
+          'Politeness strategies and register'
+        ]
+      },
+      {
+        title: 'Listening Comprehension',
+        content: 'Understanding spoken English in various accents and contexts is crucial for effective communication.',
+        keyPoints: [
+          'Understanding different English accents',
+          'Listening for main ideas and details',
+          'Inferring meaning from context',
+          'Note-taking while listening',
+          'Understanding idioms and colloquialisms',
+          'Dealing with unclear or fast speech'
+        ]
+      }
+    ],
+    examples: [
+      'Role-play common situations like ordering food or shopping',
+      'Watch English movies and TV series with subtitles',
+      'Practice conversations with language partners',
+      'Listen to English podcasts and audiobooks'
+    ],
+    reflectionQuestions: [
+      'How do communication styles differ between your native language and English?',
+      'What strategies help you when you don\'t understand something?',
+      'How can you improve your pronunciation and fluency?',
+      'Why is cultural awareness important in communication?'
+    ]
+  },
+  {
+    id: 2,
+    title: 'Reading and Text Analysis',
+    description: 'Improve your reading comprehension and analytical skills',
+    emoji: '📖',
+    sections: [
+      {
+        title: 'Reading Strategies',
+        content: 'Effective reading involves more than just understanding words. Learn strategies to comprehend and analyze texts efficiently.',
+        keyPoints: [
+          'Skimming and scanning techniques',
+          'Identifying main ideas and supporting details',
+          'Understanding text structure and organization',
+          'Building vocabulary in context',
+          'Making predictions and inferences',
+          'Critical reading and questioning'
+        ]
+      },
+      {
+        title: 'Text Types and Genres',
+        content: 'Different types of texts have different purposes and characteristics. Recognize and understand various genres.',
+        keyPoints: [
+          'Fiction: novels, short stories, poetry',
+          'Non-fiction: articles, essays, biographies',
+          'Digital texts: blogs, social media, websites',
+          'Academic texts: research papers, reports',
+          'Media texts: news articles, advertisements',
+          'Genre conventions and features'
+        ]
+      },
+      {
+        title: 'Literary Analysis',
+        content: 'Analyzing literature helps you understand deeper meanings and appreciate the author\'s craft.',
+        keyPoints: [
+          'Plot, setting, and character analysis',
+          'Themes and symbolism',
+          'Point of view and narrative techniques',
+          'Literary devices: metaphor, imagery, irony',
+          'Historical and cultural context',
+          'Author\'s purpose and message'
+        ]
+      }
+    ],
+    examples: [
+      'Read English newspapers and magazines daily',
+      'Analyze song lyrics for meaning and literary devices',
+      'Compare different versions of the same news story',
+      'Read graded readers suited to your level'
+    ],
+    reflectionQuestions: [
+      'What reading strategies work best for you?',
+      'How do you deal with unknown words while reading?',
+      'What makes a text engaging or difficult?',
+      'How can reading improve other English skills?'
+    ]
+  },
+  {
+    id: 3,
+    title: 'Writing Skills',
+    description: 'Master different types of writing in English',
+    emoji: '✍️',
+    sections: [
+      {
+        title: 'Writing Process',
+        content: 'Good writing follows a process from planning to final editing. Learn to structure your writing effectively.',
+        keyPoints: [
+          'Brainstorming and planning ideas',
+          'Organizing content with outlines',
+          'Writing clear topic sentences',
+          'Developing paragraphs with examples',
+          'Drafting and revising',
+          'Editing for grammar and style'
+        ]
+      },
+      {
+        title: 'Text Types',
+        content: 'Different purposes require different types of writing. Master various writing formats.',
+        keyPoints: [
+          'Narrative writing: personal stories',
+          'Descriptive writing: people, places, events',
+          'Expository writing: explaining and informing',
+          'Argumentative writing: persuading readers',
+          'Creative writing: imagination and style',
+          'Academic writing: essays and reports'
+        ]
+      },
+      {
+        title: 'Language and Style',
+        content: 'Effective writing uses appropriate language and engages the reader.',
+        keyPoints: [
+          'Vocabulary choice and variety',
+          'Sentence structure and complexity',
+          'Cohesion and linking words',
+          'Formal vs. informal language',
+          'Tone and voice',
+          'Avoiding common errors'
+        ]
+      }
+    ],
+    examples: [
+      'Write journal entries about daily experiences',
+      'Compose emails to pen pals or language partners',
+      'Create blog posts on topics you\'re interested in',
+      'Practice writing different types of texts'
+    ],
+    reflectionQuestions: [
+      'What types of writing do you find most challenging?',
+      'How can you make your writing more engaging?',
+      'What\'s the difference between speaking and writing?',
+      'How does feedback improve your writing?'
+    ]
+  },
+  {
+    id: 4,
+    title: 'Grammar and Language Structure',
+    description: 'Understand and apply English grammar rules',
+    emoji: '📝',
+    sections: [
+      {
+        title: 'Verb Tenses',
+        content: 'English verb tenses express time and aspect. Master their forms and uses.',
+        keyPoints: [
+          'Present simple, continuous, and perfect',
+          'Past simple, continuous, and perfect',
+          'Future forms: will, going to, present continuous',
+          'Time expressions and adverbs',
+          'Tense consistency in narratives',
+          'Common tense mistakes to avoid'
+        ]
+      },
+      {
+        title: 'Sentence Structure',
+        content: 'Understanding sentence patterns helps you construct clear and correct sentences.',
+        keyPoints: [
+          'Subject-verb-object word order',
+          'Questions and negatives',
+          'Complex sentences with clauses',
+          'Relative clauses: who, which, that',
+          'Conditionals: if-clauses',
+          'Passive voice construction'
+        ]
+      },
+      {
+        title: 'Common Grammar Points',
+        content: 'Certain grammar areas are particularly important for clear communication.',
+        keyPoints: [
+          'Articles: a, an, the',
+          'Prepositions of time and place',
+          'Modal verbs: can, must, should',
+          'Reported speech',
+          'Adjectives and adverbs',
+          'Pronouns and possessives'
+        ]
+      }
+    ],
+    examples: [
+      'Do grammar exercises and quizzes online',
+      'Keep a grammar notebook with examples',
+      'Practice using new structures in sentences',
+      'Correct your own texts and learn from mistakes'
+    ],
+    reflectionQuestions: [
+      'Which grammar areas do you find most difficult?',
+      'How important is perfect grammar in communication?',
+      'What strategies help you remember grammar rules?',
+      'How can you practice grammar in real contexts?'
+    ]
+  },
+  {
+    id: 5,
+    title: 'Culture and Society',
+    description: 'Explore English-speaking cultures and societies',
+    emoji: '🌍',
+    sections: [
+      {
+        title: 'Cultural Awareness',
+        content: 'Understanding culture is essential for effective communication and language learning.',
+        keyPoints: [
+          'British and American culture differences',
+          'Social norms and etiquette',
+          'Holidays and traditions',
+          'Pop culture: music, film, literature',
+          'Cultural values and beliefs',
+          'Avoiding stereotypes and misconceptions'
+        ]
+      },
+      {
+        title: 'Contemporary Issues',
+        content: 'Discussing current topics helps you understand English-speaking societies.',
+        keyPoints: [
+          'Education systems in English-speaking countries',
+          'Work culture and employment',
+          'Social media and technology',
+          'Environmental issues',
+          'Diversity and multiculturalism',
+          'Global English and World Englishes'
+        ]
+      },
+      {
+        title: 'Cross-cultural Communication',
+        content: 'Navigating cultural differences is key to successful international communication.',
+        keyPoints: [
+          'Direct vs. indirect communication styles',
+          'Non-verbal communication and body language',
+          'Humor and sarcasm across cultures',
+          'Taboo topics and sensitive issues',
+          'Cultural misunderstandings and how to avoid them',
+          'Intercultural competence development'
+        ]
+      }
+    ],
+    examples: [
+      'Watch documentaries about English-speaking countries',
+      'Follow English news sources and current events',
+      'Compare cultural practices with your own country',
+      'Connect with people from different English-speaking cultures'
+    ],
+    reflectionQuestions: [
+      'How does culture influence language use?',
+      'What surprises you about English-speaking cultures?',
+      'How can cultural knowledge improve your English?',
+      'What role does English play as a global language?'
+    ]
+  }
+];
 
 export default function Engelska5() {
   const { theme, isDark } = useTheme();
@@ -196,13 +484,116 @@ export default function Engelska5() {
         <View style={styles.modulesSection}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kursinnehåll</Text>
           
-          {modules.length === 0 && (
-            <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
-              <BookOpen size={48} color={theme.colors.textMuted} />
-              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Inget innehåll än</Text>
-              <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>Kursinnehåll kommer att läggas till snart</Text>
-            </View>
-          )}
+          {modules.map((module, index) => (
+            <FadeInView key={module.id} delay={300 + index * 100}>
+              <TouchableOpacity
+                style={[
+                  styles.moduleCard,
+                  { backgroundColor: theme.colors.card },
+                  module.completed && styles.moduleCardCompleted
+                ]}
+                onPress={() => setExpandedModule(expandedModule === module.id ? null : module.id)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.moduleHeader}>
+                  <TouchableOpacity
+                    style={styles.checkboxContainer}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      toggleModuleCompletion(module.id);
+                    }}
+                  >
+                    {module.completed ? (
+                      <CheckCircle size={24} color="#10B981" />
+                    ) : (
+                      <Circle size={24} color={theme.colors.textMuted} />
+                    )}
+                  </TouchableOpacity>
+                  <Text style={styles.moduleEmoji}>{module.emoji}</Text>
+                  <View style={styles.moduleTitleContainer}>
+                    <Text style={[
+                      styles.moduleTitle,
+                      { color: theme.colors.text },
+                      module.completed && { color: '#10B981' }
+                    ]}>
+                      Module {module.id}: {module.title}
+                    </Text>
+                    <Text style={[styles.moduleDescription, { color: theme.colors.textSecondary }]}>
+                      {module.description}
+                    </Text>
+                  </View>
+                </View>
+
+                {expandedModule === module.id && (
+                  <View style={styles.moduleContent}>
+                    {module.sections.map((section, sectionIndex) => (
+                      <View key={sectionIndex} style={styles.sectionCard}>
+                        <View style={styles.sectionHeader}>
+                          <BookOpen size={20} color="#10B981" />
+                          <Text style={[styles.sectionTitle2, { color: theme.colors.text }]}>
+                            {section.title}
+                          </Text>
+                        </View>
+                        <Text style={[styles.sectionContent, { color: theme.colors.textSecondary }]}>
+                          {section.content}
+                        </Text>
+                        
+                        <View style={styles.keyPointsContainer}>
+                          <Text style={[styles.keyPointsTitle, { color: theme.colors.text }]}>
+                            Key Points:
+                          </Text>
+                          {section.keyPoints.map((point, pointIndex) => (
+                            <View key={pointIndex} style={styles.keyPointItem}>
+                              <View style={[styles.bullet, { backgroundColor: '#10B981' }]} />
+                              <Text style={[styles.keyPointText, { color: theme.colors.textSecondary }]}>
+                                {point}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    ))}
+
+                    <View style={[styles.examplesSection, { backgroundColor: theme.colors.surface }]}>
+                      <View style={styles.examplesHeader}>
+                        <Target size={20} color="#22C55E" />
+                        <Text style={[styles.examplesTitle, { color: theme.colors.text }]}>
+                          Practice Activities
+                        </Text>
+                      </View>
+                      {module.examples.map((example, exampleIndex) => (
+                        <View key={exampleIndex} style={styles.exampleItem}>
+                          <CheckCircle size={16} color="#22C55E" />
+                          <Text style={[styles.exampleText, { color: theme.colors.textSecondary }]}>
+                            {example}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={[styles.reflectionSection, { backgroundColor: theme.colors.surface }]}>
+                      <View style={styles.reflectionHeader}>
+                        <Lightbulb size={20} color="#F59E0B" />
+                        <Text style={[styles.reflectionTitle, { color: theme.colors.text }]}>
+                          Reflection Questions
+                        </Text>
+                      </View>
+                      {module.reflectionQuestions.map((question, questionIndex) => (
+                        <View key={questionIndex} style={styles.questionItem}>
+                          <Text style={[styles.questionNumber, { color: '#F59E0B' }]}>
+                            {questionIndex + 1}.
+                          </Text>
+                          <Text style={[styles.questionText, { color: theme.colors.textSecondary }]}>
+                            {question}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </FadeInView>
+          ))}
         </View>
       </ScrollView>
 
@@ -300,4 +691,33 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', padding: 40, borderRadius: 20 },
   emptyTitle: { fontSize: 18, fontWeight: '700' as const, marginTop: 16, marginBottom: 8 },
   emptyText: { fontSize: 14, textAlign: 'center' },
+  moduleCard: { borderRadius: 20, padding: 20, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  moduleHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  checkboxContainer: { padding: 4 },
+  moduleCardCompleted: { borderColor: '#10B981', borderWidth: 2, borderLeftWidth: 4 },
+  moduleEmoji: { fontSize: 40 },
+  moduleTitleContainer: { flex: 1 },
+  moduleTitle: { fontSize: 18, fontWeight: '700' as const, marginBottom: 4 },
+  moduleDescription: { fontSize: 14, lineHeight: 20 },
+  moduleContent: { marginTop: 20, gap: 16 },
+  sectionCard: { paddingTop: 16, borderTopWidth: 1, borderTopColor: 'rgba(16, 185, 129, 0.1)' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  sectionTitle2: { fontSize: 16, fontWeight: '600' as const },
+  sectionContent: { fontSize: 15, lineHeight: 22, marginBottom: 16 },
+  keyPointsContainer: { marginTop: 8 },
+  keyPointsTitle: { fontSize: 15, fontWeight: '600' as const, marginBottom: 8 },
+  keyPointItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 8 },
+  bullet: { width: 6, height: 6, borderRadius: 3, marginTop: 8 },
+  keyPointText: { fontSize: 14, lineHeight: 20, flex: 1 },
+  examplesSection: { borderRadius: 12, padding: 16, marginTop: 8 },
+  examplesHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  examplesTitle: { fontSize: 16, fontWeight: '600' as const },
+  exampleItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 8 },
+  exampleText: { fontSize: 14, lineHeight: 20, flex: 1 },
+  reflectionSection: { borderRadius: 12, padding: 16, marginTop: 8 },
+  reflectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  reflectionTitle: { fontSize: 16, fontWeight: '600' as const },
+  questionItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
+  questionNumber: { fontSize: 15, fontWeight: '700' as const, minWidth: 20 },
+  questionText: { fontSize: 14, lineHeight: 20, flex: 1 },
 });

@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS active_timer_sessions (
   user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   session_type text NOT NULL CHECK (session_type IN ('focus', 'break')),
   status text NOT NULL CHECK (status IN ('idle', 'running', 'paused')),
-  course_id uuid REFERENCES courses(id) ON DELETE SET NULL,
+  course_id text REFERENCES courses(id) ON DELETE SET NULL,
   course_name text NOT NULL,
   total_duration integer NOT NULL,
   remaining_time integer NOT NULL,

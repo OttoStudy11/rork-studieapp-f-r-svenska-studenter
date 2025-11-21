@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { Database } from './database.types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // =====================================================
@@ -39,6 +40,8 @@ const DEFAULT_SETTINGS: UserSettings = {
   show_study_stats: true,
 };
 
+type UserSettingsRow = Database['public']['Tables']['user_settings']['Row'];
+
 export async function getUserSettings(userId: string): Promise<UserSettings> {
   try {
     const { data, error } = await supabase
@@ -55,11 +58,30 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
       throw error;
     }
 
-    return data as UserSettings;
+    return extractSettings(data);
   } catch (error) {
     console.error('Error getting user settings:', error);
     return DEFAULT_SETTINGS;
   }
+}
+
+function extractSettings(data: UserSettingsRow): UserSettings {
+  return {
+    timer_sound_enabled: data.timer_sound_enabled,
+    timer_haptics_enabled: data.timer_haptics_enabled,
+    timer_notifications_enabled: data.timer_notifications_enabled,
+    timer_background_enabled: data.timer_background_enabled,
+    timer_focus_duration: data.timer_focus_duration,
+    timer_break_duration: data.timer_break_duration,
+    dark_mode: data.dark_mode,
+    theme_color: data.theme_color,
+    language: data.language,
+    achievements_notifications: data.achievements_notifications,
+    friend_request_notifications: data.friend_request_notifications,
+    study_reminder_notifications: data.study_reminder_notifications,
+    profile_visible: data.profile_visible,
+    show_study_stats: data.show_study_stats,
+  };
 }
 
 export async function createUserSettings(
@@ -75,7 +97,7 @@ export async function createUserSettings(
     .single();
 
   if (error) throw error;
-  return data as UserSettings;
+  return extractSettings(data);
 }
 
 export async function updateUserSettings(
@@ -90,7 +112,7 @@ export async function updateUserSettings(
     .single();
 
   if (error) throw error;
-  return data as UserSettings;
+  return extractSettings(data);
 }
 
 // =====================================================
@@ -100,15 +122,17 @@ export async function updateUserSettings(
 export interface ActiveTimerSession {
   session_type: 'focus' | 'break';
   status: 'idle' | 'running' | 'paused';
-  course_id?: string;
+  course_id?: string | null;
   course_name: string;
   total_duration: number;
   remaining_time: number;
   start_timestamp: number;
-  paused_at?: number;
-  device_id?: string;
-  device_platform?: string;
+  paused_at?: number | null;
+  device_id?: string | null;
+  device_platform?: string | null;
 }
+
+type ActiveTimerSessionRow = Database['public']['Tables']['active_timer_sessions']['Row'];
 
 export async function saveActiveTimerSession(
   userId: string,
@@ -120,7 +144,16 @@ export async function saveActiveTimerSession(
       .upsert(
         {
           user_id: userId,
-          ...session,
+          session_type: session.session_type,
+          status: session.status,
+          course_id: session.course_id || null,
+          course_name: session.course_name,
+          total_duration: session.total_duration,
+          remaining_time: session.remaining_time,
+          start_timestamp: session.start_timestamp,
+          paused_at: session.paused_at || null,
+          device_id: session.device_id || null,
+          device_platform: session.device_platform || null,
           expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         },
         { onConflict: 'user_id' }
@@ -131,6 +164,21 @@ export async function saveActiveTimerSession(
   } catch (error) {
     console.error('Error saving active timer session:', error);
   }
+}
+
+function extractTimerSession(data: ActiveTimerSessionRow): ActiveTimerSession {
+  return {
+    session_type: data.session_type,
+    status: data.status,
+    course_id: data.course_id,
+    course_name: data.course_name,
+    total_duration: data.total_duration,
+    remaining_time: data.remaining_time,
+    start_timestamp: data.start_timestamp,
+    paused_at: data.paused_at,
+    device_id: data.device_id,
+    device_platform: data.device_platform,
+  };
 }
 
 export async function getActiveTimerSession(
@@ -151,7 +199,7 @@ export async function getActiveTimerSession(
       throw error;
     }
 
-    return data as ActiveTimerSession;
+    return extractTimerSession(data);
   } catch (error) {
     console.error('Error getting active timer session:', error);
     return null;
@@ -178,13 +226,28 @@ export async function clearActiveTimerSession(userId: string): Promise<void> {
 
 export interface OnboardingStatus {
   completed: boolean;
-  current_step?: string;
+  current_step?: string | null;
   steps_completed: string[];
   selected_courses?: string[];
-  selected_gymnasium_id?: string;
-  selected_gymnasium_grade?: string;
-  selected_program?: string;
-  selected_purpose?: string;
+  selected_gymnasium_id?: string | null;
+  selected_gymnasium_grade?: string | null;
+  selected_program?: string | null;
+  selected_purpose?: string | null;
+}
+
+type UserOnboardingRow = Database['public']['Tables']['user_onboarding']['Row'];
+
+function extractOnboardingStatus(data: UserOnboardingRow): OnboardingStatus {
+  return {
+    completed: data.completed,
+    current_step: data.current_step,
+    steps_completed: data.steps_completed || [],
+    selected_courses: data.selected_courses || [],
+    selected_gymnasium_id: data.selected_gymnasium_id,
+    selected_gymnasium_grade: data.selected_gymnasium_grade,
+    selected_program: data.selected_program,
+    selected_purpose: data.selected_purpose,
+  };
 }
 
 export async function getOnboardingStatus(
@@ -205,16 +268,7 @@ export async function getOnboardingStatus(
       throw error;
     }
 
-    return {
-      completed: data.completed,
-      current_step: data.current_step,
-      steps_completed: data.steps_completed || [],
-      selected_courses: data.selected_courses || [],
-      selected_gymnasium_id: data.selected_gymnasium_id,
-      selected_gymnasium_grade: data.selected_gymnasium_grade,
-      selected_program: data.selected_program,
-      selected_purpose: data.selected_purpose,
-    };
+    return extractOnboardingStatus(data);
   } catch (error) {
     console.error('Error getting onboarding status:', error);
     return {
@@ -234,13 +288,13 @@ export async function createOnboardingStatus(
       {
         user_id: userId,
         completed: status.completed || false,
-        current_step: status.current_step,
+        current_step: status.current_step || null,
         steps_completed: status.steps_completed || [],
         selected_courses: status.selected_courses || [],
-        selected_gymnasium_id: status.selected_gymnasium_id,
-        selected_gymnasium_grade: status.selected_gymnasium_grade,
-        selected_program: status.selected_program,
-        selected_purpose: status.selected_purpose,
+        selected_gymnasium_id: status.selected_gymnasium_id || null,
+        selected_gymnasium_grade: status.selected_gymnasium_grade || null,
+        selected_program: status.selected_program || null,
+        selected_purpose: status.selected_purpose || null,
       },
       { onConflict: 'user_id' }
     )
@@ -248,16 +302,7 @@ export async function createOnboardingStatus(
     .single();
 
   if (error) throw error;
-  return {
-    completed: data.completed,
-    current_step: data.current_step,
-    steps_completed: data.steps_completed || [],
-    selected_courses: data.selected_courses || [],
-    selected_gymnasium_id: data.selected_gymnasium_id,
-    selected_gymnasium_grade: data.selected_gymnasium_grade,
-    selected_program: data.selected_program,
-    selected_purpose: data.selected_purpose,
-  };
+  return extractOnboardingStatus(data);
 }
 
 export async function updateOnboardingStatus(
@@ -272,16 +317,7 @@ export async function updateOnboardingStatus(
     .single();
 
   if (error) throw error;
-  return {
-    completed: data.completed,
-    current_step: data.current_step,
-    steps_completed: data.steps_completed || [],
-    selected_courses: data.selected_courses || [],
-    selected_gymnasium_id: data.selected_gymnasium_id,
-    selected_gymnasium_grade: data.selected_gymnasium_grade,
-    selected_program: data.selected_program,
-    selected_purpose: data.selected_purpose,
-  };
+  return extractOnboardingStatus(data);
 }
 
 export async function completeOnboarding(userId: string): Promise<void> {

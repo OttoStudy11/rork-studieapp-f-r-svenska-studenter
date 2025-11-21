@@ -40,8 +40,6 @@ const DEFAULT_SETTINGS: UserSettings = {
   show_study_stats: true,
 };
 
-type UserSettingsRow = Database['public']['Tables']['user_settings']['Row'];
-
 export async function getUserSettings(userId: string): Promise<UserSettings> {
   try {
     const { data, error } = await supabase
@@ -65,7 +63,7 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
   }
 }
 
-function extractSettings(data: UserSettingsRow): UserSettings {
+function extractSettings(data: Database['public']['Tables']['user_settings']['Row']): UserSettings {
   return {
     timer_sound_enabled: data.timer_sound_enabled,
     timer_haptics_enabled: data.timer_haptics_enabled,
@@ -132,8 +130,6 @@ export interface ActiveTimerSession {
   device_platform?: string | null;
 }
 
-type ActiveTimerSessionRow = Database['public']['Tables']['active_timer_sessions']['Row'];
-
 export async function saveActiveTimerSession(
   userId: string,
   session: ActiveTimerSession
@@ -166,7 +162,7 @@ export async function saveActiveTimerSession(
   }
 }
 
-function extractTimerSession(data: ActiveTimerSessionRow): ActiveTimerSession {
+function extractTimerSession(data: Database['public']['Tables']['active_timer_sessions']['Row']): ActiveTimerSession {
   return {
     session_type: data.session_type,
     status: data.status,
@@ -235,9 +231,7 @@ export interface OnboardingStatus {
   selected_purpose?: string | null;
 }
 
-type UserOnboardingRow = Database['public']['Tables']['user_onboarding']['Row'];
-
-function extractOnboardingStatus(data: UserOnboardingRow): OnboardingStatus {
+function extractOnboardingStatus(data: Database['public']['Tables']['user_onboarding']['Row']): OnboardingStatus {
   return {
     completed: data.completed,
     current_step: data.current_step,

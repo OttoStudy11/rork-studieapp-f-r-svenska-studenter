@@ -1013,6 +1013,202 @@ export interface Database {
           }
         ]
       }
+      user_settings: {
+        Row: {
+          id: string
+          user_id: string
+          timer_sound_enabled: boolean
+          timer_haptics_enabled: boolean
+          timer_notifications_enabled: boolean
+          timer_background_enabled: boolean
+          timer_focus_duration: number
+          timer_break_duration: number
+          dark_mode: boolean
+          theme_color: string
+          language: string
+          achievements_notifications: boolean
+          friend_request_notifications: boolean
+          study_reminder_notifications: boolean
+          profile_visible: boolean
+          show_study_stats: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          timer_sound_enabled?: boolean
+          timer_haptics_enabled?: boolean
+          timer_notifications_enabled?: boolean
+          timer_background_enabled?: boolean
+          timer_focus_duration?: number
+          timer_break_duration?: number
+          dark_mode?: boolean
+          theme_color?: string
+          language?: string
+          achievements_notifications?: boolean
+          friend_request_notifications?: boolean
+          study_reminder_notifications?: boolean
+          profile_visible?: boolean
+          show_study_stats?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          timer_sound_enabled?: boolean
+          timer_haptics_enabled?: boolean
+          timer_notifications_enabled?: boolean
+          timer_background_enabled?: boolean
+          timer_focus_duration?: number
+          timer_break_duration?: number
+          dark_mode?: boolean
+          theme_color?: string
+          language?: string
+          achievements_notifications?: boolean
+          friend_request_notifications?: boolean
+          study_reminder_notifications?: boolean
+          profile_visible?: boolean
+          show_study_stats?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      active_timer_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          session_type: 'focus' | 'break'
+          status: 'idle' | 'running' | 'paused'
+          course_id: string | null
+          course_name: string
+          total_duration: number
+          remaining_time: number
+          start_timestamp: number
+          paused_at: number | null
+          device_id: string | null
+          device_platform: string | null
+          expires_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          session_type: 'focus' | 'break'
+          status: 'idle' | 'running' | 'paused'
+          course_id?: string | null
+          course_name: string
+          total_duration: number
+          remaining_time: number
+          start_timestamp: number
+          paused_at?: number | null
+          device_id?: string | null
+          device_platform?: string | null
+          expires_at: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          session_type?: 'focus' | 'break'
+          status?: 'idle' | 'running' | 'paused'
+          course_id?: string | null
+          course_name?: string
+          total_duration?: number
+          remaining_time?: number
+          start_timestamp?: number
+          paused_at?: number | null
+          device_id?: string | null
+          device_platform?: string | null
+          expires_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "active_timer_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "active_timer_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_onboarding: {
+        Row: {
+          id: string
+          user_id: string
+          completed: boolean
+          current_step: string | null
+          steps_completed: string[]
+          selected_courses: string[]
+          selected_gymnasium_id: string | null
+          selected_gymnasium_grade: string | null
+          selected_program: string | null
+          selected_purpose: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          completed?: boolean
+          current_step?: string | null
+          steps_completed?: string[]
+          selected_courses?: string[]
+          selected_gymnasium_id?: string | null
+          selected_gymnasium_grade?: string | null
+          selected_program?: string | null
+          selected_purpose?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          completed?: boolean
+          current_step?: string | null
+          steps_completed?: string[]
+          selected_courses?: string[]
+          selected_gymnasium_id?: string | null
+          selected_gymnasium_grade?: string | null
+          selected_program?: string | null
+          selected_purpose?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_onboarding_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

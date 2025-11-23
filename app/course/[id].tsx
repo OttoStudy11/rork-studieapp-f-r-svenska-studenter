@@ -128,6 +128,8 @@ export default function CourseDetailScreen() {
     const courseRedirects: Record<string, string> = {
       'RELREL01': '/course-content/religionskunskap1',
       'MATMAT01a': '/course-content/matematik1a',
+      'MATMAT01b': '/course-content/matematik1b',
+      'MATMAT02b': '/course-content/matematik2b',
       'SVESVE01': '/course-content/svenska1',
       'ENGENG05': '/course-content/engelska5',
       'HISHIS01b': '/course-content/historia1b',

@@ -36,6 +36,13 @@ interface Module {
   description: string;
   emoji: string;
   completed?: boolean;
+  sections: {
+    title: string;
+    content: string;
+    keyPoints: string[];
+  }[];
+  examples: string[];
+  reflectionQuestions: string[];
 }
 
 interface CourseProgress {
@@ -44,7 +51,344 @@ interface CourseProgress {
   completedModules: number[];
 }
 
-const modulesData: Module[] = [];
+const modulesData: Module[] = [
+  {
+    id: 1,
+    title: 'Aritmetik och taluppfattning',
+    description: 'Tallinjen, tal i olika former och räkning med tal',
+    emoji: '🔢',
+    sections: [
+      {
+        title: 'Reella tal',
+        content: 'De reella talen omfattar alla tal på tallinjen: naturliga tal, heltal, rationella tal och irrationella tal. Varje punkt på tallinjen motsvarar ett reellt tal.',
+        keyPoints: [
+          'Naturliga tal: 1, 2, 3, 4, ...',
+          'Heltal: ..., -2, -1, 0, 1, 2, ...',
+          'Rationella tal: kan skrivas som bråk p/q där q ≠ 0',
+          'Irrationella tal: kan inte skrivas som bråk (t.ex. √2, π)',
+          'Reella tal: alla tal på tallinjen',
+          'Tallinjen är en visuell representation av talsystemet'
+        ]
+      },
+      {
+        title: 'Grundläggande räknelagar',
+        content: 'För att effektivt lösa matematiska problem behöver du känna till och kunna tillämpa grundläggande räknelagar som gäller för addition och multiplikation.',
+        keyPoints: [
+          'Kommutativa lagen: a + b = b + a och a · b = b · a',
+          'Associativa lagen: (a + b) + c = a + (b + c)',
+          'Distributiva lagen: a · (b + c) = a · b + a · c',
+          'Identitetselement: a + 0 = a och a · 1 = a',
+          'Inversa element: a + (-a) = 0 och a · (1/a) = 1',
+          'Prioriteringsregler: Parenteser → Potenser → Multiplikation/Division → Addition/Subtraktion'
+        ]
+      },
+      {
+        title: 'Procent och proportionalitet',
+        content: 'Procent är en viktig del av vardagsmatematiken och används för att beskriva andelar och förändringar. Proportionalitet beskriver samband mellan storheter.',
+        keyPoints: [
+          'Procent betyder "per hundra" (1% = 1/100)',
+          'Procentuell förändring: (nytt värde - gammalt värde) / gammalt värde × 100%',
+          'Förändringsfaktor: nytt värde / gammalt värde',
+          'Räta proportionalitet: y = kx (k = proportionalitetskonstant)',
+          'Omvänd proportionalitet: y = k/x',
+          'Tillämpningar: rabatter, räntor, skalor, recept'
+        ]
+      }
+    ],
+    examples: [
+      'Beräkna 15% av 2400 kr',
+      'En vara kostar 800 kr och får 25% rabatt. Vad blir det nya priset?',
+      'Om 3 liter färg räcker till 45 m², hur mycket färg behövs för 120 m²?',
+      'Rita tallinjen och placera ut √2, -3/4, π och 2,5'
+    ],
+    reflectionQuestions: [
+      'Varför kan inte alla tal skrivas som bråk?',
+      'Ge exempel på när du använder procent i vardagen',
+      'Hur skiljer sig räta proportionalitet från omvänd proportionalitet?',
+      'Varför är det viktigt att följa prioriteringsreglerna när man räknar?'
+    ]
+  },
+  {
+    id: 2,
+    title: 'Algebra',
+    description: 'Algebraiska uttryck, ekvationer och formelhantering',
+    emoji: '📝',
+    sections: [
+      {
+        title: 'Algebraiska uttryck',
+        content: 'I algebra använder vi bokstäver (variabler) för att representera okända tal eller tal som kan variera. Detta gör att vi kan beskriva generella samband och lösa problem.',
+        keyPoints: [
+          'Variabel: en bokstav som representerar ett tal',
+          'Uttryck: kombination av tal, variabler och räknesätt',
+          'Koefficient: talet framför variabeln (i 3x är 3 koefficienten)',
+          'Term: del av ett uttryck som adderas eller subtraheras',
+          'Lika termer: termer med samma variabler och exponenter',
+          'Förenkla uttryck genom att samla lika termer'
+        ]
+      },
+      {
+        title: 'Ekvationer',
+        content: 'En ekvation är en matematisk utsaga om att två uttryck är lika. Att lösa en ekvation innebär att hitta värdet på variabeln som gör ekvationen sann.',
+        keyPoints: [
+          'Likhet: vänsterled = högerled',
+          'Lösning: det värde på x som gör ekvationen sann',
+          'Ekvivalenta ekvationer: har samma lösning',
+          'Addera/subtrahera samma tal på båda sidor',
+          'Multiplicera/dividera med samma tal (≠0) på båda sidor',
+          'Kontrollera alltid lösningen genom att sätta in den i ursprungsekvationen'
+        ]
+      },
+      {
+        title: 'Formler och omskrivning',
+        content: 'Formler beskriver samband mellan olika storheter. Att kunna bryta ut en variabel ur en formel är en viktig färdighet.',
+        keyPoints: [
+          'Formel: ett algebraiskt uttryck som beskriver ett samband',
+          'Exempel på formler: A = l · b, v = s/t, C = 2πr',
+          'Bryt ut variabel: isolera önskad variabel på ena sidan',
+          'Använd samma operationer på båda sidor',
+          'Kontrollera genom att sätta in kända värden',
+          'Tänk på enheter när du räknar med formler'
+        ]
+      }
+    ],
+    examples: [
+      'Förenkla uttrycket: 3x + 2y - x + 5y',
+      'Lös ekvationen: 2x + 5 = 13',
+      'Lös ekvationen: 3(x - 2) = 15',
+      'Bryt ut h ur formeln A = ½ · b · h'
+    ],
+    reflectionQuestions: [
+      'Varför är algebra användbart i praktiska situationer?',
+      'Hur vet du att du har löst en ekvation korrekt?',
+      'Ge exempel på formler du använder i andra ämnen',
+      'Vad innebär det att två ekvationer är ekvivalenta?'
+    ]
+  },
+  {
+    id: 3,
+    title: 'Geometri',
+    description: 'Geometriska figurer, mätning och pythagoras sats',
+    emoji: '📐',
+    sections: [
+      {
+        title: 'Tvådimensionella figurer',
+        content: 'Geometri handlar om former, storlekar och deras egenskaper. Tvådimensionella figurer är plana figurer med area men ingen volym.',
+        keyPoints: [
+          'Triangel: tre sidor, summan av vinklarna är 180°',
+          'Kvadrat: fyra lika långa sidor, fyra räta vinklar',
+          'Rektangel: två par parallella sidor, fyra räta vinklar',
+          'Cirkel: alla punkter lika långt från mittpunkten',
+          'Area: ytinnehåll mätt i kvadratenheter (t.ex. m²)',
+          'Omkrets: längden runt en figur'
+        ]
+      },
+      {
+        title: 'Pythagoras sats',
+        content: 'Pythagoras sats är en av matematikens mest kända satser och beskriver sambandet mellan sidorna i en rätvinklig triangel.',
+        keyPoints: [
+          'Gäller endast för rätvinkliga trianglar',
+          'a² + b² = c² där c är hypotenusan',
+          'Hypotenusan är sidan mittemot den räta vinkeln',
+          'Katetrar är de två kortare sidorna',
+          'Används för att beräkna avstånd och längder',
+          'Tillämpningar: byggteknik, navigation, koordinatgeometri'
+        ]
+      },
+      {
+        title: 'Tredimensionella kroppar',
+        content: 'Tredimensionella kroppar har volym och ytarea. De vanligaste är prisma, cylinder, pyramid, kon och klot.',
+        keyPoints: [
+          'Volym: rymdinnehåll mätt i kubikenheter (t.ex. m³)',
+          'Ytarea: sammanlagda arean av alla ytor',
+          'Prisma: har två kongruenta basområden',
+          'Cylinder: cirkulärt basområde, V = πr²h',
+          'Pyramid: spetsig form, V = ⅓ · basarea · höjd',
+          'Klot: perfekt rund kropp, V = 4/3 · πr³'
+        ]
+      }
+    ],
+    examples: [
+      'Beräkna arean av en rektangel med sidorna 8 cm och 12 cm',
+      'Beräkna hypotenusan i en rätvinklig triangel med katetrarna 3 cm och 4 cm',
+      'Beräkna volymen av en cylinder med radie 5 cm och höjd 10 cm',
+      'Hitta omkretsen av en cirkel med diameter 14 cm'
+    ],
+    reflectionQuestions: [
+      'Varför är Pythagoras sats så användbar?',
+      'Ge exempel på när du behöver beräkna area i vardagen',
+      'Hur skiljer sig volym från area?',
+      'Varför använder man π när man räknar med cirklar?'
+    ]
+  },
+  {
+    id: 4,
+    title: 'Funktioner',
+    description: 'Grundläggande funktionslära och linjära funktioner',
+    emoji: '📈',
+    sections: [
+      {
+        title: 'Funktionsbegreppet',
+        content: 'En funktion är en regel som till varje ingångsvärde (x) kopplar exakt ett utgångsvärde (y). Funktioner används för att beskriva samband mellan storheter.',
+        keyPoints: [
+          'Funktion: varje x-värde ger exakt ett y-värde',
+          'Definitionsmängd: alla tillåtna x-värden',
+          'Värdemängd: alla möjliga y-värden',
+          'Funktionsuttryck: t.ex. f(x) = 2x + 3',
+          'Graf: visuell representation av funktionen',
+          'Koordinatsystem: x-axel (horisontell) och y-axel (vertikal)'
+        ]
+      },
+      {
+        title: 'Linjära funktioner',
+        content: 'En linjär funktion har formen f(x) = kx + m och representeras grafiskt av en rät linje. Linjära funktioner beskriver konstant förändring.',
+        keyPoints: [
+          'Allmän form: y = kx + m',
+          'k = lutning (riktningskoefficient, förändring)',
+          'm = y-intercept (skärning med y-axeln)',
+          'Positiv k: linjen lutar uppåt',
+          'Negativ k: linjen lutar nedåt',
+          'k = 0: horisontell linje (konstant funktion)'
+        ]
+      },
+      {
+        title: 'Rita och tolka grafer',
+        content: 'Att kunna rita och tolka grafer är centralt i matematiken. Grafer ger en visuell bild av sambandet mellan variabler.',
+        keyPoints: [
+          'Välj lämplig skala på axlarna',
+          'Markera och namnge axlarna',
+          'Rita punkter noggrant',
+          'För linjära funktioner: behövs minst två punkter',
+          'Lutning: Δy/Δx = förändring i y / förändring i x',
+          'Tolka grafen: vad säger den om sambandet?'
+        ]
+      }
+    ],
+    examples: [
+      'Rita grafen för f(x) = 2x - 1',
+      'Bestäm k och m för linjen som går genom punkterna (0, 3) och (2, 7)',
+      'Tolka grafen: en bil färdas enligt s(t) = 80t. Vad betyder k = 80?',
+      'Vilket är funktionsvärdet för f(x) = 3x + 2 när x = 5?'
+    ],
+    reflectionQuestions: [
+      'Vad betyder det att en funktion är linjär?',
+      'Hur påverkar k och m linjens utseende?',
+      'Ge exempel på linjära samband i verkligheten',
+      'Varför är grafer användbara för att förstå samband?'
+    ]
+  },
+  {
+    id: 5,
+    title: 'Statistik och sannolikhet',
+    description: 'Datahantering, statistiska mått och grundläggande sannolikhet',
+    emoji: '📊',
+    sections: [
+      {
+        title: 'Datahantering',
+        content: 'Statistik handlar om att samla in, organisera, analysera och presentera data för att kunna dra slutsatser om en population.',
+        keyPoints: [
+          'Population: hela den grupp man vill studera',
+          'Urval: en del av populationen som undersöks',
+          'Kvalitativa variabler: beskrivande (t.ex. färg, kön)',
+          'Kvantitativa variabler: numeriska (t.ex. längd, ålder)',
+          'Frekvens: antal gånger ett värde förekommer',
+          'Diagramtyper: stapeldiagram, cirkeldiagram, linjediagram'
+        ]
+      },
+      {
+        title: 'Lägesmått och spridningsmått',
+        content: 'För att beskriva och jämföra datamängder använder vi olika statistiska mått som beskriver var data ligger och hur spridd den är.',
+        keyPoints: [
+          'Medelvärde: summan av alla värden / antal värden',
+          'Median: det mittersta värdet när data är sorterad',
+          'Typvärde: det värde som förekommer flest gånger',
+          'Variationsbredd: största värdet - minsta värdet',
+          'Medelvärdet påverkas av extremvärden',
+          'Medianen är mer robust mot extremvärden'
+        ]
+      },
+      {
+        title: 'Grundläggande sannolikhet',
+        content: 'Sannolikhet beskriver hur troligt det är att en viss händelse inträffar. Sannolikhet anges som ett tal mellan 0 och 1 (eller 0% till 100%).',
+        keyPoints: [
+          'P(A) = antal gynnsamma utfall / antal möjliga utfall',
+          'Sannolikhet är alltid mellan 0 och 1',
+          'P = 0: omöjlig händelse',
+          'P = 1: säker händelse',
+          'P = 0,5: lika troligt som otroligt',
+          'Komplementhändelse: P(ej A) = 1 - P(A)'
+        ]
+      }
+    ],
+    examples: [
+      'Beräkna medelvärde, median och typvärde för datasetet: 3, 5, 5, 7, 8, 9, 12',
+      'Tolka ett stapeldiagram över favoritfärger i en klass',
+      'Vad är sannolikheten att få en sexa vid ett tärningskast?',
+      'Vad är sannolikheten att dra ett hjärter från en kortlek med 52 kort?'
+    ],
+    reflectionQuestions: [
+      'När är medelvärdet ett bättre mått än medianen?',
+      'Hur kan statistik användas för att vilseleda?',
+      'Ge exempel på situationer där du behöver beräkna sannolikhet',
+      'Varför är det viktigt att ha ett representativt urval?'
+    ]
+  },
+  {
+    id: 6,
+    title: 'Problemlösning',
+    description: 'Strategier för att lösa matematiska problem',
+    emoji: '💡',
+    sections: [
+      {
+        title: 'Problemlösningsstrategier',
+        content: 'Att lösa matematiska problem kräver strategiskt tänkande och systematiskt arbete. Det finns flera användbara strategier att tillämpa.',
+        keyPoints: [
+          'Förstå problemet: vad är givet? vad ska du hitta?',
+          'Gör en plan: vilken strategi ska du använda?',
+          'Utför planen: genomför beräkningarna',
+          'Kontrollera svaret: är det rimligt?',
+          'Reflektera: hur kunde du tänka annorlunda?',
+          'Olika strategier: rita bild, gör tabell, gissa och kontrollera'
+        ]
+      },
+      {
+        title: 'Uppskattning och rimlighetsbedömning',
+        content: 'Att kunna uppskatta svar och bedöma om ett resultat är rimligt är viktiga färdigheter som hjälper dig att undvika fel.',
+        keyPoints: [
+          'Avrundning: förenkla tal för snabbare uppskattning',
+          'Storleksordning: är svaret för stort eller för litet?',
+          'Enhetskontroll: stämmer enheterna i svaret?',
+          'Jämförelse: kan du jämföra med något känt?',
+          'Överlägsen uppskattning: större än verkligt värde',
+          'Underlägsen uppskattning: mindre än verkligt värde'
+        ]
+      },
+      {
+        title: 'Matematisk kommunikation',
+        content: 'Att kunna förklara sitt matematiska tänkande och resonemang är en viktig del av matematiken.',
+        keyPoints: [
+          'Skriv tydligt och strukturerat',
+          'Använd matematiska symboler korrekt',
+          'Förklara dina steg och resonemang',
+          'Rita bilder och diagram när det hjälper',
+          'Definiera variabler och begrepp',
+          'Skriv en slutsats som svarar på frågan'
+        ]
+      }
+    ],
+    examples: [
+      'Uppskatta produkten 48 × 52 genom att avrunda till 50 × 50',
+      'En bil tankas med 47 liter bensin à 18,90 kr/liter. Uppskatta kostnaden',
+      'Lös problemet: En rektangel har omkretsen 30 cm och ena sidan är 8 cm. Hur lång är den andra?',
+      'Förklara varför 0,1 × 0,1 = 0,01'
+    ],
+    reflectionQuestions: [
+      'Vilken problemlösningsstrategi använder du oftast?',
+      'Hur vet du om ditt svar är rimligt?',
+      'Varför är det viktigt att visa sina beräkningar?',
+      'När är uppskattning tillräckligt och när behövs exakt svar?'
+    ]
+  }
+];
 
 export default function Matematik1b() {
   const { theme, isDark } = useTheme();

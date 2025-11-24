@@ -17,7 +17,7 @@ interface Course {
 interface Module {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   order_index: number;
   estimated_hours: number;
   lessons: Lesson[];
@@ -26,7 +26,7 @@ interface Module {
 interface Lesson {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   content: string;
   lesson_type: string;
   order_index: number;
@@ -41,7 +41,7 @@ interface Lesson {
 interface StudyGuide {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   guide_type: string;
   estimated_read_time: number;
 }
@@ -49,11 +49,11 @@ interface StudyGuide {
 interface Assessment {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   assessment_type: string;
   total_points: number;
   passing_score: number;
-  time_limit_minutes: number;
+  time_limit_minutes: number | null;
 }
 
 export default function CourseDetail() {
@@ -100,7 +100,7 @@ export default function CourseDetail() {
           )
         `)
         .eq('course_id', id)
-        .eq('course_lessons.user_lesson_progress.user_id', user?.id)
+        .eq('course_lessons.user_lesson_progress.user_id', user?.id || '')
         .order('order_index');
 
       if (modulesError) throw modulesError;

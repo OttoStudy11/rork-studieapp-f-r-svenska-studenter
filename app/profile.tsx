@@ -10,6 +10,7 @@ import {
   Modal,
   StatusBar,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useStudy } from '@/contexts/StudyContext';

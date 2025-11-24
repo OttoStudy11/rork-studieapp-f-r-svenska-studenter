@@ -1209,6 +1209,122 @@ export interface Database {
           }
         ]
       }
+      flashcards: {
+        Row: {
+          id: string
+          course_id: string
+          module_id: string | null
+          lesson_id: string | null
+          question: string
+          answer: string
+          difficulty: number
+          explanation: string | null
+          context: string | null
+          tags: string[] | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          course_id: string
+          module_id?: string | null
+          lesson_id?: string | null
+          question: string
+          answer: string
+          difficulty?: number
+          explanation?: string | null
+          context?: string | null
+          tags?: string[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          course_id?: string
+          module_id?: string | null
+          lesson_id?: string | null
+          question?: string
+          answer?: string
+          difficulty?: number
+          explanation?: string | null
+          context?: string | null
+          tags?: string[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_flashcard_progress: {
+        Row: {
+          id: string
+          user_id: string
+          flashcard_id: string
+          ease_factor: number
+          interval: number
+          repetitions: number
+          last_reviewed_at: string | null
+          next_review_at: string
+          quality: number | null
+          total_reviews: number
+          correct_reviews: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          flashcard_id: string
+          ease_factor?: number
+          interval?: number
+          repetitions?: number
+          last_reviewed_at?: string | null
+          next_review_at: string
+          quality?: number | null
+          total_reviews?: number
+          correct_reviews?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          flashcard_id?: string
+          ease_factor?: number
+          interval?: number
+          repetitions?: number
+          last_reviewed_at?: string | null
+          next_review_at?: string
+          quality?: number | null
+          total_reviews?: number
+          correct_reviews?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_flashcard_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_flashcard_progress_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

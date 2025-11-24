@@ -68,7 +68,7 @@ export default function LessonDetailScreen() {
         .from('user_lesson_progress')
         .select('*')
         .eq('lesson_id', id)
-        .eq('user_id', user?.id)
+        .eq('user_id', user?.id || '')
         .single();
 
       if (progressError && progressError.code !== 'PGRST116') {

@@ -130,6 +130,8 @@ export default function CourseDetailScreen() {
       'MATMAT01a': '/course-content/matematik1a',
       'MATMAT01b': '/course-content/matematik1b',
       'MATMAT02b': '/course-content/matematik2b',
+      'MATMAT03b': '/course-content/matematik3b',
+      'BIOBIO01': '/course-content/biologi1',
       'SVESVE01': '/course-content/svenska1',
       'ENGENG05': '/course-content/engelska5',
       'HISHIS01b': '/course-content/historia1b',

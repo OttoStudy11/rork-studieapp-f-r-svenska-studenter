@@ -4,10 +4,10 @@ import { Platform } from 'react-native';
 export type SoundType = 'start' | 'complete' | 'achievement' | 'reminder';
 
 const SOUND_URLS = {
-  start: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
-  complete: 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3',
-  achievement: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3',
-  reminder: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3',
+  start: 'https://cdn.pixabay.com/audio/2022/03/10/audio_4dedf2f94f.mp3',
+  complete: 'https://cdn.pixabay.com/audio/2021/08/04/audio_12b0c7443c.mp3',
+  achievement: 'https://cdn.pixabay.com/audio/2021/08/04/audio_d1718ab41b.mp3',
+  reminder: 'https://cdn.pixabay.com/audio/2022/03/24/audio_c183893d07.mp3',
 };
 
 class SoundManager {
@@ -48,15 +48,14 @@ class SoundManager {
     try {
       const { sound } = await Audio.Sound.createAsync(
         { uri: SOUND_URLS[type] },
-        { shouldPlay: false, volume: 0.6 },
-        null,
-        true
+        { shouldPlay: false, volume: 0.6 }
       );
 
       this.sounds.set(type, sound);
       console.log(`Sound loaded: ${type}`);
     } catch (error) {
       console.error(`Failed to load sound ${type}:`, error);
+      console.log(`Attempted URL: ${SOUND_URLS[type]}`);
     }
   }
 

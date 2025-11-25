@@ -540,11 +540,7 @@ export default function FriendsScreen() {
                           <View style={styles.friendContent}>
                             <View style={styles.friendLeft}>
                               <View style={[styles.emojiContainer, { backgroundColor: colorScheme.bg }]}>
-                                {friend.avatar?.emoji ? (
-                                  <Text style={styles.friendEmojiLarge}>{friend.avatar.emoji}</Text>
-                                ) : (
-                                  <User size={20} color={colorScheme.accent} />
-                                )}
+                                <User size={20} color={colorScheme.accent} />
                               </View>
                               <View style={styles.friendInfo}>
                                 <Text style={[styles.friendName, { color: theme.colors.text }]} numberOfLines={1}>
@@ -622,11 +618,7 @@ export default function FriendsScreen() {
                         <View style={styles.requestContent}>
                           <View style={styles.requestLeft}>
                             <View style={[styles.emojiContainer, { backgroundColor: colorScheme.bg }]}>
-                              {request.avatar?.emoji ? (
-                                <Text style={styles.friendEmojiLarge}>{request.avatar.emoji}</Text>
-                              ) : (
-                                <User size={20} color={colorScheme.accent} />
-                              )}
+                              <User size={20} color={colorScheme.accent} />
                             </View>
                             <View style={styles.friendInfo}>
                               <Text style={[styles.friendName, { color: theme.colors.text }]} numberOfLines={1}>

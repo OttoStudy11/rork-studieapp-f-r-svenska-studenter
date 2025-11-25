@@ -720,9 +720,12 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
               .insert({
                 user_id: authUser.id,
                 course_id: session.courseId || null,
+                title: session.courseId ? 'Pomodoro Session' : 'Study Session',
+                start_time: new Date(new Date(session.endTime).getTime() - session.duration * 60000).toISOString(),
                 duration_minutes: session.duration,
                 technique: 'pomodoro',
                 completed: true,
+                status: 'completed' as const,
                 created_at: session.endTime
               })
               .select()

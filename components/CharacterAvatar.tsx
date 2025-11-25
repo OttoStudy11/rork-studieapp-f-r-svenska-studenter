@@ -692,7 +692,7 @@ export default function CharacterAvatar({
   if (gradientColors) {
     return (
       <LinearGradient
-        colors={gradientColors}
+        colors={gradientColors as any}
         style={[
           {
             width: size,

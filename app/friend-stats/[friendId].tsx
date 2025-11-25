@@ -305,9 +305,6 @@ export default function FriendStatsScreen() {
 
               <View style={styles.friendInfoBox}>
                 <View style={styles.friendNameRow}>
-                  {friend.avatar?.emoji && (
-                    <Text style={styles.friendEmoji}>{friend.avatar.emoji}</Text>
-                  )}
                   <Text style={styles.friendName}>{friend.display_name}</Text>
                 </View>
                 <Text style={styles.friendProgram}>

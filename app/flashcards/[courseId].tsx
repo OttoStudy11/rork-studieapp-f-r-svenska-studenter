@@ -29,6 +29,8 @@ interface Flashcard {
   explanation?: string;
   context?: string;
   tags?: string[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface UserFlashcardProgress {
@@ -397,7 +399,11 @@ export default function FlashcardsScreen() {
       <View style={styles.swipeContainer}>
         {dueCards[currentIndex] && (
           <FlashcardSwipe
-            flashcard={dueCards[currentIndex]}
+            flashcard={{
+              ...dueCards[currentIndex],
+              created_at: dueCards[currentIndex].created_at || new Date().toISOString(),
+              updated_at: dueCards[currentIndex].updated_at || new Date().toISOString()
+            }}
             onSwipeLeft={handleSwipeLeft}
             onSwipeRight={handleSwipeRight}
             onExplain={handleExplain}

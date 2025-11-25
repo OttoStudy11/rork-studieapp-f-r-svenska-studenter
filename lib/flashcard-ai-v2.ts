@@ -68,10 +68,10 @@ export async function generateFlashcardsWithAI(
 
     console.log('📝 [AI Flashcards] Calling AI with prompts...');
 
-    let result;
+    let result: any;
     try {
       result = await generateObject({
-        schema: flashcardsResponseSchema,
+        schema: flashcardsResponseSchema as any,
         messages: [
           {
             role: 'user',
@@ -317,7 +317,7 @@ function validateAndNormalizeFlashcards(
       explanation: card.explanation?.trim() || undefined,
       context: card.context?.trim() || undefined,
       tags: Array.isArray(card.tags)
-        ? card.tags.filter((t) => typeof t === 'string').map((t) => t.trim())
+        ? card.tags.filter((t: any) => typeof t === 'string').map((t: any) => t.trim())
         : undefined,
     }));
 }
@@ -354,9 +354,9 @@ Improve wording, clarity, and educational value. Keep the same concept but make 
         answer: z.string(),
         difficulty: z.number().min(1).max(3),
         explanation: z.string().optional(),
-      }),
+      }) as any,
       messages: [{ role: 'user', content: prompt }],
-    });
+    }) as any;
 
     if (!result || !result.question || !result.answer) {
       return null;

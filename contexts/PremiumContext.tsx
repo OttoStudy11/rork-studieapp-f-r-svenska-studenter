@@ -87,7 +87,7 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
       
       // For demo users, always set to free subscription
       // In a real app, this would query the database
-      console.log('Loading subscription data for demo user:', authUser.name);
+      console.log('Loading subscription data for demo user:', authUser.id);
       setSubscriptionType('free');
       setSubscriptionExpiresAt(null);
     } catch (error) {

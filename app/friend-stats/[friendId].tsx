@@ -311,8 +311,7 @@ export default function FriendStatsScreen() {
                   <Text style={styles.friendName}>{friend.display_name}</Text>
                 </View>
                 <Text style={styles.friendProgram}>
-                  {friend.program}
-                  {friend.gymnasium_grade && ` • Årskurs ${friend.gymnasium_grade}`}
+                  {friend.program}{friend.gymnasium_grade ? ` • Årskurs ${friend.gymnasium_grade}` : ''}
                 </Text>
               </View>
             </LinearGradient>

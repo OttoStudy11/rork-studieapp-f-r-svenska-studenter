@@ -31,84 +31,84 @@ interface Lesson {
 const COURSE_MODULES: Module[] = [
   {
     id: 'm1',
-    title: 'Politiska system',
-    description: 'Demokrati och styrelseskick',
+    title: 'Historiska tidsbegrepp och epokindelning',
+    description: 'Grundläggande historisk terminologi och periodindelning',
     lessons: [
       {
         id: 'l1',
-        title: 'Vad är demokrati?',
-        description: 'Grundläggande principer för demokrati',
+        title: 'Vad är historia?',
+        description: 'Introduktion till historieämnet och varför vi studerar det förflutna',
         duration: '20 min',
         type: 'reading',
       },
       {
         id: 'l2',
-        title: 'Sveriges regering och riksdag',
-        description: 'Hur den svenska demokratin fungerar',
-        duration: '30 min',
+        title: 'Historiska epoker',
+        description: 'Överblick över historiens huvudepoker: antiken, medeltiden, nyare tid',
+        duration: '25 min',
         type: 'video',
       },
       {
         id: 'l3',
-        title: 'Politiska ideologier',
-        description: 'Från vänster till höger',
-        duration: '25 min',
+        title: 'Källkritik och historisk metod',
+        description: 'Hur historiker arbetar med källor och bevis',
+        duration: '30 min',
         type: 'reading',
       },
     ],
   },
   {
     id: 'm2',
-    title: 'Rättigheter och skyldigheter',
-    description: 'Medborgarskap i praktiken',
+    title: 'Antiken: Grekland och Rom',
+    description: 'De gamla högkulturerna runt Medelhavet',
     lessons: [
       {
         id: 'l4',
-        title: 'Mänskliga rättigheter',
-        description: 'FN:s deklaration och dess betydelse',
-        duration: '25 min',
+        title: 'Det antika Grekland',
+        description: 'Grekisk kultur, demokrati och filosofi',
+        duration: '35 min',
         type: 'video',
       },
       {
         id: 'l5',
-        title: 'Svenska grundlagar',
-        description: 'Regeringsformen, tryckfrihetsförordningen och mer',
-        duration: '30 min',
+        title: 'Romarriket',
+        description: 'Från republik till kejsardöme',
+        duration: '40 min',
         type: 'reading',
       },
       {
         id: 'l6',
-        title: 'Demokratiskt deltagande',
-        description: 'Hur du kan påverka samhället',
-        duration: '20 min',
+        title: 'Antikens arv',
+        description: 'Hur den antika kulturen påverkat vår tid',
+        duration: '25 min',
         type: 'exercise',
       },
     ],
   },
   {
     id: 'm3',
-    title: 'Samhällsekonomi',
-    description: 'Grundläggande ekonomiska begrepp',
+    title: 'Medeltiden i Europa',
+    description: 'Från romarrikets fall till renässansen',
     lessons: [
       {
         id: 'l7',
-        title: 'Privatekonomi',
-        description: 'Budget, sparande och lån',
-        duration: '25 min',
+        title: 'Folkvandringstiden',
+        description: 'Romarrikets fall och nya riken',
+        duration: '30 min',
         type: 'reading',
       },
       {
         id: 'l8',
-        title: 'Skatter och offentlig sektor',
-        description: 'Vart går skattepe ngarna?',
-        duration: '30 min',
+        title: 'Feodalsamhället',
+        description: 'Samhällsstruktur, riddare och jordbruk',
+        duration: '35 min',
         type: 'video',
       },
       {
         id: 'l9',
-        title: 'Arbetsmarknad och fackföreningar',
-        description: 'Den svenska modellen',
-        duration: '25 min',
+        title: 'Kyrkans makt',
+        description: 'Religionens roll i medeltiden',
+        duration: '30 min',
         type: 'reading',
       },
     ],
@@ -117,12 +117,12 @@ const COURSE_MODULES: Module[] = [
 
 const courseStyle = {
   emoji: '🏛️',
-  gradient: ['#06B6D4', '#0891B2'],
-  primaryColor: '#06B6D4',
-  lightColor: '#CFFAFE',
+  gradient: ['#F97316', '#EA580C'],
+  primaryColor: '#F97316',
+  lightColor: '#FFEDD5',
 };
 
-export default function Samhallskunskap1aScreen() {
+export default function Historia1a1Screen() {
   const { theme, isDark } = useTheme();
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
 
@@ -135,7 +135,7 @@ export default function Samhallskunskap1aScreen() {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <Stack.Screen
         options={{
-          title: 'Samhällskunskap 1a',
+          title: 'Historia 1a1',
           headerShown: true,
           headerStyle: { backgroundColor: courseStyle.primaryColor },
           headerTintColor: 'white',
@@ -152,12 +152,12 @@ export default function Samhallskunskap1aScreen() {
           <View style={styles.courseTitleRow}>
             <Text style={styles.courseEmoji}>{courseStyle.emoji}</Text>
             <View style={styles.courseTitleContainer}>
-              <Text style={styles.courseTitle}>Samhällskunskap 1a</Text>
-              <Text style={styles.courseSubject}>Samhällskunskap</Text>
+              <Text style={styles.courseTitle}>Historia 1a1</Text>
+              <Text style={styles.courseSubject}>Historia</Text>
             </View>
           </View>
           <Text style={styles.courseDescription}>
-            Lär dig om demokrati, rättigheter och samhällsekonomi. Förstå hur du kan påverka och delta i samhället.
+            Upptäck hur mänskliga samhällen har utvecklats genom tiderna, från antiken till medeltiden.
           </Text>
 
           <View style={styles.quickStats}>
@@ -238,8 +238,8 @@ export default function Samhallskunskap1aScreen() {
           <View style={[styles.infoCard, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.infoTitle, { color: theme.colors.text }]}>💡 Om kursen</Text>
             <Text style={[styles.infoText, { color: theme.colors.textSecondary }]}>
-              Samhällskunskap 1a ger grundläggande kunskaper om demokrati, politiska system och samhällsekonomi.
-              Kursen förbereder dig för att bli en aktiv och ansvarstagande medborgare.
+              Historia 1a1 är den första delen av historiekursen på gymnasiet. Kursen ger dig kunskap om
+              historiska tidsbegrepp och viktiga händelser från antiken och medeltiden.
             </Text>
           </View>
         </View>

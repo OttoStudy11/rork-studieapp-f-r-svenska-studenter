@@ -31,27 +31,27 @@ interface Lesson {
 const COURSE_MODULES: Module[] = [
   {
     id: 'm1',
-    title: 'Politiska system',
-    description: 'Demokrati och styrelseskick',
+    title: 'Ekologi och ekosystem',
+    description: 'Samspelet mellan organismer och deras miljö',
     lessons: [
       {
         id: 'l1',
-        title: 'Vad är demokrati?',
-        description: 'Grundläggande principer för demokrati',
+        title: 'Vad är ekologi?',
+        description: 'Introduktion till ekologi och grundläggande begrepp',
         duration: '20 min',
         type: 'reading',
       },
       {
         id: 'l2',
-        title: 'Sveriges regering och riksdag',
-        description: 'Hur den svenska demokratin fungerar',
+        title: 'Ekosystem och näringskedjor',
+        description: 'Hur energi flödar genom ekosystem',
         duration: '30 min',
         type: 'video',
       },
       {
         id: 'l3',
-        title: 'Politiska ideologier',
-        description: 'Från vänster till höger',
+        title: 'Kretslopp i naturen',
+        description: 'Vatten-, kol- och kvävekretsloppet',
         duration: '25 min',
         type: 'reading',
       },
@@ -59,27 +59,27 @@ const COURSE_MODULES: Module[] = [
   },
   {
     id: 'm2',
-    title: 'Rättigheter och skyldigheter',
-    description: 'Medborgarskap i praktiken',
+    title: 'Biologisk mångfald',
+    description: 'Artrikedom och bevarande av naturens variation',
     lessons: [
       {
         id: 'l4',
-        title: 'Mänskliga rättigheter',
-        description: 'FN:s deklaration och dess betydelse',
+        title: 'Vad är biologisk mångfald?',
+        description: 'Gen-, art- och ekosystemmångfald',
         duration: '25 min',
         type: 'video',
       },
       {
         id: 'l5',
-        title: 'Svenska grundlagar',
-        description: 'Regeringsformen, tryckfrihetsförordningen och mer',
+        title: 'Hotade arter',
+        description: 'Varför arter utrotas och hur vi kan skydda dem',
         duration: '30 min',
         type: 'reading',
       },
       {
         id: 'l6',
-        title: 'Demokratiskt deltagande',
-        description: 'Hur du kan påverka samhället',
+        title: 'Naturvård och bevarande',
+        description: 'Metoder för att bevara biologisk mångfald',
         duration: '20 min',
         type: 'exercise',
       },
@@ -87,42 +87,42 @@ const COURSE_MODULES: Module[] = [
   },
   {
     id: 'm3',
-    title: 'Samhällsekonomi',
-    description: 'Grundläggande ekonomiska begrepp',
+    title: 'Hållbar utveckling',
+    description: 'Miljö, ekonomi och samhälle i balans',
     lessons: [
       {
         id: 'l7',
-        title: 'Privatekonomi',
-        description: 'Budget, sparande och lån',
+        title: 'Vad är hållbar utveckling?',
+        description: 'De tre dimensionerna av hållbarhet',
         duration: '25 min',
         type: 'reading',
       },
       {
         id: 'l8',
-        title: 'Skatter och offentlig sektor',
-        description: 'Vart går skattepe ngarna?',
-        duration: '30 min',
+        title: 'Klimatförändringar',
+        description: 'Orsaker, effekter och lösningar',
+        duration: '35 min',
         type: 'video',
       },
       {
         id: 'l9',
-        title: 'Arbetsmarknad och fackföreningar',
-        description: 'Den svenska modellen',
-        duration: '25 min',
-        type: 'reading',
+        title: 'Hållbara livsstilar',
+        description: 'Hur vi kan leva mer hållbart',
+        duration: '20 min',
+        type: 'exercise',
       },
     ],
   },
 ];
 
 const courseStyle = {
-  emoji: '🏛️',
-  gradient: ['#06B6D4', '#0891B2'],
-  primaryColor: '#06B6D4',
-  lightColor: '#CFFAFE',
+  emoji: '🌿',
+  gradient: ['#22C55E', '#16A34A'],
+  primaryColor: '#22C55E',
+  lightColor: '#DCFCE7',
 };
 
-export default function Samhallskunskap1aScreen() {
+export default function Naturkunskap1a1Screen() {
   const { theme, isDark } = useTheme();
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
 
@@ -135,7 +135,7 @@ export default function Samhallskunskap1aScreen() {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <Stack.Screen
         options={{
-          title: 'Samhällskunskap 1a',
+          title: 'Naturkunskap 1a1',
           headerShown: true,
           headerStyle: { backgroundColor: courseStyle.primaryColor },
           headerTintColor: 'white',
@@ -152,12 +152,12 @@ export default function Samhallskunskap1aScreen() {
           <View style={styles.courseTitleRow}>
             <Text style={styles.courseEmoji}>{courseStyle.emoji}</Text>
             <View style={styles.courseTitleContainer}>
-              <Text style={styles.courseTitle}>Samhällskunskap 1a</Text>
-              <Text style={styles.courseSubject}>Samhällskunskap</Text>
+              <Text style={styles.courseTitle}>Naturkunskap 1a1</Text>
+              <Text style={styles.courseSubject}>Naturkunskap</Text>
             </View>
           </View>
           <Text style={styles.courseDescription}>
-            Lär dig om demokrati, rättigheter och samhällsekonomi. Förstå hur du kan påverka och delta i samhället.
+            Utforska ekologi, biologisk mångfald och hållbar utveckling. Lär dig om naturens kretslopp och hur vi kan leva hållbart.
           </Text>
 
           <View style={styles.quickStats}>
@@ -238,8 +238,8 @@ export default function Samhallskunskap1aScreen() {
           <View style={[styles.infoCard, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.infoTitle, { color: theme.colors.text }]}>💡 Om kursen</Text>
             <Text style={[styles.infoText, { color: theme.colors.textSecondary }]}>
-              Samhällskunskap 1a ger grundläggande kunskaper om demokrati, politiska system och samhällsekonomi.
-              Kursen förbereder dig för att bli en aktiv och ansvarstagande medborgare.
+              Naturkunskap 1a1 behandlar ekologiska samband, biologisk mångfald och hållbar utveckling.
+              Kursen ger dig verktyg för att förstå och agera på miljöutmaningar.
             </Text>
           </View>
         </View>

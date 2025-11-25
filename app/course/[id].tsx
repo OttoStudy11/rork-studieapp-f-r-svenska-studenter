@@ -33,7 +33,6 @@ import {
   Lock,
   Award,
   Edit3,
-  Save,
   X as CloseIcon,
   Brain
 } from 'lucide-react-native';
@@ -151,6 +150,8 @@ export default function CourseDetailScreen() {
       'SAMSAM01a': '/course-content/samhallskunskap1a',
       'SAMSAM02': '/course-content/samhallskunskap2',
       'NAKNAK01a1': '/course-content/naturkunskap1a1',
+      'NAKNAK01a': '/course-content/naturkunskap1a',
+      'NAKNAK01b': '/course-content/naturkunskap1b',
       'IDRIDR01': '/course-content/idrott-halsa1',
       'IDRIDR02': '/course-content/idrott-halsa2',
       'MODMOD': '/course-content/moderna-sprak',
@@ -161,8 +162,6 @@ export default function CourseDetailScreen() {
       'PRRPRR02': '/course-content/programmering2',
       'WEBWEB01': '/course-content/webbutveckling1',
       'WEBWEB02': '/course-content/webbutveckling2',
-      'NAKNAK01b': '/course-content/naturkunskap1b',
-      'TEKTEO01': '/course-content/teknik1',
     };
 
     if (id && courseRedirects[id]) {

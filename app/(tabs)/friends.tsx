@@ -79,6 +79,15 @@ export default function FriendsScreen() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('week');
+
+  const colors = [
+    { bg: '#FF6B6B15', accent: '#FF6B6B' },
+    { bg: '#4ECDC415', accent: '#4ECDC4' },
+    { bg: '#95E1D315', accent: '#95E1D3' },
+    { bg: '#FFE66D15', accent: '#FFE66D' },
+    { bg: '#A8E6CF15', accent: '#A8E6CF' },
+    { bg: '#FFD3B615', accent: '#FFD3B6' },
+  ];
   const router = useRouter();
 
 
@@ -222,8 +231,8 @@ export default function FriendsScreen() {
           id: r.requester.id,
           username: r.requester.username,
           display_name: r.requester.display_name,
-          program: r.requester.program,
-          level: r.requester.level,
+          program: r.requester.program || 'Okänd program',
+          level: r.requester.level || 'gymnasie',
           avatar: r.requester.avatar_url ? JSON.parse(r.requester.avatar_url) : undefined,
           request_id: r.id
         };
@@ -519,45 +528,61 @@ export default function FriendsScreen() {
                 </View>
                 
                 {filteredFriends.length > 0 ? (
-                  filteredFriends.map((friend, index) => (
-                    <FadeInView key={friend.id} delay={400 + index * 50}>
-                      <TouchableOpacity 
-                        style={[styles.friendCard, { backgroundColor: theme.colors.card }]}
-                        onPress={() => router.push(`/friend-stats/${friend.id}` as any)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.friendHeader}>
-                          {friend.avatar ? (
-                            <Avatar config={friend.avatar} size={50} />
-                          ) : (
-                            <View style={[styles.friendAvatar, { backgroundColor: theme.colors.primary + '15' }]}>
-                              <User size={24} color={theme.colors.primary} />
+                  filteredFriends.map((friend, index) => {
+                    const colorScheme = colors[index % colors.length];
+                    return (
+                      <FadeInView key={friend.id} delay={400 + index * 50}>
+                        <TouchableOpacity 
+                          style={[styles.friendCard, { backgroundColor: theme.colors.card }]}
+                          onPress={() => router.push(`/friend-stats/${friend.id}` as any)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.friendContent}>
+                            <View style={styles.friendLeft}>
+                              <View style={[styles.emojiContainer, { backgroundColor: colorScheme.bg }]}>
+                                {friend.avatar?.emoji ? (
+                                  <Text style={styles.friendEmojiLarge}>{friend.avatar.emoji}</Text>
+                                ) : (
+                                  <User size={20} color={colorScheme.accent} />
+                                )}
+                              </View>
+                              <View style={styles.friendInfo}>
+                                <Text style={[styles.friendName, { color: theme.colors.text }]} numberOfLines={1}>
+                                  {friend.display_name}
+                                </Text>
+                                <Text style={[styles.friendUsername, { color: theme.colors.primary }]} numberOfLines={1}>
+                                  @{friend.username}
+                                </Text>
+                                <View style={styles.programRow}>
+                                  <View style={[styles.levelBadge, { backgroundColor: colorScheme.bg }]}>
+                                    <Text style={[styles.levelText, { color: colorScheme.accent }]}>
+                                      {friend.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
+                                    </Text>
+                                  </View>
+                                  <Text style={[styles.friendProgram, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                                    {friend.program}
+                                  </Text>
+                                </View>
+                              </View>
                             </View>
-                          )}
-                          <View style={styles.friendInfo}>
-                            <View style={styles.friendNameRow}>
-                              {friend.avatar?.emoji && (
-                                <Text style={styles.friendEmoji}>{friend.avatar.emoji}</Text>
+                            <View style={styles.friendRight}>
+                              <View style={[styles.statPill, { backgroundColor: colorScheme.bg }]}>
+                                <Text style={[styles.statPillValue, { color: colorScheme.accent }]}>
+                                  {formatStudyTime(friend.studyTime || 0)}
+                                </Text>
+                              </View>
+                              {friend.streak && friend.streak > 0 && (
+                                <View style={styles.streakBadge}>
+                                  <Flame size={12} color="#FF6B6B" />
+                                  <Text style={[styles.streakText, { color: '#FF6B6B' }]}>{friend.streak}</Text>
+                                </View>
                               )}
-                              <Text style={[styles.friendName, { color: theme.colors.text }]}>{friend.display_name}</Text>
-                            </View>
-                            <Text style={[styles.friendUsername, { color: theme.colors.primary }]}>@{friend.username}</Text>
-                            <Text style={[styles.friendProgram, { color: theme.colors.textSecondary }]}>
-                              {friend.program} • {friend.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
-                            </Text>
-                          </View>
-                          <View style={styles.friendStats}>
-                            <View style={styles.friendStatItem}>
-                              <Text style={[styles.friendStatValue, { color: theme.colors.text }]}>
-                                {formatStudyTime(friend.studyTime || 0)}
-                              </Text>
-                              <Text style={[styles.friendStatLabel, { color: theme.colors.textSecondary }]}>Studietid</Text>
                             </View>
                           </View>
-                        </View>
-                      </TouchableOpacity>
-                    </FadeInView>
-                  ))
+                        </TouchableOpacity>
+                      </FadeInView>
+                    );
+                  })
                 ) : (
                   <View style={styles.emptyState}>
                     <Target size={48} color={theme.colors.textMuted} />
@@ -589,42 +614,58 @@ export default function FriendsScreen() {
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Väntande förfrågningar</Text>
                 
-                {friendRequests.map((request, index) => (
-                  <FadeInView key={request.id} delay={300 + index * 50}>
-                    <View style={[styles.requestCard, { backgroundColor: theme.colors.card }]}>
-                      <View style={styles.requestHeader}>
-                        {request.avatar ? (
-                          <Avatar config={request.avatar} size={50} />
-                        ) : (
-                          <View style={[styles.friendAvatar, { backgroundColor: theme.colors.primary + '15' }]}>
-                            <User size={24} color={theme.colors.primary} />
+                {friendRequests.map((request, index) => {
+                  const colorScheme = colors[index % colors.length];
+                  return (
+                    <FadeInView key={request.id} delay={300 + index * 50}>
+                      <View style={[styles.requestCard, { backgroundColor: theme.colors.card }]}>
+                        <View style={styles.requestContent}>
+                          <View style={styles.requestLeft}>
+                            <View style={[styles.emojiContainer, { backgroundColor: colorScheme.bg }]}>
+                              {request.avatar?.emoji ? (
+                                <Text style={styles.friendEmojiLarge}>{request.avatar.emoji}</Text>
+                              ) : (
+                                <User size={20} color={colorScheme.accent} />
+                              )}
+                            </View>
+                            <View style={styles.friendInfo}>
+                              <Text style={[styles.friendName, { color: theme.colors.text }]} numberOfLines={1}>
+                                {request.display_name}
+                              </Text>
+                              <Text style={[styles.friendUsername, { color: theme.colors.primary }]} numberOfLines={1}>
+                                @{request.username}
+                              </Text>
+                              <View style={styles.programRow}>
+                                <View style={[styles.levelBadge, { backgroundColor: colorScheme.bg }]}>
+                                  <Text style={[styles.levelText, { color: colorScheme.accent }]}>
+                                    {request.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
+                                  </Text>
+                                </View>
+                                <Text style={[styles.friendProgram, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                                  {request.program}
+                                </Text>
+                              </View>
+                            </View>
                           </View>
-                        )}
-                        <View style={styles.friendInfo}>
-                          <Text style={[styles.friendName, { color: theme.colors.text }]}>{request.display_name}</Text>
-                          <Text style={[styles.friendUsername, { color: theme.colors.primary }]}>@{request.username}</Text>
-                          <Text style={[styles.friendProgram, { color: theme.colors.textSecondary }]}>
-                            {request.program} • {request.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
-                          </Text>
+                        </View>
+                        <View style={styles.requestActions}>
+                          <TouchableOpacity
+                            style={[styles.rejectButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1 }]}
+                            onPress={() => handleRejectRequest(request.request_id)}
+                          >
+                            <Text style={[styles.rejectButtonText, { color: theme.colors.textSecondary }]}>Avvisa</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.acceptButton, { backgroundColor: theme.colors.primary }]}
+                            onPress={() => handleAcceptRequest(request.request_id)}
+                          >
+                            <Text style={styles.acceptButtonText}>Acceptera</Text>
+                          </TouchableOpacity>
                         </View>
                       </View>
-                      <View style={styles.requestActions}>
-                        <TouchableOpacity
-                          style={[styles.rejectButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1 }]}
-                          onPress={() => handleRejectRequest(request.request_id)}
-                        >
-                          <Text style={[styles.rejectButtonText, { color: theme.colors.textSecondary }]}>Avvisa</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.acceptButton, { backgroundColor: theme.colors.primary }]}
-                          onPress={() => handleAcceptRequest(request.request_id)}
-                        >
-                          <Text style={styles.acceptButtonText}>Acceptera</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </FadeInView>
-                ))}
+                    </FadeInView>
+                  );
+                })}
 
                 {friendRequests.length === 0 && (
                   <View style={styles.emptyState}>
@@ -1031,79 +1072,112 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   friendCard: {
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  friendHeader: {
+  friendContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  friendAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  friendLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  emojiContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
+  friendEmojiLarge: {
+    fontSize: 24,
+  },
   friendInfo: {
     flex: 1,
-  },
-  friendNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 2,
-  },
-  friendEmoji: {
-    fontSize: 18,
+    gap: 2,
   },
   friendName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   friendUsername: {
-    fontSize: 12,
-    marginBottom: 2,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  programRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  levelBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  levelText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   friendProgram: {
     fontSize: 12,
+    flex: 1,
   },
-  friendStats: {
+  friendRight: {
     alignItems: 'flex-end',
+    gap: 6,
   },
-  friendStatItem: {
-    alignItems: 'flex-end',
+  statPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
-  friendStatValue: {
-    fontSize: 16,
+  statPillValue: {
+    fontSize: 14,
     fontWeight: '700',
-    marginBottom: 2,
   },
-  friendStatLabel: {
-    fontSize: 11,
-    fontWeight: '500',
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#FF6B6B15',
+    borderRadius: 8,
+  },
+  streakText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   requestCard: {
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  requestHeader: {
+  requestContent: {
+    marginBottom: 16,
+  },
+  requestLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
   },
   requestActions: {
     flexDirection: 'row',

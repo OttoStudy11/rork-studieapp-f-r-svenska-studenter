@@ -6,7 +6,8 @@ import {
   ScrollView,
   Switch,
   Alert,
-  StatusBar
+  StatusBar,
+  TouchableOpacity
 } from 'react-native';
 import { useTheme, ThemeMode } from '@/contexts/ThemeContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -15,8 +16,8 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTimerSettings } from '@/contexts/TimerSettingsContext';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
-import { Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star, ChevronRight, Volume2, Vibrate, Timer as TimerIcon, Battery } from 'lucide-react-native';
-import { router, Stack } from 'expo-router';
+import { Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star, ChevronRight, Volume2, Vibrate, Timer as TimerIcon, Battery, ArrowLeft } from 'lucide-react-native';
+import { router, Stack, useRouter } from 'expo-router';
 import { AnimatedPressable, FadeInView } from '@/components/Animations';
 
 interface SettingItem {
@@ -30,6 +31,7 @@ interface SettingItem {
 }
 
 export default function SettingsScreen() {
+  const routerNav = useRouter();
   const { theme, themeMode, setThemeMode, isDark } = useTheme();
   const { showSuccess, showInfo } = useToast();
   const { user, signOut } = useAuth();
@@ -221,6 +223,15 @@ export default function SettingsScreen() {
           },
           headerTintColor: theme.colors.primary,
           headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity 
+              onPress={() => routerNav.back()}
+              style={{ padding: 8, marginLeft: -8 }}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft size={24} color={theme.colors.text} />
+            </TouchableOpacity>
+          ),
         }} 
       />
       <StatusBar 

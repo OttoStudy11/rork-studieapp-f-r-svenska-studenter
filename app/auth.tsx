@@ -156,7 +156,7 @@ export default function AuthScreen() {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <LinearGradient
         colors={['#06B6D4', '#10B981']}
         style={styles.gradient}
@@ -334,7 +334,7 @@ export default function AuthScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 }
 

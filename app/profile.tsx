@@ -10,9 +10,9 @@ import {
   Modal,
   StatusBar,
   Dimensions,
-  Alert,
+  Alert as RNAlert,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router as routerNav } from 'expo-router';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,7 +32,8 @@ import {
   User,
   Mail,
   Calendar,
-  Sparkles
+  Sparkles,
+  ArrowLeft
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AnimatedPressable, FadeInView } from '@/components/Animations';
@@ -70,37 +71,37 @@ export default function ProfileScreen() {
         purpose: editForm.purpose
       });
       setShowEditModal(false);
-      Alert.alert('Profil uppdaterad! ✅');
+      RNAlert.alert('Profil uppdaterad! ✅');
     } catch (error) {
-      Alert.alert('Fel', 'Kunde inte uppdatera profil');
+      RNAlert.alert('Fel', 'Kunde inte uppdatera profil');
     }
   };
 
   const handleExportData = () => {
-    Alert.alert(
+    RNAlert.alert(
       'Exportera data',
       'Din studiedata kommer att exporteras som en fil',
       [
         { text: 'Avbryt', style: 'cancel' },
-        { text: 'Exportera', onPress: () => Alert.alert('Export startar...') }
+        { text: 'Exportera', onPress: () => RNAlert.alert('Export startar...') }
       ]
     );
   };
 
   const handleSignOut = () => {
-    Alert.alert(
+    RNAlert.alert(
       'Logga ut',
       'Är du säker på att du vill logga ut?',
       [
         { text: 'Avbryt', style: 'cancel' },
-        { text: 'Logga ut', style: 'destructive', onPress: () => Alert.alert('Utloggad') }
+        { text: 'Logga ut', style: 'destructive', onPress: () => RNAlert.alert('Utloggad') }
       ]
     );
   };
 
-  const handleSaveAvatar = async (config: AvatarConfig) => {
+  const handleSaveAvatar = async (config: AvatarConfig & { emoji?: string }) => {
     try {
-      await updateUser({ avatar: config });
+      await updateUser({ avatar: config as AvatarConfig });
       setShowAvatarModal(false);
       showSuccess('Avatar uppdaterad! ✅');
     } catch (error) {
@@ -139,7 +140,21 @@ export default function ProfileScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Stack.Screen options={{ 
         title: 'Min Profil',
-        headerShown: false
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: theme.colors.background,
+        },
+        headerTintColor: theme.colors.text,
+        headerShadowVisible: false,
+        headerLeft: () => (
+          <TouchableOpacity 
+            onPress={() => routerNav.back()}
+            style={{ padding: 8, marginLeft: -8 }}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+        ),
       }} />
       <StatusBar 
         barStyle={isDark ? 'light-content' : 'dark-content'} 
@@ -416,7 +431,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   headerCard: {
-    paddingTop: 60,
+    paddingTop: 32,
     paddingBottom: 32,
     paddingHorizontal: 24,
     alignItems: 'center',

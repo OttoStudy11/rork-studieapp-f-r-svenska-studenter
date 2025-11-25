@@ -659,6 +659,9 @@ CREATE TRIGGER trigger_create_user_progress
 -- PART 17: HELPER FUNCTIONS FOR STATISTICS
 -- ============================================
 
+-- Drop existing function if it exists (in case signature changed)
+DROP FUNCTION IF EXISTS get_user_study_stats(UUID, TIMESTAMPTZ, TIMESTAMPTZ) CASCADE;
+
 -- Function to get user study statistics for a date range
 CREATE OR REPLACE FUNCTION get_user_study_stats(
     p_user_id UUID,
@@ -709,7 +712,10 @@ BEGIN
         AND ss.start_time >= p_start_date 
         AND ss.start_time <= p_end_date;
 END;
-$$ LANGUAGE plpgsql;
+$ LANGUAGE plpgsql;
+
+-- Drop existing function if it exists
+DROP FUNCTION IF EXISTS get_daily_study_stats(UUID, INTEGER) CASCADE;
 
 -- Function to get daily study statistics
 CREATE OR REPLACE FUNCTION get_daily_study_stats(

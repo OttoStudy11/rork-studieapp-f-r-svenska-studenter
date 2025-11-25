@@ -24,7 +24,9 @@ import {
   X as CloseIcon,
   Award,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  Target,
+  Lightbulb
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +38,13 @@ interface Module {
   description: string;
   emoji: string;
   completed?: boolean;
+  sections: {
+    title: string;
+    content: string;
+    keyPoints: string[];
+  }[];
+  examples: string[];
+  reflectionQuestions: string[];
 }
 
 interface CourseProgress {
@@ -44,7 +53,288 @@ interface CourseProgress {
   completedModules: number[];
 }
 
-const modulesData: Module[] = [];
+const modulesData: Module[] = [
+  {
+    id: 1,
+    title: 'Läsförståelse och textanalys',
+    description: 'Utveckla din förmåga att läsa och förstå olika texttyper',
+    emoji: '📖',
+    sections: [
+      {
+        title: 'Läsning av olika texttyper',
+        content: 'Att kunna läsa och förstå olika typer av texter är grundläggande för framgång i både studier och arbetsliv. Olika texttyper kräver olika lässtrategier.',
+        keyPoints: [
+          'Skönlitteratur: romaner, noveller, dikter',
+          'Sakprosa: artiklar, rapporter, faktatexter',
+          'Digitala texter: webbsidor, bloggar, sociala medier',
+          'Multimodala texter: text kombinerad med bild och ljud',
+          'Läsning med olika syften: studier, nöje, information',
+          'Anpassa läshastighet efter texttyp och syfte'
+        ]
+      },
+      {
+        title: 'Textanalys',
+        content: 'Att analysera texter handlar om att förstå hur texten är uppbyggd, vad författaren vill säga och vilka verkningsmedel som används.',
+        keyPoints: [
+          'Tema och budskap i texten',
+          'Berättarperspektiv och berättarteknik',
+          'Språkliga verkningsmedel: metaforer, symboler',
+          'Textens struktur och uppbyggnad',
+          'Kontext: tid, plats, författarbakgrund',
+          'Tolkning och argumentation'
+        ]
+      },
+      {
+        title: 'Källkritik och faktakontroll',
+        content: 'I dagens informationssamhälle är det viktigt att kunna värdera och kritiskt granska information från olika källor.',
+        keyPoints: [
+          'Källkritiska frågor: äkthet, tid, tendens',
+          'Skilja på fakta och åsikter',
+          'Identifiera vinklade och osanna påståenden',
+          'Värdera olika källors tillförlitlighet',
+          'Faktakontroll av nyheter och information',
+          'Medvetenhet om egen förförståelse'
+        ]
+      }
+    ],
+    examples: [
+      'Analysera en skönlitterär text med fokus på tema',
+      'Jämför hur samma händelse beskrivs i olika medier',
+      'Öva källkritik genom att granska artiklar',
+      'Läsa och diskutera aktuella samhällsfrågor'
+    ],
+    reflectionQuestions: [
+      'Hur påverkar texttypen hur du läser?',
+      'Vad skiljer en objektiv text från en subjektiv?',
+      'Varför är källkritik viktigt i dagens samhälle?',
+      'Hur kan samma text tolkas på olika sätt?'
+    ]
+  },
+  {
+    id: 2,
+    title: 'Skrivande och textproduktion',
+    description: 'Lär dig skriva olika typer av texter för olika syften',
+    emoji: '✍️',
+    sections: [
+      {
+        title: 'Skrivprocessen',
+        content: 'Bra texter skapas genom en process med flera steg. Från idé till färdig text krävs planering, skrivande och bearbetning.',
+        keyPoints: [
+          'Planering: syfte, målgrupp, texttyp',
+          'Idégenerering och research',
+          'Disposition och struktur',
+          'Skriva utkast',
+          'Bearbetning och revidering',
+          'Slutgiltig redigering och korrekturläsning'
+        ]
+      },
+      {
+        title: 'Olika texttyper',
+        content: 'Olika situationer kräver olika typer av texter. Att behärska flera texttyper gör dig till en flexibel skribent.',
+        keyPoints: [
+          'Berättande texter: noveller, personliga berättelser',
+          'Beskrivande texter: reportage, reseskildring',
+          'Argumenterande texter: debattartikel, insändare',
+          'Utredande texter: PM, rapporter',
+          'Instruerande texter: manual, guide',
+          'Formella texter: brev, mail, ansökningar'
+        ]
+      },
+      {
+        title: 'Språk och stil',
+        content: 'Ett gott språk är anpassat till syfte, målgrupp och texttyp. Variation och precision i språket gör texten levande.',
+        keyPoints: [
+          'Ordval och uttryckssätt',
+          'Meningsbyggnad och variation',
+          'Formellt vs. informellt språk',
+          'Bildspråk och stilfigurer',
+          'Tydlighet och precision',
+          'Språkriktighet: grammatik och stavning'
+        ]
+      }
+    ],
+    examples: [
+      'Skriva en argumenterande text om aktuell samhällsfråga',
+      'Författa en personlig berättelse med fokus på språk',
+      'Producera en formell ansökan eller mail',
+      'Öva på att bearbeta och förbättra texter'
+    ],
+    reflectionQuestions: [
+      'Hur skiljer sig skrivande för olika syften?',
+      'Vad gör en text övertygande?',
+      'Hur kan du utveckla ditt eget skrivande?',
+      'Varför är det viktigt att kunna anpassa språket?'
+    ]
+  },
+  {
+    id: 3,
+    title: 'Muntlig kommunikation',
+    description: 'Utveckla din förmåga att kommunicera muntligt',
+    emoji: '🗣️',
+    sections: [
+      {
+        title: 'Samtalsförmåga',
+        content: 'Att kommunicera muntligt är en viktig färdighet i både privata och professionella sammanhang.',
+        keyPoints: [
+          'Aktivt lyssnande',
+          'Turtagning i samtal',
+          'Ställa frågor och förtydliga',
+          'Ge och ta feedback',
+          'Argumentera och bemöta argument',
+          'Anpassa språk till situation'
+        ]
+      },
+      {
+        title: 'Presentation och föredrag',
+        content: 'Att hålla presentationer kräver både förberedelse och träning. En bra presentation är väl strukturerad och engagerande.',
+        keyPoints: [
+          'Planering av presentation',
+          'Disposition: inledning, innehåll, avslutning',
+          'Tydligt och engagerande tal',
+          'Kroppsspråk och röstanvändning',
+          'Stödmaterial: PowerPoint, bilder',
+          'Hantera nervositet'
+        ]
+      },
+      {
+        title: 'Diskussion och debatt',
+        content: 'I diskussioner och debatter tränar du på att formulera och försvara åsikter samt att lyssna på och bemöta andras argument.',
+        keyPoints: [
+          'Sakliga argument',
+          'Lyssna aktivt på andra',
+          'Respektera olika åsikter',
+          'Retoriska grepp',
+          'Källhänvisningar',
+          'Etik i kommunikation'
+        ]
+      }
+    ],
+    examples: [
+      'Hålla en presentation för klassen',
+      'Delta i klassrumsdiskussioner',
+      'Genomföra en debatt i grupp',
+      'Öva på samtalsteknik i parövningar'
+    ],
+    reflectionQuestions: [
+      'Vad gör en presentation engagerande?',
+      'Hur kan du bli tryggare i att tala inför andra?',
+      'Varför är det viktigt att lyssna aktivt?',
+      'Hur skiljer sig muntlig och skriftlig kommunikation?'
+    ]
+  },
+  {
+    id: 4,
+    title: 'Svenska språket',
+    description: 'Utforska det svenska språkets struktur och utveckling',
+    emoji: '🔤',
+    sections: [
+      {
+        title: 'Grammatik',
+        content: 'Grammatiken är språkets byggstenar. Att förstå grammatik hjälper dig att använda språket korrekt och effektivt.',
+        keyPoints: [
+          'Ordklasser: substantiv, verb, adjektiv',
+          'Satsdelsanalys',
+          'Tempus och aspekt',
+          'Presens, preteritum, perfekt',
+          'Ord och ordbildning',
+          'Skiljetecken och interpunktion'
+        ]
+      },
+      {
+        title: 'Språkhistoria',
+        content: 'Svenska språket har utvecklats över århundraden. Att känna till språkets historia ger perspektiv på dagens språk.',
+        keyPoints: [
+          'Fornsvenska och medeltiden',
+          'Nysvenska från 1500-talet',
+          'Påverkan från andra språk',
+          'Dialekter och sociolekter',
+          'Standardsvenska och variationer',
+          'Språkförändring pågår ständigt'
+        ]
+      },
+      {
+        title: 'Flerspråkighet',
+        content: 'Sverige är idag ett mångspråkigt samhälle. Flerspråkighet är en resurs både för individen och samhället.',
+        keyPoints: [
+          'Modersmål och andraspråk',
+          'Minoritetsspråk i Sverige',
+          'Code-switching',
+          'Flerspråkighetens fördelar',
+          'Språklig identitet',
+          'Språkpolitik'
+        ]
+      }
+    ],
+    examples: [
+      'Analysera grammatiska strukturer i texter',
+      'Jämföra modern svenska med äldre texter',
+      'Undersöka lånord från olika språk',
+      'Diskutera språklig variation och normer'
+    ],
+    reflectionQuestions: [
+      'Varför är grammatik viktig?',
+      'Hur har svenskan påverkats av andra språk?',
+      'Vad betyder det att behärska flera språk?',
+      'Hur förändras språket idag?'
+    ]
+  },
+  {
+    id: 5,
+    title: 'Litteratur och kultur',
+    description: 'Upptäck litteraturens värld och dess betydelse',
+    emoji: '📚',
+    sections: [
+      {
+        title: 'Skönlitteratur',
+        content: 'Skönlitteratur speglar människans villkor genom berättelser, dikter och dramatik. Att läsa litteratur utvecklar både språk och empati.',
+        keyPoints: [
+          'Romaner och noveller',
+          'Poesi och lyrik',
+          'Drama och teater',
+          'Litterära genrer',
+          'Teman i litteraturen',
+          'Karaktärer och miljöskildring'
+        ]
+      },
+      {
+        title: 'Litteraturhistoria',
+        content: 'Litteraturen har utvecklats genom tiderna och speglar sin tids samhälle, värderingar och tankesätt.',
+        keyPoints: [
+          'Från medeltid till nutid',
+          'Viktiga författare och verk',
+          'Litterära epoker',
+          'Nordisk litteratur',
+          'Världslitteratur',
+          'Modern och samtida litteratur'
+        ]
+      },
+      {
+        title: 'Litteratur och samhälle',
+        content: 'Litteraturen påverkar och påverkas av samhället. Genom litteraturen kan vi förstå både vår egen tid och historien.',
+        keyPoints: [
+          'Litteratur som spegling av samhället',
+          'Samhällskritik i litteraturen',
+          'Litteratur och identitet',
+          'Representation och mångfald',
+          'Kanon och värdering',
+          'Läsarens tolkning'
+        ]
+      }
+    ],
+    examples: [
+      'Läsa och analysera en roman',
+      'Studera dikter från olika tidsperioder',
+      'Jämföra klassisk och modern litteratur',
+      'Diskutera litteraturens roll i samhället'
+    ],
+    reflectionQuestions: [
+      'Vad kan vi lära oss av litteraturen?',
+      'Hur speglar litteraturen sin tid?',
+      'Varför är det viktigt att läsa skönlitteratur?',
+      'Hur påverkar din bakgrund din tolkning av en text?'
+    ]
+  }
+];
 
 export default function Svenska1() {
   const { theme, isDark } = useTheme();
@@ -303,6 +593,74 @@ export default function Svenska1() {
                     </Text>
                   </View>
                 </View>
+
+                {expandedModule === module.id && (
+                  <View style={styles.moduleContent}>
+                    {module.sections.map((section, sectionIndex) => (
+                      <View key={sectionIndex} style={styles.sectionCard}>
+                        <View style={styles.sectionHeader2}>
+                          <BookOpen size={20} color="#EC4899" />
+                          <Text style={[styles.sectionTitle2, { color: theme.colors.text }]}>
+                            {section.title}
+                          </Text>
+                        </View>
+                        <Text style={[styles.sectionContent, { color: theme.colors.textSecondary }]}>
+                          {section.content}
+                        </Text>
+                        
+                        <View style={styles.keyPointsContainer}>
+                          <Text style={[styles.keyPointsTitle, { color: theme.colors.text }]}>
+                            Viktiga punkter:
+                          </Text>
+                          {section.keyPoints.map((point, pointIndex) => (
+                            <View key={pointIndex} style={styles.keyPointItem}>
+                              <View style={[styles.bullet, { backgroundColor: '#EC4899' }]} />
+                              <Text style={[styles.keyPointText, { color: theme.colors.textSecondary }]}>
+                                {point}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    ))}
+
+                    <View style={[styles.examplesSection, { backgroundColor: theme.colors.surface }]}>
+                      <View style={styles.examplesHeader}>
+                        <Target size={20} color="#22C55E" />
+                        <Text style={[styles.examplesTitle, { color: theme.colors.text }]}>
+                          Exempel på arbetsområden
+                        </Text>
+                      </View>
+                      {module.examples.map((example, exampleIndex) => (
+                        <View key={exampleIndex} style={styles.exampleItem}>
+                          <CheckCircle size={16} color="#22C55E" />
+                          <Text style={[styles.exampleText, { color: theme.colors.textSecondary }]}>
+                            {example}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={[styles.reflectionSection, { backgroundColor: theme.colors.surface }]}>
+                      <View style={styles.reflectionHeader}>
+                        <Lightbulb size={20} color="#EC4899" />
+                        <Text style={[styles.reflectionTitle, { color: theme.colors.text }]}>
+                          Reflektionsfrågor
+                        </Text>
+                      </View>
+                      {module.reflectionQuestions.map((question, questionIndex) => (
+                        <View key={questionIndex} style={styles.questionItem}>
+                          <Text style={[styles.questionNumber, { color: '#EC4899' }]}>
+                            {questionIndex + 1}.
+                          </Text>
+                          <Text style={[styles.questionText, { color: theme.colors.textSecondary }]}>
+                            {question}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </TouchableOpacity>
             </FadeInView>
           ))}
@@ -458,4 +816,25 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', padding: 40, borderRadius: 20 },
   emptyTitle: { fontSize: 18, fontWeight: '700' as const, marginTop: 16, marginBottom: 8 },
   emptyText: { fontSize: 14, textAlign: 'center' },
+  moduleContent: { marginTop: 20, gap: 16 },
+  sectionCard: { paddingTop: 16, borderTopWidth: 1, borderTopColor: 'rgba(236, 72, 153, 0.1)' },
+  sectionHeader2: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  sectionTitle2: { fontSize: 16, fontWeight: '600' as const },
+  sectionContent: { fontSize: 15, lineHeight: 22, marginBottom: 16 },
+  keyPointsContainer: { marginTop: 8 },
+  keyPointsTitle: { fontSize: 15, fontWeight: '600' as const, marginBottom: 8 },
+  keyPointItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 8 },
+  bullet: { width: 6, height: 6, borderRadius: 3, marginTop: 8 },
+  keyPointText: { fontSize: 14, lineHeight: 20, flex: 1 },
+  examplesSection: { borderRadius: 12, padding: 16, marginTop: 8 },
+  examplesHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  examplesTitle: { fontSize: 16, fontWeight: '600' as const },
+  exampleItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 8 },
+  exampleText: { fontSize: 14, lineHeight: 20, flex: 1 },
+  reflectionSection: { borderRadius: 12, padding: 16, marginTop: 8 },
+  reflectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  reflectionTitle: { fontSize: 16, fontWeight: '600' as const },
+  questionItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
+  questionNumber: { fontSize: 15, fontWeight: '700' as const, minWidth: 20 },
+  questionText: { fontSize: 14, lineHeight: 20, flex: 1 },
 });

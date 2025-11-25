@@ -227,9 +227,8 @@ export default function OnboardingScreen() {
           purpose: [...data.goals, ...data.purpose].join(', ') || 'Allmän studiehjälp',
           subscriptionType: 'free',
           gymnasium: gymnasium,
-          avatar: { emoji: '😊' },
-          selectedCourses: Array.from(data.selectedCourses),
-          avatarConfig: data.avatarConfig
+          avatar: data.avatarConfig,
+          selectedCourses: Array.from(data.selectedCourses)
         });
         
         // Sync courses to Supabase using the same logic as CoursePickerModal

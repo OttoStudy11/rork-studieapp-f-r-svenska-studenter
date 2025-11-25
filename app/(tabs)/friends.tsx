@@ -17,7 +17,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy, User, Target, TrendingUp, Flame, UsersRound, Lock, Globe, BookOpen } from 'lucide-react-native';
 import Avatar from '@/components/Avatar';
 import FriendSearch from '@/components/FriendSearch';
-import type { AvatarConfig } from '@/components/AvatarCustomizer';
+import type { AvatarConfig } from '@/constants/avatar-config';
 import * as Clipboard from 'expo-clipboard';
 import { Platform } from 'react-native';
 import { Share } from 'react-native';

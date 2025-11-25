@@ -16,7 +16,7 @@ import { useStudy } from '@/contexts/StudyContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import Avatar from '@/components/Avatar';
-import type { AvatarConfig } from '@/components/AvatarCustomizer';
+import type { AvatarConfig } from '@/constants/avatar-config';
 import {
   ArrowLeft,
   Trophy,

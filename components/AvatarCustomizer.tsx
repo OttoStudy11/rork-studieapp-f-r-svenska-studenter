@@ -6,10 +6,8 @@ import {
   TouchableOpacity,
   ScrollView
 } from 'react-native';
-
-export interface AvatarConfig {
-  emoji: string;
-}
+import type { AvatarConfig } from '@/constants/avatar-config';
+import { DEFAULT_AVATAR_CONFIG } from '@/constants/avatar-config';
 
 interface AvatarCustomizerProps {
   onAvatarChange: (config: AvatarConfig) => void;
@@ -44,15 +42,13 @@ const avatarEmojis = [
   '🦦', '🦥', '🐁', '🐀', '🐿️', '🦔'
 ];
 
-const defaultConfig: AvatarConfig = {
-  emoji: '😊'
-};
+const defaultConfig: AvatarConfig = DEFAULT_AVATAR_CONFIG;
 
 export default function AvatarCustomizer({ onAvatarChange, initialConfig = defaultConfig }: AvatarCustomizerProps) {
   const [config, setConfig] = useState<AvatarConfig>(initialConfig);
 
   const updateConfig = (emoji: string) => {
-    const newConfig = { emoji };
+    const newConfig = { ...config };
     setConfig(newConfig);
     onAvatarChange(newConfig);
   };
@@ -60,7 +56,7 @@ export default function AvatarCustomizer({ onAvatarChange, initialConfig = defau
   const renderAvatarPreview = () => {
     return (
       <View style={styles.avatarPreview}>
-        <Text style={styles.previewEmoji}>{config.emoji}</Text>
+        <Text style={styles.previewEmoji}>😊</Text>
       </View>
     );
   };
@@ -80,7 +76,7 @@ export default function AvatarCustomizer({ onAvatarChange, initialConfig = defau
                 key={emoji}
                 style={[
                   styles.emojiOption,
-                  config.emoji === emoji && styles.selectedEmojiOption
+                  false && styles.selectedEmojiOption
                 ]}
                 onPress={() => updateConfig(emoji)}
               >

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase, testDatabaseConnection } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import type { Gymnasium } from '@/constants/gymnasiums';
-import type { AvatarConfig } from '@/components/AvatarCustomizer';
+import type { AvatarConfig } from '@/constants/avatar-config';
 import { getSelectedCoursesData } from '@/constants/gymnasium-courses';
 
 type DbUser = Database['public']['Tables']['profiles']['Row'];

@@ -521,7 +521,11 @@ export default function FriendsScreen() {
                 {filteredFriends.length > 0 ? (
                   filteredFriends.map((friend, index) => (
                     <FadeInView key={friend.id} delay={400 + index * 50}>
-                      <TouchableOpacity style={[styles.friendCard, { backgroundColor: theme.colors.card }]}>
+                      <TouchableOpacity 
+                        style={[styles.friendCard, { backgroundColor: theme.colors.card }]}
+                        onPress={() => router.push(`/friend-stats/${friend.id}` as any)}
+                        activeOpacity={0.7}
+                      >
                         <View style={styles.friendHeader}>
                           {friend.avatar ? (
                             <Avatar config={friend.avatar} size={50} />
@@ -531,7 +535,12 @@ export default function FriendsScreen() {
                             </View>
                           )}
                           <View style={styles.friendInfo}>
-                            <Text style={[styles.friendName, { color: theme.colors.text }]}>{friend.display_name}</Text>
+                            <View style={styles.friendNameRow}>
+                              {friend.avatar?.emoji && (
+                                <Text style={styles.friendEmoji}>{friend.avatar.emoji}</Text>
+                              )}
+                              <Text style={[styles.friendName, { color: theme.colors.text }]}>{friend.display_name}</Text>
+                            </View>
                             <Text style={[styles.friendUsername, { color: theme.colors.primary }]}>@{friend.username}</Text>
                             <Text style={[styles.friendProgram, { color: theme.colors.textSecondary }]}>
                               {friend.program} • {friend.level === 'gymnasie' ? 'Gymnasie' : 'Högskola'}
@@ -1046,10 +1055,18 @@ const styles = StyleSheet.create({
   friendInfo: {
     flex: 1,
   },
+  friendNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  friendEmoji: {
+    fontSize: 18,
+  },
   friendName: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 2,
   },
   friendUsername: {
     fontSize: 12,

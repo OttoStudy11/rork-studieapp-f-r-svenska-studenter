@@ -27,6 +27,7 @@ export interface Database {
           gymnasium_id: string | null
           gymnasium_name: string | null
           gymnasium_grade: string | null
+          daily_goal_hours: number
           created_at: string
         }
         Insert: {
@@ -46,6 +47,7 @@ export interface Database {
           gymnasium_id?: string | null
           gymnasium_name?: string | null
           gymnasium_grade?: string | null
+          daily_goal_hours?: number
           created_at?: string
         }
         Update: {
@@ -65,6 +67,7 @@ export interface Database {
           gymnasium_id?: string | null
           gymnasium_name?: string | null
           gymnasium_grade?: string | null
+          daily_goal_hours?: number
           created_at?: string
         }
         Relationships: [

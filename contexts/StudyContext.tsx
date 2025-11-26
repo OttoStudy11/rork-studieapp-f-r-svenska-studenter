@@ -26,6 +26,7 @@ export interface User {
   subscriptionType: 'free' | 'premium';
   subscriptionExpiresAt?: Date;
   gymnasium?: Gymnasium | null;
+  dailyGoalHours?: number;
 }
 
 export interface Course {
@@ -66,7 +67,7 @@ export interface StudyContextType {
   isAuthenticated: boolean;
   
   // User actions
-  completeOnboarding: (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[] }) => Promise<void>;
+  completeOnboarding: (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number }) => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   
   // Course actions
@@ -360,7 +361,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     };
   }, [authUser, isAuthenticated, authLoading, loadUserData]);
 
-  const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[] }) => {
+  const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number }) => {
     try {
       if (!authUser) throw new Error('No authenticated user');
 
@@ -388,7 +389,8 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
             subscription_type: userData.subscriptionType || 'free',
             gymnasium_id: userData.gymnasium?.id || null,
             gymnasium_name: userData.gymnasium?.name || null,
-            gymnasium_grade: userData.gymnasium ? '1' : null // Default grade
+            gymnasium_grade: userData.gymnasium ? '1' : null,
+            daily_goal_hours: userData.dailyGoalHours || 2
           });
         
         if (profileError) {

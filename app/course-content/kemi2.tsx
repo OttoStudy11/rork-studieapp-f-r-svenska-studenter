@@ -11,7 +11,43 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 interface Module { id: number; title: string; description: string; emoji: string; completed?: boolean; }
 interface CourseProgress { progress: number; targetGrade: string; completedModules: number[]; }
 
-const modulesData: Module[] = [];
+const modulesData: Module[] = [
+  {
+    id: 1,
+    title: 'Organiska föreningar',
+    description: 'Kolväten, funktionella grupper och nomenklatur',
+    emoji: '🧪',
+    completed: false
+  },
+  {
+    id: 2,
+    title: 'Kolhydrater och lipider',
+    description: 'Sockerarter, fetter och deras uppbyggnad',
+    emoji: '🍯',
+    completed: false
+  },
+  {
+    id: 3,
+    title: 'Proteiner och enzymer',
+    description: 'Aminosyror, proteinstruktur och katalys',
+    emoji: '🧬',
+    completed: false
+  },
+  {
+    id: 4,
+    title: 'Nukleinsyror',
+    description: 'DNA, RNA och genetisk information',
+    emoji: '🧬',
+    completed: false
+  },
+  {
+    id: 5,
+    title: 'Biokemi och metabolism',
+    description: 'Cellens kemiska processer och energiomsättning',
+    emoji: '⚙️',
+    completed: false
+  }
+];
 
 export default function Kemi2() {
   const { theme, isDark } = useTheme();

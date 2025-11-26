@@ -44,7 +44,43 @@ interface CourseProgress {
   completedModules: number[];
 }
 
-const modulesData: Module[] = [];
+const modulesData: Module[] = [
+  {
+    id: 1,
+    title: 'Cellens biokemi',
+    description: 'Fördjupning i cellens kemiska processer och struktur',
+    emoji: '🧬',
+    completed: false
+  },
+  {
+    id: 2,
+    title: 'Genetik och evolution',
+    description: 'DNA, arv och evolutionära processer',
+    emoji: '🔬',
+    completed: false
+  },
+  {
+    id: 3,
+    title: 'Ekologi och ekosystem',
+    description: 'Samspel mellan organismer och deras miljö',
+    emoji: '🌿',
+    completed: false
+  },
+  {
+    id: 4,
+    title: 'Mikrobiologi',
+    description: 'Bakterier, virus och andra mikroorganismer',
+    emoji: '🦠',
+    completed: false
+  },
+  {
+    id: 5,
+    title: 'Immunologi',
+    description: 'Immunsystemet och kroppens försvar',
+    emoji: '🛡️',
+    completed: false
+  }
+];
 
 export default function Biologi2() {
   const { theme, isDark } = useTheme();

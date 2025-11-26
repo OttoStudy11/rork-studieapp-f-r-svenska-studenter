@@ -11,7 +11,43 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 interface Module { id: number; title: string; description: string; emoji: string; completed?: boolean; }
 interface CourseProgress { progress: number; targetGrade: string; completedModules: number[]; }
 
-const modulesData: Module[] = [];
+const modulesData: Module[] = [
+  {
+    id: 1,
+    title: 'Elektricitet och elektriska kretsar',
+    description: 'Elektrisk laddning, ström, spänning och Ohms lag',
+    emoji: '⚡',
+    completed: false
+  },
+  {
+    id: 2,
+    title: 'Magnetism',
+    description: 'Magnetfält, elektromagnetism och induktion',
+    emoji: '🧲',
+    completed: false
+  },
+  {
+    id: 3,
+    title: 'Vågrörelse',
+    description: 'Mekaniska och elektromagnetiska vågor',
+    emoji: '🌊',
+    completed: false
+  },
+  {
+    id: 4,
+    title: 'Ljus och optik',
+    description: 'Ljusets egenskaper, brytning och interferens',
+    emoji: '🔆',
+    completed: false
+  },
+  {
+    id: 5,
+    title: 'Kärnfysik och strålning',
+    description: 'Radioaktivitet, kärnreaktioner och strålning',
+    emoji: '☢️',
+    completed: false
+  }
+];
 
 export default function Fysik2() {
   const { theme, isDark } = useTheme();

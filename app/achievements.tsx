@@ -5,20 +5,17 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   StatusBar,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Trophy, Star, Zap, Medal, Crown, Sparkles } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { useAchievements, Achievement } from '@/contexts/AchievementContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import { SPACING, BORDER_RADIUS, TYPOGRAPHY, SHADOWS } from '@/constants/design-system';
-
-const { width } = Dimensions.get('window');
 
 type CategoryFilter = 'all' | 'study' | 'social' | 'streak' | 'milestone';
 
@@ -29,13 +26,6 @@ const ACHIEVEMENT_CATEGORIES = [
   { id: 'streak' as const, label: 'Streak', icon: '🔥', gradient: ['#F59E0B', '#D97706'] },
   { id: 'milestone' as const, label: 'Milstolpar', icon: '🏆', gradient: ['#8B5CF6', '#7C3AED'] },
 ];
-
-const ACHIEVEMENT_EMOJIS = {
-  study: ['📚', '✏️', '🎓', '📖', '💡', '🧠', '📝', '🔬', '🎯', '⚡'],
-  social: ['👥', '🤝', '💬', '🎉', '👋', '💪', '🌟', '🎊', '🏅', '💫'],
-  streak: ['🔥', '⚡', '💥', '🌟', '✨', '💪', '🎯', '🚀', '⭐', '💫'],
-  milestone: ['🏆', '👑', '🎖️', '🥇', '🎯', '🏅', '💎', '🌟', '✨', '🔮'],
-};
 
 interface AchievementCardProps {
   achievement: Achievement;
@@ -55,17 +45,17 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
         styles.achievementCard,
         { 
           backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-          opacity: isUnlocked ? 1 : 0.85,
+          opacity: isUnlocked ? 1 : 0.7,
         }
       ]}
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
       disabled={!onPress}
     >
       {isUnlocked && (
         <View style={styles.shimmerOverlay}>
           <LinearGradient
-            colors={['transparent', 'rgba(255, 255, 255, 0.05)', 'transparent']}
+            colors={['transparent', 'rgba(255, 255, 255, 0.1)', 'transparent']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.shimmer}
@@ -75,24 +65,34 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
       
       <View style={styles.achievementContent}>
         <View style={styles.achievementLeft}>
-          <LinearGradient
-            colors={isUnlocked ? categoryGradient as any : [isDark ? '#374151' : '#E5E7EB', isDark ? '#4B5563' : '#F3F4F6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.achievementIconContainer}
+          <View
+            style={[
+              styles.achievementIconContainer,
+              { 
+                backgroundColor: isUnlocked 
+                  ? categoryGradient[0] + '20' 
+                  : (isDark ? '#374151' : '#F3F4F6')
+              }
+            ]}
           >
-            <Text style={styles.achievementIcon}>{achievement.icon}</Text>
+            <Text style={[
+              styles.achievementIcon,
+              !isUnlocked && styles.achievementIconLocked
+            ]}>
+              {achievement.icon}
+            </Text>
             {!isUnlocked && (
               <View style={styles.lockOverlay}>
                 <Text style={styles.lockIcon}>🔒</Text>
               </View>
             )}
-          </LinearGradient>
+          </View>
           
           <View style={styles.achievementInfo}>
             <Text style={[
               styles.achievementTitle,
-              { color: isDark ? '#FFFFFF' : '#111827' }
+              { color: isDark ? '#FFFFFF' : '#111827' },
+              !isUnlocked && { opacity: 0.6 }
             ]}>
               {achievement.title}
             </Text>
@@ -105,9 +105,9 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
             
             {isUnlocked && achievement.unlockedAt && (
               <View style={styles.unlockedBadge}>
-                <Sparkles size={12} color="#10B981" />
+                <Text style={styles.unlockedEmoji}>✨</Text>
                 <Text style={styles.unlockedText}>
-                  Upplåst {new Date(achievement.unlockedAt).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' })}
+                  {new Date(achievement.unlockedAt).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })}
                 </Text>
               </View>
             )}
@@ -116,20 +116,18 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
         
         <View style={styles.achievementRight}>
           {isUnlocked ? (
-            <View style={styles.pointsBadge}>
-              <LinearGradient
-                colors={['#10B981', '#059669'] as any}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.pointsGradient}
-              >
-                <Star size={14} color="white" fill="white" />
-                <Text style={styles.pointsText}>+{achievement.reward.points}</Text>
-              </LinearGradient>
-            </View>
+            <LinearGradient
+              colors={categoryGradient as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.pointsBadge}
+            >
+              <Text style={styles.pointsEmoji}>⭐</Text>
+              <Text style={styles.pointsText}>{achievement.reward.points}</Text>
+            </LinearGradient>
           ) : (
             <View style={[styles.lockedPointsBadge, { backgroundColor: isDark ? '#374151' : '#F3F4F6' }]}>
-              <Text style={[styles.lockedPointsText, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+              <Text style={[styles.lockedPointsText, { color: isDark ? '#6B7280' : '#9CA3AF' }]}>
                 {achievement.reward.points}p
               </Text>
             </View>
@@ -137,7 +135,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
         </View>
       </View>
       
-      {!isUnlocked && (
+      {!isUnlocked && progress > 0 && (
         <View style={styles.progressSection}>
           <View style={[
             styles.progressBar,
@@ -152,7 +150,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
           </View>
           <Text style={[
             styles.progressText,
-            { color: isDark ? '#9CA3AF' : '#6B7280' }
+            { color: isDark ? '#6B7280' : '#9CA3AF' }
           ]}>
             {Math.round(progress)}%
           </Text>
@@ -230,7 +228,7 @@ export default function AchievementsScreen() {
           >
             <View style={styles.heroHeader}>
               <View style={styles.heroLevelBadge}>
-                <Crown size={32} color="white" />
+                <Text style={styles.heroLevelIcon}>👑</Text>
                 <Text style={styles.heroLevelNumber}>Nivå {userLevel.level}</Text>
               </View>
               <Text style={styles.heroLevelTitle}>{userLevel.title}</Text>
@@ -238,7 +236,7 @@ export default function AchievementsScreen() {
             
             <View style={styles.heroStats}>
               <View style={styles.heroStatItem}>
-                <Trophy size={24} color="white" />
+                <Text style={styles.heroStatEmoji}>🏆</Text>
                 <Text style={styles.heroStatNumber}>{unlockedAchievements.length}</Text>
                 <Text style={styles.heroStatLabel}>Upplåsta</Text>
               </View>
@@ -246,7 +244,7 @@ export default function AchievementsScreen() {
               <View style={styles.heroStatDivider} />
               
               <View style={styles.heroStatItem}>
-                <Star size={24} color="white" />
+                <Text style={styles.heroStatEmoji}>⭐</Text>
                 <Text style={styles.heroStatNumber}>{totalPoints}</Text>
                 <Text style={styles.heroStatLabel}>Poäng</Text>
               </View>
@@ -254,7 +252,7 @@ export default function AchievementsScreen() {
               <View style={styles.heroStatDivider} />
               
               <View style={styles.heroStatItem}>
-                <Zap size={24} color="white" />
+                <Text style={styles.heroStatEmoji}>🔥</Text>
                 <Text style={styles.heroStatNumber}>{currentStreak}</Text>
                 <Text style={styles.heroStatLabel}>Streak</Text>
               </View>
@@ -278,7 +276,7 @@ export default function AchievementsScreen() {
           <View style={styles.quickStatsContainer}>
             <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
               <View style={[styles.quickStatIconContainer, { backgroundColor: '#10B981' + '20' }]}>
-                <Medal size={20} color="#10B981" />
+                <Text style={styles.quickStatEmoji}>🎯</Text>
               </View>
               <Text style={[styles.quickStatNumber, { color: theme.colors.text }]}>
                 {Math.round((unlockedAchievements.length / achievements.length) * 100)}%
@@ -288,7 +286,7 @@ export default function AchievementsScreen() {
             
             <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
               <View style={[styles.quickStatIconContainer, { backgroundColor: '#F59E0B' + '20' }]}>
-                <Sparkles size={20} color="#F59E0B" />
+                <Text style={styles.quickStatEmoji}>✨</Text>
               </View>
               <Text style={[styles.quickStatNumber, { color: theme.colors.text }]}>
                 {lockedAchievements.length}
@@ -421,12 +419,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.md,
   },
+  heroLevelIcon: {
+    fontSize: 48,
+    marginBottom: 4,
+  },
   heroLevelNumber: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800' as const,
     color: 'white',
-    marginTop: SPACING.sm,
-    letterSpacing: -1,
+    letterSpacing: -0.5,
   },
   heroLevelTitle: {
     fontSize: 20,
@@ -445,17 +446,22 @@ const styles = StyleSheet.create({
   },
   heroStatItem: {
     alignItems: 'center',
-    gap: SPACING.xs,
+    gap: 4,
+  },
+  heroStatEmoji: {
+    fontSize: 28,
   },
   heroStatNumber: {
     fontSize: 24,
     fontWeight: '700' as const,
     color: 'white',
+    marginTop: 2,
   },
   heroStatLabel: {
     fontSize: 12,
     fontWeight: '500' as const,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 2,
   },
   heroStatDivider: {
     width: 1,
@@ -496,12 +502,15 @@ const styles = StyleSheet.create({
     ...SHADOWS.sm,
   },
   quickStatIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.sm,
+  },
+  quickStatEmoji: {
+    fontSize: 24,
   },
   quickStatNumber: {
     ...TYPOGRAPHY.h3,
@@ -552,10 +561,11 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   achievementCard: {
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: BORDER_RADIUS.xl,
     padding: SPACING.lg,
-    ...SHADOWS.sm,
+    ...SHADOWS.md,
     overflow: 'hidden',
+    marginBottom: SPACING.sm,
   },
   shimmerOverlay: {
     position: 'absolute',
@@ -578,15 +588,18 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   achievementIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   achievementIcon: {
-    fontSize: 28,
+    fontSize: 36,
+  },
+  achievementIconLocked: {
+    opacity: 0.4,
   },
   lockOverlay: {
     position: 'absolute',
@@ -594,13 +607,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: 28,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   lockIcon: {
-    fontSize: 20,
+    fontSize: 24,
   },
   achievementInfo: {
     flex: 1,
@@ -617,40 +630,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: SPACING.xs,
+    marginTop: 4,
+  },
+  unlockedEmoji: {
+    fontSize: 12,
   },
   unlockedText: {
     fontSize: 11,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
     color: '#10B981',
   },
   achievementRight: {
     marginLeft: SPACING.md,
   },
   pointsBadge: {
-    borderRadius: BORDER_RADIUS.md,
-    overflow: 'hidden',
-    ...SHADOWS.sm,
-  },
-  pointsGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
     gap: 4,
+    ...SHADOWS.sm,
+  },
+  pointsEmoji: {
+    fontSize: 16,
   },
   pointsText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700' as const,
     color: 'white',
   },
   lockedPointsBadge: {
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   lockedPointsText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
   },
   progressSection: {
@@ -658,18 +674,19 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   progressBar: {
-    height: 6,
-    borderRadius: 3,
+    height: 4,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 2,
   },
   progressText: {
     fontSize: 11,
     fontWeight: '600' as const,
     textAlign: 'right',
+    marginTop: 2,
   },
   emptyState: {
     alignItems: 'center',

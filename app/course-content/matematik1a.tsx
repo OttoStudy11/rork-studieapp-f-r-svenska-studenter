@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StatusBar,
   Modal,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -26,7 +25,9 @@ import {
   X as CloseIcon,
   Award,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  Plus,
+  Minus
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,7 +38,6 @@ interface Module {
   title: string;
   description: string;
   emoji: string;
-  completed?: boolean;
   sections: {
     title: string;
     content: string;
@@ -47,11 +47,13 @@ interface Module {
   reflectionQuestions: string[];
 }
 
-interface CourseProgress {
-  progress: number;
+interface CourseProgressData {
+  manualProgress: number;
   targetGrade: string;
   completedModules: number[];
 }
+
+const COURSE_ID = 'MATMAT01a';
 
 const modulesData: Module[] = [
   {
@@ -272,18 +274,17 @@ const modulesData: Module[] = [
 export default function Matematik1a() {
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
+  
   const [expandedModule, setExpandedModule] = React.useState<number | null>(null);
-  const [courseProgress, setCourseProgress] = useState<CourseProgress>({
-    progress: 0,
+  const [progress, setProgress] = useState<CourseProgressData>({
+    manualProgress: 0,
     targetGrade: '',
-    completedModules: [],
+    completedModules: []
   });
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editProgress, setEditProgress] = useState<string>('0');
   const [editTargetGrade, setEditTargetGrade] = useState<string>('');
-  const [modules, setModules] = useState<Module[]>(modulesData);
 
-  const storageKey = `@matematik1a_progress_${user?.id}`;
+  const storageKey = `@course_progress_${COURSE_ID}_${user?.id}`;
 
   useEffect(() => {
     loadProgress();
@@ -296,71 +297,47 @@ export default function Matematik1a() {
     try {
       const stored = await AsyncStorage.getItem(storageKey);
       if (stored) {
-        const progress = JSON.parse(stored);
-        setCourseProgress(progress);
-        setEditProgress(progress.progress.toString());
-        setEditTargetGrade(progress.targetGrade);
-        
-        const updatedModules = modulesData.map(module => ({
-          ...module,
-          completed: progress.completedModules.includes(module.id),
-        }));
-        setModules(updatedModules);
+        const data = JSON.parse(stored);
+        setProgress(data);
+        setEditTargetGrade(data.targetGrade || '');
       }
     } catch (error) {
       console.error('Error loading progress:', error);
     }
   };
 
-  const saveProgress = async (progress: CourseProgress) => {
+  const saveProgress = async (newProgress: CourseProgressData) => {
     if (!user?.id) return;
     
     try {
-      await AsyncStorage.setItem(storageKey, JSON.stringify(progress));
-      setCourseProgress(progress);
+      await AsyncStorage.setItem(storageKey, JSON.stringify(newProgress));
+      setProgress(newProgress);
     } catch (error) {
       console.error('Error saving progress:', error);
     }
   };
 
-  const toggleModuleCompletion = (moduleId: number) => {
-    const updatedModules = modules.map(m => 
-      m.id === moduleId ? { ...m, completed: !m.completed } : m
-    );
-    setModules(updatedModules);
-
-    const completedIds = updatedModules.filter(m => m.completed).map(m => m.id);
-    const autoProgress = Math.round((completedIds.length / modulesData.length) * 100);
-    
-    const newProgress = {
-      ...courseProgress,
-      completedModules: completedIds,
-      progress: autoProgress,
-    };
-    
-    saveProgress(newProgress);
-    setEditProgress(autoProgress.toString());
+  const handleAdjustProgress = async (adjustment: number) => {
+    const newValue = Math.max(0, Math.min(100, progress.manualProgress + adjustment));
+    await saveProgress({ ...progress, manualProgress: newValue });
   };
 
-  const handleSaveManualProgress = async () => {
-    try {
-      const progressValue = parseInt(editProgress, 10);
-      if (isNaN(progressValue) || progressValue < 0 || progressValue > 100) {
-        Alert.alert('Fel', 'Progress måste vara ett tal mellan 0 och 100');
-        return;
-      }
+  const handleToggleModule = async (moduleId: number) => {
+    const isCompleted = progress.completedModules.includes(moduleId);
+    const newCompletedModules = isCompleted
+      ? progress.completedModules.filter(id => id !== moduleId)
+      : [...progress.completedModules, moduleId];
+    
+    await saveProgress({ ...progress, completedModules: newCompletedModules });
+  };
 
-      const newProgress = {
-        ...courseProgress,
-        progress: progressValue,
-        targetGrade: editTargetGrade,
-      };
-      
-      await saveProgress(newProgress);
-      Alert.alert('Framgång! ✅', 'Kursinformation har uppdaterats');
+  const handleSaveTargetGrade = async () => {
+    try {
+      await saveProgress({ ...progress, targetGrade: editTargetGrade });
+      Alert.alert('Framgång! ✅', 'Målbetyg har uppdaterats');
       setShowEditModal(false);
     } catch (error) {
-      console.error('Error saving progress:', error);
+      console.error('Error saving target grade:', error);
       Alert.alert('Fel', 'Ett oväntat fel inträffade');
     }
   };
@@ -404,38 +381,56 @@ export default function Matematik1a() {
               <View style={styles.progressSection}>
                 <View style={styles.progressInfo}>
                   <Text style={styles.progressLabel}>Kursframsteg</Text>
-                  <Text style={styles.progressPercent}>{courseProgress.progress}%</Text>
+                  <Text style={styles.progressPercent}>{progress.manualProgress}%</Text>
                 </View>
                 <View style={styles.progressBar}>
                   <View 
-                    style={[styles.progressFill, { width: `${courseProgress.progress}%` }]} 
+                    style={[styles.progressFill, { width: `${progress.manualProgress}%` }]} 
                   />
                 </View>
-                <Text style={styles.progressText}>
-                  {courseProgress.completedModules.length} av {modulesData.length} moduler slutförda
-                </Text>
+                <View style={styles.progressControls}>
+                  <TouchableOpacity
+                    style={[styles.progressButton, progress.manualProgress <= 0 && styles.progressButtonDisabled]}
+                    onPress={() => handleAdjustProgress(-10)}
+                    disabled={progress.manualProgress <= 0}
+                  >
+                    <Minus size={16} color="white" strokeWidth={3} />
+                    <Text style={styles.progressButtonText}>10%</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.progressText}>
+                    {progress.completedModules.length} av {modulesData.length} moduler slutförda
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.progressButton, progress.manualProgress >= 100 && styles.progressButtonDisabled]}
+                    onPress={() => handleAdjustProgress(10)}
+                    disabled={progress.manualProgress >= 100}
+                  >
+                    <Plus size={16} color="white" strokeWidth={3} />
+                    <Text style={styles.progressButtonText}>10%</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={styles.quickStats}>
                 <View style={styles.quickStatItem}>
                   <TrendingUp size={16} color="rgba(255, 255, 255, 0.9)" />
                   <Text style={styles.quickStatText}>
-                    {courseProgress.progress}% klar
+                    {progress.manualProgress}% klar
                   </Text>
                 </View>
-                {courseProgress.completedModules.length > 0 && (
+                {progress.completedModules.length > 0 && (
                   <View style={styles.quickStatItem}>
                     <CheckCircle size={16} color="#FCD34D" />
                     <Text style={styles.quickStatText}>
-                      {courseProgress.completedModules.length} slutförda
+                      {progress.completedModules.length} slutförda
                     </Text>
                   </View>
                 )}
-                {courseProgress.targetGrade && (
+                {progress.targetGrade && (
                   <View style={styles.quickStatItem}>
                     <Award size={16} color="#FCD34D" />
                     <Text style={styles.quickStatText}>
-                      Mål: {courseProgress.targetGrade}
+                      Mål: {progress.targetGrade}
                     </Text>
                   </View>
                 )}
@@ -499,128 +494,120 @@ export default function Matematik1a() {
         <View style={styles.modulesSection}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kursinnehåll</Text>
           
-          {modules.length === 0 && (
-            <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
-              <BookOpen size={48} color={theme.colors.textMuted} />
-              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
-                Inget innehåll än
-              </Text>
-              <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-                Kursinnehåll kommer att läggas till snart
-              </Text>
-            </View>
-          )}
-
-          {modules.map((module, index) => (
-            <FadeInView key={module.id} delay={300 + index * 100}>
-              <TouchableOpacity
-                style={[
-                  styles.moduleCard, 
-                  { backgroundColor: theme.colors.card },
-                  module.completed && styles.moduleCardCompleted
-                ]}
-                onPress={() => setExpandedModule(expandedModule === module.id ? null : module.id)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.moduleHeader}>
-                  <TouchableOpacity
-                    style={styles.checkboxContainer}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      toggleModuleCompletion(module.id);
-                    }}
-                  >
-                    {module.completed ? (
-                      <CheckCircle size={24} color="#3B82F6" />
-                    ) : (
-                      <Circle size={24} color={theme.colors.textMuted} />
-                    )}
-                  </TouchableOpacity>
-                  <Text style={styles.moduleEmoji}>{module.emoji}</Text>
-                  <View style={styles.moduleTitleContainer}>
-                    <Text style={[
-                      styles.moduleTitle, 
-                      { color: theme.colors.text },
-                      module.completed && { color: '#3B82F6' }
-                    ]}>
-                      Modul {module.id}: {module.title}
-                    </Text>
-                    <Text style={[styles.moduleDescription, { color: theme.colors.textSecondary }]}>
-                      {module.description}
-                    </Text>
-                  </View>
-                </View>
-
-                {expandedModule === module.id && (
-                  <View style={styles.moduleContent}>
-                    {module.sections.map((section, sectionIndex) => (
-                      <View key={sectionIndex} style={styles.sectionCard}>
-                        <View style={styles.sectionHeader}>
-                          <BookOpen size={20} color="#3B82F6" />
-                          <Text style={[styles.sectionTitle2, { color: theme.colors.text }]}>
-                            {section.title}
-                          </Text>
-                        </View>
-                        <Text style={[styles.sectionContent, { color: theme.colors.textSecondary }]}>
-                          {section.content}
-                        </Text>
-                        
-                        <View style={styles.keyPointsContainer}>
-                          <Text style={[styles.keyPointsTitle, { color: theme.colors.text }]}>
-                            Viktiga punkter:
-                          </Text>
-                          {section.keyPoints.map((point, pointIndex) => (
-                            <View key={pointIndex} style={styles.keyPointItem}>
-                              <View style={[styles.bullet, { backgroundColor: '#3B82F6' }]} />
-                              <Text style={[styles.keyPointText, { color: theme.colors.textSecondary }]}>
-                                {point}
-                              </Text>
-                            </View>
-                          ))}
-                        </View>
-                      </View>
-                    ))}
-
-                    <View style={[styles.examplesSection, { backgroundColor: theme.colors.surface }]}>
-                      <View style={styles.examplesHeader}>
-                        <Target size={20} color="#22C55E" />
-                        <Text style={[styles.examplesTitle, { color: theme.colors.text }]}>
-                          Exempel på tillämpningar
-                        </Text>
-                      </View>
-                      {module.examples.map((example, exampleIndex) => (
-                        <View key={exampleIndex} style={styles.exampleItem}>
-                          <CheckCircle size={16} color="#22C55E" />
-                          <Text style={[styles.exampleText, { color: theme.colors.textSecondary }]}>
-                            {example}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-
-                    <View style={[styles.reflectionSection, { backgroundColor: theme.colors.surface }]}>
-                      <View style={styles.reflectionHeader}>
-                        <Lightbulb size={20} color="#F59E0B" />
-                        <Text style={[styles.reflectionTitle, { color: theme.colors.text }]}>
-                          Reflektionsfrågor
-                        </Text>
-                      </View>
-                      {module.reflectionQuestions.map((question, questionIndex) => (
-                        <View key={questionIndex} style={styles.questionItem}>
-                          <Text style={[styles.questionNumber, { color: '#F59E0B' }]}>
-                            {questionIndex + 1}.
-                          </Text>
-                          <Text style={[styles.questionText, { color: theme.colors.textSecondary }]}>
-                            {question}
-                          </Text>
-                        </View>
-                      ))}
+          {modulesData.map((module, index) => {
+            const isCompleted = progress.completedModules.includes(module.id);
+            
+            return (
+              <FadeInView key={module.id} delay={300 + index * 100}>
+                <TouchableOpacity
+                  style={[
+                    styles.moduleCard, 
+                    { backgroundColor: theme.colors.card },
+                    isCompleted && styles.moduleCardCompleted
+                  ]}
+                  onPress={() => setExpandedModule(expandedModule === module.id ? null : module.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.moduleHeader}>
+                    <TouchableOpacity
+                      style={styles.checkboxContainer}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleToggleModule(module.id);
+                      }}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle size={24} color="#3B82F6" />
+                      ) : (
+                        <Circle size={24} color={theme.colors.textMuted} />
+                      )}
+                    </TouchableOpacity>
+                    <Text style={styles.moduleEmoji}>{module.emoji}</Text>
+                    <View style={styles.moduleTitleContainer}>
+                      <Text style={[
+                        styles.moduleTitle, 
+                        { color: theme.colors.text },
+                        isCompleted && { color: '#3B82F6' }
+                      ]}>
+                        Modul {module.id}: {module.title}
+                      </Text>
+                      <Text style={[styles.moduleDescription, { color: theme.colors.textSecondary }]}>
+                        {module.description}
+                      </Text>
                     </View>
                   </View>
-                )}
-              </TouchableOpacity>
-            </FadeInView>
-          ))}
+
+                  {expandedModule === module.id && (
+                    <View style={styles.moduleContent}>
+                      {module.sections.map((section, sectionIndex) => (
+                        <View key={sectionIndex} style={styles.sectionCard}>
+                          <View style={styles.sectionHeader}>
+                            <BookOpen size={20} color="#3B82F6" />
+                            <Text style={[styles.sectionTitle2, { color: theme.colors.text }]}>
+                              {section.title}
+                            </Text>
+                          </View>
+                          <Text style={[styles.sectionContent, { color: theme.colors.textSecondary }]}>
+                            {section.content}
+                          </Text>
+                          
+                          <View style={styles.keyPointsContainer}>
+                            <Text style={[styles.keyPointsTitle, { color: theme.colors.text }]}>
+                              Viktiga punkter:
+                            </Text>
+                            {section.keyPoints.map((point, pointIndex) => (
+                              <View key={pointIndex} style={styles.keyPointItem}>
+                                <View style={[styles.bullet, { backgroundColor: '#3B82F6' }]} />
+                                <Text style={[styles.keyPointText, { color: theme.colors.textSecondary }]}>
+                                  {point}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      ))}
+
+                      <View style={[styles.examplesSection, { backgroundColor: theme.colors.surface }]}>
+                        <View style={styles.examplesHeader}>
+                          <Target size={20} color="#22C55E" />
+                          <Text style={[styles.examplesTitle, { color: theme.colors.text }]}>
+                            Exempel på tillämpningar
+                          </Text>
+                        </View>
+                        {module.examples.map((example, exampleIndex) => (
+                          <View key={exampleIndex} style={styles.exampleItem}>
+                            <CheckCircle size={16} color="#22C55E" />
+                            <Text style={[styles.exampleText, { color: theme.colors.textSecondary }]}>
+                              {example}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+
+                      <View style={[styles.reflectionSection, { backgroundColor: theme.colors.surface }]}>
+                        <View style={styles.reflectionHeader}>
+                          <Lightbulb size={20} color="#F59E0B" />
+                          <Text style={[styles.reflectionTitle, { color: theme.colors.text }]}>
+                            Reflektionsfrågor
+                          </Text>
+                        </View>
+                        {module.reflectionQuestions.map((question, questionIndex) => (
+                          <View key={questionIndex} style={styles.questionItem}>
+                            <Text style={[styles.questionNumber, { color: '#F59E0B' }]}>
+                              {questionIndex + 1}.
+                            </Text>
+                            <Text style={[styles.questionText, { color: theme.colors.textSecondary }]}>
+                              {question}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </FadeInView>
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -637,7 +624,7 @@ export default function Matematik1a() {
           <View style={styles.modalContainer}>
             <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
               <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Redigera kursinformation</Text>
+                <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Redigera målbetyg</Text>
                 <TouchableOpacity
                   style={[styles.modalCloseButton, { backgroundColor: theme.colors.borderLight }]}
                   onPress={() => setShowEditModal(false)}
@@ -647,22 +634,6 @@ export default function Matematik1a() {
               </View>
 
               <View style={styles.modalBody}>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Framsteg (%)</Text>
-                  <TextInput
-                    style={[styles.input, { 
-                      backgroundColor: theme.colors.surface, 
-                      color: theme.colors.text,
-                      borderColor: theme.colors.border
-                    }]}
-                    value={editProgress}
-                    onChangeText={setEditProgress}
-                    keyboardType="numeric"
-                    placeholder="0-100"
-                    placeholderTextColor={theme.colors.textMuted}
-                  />
-                </View>
-
                 <View style={styles.inputGroup}>
                   <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Målbetyg</Text>
                   <View style={styles.gradeButtons}>
@@ -703,7 +674,7 @@ export default function Matematik1a() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalButton, styles.modalSaveButton, { backgroundColor: '#3B82F6' }]}
-                  onPress={handleSaveManualProgress}
+                  onPress={handleSaveTargetGrade}
                 >
                   <Text style={[styles.modalButtonText, { color: 'white' }]}>Spara</Text>
                 </TouchableOpacity>
@@ -873,11 +844,40 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
+    flex: 1,
+    textAlign: 'center',
+  },
+  progressControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 8,
+  },
+  progressButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 70,
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+    justifyContent: 'center',
+  },
+  progressButtonDisabled: {
+    opacity: 0.3,
+  },
+  progressButtonText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '700' as const,
   },
   quickStats: {
     flexDirection: 'row',
     gap: 16,
     marginTop: 12,
+    flexWrap: 'wrap',
   },
   quickStatItem: {
     flexDirection: 'row',
@@ -954,13 +954,6 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     marginBottom: 8,
   },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-  },
   gradeButtons: {
     flexDirection: 'row',
     gap: 8,
@@ -1027,21 +1020,6 @@ const styles = StyleSheet.create({
   flashcardsButtonText: {
     fontSize: 16,
     fontWeight: '700' as const,
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: 40,
-    borderRadius: 20,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
   },
   courseGoals: {
     gap: 12,

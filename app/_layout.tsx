@@ -10,6 +10,7 @@ import { AchievementProvider } from "@/contexts/AchievementContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { TimerSettingsProvider } from "@/contexts/TimerSettingsContext";
+import { CourseProgressProvider } from "@/contexts/CourseProgressContext";
 
 import { LoadingScreen } from "@/components/LoadingScreen";
 
@@ -53,11 +54,13 @@ export default function RootLayout() {
             <PremiumProvider>
               <StudyProvider>
                 <TimerSettingsProvider>
-                  <GestureHandlerRootView style={{ flex: 1 }}>
-                    <AchievementProvider>
-                      <RootLayoutNav />
-                    </AchievementProvider>
-                  </GestureHandlerRootView>
+                  <CourseProgressProvider>
+                    <GestureHandlerRootView style={{ flex: 1 }}>
+                      <AchievementProvider>
+                        <RootLayoutNav />
+                      </AchievementProvider>
+                    </GestureHandlerRootView>
+                  </CourseProgressProvider>
                 </TimerSettingsProvider>
               </StudyProvider>
             </PremiumProvider>

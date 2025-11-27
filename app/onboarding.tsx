@@ -18,10 +18,12 @@ import { GraduationCap, BookOpen, MapPin, Home, Flame } from 'lucide-react-nativ
 import { SWEDISH_GYMNASIUMS } from '@/constants/gymnasiums';
 import { AnimatedPressable, PressableCard, RippleButton, FadeInView } from '@/components/Animations';
 import GymnasiumAndProgramPicker from '@/components/GymnasiumAndProgramPicker';
+import UniversityPicker from '@/components/UniversityPicker';
 import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
 import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 import { getGymnasiumCourses, type GymnasiumCourse } from '@/constants/gymnasium-courses';
 import { GYMNASIUM_PROGRAMS } from '@/constants/gymnasium-programs';
+import { SWEDISH_UNIVERSITIES, UNIVERSITY_PROGRAMS, type University, type UniversityProgram, type UniversityProgramYear } from '@/constants/universities';
 
 import type { AvatarConfig } from '@/constants/avatar-config';
 import { DEFAULT_AVATAR_CONFIG } from '@/constants/avatar-config';
@@ -34,6 +36,9 @@ interface OnboardingData {
   gymnasium: Gymnasium | null;
   gymnasiumProgram: GymnasiumProgram | null;
   gymnasiumGrade: GymnasiumGrade | null;
+  university: University | null;
+  universityProgram: UniversityProgram | null;
+  universityYear: UniversityProgramYear | null;
   program: string;
   goals: string[];
   purpose: string[];
@@ -77,6 +82,9 @@ export default function OnboardingScreen() {
     gymnasium: null,
     gymnasiumProgram: null,
     gymnasiumGrade: null,
+    university: null,
+    universityProgram: null,
+    universityYear: null,
     program: '',
     goals: [],
     purpose: [],

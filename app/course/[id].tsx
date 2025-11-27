@@ -34,7 +34,8 @@ import {
   Award,
   Edit3,
   X as CloseIcon,
-  Brain
+  Brain,
+  GraduationCap
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Database } from '@/lib/database.types';
@@ -555,6 +556,20 @@ export default function CourseDetailScreen() {
             <View style={styles.actionInfo}>
               <Text style={[styles.actionTitle, { color: theme.colors.text }]}>Flashcards</Text>
               <Text style={[styles.actionDescription, { color: theme.colors.textSecondary }]}>Öva med AI-genererade flashcards</Text>
+            </View>
+            <ChevronRight size={20} color={theme.colors.textMuted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: theme.colors.card }]}
+            onPress={() => router.push('/hogskoleprovet' as any)}
+          >
+            <View style={[styles.actionIconContainer, { backgroundColor: '#3B82F6' + '20' }]}>
+              <GraduationCap size={24} color="#3B82F6" />
+            </View>
+            <View style={styles.actionInfo}>
+              <Text style={[styles.actionTitle, { color: theme.colors.text }]}>Högskoleprovet</Text>
+              <Text style={[styles.actionDescription, { color: theme.colors.textSecondary }]}>Träna på högskoleprovet med riktiga frågor</Text>
             </View>
             <ChevronRight size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>

@@ -72,7 +72,7 @@ interface HogskoleprovetContextValue {
   getQuestionsBySection: (sectionId: string, testId?: string) => Promise<HPQuestion[]>;
   submitAnswer: (questionId: string, selectedAnswer: string, timeSpentSeconds: number) => Promise<boolean>;
   startAttempt: (type: 'full_test' | 'section_practice' | 'question_practice', sectionId?: string, testId?: string) => Promise<string | null>;
-  completeAttempt: (attemptId: string, totalQuestions: number, correctAnswers: number) => Promise<void>;
+  completeAttempt: (attemptId: string, totalQuestions: number, correctAnswers: number, timeSpentMinutes?: number) => Promise<void>;
   getUserStats: () => Promise<{ totalAttempts: number; averageScore: number; strongSections: string[]; weakSections: string[] }>;
 }
 

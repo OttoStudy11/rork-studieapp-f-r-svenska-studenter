@@ -96,8 +96,9 @@ export default function HogskoleprovetPracticeScreen() {
 
   const finishPractice = async () => {
     if (attemptId) {
-      const totalTimeMinutes = Math.floor((Date.now() - startTime) / 60000);
-      await completeAttempt(attemptId, score.total, score.correct, totalTimeMinutes);
+      const sessionStartTime = Date.now();
+      const totalTimeMinutes = Math.floor((sessionStartTime - Date.now()) / 60000);
+      await completeAttempt(attemptId, score.total, score.correct, Math.max(1, totalTimeMinutes));
     }
     setShowResults(true);
   };

@@ -16,7 +16,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight, GraduationCap, ChevronRight } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
 import { Skeleton, SkeletonStats, SkeletonList } from '@/components/Skeleton';
@@ -324,57 +324,6 @@ export default function HomeScreen() {
                 </View>
               )}
             </View>
-          </View>
-        </SlideInView>
-
-        {/* Högskoleprovet Section - Enhanced */}
-        <SlideInView direction="up" delay={450}>
-          <View style={styles.section}>
-            <TouchableOpacity 
-              style={styles.hogskoleprovContainer}
-              onPress={() => router.push('/hogskoleprovet/index')}
-              activeOpacity={0.95}
-            >
-              <LinearGradient
-                colors={['#4F46E5', '#7C3AED']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.hogskoleprovGradient}
-              >
-                <View style={styles.hogskoleprovHeader}>
-                  <View style={styles.hogskoleprovIconLarge}>
-                    <GraduationCap size={40} color="white" strokeWidth={2.5} />
-                  </View>
-                  <View style={styles.hogskoleprovBadge}>
-                    <Text style={styles.hogskoleprovBadgeText}>HÖGSKOLEPROVET</Text>
-                  </View>
-                </View>
-                <Text style={styles.hogskoleprovTitle}>Träna Inför Högskoleprovet</Text>
-                <Text style={styles.hogskoleprovDescription}>
-                  Öva på riktiga frågor från tidigare prov och förbättra dina resultat
-                </Text>
-                <View style={styles.hogskoleprovStats}>
-                  <View style={styles.hogskoleprovStatItem}>
-                    <BookOpen size={18} color="rgba(255,255,255,0.95)" />
-                    <Text style={styles.hogskoleprovStatText}>8 Delar</Text>
-                  </View>
-                  <View style={styles.hogskoleprovStatDivider} />
-                  <View style={styles.hogskoleprovStatItem}>
-                    <Target size={18} color="rgba(255,255,255,0.95)" />
-                    <Text style={styles.hogskoleprovStatText}>100+ Frågor</Text>
-                  </View>
-                  <View style={styles.hogskoleprovStatDivider} />
-                  <View style={styles.hogskoleprovStatItem}>
-                    <Clock size={18} color="rgba(255,255,255,0.95)" />
-                    <Text style={styles.hogskoleprovStatText}>Tidigare Prov</Text>
-                  </View>
-                </View>
-                <View style={styles.hogskoleprovCTA}>
-                  <Text style={styles.hogskoleprovCTAText}>Börja Öva Nu</Text>
-                  <ChevronRight size={20} color="white" strokeWidth={3} />
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
           </View>
         </SlideInView>
 
@@ -954,106 +903,7 @@ const styles = StyleSheet.create({
   compactArrow: {
     opacity: 0.6,
   },
-  hogskoleprovContainer: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 15,
-  },
-  hogskoleprovGradient: {
-    padding: 28,
-  },
-  hogskoleprovHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  hogskoleprovIconLarge: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  hogskoleprovBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-  },
-  hogskoleprovBadgeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  hogskoleprovTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: 'white',
-    marginBottom: 10,
-    letterSpacing: -0.5,
-  },
-  hogskoleprovDescription: {
-    fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  hogskoleprovStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  hogskoleprovStatItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  hogskoleprovStatText: {
-    fontSize: 13,
-    color: 'white',
-    fontWeight: '700',
-  },
-  hogskoleprovStatDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  hogskoleprovCTA: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    gap: 8,
-  },
-  hogskoleprovCTAText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: 'white',
-    letterSpacing: 0.5,
-  },
+
   premiumBanner: {
     borderRadius: 16,
     padding: 20,

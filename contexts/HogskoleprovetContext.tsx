@@ -111,6 +111,8 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
 
   const getQuestionsBySection = useCallback(async (sectionId: string, testId?: string): Promise<HPQuestion[]> => {
     try {
+      console.log('[HP] Fetching questions for section:', sectionId, 'test:', testId);
+      
       let query = supabase
         .from('hp_questions')
         .select('*')
@@ -123,14 +125,35 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      console.log('[HP] Query result:', { data: data?.length, error });
 
-      return (data || []).map(q => ({
-        ...q,
-        options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
-      })) as HPQuestion[];
+      if (error) {
+        console.error('[HP] Error fetching questions:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.warn('[HP] No questions found for section:', sectionId);
+        return [];
+      }
+
+      const questions = (data || []).map(q => {
+        try {
+          return {
+            ...q,
+            options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
+          } as HPQuestion;
+        } catch (e) {
+          console.error('[HP] Error parsing question options:', e, q);
+          return null;
+        }
+      }).filter(Boolean) as HPQuestion[];
+
+      console.log('[HP] Parsed questions:', questions.length);
+      return questions;
     } catch (error) {
-      console.error('Error fetching questions:', error);
+      console.error('[HP] Error in getQuestionsBySection:', error);
+      Alert.alert('Fel', 'Kunde inte hämta frågor. Försök igen.');
       return [];
     }
   }, []);

@@ -39,26 +39,46 @@ export default function HogskoleprovetPracticeScreen() {
   }, [sectionId]);
 
   const loadQuestions = async () => {
-    if (!sectionId) return;
+    if (!sectionId) {
+      console.log('[HP Practice] No section ID provided');
+      return;
+    }
     
     try {
+      console.log('[HP Practice] Loading questions for section:', sectionId);
       setIsLoading(true);
+      
       const fetchedQuestions = await getQuestionsBySection(sectionId);
+      console.log('[HP Practice] Fetched questions:', fetchedQuestions.length);
       
       if (fetchedQuestions.length === 0) {
-        Alert.alert('Ingen fråga hittades', 'Det finns ingen fråga i detta avsnitt ännu');
-        router.back();
+        console.warn('[HP Practice] No questions found');
+        Alert.alert(
+          'Inga frågor tillgängliga', 
+          'Det finns inga frågor för detta avsnitt ännu. Kontrollera att databasen är korrekt populerad.',
+          [
+            { text: 'OK', onPress: () => router.back() }
+          ]
+        );
         return;
       }
       
       setQuestions(fetchedQuestions);
       
       const id = await startAttempt('section_practice', sectionId);
+      console.log('[HP Practice] Started attempt:', id);
       setAttemptId(id);
       setStartTime(Date.now());
     } catch (error) {
-      console.error('Error loading questions:', error);
-      Alert.alert('Fel', 'Kunde inte ladda frågor');
+      console.error('[HP Practice] Error loading questions:', error);
+      Alert.alert(
+        'Fel',
+        'Kunde inte ladda frågor. Kontrollera din internetanslutning och försök igen.',
+        [
+          { text: 'Försök igen', onPress: loadQuestions },
+          { text: 'Gå tillbaka', onPress: () => router.back() }
+        ]
+      );
     } finally {
       setIsLoading(false);
     }

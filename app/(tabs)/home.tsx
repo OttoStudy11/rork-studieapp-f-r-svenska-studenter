@@ -16,7 +16,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight, GraduationCap, ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
 import { Skeleton, SkeletonStats, SkeletonList } from '@/components/Skeleton';
@@ -248,6 +248,41 @@ export default function HomeScreen() {
               </View>
             </View>
           </LinearGradient>
+        </SlideInView>
+
+        {/* Högskoleprovet Section - Prominent */}
+        <SlideInView direction="up" delay={150}>
+          <TouchableOpacity 
+            style={[styles.hogskoleprovBanner, { backgroundColor: theme.colors.card }]}
+            onPress={() => router.push('/hogskoleprovet/index')}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={['#3B82F6', '#2563EB']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.hogskoleprovGradient}
+            >
+              <View style={styles.hogskoleprovIcon}>
+                <GraduationCap size={32} color="white" />
+              </View>
+              <View style={styles.hogskoleprovContent}>
+                <Text style={styles.hogskoleprovTitle}>Öva Högskoleprovet</Text>
+                <Text style={styles.hogskoleprovSubtitle}>Träna på riktiga frågor från tidigare prov</Text>
+                <View style={styles.hogskoleprovMeta}>
+                  <View style={styles.hogskoleprovMetaItem}>
+                    <Target size={14} color="rgba(255,255,255,0.9)" />
+                    <Text style={styles.hogskoleprovMetaText}>8 delar</Text>
+                  </View>
+                  <View style={styles.hogskoleprovMetaItem}>
+                    <Clock size={14} color="rgba(255,255,255,0.9)" />
+                    <Text style={styles.hogskoleprovMetaText}>Tidigare prov</Text>
+                  </View>
+                </View>
+              </View>
+              <ChevronRight size={28} color="white" />
+            </LinearGradient>
+          </TouchableOpacity>
         </SlideInView>
 
         {/* Quick Actions */}
@@ -900,6 +935,61 @@ const styles = StyleSheet.create({
   },
   compactArrow: {
     opacity: 0.6,
+  },
+  hogskoleprovBanner: {
+    marginHorizontal: 24,
+    borderRadius: 20,
+    marginBottom: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  hogskoleprovGradient: {
+    padding: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  hogskoleprovIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  hogskoleprovContent: {
+    flex: 1,
+  },
+  hogskoleprovTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: 'white',
+    marginBottom: 4,
+    letterSpacing: -0.5,
+  },
+  hogskoleprovSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  hogskoleprovMeta: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  hogskoleprovMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  hogskoleprovMetaText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '600',
   },
   premiumBanner: {
     borderRadius: 16,

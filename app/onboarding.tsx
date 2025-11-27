@@ -49,21 +49,16 @@ interface OnboardingData {
 }
 
 const goalOptions = [
-  'Bättre planering',
-  'Högre betyg',
-  'Minska stress',
-  'Balans fritid/studier',
-  'Bättre fokus',
-  'Motivation'
-];
-
-const purposeOptions = [
-  'Fokus & koncentration',
-  'Motivation & disciplin',
-  'Studera med vänner',
-  'Studietips & tekniker',
-  'Spåra framsteg',
-  'Organisera material'
+  { id: 'better_grades', label: 'Få högre betyg', icon: '📈', color: '#10B981' },
+  { id: 'focus', label: 'Förbättra fokus', icon: '🎯', color: '#3B82F6' },
+  { id: 'planning', label: 'Bli bättre på planering', icon: '📅', color: '#8B5CF6' },
+  { id: 'reduce_stress', label: 'Minska stress', icon: '🧘', color: '#EC4899' },
+  { id: 'balance', label: 'Balansera studier & fritid', icon: '⚖️', color: '#F59E0B' },
+  { id: 'motivation', label: 'Öka motivation', icon: '🔥', color: '#EF4444' },
+  { id: 'friends', label: 'Studera med vänner', icon: '👥', color: '#06B6D4' },
+  { id: 'techniques', label: 'Lära studietips', icon: '💡', color: '#22C55E' },
+  { id: 'track_progress', label: 'Spåra mitt framsteg', icon: '📊', color: '#6366F1' },
+  { id: 'organize', label: 'Organisera material', icon: '📚', color: '#14B8A6' },
 ];
 
 
@@ -199,7 +194,7 @@ export default function OnboardingScreen() {
   }, [data.username]);
 
   const handleNext = () => {
-    const maxSteps = data.studyLevel === 'gymnasie' ? 5 : 3;
+    const maxSteps = data.studyLevel === 'gymnasie' ? 6 : 4;
     if (step < maxSteps) {
       setStep(step + 1);
     } else {
@@ -227,6 +222,11 @@ export default function OnboardingScreen() {
         };
         
         // Complete onboarding with user data
+        const selectedGoalLabels = data.goals
+          .map(id => goalOptions.find(g => g.id === id)?.label)
+          .filter(Boolean)
+          .join(', ');
+        
         await completeOnboarding({
           name: data.displayName,
           username: data.username,
@@ -234,7 +234,7 @@ export default function OnboardingScreen() {
           email: user?.email || '',
           studyLevel: data.studyLevel as 'gymnasie' | 'högskola',
           program: programName,
-          purpose: [...data.goals, ...data.purpose].join(', ') || 'Allmän studiehjälp',
+          purpose: selectedGoalLabels || 'Allmän studiehjälp',
           subscriptionType: 'free',
           gymnasium: gymnasium,
           avatar: data.avatarConfig,
@@ -357,11 +357,11 @@ export default function OnboardingScreen() {
     return 'Övrigt';
   };
 
-  const toggleSelection = (array: string[], item: string, key: 'goals' | 'purpose') => {
-    const newArray = array.includes(item)
-      ? array.filter(i => i !== item)
-      : [...array, item];
-    setData({ ...data, [key]: newArray });
+  const toggleGoal = (goalId: string) => {
+    const newGoals = data.goals.includes(goalId)
+      ? data.goals.filter(id => id !== goalId)
+      : [...data.goals, goalId];
+    setData({ ...data, goals: newGoals });
   };
 
   const canProceed = () => {
@@ -382,8 +382,17 @@ export default function OnboardingScreen() {
           return data.selectedCourses.size > 0;
         }
         return true;
-      case 4: return true;
-      case 5: return true;
+      case 4: 
+        if (data.studyLevel === 'gymnasie') {
+          return true;
+        }
+        return data.goals.length > 0;
+      case 5: 
+        if (data.studyLevel === 'gymnasie') {
+          return data.goals.length > 0;
+        }
+        return true;
+      case 6: return true;
       default: return false;
     }
   };
@@ -660,38 +669,51 @@ export default function OnboardingScreen() {
         if (data.studyLevel === 'högskola') {
           return (
             <View style={styles.stepContainer}>
-              <Flame size={60} color="#FFA500" style={styles.icon} />
-              <Text style={styles.title}>Sätt ditt dagsmål</Text>
-              <Text style={styles.subtitle}>Hur många timmar vill du studera per dag?</Text>
+              <Text style={styles.title}>Vad vill du uppnå?</Text>
+              <Text style={styles.subtitle}>Välj ett eller flera mål som passar dig</Text>
               
-              <View style={styles.dailyGoalContainer}>
-                <Text style={styles.dailyGoalValue}>{data.dailyGoalHours.toFixed(1)}</Text>
-                <Text style={styles.dailyGoalLabel}>timmar per dag</Text>
+              <ScrollView style={styles.goalsScrollView} showsVerticalScrollIndicator={false}>
+                <View style={styles.goalsGrid}>
+                  {goalOptions.map((goal) => {
+                    const isSelected = data.goals.includes(goal.id);
+                    
+                    return (
+                      <AnimatedPressable
+                        key={goal.id}
+                        style={[
+                          styles.goalCard,
+                          isSelected && [styles.selectedGoalCard, { borderColor: goal.color }]
+                        ]}
+                        onPress={() => toggleGoal(goal.id)}
+                      >
+                        <View style={[
+                          styles.goalIconContainer,
+                          { backgroundColor: goal.color + '20' }
+                        ]}>
+                          <Text style={styles.goalEmoji}>{goal.icon}</Text>
+                        </View>
+                        <Text style={[
+                          styles.goalText,
+                          isSelected && { color: goal.color }
+                        ]} numberOfLines={2}>
+                          {goal.label}
+                        </Text>
+                        {isSelected && (
+                          <View style={[styles.checkMark, { backgroundColor: goal.color }]}>
+                            <Text style={styles.checkMarkText}>✓</Text>
+                          </View>
+                        )}
+                      </AnimatedPressable>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+              
+              <View style={styles.goalsSummary}>
+                <Text style={styles.goalsSummaryText}>
+                  {data.goals.length > 0 ? `${data.goals.length} mål valda` : 'Välj minst ett mål'}
+                </Text>
               </View>
-              
-              <View style={styles.goalOptionsContainer}>
-                {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4].map((hours) => (
-                  <AnimatedPressable
-                    key={hours}
-                    style={[
-                      styles.goalOption,
-                      data.dailyGoalHours === hours && styles.selectedGoalOption
-                    ]}
-                    onPress={() => setData({ ...data, dailyGoalHours: hours })}
-                  >
-                    <Text style={[
-                      styles.goalOptionText,
-                      data.dailyGoalHours === hours && styles.selectedGoalOptionText
-                    ]}>
-                      {hours}h
-                    </Text>
-                  </AnimatedPressable>
-                ))}
-              </View>
-              
-              <Text style={styles.goalHintText}>
-                Du kan ändra detta när som helst i inställningarna
-              </Text>
             </View>
           );
         }
@@ -764,6 +786,45 @@ export default function OnboardingScreen() {
         );
 
       case 4:
+        if (data.studyLevel === 'gymnasie') {
+          return (
+            <View style={styles.stepContainer}>
+              <Flame size={60} color="#FFA500" style={styles.icon} />
+              <Text style={styles.title}>Sätt ditt dagsmål</Text>
+              <Text style={styles.subtitle}>Hur många timmar vill du studera per dag?</Text>
+              
+              <View style={styles.dailyGoalContainer}>
+                <Text style={styles.dailyGoalValue}>{data.dailyGoalHours.toFixed(1)}</Text>
+                <Text style={styles.dailyGoalLabel}>timmar per dag</Text>
+              </View>
+              
+              <View style={styles.goalOptionsContainer}>
+                {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4].map((hours) => (
+                  <AnimatedPressable
+                    key={hours}
+                    style={[
+                      styles.goalOption,
+                      data.dailyGoalHours === hours && styles.selectedGoalOption
+                    ]}
+                    onPress={() => setData({ ...data, dailyGoalHours: hours })}
+                  >
+                    <Text style={[
+                      styles.goalOptionText,
+                      data.dailyGoalHours === hours && styles.selectedGoalOptionText
+                    ]}>
+                      {hours}h
+                    </Text>
+                  </AnimatedPressable>
+                ))}
+              </View>
+              
+              <Text style={styles.goalHintText}>
+                Du kan ändra detta när som helst i inställningarna
+              </Text>
+            </View>
+          );
+        }
+        
         return (
           <View style={styles.stepContainer}>
             <Flame size={60} color="#FFA500" style={styles.icon} />
@@ -804,6 +865,57 @@ export default function OnboardingScreen() {
       case 5:
         return (
           <View style={styles.stepContainer}>
+            <Text style={styles.title}>Vad vill du uppnå?</Text>
+            <Text style={styles.subtitle}>Välj ett eller flera mål som passar dig</Text>
+            
+            <ScrollView style={styles.goalsScrollView} showsVerticalScrollIndicator={false}>
+              <View style={styles.goalsGrid}>
+                {goalOptions.map((goal) => {
+                  const isSelected = data.goals.includes(goal.id);
+                  
+                  return (
+                    <AnimatedPressable
+                      key={goal.id}
+                      style={[
+                        styles.goalCard,
+                        isSelected && [styles.selectedGoalCard, { borderColor: goal.color }]
+                      ]}
+                      onPress={() => toggleGoal(goal.id)}
+                    >
+                      <View style={[
+                        styles.goalIconContainer,
+                        { backgroundColor: goal.color + '20' }
+                      ]}>
+                        <Text style={styles.goalEmoji}>{goal.icon}</Text>
+                      </View>
+                      <Text style={[
+                        styles.goalText,
+                        isSelected && { color: goal.color }
+                      ]} numberOfLines={2}>
+                        {goal.label}
+                      </Text>
+                      {isSelected && (
+                        <View style={[styles.checkMark, { backgroundColor: goal.color }]}>
+                          <Text style={styles.checkMarkText}>✓</Text>
+                        </View>
+                      )}
+                    </AnimatedPressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+            
+            <View style={styles.goalsSummary}>
+              <Text style={styles.goalsSummaryText}>
+                {data.goals.length > 0 ? `${data.goals.length} mål valda` : 'Välj minst ett mål'}
+              </Text>
+            </View>
+          </View>
+        );
+      
+      case 6:
+        return (
+          <View style={styles.stepContainer}>
             <Text style={styles.title}>Skapa din avatar</Text>
             <Text style={styles.subtitle}>Designa din personliga karaktär</Text>
             <View style={styles.avatarBuilderContainer}>
@@ -831,9 +943,9 @@ export default function OnboardingScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 6 : 4)) * 100}%` }]} />
+              <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 7 : 5)) * 100}%` }]} />
             </View>
-            <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '6' : '4'}</Text>
+            <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '7' : '5'}</Text>
           </View>
 
           <FadeInView key={step} duration={300}>
@@ -861,7 +973,7 @@ export default function OnboardingScreen() {
               rippleOpacity={0.2}
             >
               <Text style={styles.nextButtonText}>
-                {step === (data.studyLevel === 'gymnasie' ? 5 : 3) ? 'Slutför' : 'Nästa'}
+                {step === (data.studyLevel === 'gymnasie' ? 6 : 4) ? 'Slutför' : 'Nästa'}
               </Text>
             </RippleButton>
           </View>
@@ -1324,5 +1436,76 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
+  },
+  goalsScrollView: {
+    maxHeight: 450,
+    width: '100%',
+    marginVertical: 20,
+  },
+  goalsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  goalCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    width: '47%',
+    minHeight: 130,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    position: 'relative',
+  },
+  selectedGoalCard: {
+    backgroundColor: 'white',
+    borderWidth: 2,
+  },
+  goalIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  goalEmoji: {
+    fontSize: 28,
+  },
+  goalText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  checkMark: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkMarkText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  goalsSummary: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+  },
+  goalsSummaryText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'white',
+    textAlign: 'center',
   },
 });

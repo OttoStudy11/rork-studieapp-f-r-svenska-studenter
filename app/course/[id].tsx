@@ -162,6 +162,7 @@ export default function CourseDetailScreen() {
       'PRRPRR02': '/course-content/programmering2',
       'WEBWEB01': '/course-content/webbutveckling1',
       'WEBWEB02': '/course-content/webbutveckling2',
+      'SF1624': '/course-content/sf1624-algebra-geometri',
     };
 
     if (id && courseRedirects[id]) {

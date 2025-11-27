@@ -715,29 +715,8 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           setPomodoroSessions(prev => [dbSession, ...prev]);
           console.log('✅ Pomodoro session added to local state');
           
-          // Also save to study_sessions table for progress tracking
+          // Update user_progress directly instead of saving duplicate study_sessions
           try {
-            const { data: studySessionData, error: studySessionError } = await supabase
-              .from('study_sessions')
-              .insert({
-                user_id: authUser.id,
-                course_id: session.courseId || null,
-                title: session.courseId ? 'Pomodoro Session' : 'Study Session',
-                start_time: new Date(new Date(session.endTime).getTime() - session.duration * 60000).toISOString(),
-                duration_minutes: session.duration,
-                technique: 'pomodoro',
-                completed: true,
-                status: 'completed' as const,
-                created_at: session.endTime
-              })
-              .select()
-              .single();
-            
-            if (studySessionError) {
-              console.warn('⚠️ Could not save to study_sessions:', studySessionError.message);
-            } else {
-              console.log('✅ Study session saved with ID:', studySessionData?.id);
-            }
             
             // Update user_progress table
             console.log('Updating user_progress table...');

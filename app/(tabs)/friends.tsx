@@ -257,13 +257,43 @@ export default function FriendsScreen() {
         sessionCountMap[session.user_id] = (sessionCountMap[session.user_id] || 0) + 1;
       });
       
-      const leaderboardData: LeaderboardEntry[] = mappedFriends
-        .map((friend, index) => ({
+      // Get current user progress
+      const { data: currentUserProgress } = await supabase
+        .from('user_progress')
+        .select('user_id, total_study_time, current_streak')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      // Get current user session count
+      const { data: currentUserSessions } = await supabase
+        .from('study_sessions')
+        .select('user_id')
+        .eq('user_id', user.id);
+      
+      // Create array of all users including current user
+      const allUsersForLeaderboard = [
+        ...mappedFriends.map((friend) => ({
           ...friend,
           studyTime: friend.studyTime || 0,
           sessionCount: sessionCountMap[friend.id] || 0,
-          position: index + 1
-        }))
+          position: 0
+        })),
+        // Add current user
+        {
+          id: user.id,
+          username: studyUser?.username || 'Du',
+          display_name: studyUser?.displayName || 'Du',
+          program: studyUser?.program || '',
+          level: studyUser?.studyLevel || 'gymnasie' as 'gymnasie' | 'högskola',
+          avatar: studyUser?.avatar,
+          studyTime: Math.floor((currentUserProgress?.total_study_time || 0) / 60),
+          sessionCount: currentUserSessions?.length || 0,
+          position: 0
+        }
+      ];
+      
+      // Sort by study time and assign positions
+      const leaderboardData: LeaderboardEntry[] = allUsersForLeaderboard
         .sort((a, b) => b.studyTime - a.studyTime)
         .map((entry, index) => ({ ...entry, position: index + 1 }));
       
@@ -274,7 +304,7 @@ export default function FriendsScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, showError]);
+  }, [user, studyUser, showError]);
 
   useEffect(() => {
     loadFriends();

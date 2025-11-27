@@ -387,6 +387,7 @@ export interface Database {
           current_streak: number
           longest_streak: number
           last_study_date: string | null
+          total_points: number
           created_at: string
           updated_at: string
         }
@@ -397,6 +398,7 @@ export interface Database {
           current_streak?: number
           longest_streak?: number
           last_study_date?: string | null
+          total_points?: number
           created_at?: string
           updated_at?: string
         }
@@ -407,6 +409,7 @@ export interface Database {
           current_streak?: number
           longest_streak?: number
           last_study_date?: string | null
+          total_points?: number
           created_at?: string
           updated_at?: string
         }

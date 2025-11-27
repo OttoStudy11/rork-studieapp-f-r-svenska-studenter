@@ -154,6 +154,8 @@ const dbSessionToSession = (dbSession: DbPomodoroSession): PomodoroSession => ({
 export const [StudyProvider, useStudy] = createContextHook(() => {
   const authContext = useAuth();
   
+
+  
   // Add safety check for auth context
   if (!authContext) {
     console.error('StudyContext: AuthContext is not available');
@@ -722,7 +724,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
             console.log('Updating user_progress table...');
             const { data: existingProgress, error: progressFetchError } = await supabase
               .from('user_progress')
-              .select('total_study_time, total_sessions, current_streak, last_study_date, longest_streak')
+              .select('total_study_time, total_sessions, current_streak, last_study_date, longest_streak, total_points')
               .eq('user_id', authUser.id)
               .maybeSingle();
             
@@ -747,6 +749,8 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
             
             console.log('Calculated new streak:', newStreak);
             
+            const pointsEarned = Math.floor(session.duration / 5);
+            
             const progressUpdate = {
               user_id: authUser.id,
               total_study_time: (existingProgress?.total_study_time || 0) + session.duration,
@@ -754,6 +758,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
               current_streak: newStreak,
               longest_streak: Math.max(newStreak, existingProgress?.longest_streak || 0),
               last_study_date: session.endTime,
+              total_points: (existingProgress?.total_points || 0) + pointsEarned,
               updated_at: new Date().toISOString()
             };
             
@@ -772,6 +777,16 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
               console.error('Progress error details:', JSON.stringify(progressError, null, 2));
             } else {
               console.log('✅ User progress updated successfully:', updatedProgress);
+              console.log(`🎯 Points earned: ${pointsEarned}. Total points: ${(existingProgress?.total_points || 0) + pointsEarned}`);
+            }
+            
+            // Check for achievements using database function directly
+            try {
+              const { checkAndUpdateAchievements } = await import('@/lib/database');
+              console.log('🏆 Checking for new achievements...');
+              await checkAndUpdateAchievements(authUser.id);
+            } catch (achievementError) {
+              console.warn('⚠️ Could not check achievements:', achievementError);
             }
             
             // Update course progress if a course was selected

@@ -128,7 +128,8 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
       console.log('[HP] Query result:', { data: data?.length, error });
 
       if (error) {
-        console.error('[HP] Error fetching questions:', error);
+        console.error('[HP] Error fetching questions:', JSON.stringify(error, null, 2));
+        console.error('[HP] Error details:', error.message, error.details, error.hint, error.code);
         throw error;
       }
 
@@ -151,9 +152,23 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
 
       console.log('[HP] Parsed questions:', questions.length);
       return questions;
-    } catch (error) {
-      console.error('[HP] Error in getQuestionsBySection:', error);
-      Alert.alert('Fel', 'Kunde inte hämta frågor. Försök igen.');
+    } catch (error: any) {
+      console.error('[HP] Error in getQuestionsBySection:', JSON.stringify(error, null, 2));
+      console.error('[HP] Full error:', error);
+      console.error('[HP] Error message:', error?.message);
+      console.error('[HP] Error details:', error?.details);
+      console.error('[HP] Error hint:', error?.hint);
+      console.error('[HP] Error code:', error?.code);
+      
+      let errorMessage = 'Kunde inte hämta frågor. ';
+      if (error?.message) {
+        errorMessage += error.message;
+      }
+      if (error?.hint) {
+        errorMessage += ' ' + error.hint;
+      }
+      
+      Alert.alert('Fel', errorMessage);
       return [];
     }
   }, []);

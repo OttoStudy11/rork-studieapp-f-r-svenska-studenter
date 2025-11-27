@@ -31,7 +31,20 @@ Detta lägger till:
 
 ## Verifiering
 
-### Kontrollera att tabellerna skapades
+### Snabb Verifiering
+Kör denna fil i Supabase SQL Editor för att verifiera allt:
+```bash
+verify-hogskoleprovet-setup.sql
+```
+
+Denna fil kontrollerar:
+- Att alla tabeller existerar
+- Att sektioner är korrekt skapade (8 st)
+- Att test-instanser existerar
+- Att frågor finns för varje sektion
+- Att RLS policies är korrekt konfigurerade
+
+### Manuell Verifiering
 ```sql
 -- Kontrollera hp_sections
 SELECT * FROM hp_sections ORDER BY section_order;

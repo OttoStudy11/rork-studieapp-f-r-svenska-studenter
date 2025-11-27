@@ -213,9 +213,9 @@ export default function OnboardingScreen() {
         console.log('Completing onboarding with data:', data);
         console.log('Selected courses:', Array.from(data.selectedCourses));
         
-        const programName = data.gymnasiumProgram ? 
-          `${data.gymnasiumProgram.name} - År ${data.gymnasiumGrade}` : 
-          data.program || 'Ej valt';
+        const programName = data.studyLevel === 'gymnasie' 
+          ? (data.gymnasiumProgram ? `${data.gymnasiumProgram.name} - År ${data.year}` : data.program || 'Ej valt')
+          : (data.universityProgram ? `${data.universityProgram.name}${data.universityYear ? ` - Termin ${data.universityYear}` : ''}` : data.program || 'Ej valt');
         
         // Get the gymnasium for selected courses data
         const gymnasium: Gymnasium = data.gymnasium || { 
@@ -376,8 +376,12 @@ export default function OnboardingScreen() {
         if (data.studyLevel === 'gymnasie') {
           return data.gymnasium !== null;
         }
+        return data.university !== null && data.universityProgram !== null && data.universityYear !== null;
+      case 3: 
+        if (data.studyLevel === 'gymnasie') {
+          return data.selectedCourses.size > 0;
+        }
         return true;
-      case 3: return data.studyLevel !== 'gymnasie' || data.selectedCourses.size > 0;
       case 4: return true;
       case 5: return true;
       default: return false;
@@ -543,9 +547,30 @@ export default function OnboardingScreen() {
         );
 
       case 2:
-        if (data.studyLevel !== 'gymnasie') {
-          handleComplete();
-          return null;
+        if (data.studyLevel === 'högskola') {
+          return (
+            <View style={styles.stepContainer}>
+              <GraduationCap size={60} color="#1F2937" style={styles.icon} />
+              <Text style={styles.title}>Välj högskola och program</Text>
+              <Text style={styles.subtitle}>Välj ditt program, skola och termin</Text>
+              
+              <UniversityPicker
+                selectedUniversity={data.university}
+                selectedProgram={data.universityProgram}
+                selectedYear={data.universityYear}
+                onSelect={(university, program, year) => {
+                  console.log('Selected:', { university, program, year });
+                  setData({ 
+                    ...data, 
+                    university, 
+                    universityProgram: program, 
+                    universityYear: year 
+                  });
+                }}
+                placeholder="Välj högskola och program"
+              />
+            </View>
+          );
         }
         
         const filteredGymnasiums = gymnasiumSearchQuery
@@ -632,9 +657,43 @@ export default function OnboardingScreen() {
         );
 
       case 3:
-        if (data.studyLevel !== 'gymnasie') {
-          handleComplete();
-          return null;
+        if (data.studyLevel === 'högskola') {
+          return (
+            <View style={styles.stepContainer}>
+              <Flame size={60} color="#FFA500" style={styles.icon} />
+              <Text style={styles.title}>Sätt ditt dagsmål</Text>
+              <Text style={styles.subtitle}>Hur många timmar vill du studera per dag?</Text>
+              
+              <View style={styles.dailyGoalContainer}>
+                <Text style={styles.dailyGoalValue}>{data.dailyGoalHours.toFixed(1)}</Text>
+                <Text style={styles.dailyGoalLabel}>timmar per dag</Text>
+              </View>
+              
+              <View style={styles.goalOptionsContainer}>
+                {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4].map((hours) => (
+                  <AnimatedPressable
+                    key={hours}
+                    style={[
+                      styles.goalOption,
+                      data.dailyGoalHours === hours && styles.selectedGoalOption
+                    ]}
+                    onPress={() => setData({ ...data, dailyGoalHours: hours })}
+                  >
+                    <Text style={[
+                      styles.goalOptionText,
+                      data.dailyGoalHours === hours && styles.selectedGoalOptionText
+                    ]}>
+                      {hours}h
+                    </Text>
+                  </AnimatedPressable>
+                ))}
+              </View>
+              
+              <Text style={styles.goalHintText}>
+                Du kan ändra detta när som helst i inställningarna
+              </Text>
+            </View>
+          );
         }
         
         return (
@@ -1253,5 +1312,17 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
     marginTop: 30,
+  },
+  universityPickerWrapper: {
+    width: '100%',
+    marginTop: 20,
+  },
+  infoText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    padding: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
   },
 });

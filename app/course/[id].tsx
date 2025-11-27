@@ -163,6 +163,19 @@ export default function CourseDetailScreen() {
       'WEBWEB01': '/course-content/webbutveckling1',
       'WEBWEB02': '/course-content/webbutveckling2',
       'SF1624': '/course-content/sf1624-algebra-geometri',
+      'SF1625': '/course-content/sf1625-envariabelanalys',
+      'DD1331': '/course-content/dd1331-programmering',
+      'DD1337': '/course-content/dd1337-programmering',
+      'DD2372': '/course-content/dd2372-databaser',
+      'MED101': '/course-content/med101-medicinsk-terminologi',
+      'MED102': '/course-content/med102-anatomi-fysiologi',
+      'OMV101': '/course-content/omv101-omvardnad-grunder',
+      'BIO101': '/course-content/bio101-allman-biologi',
+      'KEM101': '/course-content/kem101-allmanna-kemi',
+      'FYS101': '/course-content/fys101-mekanik',
+      'JUR101': '/course-content/jur101-juridik',
+      'EKO101': '/course-content/eko101-ekonomi',
+      'PSY101': '/course-content/psy101-psykologi',
     };
 
     if (id && courseRedirects[id]) {

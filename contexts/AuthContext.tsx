@@ -259,7 +259,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     };
   }, [initializeAuth, checkOnboardingStatus]);
 
-  const RATE_LIMIT_DELAY = 60000; // 60 seconds
+  const RATE_LIMIT_DELAY = 0; // No delay
 
   const handleSignUp = useCallback(async (email: string, password: string) => {
     try {

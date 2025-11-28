@@ -251,7 +251,7 @@ export default function TimerScreen() {
   const { courses, addPomodoroSession, pomodoroSessions } = useStudy();
   const { showSuccess, showAchievement } = useToast();
   const { theme, isDark } = useTheme();
-  const { currentStreak } = useAchievements();
+  const { currentStreak, checkAchievements, refreshAchievements } = useAchievements();
   const { settings } = useTimerSettings();
   const appState = useRef(AppState.currentState);
   const [timerState, setTimerState] = useState<TimerState>('idle');
@@ -561,6 +561,17 @@ export default function TimerScreen() {
         setSessionCount(prev => prev + 1);
         
         const coinsEarned = focusTime;
+        
+        // Check for achievements after session is saved
+        try {
+          console.log('\ud83c\udfc6 Checking for achievements after session...');
+          await checkAchievements();
+          // Refresh achievements to ensure UI is updated
+          await refreshAchievements();
+          console.log('\u2705 Achievements checked and refreshed successfully');
+        } catch (achError) {
+          console.log('\u26a0\ufe0f Could not check achievements:', achError);
+        }
         
         setCompletedSessionData({
           duration: focusTime,

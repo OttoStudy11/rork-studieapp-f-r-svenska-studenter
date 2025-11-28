@@ -780,11 +780,23 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
               console.log(`🎯 Points earned: ${pointsEarned}. Total points: ${(existingProgress?.total_points || 0) + pointsEarned}`);
             }
             
-            // Check for achievements using database function directly
+            // Check for achievements using achievement context directly
             try {
-              const { checkAndUpdateAchievements } = await import('@/lib/database');
-              console.log('🏆 Checking for new achievements...');
-              await checkAndUpdateAchievements(authUser.id);
+              // Import achievements context dynamically to avoid circular dependency
+              const { checkAchievements } = await import('@/contexts/AchievementContext').then(mod => ({
+                checkAchievements: async () => {
+                  const { checkAndUpdateAchievements } = await import('@/lib/database');
+                  console.log('🏆 Checking for new achievements...');
+                  const newAchievements = await checkAndUpdateAchievements(authUser.id);
+                  return newAchievements;
+                }
+              }));
+              
+              const newAchievements = await checkAchievements();
+              
+              if (newAchievements && newAchievements.length > 0) {
+                console.log(`✅ Unlocked ${newAchievements.length} new achievement(s)!`);
+              }
             } catch (achievementError) {
               console.warn('⚠️ Could not check achievements:', achievementError);
             }

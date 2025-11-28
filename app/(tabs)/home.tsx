@@ -244,6 +244,7 @@ export default function HomeScreen() {
                   </View>
                   <Text style={styles.heroStatNumber}>{totalPoints}</Text>
                   <Text style={styles.heroStatLabel}>Poäng</Text>
+                  <Text style={styles.heroStatSubtext}>{Math.floor(totalStudyTime / 60)}h studerat</Text>
                 </View>
               </View>
             </View>
@@ -608,6 +609,13 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
     textAlign: 'center',
+  },
+  heroStatSubtext: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontWeight: '400',
+    textAlign: 'center',
+    marginTop: 2,
   },
   heroStatDivider: {
     width: 1,

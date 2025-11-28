@@ -97,6 +97,8 @@ export default function FriendsScreen() {
     friend.program.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const [currentUserProgress, setCurrentUserProgress] = useState<{ current_streak?: number; total_study_time?: number } | null>(null);
+
   const loadFriends = useCallback(async () => {
     if (!user) return;
     
@@ -258,11 +260,13 @@ export default function FriendsScreen() {
       });
       
       // Get current user progress
-      const { data: currentUserProgress } = await supabase
+      const { data: fetchedUserProgress } = await supabase
         .from('user_progress')
         .select('user_id, total_study_time, current_streak')
         .eq('user_id', user.id)
         .maybeSingle();
+
+      setCurrentUserProgress(fetchedUserProgress);
       
       // Get current user session count
       const { data: currentUserSessions } = await supabase
@@ -539,7 +543,9 @@ export default function FriendsScreen() {
                   <View style={[styles.statIconContainer, { backgroundColor: theme.colors.warning + '15' }]}>
                     <Flame size={20} color={theme.colors.warning} />
                   </View>
-                  <Text style={[styles.statValue, { color: theme.colors.text }]}>0</Text>
+                  <Text style={[styles.statValue, { color: theme.colors.text }]}>
+                    {currentUserProgress?.current_streak || 0}
+                  </Text>
                   <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Streak</Text>
                 </View>
               </View>

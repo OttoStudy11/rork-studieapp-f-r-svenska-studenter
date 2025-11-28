@@ -200,13 +200,13 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
           {/* Session info */}
           <View style={styles.sessionInfo}>
             <Text style={styles.sessionText}>
-              You completed {data.duration}{isBreak ? 's' : 'm'}
+              You studied for {data.duration} minutes
             </Text>
             <Text style={styles.sessionText}>
-              of {data.courseName} and
+              in {data.courseName} and
             </Text>
             <Text style={styles.sessionText}>
-              earned {data.coinsEarned} coins.
+              earned {data.coinsEarned} points.
             </Text>
           </View>
 
@@ -560,7 +560,7 @@ export default function TimerScreen() {
         
         setSessionCount(prev => prev + 1);
         
-        const coinsEarned = focusTime;
+        const pointsEarned = Math.floor(focusTime / 5);
         
         // Check for achievements after session is saved
         try {
@@ -577,14 +577,14 @@ export default function TimerScreen() {
           duration: focusTime,
           sessionType: 'focus',
           courseName,
-          coinsEarned
+          coinsEarned: pointsEarned
         });
         setShowCompletionScreen(true);
         
         if (settings.notificationsEnabled) {
           await TimerPersistence.showImmediateNotification(
             '🎯 Focus Session Complete!',
-            `Great work on ${courseName}! You earned ${coinsEarned} coins.`
+            `Great work on ${courseName}! You earned ${pointsEarned} points.`
           );
         }
         

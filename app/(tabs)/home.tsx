@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,22 +15,49 @@ import { useAchievements } from '@/contexts/AchievementContext';
 import { useToast } from '@/contexts/ToastContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Image } from 'expo-image';
 import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
 import { Skeleton, SkeletonStats, SkeletonList } from '@/components/Skeleton';
 import CharacterAvatar from '@/components/CharacterAvatar';
+import { supabase } from '@/lib/supabase';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { user, courses, notes, pomodoroSessions, isLoading } = useStudy();
-  const { totalPoints, getUserLevel, getRecentAchievements, currentStreak } = useAchievements();
+  const { totalPoints: achievementPoints, getUserLevel, getRecentAchievements, currentStreak } = useAchievements();
   const { showSuccess } = useToast();
   const { isPremium, limits, isDemoMode, canAddCourse, canAddNote, showPremiumModal } = usePremium();
   const { theme, isDark } = useTheme();
+  const { user: authUser } = useAuth();
+  const [totalPoints, setTotalPoints] = useState(0);
   
+  // Load total points from user_progress
+  useEffect(() => {
+    const loadTotalPoints = async () => {
+      if (!authUser) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('user_progress')
+          .select('total_points')
+          .eq('user_id', authUser.id)
+          .maybeSingle();
+        
+        if (!error && data) {
+          setTotalPoints(data.total_points || 0);
+        }
+      } catch (err) {
+        console.warn('Could not load total points:', err);
+      }
+    };
+    
+    loadTotalPoints();
+  }, [authUser, pomodoroSessions]);
+
   const handleAddCourse = () => {
     if (!canAddCourse(courses.length)) {
       showPremiumModal('Obegränsat antal kurser');
@@ -244,7 +271,7 @@ export default function HomeScreen() {
                   </View>
                   <Text style={styles.heroStatNumber}>{totalPoints}</Text>
                   <Text style={styles.heroStatLabel}>Poäng</Text>
-                  <Text style={styles.heroStatSubtext}>{Math.floor(totalStudyTime / 60)}h studerat</Text>
+                  <Text style={styles.heroStatSubtext}>1p per 5 min</Text>
                 </View>
               </View>
             </View>

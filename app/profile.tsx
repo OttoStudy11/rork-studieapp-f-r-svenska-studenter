@@ -205,7 +205,11 @@ export default function ProfileScreen() {
             </View>
             {user.program && (
               <View style={styles.profileProgramTag}>
-                <Text style={styles.profileProgramText}>{user.program}</Text>
+                <Text style={styles.profileProgramText}>
+                  {user.program}
+                  {user.studyLevel === 'gymnasie' && user.gymnasiumGrade ? ` - År ${user.gymnasiumGrade}` : ''}
+                  {user.studyLevel === 'högskola' && user.universityYear ? ` - Termin ${user.universityYear}` : ''}
+                </Text>
               </View>
             )}
           </View>

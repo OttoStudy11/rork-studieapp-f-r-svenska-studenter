@@ -209,8 +209,8 @@ export default function OnboardingScreen() {
         console.log('Selected courses:', Array.from(data.selectedCourses));
         
         const programName = data.studyLevel === 'gymnasie' 
-          ? (data.gymnasiumProgram ? `${data.gymnasiumProgram.name} - År ${data.year}` : data.program || 'Ej valt')
-          : (data.universityProgram ? `${data.universityProgram.name}${data.universityYear ? ` - Termin ${data.universityYear}` : ''}` : data.program || 'Ej valt');
+          ? (data.gymnasiumProgram ? data.gymnasiumProgram.name : data.program || 'Ej valt')
+          : (data.universityProgram ? data.universityProgram.name : data.program || 'Ej valt');
         
         // Get the gymnasium for selected courses data
         const gymnasium: Gymnasium = data.gymnasium || { 
@@ -237,6 +237,8 @@ export default function OnboardingScreen() {
           purpose: selectedGoalLabels || 'Allmän studiehjälp',
           subscriptionType: 'free',
           gymnasium: gymnasium,
+          gymnasiumGrade: data.studyLevel === 'gymnasie' && data.year ? String(data.year) : null,
+          universityYear: data.studyLevel === 'högskola' ? data.universityYear : null,
           avatar: data.avatarConfig,
           selectedCourses: Array.from(data.selectedCourses),
           dailyGoalHours: data.dailyGoalHours

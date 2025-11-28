@@ -26,6 +26,8 @@ export interface User {
   subscriptionType: 'free' | 'premium';
   subscriptionExpiresAt?: Date;
   gymnasium?: Gymnasium | null;
+  gymnasiumGrade?: string | null;
+  universityYear?: string | null;
   dailyGoalHours?: number;
 }
 
@@ -67,7 +69,7 @@ export interface StudyContextType {
   isAuthenticated: boolean;
   
   // User actions
-  completeOnboarding: (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number }) => Promise<void>;
+  completeOnboarding: (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number; gymnasiumGrade?: string | null; universityYear?: string | null }) => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   
   // Course actions
@@ -103,7 +105,9 @@ const dbUserToUser = (dbUser: DbUser, email: string): User => ({
     city: '',
     municipality: '',
     type: 'kommunal'
-  } : null
+  } : null,
+  gymnasiumGrade: dbUser.gymnasium_grade,
+  universityYear: null
 });
 
 const userToDbUser = (user: Partial<User> & { id: string }): Database['public']['Tables']['profiles']['Insert'] => ({
@@ -363,7 +367,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     };
   }, [authUser, isAuthenticated, authLoading, loadUserData]);
 
-  const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number }) => {
+  const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number; gymnasiumGrade?: string | null; universityYear?: string | null }) => {
     try {
       if (!authUser) throw new Error('No authenticated user');
 
@@ -391,7 +395,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
             subscription_type: userData.subscriptionType || 'free',
             gymnasium_id: userData.gymnasium?.id || null,
             gymnasium_name: userData.gymnasium?.name || null,
-            gymnasium_grade: userData.gymnasium ? '1' : null,
+            gymnasium_grade: userData.gymnasiumGrade || null,
             daily_goal_hours: userData.dailyGoalHours || 2
           });
         

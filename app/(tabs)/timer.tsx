@@ -18,9 +18,11 @@ import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAchievements } from '@/contexts/AchievementContext';
 import { useTimerSettings } from '@/contexts/TimerSettingsContext';
+import { usePremium } from '@/contexts/PremiumContext';
 import { TimerPersistence } from '@/lib/timer-persistence';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
+import { PremiumGate } from '@/components/PremiumGate';
 import { AppState } from 'react-native';
 import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -253,6 +255,7 @@ export default function TimerScreen() {
   const { theme, isDark } = useTheme();
   const { currentStreak, checkAchievements, refreshAchievements } = useAchievements();
   const { settings } = useTimerSettings();
+  const { isPremium } = usePremium();
   const appState = useRef(AppState.currentState);
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [sessionType, setSessionType] = useState<SessionType>('focus');
@@ -1293,6 +1296,7 @@ export default function TimerScreen() {
 
         {/* Statistics Section */}
         <View style={styles.section}>
+        <PremiumGate feature="statistics">
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
           </View>
@@ -1439,6 +1443,7 @@ export default function TimerScreen() {
               </View>
             </LinearGradient>
           )}
+        </PremiumGate>
         </View>
       </ScrollView>
 

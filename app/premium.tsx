@@ -65,15 +65,9 @@ export default function PremiumScreen() {
     {
       icon: BarChart3,
       title: 'Avancerad Statistik',
-      description: 'Detaljerade grafer, insikter och trendanalys av din studietid',
+      description: 'Detaljerade grafer, insikter och trendanalys av din studietid i fokus-sidan',
       gradient: ['#06B6D4', '#0891B2'] as const,
       badge: 'Nytt'
-    },
-    {
-      icon: Shield,
-      title: 'Distraktionsblockerare',
-      description: 'Blockera appar och webbplatser under fokuserade studiesessioner',
-      gradient: ['#10B981', '#059669'] as const
     },
     {
       icon: Sparkles,
@@ -83,16 +77,17 @@ export default function PremiumScreen() {
       badge: 'AI'
     },
     {
-      icon: Clock,
-      title: 'Anpassade Studietimers',
-      description: 'Pomodoro, Deep Work, stoppur och skräddarsydda studietimers',
-      gradient: ['#F59E0B', '#D97706'] as const
+      icon: Users,
+      title: 'Tävlingsfunktionen',
+      description: 'Tävla mot dina vänner i battle-läget och se vem som pluggar mest',
+      gradient: ['#EF4444', '#DC2626'] as const
     },
     {
-      icon: Users,
-      title: 'Obegränsade Studievänner',
-      description: 'Bjud in hur många studiekamrater du vill och tävla i topplistan',
-      gradient: ['#EF4444', '#DC2626'] as const
+      icon: Sparkles,
+      title: 'AI-genererade Flashcards',
+      description: 'Automatiskt genererade flashcards med spaced repetition för bättre minne',
+      gradient: ['#F59E0B', '#D97706'] as const,
+      badge: 'AI'
     },
     {
       icon: Award,
@@ -101,22 +96,16 @@ export default function PremiumScreen() {
       gradient: ['#F59E0B', '#F97316'] as const
     },
     {
-      icon: TrendingUp,
-      title: 'Exportera Din Data',
-      description: 'Exportera all din studiedata för backup och analys',
-      gradient: ['#8B5CF6', '#A78BFA'] as const
-    },
-    {
       icon: Star,
       title: 'Prioriterad Support',
       description: 'Få snabb och personlig hjälp direkt från teamet',
-      gradient: ['#F59E0B', '#EF4444'] as const
+      gradient: ['#3B82F6', '#2563EB'] as const
     },
     {
       icon: Zap,
       title: 'Allt Framtida Innehåll',
       description: 'Få tillgång till alla nya premium-funktioner automatiskt',
-      gradient: ['#3B82F6', '#2563EB'] as const,
+      gradient: ['#10B981', '#059669'] as const,
       badge: 'Kommande'
     }
   ];
@@ -316,10 +305,9 @@ export default function PremiumScreen() {
                   </View>
                 )}
                 <View style={styles.pricingContent}>
-                  <Text style={[styles.price, { color: theme.colors.text }]}>39 kr</Text>
+                  <Text style={[styles.price, { color: theme.colors.text }]}>49 kr</Text>
                   <Text style={[styles.pricePeriod, { color: theme.colors.textSecondary }]}>/månad</Text>
                 </View>
-                <Text style={[styles.trialText, { color: theme.colors.textMuted }]}>3 dagars gratis provperiod</Text>
               </TouchableOpacity>
 
               {/* Yearly Plan - Featured */}
@@ -348,12 +336,11 @@ export default function PremiumScreen() {
                 )}
                 <View style={styles.pricingContent}>
                   <View style={[styles.yearlyPriceContainer, { backgroundColor: theme.colors.primary }]}>
-                    <Text style={styles.yearlyPrice}>129 kr</Text>
+                    <Text style={styles.yearlyPrice}>150 kr</Text>
                   </View>
                   <Text style={[styles.pricePeriod, { color: theme.colors.textSecondary }]}>/år</Text>
                 </View>
-                <Text style={[styles.savingsText, { color: theme.colors.success }]}>Spara 339 kr/år</Text>
-                <Text style={[styles.trialText, { color: theme.colors.textMuted }]}>7 dagars gratis provperiod</Text>
+                <Text style={[styles.savingsText, { color: theme.colors.success }]}>Spara 438 kr/år</Text>
               </TouchableOpacity>
             </View>
           </SlideInView>
@@ -430,11 +417,11 @@ export default function PremiumScreen() {
                 <View style={[styles.comparisonDivider, { backgroundColor: theme.colors.border }]} />
                 
                 {[
-                  { feature: 'Antal kurser', free: '3 kurser', premium: 'Obegränsat' },
-                  { feature: 'Studievänner', free: '3 vänner', premium: 'Obegränsat' },
-                  { feature: 'AI-assisterad lärning', free: '—', premium: '✓' },
+                  { feature: 'Antal kurser', free: 'Begränsat', premium: 'Obegränsat' },
+                  { feature: 'AI Chat', free: '—', premium: '✓' },
+                  { feature: 'Flashcards', free: '—', premium: '✓' },
+                  { feature: 'Tävlingsfunktion', free: '—', premium: '✓' },
                   { feature: 'Avancerad statistik', free: '—', premium: '✓' },
-                  { feature: 'Exportera data', free: '—', premium: '✓' },
                 ].map((item, index) => (
                   <View key={index}>
                     <View style={styles.comparisonRow}>
@@ -455,16 +442,8 @@ export default function PremiumScreen() {
             </View>
           </SlideInView>
 
-          {/* No Payment Due */}
-          <FadeInView delay={1400}>
-            <View style={[styles.noPaymentContainer, { backgroundColor: theme.colors.success + '15', borderRadius: 12, marginHorizontal: 20, paddingVertical: 16, paddingHorizontal: 20 }]}>
-              <Shield size={20} color={theme.colors.success} />
-              <Text style={[styles.noPaymentText, { color: theme.colors.success }]}>Ingen betalning nu - avbryt när som helst</Text>
-            </View>
-          </FadeInView>
-
           {/* CTA Button */}
-          <FadeInView delay={1500}>
+          <FadeInView delay={1400}>
             <TouchableOpacity
               style={[styles.ctaButton, { backgroundColor: theme.colors.primary }]}
               onPress={handleUpgrade}
@@ -476,9 +455,16 @@ export default function PremiumScreen() {
                 end={{ x: 1, y: 0 }}
               >
                 <Crown size={20} color="#FFF" />
-                <Text style={styles.ctaButtonText}>BÖRJA GRATIS PROVPERIOD</Text>
+                <Text style={styles.ctaButtonText}>KÖP PREMIUM</Text>
               </LinearGradient>
             </TouchableOpacity>
+          </FadeInView>
+
+          {/* Payment Info */}
+          <FadeInView delay={1500}>
+            <View style={[styles.noPaymentContainer, { backgroundColor: 'transparent', borderRadius: 12, marginHorizontal: 20, paddingVertical: 8, paddingHorizontal: 20 }]}>
+              <Text style={[styles.paymentInfoText, { color: theme.colors.textSecondary }]}>Säker betalning • Avbryt när som helst</Text>
+            </View>
           </FadeInView>
 
           {/* Footer Links */}
@@ -770,6 +756,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#10B981',
     fontWeight: '600',
+  },
+  paymentInfoText: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   ctaButton: {
     backgroundColor: '#10B981',

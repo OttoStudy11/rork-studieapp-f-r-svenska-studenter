@@ -79,6 +79,7 @@ export default function FriendsScreen() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('week');
+  const [leaderboardView, setLeaderboardView] = useState<'friends' | 'global'>('friends');
 
   const colors = [
     { bg: '#FF6B6B15', accent: '#FF6B6B' },
@@ -409,6 +410,14 @@ export default function FriendsScreen() {
       return `${hours}h ${mins}m`;
     }
     return `${mins}m`;
+  };
+
+  const formatLeaderboardTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    if (hours >= 1) {
+      return `${hours}h`;
+    }
+    return `${minutes}m`;
   };
 
   if (isLoading) {
@@ -748,6 +757,42 @@ export default function FriendsScreen() {
           </View>
           
           <View style={styles.modalContent}>
+            {/* View Selector (Friends/Global) */}
+            <View style={[styles.viewSelectorContainer, { backgroundColor: theme.colors.card }]}>
+              <TouchableOpacity
+                style={[
+                  styles.viewButton,
+                  leaderboardView === 'friends' && { backgroundColor: theme.colors.primary }
+                ]}
+                onPress={() => setLeaderboardView('friends')}
+              >
+                <UsersRound size={16} color={leaderboardView === 'friends' ? 'white' : theme.colors.textSecondary} />
+                <Text style={[
+                  styles.viewButtonText,
+                  { color: theme.colors.textSecondary },
+                  leaderboardView === 'friends' && { color: 'white', fontWeight: '600' }
+                ]}>
+                  Vänner
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.viewButton,
+                  leaderboardView === 'global' && { backgroundColor: theme.colors.primary }
+                ]}
+                onPress={() => setLeaderboardView('global')}
+              >
+                <Globe size={16} color={leaderboardView === 'global' ? 'white' : theme.colors.textSecondary} />
+                <Text style={[
+                  styles.viewButtonText,
+                  { color: theme.colors.textSecondary },
+                  leaderboardView === 'global' && { color: 'white', fontWeight: '600' }
+                ]}>
+                  Globalt
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Timeframe Selector */}
             <View style={[styles.timeframeContainer, { backgroundColor: theme.colors.card }]}>
               <TouchableOpacity
@@ -800,7 +845,7 @@ export default function FriendsScreen() {
             {/* Leaderboard List */}
             <ScrollView style={styles.leaderboardContainer} showsVerticalScrollIndicator={false}>
               {leaderboard.length > 0 ? (
-                leaderboard.map((entry, index) => (
+                (leaderboardView === 'global' ? leaderboard.slice(0, 15) : leaderboard).map((entry, index) => (
                   <FadeInView key={entry.id} delay={100 + index * 50}>
                     <View style={[
                       styles.leaderboardItem,
@@ -843,7 +888,7 @@ export default function FriendsScreen() {
                       </View>
                       <View style={styles.leaderboardStats}>
                         <Text style={[styles.studyTime, { color: theme.colors.text }]}>
-                          {formatStudyTime(entry.studyTime)}
+                          {formatLeaderboardTime(entry.studyTime)}
                         </Text>
                         <Text style={[styles.sessionCount, { color: theme.colors.textSecondary }]}>
                           {entry.sessionCount} sessioner
@@ -1037,6 +1082,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  viewSelectorContainer: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+    gap: 4,
+  },
+  viewButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 6,
+  },
+  viewButtonText: {
     fontSize: 14,
     fontWeight: '500',
   },

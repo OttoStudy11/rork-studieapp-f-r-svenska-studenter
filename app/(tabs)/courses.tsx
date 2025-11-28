@@ -530,7 +530,13 @@ export default function CoursesScreen() {
                 <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>Lägg till kurser för att komma igång</Text>
                 <TouchableOpacity 
                   style={[styles.addButtonLarge, { backgroundColor: theme.colors.primary }]}
-                  onPress={() => setShowCoursePickerModal(true)}
+                  onPress={() => {
+                    if (!isPremium) {
+                      showPremiumModal('Lägg till kurser');
+                    } else {
+                      setShowCoursePickerModal(true);
+                    }
+                  }}
                 >
                   <Plus size={20} color="white" />
                   <Text style={styles.addButtonText}>Lägg till kurs</Text>

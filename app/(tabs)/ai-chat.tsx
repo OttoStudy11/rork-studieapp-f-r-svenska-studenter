@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Send, Sparkles, BookOpen, Lightbulb, Brain, Flame, TrendingUp } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useTheme } from '@/contexts/ThemeContext';
+import { PremiumGate } from '@/components/PremiumGate';
 
 export default function AIChatScreen() {
   const [input, setInput] = useState('');
@@ -116,7 +117,8 @@ export default function AIChatScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
+    <PremiumGate feature="ai-chat">
+      <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
       <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
@@ -232,6 +234,7 @@ export default function AIChatScreen() {
         </View>
       </KeyboardAvoidingView>
     </View>
+    </PremiumGate>
   );
 }
 

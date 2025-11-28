@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Sparkles, BarChart3, BookOpen } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { calculateSM2, getQualityFromSwipe } from '@/lib/sm2-algorithm';
+import { PremiumGate } from '@/components/PremiumGate';
 
 interface Flashcard {
   id: string;
@@ -366,6 +367,7 @@ export default function FlashcardsScreen() {
   }
 
   return (
+    <PremiumGate feature="flashcards">
     <SafeAreaView style={styles.container}>
       <Stack.Screen
         options={{
@@ -424,6 +426,7 @@ export default function FlashcardsScreen() {
         </View>
       </View>
     </SafeAreaView>
+    </PremiumGate>
   );
 }
 

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '@/lib/supabase';
 
 export type SubscriptionType = 'free' | 'premium';
 
@@ -15,6 +16,10 @@ export interface PremiumLimits {
   canUseAdvancedStats: boolean;
   canUseDarkMode: boolean;
   canUseCustomThemes: boolean;
+  canUseAIChat: boolean;
+  canUseFlashcards: boolean;
+  canUseBattle: boolean;
+  canUseAdvancedStatistics: boolean;
 }
 
 export interface PremiumContextType {
@@ -48,6 +53,10 @@ const FREE_LIMITS: PremiumLimits = {
   canUseAdvancedStats: false,
   canUseDarkMode: false,
   canUseCustomThemes: false,
+  canUseAIChat: false,
+  canUseFlashcards: false,
+  canUseBattle: false,
+  canUseAdvancedStatistics: false,
 };
 
 const PREMIUM_LIMITS: PremiumLimits = {
@@ -59,6 +68,10 @@ const PREMIUM_LIMITS: PremiumLimits = {
   canUseAdvancedStats: true,
   canUseDarkMode: true,
   canUseCustomThemes: true,
+  canUseAIChat: true,
+  canUseFlashcards: true,
+  canUseBattle: true,
+  canUseAdvancedStatistics: true,
 };
 
 const DEMO_MODE_KEY = 'isDemoMode';
@@ -85,11 +98,25 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
       setIsLoading(true);
       if (!authUser) return;
       
-      // For demo users, always set to free subscription
-      // In a real app, this would query the database
-      console.log('Loading subscription data for demo user:', authUser.id);
-      setSubscriptionType('free');
-      setSubscriptionExpiresAt(null);
+      // Query the database to get the user's premium status
+      console.log('Loading subscription data for user:', authUser.id);
+      
+      // Check if the user has premium status from the profiles table
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('subscription_type, subscription_expires_at')
+        .eq('id', authUser.id)
+        .single();
+      
+      if (error) {
+        console.error('Error loading subscription:', error);
+        setSubscriptionType('free');
+        setSubscriptionExpiresAt(null);
+        return;
+      }
+      
+      setSubscriptionType(profile?.subscription_type || 'free');
+      setSubscriptionExpiresAt(profile?.subscription_expires_at ? new Date(profile.subscription_expires_at) : null);
     } catch (error) {
       console.error('Error loading subscription data:', error);
       setSubscriptionType('free');

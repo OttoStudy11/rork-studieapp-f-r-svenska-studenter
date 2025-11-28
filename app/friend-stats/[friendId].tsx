@@ -28,6 +28,7 @@ import {
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import { LinearGradient } from 'expo-linear-gradient';
+import { PremiumGate } from '@/components/PremiumGate';
 
 
 
@@ -249,6 +250,7 @@ export default function FriendStatsScreen() {
   const overallScore = getOverallScore();
 
   return (
+    <PremiumGate feature="battle">
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Stack.Screen
         options={{
@@ -391,6 +393,7 @@ export default function FriendStatsScreen() {
         </SlideInView>
       </ScrollView>
     </SafeAreaView>
+    </PremiumGate>
   );
 }
 

@@ -935,12 +935,12 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <LinearGradient
         colors={['#06B6D4', '#10B981']}
         style={styles.gradient}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
               <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 7 : 5)) * 100}%` }]} />
@@ -979,13 +979,14 @@ export default function OnboardingScreen() {
           </View>
         </ScrollView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#06B6D4',
   },
   gradient: {
     flex: 1,
@@ -993,6 +994,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 20,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   progressContainer: {
     marginTop: 20,
@@ -1450,36 +1453,36 @@ const styles = StyleSheet.create({
   },
   goalCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 20,
+    padding: 20,
     alignItems: 'center',
     width: '47%',
-    minHeight: 130,
-    borderWidth: 2,
+    minHeight: 150,
+    borderWidth: 3,
     borderColor: 'rgba(255, 255, 255, 0.3)',
     position: 'relative',
   },
   selectedGoalCard: {
     backgroundColor: 'white',
-    borderWidth: 2,
+    borderWidth: 3,
   },
   goalIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   goalEmoji: {
-    fontSize: 28,
+    fontSize: 32,
   },
   goalText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F2937',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 20,
   },
   checkMark: {
     position: 'absolute',

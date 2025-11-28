@@ -31,9 +31,12 @@ import {
 import { FadeInView, SlideInView } from '@/components/Animations';
 
 export default function PremiumScreen() {
-  const { isPremium, upgradeToPremium } = usePremium();
+  const { isPremium, getOfferings, purchasePackage, restorePurchases } = usePremium();
   const { theme } = useTheme();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+  const [offerings, setOfferings] = useState<any>(null);
+  const [isLoadingOfferings, setIsLoadingOfferings] = useState(true);
+  const [isPurchasing, setIsPurchasing] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -53,6 +56,16 @@ export default function PremiumScreen() {
       ])
     ).start();
   }, [pulseAnim]);
+
+  useEffect(() => {
+    const loadOfferings = async () => {
+      setIsLoadingOfferings(true);
+      const result = await getOfferings();
+      setOfferings(result);
+      setIsLoadingOfferings(false);
+    };
+    loadOfferings();
+  }, [getOfferings]);
 
   const features = [
     {
@@ -111,8 +124,35 @@ export default function PremiumScreen() {
   ];
 
   const handleUpgrade = async () => {
-    console.log('Upgrading to premium:', selectedPlan);
-    await upgradeToPremium();
+    if (!offerings || isPurchasing) return;
+    
+    setIsPurchasing(true);
+    try {
+      const packages = offerings.availablePackages;
+      const selectedPackage = selectedPlan === 'monthly' 
+        ? packages.find((pkg: any) => pkg.packageType === 'MONTHLY')
+        : packages.find((pkg: any) => pkg.packageType === 'ANNUAL');
+      
+      if (selectedPackage) {
+        const success = await purchasePackage(selectedPackage);
+        if (success) {
+          console.log('[Premium] Purchase successful, user is now premium');
+        }
+      } else {
+        console.error('[Premium] Selected package not found');
+      }
+    } catch (error) {
+      console.error('[Premium] Purchase error:', error);
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    const success = await restorePurchases();
+    if (success) {
+      router.back();
+    }
   };
 
   if (isPremium) {
@@ -445,8 +485,9 @@ export default function PremiumScreen() {
           {/* CTA Button */}
           <FadeInView delay={1400}>
             <TouchableOpacity
-              style={[styles.ctaButton, { backgroundColor: theme.colors.primary }]}
+              style={[styles.ctaButton, { backgroundColor: theme.colors.primary, opacity: (isPurchasing || isLoadingOfferings) ? 0.6 : 1 }]}
               onPress={handleUpgrade}
+              disabled={isPurchasing || isLoadingOfferings}
             >
               <LinearGradient
                 colors={[theme.colors.primary, '#7C3AED']}
@@ -455,7 +496,9 @@ export default function PremiumScreen() {
                 end={{ x: 1, y: 0 }}
               >
                 <Crown size={20} color="#FFF" />
-                <Text style={styles.ctaButtonText}>KÖP PREMIUM</Text>
+                <Text style={styles.ctaButtonText}>
+                  {isPurchasing ? 'KÖPER...' : isLoadingOfferings ? 'LADDAR...' : 'KÖP PREMIUM'}
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
           </FadeInView>
@@ -473,7 +516,7 @@ export default function PremiumScreen() {
             <Text style={[styles.footerDivider, { color: theme.colors.textMuted }]}>•</Text>
             <TouchableOpacity><Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Villkor</Text></TouchableOpacity>
             <Text style={[styles.footerDivider, { color: theme.colors.textMuted }]}>•</Text>
-            <TouchableOpacity><Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Återställ köp</Text></TouchableOpacity>
+            <TouchableOpacity onPress={handleRestorePurchases}><Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Återställ köp</Text></TouchableOpacity>
           </View>
         </Animated.ScrollView>
       </SafeAreaView>

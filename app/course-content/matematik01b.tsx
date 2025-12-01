@@ -208,7 +208,7 @@ const modulesData: Module[] = [
 ];
 
 export default function Matematik1bCourse() {
-  const { colors } = useTheme();
+  const { theme } = useTheme();
   const { user } = useAuth();
   const [expandedModule, setExpandedModule] = useState<number | null>(null);
   const [courseProgress, setCourseProgress] = useState<CourseProgress>({
@@ -271,7 +271,7 @@ export default function Matematik1bCourse() {
   const gradientColors = ['#3B82F6', '#2563EB'] as const;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle="light-content" />
       
       <LinearGradient colors={gradientColors} style={styles.header}>
@@ -288,25 +288,25 @@ export default function Matematik1bCourse() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <FadeInView delay={100}>
-          <View style={[styles.heroCard, { backgroundColor: colors.card }]}>
+          <View style={[styles.heroCard, { backgroundColor: theme.colors.card }]}>
             <View style={styles.heroBadge}>
               <Sparkles size={16} color="#3B82F6" />
               <Text style={[styles.heroBadgeText, { color: '#3B82F6' }]}>HÖGSKOLEFÖRBEREDANDE</Text>
             </View>
-            <Text style={[styles.heroTitle, { color: colors.text }]}>Matematik för högskoleförberedande program</Text>
-            <Text style={[styles.heroDescription, { color: colors.textSecondary }]}>
+            <Text style={[styles.heroTitle, { color: theme.colors.text }]}>Matematik för högskoleförberedande program</Text>
+            <Text style={[styles.heroDescription, { color: theme.colors.textSecondary }]}>
               Fördjupa dina kunskaper i algebra, funktioner, geometri och sannolikhet. Kursen ger en solid grund för vidare studier.
             </Text>
             
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <BookOpen size={20} color="#3B82F6" />
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Moduler</Text>
-                <Text style={[styles.statValue, { color: colors.text }]}>{modulesData.length}</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Moduler</Text>
+                <Text style={[styles.statValue, { color: theme.colors.text }]}>{modulesData.length}</Text>
               </View>
               <View style={styles.statItem}>
                 <Target size={20} color="#3B82F6" />
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Målbetyg</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Målbetyg</Text>
                 <TouchableOpacity onPress={() => {
                   setSelectedGrade(courseProgress.targetGrade);
                   setTargetGradeModalVisible(true);
@@ -316,13 +316,13 @@ export default function Matematik1bCourse() {
               </View>
               <View style={styles.statItem}>
                 <TrendingUp size={20} color="#3B82F6" />
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Framsteg</Text>
-                <Text style={[styles.statValue, { color: colors.text }]}>{Math.round(courseProgress.progress)}%</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Framsteg</Text>
+                <Text style={[styles.statValue, { color: theme.colors.text }]}>{Math.round(courseProgress.progress)}%</Text>
               </View>
             </View>
 
             <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBarBackground, { backgroundColor: colors.border }]}>
+              <View style={[styles.progressBarBackground, { backgroundColor: theme.colors.border }]}>
                 <View style={[styles.progressBarFill, { width: `${courseProgress.progress}%`, backgroundColor: '#3B82F6' }]} />
               </View>
             </View>
@@ -330,7 +330,7 @@ export default function Matematik1bCourse() {
         </FadeInView>
 
         <View style={styles.modulesSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Kursinnehåll</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kursinnehåll</Text>
           
           {modulesData.map((module, index) => {
             const isCompleted = courseProgress.completedModules.includes(module.id);
@@ -338,7 +338,7 @@ export default function Matematik1bCourse() {
             
             return (
               <SlideInView key={module.id} delay={index * 100}>
-                <View style={[styles.moduleCard, { backgroundColor: colors.card }]}>
+                <View style={[styles.moduleCard, { backgroundColor: theme.colors.card }]}>
                   <TouchableOpacity
                     onPress={() => setExpandedModule(isExpanded ? null : module.id)}
                     style={styles.moduleHeader}
@@ -347,8 +347,8 @@ export default function Matematik1bCourse() {
                       <Text style={styles.moduleEmoji}>{module.emoji}</Text>
                     </View>
                     <View style={styles.moduleInfo}>
-                      <Text style={[styles.moduleTitle, { color: colors.text }]}>{module.title}</Text>
-                      <Text style={[styles.moduleDescription, { color: colors.textSecondary }]}>
+                      <Text style={[styles.moduleTitle, { color: theme.colors.text }]}>{module.title}</Text>
+                      <Text style={[styles.moduleDescription, { color: theme.colors.textSecondary }]}>
                         {module.description}
                       </Text>
                     </View>
@@ -362,7 +362,7 @@ export default function Matematik1bCourse() {
                       {isCompleted ? (
                         <CheckCircle size={24} color="#3B82F6" />
                       ) : (
-                        <Circle size={24} color={colors.textSecondary} />
+                        <Circle size={24} color={theme.colors.textSecondary} />
                       )}
                     </TouchableOpacity>
                   </TouchableOpacity>
@@ -373,16 +373,16 @@ export default function Matematik1bCourse() {
                         <View key={idx} style={styles.section}>
                           <View style={styles.sectionHeader}>
                             <Lightbulb size={18} color="#3B82F6" />
-                            <Text style={[styles.sectionTitleText, { color: colors.text }]}>{section.title}</Text>
+                            <Text style={[styles.sectionTitleText, { color: theme.colors.text }]}>{section.title}</Text>
                           </View>
-                          <Text style={[styles.sectionContent, { color: colors.textSecondary }]}>
+                          <Text style={[styles.sectionContent, { color: theme.colors.textSecondary }]}>
                             {section.content}
                           </Text>
                           <View style={styles.keyPoints}>
                             {section.keyPoints.map((point, pidx) => (
                               <View key={pidx} style={styles.keyPoint}>
                                 <Text style={styles.bullet}>•</Text>
-                                <Text style={[styles.keyPointText, { color: colors.textSecondary }]}>{point}</Text>
+                                <Text style={[styles.keyPointText, { color: theme.colors.textSecondary }]}>{point}</Text>
                               </View>
                             ))}
                           </View>
@@ -390,18 +390,18 @@ export default function Matematik1bCourse() {
                       ))}
 
                       <View style={styles.examplesSection}>
-                        <Text style={[styles.examplesTitle, { color: colors.text }]}>📝 Praktiska övningar</Text>
+                        <Text style={[styles.examplesTitle, { color: theme.colors.text }]}>📝 Praktiska övningar</Text>
                         {module.examples.map((example, idx) => (
-                          <Text key={idx} style={[styles.example, { color: colors.textSecondary }]}>
+                          <Text key={idx} style={[styles.example, { color: theme.colors.textSecondary }]}>
                             • {example}
                           </Text>
                         ))}
                       </View>
 
                       <View style={styles.reflectionSection}>
-                        <Text style={[styles.reflectionTitle, { color: colors.text }]}>💭 Reflektionsfrågor</Text>
+                        <Text style={[styles.reflectionTitle, { color: theme.colors.text }]}>💭 Reflektionsfrågor</Text>
                         {module.reflectionQuestions.map((question, idx) => (
-                          <Text key={idx} style={[styles.reflectionQuestion, { color: colors.textSecondary }]}>
+                          <Text key={idx} style={[styles.reflectionQuestion, { color: theme.colors.textSecondary }]}>
                             {idx + 1}. {question}
                           </Text>
                         ))}
@@ -424,11 +424,11 @@ export default function Matematik1bCourse() {
         onRequestClose={() => setTargetGradeModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Välj målbetyg</Text>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Välj målbetyg</Text>
               <TouchableOpacity onPress={() => setTargetGradeModalVisible(false)}>
-                <CloseIcon size={24} color={colors.textSecondary} />
+                <CloseIcon size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -440,12 +440,12 @@ export default function Matematik1bCourse() {
                   style={[
                     styles.gradeOption,
                     selectedGrade === grade && styles.gradeOptionSelected,
-                    { borderColor: colors.border }
+                    { borderColor: theme.colors.border }
                   ]}
                 >
                   <Text style={[
                     styles.gradeText,
-                    { color: selectedGrade === grade ? '#FFF' : colors.text }
+                    { color: selectedGrade === grade ? '#FFF' : theme.colors.text }
                   ]}>
                     {grade}
                   </Text>

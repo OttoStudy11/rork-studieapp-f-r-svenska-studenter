@@ -374,11 +374,11 @@ export default function Svenska1Course() {
     setTargetGradeModalVisible(false);
   };
 
-  const gradientColors = ['#EC4899', '#DB2777'];
+  const gradientColors = ['#EC4899', '#DB2777'] as const;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <StatusBar barStyle={theme.dark ? 'light-content' : 'dark-content'} />
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle="light-content" />
       
       <LinearGradient colors={gradientColors} style={styles.header}>
         <View style={styles.headerContent}>
@@ -394,25 +394,25 @@ export default function Svenska1Course() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <FadeInView delay={100}>
-          <View style={[styles.heroCard, { backgroundColor: theme.card }]}>
+          <View style={[styles.heroCard, { backgroundColor: theme.colors.card }]}>
             <View style={styles.heroBadge}>
               <Sparkles size={16} color="#EC4899" />
               <Text style={[styles.heroBadgeText, { color: '#EC4899' }]}>GRUNDKURS</Text>
             </View>
-            <Text style={[styles.heroTitle, { color: theme.text }]}>Svenska språket och litteratur</Text>
-            <Text style={[styles.heroDescription, { color: theme.textSecondary }]}>
+            <Text style={[styles.heroTitle, { color: theme.colors.text }]}>Svenska språket och litteratur</Text>
+            <Text style={[styles.heroDescription, { color: theme.colors.textSecondary }]}>
               Utveckla din läs- och skrivförmåga, analysera texter och litteratur, och kommunicera effektivt på svenska.
             </Text>
             
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <BookOpen size={20} color="#EC4899" />
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Moduler</Text>
-                <Text style={[styles.statValue, { color: theme.text }]}>{modulesData.length}</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Moduler</Text>
+                <Text style={[styles.statValue, { color: theme.colors.text }]}>{modulesData.length}</Text>
               </View>
               <View style={styles.statItem}>
                 <Target size={20} color="#EC4899" />
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Målbetyg</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Målbetyg</Text>
                 <TouchableOpacity onPress={() => {
                   setSelectedGrade(courseProgress.targetGrade);
                   setTargetGradeModalVisible(true);
@@ -422,13 +422,13 @@ export default function Svenska1Course() {
               </View>
               <View style={styles.statItem}>
                 <TrendingUp size={20} color="#EC4899" />
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Framsteg</Text>
-                <Text style={[styles.statValue, { color: theme.text }]}>{Math.round(courseProgress.progress)}%</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Framsteg</Text>
+                <Text style={[styles.statValue, { color: theme.colors.text }]}>{Math.round(courseProgress.progress)}%</Text>
               </View>
             </View>
 
             <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBarBackground, { backgroundColor: theme.border }]}>
+              <View style={[styles.progressBarBackground, { backgroundColor: theme.colors.border }]}>
                 <View style={[styles.progressBarFill, { width: `${courseProgress.progress}%`, backgroundColor: '#EC4899' }]} />
               </View>
             </View>
@@ -436,7 +436,7 @@ export default function Svenska1Course() {
         </FadeInView>
 
         <View style={styles.modulesSection}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Kursinnehåll</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kursinnehåll</Text>
           
           {modulesData.map((module, index) => {
             const isCompleted = courseProgress.completedModules.includes(module.id);
@@ -444,7 +444,7 @@ export default function Svenska1Course() {
             
             return (
               <SlideInView key={module.id} delay={index * 100}>
-                <View style={[styles.moduleCard, { backgroundColor: theme.card }]}>
+                <View style={[styles.moduleCard, { backgroundColor: theme.colors.card }]}>
                   <TouchableOpacity
                     onPress={() => setExpandedModule(isExpanded ? null : module.id)}
                     style={styles.moduleHeader}
@@ -453,8 +453,8 @@ export default function Svenska1Course() {
                       <Text style={styles.moduleEmoji}>{module.emoji}</Text>
                     </View>
                     <View style={styles.moduleInfo}>
-                      <Text style={[styles.moduleTitle, { color: theme.text }]}>{module.title}</Text>
-                      <Text style={[styles.moduleDescription, { color: theme.textSecondary }]}>
+                      <Text style={[styles.moduleTitle, { color: theme.colors.text }]}>{module.title}</Text>
+                      <Text style={[styles.moduleDescription, { color: theme.colors.textSecondary }]}>
                         {module.description}
                       </Text>
                     </View>
@@ -468,7 +468,7 @@ export default function Svenska1Course() {
                       {isCompleted ? (
                         <CheckCircle size={24} color="#EC4899" />
                       ) : (
-                        <Circle size={24} color={theme.textSecondary} />
+                        <Circle size={24} color={theme.colors.textSecondary} />
                       )}
                     </TouchableOpacity>
                   </TouchableOpacity>
@@ -479,16 +479,16 @@ export default function Svenska1Course() {
                         <View key={idx} style={styles.section}>
                           <View style={styles.sectionHeader}>
                             <Lightbulb size={18} color="#EC4899" />
-                            <Text style={[styles.sectionTitle, { color: theme.text }]}>{section.title}</Text>
+                            <Text style={[styles.sectionTitleText, { color: theme.colors.text }]}>{section.title}</Text>
                           </View>
-                          <Text style={[styles.sectionContent, { color: theme.textSecondary }]}>
+                          <Text style={[styles.sectionContent, { color: theme.colors.textSecondary }]}>
                             {section.content}
                           </Text>
                           <View style={styles.keyPoints}>
                             {section.keyPoints.map((point, pidx) => (
                               <View key={pidx} style={styles.keyPoint}>
                                 <Text style={styles.bullet}>•</Text>
-                                <Text style={[styles.keyPointText, { color: theme.textSecondary }]}>{point}</Text>
+                                <Text style={[styles.keyPointText, { color: theme.colors.textSecondary }]}>{point}</Text>
                               </View>
                             ))}
                           </View>
@@ -496,18 +496,18 @@ export default function Svenska1Course() {
                       ))}
 
                       <View style={styles.examplesSection}>
-                        <Text style={[styles.examplesTitle, { color: theme.text }]}>📝 Praktiska övningar</Text>
+                        <Text style={[styles.examplesTitle, { color: theme.colors.text }]}>📝 Praktiska övningar</Text>
                         {module.examples.map((example, idx) => (
-                          <Text key={idx} style={[styles.example, { color: theme.textSecondary }]}>
+                          <Text key={idx} style={[styles.example, { color: theme.colors.textSecondary }]}>
                             • {example}
                           </Text>
                         ))}
                       </View>
 
                       <View style={styles.reflectionSection}>
-                        <Text style={[styles.reflectionTitle, { color: theme.text }]}>💭 Reflektionsfrågor</Text>
+                        <Text style={[styles.reflectionTitle, { color: theme.colors.text }]}>💭 Reflektionsfrågor</Text>
                         {module.reflectionQuestions.map((question, idx) => (
-                          <Text key={idx} style={[styles.reflectionQuestion, { color: theme.textSecondary }]}>
+                          <Text key={idx} style={[styles.reflectionQuestion, { color: theme.colors.textSecondary }]}>
                             {idx + 1}. {question}
                           </Text>
                         ))}
@@ -530,11 +530,11 @@ export default function Svenska1Course() {
         onRequestClose={() => setTargetGradeModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Välj målbetyg</Text>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Välj målbetyg</Text>
               <TouchableOpacity onPress={() => setTargetGradeModalVisible(false)}>
-                <CloseIcon size={24} color={theme.textSecondary} />
+                <CloseIcon size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -546,12 +546,12 @@ export default function Svenska1Course() {
                   style={[
                     styles.gradeOption,
                     selectedGrade === grade && styles.gradeOptionSelected,
-                    { borderColor: theme.border }
+                    { borderColor: theme.colors.border }
                   ]}
                 >
                   <Text style={[
                     styles.gradeText,
-                    { color: selectedGrade === grade ? '#FFF' : theme.text }
+                    { color: selectedGrade === grade ? '#FFF' : theme.colors.text }
                   ]}>
                     {grade}
                   </Text>
@@ -677,6 +677,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 16,
+  },
+  sectionTitleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   moduleCard: {
     borderRadius: 16,

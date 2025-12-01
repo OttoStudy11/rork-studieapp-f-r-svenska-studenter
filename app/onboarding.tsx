@@ -238,7 +238,7 @@ export default function OnboardingScreen() {
           subscriptionType: 'free',
           gymnasium: gymnasium,
           gymnasiumGrade: data.studyLevel === 'gymnasie' && data.year ? String(data.year) : null,
-          universityYear: data.studyLevel === 'högskola' ? data.universityYear : null,
+          universityYear: data.studyLevel === 'högskola' && data.universityYear ? String(data.universityYear) : null,
           avatar: data.avatarConfig,
           selectedCourses: Array.from(data.selectedCourses),
           dailyGoalHours: data.dailyGoalHours

@@ -19,12 +19,13 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAchievements } from '@/contexts/AchievementContext';
 import { useTimerSettings } from '@/contexts/TimerSettingsContext';
 import { usePremium } from '@/contexts/PremiumContext';
+import { useExams } from '@/contexts/ExamContext';
 import { TimerPersistence } from '@/lib/timer-persistence';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
 import { PremiumGate } from '@/components/PremiumGate';
 import { AppState } from 'react-native';
-import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen } from 'lucide-react-native';
+import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen, FileText, CheckCircle } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import * as Notifications from 'expo-notifications';
@@ -252,6 +253,7 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
 export default function TimerScreen() {
   const { courses, addPomodoroSession, pomodoroSessions } = useStudy();
   const { showSuccess, showAchievement } = useToast();
+  const { upcomingExams, completedExams } = useExams();
   const { theme, isDark } = useTheme();
   const { currentStreak, checkAchievements, refreshAchievements } = useAchievements();
   const { settings } = useTimerSettings();
@@ -282,7 +284,7 @@ export default function TimerScreen() {
   const [newSessionDuration, setNewSessionDuration] = useState(25);
   const [newSessionCourse, setNewSessionCourse] = useState('');
   const [newSessionNotes, setNewSessionNotes] = useState('');
-  const [expandedSectionPlanner, setExpandedSectionPlanner] = useState<'upcoming' | 'history' | null>('upcoming');
+  const [expandedSectionPlanner, setExpandedSectionPlanner] = useState<'upcoming' | 'history' | 'exams' | null>('upcoming');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   
@@ -1238,6 +1240,89 @@ export default function TimerScreen() {
               </TouchableOpacity>
 
               {expandedSectionPlanner === 'history' && (
+                <View style={styles.sessionsList}>
+                  {pomodoroSessions.length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <BookOpen size={48} color={theme.colors.textSecondary} opacity={0.3} />
+                      <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
+                        Ingen historik än
+                      </Text>
+                      <Text style={[styles.emptyStateSubtext, { color: theme.colors.textSecondary }]}>
+                        Slutför en session för att se den här
+                      </Text>
+                    </View>
+                  ) : (
+                    pomodoroSessions
+                      .slice(0, 10)
+                      .map((session) => {
+                        const courseName = session.courseId 
+                          ? courses.find((c) => c.id === session.courseId)?.title || 'Okänd kurs'
+                          : 'Allmän session';
+                        
+                        return (
+                          <View key={session.id} style={[styles.historyCard, { backgroundColor: theme.colors.card }]}>
+                            <View style={styles.historyCardHeader}>
+                              <View style={styles.historyCardLeft}>
+                                <Brain size={20} color={theme.colors.secondary} />
+                                <Text style={[styles.historyCourseText, { color: theme.colors.text }]}>
+                                  {courseName}
+                                </Text>
+                              </View>
+                              <View style={[styles.historyBadge, { backgroundColor: theme.colors.secondary + '20' }]}>
+                                <Text style={[styles.historyBadgeText, { color: theme.colors.secondary }]}>
+                                  {session.duration} min
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={styles.historyCardDetails}>
+                              <Calendar size={14} color={theme.colors.textSecondary} />
+                              <Text style={[styles.historyDetailText, { color: theme.colors.textSecondary }]}>
+                                {new Date(session.endTime).toLocaleDateString('sv-SE', { 
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </Text>
+                            </View>
+                          </View>
+                        );
+                      })
+                  )}
+                </View>
+              )}
+
+              {/* Exams Section */}
+              <TouchableOpacity 
+                style={[styles.plannerSectionHeader, { marginTop: 16 }]}
+                onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'exams' ? null : 'exams')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.plannerSectionLeft}>
+                  <FileText size={20} color={theme.colors.warning} />
+                  <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Prov</Text>
+                </View>
+                <View style={styles.plannerSectionRight}>
+                  <TouchableOpacity
+                    style={[styles.addSessionButton, { backgroundColor: theme.colors.warning }]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      // TODO: Open add exam modal
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Plus size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  {expandedSectionPlanner === 'exams' ? (
+                    <ChevronUp size={20} color={theme.colors.textSecondary} />
+                  ) : (
+                    <ChevronDown size={20} color={theme.colors.textSecondary} />
+                  )}
+                </View>
+              </TouchableOpacity>
+
+              {expandedSectionPlanner === 'exams' && (
                 <View style={styles.sessionsList}>
                   {pomodoroSessions.length === 0 ? (
                     <View style={styles.emptyState}>

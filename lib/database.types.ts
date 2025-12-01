@@ -1693,6 +1693,71 @@ export interface Database {
           }
         ]
       }
+      exams: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string | null
+          title: string
+          description: string | null
+          exam_date: string
+          duration_minutes: number | null
+          location: string | null
+          exam_type: string
+          status: string
+          grade: string | null
+          notes: string | null
+          notification_enabled: boolean
+          notification_time_before_minutes: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_id?: string | null
+          title: string
+          description?: string | null
+          exam_date: string
+          duration_minutes?: number | null
+          location?: string | null
+          exam_type?: string
+          status?: string
+          grade?: string | null
+          notes?: string | null
+          notification_enabled?: boolean
+          notification_time_before_minutes?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          course_id?: string | null
+          title?: string
+          description?: string | null
+          exam_date?: string
+          duration_minutes?: number | null
+          location?: string | null
+          exam_type?: string
+          status?: string
+          grade?: string | null
+          notes?: string | null
+          notification_enabled?: boolean
+          notification_time_before_minutes?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exams_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

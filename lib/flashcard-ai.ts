@@ -1,5 +1,4 @@
-import { generateObject, generateText } from '@rork-ai/toolkit-sdk';
-import { z } from 'zod';
+import { generateText } from '@rork-ai/toolkit-sdk';
 import { supabase } from './supabase';
 
 export interface GenerateFlashcardsOptions {
@@ -172,21 +171,9 @@ export async function generateFlashcardsFromContent(
 
     console.log('🤖 Generating flashcards with AI based on course name and subject...');
     
-    let result;
+    let result: any;
     try {
-      result = await generateObject({
-        schema: z.object({
-          flashcards: z.array(
-            z.object({
-              question: z.string().describe('Clear, specific question in Swedish'),
-              answer: z.string().describe('Concise, accurate answer in Swedish'),
-              difficulty: z.number().min(1).max(3).describe('1 = easy, 2 = medium, 3 = hard'),
-              explanation: z.string().optional().describe('Additional context or explanation in Swedish'),
-              context: z.string().optional().describe('Where this concept appears in the curriculum'),
-              tags: z.array(z.string()).optional().describe('Related topics or concepts'),
-            })
-          ),
-        }),
+      const textOutput = await generateText({
         messages: [
           {
             role: 'user',
@@ -248,19 +235,27 @@ Fokusera på att täcka hela kursens centrala innehåll jämnt, med betoning på
           },
         ],
       });
+      
+      try {
+        result = JSON.parse(textOutput);
+      } catch (parseError) {
+        console.error('❌ Failed to parse AI output as JSON:', parseError);
+        console.log('Raw output:', textOutput);
+        throw new Error('AI returnerade ogiltigt format');
+      }
     } catch (genError: any) {
       console.error('❌ Error generating flashcards with AI:', genError);
       throw new Error(`AI-generering misslyckades: ${genError?.message || 'Okänt fel'}`);
     }
 
-    if (!result || !result.flashcards) {
+    if (!result || !result.flashcards || !Array.isArray(result.flashcards)) {
       console.error('❌ Result is missing flashcards:', result);
       throw new Error('AI-generering misslyckades: Inget resultat returnerades');
     }
 
     console.log(`✅ AI generated ${result.flashcards.length} flashcards`);
 
-    const flashcardsToInsert = result.flashcards.map((fc) => ({
+    const flashcardsToInsert = result.flashcards.map((fc: any) => ({
       course_id: courseId,
       module_id: moduleId || null,
       lesson_id: lessonId || null,

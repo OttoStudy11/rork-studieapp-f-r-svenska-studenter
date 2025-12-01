@@ -96,8 +96,9 @@ export class TimerPersistence {
           badge: 1,
         },
         trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: remainingSeconds,
-        },
+        } as Notifications.TimeIntervalTriggerInput,
       });
 
       await AsyncStorage.setItem(TIMER_NOTIFICATION_ID_KEY, notificationId);
@@ -126,8 +127,9 @@ export class TimerPersistence {
           priority: Notifications.AndroidNotificationPriority.LOW,
         },
         trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: delaySeconds,
-        },
+        } as Notifications.TimeIntervalTriggerInput,
       });
 
       console.log('Progress notification scheduled for', delaySeconds, 'seconds');

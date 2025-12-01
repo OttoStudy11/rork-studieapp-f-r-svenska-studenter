@@ -184,6 +184,7 @@ export interface Database {
           progress: number
           target_grade: string | null
           is_active: boolean
+          manual_progress: number
         }
         Insert: {
           id?: string
@@ -192,6 +193,7 @@ export interface Database {
           progress?: number
           target_grade?: string | null
           is_active?: boolean
+          manual_progress?: number
         }
         Update: {
           id?: string
@@ -200,6 +202,7 @@ export interface Database {
           progress?: number
           target_grade?: string | null
           is_active?: boolean
+          manual_progress?: number
         }
         Relationships: [
           {
@@ -1507,6 +1510,115 @@ export interface Database {
             columns: ["question_id"]
             isOneToOne: false
             referencedRelation: "hp_questions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_module_progress: {
+        Row: {
+          id: string
+          user_id: string
+          module_id: string
+          course_id: string
+          is_completed: boolean
+          completed_at: string | null
+          completed_lessons: number
+          total_lessons: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          module_id: string
+          course_id: string
+          is_completed?: boolean
+          completed_at?: string | null
+          completed_lessons?: number
+          total_lessons?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          module_id?: string
+          course_id?: string
+          is_completed?: boolean
+          completed_at?: string | null
+          completed_lessons?: number
+          total_lessons?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_module_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_module_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_module_progress_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      flashcard_decks: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string
+          name: string
+          description: string | null
+          total_cards: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_id: string
+          name: string
+          description?: string | null
+          total_cards?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          course_id?: string
+          name?: string
+          description?: string | null
+          total_cards?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_decks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_decks_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           }
         ]

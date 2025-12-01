@@ -34,6 +34,7 @@ export interface UserFlashcardProgress {
 
 export interface FlashcardSet {
   id: string;
+  user_id: string;
   course_id: string;
   name: string;
   description?: string;
@@ -43,6 +44,7 @@ export interface FlashcardSet {
 }
 
 export interface CreateFlashcardSetParams {
+  userId: string;
   courseId: string;
   name: string;
   description?: string;
@@ -304,12 +306,13 @@ export async function createFlashcardSet(
 
     const { data, error } = await supabase
       .from('flashcard_decks')
-      .insert({
+      .insert([{
+        user_id: params.userId,
         course_id: params.courseId,
         name: params.name,
         description: params.description || null,
         total_cards: 0,
-      })
+      }])
       .select()
       .single();
 

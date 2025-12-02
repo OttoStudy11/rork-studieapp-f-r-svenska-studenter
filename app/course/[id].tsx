@@ -35,7 +35,7 @@ import {
   Edit3,
   X as CloseIcon,
   Brain,
-  GraduationCap
+
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Database } from '@/lib/database.types';
@@ -124,66 +124,6 @@ export default function CourseDetailScreen() {
   const [userCourseData, setUserCourseData] = useState<any>(null);
 
   useEffect(() => {
-    // Redirect to custom course content pages
-    const courseRedirects: Record<string, string> = {
-      'RELREL01': '/course-content/religionskunskap1',
-      'MATMAT01a': '/course-content/matematik1a',
-      'MATMAT01b': '/course-content/matematik1b',
-      'MATMAT02b': '/course-content/matematik2b',
-      'MATMAT03b': '/course-content/matematik3b',
-      'MATMAT03c': '/course-content/matematik3c',
-      'MATMAT04': '/course-content/matematik4',
-      'MATMAT05': '/course-content/matematik5',
-      'BIOBIO01': '/course-content/biologi1',
-      'BIOBIO02': '/course-content/biologi2',
-      'FYSFYS01a': '/course-content/fysik1a',
-      'FYSFYS02': '/course-content/fysik2',
-      'KEMKEM01': '/course-content/kemi1',
-      'KEMKEM02': '/course-content/kemi2',
-      'SVESVE01': '/course-content/svenska1',
-      'SVESVE02': '/course-content/svenska2',
-      'SVESVE03': '/course-content/svenska3',
-      'ENGENG05': '/course-content/engelska5',
-      'ENGENG06': '/course-content/engelska6',
-      'HISHIS01a1': '/course-content/historia1a1',
-      'HISHIS01b': '/course-content/historia1b',
-      'SAMSAM01b': '/course-content/samhallskunskap1b',
-      'SAMSAM01a': '/course-content/samhallskunskap1a',
-      'SAMSAM02': '/course-content/samhallskunskap2',
-      'NAKNAK01a1': '/course-content/naturkunskap1a1',
-      'NAKNAK01a': '/course-content/naturkunskap1a',
-      'NAKNAK01b': '/course-content/naturkunskap1b',
-      'IDRIDR01': '/course-content/idrott-halsa1',
-      'IDRIDR02': '/course-content/idrott-halsa2',
-      'MODMOD': '/course-content/moderna-sprak',
-      'GEOGEO01': '/course-content/geografi1',
-      'FILFIL01': '/course-content/filosofi1',
-      'PSKPSK01': '/course-content/psykologi1',
-      'PRRPRR01': '/course-content/programmering1',
-      'PRRPRR02': '/course-content/programmering2',
-      'WEBWEB01': '/course-content/webbutveckling1',
-      'WEBWEB02': '/course-content/webbutveckling2',
-      'SF1624': '/course-content/sf1624-algebra-geometri',
-      'SF1625': '/course-content/sf1625-envariabelanalys',
-      'DD1331': '/course-content/dd1331-programmering',
-      'DD1337': '/course-content/dd1337-programmering',
-      'DD2372': '/course-content/dd2372-databaser',
-      'MED101': '/course-content/med101-medicinsk-terminologi',
-      'MED102': '/course-content/med102-anatomi-fysiologi',
-      'OMV101': '/course-content/omv101-omvardnad-grunder',
-      'BIO101': '/course-content/bio101-allman-biologi',
-      'KEM101': '/course-content/kem101-allmanna-kemi',
-      'FYS101': '/course-content/fys101-mekanik',
-      'JUR101': '/course-content/jur101-juridik',
-      'EKO101': '/course-content/eko101-ekonomi',
-      'PSY101': '/course-content/psy101-psykologi',
-    };
-
-    if (id && courseRedirects[id]) {
-      router.replace(courseRedirects[id] as any);
-      return;
-    }
-    
     if (id && user?.id) {
       loadCourseData();
     }
@@ -556,20 +496,6 @@ export default function CourseDetailScreen() {
             <View style={styles.actionInfo}>
               <Text style={[styles.actionTitle, { color: theme.colors.text }]}>Flashcards</Text>
               <Text style={[styles.actionDescription, { color: theme.colors.textSecondary }]}>Öva med AI-genererade flashcards</Text>
-            </View>
-            <ChevronRight size={20} color={theme.colors.textMuted} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: theme.colors.card }]}
-            onPress={() => router.push('/hogskoleprovet' as any)}
-          >
-            <View style={[styles.actionIconContainer, { backgroundColor: '#3B82F6' + '20' }]}>
-              <GraduationCap size={24} color="#3B82F6" />
-            </View>
-            <View style={styles.actionInfo}>
-              <Text style={[styles.actionTitle, { color: theme.colors.text }]}>Högskoleprovet</Text>
-              <Text style={[styles.actionDescription, { color: theme.colors.textSecondary }]}>Träna på högskoleprovet med riktiga frågor</Text>
             </View>
             <ChevronRight size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>

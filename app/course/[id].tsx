@@ -35,7 +35,9 @@ import {
   Edit3,
   X as CloseIcon,
   Brain,
-
+  Sparkles,
+  Zap,
+  Trophy
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Database } from '@/lib/database.types';
@@ -382,67 +384,99 @@ export default function CourseDetailScreen() {
             transform: [{ translateY: slideAnim }]
           }}
         >
-        <View>
+        <View style={styles.heroContainer}>
         <LinearGradient
           colors={courseStyle.gradient as any}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.courseHeader}
         >
-          <View style={styles.courseTitleRow}>
-            <Text style={styles.courseEmoji}>{courseStyle.emoji}</Text>
-            <View style={styles.courseTitleContainer}>
-              <Text style={styles.courseTitle}>{course.title}</Text>
-              <Text style={styles.courseSubject}>{course.subject}</Text>
-            </View>
-          </View>
-          <Text style={styles.courseDescription}>{course.description}</Text>
+          {/* Decorative elements */}
+          <View style={styles.decorativeCircle1} />
+          <View style={styles.decorativeCircle2} />
           
-          {userCourseData && (
-            <View style={styles.progressSection}>
-              <View style={styles.progressInfo}>
-                <Text style={styles.progressLabel}>Kursframståg</Text>
-                <Text style={styles.progressPercent}>{userCourseData.progress}%</Text>
+          <View style={styles.courseHeaderContent}>
+            {/* Emoji and Title Section */}
+            <View style={styles.courseTitleSection}>
+              <View style={[styles.emojiContainer, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+                <Text style={styles.courseEmojiLarge}>{courseStyle.emoji}</Text>
               </View>
-              <View style={styles.progressBar}>
-                <View 
-                  style={[styles.progressFill, { width: `${userCourseData.progress}%` }]} 
-                />
+              <View style={styles.courseTitleContainer}>
+                <Text style={styles.courseTitle}>{course.title}</Text>
+                <View style={styles.subjectBadge}>
+                  <Sparkles size={14} color="rgba(255, 255, 255, 0.9)" />
+                  <Text style={styles.courseSubject}>{course.subject}</Text>
+                </View>
               </View>
-              <Text style={styles.progressText}>
-                {userProgress.completed} av {userProgress.total} lektioner slutförda
-              </Text>
             </View>
-          )}
-          
-          <View style={styles.quickStats}>
-            <View style={styles.quickStatItem}>
-              <TrendingUp size={16} color="rgba(255, 255, 255, 0.9)" />
-              <Text style={styles.quickStatText}>
-                {userProgress.percentage}% klar
-              </Text>
-            </View>
-            {userProgress.completed > 0 && (
-              <View style={styles.quickStatItem}>
-                <Star size={16} color="#FCD34D" />
-                <Text style={styles.quickStatText}>
-                  {userProgress.completed} slutförda
-                </Text>
+
+            {/* Course Description */}
+            <Text style={styles.courseDescription}>{course.description}</Text>
+            
+            {/* Progress Section with Enhanced Design */}
+            {userCourseData && (
+              <View style={styles.progressSection}>
+                <View style={styles.progressHeader}>
+                  <View style={styles.progressLabelContainer}>
+                    <TrendingUp size={18} color="white" />
+                    <Text style={styles.progressLabel}>Din framgång</Text>
+                  </View>
+                  <View style={styles.progressPercentBadge}>
+                    <Text style={styles.progressPercent}>{userCourseData.progress}%</Text>
+                  </View>
+                </View>
+                <View style={styles.progressBarContainer}>
+                  <View style={styles.progressBar}>
+                    <Animated.View 
+                      style={[
+                        styles.progressFill, 
+                        { width: `${userCourseData.progress}%` }
+                      ]} 
+                    />
+                  </View>
+                </View>
+                <View style={styles.progressTextContainer}>
+                  <View style={styles.progressStat}>
+                    <CheckCircle size={14} color="rgba(255, 255, 255, 0.9)" />
+                    <Text style={styles.progressText}>
+                      {userProgress.completed} av {userProgress.total} lektioner
+                    </Text>
+                  </View>
+                  {userCourseData?.target_grade && (
+                    <View style={styles.progressStat}>
+                      <Trophy size={14} color="#FCD34D" />
+                      <Text style={styles.progressText}>
+                        Mål: {userCourseData.target_grade}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
             )}
-            {userCourseData?.target_grade && (
-              <View style={styles.quickStatItem}>
-                <Award size={16} color="#FCD34D" />
-                <Text style={styles.quickStatText}>
-                  Mål: {userCourseData.target_grade}
-                </Text>
+            
+            {/* Quick Stats with Enhanced Design */}
+            <View style={styles.quickStatsContainer}>
+              <View style={[styles.quickStatCard, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
+                <BookOpen size={20} color="white" />
+                <Text style={styles.quickStatNumber}>{modules.length}</Text>
+                <Text style={styles.quickStatLabel}>Moduler</Text>
               </View>
-            )}
+              <View style={[styles.quickStatCard, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
+                <Clock size={20} color="white" />
+                <Text style={styles.quickStatNumber}>{modules.reduce((sum, m) => sum + m.estimated_hours, 0)}h</Text>
+                <Text style={styles.quickStatLabel}>Uppskattad tid</Text>
+              </View>
+              <View style={[styles.quickStatCard, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
+                <Zap size={20} color="#FCD34D" />
+                <Text style={styles.quickStatNumber}>{userProgress.percentage}%</Text>
+                <Text style={styles.quickStatLabel}>Genomfört</Text>
+              </View>
+            </View>
           </View>
         </LinearGradient>
         
         <TouchableOpacity
-          style={[styles.editButton, { backgroundColor: 'rgba(255, 255, 255, 0.9)' }]}
+          style={[styles.editButton, { backgroundColor: 'rgba(255, 255, 255, 0.95)' }]}
           onPress={() => setShowEditModal(true)}
         >
           <Edit3 size={20} color={courseStyle.primaryColor} />
@@ -450,38 +484,7 @@ export default function CourseDetailScreen() {
         </View>
         </Animated.View>
 
-        <Animated.View 
-          style={[
-            styles.statsContainer,
-            {
-              opacity: fadeAnim,
-              transform: [{ 
-                translateY: slideAnim.interpolate({
-                  inputRange: [0, 50],
-                  outputRange: [0, 25]
-                })
-              }]
-            }
-          ]}
-        >
-          <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
-            <BookOpen size={20} color={courseStyle.primaryColor} />
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{modules.length}</Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Moduler</Text>
-          </View>
-          <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
-            <Clock size={20} color={courseStyle.primaryColor} />
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>
-              {modules.reduce((sum, m) => sum + m.estimated_hours, 0)}h
-            </Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Uppskattad tid</Text>
-          </View>
-          <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
-            <FileText size={20} color={courseStyle.primaryColor} />
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{studyGuides.length}</Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Studiehjälpmedel</Text>
-          </View>
-        </Animated.View>
+
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>🎯 Snabbåtkomst</Text>
@@ -761,123 +764,187 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  courseHeader: {
-    padding: 24,
-    marginBottom: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+  heroContainer: {
+    marginBottom: 24,
   },
-  courseTitleRow: {
+  courseHeader: {
+    paddingTop: 32,
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  decorativeCircle1: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    top: -80,
+    right: -60,
+  },
+  decorativeCircle2: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    bottom: -40,
+    left: -50,
+  },
+  courseHeaderContent: {
+    position: 'relative',
+    zIndex: 1,
+  },
+  courseTitleSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 20,
+    gap: 16,
   },
-  courseEmoji: {
+  emojiContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  courseEmojiLarge: {
     fontSize: 40,
-    marginRight: 16,
   },
   courseTitleContainer: {
     flex: 1,
   },
-  quickStats: {
-    flexDirection: 'row',
-    gap: 16,
-    marginTop: 12,
-  },
-  quickStatItem: {
+  subjectBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-  },
-  quickStatText: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '600' as const,
+    marginTop: 8,
   },
   courseTitle: {
-    fontSize: 28,
-    fontWeight: 'bold' as const,
+    fontSize: 32,
+    fontWeight: '800' as const,
     color: 'white',
-    marginBottom: 4,
+    marginBottom: 2,
+    letterSpacing: -0.5,
+    lineHeight: 38,
   },
   courseSubject: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.95)',
+    fontWeight: '600' as const,
   },
   courseDescription: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: 'rgba(255, 255, 255, 0.85)',
     lineHeight: 24,
-    marginBottom: 24,
+    marginBottom: 28,
   },
   progressSection: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  progressInfo: {
+  progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
+  },
+  progressLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   progressLabel: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500' as const,
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '700' as const,
+  },
+  progressPercentBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   progressPercent: {
-    fontSize: 18,
+    fontSize: 20,
     color: 'white',
-    fontWeight: 'bold' as const,
+    fontWeight: '800' as const,
+  },
+  progressBarContainer: {
+    marginBottom: 12,
   },
   progressBar: {
-    height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 4,
-    marginBottom: 8,
+    height: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 6,
+    overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: 'white',
-    borderRadius: 4,
+    borderRadius: 6,
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+  },
+  progressTextContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   progressText: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '600' as const,
   },
-  statsContainer: {
+  quickStatsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    gap: 16,
+    gap: 12,
   },
-  statItem: {
+  quickStatCard: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold' as const,
-    marginTop: 8,
-    marginBottom: 4,
+  quickStatNumber: {
+    fontSize: 24,
+    fontWeight: '800' as const,
+    color: 'white',
   },
-  statLabel: {
-    fontSize: 12,
+  quickStatLabel: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '600' as const,
     textAlign: 'center',
   },
+
   section: {
     paddingHorizontal: 20,
     marginBottom: 24,
@@ -1031,18 +1098,18 @@ const styles = StyleSheet.create({
   },
   editButton: {
     position: 'absolute',
-    top: 20,
-    right: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    top: 24,
+    right: 24,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   modalOverlay: {
     flex: 1,

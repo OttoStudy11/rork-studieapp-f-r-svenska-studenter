@@ -8,7 +8,7 @@ import { StudyProvider } from "@/contexts/StudyContext";
 import { ToastProvider, useToast, ToastContainer } from "@/contexts/ToastContext";
 import { AchievementProvider } from "@/contexts/AchievementContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { TimerSettingsProvider } from "@/contexts/TimerSettingsContext";
 import { CourseProgressProvider } from "@/contexts/CourseProgressContext";
 
@@ -22,9 +22,10 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { toasts, dismissToast } = useToast();
-  const { isLoading } = useAuth();
+  const { isLoading: authLoading } = useAuth();
+  const { isLoading: themeLoading } = useTheme();
   
-  if (isLoading) {
+  if (authLoading || themeLoading) {
     return <LoadingScreen message="Startar din studieplats..." />;
   }
   

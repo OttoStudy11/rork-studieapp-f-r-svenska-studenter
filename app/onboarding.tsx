@@ -14,16 +14,15 @@ import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { Image } from 'expo-image';
-import { GraduationCap, BookOpen, MapPin, Home, Flame } from 'lucide-react-native';
+import { GraduationCap, BookOpen, MapPin, Flame } from 'lucide-react-native';
 import { SWEDISH_GYMNASIUMS } from '@/constants/gymnasiums';
-import { AnimatedPressable, PressableCard, RippleButton, FadeInView } from '@/components/Animations';
-import GymnasiumAndProgramPicker from '@/components/GymnasiumAndProgramPicker';
+import { AnimatedPressable, RippleButton, FadeInView } from '@/components/Animations';
 import UniversityPicker from '@/components/UniversityPicker';
 import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
 import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 import { getGymnasiumCourses, type GymnasiumCourse } from '@/constants/gymnasium-courses';
 import { GYMNASIUM_PROGRAMS } from '@/constants/gymnasium-programs';
-import { SWEDISH_UNIVERSITIES, UNIVERSITY_PROGRAMS, type University, type UniversityProgram, type UniversityProgramYear } from '@/constants/universities';
+import { type University, type UniversityProgram, type UniversityProgramYear } from '@/constants/universities';
 
 import type { AvatarConfig } from '@/constants/avatar-config';
 import { DEFAULT_AVATAR_CONFIG } from '@/constants/avatar-config';
@@ -1455,16 +1454,18 @@ const styles = StyleSheet.create({
   goalsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    justifyContent: 'center',
+    gap: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
   },
   goalCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
+    justifyContent: 'space-between',
     width: '48%',
-    minHeight: 130,
+    height: 140,
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.4)',
     position: 'relative',
@@ -1485,17 +1486,19 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   goalEmoji: {
     fontSize: 26,
   },
   goalText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#1F2937',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 17,
+    flex: 1,
+    paddingHorizontal: 4,
   },
   checkMark: {
     position: 'absolute',

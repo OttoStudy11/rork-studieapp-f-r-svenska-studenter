@@ -244,9 +244,9 @@ export default function FriendsScreen() {
       setFriends(mappedFriends);
       setFriendRequests(mappedRequests);
       
-      // Fetch actual session counts for leaderboard
+      // Fetch actual session counts for leaderboard using pomodoro_sessions
       const { data: sessionCounts, error: sessionError } = await supabase
-        .from('study_sessions')
+        .from('pomodoro_sessions')
         .select('user_id')
         .in('user_id', friendIds);
       
@@ -269,17 +269,18 @@ export default function FriendsScreen() {
 
       setCurrentUserProgress(fetchedUserProgress);
       
-      // Get current user session count
+      // Get current user session count from pomodoro_sessions
       const { data: currentUserSessions } = await supabase
-        .from('study_sessions')
+        .from('pomodoro_sessions')
         .select('user_id')
         .eq('user_id', user.id);
       
       // Create array of all users including current user
+      // Convert study time from minutes to hours for proper leaderboard display
       const allUsersForLeaderboard = [
         ...mappedFriends.map((friend) => ({
           ...friend,
-          studyTime: friend.studyTime || 0,
+          studyTime: Math.round((friend.studyTime || 0) / 60), // Convert minutes to hours
           sessionCount: sessionCountMap[friend.id] || 0,
           position: 0
         })),
@@ -291,7 +292,7 @@ export default function FriendsScreen() {
           program: studyUser?.program || '',
           level: studyUser?.studyLevel || 'gymnasie' as 'gymnasie' | 'högskola',
           avatar: studyUser?.avatar,
-          studyTime: Math.floor((currentUserProgress?.total_study_time || 0) / 60),
+          studyTime: Math.round((fetchedUserProgress?.total_study_time || 0) / 60), // Convert minutes to hours
           sessionCount: currentUserSessions?.length || 0,
           position: 0
         }
@@ -412,12 +413,12 @@ export default function FriendsScreen() {
     return `${mins}m`;
   };
 
-  const formatLeaderboardTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
+  const formatLeaderboardTime = (hours: number) => {
+    // Input is already in hours
     if (hours >= 1) {
       return `${hours}h`;
     }
-    return `${minutes}m`;
+    return `${hours}h`;
   };
 
   if (isLoading) {

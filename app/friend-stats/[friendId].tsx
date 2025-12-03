@@ -99,9 +99,9 @@ export default function FriendStatsScreen() {
         .select('*')
         .eq('user_id', friendId);
 
-      // Load friend sessions
+      // Load friend sessions from pomodoro_sessions
       const { data: friendSessions } = await supabase
-        .from('study_sessions')
+        .from('pomodoro_sessions')
         .select('*')
         .eq('user_id', friendId);
 
@@ -118,11 +118,15 @@ export default function FriendStatsScreen() {
         .select('*')
         .eq('user_id', user.id);
 
-      // Load your sessions
+      // Load your sessions from pomodoro_sessions
       const { data: yourSessions } = await supabase
-        .from('study_sessions')
+        .from('pomodoro_sessions')
         .select('*')
         .eq('user_id', user.id);
+
+      // Convert study time from minutes to hours for display
+      const friendStudyTimeMinutes = friendProgress?.total_study_time || 0;
+      const yourStudyTimeMinutes = yourProgress?.total_study_time || 0;
 
       setFriend({
         id: friendProfile.id,
@@ -132,14 +136,14 @@ export default function FriendStatsScreen() {
         level: friendProfile.level as 'gymnasie' | 'högskola',
         gymnasium_grade: friendProfile.gymnasium_grade,
         avatar: friendProfile.avatar_url ? JSON.parse(friendProfile.avatar_url) : undefined,
-        studyTime: friendProgress?.total_study_time || 0,
+        studyTime: friendStudyTimeMinutes, // Keep in minutes for calculations
         sessionCount: friendSessions?.length || 0,
         streak: friendProgress?.current_streak || 0,
         courseCount: friendCourses?.length || 0,
       });
 
       setYourStats({
-        studyTime: yourProgress?.total_study_time || 0,
+        studyTime: yourStudyTimeMinutes, // Keep in minutes for calculations
         sessionCount: yourSessions?.length || 0,
         streak: yourProgress?.current_streak || 0,
         courseCount: yourCourses?.length || 0,

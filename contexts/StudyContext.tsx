@@ -753,7 +753,11 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
             
             console.log('Calculated new streak:', newStreak);
             
+            // Calculate points: 1 point per 5 minutes of studying
             const pointsEarned = Math.floor(session.duration / 5);
+            
+            const currentTotalPoints = existingProgress?.total_points || 0;
+            const newTotalPoints = currentTotalPoints + pointsEarned;
             
             const progressUpdate = {
               user_id: authUser.id,
@@ -762,7 +766,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
               current_streak: newStreak,
               longest_streak: Math.max(newStreak, existingProgress?.longest_streak || 0),
               last_study_date: session.endTime,
-              total_points: (existingProgress?.total_points || 0) + pointsEarned,
+              total_points: newTotalPoints,
               updated_at: new Date().toISOString()
             };
             
@@ -781,7 +785,8 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
               console.error('Progress error details:', JSON.stringify(progressError, null, 2));
             } else {
               console.log('✅ User progress updated successfully:', updatedProgress);
-              console.log(`🎯 Points earned: ${pointsEarned}. Total points: ${(existingProgress?.total_points || 0) + pointsEarned}`);
+              console.log(`🎯 Points earned: +${pointsEarned} pts (${session.duration} min ÷ 5)`);
+              console.log(`💰 Total points: ${newTotalPoints} pts (was ${currentTotalPoints})`);
             }
             
             // Check for achievements using achievement context directly

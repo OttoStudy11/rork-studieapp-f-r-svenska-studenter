@@ -29,7 +29,6 @@ import {
   FileText,
   Target,
   TrendingUp,
-  Star,
   Lock,
   Award,
   Edit3,
@@ -132,22 +131,23 @@ export default function CourseDetailScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
   
+  const handleFocusEffect = useCallback(() => {
+    if (id && user?.id) {
+      console.log('Screen focused, reloading course data');
+      loadCourseData();
+    }
+  }, [id, user?.id]);
+
   // Reload data when screen becomes focused (e.g., returning from a lesson)
-  useFocusEffect(
-    useCallback(() => {
-      if (id && user?.id) {
-        console.log('Screen focused, reloading course data');
-        loadCourseData();
-      }
-    }, [id, user?.id])
-  );
+  useFocusEffect(handleFocusEffect);
 
   const loadCourseData = async () => {
     try {
       setIsLoading(true);
       console.log('Loading course data for ID:', id);
 
-      const { data: courseData, error: courseError} = await supabase
+      // 1. Load course basic data
+      const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .select('*')
         .eq('id', id)
@@ -164,16 +164,17 @@ export default function CourseDetailScreen() {
         setCourseStyle(getCourseStyle(courseData.subject));
       }
 
+      // 2. Load user course data
       const { data: userCourse, error: userCourseError } = await supabase
         .from('user_courses')
         .select('*')
         .eq('user_id', user!.id)
         .eq('course_id', id || '')
-        .single();
+        .maybeSingle();
 
       if (userCourseError) {
         console.error('Error loading user course:', userCourseError);
-      } else {
+      } else if (userCourse) {
         setUserCourseData(userCourse);
         setEditProgress(userCourse?.progress?.toString() || '0');
         setEditTargetGrade(userCourse?.target_grade || '');
@@ -181,74 +182,106 @@ export default function CourseDetailScreen() {
 
       console.log('🔍 Fetching modules for course:', id);
       
+      // 3. Load modules first
       const { data: modulesData, error: modulesError } = await supabase
         .from('course_modules')
-        .select(`
-          *,
-          course_lessons (
-            *,
-            user_lesson_progress (
-              *
-            )
-          )
-        `)
+        .select('*')
         .eq('course_id', id || '')
         .eq('is_published', true)
-        .order('order_index');
+        .order('order_index', { ascending: true });
 
-      console.log('📦 Modules data:', modulesData);
+      console.log('📦 Raw modules data:', modulesData);
       console.log('❌ Modules error:', modulesError);
 
       if (modulesError) {
         console.error('Error loading modules:', modulesError);
         Alert.alert('Fel vid laddning av moduler', modulesError.message);
-      } else {
-        const processedModules: ModuleWithLessons[] = (modulesData?.map(module => ({
-          ...module,
-          description: module.description || '',
-          lessons: (module.course_lessons || [])
-            .filter((lesson: any) => lesson.is_published)
-            .sort((a: any, b: any) => a.order_index - b.order_index)
-            .map((lesson: any) => ({
-              ...lesson,
-              progress: lesson.user_lesson_progress?.find(
-                (p: any) => p.user_id === user?.id
-              )
-            }))
-        })) || []) as ModuleWithLessons[];
-        
-        console.log('✅ Processed modules:', processedModules.length);
-        console.log('📝 Total lessons found:', processedModules.reduce((sum, m) => sum + m.lessons.length, 0));
-        
-        setModules(processedModules);
-        
-        const totalLessons = processedModules.reduce((sum, module) => sum + module.lessons.length, 0);
-        const completedLessons = processedModules.reduce(
-          (sum, module) => sum + module.lessons.filter(lesson => lesson.progress?.status === 'completed').length, 
-          0
-        );
-        
-        setUserProgress({
-          completed: completedLessons,
-          total: totalLessons,
-          percentage: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
-        });
-        
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.spring(slideAnim, {
-            toValue: 0,
-            tension: 50,
-            friction: 8,
-            useNativeDriver: true,
-          }),
-        ]).start();
+        return;
       }
 
+      if (!modulesData || modulesData.length === 0) {
+        console.log('⚠️ No modules found for course:', id);
+        setModules([]);
+        setUserProgress({ completed: 0, total: 0, percentage: 0 });
+        return;
+      }
+
+      // 4. Load lessons for all modules
+      const moduleIds = modulesData.map(m => m.id);
+      const { data: lessonsData, error: lessonsError } = await supabase
+        .from('course_lessons')
+        .select('*')
+        .in('module_id', moduleIds)
+        .eq('is_published', true)
+        .order('order_index', { ascending: true });
+
+      console.log('📝 Raw lessons data:', lessonsData);
+      console.log('❌ Lessons error:', lessonsError);
+
+      if (lessonsError) {
+        console.error('Error loading lessons:', lessonsError);
+      }
+
+      // 5. Load user progress for all lessons
+      const lessonIds = (lessonsData || []).map(l => l.id);
+      let progressData: any[] = [];
+      if (lessonIds.length > 0) {
+        const { data: userProgressData, error: progressError } = await supabase
+          .from('user_lesson_progress')
+          .select('*')
+          .eq('user_id', user!.id)
+          .in('lesson_id', lessonIds);
+
+        console.log('📊 User progress data:', userProgressData);
+        console.log('❌ Progress error:', progressError);
+
+        if (progressError) {
+          console.error('Error loading user progress:', progressError);
+        } else {
+          progressData = userProgressData || [];
+        }
+      }
+
+      // 6. Build the complete structure
+      const processedModules: ModuleWithLessons[] = modulesData.map(module => {
+        const moduleLessons = (lessonsData || []).filter(l => l.module_id === module.id);
+        const lessonsWithProgress = moduleLessons.map(lesson => {
+          const progress = progressData.find(p => p.lesson_id === lesson.id);
+          return {
+            ...lesson,
+            progress: progress || undefined
+          };
+        });
+
+        return {
+          ...module,
+          description: module.description || '',
+          lessons: lessonsWithProgress
+        };
+      });
+
+      console.log('✅ Processed modules:', processedModules.length);
+      console.log('📝 Total lessons:', processedModules.reduce((sum, m) => sum + m.lessons.length, 0));
+      processedModules.forEach(m => {
+        console.log(`  Module "${m.title}": ${m.lessons.length} lessons`);
+      });
+
+      setModules(processedModules);
+
+      // 7. Calculate progress
+      const totalLessons = processedModules.reduce((sum, module) => sum + module.lessons.length, 0);
+      const completedLessons = processedModules.reduce(
+        (sum, module) => sum + module.lessons.filter(lesson => lesson.progress?.status === 'completed').length,
+        0
+      );
+
+      setUserProgress({
+        completed: completedLessons,
+        total: totalLessons,
+        percentage: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+      });
+
+      // 8. Load study guides
       const { data: guidesData, error: guidesError } = await supabase
         .from('study_guides')
         .select('*')
@@ -264,6 +297,21 @@ export default function CourseDetailScreen() {
         }));
         setStudyGuides(processedGuides as StudyGuide[]);
       }
+
+      // 9. Animate entrance
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
 
     } catch (error) {
       console.error('Error in loadCourseData:', error);

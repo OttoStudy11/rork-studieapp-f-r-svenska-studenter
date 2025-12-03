@@ -28,7 +28,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.rork.app",
+      "package": "com.rorkapp.mobile",
       "permissions": [
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",

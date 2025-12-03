@@ -121,36 +121,24 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
   const systemColorScheme = useColorScheme();
   const [themeMode, setThemeMode] = useState<ThemeMode>('system');
   const [isLoading, setIsLoading] = useState(true);
-  const [initialTheme, setInitialTheme] = useState<Theme | null>(null);
 
-  // Load saved theme preference
+  // Load saved theme preference synchronously on mount
   useEffect(() => {
     const loadTheme = async () => {
       try {
         const savedTheme = await AsyncStorage.getItem('theme_mode');
         if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
-          const mode = savedTheme as ThemeMode;
-          setThemeMode(mode);
-          
-          // Set initial theme to prevent flashing
-          if (mode === 'system') {
-            setInitialTheme(systemColorScheme === 'dark' ? darkTheme : lightTheme);
-          } else {
-            setInitialTheme(mode === 'dark' ? darkTheme : lightTheme);
-          }
-        } else {
-          setInitialTheme(systemColorScheme === 'dark' ? darkTheme : lightTheme);
+          setThemeMode(savedTheme as ThemeMode);
         }
       } catch (error) {
         console.log('Error loading theme:', error);
-        setInitialTheme(systemColorScheme === 'dark' ? darkTheme : lightTheme);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadTheme();
-  }, [systemColorScheme]);
+  }, []);
 
   // Save theme preference
   const updateThemeMode = useCallback(async (mode: ThemeMode) => {
@@ -164,16 +152,11 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
 
   // Calculate current theme
   const currentTheme = useMemo(() => {
-    // Use initial theme during loading to prevent flash
-    if (isLoading && initialTheme) {
-      return initialTheme;
-    }
-    
     if (themeMode === 'system') {
       return systemColorScheme === 'dark' ? darkTheme : lightTheme;
     }
     return themeMode === 'dark' ? darkTheme : lightTheme;
-  }, [themeMode, systemColorScheme, isLoading, initialTheme]);
+  }, [themeMode, systemColorScheme]);
 
   const isDark = useMemo(() => {
     if (themeMode === 'system') {

@@ -23,6 +23,9 @@ export interface Database {
           purpose: string
           subscription_type: 'free' | 'premium'
           subscription_expires_at: string | null
+          subscription_product_id: string | null
+          subscription_updated_at: string | null
+          revenuecat_customer_id: string | null
           program_id: string | null
           gymnasium_id: string | null
           gymnasium_name: string | null
@@ -43,6 +46,9 @@ export interface Database {
           purpose: string
           subscription_type?: 'free' | 'premium'
           subscription_expires_at?: string | null
+          subscription_product_id?: string | null
+          subscription_updated_at?: string | null
+          revenuecat_customer_id?: string | null
           program_id?: string | null
           gymnasium_id?: string | null
           gymnasium_name?: string | null
@@ -63,6 +69,9 @@ export interface Database {
           purpose?: string
           subscription_type?: 'free' | 'premium'
           subscription_expires_at?: string | null
+          subscription_product_id?: string | null
+          subscription_updated_at?: string | null
+          revenuecat_customer_id?: string | null
           program_id?: string | null
           gymnasium_id?: string | null
           gymnasium_name?: string | null

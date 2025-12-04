@@ -15,29 +15,22 @@ import { CourseProgressProvider } from "@/contexts/CourseProgressContext";
 import { ExamProvider } from "@/contexts/ExamContext";
 
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { Platform } from 'react-native';
+import { Platform, useEffect } from 'react-native';
 import Purchases from 'react-native-purchases';
 
 //...
 
-import { Platform } from 'react-native';
-import { useEffect } from 'react';
-import Purchases, { LOG_LEVEL } from 'react-native-purchases';
-
 export default function App() {
-  useEffect(() => {
-    Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
-    // Platform-specific API keys
-    const iosApiKey = 'appl_ttKXYkEBKHJdIqTkYvbLSbUSDcX';
+  useEffect(() => {
+    Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
 
     if (Platform.OS === 'ios') {
-       Purchases.configure({apiKey: iosApiKey});
-    } else if (Platform.OS === 'android') {
-       Purchases.configure({apiKey: androidApiKey});
-    }
+    	Purchases.configure({ apiKey: <appl_ttKXYkEBKHJdIqTkYvbLSbUSDcX> });
+
   }, []);
 }
+
 
 SplashScreen.preventAutoHideAsync();
 

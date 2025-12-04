@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
-  Animated
+  Animated,
+  Modal,
+  ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { 
@@ -17,8 +21,6 @@ import {
   Check, 
   BarChart3, 
   ArrowLeft,
-  Shield,
-  Clock,
   Sparkles,
   Zap,
   Star,
@@ -26,20 +28,105 @@ import {
   Award,
   Unlock,
   Infinity,
-  Users
+  Users,
+  AlertCircle,
+  RefreshCw,
+  X,
+  Shield,
+  ExternalLink,
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
+import {
+  isMonthlyPackage,
+  isAnnualPackage,
+  getDebugMode,
+} from '@/services/revenuecat';
 
+// ============================================================================
+// CONFIGURATION - PLACEHOLDER URLS
+// ============================================================================
+// IMPORTANT: Ersätt dessa med riktiga länkar innan publicering!
+// Du kan använda GitHub Pages för att snabbt skapa en enkel sida med policies.
+const TERMS_URL = 'https://placeholder.example/terms';
+const PRIVACY_URL = 'https://placeholder.example/privacy';
+
+// Privacy policy placeholder text för in-app modal
+const PRIVACY_POLICY_PLACEHOLDER = `
+INTEGRITETSPOLICY - STUDIESTUGAN
+
+Senast uppdaterad: [DATUM]
+
+1. INLEDNING
+Denna integritetspolicy beskriver hur Studiestugan ("vi", "oss", "vår") samlar in, använder och skyddar dina personuppgifter.
+
+2. INFORMATION VI SAMLAR IN
+- Kontouppgifter (e-post, användarnamn)
+- Studiestatistik och framsteg
+- Betalningsinformation (hanteras av Apple/Google)
+- Användningsdata för att förbättra appen
+
+3. HUR VI ANVÄNDER INFORMATIONEN
+- Tillhandahålla våra tjänster
+- Förbättra användarupplevelsen
+- Hantera prenumerationer
+- Kommunicera med dig
+
+4. DELNING AV INFORMATION
+Vi delar inte dina personuppgifter med tredje part förutom:
+- När det krävs enligt lag
+- För betalningshantering via Apple/Google
+
+5. DATASÄKERHET
+Vi använder branschstandard säkerhetsåtgärder för att skydda dina uppgifter.
+
+6. DINA RÄTTIGHETER
+Du har rätt att:
+- Begära tillgång till dina uppgifter
+- Begära rättelse eller radering
+- Invända mot behandling
+
+7. KONTAKT
+[Kontaktinformation]
+
+---
+OBS: Detta är en placeholder-policy. 
+Ersätt med en riktig juridiskt granskad policy innan publicering.
+`;
+
+// ============================================================================
+// TYPES
+// ============================================================================
+interface PricingPlan {
+  id: 'monthly' | 'yearly';
+  pkg?: PurchasesPackage;
+  title: string;
+  price: string;
+  period: string;
+  savings?: string;
+  isFeatured: boolean;
+}
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
 export default function PremiumScreen() {
-  const { isPremium, getOfferings, purchasePackage, restorePurchases } = usePremium();
+  const { isPremium, getOfferings, purchasePackage, restorePurchases, isOffline } = usePremium();
   const { theme } = useTheme();
+  
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
-  const [offerings, setOfferings] = useState<any>(null);
+  const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
   const [isLoadingOfferings, setIsLoadingOfferings] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  
   const scrollY = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Pulse animation for crown
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -57,15 +144,120 @@ export default function PremiumScreen() {
     ).start();
   }, [pulseAnim]);
 
-  useEffect(() => {
-    const loadOfferings = async () => {
-      setIsLoadingOfferings(true);
+  // Load offerings with exponential backoff retry
+  const loadOfferings = useCallback(async (attempt: number = 0) => {
+    setIsLoadingOfferings(true);
+    setLoadError(null);
+    
+    try {
+      console.log('[Premium Screen] Loading offerings, attempt:', attempt + 1);
       const result = await getOfferings();
-      setOfferings(result);
+      
+      if (result) {
+        setOfferings(result);
+        setLoadError(null);
+        console.log('[Premium Screen] Offerings loaded successfully');
+      } else {
+        // No offerings available
+        if (attempt < 2) {
+          // Retry with exponential backoff
+          const delay = Math.pow(2, attempt) * 1000;
+          console.log(`[Premium Screen] Retrying in ${delay}ms...`);
+          setTimeout(() => loadOfferings(attempt + 1), delay);
+          return;
+        }
+        setLoadError('Produkter ej tillgängliga. Försök igen om en stund.');
+      }
+    } catch (error) {
+      console.error('[Premium Screen] Failed to load offerings:', error);
+      if (attempt < 2) {
+        const delay = Math.pow(2, attempt) * 1000;
+        setTimeout(() => loadOfferings(attempt + 1), delay);
+        return;
+      }
+      setLoadError('Kunde inte ladda produkter. Kontrollera din internetanslutning.');
+    } finally {
       setIsLoadingOfferings(false);
-    };
-    loadOfferings();
+    }
   }, [getOfferings]);
+
+  useEffect(() => {
+    loadOfferings(0);
+  }, [loadOfferings]);
+
+  // Get pricing plans from offerings
+  const pricingPlans = React.useMemo((): PricingPlan[] => {
+    if (!offerings) {
+      // Fallback display while loading
+      return [
+        {
+          id: 'monthly',
+          title: 'Månadsvis',
+          price: '...',
+          period: '/månad',
+          isFeatured: false,
+        },
+        {
+          id: 'yearly',
+          title: 'Årsvis',
+          price: '...',
+          period: '/år',
+          savings: 'Laddar...',
+          isFeatured: true,
+        },
+      ];
+    }
+
+    const packages = offerings.availablePackages;
+    const monthlyPkg = packages.find(p => isMonthlyPackage(p));
+    const yearlyPkg = packages.find(p => isAnnualPackage(p));
+
+    const plans: PricingPlan[] = [];
+
+    if (monthlyPkg) {
+      plans.push({
+        id: 'monthly',
+        pkg: monthlyPkg,
+        title: 'Månadsvis',
+        price: monthlyPkg.product.priceString,
+        period: '/månad',
+        isFeatured: false,
+      });
+    }
+
+    if (yearlyPkg) {
+      // Calculate savings if monthly price is available
+      let savings = '';
+      if (monthlyPkg) {
+        const monthlyPrice = monthlyPkg.product.price;
+        const yearlyPrice = yearlyPkg.product.price;
+        const yearlyEquivalentMonthly = yearlyPrice / 12;
+        const savingsPercent = Math.round((1 - yearlyEquivalentMonthly / monthlyPrice) * 100);
+        if (savingsPercent > 0) {
+          savings = `Spara ${savingsPercent}%`;
+        }
+      }
+
+      plans.push({
+        id: 'yearly',
+        pkg: yearlyPkg,
+        title: 'Årsvis',
+        price: yearlyPkg.product.priceString,
+        period: '/år',
+        savings: savings || 'Bäst värde',
+        isFeatured: true,
+      });
+    }
+
+    // If no packages found, show debug info in dev mode
+    if (plans.length === 0 && getDebugMode()) {
+      console.warn('[Premium Screen] No packages found. Available packages:', 
+        packages.map(p => ({ id: p.identifier, type: p.packageType }))
+      );
+    }
+
+    return plans;
+  }, [offerings]);
 
   const features = [
     {
@@ -78,7 +270,7 @@ export default function PremiumScreen() {
     {
       icon: BarChart3,
       title: 'Avancerad Statistik',
-      description: 'Detaljerade grafer, insikter och trendanalys av din studietid i fokus-sidan',
+      description: 'Detaljerade grafer, insikter och trendanalys av din studietid',
       gradient: ['#06B6D4', '#0891B2'] as const,
       badge: 'Nytt'
     },
@@ -123,38 +315,63 @@ export default function PremiumScreen() {
     }
   ];
 
-  const handleUpgrade = async () => {
+  const handlePurchase = async () => {
     if (!offerings || isPurchasing) return;
+    
+    const selectedPlanData = pricingPlans.find(p => p.id === selectedPlan);
+    if (!selectedPlanData?.pkg) {
+      console.error('[Premium Screen] Selected package not found');
+      return;
+    }
     
     setIsPurchasing(true);
     try {
-      const packages = offerings.availablePackages;
-      const selectedPackage = selectedPlan === 'monthly' 
-        ? packages.find((pkg: any) => pkg.packageType === 'MONTHLY')
-        : packages.find((pkg: any) => pkg.packageType === 'ANNUAL');
-      
-      if (selectedPackage) {
-        const success = await purchasePackage(selectedPackage);
-        if (success) {
-          console.log('[Premium] Purchase successful, user is now premium');
-        }
-      } else {
-        console.error('[Premium] Selected package not found');
+      const success = await purchasePackage(selectedPlanData.pkg);
+      if (success) {
+        console.log('[Premium Screen] Purchase successful');
+        // User is now premium, UI will update automatically
       }
     } catch (error) {
-      console.error('[Premium] Purchase error:', error);
+      console.error('[Premium Screen] Purchase error:', error);
     } finally {
       setIsPurchasing(false);
     }
   };
 
   const handleRestorePurchases = async () => {
-    const success = await restorePurchases();
-    if (success) {
-      router.back();
+    if (isRestoring) return;
+    
+    setIsRestoring(true);
+    try {
+      const success = await restorePurchases();
+      if (success) {
+        router.back();
+      }
+    } catch (error) {
+      console.error('[Premium Screen] Restore error:', error);
+    } finally {
+      setIsRestoring(false);
     }
   };
 
+  const handleRetry = () => {
+    loadOfferings(0);
+  };
+
+  const openExternalLink = async (url: string) => {
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        console.warn('[Premium Screen] Cannot open URL:', url);
+      }
+    } catch (error) {
+      console.error('[Premium Screen] Error opening URL:', error);
+    }
+  };
+
+  // Premium user view
   if (isPremium) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -297,6 +514,24 @@ export default function PremiumScreen() {
             </FadeInView>
           </View>
 
+          {/* Offline/Error Notice */}
+          {(isOffline || loadError) && (
+            <SlideInView direction="up" delay={350}>
+              <View style={[styles.noticeContainer, { backgroundColor: theme.colors.warning + '20' }]}>
+                <AlertCircle size={20} color={theme.colors.warning} />
+                <Text style={[styles.noticeText, { color: theme.colors.text }]}>
+                  {loadError || 'Du är offline. Vissa funktioner kan vara begränsade.'}
+                </Text>
+                {loadError && (
+                  <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
+                    <RefreshCw size={16} color={theme.colors.primary} />
+                    <Text style={[styles.retryText, { color: theme.colors.primary }]}>Försök igen</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </SlideInView>
+          )}
+
           {/* Value Proposition */}
           <SlideInView direction="up" delay={400}>
             <View style={styles.valueSection}>
@@ -329,60 +564,72 @@ export default function PremiumScreen() {
           {/* Pricing Cards */}
           <SlideInView direction="up" delay={500}>
             <Text style={[styles.pricingSectionTitle, { color: theme.colors.text }]}>Välj din plan</Text>
-            <View style={styles.pricingContainer}>
-              {/* Monthly Plan */}
-              <TouchableOpacity
-                style={[
-                  styles.pricingCard,
-                  { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
-                  selectedPlan === 'monthly' && { borderColor: theme.colors.primary, borderWidth: 2 }
-                ]}
-                onPress={() => setSelectedPlan('monthly')}
-              >
-                {selectedPlan === 'monthly' && (
-                  <View style={[styles.selectedBadge, { backgroundColor: theme.colors.primary }]}>
-                    <Check size={14} color="#FFF" />
-                  </View>
-                )}
-                <View style={styles.pricingContent}>
-                  <Text style={[styles.price, { color: theme.colors.text }]}>49 kr</Text>
-                  <Text style={[styles.pricePeriod, { color: theme.colors.textSecondary }]}>/månad</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Yearly Plan - Featured */}
-              <TouchableOpacity
-                style={[
-                  styles.pricingCard, 
-                  styles.featuredCard,
-                  { backgroundColor: theme.colors.card },
-                  selectedPlan === 'yearly' && { borderWidth: 2 }
-                ]}
-                onPress={() => setSelectedPlan('yearly')}
-              >
-                <LinearGradient
-                  colors={[theme.colors.success, '#059669']}
-                  style={[styles.dealBadge, { flexDirection: 'row', gap: 6 }]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
+            
+            {isLoadingOfferings ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+                  Laddar priser...
+                </Text>
+              </View>
+            ) : pricingPlans.length === 0 ? (
+              <View style={[styles.errorContainer, { backgroundColor: theme.colors.card }]}>
+                <AlertCircle size={32} color={theme.colors.warning} />
+                <Text style={[styles.errorTitle, { color: theme.colors.text }]}>
+                  Produkter ej tillgängliga
+                </Text>
+                <Text style={[styles.errorDescription, { color: theme.colors.textSecondary }]}>
+                  Vi kunde inte ladda produkterna just nu. Försök igen om en stund.
+                </Text>
+                <TouchableOpacity 
+                  style={[styles.errorRetryButton, { backgroundColor: theme.colors.primary }]}
+                  onPress={handleRetry}
                 >
-                  <Sparkles size={14} color="#FFF" />
-                  <Text style={styles.dealText}>SPARA 50% - POPULÄRT VAL</Text>
-                </LinearGradient>
-                {selectedPlan === 'yearly' && (
-                  <View style={[styles.selectedBadge, { backgroundColor: theme.colors.primary, top: 40 }]}>
-                    <Check size={14} color="#FFF" />
-                  </View>
-                )}
-                <View style={styles.pricingContent}>
-                  <View style={[styles.yearlyPriceContainer, { backgroundColor: theme.colors.primary }]}>
-                    <Text style={styles.yearlyPrice}>150 kr</Text>
-                  </View>
-                  <Text style={[styles.pricePeriod, { color: theme.colors.textSecondary }]}>/år</Text>
-                </View>
-                <Text style={[styles.savingsText, { color: theme.colors.success }]}>Spara 438 kr/år</Text>
-              </TouchableOpacity>
-            </View>
+                  <RefreshCw size={18} color="#FFF" />
+                  <Text style={styles.errorRetryText}>Försök igen</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.pricingContainer}>
+                {pricingPlans.map((plan) => (
+                  <TouchableOpacity
+                    key={plan.id}
+                    style={[
+                      styles.pricingCard,
+                      { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                      plan.isFeatured && styles.featuredCard,
+                      selectedPlan === plan.id && { borderColor: theme.colors.primary, borderWidth: 2 }
+                    ]}
+                    onPress={() => setSelectedPlan(plan.id)}
+                    disabled={!plan.pkg}
+                  >
+                    {plan.isFeatured && plan.savings && (
+                      <LinearGradient
+                        colors={[theme.colors.success, '#059669']}
+                        style={styles.dealBadge}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      >
+                        <Sparkles size={14} color="#FFF" />
+                        <Text style={styles.dealText}>{plan.savings.toUpperCase()}</Text>
+                      </LinearGradient>
+                    )}
+                    {selectedPlan === plan.id && (
+                      <View style={[styles.selectedBadge, { backgroundColor: theme.colors.primary, top: plan.isFeatured ? 40 : 12 }]}>
+                        <Check size={14} color="#FFF" />
+                      </View>
+                    )}
+                    <View style={[styles.pricingContent, plan.isFeatured && { marginTop: 20 }]}>
+                      <Text style={[styles.planTitle, { color: theme.colors.textSecondary }]}>{plan.title}</Text>
+                      <View style={styles.priceRow}>
+                        <Text style={[styles.price, { color: theme.colors.text }]}>{plan.price}</Text>
+                        <Text style={[styles.pricePeriod, { color: theme.colors.textSecondary }]}>{plan.period}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </SlideInView>
 
           {/* Features */}
@@ -432,62 +679,18 @@ export default function PremiumScreen() {
             </View>
           </SlideInView>
 
-          {/* Comparison */}
-          <SlideInView direction="up" delay={1200}>
-            <View style={styles.comparisonSection}>
-              <Text style={[styles.comparisonTitle, { color: theme.colors.text }]}>Varför välja Premium?</Text>
-              <View style={[styles.comparisonCard, { backgroundColor: theme.colors.card }]}>
-                <View style={styles.comparisonRow}>
-                  <View style={styles.comparisonColumn}>
-                    <Text style={[styles.comparisonLabel, { color: theme.colors.textMuted }]}>Gratis</Text>
-                  </View>
-                  <View style={styles.comparisonColumn}>
-                    <LinearGradient
-                      colors={['#FFD700', '#FFA500']}
-                      style={styles.premiumLabel}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                    >
-                      <Crown size={14} color="#FFF" />
-                      <Text style={styles.premiumLabelText}>Premium</Text>
-                    </LinearGradient>
-                  </View>
-                </View>
-                
-                <View style={[styles.comparisonDivider, { backgroundColor: theme.colors.border }]} />
-                
-                {[
-                  { feature: 'Antal kurser', free: 'Begränsat', premium: 'Obegränsat' },
-                  { feature: 'AI Chat', free: '—', premium: '✓' },
-                  { feature: 'Flashcards', free: '—', premium: '✓' },
-                  { feature: 'Tävlingsfunktion', free: '—', premium: '✓' },
-                  { feature: 'Avancerad statistik', free: '—', premium: '✓' },
-                ].map((item, index) => (
-                  <View key={index}>
-                    <View style={styles.comparisonRow}>
-                      <View style={[styles.comparisonColumn, styles.comparisonFeature]}>
-                        <Text style={[styles.comparisonFeatureText, { color: theme.colors.text }]}>{item.feature}</Text>
-                      </View>
-                      <View style={styles.comparisonColumn}>
-                        <Text style={[styles.comparisonValue, { color: theme.colors.textMuted }]}>{item.free}</Text>
-                      </View>
-                      <View style={styles.comparisonColumn}>
-                        <Text style={[styles.comparisonValue, styles.comparisonPremiumValue, { color: theme.colors.primary }]}>{item.premium}</Text>
-                      </View>
-                    </View>
-                    {index < 4 && <View style={[styles.comparisonDivider, { backgroundColor: theme.colors.borderLight }]} />}
-                  </View>
-                ))}
-              </View>
-            </View>
-          </SlideInView>
-
           {/* CTA Button */}
           <FadeInView delay={1400}>
             <TouchableOpacity
-              style={[styles.ctaButton, { backgroundColor: theme.colors.primary, opacity: (isPurchasing || isLoadingOfferings) ? 0.6 : 1 }]}
-              onPress={handleUpgrade}
-              disabled={isPurchasing || isLoadingOfferings}
+              style={[
+                styles.ctaButton, 
+                { 
+                  backgroundColor: theme.colors.primary, 
+                  opacity: (isPurchasing || isLoadingOfferings || pricingPlans.length === 0) ? 0.6 : 1 
+                }
+              ]}
+              onPress={handlePurchase}
+              disabled={isPurchasing || isLoadingOfferings || pricingPlans.length === 0}
             >
               <LinearGradient
                 colors={[theme.colors.primary, '#7C3AED']}
@@ -495,31 +698,162 @@ export default function PremiumScreen() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
-                <Crown size={20} color="#FFF" />
-                <Text style={styles.ctaButtonText}>
-                  {isPurchasing ? 'KÖPER...' : isLoadingOfferings ? 'LADDAR...' : 'KÖP PREMIUM'}
-                </Text>
+                {isPurchasing ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Crown size={20} color="#FFF" />
+                    <Text style={styles.ctaButtonText}>
+                      {isLoadingOfferings ? 'LADDAR...' : 'STARTA PREMIUM'}
+                    </Text>
+                  </>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </FadeInView>
 
-          {/* Payment Info */}
-          <FadeInView delay={1500}>
-            <View style={[styles.noPaymentContainer, { backgroundColor: 'transparent', borderRadius: 12, marginHorizontal: 20, paddingVertical: 8, paddingHorizontal: 20 }]}>
-              <Text style={[styles.paymentInfoText, { color: theme.colors.textSecondary }]}>Säker betalning • Avbryt när som helst</Text>
+          {/* Apple Subscription Terms (Required) */}
+          <FadeInView delay={1450}>
+            <View style={[styles.subscriptionTerms, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.termsHeader}>
+                <Shield size={16} color={theme.colors.textSecondary} />
+                <Text style={[styles.termsHeaderText, { color: theme.colors.textSecondary }]}>
+                  Prenumerationsinformation
+                </Text>
+              </View>
+              <Text style={[styles.termsText, { color: theme.colors.textMuted }]}>
+                • Abonnemanget förnyas automatiskt tills det avslutas.{'\n'}
+                • Debitering sker via ditt Apple-konto.{'\n'}
+                • Avsluta när som helst via App Store → Konto → Prenumerationer.{'\n'}
+                • Återbetalningar hanteras av Apple.
+              </Text>
             </View>
+          </FadeInView>
+
+          {/* Restore Purchases */}
+          <FadeInView delay={1500}>
+            <TouchableOpacity 
+              style={styles.restoreButton}
+              onPress={handleRestorePurchases}
+              disabled={isRestoring}
+            >
+              {isRestoring ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <Text style={[styles.restoreText, { color: theme.colors.primary }]}>
+                  Återställ köp
+                </Text>
+              )}
+            </TouchableOpacity>
           </FadeInView>
 
           {/* Footer Links */}
           <View style={styles.footerLinks}>
-            <TouchableOpacity><Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Sekretesspolicy</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowPrivacyModal(true)}>
+              <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Integritetspolicy</Text>
+            </TouchableOpacity>
             <Text style={[styles.footerDivider, { color: theme.colors.textMuted }]}>•</Text>
-            <TouchableOpacity><Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Villkor</Text></TouchableOpacity>
-            <Text style={[styles.footerDivider, { color: theme.colors.textMuted }]}>•</Text>
-            <TouchableOpacity onPress={handleRestorePurchases}><Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Återställ köp</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowTermsModal(true)}>
+              <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Användarvillkor</Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Debug info in dev mode */}
+          {getDebugMode() && offerings && (
+            <View style={[styles.debugContainer, { backgroundColor: theme.colors.card }]}>
+              <Text style={[styles.debugTitle, { color: theme.colors.warning }]}>DEBUG INFO</Text>
+              <Text style={[styles.debugText, { color: theme.colors.textSecondary }]}>
+                Offering ID: {offerings.identifier}{'\n'}
+                Packages: {offerings.availablePackages.map(p => p.identifier).join(', ')}
+              </Text>
+            </View>
+          )}
         </Animated.ScrollView>
       </SafeAreaView>
+
+      {/* Privacy Policy Modal */}
+      <Modal
+        visible={showPrivacyModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowPrivacyModal(false)}
+      >
+        <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Integritetspolicy</Text>
+            <TouchableOpacity 
+              style={[styles.modalCloseButton, { backgroundColor: theme.colors.card }]}
+              onPress={() => setShowPrivacyModal(false)}
+            >
+              <X size={20} color={theme.colors.text} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modalContent}>
+            <Text style={[styles.modalText, { color: theme.colors.text }]}>
+              {PRIVACY_POLICY_PLACEHOLDER}
+            </Text>
+            <TouchableOpacity 
+              style={[styles.externalLinkButton, { borderColor: theme.colors.border }]}
+              onPress={() => openExternalLink(PRIVACY_URL)}
+            >
+              <ExternalLink size={16} color={theme.colors.primary} />
+              <Text style={[styles.externalLinkText, { color: theme.colors.primary }]}>
+                Öppna i webbläsare
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Terms Modal */}
+      <Modal
+        visible={showTermsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowTermsModal(false)}
+      >
+        <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Användarvillkor</Text>
+            <TouchableOpacity 
+              style={[styles.modalCloseButton, { backgroundColor: theme.colors.card }]}
+              onPress={() => setShowTermsModal(false)}
+            >
+              <X size={20} color={theme.colors.text} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modalContent}>
+            <Text style={[styles.modalText, { color: theme.colors.text }]}>
+              ANVÄNDARVILLKOR - STUDIESTUGAN{'\n\n'}
+              Senast uppdaterad: [DATUM]{'\n\n'}
+              1. GODKÄNNANDE AV VILLKOR{'\n'}
+              Genom att använda Studiestugan godkänner du dessa villkor.{'\n\n'}
+              2. TJÄNSTEBESKRIVNING{'\n'}
+              Studiestugan är en studieapp som hjälper dig att planera och följa upp dina studier.{'\n\n'}
+              3. PRENUMERATIONER{'\n'}
+              • Premium-prenumeration ger tillgång till extra funktioner{'\n'}
+              • Priser visas i appen innan köp{'\n'}
+              • Prenumerationer förnyas automatiskt{'\n'}
+              • Avsluta via App Store / Google Play{'\n\n'}
+              4. ANVÄNDARENS ANSVAR{'\n'}
+              Du ansvarar för att hålla din kontoinformation säker.{'\n\n'}
+              5. ÄNDRINGAR{'\n'}
+              Vi kan uppdatera dessa villkor. Fortsatt användning innebär godkännande.{'\n\n'}
+              ---{'\n'}
+              OBS: Detta är placeholder-villkor. Ersätt med juridiskt granskade villkor innan publicering.
+            </Text>
+            <TouchableOpacity 
+              style={[styles.externalLinkButton, { borderColor: theme.colors.border }]}
+              onPress={() => openExternalLink(TERMS_URL)}
+            >
+              <ExternalLink size={16} color={theme.colors.primary} />
+              <Text style={[styles.externalLinkText, { color: theme.colors.primary }]}>
+                Öppna i webbläsare
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -557,7 +891,7 @@ const styles = StyleSheet.create({
   },
   floatingHeaderTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   heroSection: {
     paddingHorizontal: 20,
@@ -595,7 +929,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontSize: 36,
-    fontWeight: '800',
+    fontWeight: '800' as const,
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: -1,
@@ -616,7 +950,30 @@ const styles = StyleSheet.create({
   },
   trustText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '600' as const,
+  },
+  noticeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 12,
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  noticeText: {
+    flex: 1,
+    fontSize: 14,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   valueSection: {
     paddingHorizontal: 20,
@@ -647,7 +1004,7 @@ const styles = StyleSheet.create({
   },
   valueNumber: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '800' as const,
     marginBottom: 4,
   },
   valueLabel: {
@@ -657,80 +1014,131 @@ const styles = StyleSheet.create({
   },
   pricingSectionTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     textAlign: 'center',
     marginBottom: 24,
     paddingHorizontal: 20,
   },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+  },
+  errorContainer: {
+    marginHorizontal: 20,
+    padding: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  errorDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  errorRetryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
+  },
+  errorRetryText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
   pricingContainer: {
     paddingHorizontal: 20,
     marginBottom: 40,
+    gap: 16,
   },
   pricingCard: {
-    backgroundColor: '#2A2B35',
     borderRadius: 16,
     padding: 20,
-    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#3A3B47',
+    position: 'relative',
   },
   featuredCard: {
-    borderColor: '#10B981',
     borderWidth: 2,
-    position: 'relative',
   },
   dealBadge: {
     position: 'absolute',
     top: -1,
     left: -1,
     right: -1,
-    backgroundColor: '#10B981',
     paddingVertical: 8,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
   },
   dealText: {
     color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
     letterSpacing: 0.5,
   },
   pricingContent: {
+    alignItems: 'center',
+  },
+  planTitle: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  priceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    marginTop: 20,
+    gap: 4,
   },
   price: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  yearlyPriceContainer: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  yearlyPrice: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: 'bold' as const,
   },
   pricePeriod: {
     fontSize: 16,
-    color: '#9CA3AF',
   },
-  trialText: {
-    fontSize: 16,
-    color: '#9CA3AF',
-    textAlign: 'right',
+  selectedBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
   },
   featuresContainer: {
     paddingHorizontal: 20,
     marginBottom: 40,
+  },
+  featuresTitle: {
+    fontSize: 28,
+    fontWeight: '800' as const,
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  featuresSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
   },
   featureItem: {
     flexDirection: 'row',
@@ -763,7 +1171,7 @@ const styles = StyleSheet.create({
   },
   featureTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   featureBadge: {
     paddingHorizontal: 8,
@@ -772,7 +1180,7 @@ const styles = StyleSheet.create({
   },
   featureBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -785,60 +1193,94 @@ const styles = StyleSheet.create({
   },
   featureDescription: {
     fontSize: 14,
-    color: '#9CA3AF',
     lineHeight: 20,
   },
-  noPaymentContainer: {
+  ctaButton: {
+    marginHorizontal: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  ctaGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    gap: 8,
-  },
-  noPaymentText: {
-    fontSize: 16,
-    color: '#10B981',
-    fontWeight: '600',
-  },
-  paymentInfoText: {
-    fontSize: 14,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  ctaButton: {
-    backgroundColor: '#10B981',
-    marginHorizontal: 20,
-    borderRadius: 16,
     paddingVertical: 18,
-    alignItems: 'center',
-    marginBottom: 32,
+    paddingHorizontal: 24,
+    gap: 8,
   },
   ctaButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
     letterSpacing: 0.5,
+  },
+  subscriptionTerms: {
+    marginHorizontal: 20,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  termsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  termsHeaderText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  termsText: {
+    fontSize: 12,
+    lineHeight: 20,
+  },
+  restoreButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  restoreText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
   footerLinks: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 24,
+    gap: 16,
     paddingHorizontal: 20,
+    marginBottom: 20,
   },
   footerLink: {
     fontSize: 14,
-    color: '#9CA3AF',
+  },
+  footerDivider: {
+    fontSize: 14,
+  },
+  debugContainer: {
+    marginHorizontal: 20,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  debugTitle: {
+    fontSize: 12,
+    fontWeight: 'bold' as const,
+    marginBottom: 8,
+  },
+  debugText: {
+    fontSize: 11,
+    fontFamily: 'monospace',
   },
   premiumTitle: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
+    fontWeight: 'bold' as const,
     marginTop: 16,
     marginBottom: 8,
+    textAlign: 'center',
   },
   premiumSubtitle: {
     fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
   },
   benefitsSection: {
@@ -848,7 +1290,6 @@ const styles = StyleSheet.create({
   benefitItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2A2B35',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -859,13 +1300,11 @@ const styles = StyleSheet.create({
   },
   benefitTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: '600' as const,
     marginBottom: 4,
   },
   benefitDescription: {
     fontSize: 14,
-    color: '#9CA3AF',
   },
   iconContainer: {
     width: 48,
@@ -877,8 +1316,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: 'bold' as const,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -900,120 +1338,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  titleSubtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  selectedBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  savingsText: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  featuresTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    marginBottom: 8,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-  },
-  featuresSubtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
-  },
-  ctaGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    gap: 8,
-    width: '100%',
-  },
-  footerDivider: {
-    fontSize: 14,
-  },
-  comparisonSection: {
-    paddingHorizontal: 20,
-    marginBottom: 32,
-  },
-  comparisonTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  comparisonCard: {
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  comparisonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  comparisonColumn: {
+  modalContainer: {
     flex: 1,
-    alignItems: 'center',
   },
-  comparisonFeature: {
-    flex: 1.5,
-    alignItems: 'flex-start',
-  },
-  comparisonLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  premiumLabel: {
+  modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  modalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  modalText: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  externalLinkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderWidth: 1,
     borderRadius: 12,
-    gap: 4,
+    gap: 8,
+    marginBottom: 40,
   },
-  premiumLabelText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  comparisonDivider: {
-    height: 1,
-    marginVertical: 4,
-  },
-  comparisonFeatureText: {
+  externalLinkText: {
     fontSize: 14,
-    fontWeight: '600',
-  },
-  comparisonValue: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  comparisonPremiumValue: {
-    fontWeight: '700',
+    fontWeight: '600' as const,
   },
 });

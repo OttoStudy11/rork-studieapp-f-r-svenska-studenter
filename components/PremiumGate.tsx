@@ -5,54 +5,85 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Crown, Lock, Sparkles } from 'lucide-react-native';
+import { Crown, Lock, Sparkles, Zap, BarChart3, Users } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 
 const { width } = Dimensions.get('window');
 
-interface PremiumGateProps {
-  feature: 'ai-chat' | 'flashcards' | 'battle' | 'statistics';
-  children: React.ReactNode;
-}
-
-const FEATURE_TEXTS = {
+// Feature configurations for different premium features
+const FEATURE_CONFIGS = {
   'ai-chat': {
     title: 'AI Chat är Premium',
     description: 'Få tillgång till din personliga AI-studieguide med obegränsade frågor och svar',
     icon: Sparkles,
+    gradient: ['#EC4899', '#DB2777'] as const,
   },
   'flashcards': {
     title: 'Flashcards är Premium',
     description: 'Träna med AI-genererade flashcards och spaced repetition för bättre minne',
-    icon: Sparkles,
+    icon: Zap,
+    gradient: ['#F59E0B', '#D97706'] as const,
   },
   'battle': {
     title: 'Tävlingsfunktionen är Premium',
     description: 'Tävla mot dina vänner och se vem som pluggar mest. Håll dig motiverad!',
-    icon: Crown,
+    icon: Users,
+    gradient: ['#EF4444', '#DC2626'] as const,
   },
   'statistics': {
     title: 'Avancerad Statistik är Premium',
     description: 'Få detaljerade insikter och trendanalys av din studietid och framsteg',
-    icon: Crown,
+    icon: BarChart3,
+    gradient: ['#06B6D4', '#0891B2'] as const,
   },
-};
+} as const;
 
-export function PremiumGate({ feature, children }: PremiumGateProps) {
-  const { isPremium } = usePremium();
+type FeatureType = keyof typeof FEATURE_CONFIGS;
+
+interface PremiumGateProps {
+  feature: FeatureType;
+  children: React.ReactNode;
+  showLoadingWhileChecking?: boolean;
+}
+
+export function PremiumGate({ 
+  feature, 
+  children, 
+  showLoadingWhileChecking = false 
+}: PremiumGateProps) {
+  const { isPremium, isLoading, isOffline } = usePremium();
   const { theme, isDark } = useTheme();
 
+  // Show loading state while checking premium status
+  if (isLoading && showLoadingWhileChecking) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+          Kontrollerar premium-status...
+        </Text>
+      </View>
+    );
+  }
+
+  // User has premium access - show children
   if (isPremium) {
     return <>{children}</>;
   }
 
-  const featureText = FEATURE_TEXTS[feature];
-  const Icon = featureText.icon;
+  // User does not have premium - show gate
+  const featureConfig = FEATURE_CONFIGS[feature];
+  const FeatureIcon = featureConfig.icon;
+
+  const handleUpgrade = () => {
+    router.push('/premium');
+  };
 
   return (
     <View style={styles.container}>
@@ -62,7 +93,11 @@ export function PremiumGate({ feature, children }: PremiumGateProps) {
         style={styles.blurOverlay}
         tint={isDark ? 'dark' : 'light'}
       >
-        <View style={[styles.contentContainer, { backgroundColor: isDark ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)' }]}>
+        <View style={[
+          styles.contentContainer, 
+          { backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)' }
+        ]}>
+          {/* Crown icon with gradient */}
           <LinearGradient
             colors={['#FFD700', '#FFA500', '#FF8C00']}
             style={styles.iconContainer}
@@ -72,23 +107,46 @@ export function PremiumGate({ feature, children }: PremiumGateProps) {
             <Crown size={48} color="#FFF" strokeWidth={2.5} />
           </LinearGradient>
 
+          {/* Lock badge */}
           <View style={styles.lockBadge}>
             <Lock size={16} color="#FFF" />
           </View>
 
+          {/* Feature-specific icon */}
+          <LinearGradient
+            colors={featureConfig.gradient}
+            style={styles.featureIconBadge}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <FeatureIcon size={16} color="#FFF" />
+          </LinearGradient>
+
+          {/* Title and description */}
           <Text style={[styles.title, { color: theme.colors.text }]}>
-            {featureText.title}
+            {featureConfig.title}
           </Text>
           <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-            {featureText.description}
+            {featureConfig.description}
           </Text>
 
+          {/* Offline notice */}
+          {isOffline && (
+            <View style={[styles.offlineNotice, { backgroundColor: theme.colors.warning + '20' }]}>
+              <Text style={[styles.offlineText, { color: theme.colors.warning }]}>
+                Du är offline. Anslut till internet för att uppgradera.
+              </Text>
+            </View>
+          )}
+
+          {/* Upgrade button */}
           <TouchableOpacity
             style={styles.upgradeButton}
-            onPress={() => router.push('/premium')}
+            onPress={handleUpgrade}
+            disabled={isOffline}
           >
             <LinearGradient
-              colors={['#FFD700', '#FFA500']}
+              colors={isOffline ? ['#9CA3AF', '#6B7280'] : ['#FFD700', '#FFA500']}
               style={styles.upgradeGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
@@ -98,9 +156,10 @@ export function PremiumGate({ feature, children }: PremiumGateProps) {
             </LinearGradient>
           </TouchableOpacity>
 
+          {/* Learn more link */}
           <TouchableOpacity
             style={styles.learnMoreButton}
-            onPress={() => router.push('/premium')}
+            onPress={handleUpgrade}
           >
             <Text style={[styles.learnMoreText, { color: theme.colors.primary }]}>
               Se alla Premium-fördelar
@@ -112,10 +171,59 @@ export function PremiumGate({ feature, children }: PremiumGateProps) {
   );
 }
 
+// HOC version for wrapping entire screens
+interface WithPremiumGateOptions {
+  feature: FeatureType;
+  showLoadingWhileChecking?: boolean;
+}
+
+export function withPremiumGate<P extends object>(
+  WrappedComponent: React.ComponentType<P>,
+  options: WithPremiumGateOptions
+) {
+  return function PremiumGatedComponent(props: P) {
+    return (
+      <PremiumGate 
+        feature={options.feature} 
+        showLoadingWhileChecking={options.showLoadingWhileChecking}
+      >
+        <WrappedComponent {...props} />
+      </PremiumGate>
+    );
+  };
+}
+
+// Hook for checking premium status for specific features
+export function usePremiumFeature(feature: FeatureType) {
+  const { isPremium, isLoading, limits } = usePremium();
+  
+  const featureAccess = {
+    'ai-chat': limits.canUseAIChat,
+    'flashcards': limits.canUseFlashcards,
+    'battle': limits.canUseBattle,
+    'statistics': limits.canUseAdvancedStatistics,
+  };
+  
+  return {
+    hasAccess: isPremium && featureAccess[feature],
+    isLoading,
+    isPremium,
+  };
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
   },
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -124,7 +232,7 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   contentContainer: {
-    width: width - 64,
+    width: width - 48,
     maxWidth: 400,
     borderRadius: 24,
     padding: 32,
@@ -134,6 +242,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 12,
+    position: 'relative',
   },
   iconContainer: {
     width: 96,
@@ -150,8 +259,8 @@ const styles = StyleSheet.create({
   },
   lockBadge: {
     position: 'absolute',
-    top: 32,
-    right: 32,
+    top: 24,
+    right: 24,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -159,9 +268,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  featureIconBadge: {
+    position: 'absolute',
+    top: 100,
+    left: '50%',
+    marginLeft: 24,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.9)',
+  },
   title: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '800' as const,
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: -0.5,
@@ -172,6 +294,16 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 24,
     paddingHorizontal: 8,
+  },
+  offlineNotice: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  offlineText: {
+    fontSize: 13,
+    textAlign: 'center',
   },
   upgradeButton: {
     width: '100%',
@@ -195,7 +327,7 @@ const styles = StyleSheet.create({
   upgradeButtonText: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     letterSpacing: 0.5,
   },
   learnMoreButton: {
@@ -203,6 +335,8 @@ const styles = StyleSheet.create({
   },
   learnMoreText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
 });
+
+export default PremiumGate;

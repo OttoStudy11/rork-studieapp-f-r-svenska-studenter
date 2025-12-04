@@ -81,8 +81,8 @@ const PREMIUM_LIMITS: PremiumLimits = {
 
 const DEMO_MODE_KEY = 'isDemoMode';
 
-const REVENUECAT_API_KEY_IOS = 'appl_ttKXYkEBKHJdIqTkYvbLSbUSDcX';
-const REVENUECAT_API_KEY_ANDROID = 'appl_ttKXYkEBKHJdIqTkYvbLSbUSDcX';
+const REVENUECAT_API_KEY_IOS = 'appl_YOUR_IOS_KEY_HERE';
+const REVENUECAT_API_KEY_ANDROID = 'goog_YOUR_ANDROID_KEY_HERE';
 
 export const [PremiumProvider, usePremium] = createContextHook(() => {
   const { user: authUser, isAuthenticated } = useAuth();

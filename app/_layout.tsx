@@ -15,6 +15,22 @@ import { CourseProgressProvider } from "@/contexts/CourseProgressContext";
 import { ExamProvider } from "@/contexts/ExamContext";
 
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { Platform, useEffect } from 'react-native';
+import Purchases from 'react-native-purchases';
+
+//...
+
+export default function App() {
+
+  useEffect(() => {
+    Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
+
+    if (Platform.OS === 'ios') {
+    	Purchases.configure({ apiKey: <appl_ttKXYkEBKHJdIqTkYvbLSbUSDcX> });
+
+  }, []);
+}
+
 
 SplashScreen.preventAutoHideAsync();
 

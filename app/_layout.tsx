@@ -15,7 +15,7 @@ import { CourseProgressProvider } from "@/contexts/CourseProgressContext";
 import { ExamProvider } from "@/contexts/ExamContext";
 
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { Platform, useEffect } from 'react-native';
+import { Platform } from 'react-native';
 import Purchases from 'react-native-purchases';
 
 //...

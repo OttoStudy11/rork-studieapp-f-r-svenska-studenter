@@ -20,17 +20,24 @@ import Purchases from 'react-native-purchases';
 
 //...
 
-export default function App() {
+import { Platform } from 'react-native';
+import { useEffect } from 'react';
+import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
+export default function App() {
   useEffect(() => {
-    Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
+    Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+
+    // Platform-specific API keys
+    const iosApiKey = 'appl_ttKXYkEBKHJdIqTkYvbLSbUSDcX';
 
     if (Platform.OS === 'ios') {
-    	Purchases.configure({ apiKey: <appl_ttKXYkEBKHJdIqTkYvbLSbUSDcX> });
-
+       Purchases.configure({apiKey: iosApiKey});
+    } else if (Platform.OS === 'android') {
+       Purchases.configure({apiKey: androidApiKey});
+    }
   }, []);
 }
-
 
 SplashScreen.preventAutoHideAsync();
 

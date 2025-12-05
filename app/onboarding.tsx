@@ -104,17 +104,18 @@ export default function OnboardingScreen() {
     );
   }
   
-  // Update data with user info when available
+  // Initialize username only once when component mounts
   useEffect(() => {
-    if (authContext?.user?.email && !data.displayName) {
+    if (authContext?.user?.email && !data.username && !data.displayName) {
       const emailPrefix = authContext.user!.email.split('@')[0] || '';
+      const initialUsername = emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_');
       setData(prev => ({
         ...prev,
         displayName: emailPrefix,
-        username: emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+        username: initialUsername
       }));
     }
-  }, [authContext.user?.email, data.displayName]);
+  }, [authContext.user?.email]);
 
   useEffect(() => {
     if (data.gymnasiumProgram && data.year && step === 3) {
@@ -181,16 +182,7 @@ export default function OnboardingScreen() {
     }
   };
   
-  // Debounce username check
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (data.username) {
-        checkUsernameAvailability(data.username);
-      }
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [data.username]);
+  // Username is checked directly in onChangeText to avoid delays
 
   const handleNext = () => {
     const maxSteps = data.studyLevel === 'gymnasie' ? 6 : 4;
@@ -237,7 +229,7 @@ export default function OnboardingScreen() {
           subscriptionType: 'free',
           gymnasium: gymnasium,
           gymnasiumGrade: data.studyLevel === 'gymnasie' && data.year ? String(data.year) : null,
-          universityYear: data.studyLevel === 'högskola' && data.universityYear ? String(data.universityYear) : null,
+          universityYear: data.studyLevel === 'högskola' && data.universityYear ? (typeof data.universityYear === 'number' ? data.universityYear : null) : null,
           avatar: data.avatarConfig,
           selectedCourses: Array.from(data.selectedCourses),
           dailyGoalHours: data.dailyGoalHours
@@ -367,7 +359,7 @@ export default function OnboardingScreen() {
 
   const canProceed = () => {
     switch (step) {
-      case 0: return data.username.length >= 3 && data.displayName.length > 0 && usernameAvailable === true;
+      case 0: return data.username.trim().length >= 3 && data.displayName.trim().length > 0 && usernameAvailable === true;
       case 1: 
         if (data.studyLevel === 'gymnasie') {
           return data.gymnasiumProgram !== null && data.year !== null;
@@ -424,6 +416,11 @@ export default function OnboardingScreen() {
                   onChangeText={(text) => {
                     const cleanText = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
                     setData({ ...data, username: cleanText });
+                    if (cleanText.length >= 3) {
+                      checkUsernameAvailability(cleanText);
+                    } else {
+                      setUsernameAvailable(null);
+                    }
                   }}
                   autoCapitalize="none"
                   autoCorrect={false}

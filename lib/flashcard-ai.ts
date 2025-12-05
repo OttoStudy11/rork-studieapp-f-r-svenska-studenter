@@ -8,6 +8,14 @@ export interface GenerateFlashcardsOptions {
   count?: number;
 }
 
+export interface GenerateFlashcardsFromTextOptions {
+  text: string;
+  courseId: string;
+  moduleId?: string;
+  lessonId?: string;
+  count?: number;
+}
+
 const hardcodedCourseContent: Record<string, string> = {
   'RELREL01': `Kurs: Religionskunskap 1
 Utforska världsreligioner, etik och existentiella frågor
@@ -280,6 +288,147 @@ Fokusera på att täcka hela kursens centrala innehåll jämnt, med betoning på
     console.log(`✅ Successfully generated ${flashcardsToInsert.length} flashcards for ${courseName}`);
   } catch (error: any) {
     console.error('❌ Error in generateFlashcardsFromContent:', error);
+    console.error('Error stack:', error?.stack);
+    console.error('Error details:', JSON.stringify(error, null, 2));
+    
+    if (error?.message) {
+      throw new Error(error.message);
+    }
+    
+    throw new Error('Ett oväntat fel uppstod när flashcards skulle genereras. Försök igen.');
+  }
+}
+
+export async function generateFlashcardsFromText(
+  options: GenerateFlashcardsFromTextOptions
+): Promise<void> {
+  try {
+    const { text, courseId, moduleId, lessonId, count = 15 } = options;
+
+    console.log('🎯 Starting flashcard generation from user text');
+    console.log('📖 Text length:', text.length, 'characters');
+
+    if (text.trim().length < 50) {
+      throw new Error('Texten är för kort. Vänligen ange minst 50 tecken.');
+    }
+
+    console.log('🤖 Generating flashcards with AI from user-provided text...');
+    
+    let result: any;
+    try {
+      const textOutput = await generateText({
+        messages: [
+          {
+            role: 'user',
+            content: `Du är en expert på att skapa pedagogiska flashcards för svenska gymnasieelever.
+
+🎯 DITT MÅL:
+Skapa ${count} flashcards baserat på texten nedan.
+
+📝 TEXT ATT ANALYSERA:
+${text}
+
+📋 INSTRUKTIONER:
+
+1. FRÅGOR:
+   - Tydliga och konkreta
+   - Täcker viktiga koncept, definitioner och samband i texten
+   - Varierar mellan faktafrågor, förståelsefrågor och tillämpningsfrågor
+   - Använd olika frågetyper: "Vad är...?", "Förklara...", "Varför..?", "Hur..?"
+   - Undvik ja/nej-frågor
+
+2. SVAR:
+   - Koncisa men kompletta (2-4 meningar)
+   - Pedagogiska och lätta att komma ihåg
+   - Inkluderar konkreta exempel där relevant
+   - Korrekt svenska och facktermer
+
+3. SVÅRIGHETSGRAD:
+   - 1 (Lätt): Grundläggande fakta och definitioner - ~40%
+   - 2 (Medel): Förståelse och samband mellan koncept - ~40%
+   - 3 (Svår): Analys, tillämpning och komplexa samband - ~20%
+
+4. FÖRKLARINGAR (explanation):
+   - Lägg till fördjupande förklaringar för svårare koncept
+   - Använd analogier och exempel
+   - Hjälp eleven att förstå "varför" inte bara "vad"
+
+5. KONTEXT (context):
+   - Ange vilket område eller tema konceptet tillhör
+   - Basera på textens innehåll
+
+6. TAGGAR (tags):
+   - Lägg till 2-4 relevanta nyckelord per flashcard
+   - Exempel: ["Fotosyntesen", "Växtbiologi", "Energiomvandling"]
+
+7. VARIATION:
+   - Täck olika teman och områden inom texten
+   - Blanda olika typer av frågor
+
+8. FORMAT:
+   - Returnera svaret som en JSON-struktur:
+   {
+     "flashcards": [
+       {
+         "question": "Frågan här",
+         "answer": "Svaret här",
+         "difficulty": 1,
+         "explanation": "Förklaring här (valfritt)",
+         "context": "Kontext här",
+         "tags": ["tagg1", "tagg2"]
+       }
+     ]
+   }
+
+✅ SKAPA NU ${count} HÖGKVALITATIVA FLASHCARDS FRÅN TEXTEN OVAN.`,
+          },
+        ],
+      });
+      
+      try {
+        result = JSON.parse(textOutput);
+      } catch (parseError) {
+        console.error('❌ Failed to parse AI output as JSON:', parseError);
+        console.log('Raw output:', textOutput);
+        throw new Error('AI returnerade ogiltigt format');
+      }
+    } catch (genError: any) {
+      console.error('❌ Error generating flashcards with AI:', genError);
+      throw new Error(`AI-generering misslyckades: ${genError?.message || 'Okänt fel'}`);
+    }
+
+    if (!result || !result.flashcards || !Array.isArray(result.flashcards)) {
+      console.error('❌ Result is missing flashcards:', result);
+      throw new Error('AI-generering misslyckades: Inget resultat returnerades');
+    }
+
+    console.log(`✅ AI generated ${result.flashcards.length} flashcards from user text`);
+
+    const flashcardsToInsert = result.flashcards.map((fc: any) => ({
+      course_id: courseId,
+      module_id: moduleId || null,
+      lesson_id: lessonId || null,
+      question: fc.question,
+      answer: fc.answer,
+      difficulty: fc.difficulty,
+      explanation: fc.explanation || null,
+      context: fc.context || null,
+      tags: fc.tags || null,
+    }));
+
+    console.log('💾 Inserting flashcards to database...');
+    const { error: insertError } = await supabase
+      .from('flashcards')
+      .insert(flashcardsToInsert);
+
+    if (insertError) {
+      console.error('❌ Error inserting flashcards:', insertError);
+      throw new Error(`Kunde inte spara flashcards: ${insertError.message}`);
+    }
+
+    console.log(`✅ Successfully generated ${flashcardsToInsert.length} flashcards from user text`);
+  } catch (error: any) {
+    console.error('❌ Error in generateFlashcardsFromText:', error);
     console.error('Error stack:', error?.stack);
     console.error('Error details:', JSON.stringify(error, null, 2));
     

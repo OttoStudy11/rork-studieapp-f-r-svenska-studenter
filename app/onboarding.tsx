@@ -91,22 +91,11 @@ export default function OnboardingScreen() {
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [availableCourses, setAvailableCourses] = useState<GymnasiumCourse[]>([]);
   const [gymnasiumSearchQuery, setGymnasiumSearchQuery] = useState('');
-  
-  // Safety checks for contexts
-  if (!authContext || !studyContext || !toastContext) {
-    console.error('OnboardingScreen: Required contexts are not available');
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const [hasInitializedUsername, setHasInitializedUsername] = useState(false);
   
   // Initialize username only once when component mounts
   useEffect(() => {
-    if (authContext?.user?.email && !data.username && !data.displayName) {
+    if (authContext?.user?.email && !hasInitializedUsername) {
       const emailPrefix = authContext.user!.email.split('@')[0] || '';
       const initialUsername = emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_');
       setData(prev => ({
@@ -114,8 +103,9 @@ export default function OnboardingScreen() {
         displayName: emailPrefix,
         username: initialUsername
       }));
+      setHasInitializedUsername(true);
     }
-  }, [authContext.user?.email]);
+  }, [authContext, hasInitializedUsername]);
 
   useEffect(() => {
     if (data.gymnasiumProgram && data.year && step === 3) {
@@ -144,6 +134,18 @@ export default function OnboardingScreen() {
       }));
     }
   }, [data.gymnasiumProgram, data.year, step]);
+  
+  // Safety checks for contexts
+  if (!authContext || !studyContext || !toastContext) {
+    console.error('OnboardingScreen: Required contexts are not available');
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
   
   const { user } = authContext;
   const { completeOnboarding } = studyContext;
@@ -229,7 +231,7 @@ export default function OnboardingScreen() {
           subscriptionType: 'free',
           gymnasium: gymnasium,
           gymnasiumGrade: data.studyLevel === 'gymnasie' && data.year ? String(data.year) : null,
-          universityYear: data.studyLevel === 'högskola' && data.universityYear ? (typeof data.universityYear === 'number' ? data.universityYear : null) : null,
+          universityYear: data.studyLevel === 'högskola' && data.universityYear ? String(data.universityYear) : null,
           avatar: data.avatarConfig,
           selectedCourses: Array.from(data.selectedCourses),
           dailyGoalHours: data.dailyGoalHours
@@ -359,7 +361,10 @@ export default function OnboardingScreen() {
 
   const canProceed = () => {
     switch (step) {
-      case 0: return data.username.trim().length >= 3 && data.displayName.trim().length > 0 && usernameAvailable === true;
+      case 0: 
+        return data.username.trim().length >= 3 && 
+               data.displayName.trim().length > 0 && 
+               usernameAvailable === true;
       case 1: 
         if (data.studyLevel === 'gymnasie') {
           return data.gymnasiumProgram !== null && data.year !== null;
@@ -415,7 +420,10 @@ export default function OnboardingScreen() {
                   value={data.username}
                   onChangeText={(text) => {
                     const cleanText = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    // Always update the state, even if empty
                     setData({ ...data, username: cleanText });
+                    
+                    // Validate availability only when length is >= 3
                     if (cleanText.length >= 3) {
                       checkUsernameAvailability(cleanText);
                     } else {

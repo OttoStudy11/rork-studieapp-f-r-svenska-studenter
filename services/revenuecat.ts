@@ -182,6 +182,12 @@ let isInitialized = false;
 let initializationPromise: Promise<boolean> | null = null;
 
 export async function initializeRevenueCat(userId?: string): Promise<boolean> {
+  // Web is not supported - RevenueCat SDK doesn't work properly on React Native Web
+  if (Platform.OS === 'web') {
+    log('info', 'RevenueCat is not supported on web platform. Purchases disabled.');
+    return false;
+  }
+
   // Return existing promise if already initializing
   if (initializationPromise) {
     return initializationPromise;

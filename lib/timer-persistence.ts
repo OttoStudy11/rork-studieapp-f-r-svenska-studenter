@@ -121,8 +121,8 @@ export class TimerPersistence {
 
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: '💪 Keep Going!',
-          body: `You've been focused on ${courseName} for ${delaySeconds / 60} minutes!`,
+          title: '💪 Fortsätt kämpa!',
+          body: `Du har varit fokuserad på ${courseName} i ${delaySeconds / 60} minuter!`,
           sound: false,
           priority: Notifications.AndroidNotificationPriority.LOW,
         },

@@ -287,6 +287,17 @@ export default function TimerScreen() {
   const [expandedSectionPlanner, setExpandedSectionPlanner] = useState<'upcoming' | 'history' | 'exams' | null>('upcoming');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+
+  const [showAddExam, setShowAddExam] = useState(false);
+  const [newExamTitle, setNewExamTitle] = useState('');
+  const [newExamCourse, setNewExamCourse] = useState('');
+  const [newExamDate, setNewExamDate] = useState(new Date());
+  const [newExamDuration, setNewExamDuration] = useState(120);
+  const [newExamLocation, setNewExamLocation] = useState('');
+  const [newExamType, setNewExamType] = useState<'written' | 'oral' | 'practical' | 'online' | 'other'>('written');
+  const [newExamNotes, setNewExamNotes] = useState('');
+  const [showExamDatePicker, setShowExamDatePicker] = useState(false);
+  const [showExamTimePicker, setShowExamTimePicker] = useState(false);
   
   // Suppress unused variable warnings for now
   void motivationalQuote;
@@ -1308,7 +1319,7 @@ export default function TimerScreen() {
                     style={[styles.addSessionButton, { backgroundColor: theme.colors.warning }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      // TODO: Open add exam modal
+                      setShowAddExam(true);
                     }}
                     activeOpacity={0.8}
                   >
@@ -1324,54 +1335,128 @@ export default function TimerScreen() {
 
               {expandedSectionPlanner === 'exams' && (
                 <View style={styles.sessionsList}>
-                  {pomodoroSessions.length === 0 ? (
+                  {upcomingExams.length === 0 && completedExams.length === 0 ? (
                     <View style={styles.emptyState}>
-                      <BookOpen size={48} color={theme.colors.textSecondary} opacity={0.3} />
+                      <FileText size={48} color={theme.colors.textSecondary} opacity={0.3} />
                       <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
-                        Ingen historik än
+                        Inga prov schemalagda
                       </Text>
                       <Text style={[styles.emptyStateSubtext, { color: theme.colors.textSecondary }]}>
-                        Slutför en session för att se den här
+                        Tryck på + för att lägga till ett prov
                       </Text>
                     </View>
                   ) : (
-                    pomodoroSessions
-                      .slice(0, 10)
-                      .map((session) => {
-                        const courseName = session.courseId 
-                          ? courses.find((c) => c.id === session.courseId)?.title || 'Okänd kurs'
-                          : 'Allmän session';
-                        
-                        return (
-                          <View key={session.id} style={[styles.historyCard, { backgroundColor: theme.colors.card }]}>
-                            <View style={styles.historyCardHeader}>
-                              <View style={styles.historyCardLeft}>
-                                <Brain size={20} color={theme.colors.secondary} />
-                                <Text style={[styles.historyCourseText, { color: theme.colors.text }]}>
-                                  {courseName}
-                                </Text>
+                    <>
+                      {upcomingExams.length > 0 && (
+                        <View style={styles.examSection}>
+                          <Text style={[styles.examSectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
+                          {upcomingExams.map((exam) => {
+                            const courseName = exam.courseId 
+                              ? courses.find((c) => c.id === exam.courseId)?.title || 'Allmän kurs'
+                              : 'Allmänt prov';
+                            
+                            return (
+                              <View key={exam.id} style={[styles.examCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.warning }]}>
+                                <View style={styles.examCardHeader}>
+                                  <View style={styles.examCardLeft}>
+                                    <FileText size={20} color={theme.colors.warning} />
+                                    <View>
+                                      <Text style={[styles.examTitle, { color: theme.colors.text }]}>
+                                        {exam.title}
+                                      </Text>
+                                      <Text style={[styles.examCourse, { color: theme.colors.textSecondary }]}>
+                                        {courseName}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                </View>
+                                <View style={styles.examCardDetails}>
+                                  <View style={styles.examDetailRow}>
+                                    <Calendar size={16} color={theme.colors.textSecondary} />
+                                    <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
+                                      {new Date(exam.examDate).toLocaleDateString('sv-SE', { 
+                                        weekday: 'long',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </Text>
+                                  </View>
+                                  {exam.location && (
+                                    <View style={styles.examDetailRow}>
+                                      <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
+                                        📍 {exam.location}
+                                      </Text>
+                                    </View>
+                                  )}
+                                  {exam.durationMinutes && (
+                                    <View style={styles.examDetailRow}>
+                                      <Clock size={16} color={theme.colors.textSecondary} />
+                                      <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
+                                        {exam.durationMinutes} minuter
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+                                {exam.notes && (
+                                  <Text style={[styles.examNotes, { color: theme.colors.textSecondary }]} numberOfLines={2}>
+                                    {exam.notes}
+                                  </Text>
+                                )}
                               </View>
-                              <View style={[styles.historyBadge, { backgroundColor: theme.colors.secondary + '20' }]}>
-                                <Text style={[styles.historyBadgeText, { color: theme.colors.secondary }]}>
-                                  {session.duration} min
-                                </Text>
+                            );
+                          })}
+                        </View>
+                      )}
+
+                      {completedExams.length > 0 && (
+                        <View style={[styles.examSection, { marginTop: 16 }]}>
+                          <Text style={[styles.examSectionTitle, { color: theme.colors.text }]}>Genomförda prov</Text>
+                          {completedExams.slice(0, 5).map((exam) => {
+                            const courseName = exam.courseId 
+                              ? courses.find((c) => c.id === exam.courseId)?.title || 'Allmän kurs'
+                              : 'Allmänt prov';
+                            
+                            return (
+                              <View key={exam.id} style={[styles.examCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.success, opacity: 0.7 }]}>
+                                <View style={styles.examCardHeader}>
+                                  <View style={styles.examCardLeft}>
+                                    <CheckCircle size={20} color={theme.colors.success} />
+                                    <View>
+                                      <Text style={[styles.examTitle, { color: theme.colors.text }]}>
+                                        {exam.title}
+                                      </Text>
+                                      <Text style={[styles.examCourse, { color: theme.colors.textSecondary }]}>
+                                        {courseName}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                  {exam.grade && (
+                                    <View style={[styles.gradeBadge, { backgroundColor: theme.colors.success + '20' }]}>
+                                      <Text style={[styles.gradeText, { color: theme.colors.success }]}>
+                                        {exam.grade}
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+                                <View style={styles.examCardDetails}>
+                                  <View style={styles.examDetailRow}>
+                                    <Calendar size={16} color={theme.colors.textSecondary} />
+                                    <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
+                                      {new Date(exam.examDate).toLocaleDateString('sv-SE', { 
+                                        month: 'short',
+                                        day: 'numeric'
+                                      })}
+                                    </Text>
+                                  </View>
+                                </View>
                               </View>
-                            </View>
-                            <View style={styles.historyCardDetails}>
-                              <Calendar size={14} color={theme.colors.textSecondary} />
-                              <Text style={[styles.historyDetailText, { color: theme.colors.textSecondary }]}>
-                                {new Date(session.endTime).toLocaleDateString('sv-SE', { 
-                                  weekday: 'short',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </Text>
-                            </View>
-                          </View>
-                        );
-                      })
+                            );
+                          })}
+                        </View>
+                      )}
+                    </>
                   )}
                 </View>
               )}
@@ -2773,5 +2858,76 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  examSection: {
+    marginTop: 8,
+  },
+  examSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    opacity: 0.7,
+  },
+  examCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  examCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  examCardLeft: {
+    flexDirection: 'row',
+    gap: 12,
+    flex: 1,
+  },
+  examTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  examCourse: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  examCardDetails: {
+    gap: 8,
+  },
+  examDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  examDetailText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  examNotes: {
+    fontSize: 14,
+    fontWeight: '400',
+    lineHeight: 20,
+    marginTop: 12,
+    fontStyle: 'italic',
+  },
+  gradeBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  gradeText: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });

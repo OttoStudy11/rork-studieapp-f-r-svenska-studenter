@@ -1,19 +1,18 @@
 -- ============================================================
--- COURSE CONTENT POPULATION TEMPLATE
+-- COURSE CONTENT POPULATION TEMPLATE (UUID VERSION)
 -- ============================================================
--- This template shows how to properly populate course content
--- including modules and lessons for any course in the system.
+-- IMPORTANT: This template uses proper UUIDs for all IDs.
+-- The database requires UUID format for module and lesson IDs.
 -- ============================================================
 
 -- ============================================================
 -- STEP 1: Ensure the course exists in the courses table
 -- ============================================================
--- Course IDs should use the course_code format (e.g., 'MATMAT01a')
--- This ensures consistency across the system
+-- The courses table uses course_code as the id (string format is OK here)
 
 INSERT INTO courses (id, course_code, title, description, subject, level, points, resources, tips, related_courses, progress)
 VALUES (
-  'MATMAT01a',                    -- id (use course_code as id for consistency)
+  'MATMAT01a',                    -- id (course_code format)
   'MATMAT01a',                    -- course_code
   'Matematik 1a',                 -- title
   'Grundläggande kurs i matematik för gymnasiet. Kursen behandlar aritmetik, algebra, geometri, sannolikhet och statistik samt funktioner.',
@@ -31,15 +30,15 @@ ON CONFLICT (id) DO UPDATE SET
   points = EXCLUDED.points;
 
 -- ============================================================
--- STEP 2: Create course modules
+-- STEP 2: Create course modules (using UUIDs)
 -- ============================================================
--- Modules are the main sections of a course
--- Each module should have a clear order_index starting from 1
+-- IMPORTANT: course_modules.id MUST be a valid UUID!
+-- Use gen_random_uuid() or specify UUIDs manually
 
 -- Module 1: Taluppfattning och aritmetik
 INSERT INTO course_modules (id, course_id, title, description, order_index, estimated_hours, is_published)
 VALUES (
-  'MATMAT01a-M01',
+  'a1b2c3d4-1111-4000-8000-000000000001'::uuid,  -- Valid UUID format
   'MATMAT01a',
   'Taluppfattning och aritmetik',
   'Grundläggande begrepp om tal, räknesätt och talens egenskaper.',
@@ -55,7 +54,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- Module 2: Algebra
 INSERT INTO course_modules (id, course_id, title, description, order_index, estimated_hours, is_published)
 VALUES (
-  'MATMAT01a-M02',
+  'a1b2c3d4-1111-4000-8000-000000000002'::uuid,
   'MATMAT01a',
   'Algebra',
   'Algebraiska uttryck, ekvationer och olikheter.',
@@ -71,7 +70,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- Module 3: Geometri
 INSERT INTO course_modules (id, course_id, title, description, order_index, estimated_hours, is_published)
 VALUES (
-  'MATMAT01a-M03',
+  'a1b2c3d4-1111-4000-8000-000000000003'::uuid,
   'MATMAT01a',
   'Geometri',
   'Geometriska begrepp, area, volym och trigonometri.',
@@ -87,7 +86,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- Module 4: Funktioner
 INSERT INTO course_modules (id, course_id, title, description, order_index, estimated_hours, is_published)
 VALUES (
-  'MATMAT01a-M04',
+  'a1b2c3d4-1111-4000-8000-000000000004'::uuid,
   'MATMAT01a',
   'Funktioner',
   'Linjära funktioner, andragradsfunktioner och exponentialfunktioner.',
@@ -103,7 +102,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- Module 5: Sannolikhet och statistik
 INSERT INTO course_modules (id, course_id, title, description, order_index, estimated_hours, is_published)
 VALUES (
-  'MATMAT01a-M05',
+  'a1b2c3d4-1111-4000-8000-000000000005'::uuid,
   'MATMAT01a',
   'Sannolikhet och statistik',
   'Grundläggande sannolikhetslära och beskrivande statistik.',
@@ -117,11 +116,9 @@ ON CONFLICT (id) DO UPDATE SET
   is_published = EXCLUDED.is_published;
 
 -- ============================================================
--- STEP 3: Create lessons for each module
+-- STEP 3: Create lessons for each module (using UUIDs)
 -- ============================================================
--- Lessons are the individual learning units within a module
--- lesson_type can be: 'theory', 'practical', 'exercise', 'quiz', 'video', 'reading'
--- difficulty_level can be: 'easy', 'medium', 'hard'
+-- IMPORTANT: course_lessons.id and module_id MUST be valid UUIDs!
 
 -- =====================
 -- MODULE 1 LESSONS
@@ -130,8 +127,8 @@ ON CONFLICT (id) DO UPDATE SET
 -- Lesson 1.1: Introduktion till tal
 INSERT INTO course_lessons (id, module_id, course_id, title, description, content, lesson_type, order_index, estimated_minutes, difficulty_level, learning_objectives, is_published)
 VALUES (
-  'MATMAT01a-M01-L01',
-  'MATMAT01a-M01',
+  'b1b2c3d4-1111-4000-8000-000000000101'::uuid,
+  'a1b2c3d4-1111-4000-8000-000000000001'::uuid,  -- Must match module UUID
   'MATMAT01a',
   'Introduktion till tal',
   'En översikt över talsystemet och dess historia.',
@@ -171,8 +168,8 @@ ON CONFLICT (id) DO UPDATE SET
 -- Lesson 1.2: Räknesätt
 INSERT INTO course_lessons (id, module_id, course_id, title, description, content, lesson_type, order_index, estimated_minutes, difficulty_level, learning_objectives, is_published)
 VALUES (
-  'MATMAT01a-M01-L02',
-  'MATMAT01a-M01',
+  'b1b2c3d4-1111-4000-8000-000000000102'::uuid,
+  'a1b2c3d4-1111-4000-8000-000000000001'::uuid,
   'MATMAT01a',
   'Räknesätt och prioriteringsregler',
   'Addition, subtraktion, multiplikation och division med prioriteringsregler.',
@@ -216,8 +213,8 @@ ON CONFLICT (id) DO UPDATE SET
 -- Lesson 1.3: Bråkräkning
 INSERT INTO course_lessons (id, module_id, course_id, title, description, content, lesson_type, order_index, estimated_minutes, difficulty_level, learning_objectives, is_published)
 VALUES (
-  'MATMAT01a-M01-L03',
-  'MATMAT01a-M01',
+  'b1b2c3d4-1111-4000-8000-000000000103'::uuid,
+  'a1b2c3d4-1111-4000-8000-000000000001'::uuid,
   'MATMAT01a',
   'Bråkräkning',
   'Räkning med bråktal: addition, subtraktion, multiplikation och division.',
@@ -259,8 +256,8 @@ ON CONFLICT (id) DO UPDATE SET
 -- Lesson 1.4: Övningar taluppfattning
 INSERT INTO course_lessons (id, module_id, course_id, title, description, content, lesson_type, order_index, estimated_minutes, difficulty_level, learning_objectives, is_published)
 VALUES (
-  'MATMAT01a-M01-L04',
-  'MATMAT01a-M01',
+  'b1b2c3d4-1111-4000-8000-000000000104'::uuid,
+  'a1b2c3d4-1111-4000-8000-000000000001'::uuid,
   'MATMAT01a',
   'Övningar: Taluppfattning',
   'Praktiska övningar på taluppfattning och aritmetik.',
@@ -313,8 +310,8 @@ ON CONFLICT (id) DO UPDATE SET
 -- Lesson 2.1: Algebraiska uttryck
 INSERT INTO course_lessons (id, module_id, course_id, title, description, content, lesson_type, order_index, estimated_minutes, difficulty_level, learning_objectives, is_published)
 VALUES (
-  'MATMAT01a-M02-L01',
-  'MATMAT01a-M02',
+  'b1b2c3d4-1111-4000-8000-000000000201'::uuid,
+  'a1b2c3d4-1111-4000-8000-000000000002'::uuid,
   'MATMAT01a',
   'Algebraiska uttryck',
   'Introduktion till variabler och algebraiska uttryck.',
@@ -364,8 +361,8 @@ ON CONFLICT (id) DO UPDATE SET
 -- Lesson 2.2: Ekvationer
 INSERT INTO course_lessons (id, module_id, course_id, title, description, content, lesson_type, order_index, estimated_minutes, difficulty_level, learning_objectives, is_published)
 VALUES (
-  'MATMAT01a-M02-L02',
-  'MATMAT01a-M02',
+  'b1b2c3d4-1111-4000-8000-000000000202'::uuid,
+  'a1b2c3d4-1111-4000-8000-000000000002'::uuid,
   'MATMAT01a',
   'Linjära ekvationer',
   'Lösning av linjära ekvationer av första graden.',
@@ -415,8 +412,6 @@ ON CONFLICT (id) DO UPDATE SET
   content = EXCLUDED.content,
   is_published = EXCLUDED.is_published;
 
--- Continue with more lessons...
-
 -- =====================
 -- MODULE 3 LESSONS
 -- =====================
@@ -424,8 +419,8 @@ ON CONFLICT (id) DO UPDATE SET
 -- Lesson 3.1: Geometriska begrepp
 INSERT INTO course_lessons (id, module_id, course_id, title, description, content, lesson_type, order_index, estimated_minutes, difficulty_level, learning_objectives, is_published)
 VALUES (
-  'MATMAT01a-M03-L01',
-  'MATMAT01a-M03',
+  'b1b2c3d4-1111-4000-8000-000000000301'::uuid,
+  'a1b2c3d4-1111-4000-8000-000000000003'::uuid,
   'MATMAT01a',
   'Geometriska begrepp',
   'Grundläggande geometriska begrepp och figurer.',
@@ -479,8 +474,8 @@ ON CONFLICT (id) DO UPDATE SET
 -- Lesson 4.1: Funktioner introduktion
 INSERT INTO course_lessons (id, module_id, course_id, title, description, content, lesson_type, order_index, estimated_minutes, difficulty_level, learning_objectives, is_published)
 VALUES (
-  'MATMAT01a-M04-L01',
-  'MATMAT01a-M04',
+  'b1b2c3d4-1111-4000-8000-000000000401'::uuid,
+  'a1b2c3d4-1111-4000-8000-000000000004'::uuid,
   'MATMAT01a',
   'Introduktion till funktioner',
   'Begreppet funktion och funktionssamband.',
@@ -533,8 +528,8 @@ ON CONFLICT (id) DO UPDATE SET
 -- Lesson 5.1: Sannolikhet
 INSERT INTO course_lessons (id, module_id, course_id, title, description, content, lesson_type, order_index, estimated_minutes, difficulty_level, learning_objectives, is_published)
 VALUES (
-  'MATMAT01a-M05-L01',
-  'MATMAT01a-M05',
+  'b1b2c3d4-1111-4000-8000-000000000501'::uuid,
+  'a1b2c3d4-1111-4000-8000-000000000005'::uuid,
   'MATMAT01a',
   'Grundläggande sannolikhet',
   'Introduktion till sannolikhetslära.',
@@ -583,13 +578,13 @@ ON CONFLICT (id) DO UPDATE SET
   is_published = EXCLUDED.is_published;
 
 -- ============================================================
--- STEP 4: Create exercises (optional but recommended)
+-- STEP 4: Create exercises (optional)
 -- ============================================================
 
 INSERT INTO course_exercises (id, lesson_id, course_id, title, description, instructions, exercise_type, questions, correct_answers, points, difficulty_level, is_published)
 VALUES (
-  'MATMAT01a-M01-L01-E01',
-  'MATMAT01a-M01-L01',
+  'c1b2c3d4-1111-4000-8000-000000000001'::uuid,
+  'b1b2c3d4-1111-4000-8000-000000000101'::uuid,
   'MATMAT01a',
   'Quiz: Taltyper',
   'Testa dina kunskaper om olika taltyper.',
@@ -616,7 +611,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 INSERT INTO study_guides (id, course_id, title, description, content, guide_type, difficulty_level, estimated_read_time, is_published)
 VALUES (
-  'MATMAT01a-SG01',
+  'd1b2c3d4-1111-4000-8000-000000000001'::uuid,
   'MATMAT01a',
   'Formelsamling Matematik 1a',
   'Komplett formelsamling för Matematik 1a',
@@ -657,7 +652,6 @@ ON CONFLICT (id) DO UPDATE SET
 -- ============================================================
 -- VERIFICATION QUERIES
 -- ============================================================
--- Run these to verify the data was inserted correctly
 
 -- Check course exists
 SELECT id, title, subject, points FROM courses WHERE id = 'MATMAT01a';

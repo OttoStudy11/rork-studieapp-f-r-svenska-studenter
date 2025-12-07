@@ -4,13 +4,29 @@
 
 This guide explains how to properly set up course content in the StudieStugan app. The system uses Supabase to store courses, modules, lessons, and study guides.
 
+## IMPORTANT: UUID Requirements
+
+**The database uses UUID format for module, lesson, exercise, and study guide IDs!**
+
+- `courses.id` can be a string (course_code like 'MATMAT01a')
+- `course_modules.id` **MUST be a valid UUID**
+- `course_lessons.id` **MUST be a valid UUID**
+- `course_lessons.module_id` **MUST be a valid UUID**
+- `course_exercises.id` **MUST be a valid UUID**
+- `study_guides.id` **MUST be a valid UUID**
+
+Example valid UUID: `'a1b2c3d4-1111-4000-8000-000000000001'::uuid`
+
+**WRONG (will cause error):** `'MATMAT01a-M01'` (invalid UUID syntax)
+**CORRECT:** `'a1b2c3d4-1111-4000-8000-000000000001'::uuid`
+
 ## Database Schema
 
 ### Tables Structure
 
 ```
 courses
-├── id (PRIMARY KEY - use course_code like 'MATMAT01a')
+├── id (PRIMARY KEY - STRING, use course_code like 'MATMAT01a')
 ├── course_code
 ├── title
 ├── description
@@ -22,8 +38,8 @@ courses
 └── related_courses (JSONB array)
 
 course_modules
-├── id (PRIMARY KEY - use format 'COURSEID-M01')
-├── course_id (FK → courses.id)
+├── id (PRIMARY KEY - UUID!)
+├── course_id (FK → courses.id - string)
 ├── title
 ├── description
 ├── order_index
@@ -31,9 +47,9 @@ course_modules
 └── is_published
 
 course_lessons
-├── id (PRIMARY KEY - use format 'COURSEID-M01-L01')
-├── module_id (FK → course_modules.id)
-├── course_id (FK → courses.id)
+├── id (PRIMARY KEY - UUID!)
+├── module_id (FK → course_modules.id - UUID!)
+├── course_id (FK → courses.id - string)
 ├── title
 ├── description
 ├── content (TEXT - markdown supported)
@@ -45,8 +61,8 @@ course_lessons
 └── is_published
 
 study_guides
-├── id (PRIMARY KEY - use format 'COURSEID-SG01')
-├── course_id (FK → courses.id)
+├── id (PRIMARY KEY - UUID!)
+├── course_id (FK → courses.id - string)
 ├── title
 ├── description
 ├── content (TEXT - markdown)
@@ -56,17 +72,15 @@ study_guides
 └── is_published
 ```
 
-## ID Naming Convention
+## ID Format Requirements
 
-Use consistent IDs for easy reference:
-
-| Entity | Format | Example |
-|--------|--------|---------|
-| Course | `{COURSE_CODE}` | `MATMAT01a` |
-| Module | `{COURSE_ID}-M{##}` | `MATMAT01a-M01` |
-| Lesson | `{MODULE_ID}-L{##}` | `MATMAT01a-M01-L01` |
-| Exercise | `{LESSON_ID}-E{##}` | `MATMAT01a-M01-L01-E01` |
-| Study Guide | `{COURSE_ID}-SG{##}` | `MATMAT01a-SG01` |
+| Entity | ID Format | Example |
+|--------|-----------|---------|
+| Course | String (course_code) | `'MATMAT01a'` |
+| Module | **UUID** | `'a1b2c3d4-1111-4000-8000-000000000001'::uuid` |
+| Lesson | **UUID** | `'b1b2c3d4-1111-4000-8000-000000000101'::uuid` |
+| Exercise | **UUID** | `'c1b2c3d4-1111-4000-8000-000000000001'::uuid` |
+| Study Guide | **UUID** | `'d1b2c3d4-1111-4000-8000-000000000001'::uuid` |
 
 ## How to Add Course Content
 
@@ -77,18 +91,19 @@ Copy the template from `sql-templates/course-content-template.sql` and modify it
 ### Step 2: Modify Course Details
 
 ```sql
+-- Courses can use string IDs (course_code format)
 INSERT INTO courses (id, course_code, title, description, subject, level, points, resources, tips, related_courses, progress)
 VALUES (
-  'YOUR_COURSE_CODE',    -- e.g., 'ENGENG05'
-  'YOUR_COURSE_CODE',
-  'Course Title',        -- e.g., 'Engelska 5'
+  'ENGENG05',            -- id (string, course_code format)
+  'ENGENG05',            -- course_code
+  'Engelska 5',
   'Course description...',
-  'Subject',             -- e.g., 'Engelska'
+  'Engelska',
   'gymnasie',
-  100,                   -- points
+  100,
   '["Resource 1", "Resource 2"]'::jsonb,
   '["Tip 1", "Tip 2"]'::jsonb,
-  '["RELATED1", "RELATED2"]'::jsonb,
+  '["ENGENG06"]'::jsonb,
   0
 )
 ON CONFLICT (id) DO UPDATE SET
@@ -96,45 +111,47 @@ ON CONFLICT (id) DO UPDATE SET
   description = EXCLUDED.description;
 ```
 
-### Step 3: Add Modules
+### Step 3: Add Modules (MUST USE UUIDs!)
 
 ```sql
+-- IMPORTANT: Module ID MUST be a valid UUID!
 INSERT INTO course_modules (id, course_id, title, description, order_index, estimated_hours, is_published)
 VALUES (
-  'ENGENG05-M01',        -- Module ID
-  'ENGENG05',            -- Course ID
+  'e1234567-0001-4000-8000-000000000001'::uuid,  -- UUID format required!
+  'ENGENG05',                                     -- Course ID (string)
   'Module Title',
   'Module description...',
-  1,                     -- Order (1, 2, 3...)
-  8,                     -- Estimated hours
-  true                   -- Published
+  1,
+  8,
+  true
 )
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,
   is_published = EXCLUDED.is_published;
 ```
 
-### Step 4: Add Lessons
+### Step 4: Add Lessons (MUST USE UUIDs!)
 
 ```sql
+-- IMPORTANT: Lesson ID and module_id MUST be valid UUIDs!
 INSERT INTO course_lessons (
   id, module_id, course_id, title, description, content,
   lesson_type, order_index, estimated_minutes, difficulty_level,
   learning_objectives, is_published
 )
 VALUES (
-  'ENGENG05-M01-L01',
-  'ENGENG05-M01',
+  'f1234567-0001-4000-8000-000000000101'::uuid,  -- UUID format required!
+  'e1234567-0001-4000-8000-000000000001'::uuid,  -- Must match module UUID!
   'ENGENG05',
   'Lesson Title',
   'Short description',
   '## Lesson Content
   
   Your markdown content here...',
-  'theory',              -- theory, practical, exercise, quiz, video, reading
+  'theory',
   1,
   30,
-  'easy',                -- easy, medium, hard
+  'easy',
   ARRAY['Objective 1', 'Objective 2'],
   true
 )
@@ -142,6 +159,19 @@ ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,
   content = EXCLUDED.content,
   is_published = EXCLUDED.is_published;
+```
+
+### UUID Generation Tips
+
+For creating consistent UUIDs, use this pattern:
+- Base: `'{prefix}-{course}-4000-8000-{suffix}'`
+- Example for ENGENG05 Module 1: `'e1234567-e505-4000-8000-000000000001'`
+- Example for ENGENG05 Lesson 1.1: `'f1234567-e505-4000-8000-000000000101'`
+
+Or use `gen_random_uuid()` in PostgreSQL to auto-generate UUIDs:
+```sql
+INSERT INTO course_modules (id, course_id, title, ...)
+VALUES (gen_random_uuid(), 'ENGENG05', 'Module Title', ...);
 ```
 
 ## Available Courses (Ready for Content)
@@ -232,10 +262,21 @@ When a course has no modules/lessons:
 - Flashcards and study planning still work
 - Refresh button allows checking for new content
 
+## Common Errors
+
+### "invalid input syntax for type uuid"
+**Cause:** You used a string like `'MATMAT01a-M01'` instead of a UUID.
+**Solution:** Use proper UUID format: `'a1b2c3d4-1111-4000-8000-000000000001'::uuid`
+
+### Foreign key constraint violation
+**Cause:** The `module_id` in lessons doesn't match any existing module UUID.
+**Solution:** Make sure the module exists first and use the exact same UUID.
+
 ## Tips
 
-1. **Always use `is_published = true`** for content to appear in the app
-2. **Use `ON CONFLICT` clauses** to make scripts idempotent (runnable multiple times)
-3. **Order matters** - set `order_index` correctly for proper sequencing
-4. **Test incrementally** - add one module, verify, then add more
-5. **Use markdown** in `content` field for rich formatting
+1. **Always use valid UUIDs** for modules, lessons, exercises, and study guides
+2. **Always use `is_published = true`** for content to appear in the app
+3. **Use `ON CONFLICT` clauses** to make scripts idempotent (runnable multiple times)
+4. **Order matters** - set `order_index` correctly for proper sequencing
+5. **Test incrementally** - add one module, verify, then add more
+6. **Use markdown** in `content` field for rich formatting

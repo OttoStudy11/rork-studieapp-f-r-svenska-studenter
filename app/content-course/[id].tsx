@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router';
 import { 
-  BookOpen, 
   CheckCircle,
   ChevronRight,
   Play,
@@ -19,12 +18,12 @@ import {
   HelpCircle,
   Lock,
   Clock,
-  Award,
-  Sparkles
+  Sparkles,
+  BookOpen
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCourseContent } from '@/contexts/CourseContentContext';
-import { CourseHero, getCourseStyle } from '@/components/CourseHero';
+import { CourseHeader, getCourseStyle } from '@/components/CourseHeader';
 import * as Haptics from 'expo-haptics';
 
 export default function ContentCourseDetailScreen() {
@@ -40,7 +39,6 @@ export default function ContentCourseDetailScreen() {
   } = useCourseContent();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   const course = id ? getCourseById(id) : undefined;
@@ -57,20 +55,12 @@ export default function ContentCourseDetailScreen() {
   );
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
 
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -90,12 +80,12 @@ export default function ContentCourseDetailScreen() {
 
   const navigateToLesson = (lessonId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/content-lesson/${lessonId}` as any);
+    router.push(`/content-lesson/${lessonId}` as never);
   };
 
   const navigateToModule = (moduleId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/content-module/${moduleId}` as any);
+    router.push(`/content-module/${moduleId}` as never);
   };
 
   const handleStartCourse = () => {
@@ -108,14 +98,7 @@ export default function ContentCourseDetailScreen() {
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <Stack.Screen 
-          options={{ 
-            title: 'Laddar...',
-            headerShown: true,
-            headerStyle: { backgroundColor: theme.colors.background },
-            headerTintColor: theme.colors.text
-          }} 
-        />
+        <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
@@ -129,14 +112,7 @@ export default function ContentCourseDetailScreen() {
   if (!course) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <Stack.Screen 
-          options={{ 
-            title: 'Kurs ej hittad',
-            headerShown: true,
-            headerStyle: { backgroundColor: theme.colors.background },
-            headerTintColor: theme.colors.text
-          }} 
-        />
+        <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.errorContainer}>
           <BookOpen size={64} color={theme.colors.textMuted} />
           <Text style={[styles.errorTitle, { color: theme.colors.text }]}>
@@ -162,22 +138,17 @@ export default function ContentCourseDetailScreen() {
     0
   );
   const estimatedHours = Math.ceil(totalDuration / 60);
+  const isCompleted = progress?.percentComplete === 100;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Stack.Screen 
-        options={{ 
-          title: '',
-          headerShown: true,
-          headerTransparent: true,
-          headerTintColor: 'white'
-        }} 
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView 
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        bounces={true}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -187,135 +158,75 @@ export default function ContentCourseDetailScreen() {
           />
         }
       >
-        <CourseHero
+        <CourseHeader
           title={course.title}
-          description={course.description}
+          subtitle={course.description}
           courseStyle={courseStyle}
+          badge="Studiekurs"
+          isCompleted={isCompleted}
+          stats={[
+            { label: 'moduler', value: course.modules.length, icon: 'modules' },
+            { label: 'lektioner', value: totalLessons, icon: 'lessons' },
+            { label: estimatedHours > 0 ? 'timmar' : 'min', value: estimatedHours > 0 ? estimatedHours : totalDuration, icon: 'time' }
+          ]}
           progress={progress ? {
             completed: progress.lessonsCompleted,
             total: progress.totalLessons || totalLessons,
             percentage: progress.percentComplete
           } : undefined}
-          modulesCount={course.modules.length}
-          lessonsCount={totalLessons}
-          estimatedHours={estimatedHours}
-          showEditButton={false}
-          onStartPress={handleStartCourse}
-          imageUrl={course.image}
-          fadeAnim={fadeAnim}
-          slideAnim={slideAnim}
-          variant="compact"
-          badgeText="Studiekurs"
         />
 
-        {progress && progress.percentComplete > 0 && (
-          <Animated.View 
-            style={[
-              styles.progressCard,
-              { 
-                backgroundColor: theme.colors.card,
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }]
-              }
-            ]}
-          >
-            <View style={styles.progressHeader}>
-              <Award size={22} color={courseStyle.primaryColor} />
-              <View style={styles.progressInfo}>
-                <Text style={[styles.progressTitle, { color: theme.colors.text }]}>
-                  Din framgång
-                </Text>
-                <Text style={[styles.progressSubtitle, { color: theme.colors.textSecondary }]}>
-                  {progress.lessonsCompleted} av {progress.totalLessons || totalLessons} lektioner
-                </Text>
-              </View>
-              <View style={[styles.progressBadge, { backgroundColor: courseStyle.primaryColor }]}>
-                <Text style={styles.progressBadgeText}>{progress.percentComplete}%</Text>
-              </View>
-            </View>
-            <View style={[styles.progressBar, { backgroundColor: theme.colors.borderLight }]}>
-              <Animated.View 
-                style={[
-                  styles.progressFill, 
-                  { 
-                    width: `${progress.percentComplete}%`,
-                    backgroundColor: courseStyle.primaryColor 
-                  }
-                ]} 
-              />
-            </View>
-            {progress.percentComplete === 100 && (
-              <View style={styles.completedBanner}>
-                <CheckCircle size={18} color={theme.colors.success} />
-                <Text style={[styles.completedBannerText, { color: theme.colors.success }]}>
-                  Kurs slutförd! Bra jobbat! 🎉
-                </Text>
-              </View>
-            )}
-          </Animated.View>
-        )}
+        <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
+          {progress && progress.percentComplete === 0 && (
+            <TouchableOpacity
+              style={[styles.startButton, { backgroundColor: courseStyle.primaryColor }]}
+              onPress={handleStartCourse}
+              activeOpacity={0.8}
+            >
+              <Sparkles size={22} color="white" />
+              <Text style={styles.startButtonText}>Börja kursen</Text>
+            </TouchableOpacity>
+          )}
 
-        <View style={styles.modulesSection}>
-          <View style={styles.sectionHeader}>
+          <View style={styles.modulesSection}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              📚 Kursinnehåll
+              Kursinnehåll
             </Text>
-            <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>
-              {course.modules.length} moduler • {totalLessons} lektioner
-            </Text>
-          </View>
 
-          {course.modules.map((module, moduleIndex) => {
-            const moduleProgress = id ? getModuleProgress(id, module.id) : undefined;
-            const isModuleCompleted = moduleProgress?.percentComplete === 100;
-            const isModuleLocked = course.premiumRequired && moduleIndex > 0;
-            const moduleDuration = module.lessons.reduce((sum, l) => sum + (l.durationMinutes || 0), 0);
+            {course.modules.map((module, moduleIndex) => {
+              const moduleProgress = id ? getModuleProgress(id, module.id) : undefined;
+              const isModuleCompleted = moduleProgress?.percentComplete === 100;
+              const isModuleLocked = course.premiumRequired && moduleIndex > 0;
+              const moduleDuration = module.lessons.reduce((sum, l) => sum + (l.durationMinutes || 0), 0);
 
-            return (
-              <Animated.View 
-                key={module.id}
-                style={[
-                  styles.moduleCard,
-                  { 
-                    backgroundColor: theme.colors.card,
-                    opacity: fadeAnim,
-                    transform: [{ translateY: slideAnim }],
-                    borderLeftWidth: 4,
-                    borderLeftColor: isModuleCompleted 
-                      ? theme.colors.success 
-                      : moduleProgress && moduleProgress.percentComplete > 0 
-                      ? theme.colors.warning 
-                      : theme.colors.border
-                  }
-                ]}
-              >
+              return (
                 <TouchableOpacity
-                  style={styles.moduleHeader}
+                  key={module.id}
+                  style={[
+                    styles.moduleCard,
+                    { backgroundColor: theme.colors.card },
+                    isModuleCompleted && { borderLeftWidth: 3, borderLeftColor: theme.colors.success }
+                  ]}
                   onPress={() => !isModuleLocked && navigateToModule(module.id)}
                   disabled={isModuleLocked}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.moduleHeaderLeft}>
+                  <View style={styles.moduleHeader}>
                     <View style={[
                       styles.moduleNumber,
-                      { 
-                        backgroundColor: isModuleCompleted 
-                          ? theme.colors.success + '20' 
-                          : isModuleLocked 
-                          ? theme.colors.borderLight
-                          : courseStyle.primaryColor + '20' 
-                      }
+                      { backgroundColor: isModuleCompleted ? theme.colors.success + '15' : courseStyle.primaryColor + '15' }
                     ]}>
                       {isModuleCompleted ? (
-                        <CheckCircle size={20} color={theme.colors.success} />
+                        <CheckCircle size={18} color={theme.colors.success} />
                       ) : isModuleLocked ? (
-                        <Lock size={18} color={theme.colors.textMuted} />
+                        <Lock size={16} color={theme.colors.textMuted} />
                       ) : (
                         <Text style={[styles.moduleNumberText, { color: courseStyle.primaryColor }]}>
                           {moduleIndex + 1}
                         </Text>
                       )}
                     </View>
+                    
                     <View style={styles.moduleInfo}>
                       <Text 
                         style={[
@@ -326,14 +237,6 @@ export default function ContentCourseDetailScreen() {
                       >
                         {module.title}
                       </Text>
-                      {module.description && (
-                        <Text 
-                          style={[styles.moduleDescription, { color: theme.colors.textSecondary }]}
-                          numberOfLines={2}
-                        >
-                          {module.description}
-                        </Text>
-                      )}
                       <View style={styles.moduleMeta}>
                         <View style={styles.moduleMetaItem}>
                           <FileText size={12} color={theme.colors.textMuted} />
@@ -347,142 +250,76 @@ export default function ContentCourseDetailScreen() {
                             {moduleDuration} min
                           </Text>
                         </View>
-                        {moduleProgress && moduleProgress.percentComplete > 0 && (
-                          <View style={[
-                            styles.moduleProgressBadge,
-                            { 
-                              backgroundColor: isModuleCompleted 
-                                ? theme.colors.success + '20' 
-                                : theme.colors.warning + '20' 
-                            }
-                          ]}>
-                            <Text style={[
-                              styles.moduleProgressText,
-                              { 
-                                color: isModuleCompleted 
-                                  ? theme.colors.success 
-                                  : theme.colors.warning 
-                              }
-                            ]}>
-                              {moduleProgress.percentComplete}%
-                            </Text>
-                          </View>
-                        )}
                       </View>
                     </View>
-                  </View>
-                  {!isModuleLocked && (
-                    <ChevronRight size={20} color={theme.colors.textMuted} />
-                  )}
-                </TouchableOpacity>
 
-                <View style={styles.lessonsContainer}>
-                  {module.lessons.map((lesson, lessonIndex) => {
-                    const LessonIcon = getLessonTypeIcon(lesson.type);
-                    const completed = id ? isLessonCompleted(id, lesson.id) : false;
-                    const isLessonLocked = isModuleLocked;
-                    
-                    return (
-                      <TouchableOpacity
-                        key={lesson.id}
-                        style={[
-                          styles.lessonCard,
-                          { backgroundColor: theme.colors.surface },
-                          completed && { 
-                            backgroundColor: theme.colors.success + '08',
-                            borderLeftWidth: 3,
-                            borderLeftColor: theme.colors.success
-                          },
-                          isLessonLocked && {
-                            opacity: 0.5
-                          }
-                        ]}
-                        onPress={() => !isLessonLocked && navigateToLesson(lesson.id)}
-                        disabled={isLessonLocked}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.lessonLeft}>
+                    <View style={styles.moduleRight}>
+                      {moduleProgress && moduleProgress.percentComplete > 0 && !isModuleCompleted && (
+                        <View style={[styles.progressPill, { backgroundColor: courseStyle.primaryColor + '15' }]}>
+                          <Text style={[styles.progressPillText, { color: courseStyle.primaryColor }]}>
+                            {moduleProgress.percentComplete}%
+                          </Text>
+                        </View>
+                      )}
+                      {!isModuleLocked && <ChevronRight size={20} color={theme.colors.textMuted} />}
+                    </View>
+                  </View>
+
+                  <View style={styles.lessonsPreview}>
+                    {module.lessons.slice(0, 3).map((lesson, lessonIndex) => {
+                      const LessonIcon = getLessonTypeIcon(lesson.type);
+                      const completed = id ? isLessonCompleted(id, lesson.id) : false;
+                      
+                      return (
+                        <TouchableOpacity
+                          key={lesson.id}
+                          style={[
+                            styles.lessonItem,
+                            { backgroundColor: theme.colors.surface },
+                            completed && { backgroundColor: theme.colors.success + '08' }
+                          ]}
+                          onPress={() => !isModuleLocked && navigateToLesson(lesson.id)}
+                          disabled={isModuleLocked}
+                          activeOpacity={0.7}
+                        >
                           <View style={[
-                            styles.lessonIconContainer,
-                            { 
-                              backgroundColor: completed 
-                                ? theme.colors.success + '20' 
-                                : isLessonLocked
-                                ? theme.colors.borderLight
-                                : courseStyle.primaryColor + '15' 
-                            }
+                            styles.lessonIcon,
+                            { backgroundColor: completed ? theme.colors.success + '15' : theme.colors.borderLight }
                           ]}>
                             {completed ? (
-                              <CheckCircle size={18} color={theme.colors.success} />
-                            ) : isLessonLocked ? (
-                              <Lock size={16} color={theme.colors.textMuted} />
+                              <CheckCircle size={14} color={theme.colors.success} />
                             ) : (
-                              <LessonIcon size={18} color={courseStyle.primaryColor} />
+                              <LessonIcon size={14} color={theme.colors.textMuted} />
                             )}
                           </View>
-                          <View style={styles.lessonInfo}>
-                            <Text 
-                              style={[
-                                styles.lessonTitle, 
-                                { color: theme.colors.text },
-                                completed && { color: theme.colors.success },
-                                isLessonLocked && { color: theme.colors.textMuted }
-                              ]}
-                              numberOfLines={2}
-                            >
-                              {lessonIndex + 1}. {lesson.title}
+                          <Text 
+                            style={[
+                              styles.lessonTitle,
+                              { color: completed ? theme.colors.success : theme.colors.text }
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {lessonIndex + 1}. {lesson.title}
+                          </Text>
+                          {lesson.durationMinutes && (
+                            <Text style={[styles.lessonDuration, { color: theme.colors.textMuted }]}>
+                              {lesson.durationMinutes}m
                             </Text>
-                            <View style={styles.lessonMeta}>
-                              {lesson.durationMinutes && (
-                                <Text style={[styles.lessonDuration, { color: theme.colors.textMuted }]}>
-                                  {lesson.durationMinutes} min
-                                </Text>
-                              )}
-                              <View style={[
-                                styles.lessonTypeBadge,
-                                { backgroundColor: theme.colors.borderLight }
-                              ]}>
-                                <Text style={[styles.lessonTypeText, { color: theme.colors.textMuted }]}>
-                                  {lesson.type === 'text' ? 'Läsning' : 
-                                   lesson.type === 'video' ? 'Video' : 'Quiz'}
-                                </Text>
-                              </View>
-                              {completed && (
-                                <View style={[styles.completedTag, { backgroundColor: theme.colors.success + '20' }]}>
-                                  <Text style={[styles.completedTagText, { color: theme.colors.success }]}>
-                                    Klar
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                          </View>
-                        </View>
-                        <ChevronRight size={18} color={theme.colors.textMuted} />
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </Animated.View>
-            );
-          })}
-        </View>
-
-        {progress && progress.percentComplete === 0 && (
-          <View style={styles.startPromptSection}>
-            <TouchableOpacity
-              style={[styles.startCourseButton, { backgroundColor: courseStyle.primaryColor }]}
-              onPress={handleStartCourse}
-            >
-              <Sparkles size={22} color="white" />
-              <Text style={styles.startCourseButtonText}>Börja kursen nu</Text>
-            </TouchableOpacity>
-            <Text style={[styles.startPromptHint, { color: theme.colors.textSecondary }]}>
-              Starta med den första lektionen för att börja din inlärningsresa
-            </Text>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                    {module.lessons.length > 3 && (
+                      <Text style={[styles.moreLessons, { color: theme.colors.textMuted }]}>
+                        +{module.lessons.length - 3} fler lektioner
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-        )}
-
-        <View style={styles.bottomPadding} />
+        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -535,82 +372,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
   },
-  progressCard: {
-    marginHorizontal: 20,
-    marginTop: -20,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    marginBottom: 24,
+  mainContent: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
   },
-  progressHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  progressInfo: {
-    flex: 1,
-  },
-  progressTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    marginBottom: 2,
-  },
-  progressSubtitle: {
-    fontSize: 14,
-  },
-  progressBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  progressBadgeText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '800' as const,
-  },
-  progressBar: {
-    height: 10,
-    borderRadius: 5,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 5,
-  },
-  completedBanner: {
+  startButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 14,
+    marginBottom: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  completedBannerText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  modulesSection: {
-    paddingHorizontal: 20,
-  },
-  sectionHeader: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 22,
+  startButtonText: {
+    color: 'white',
+    fontSize: 17,
     fontWeight: '700' as const,
-    marginBottom: 4,
-    letterSpacing: -0.5,
   },
-  sectionSubtitle: {
-    fontSize: 14,
+  modulesSection: {},
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginBottom: 16,
+    letterSpacing: -0.3,
   },
   moduleCard: {
     borderRadius: 16,
@@ -618,7 +408,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -626,13 +416,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
-  },
-  moduleHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    flex: 1,
     gap: 12,
   },
   moduleNumber: {
@@ -643,28 +426,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   moduleNumberText: {
-    fontSize: 18,
-    fontWeight: '800' as const,
+    fontSize: 16,
+    fontWeight: '700' as const,
   },
   moduleInfo: {
     flex: 1,
   },
   moduleTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600' as const,
-    marginBottom: 4,
-    lineHeight: 22,
-  },
-  moduleDescription: {
-    fontSize: 14,
+    marginBottom: 6,
     lineHeight: 20,
-    marginBottom: 8,
   },
   moduleMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
+    gap: 14,
   },
   moduleMetaItem: {
     flexDirection: 'row',
@@ -673,105 +450,54 @@ const styles = StyleSheet.create({
   },
   moduleMetaText: {
     fontSize: 12,
-  },
-  moduleProgressBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  moduleProgressText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-  },
-  lessonsContainer: {
-    padding: 12,
-  },
-  lessonCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  lessonLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  lessonIconContainer: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  lessonInfo: {
-    flex: 1,
-  },
-  lessonTitle: {
-    fontSize: 15,
     fontWeight: '500' as const,
-    marginBottom: 4,
-    lineHeight: 20,
   },
-  lessonMeta: {
+  moduleRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flexWrap: 'wrap',
+  },
+  progressPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  progressPillText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
+  lessonsPreview: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 6,
+  },
+  lessonItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 10,
+    gap: 10,
+  },
+  lessonIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lessonTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
   lessonDuration: {
     fontSize: 12,
-  },
-  lessonTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  lessonTypeText: {
-    fontSize: 11,
     fontWeight: '500' as const,
   },
-  completedTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  completedTagText: {
-    fontSize: 11,
-    fontWeight: '600' as const,
-  },
-  startPromptSection: {
-    paddingHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  startCourseButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 18,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  startCourseButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '700' as const,
-  },
-  startPromptHint: {
+  moreLessons: {
+    fontSize: 12,
+    fontWeight: '500' as const,
     textAlign: 'center',
-    fontSize: 14,
-    marginTop: 12,
-    lineHeight: 20,
-  },
-  bottomPadding: {
-    height: 40,
+    paddingVertical: 8,
   },
 });

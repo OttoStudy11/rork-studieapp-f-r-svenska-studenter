@@ -12,6 +12,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { TimerSettingsProvider } from "@/contexts/TimerSettingsContext";
 import { CourseProgressProvider } from "@/contexts/CourseProgressContext";
 import { ExamProvider } from "@/contexts/ExamContext";
+import { CourseContentProvider } from "@/contexts/CourseContentContext";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
 SplashScreen.preventAutoHideAsync();
@@ -56,11 +57,13 @@ export default function RootLayout() {
                 <TimerSettingsProvider>
                   <CourseProgressProvider>
                     <ExamProvider>
-                      <GestureHandlerRootView style={{ flex: 1 }}>
-                        <AchievementProvider>
-                          <RootLayoutNav />
-                        </AchievementProvider>
-                      </GestureHandlerRootView>
+                      <CourseContentProvider>
+                        <GestureHandlerRootView style={{ flex: 1 }}>
+                          <AchievementProvider>
+                            <RootLayoutNav />
+                          </AchievementProvider>
+                        </GestureHandlerRootView>
+                      </CourseContentProvider>
                     </ExamProvider>
                   </CourseProgressProvider>
                 </TimerSettingsProvider>

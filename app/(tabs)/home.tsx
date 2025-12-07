@@ -17,7 +17,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight, GraduationCap } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
 import { Skeleton, SkeletonStats, SkeletonList } from '@/components/Skeleton';
@@ -292,10 +292,10 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.actionButton, { backgroundColor: theme.colors.secondary }]}
-              onPress={handleAddCourse}
+              onPress={() => router.push('/course-library')}
             >
-              <Plus size={24} color="white" />
-              <Text style={styles.actionButtonText}>Ny kurs</Text>
+              <GraduationCap size={24} color="white" />
+              <Text style={styles.actionButtonText}>Studiekurser</Text>
             </TouchableOpacity>
           </View>
         </SlideInView>

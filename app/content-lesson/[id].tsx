@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Animated,
   Alert
 } from 'react-native';
-import { useLocalSearchParams, router, Stack } from 'expo-router';
+import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router';
 import { 
   Clock, 
   CheckCircle,
@@ -17,11 +17,14 @@ import {
   FileText,
   Play,
   HelpCircle,
-  ArrowLeft
+  ArrowLeft,
+  BookOpen,
+  Award
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCourseContent } from '@/contexts/CourseContentContext';
+import { getCourseStyle } from '@/components/CourseHero';
 import * as Haptics from 'expo-haptics';
 
 export default function ContentLessonScreen() {
@@ -30,11 +33,13 @@ export default function ContentLessonScreen() {
   const { 
     findLessonById, 
     markLessonCompleted, 
-    isLessonCompleted
+    isLessonCompleted,
+    getCourseProgress
   } = useCourseContent();
 
   const [startTime] = useState(new Date());
   const [isCompleting, setIsCompleting] = useState(false);
+  const [localCompleted, setLocalCompleted] = useState(false);
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -44,7 +49,16 @@ export default function ContentLessonScreen() {
   const module = lessonData?.module;
   const lesson = lessonData?.lesson;
   
-  const completed = course && lesson ? isLessonCompleted(course.id, lesson.id) : false;
+  const courseStyle = course ? getCourseStyle(course.title.split(' ')[0]) : getCourseStyle('default');
+  const completed = (course && lesson ? isLessonCompleted(course.id, lesson.id) : false) || localCompleted;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (course && lesson) {
+        setLocalCompleted(isLessonCompleted(course.id, lesson.id));
+      }
+    }, [course, lesson, isLessonCompleted])
+  );
 
   useEffect(() => {
     Animated.parallel([
@@ -79,11 +93,17 @@ export default function ContentLessonScreen() {
       const timeSpent = Math.round((new Date().getTime() - startTime.getTime()) / (1000 * 60));
       await markLessonCompleted(course.id, lesson.id, timeSpent);
       
+      setLocalCompleted(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
+      const progress = getCourseProgress(course.id);
+      const isLastLesson = progress && progress.percentComplete === 100;
+      
       Alert.alert(
-        'Grattis! 🎉',
-        'Du har slutfört lektionen!',
+        isLastLesson ? '🎉 Kurs slutförd!' : 'Grattis! 🎉',
+        isLastLesson 
+          ? 'Du har slutfört hela kursen! Fantastiskt jobbat!' 
+          : 'Du har slutfört lektionen!',
         [
           {
             text: 'Fortsätt',
@@ -118,7 +138,7 @@ export default function ContentLessonScreen() {
         router.replace(`/content-lesson/${nextModule.lessons[0].id}` as any);
       }
     } else {
-      router.back();
+      router.push(`/content-course/${course.id}` as any);
     }
   };
 
@@ -136,6 +156,12 @@ export default function ContentLessonScreen() {
       if (prevModule.lessons.length > 0) {
         router.replace(`/content-lesson/${prevModule.lessons[prevModule.lessons.length - 1].id}` as any);
       }
+    }
+  };
+
+  const navigateToModule = () => {
+    if (module) {
+      router.push(`/content-module/${module.id}` as any);
     }
   };
 
@@ -160,7 +186,7 @@ export default function ContentLessonScreen() {
           <View key={index} style={styles.bulletList}>
             {items.map((item, itemIndex) => (
               <View key={itemIndex} style={styles.bulletItem}>
-                <View style={[styles.bulletDot, { backgroundColor: theme.colors.primary }]} />
+                <View style={[styles.bulletDot, { backgroundColor: courseStyle.primaryColor }]} />
                 <Text style={[styles.bulletText, { color: theme.colors.text }]}>
                   {item.replace(/^- /, '')}
                 </Text>
@@ -179,8 +205,8 @@ export default function ContentLessonScreen() {
               if (match) {
                 return (
                   <View key={itemIndex} style={styles.numberedItem}>
-                    <View style={[styles.numberBadge, { backgroundColor: theme.colors.primary + '20' }]}>
-                      <Text style={[styles.numberText, { color: theme.colors.primary }]}>
+                    <View style={[styles.numberBadge, { backgroundColor: courseStyle.primaryColor + '20' }]}>
+                      <Text style={[styles.numberText, { color: courseStyle.primaryColor }]}>
                         {match[1]}
                       </Text>
                     </View>
@@ -252,20 +278,23 @@ export default function ContentLessonScreen() {
   const hasPrevious = currentLessonIndex > 0 || currentModuleIndex > 0;
   const hasNext = currentLessonIndex < module.lessons.length - 1 || currentModuleIndex < course.modules.length - 1;
 
+  const totalLessonsInModule = module.lessons.length;
+  const lessonNumber = currentLessonIndex + 1;
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Stack.Screen 
         options={{ 
           title: '',
           headerShown: true,
-          headerStyle: { backgroundColor: theme.colors.background },
-          headerTintColor: theme.colors.text,
+          headerTransparent: true,
+          headerTintColor: 'white',
           headerLeft: () => (
             <TouchableOpacity 
               onPress={() => router.back()}
-              style={styles.headerBackButton}
+              style={styles.headerButton}
             >
-              <ArrowLeft size={24} color={theme.colors.text} />
+              <ArrowLeft size={24} color="white" />
             </TouchableOpacity>
           )
         }} 
@@ -278,7 +307,7 @@ export default function ContentLessonScreen() {
       >
         <Animated.View 
           style={[
-            styles.lessonHeader,
+            styles.heroSection,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }]
@@ -286,35 +315,55 @@ export default function ContentLessonScreen() {
           ]}
         >
           <LinearGradient
-            colors={['#6366F1', '#8B5CF6']}
-            style={styles.headerGradient}
+            colors={courseStyle.gradient as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroGradient}
           >
-            <View style={styles.headerContent}>
-              <View style={styles.lessonTypeBadge}>
-                <LessonIcon size={14} color="white" />
-                <Text style={styles.lessonTypeText}>
-                  {lesson.type === 'text' ? 'Läsning' : 
-                   lesson.type === 'video' ? 'Video' : 'Quiz'}
+            <View style={styles.decorativeCircle1} />
+            <View style={styles.decorativeCircle2} />
+
+            <View style={styles.heroContent}>
+              <TouchableOpacity 
+                style={styles.moduleBreadcrumb}
+                onPress={navigateToModule}
+              >
+                <ChevronLeft size={16} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.moduleBreadcrumbText} numberOfLines={1}>
+                  {module.title}
                 </Text>
+              </TouchableOpacity>
+
+              <View style={styles.lessonBadgeRow}>
+                <View style={styles.lessonTypeBadge}>
+                  <LessonIcon size={14} color="white" />
+                  <Text style={styles.lessonTypeText}>
+                    {lesson.type === 'text' ? 'Läsning' : 
+                     lesson.type === 'video' ? 'Video' : 'Quiz'}
+                  </Text>
+                </View>
+                <View style={styles.lessonNumberBadge}>
+                  <Text style={styles.lessonNumberText}>
+                    {lessonNumber} / {totalLessonsInModule}
+                  </Text>
+                </View>
               </View>
               
               <Text style={styles.lessonTitle}>{lesson.title}</Text>
               
               <View style={styles.lessonMeta}>
-                <Text style={styles.moduleName}>{module.title}</Text>
                 {lesson.durationMinutes && (
-                  <>
-                    <Text style={styles.metaSeparator}>•</Text>
-                    <Clock size={14} color="rgba(255,255,255,0.8)" />
+                  <View style={styles.metaItem}>
+                    <Clock size={16} color="rgba(255,255,255,0.8)" />
                     <Text style={styles.metaText}>{lesson.durationMinutes} min</Text>
-                  </>
+                  </View>
                 )}
               </View>
 
               {completed && (
                 <View style={styles.completedBadge}>
-                  <CheckCircle size={16} color="#10B981" />
-                  <Text style={styles.completedText}>Slutförd</Text>
+                  <CheckCircle size={18} color="#10B981" />
+                  <Text style={styles.completedBadgeText}>Slutförd</Text>
                 </View>
               )}
             </View>
@@ -331,11 +380,49 @@ export default function ContentLessonScreen() {
           ]}
         >
           <View style={[styles.contentCard, { backgroundColor: theme.colors.card }]}>
-            {renderContent(lesson.content)}
+            {lesson.content ? (
+              renderContent(lesson.content)
+            ) : (
+              <View style={styles.noContent}>
+                <BookOpen size={48} color={theme.colors.textMuted} />
+                <Text style={[styles.noContentText, { color: theme.colors.textMuted }]}>
+                  Inget innehåll tillgängligt för denna lektion.
+                </Text>
+              </View>
+            )}
           </View>
         </Animated.View>
 
-        <View style={styles.navigationSection}>
+        <View style={styles.actionSection}>
+          {!completed ? (
+            <TouchableOpacity
+              style={[
+                styles.completeButton, 
+                { backgroundColor: theme.colors.success },
+                isCompleting && styles.completeButtonDisabled
+              ]}
+              onPress={handleMarkCompleted}
+              disabled={isCompleting}
+            >
+              <CheckCircle size={22} color="white" />
+              <Text style={styles.completeButtonText}>
+                {isCompleting ? 'Sparar...' : 'Markera som slutförd'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={[styles.completedIndicator, { backgroundColor: theme.colors.success + '15' }]}>
+              <Award size={26} color={theme.colors.success} />
+              <View style={styles.completedIndicatorInfo}>
+                <Text style={[styles.completedIndicatorTitle, { color: theme.colors.success }]}>
+                  Lektion slutförd!
+                </Text>
+                <Text style={[styles.completedIndicatorSubtitle, { color: theme.colors.textSecondary }]}>
+                  Bra jobbat, fortsätt till nästa
+                </Text>
+              </View>
+            </View>
+          )}
+
           <View style={styles.navigationButtons}>
             <TouchableOpacity
               style={[
@@ -358,7 +445,7 @@ export default function ContentLessonScreen() {
             <TouchableOpacity
               style={[
                 styles.navButton,
-                { backgroundColor: theme.colors.card },
+                { backgroundColor: hasNext ? courseStyle.primaryColor : theme.colors.card },
                 !hasNext && styles.navButtonDisabled
               ]}
               onPress={navigateToNextLesson}
@@ -366,39 +453,13 @@ export default function ContentLessonScreen() {
             >
               <Text style={[
                 styles.navButtonText, 
-                { color: hasNext ? theme.colors.text : theme.colors.textMuted }
+                { color: hasNext ? 'white' : theme.colors.textMuted }
               ]}>
                 Nästa
               </Text>
-              <ChevronRight size={20} color={hasNext ? theme.colors.text : theme.colors.textMuted} />
+              <ChevronRight size={20} color={hasNext ? 'white' : theme.colors.textMuted} />
             </TouchableOpacity>
           </View>
-
-          {!completed && (
-            <TouchableOpacity
-              style={[
-                styles.completeButton, 
-                { backgroundColor: theme.colors.success },
-                isCompleting && styles.completeButtonDisabled
-              ]}
-              onPress={handleMarkCompleted}
-              disabled={isCompleting}
-            >
-              <CheckCircle size={20} color="white" />
-              <Text style={styles.completeButtonText}>
-                {isCompleting ? 'Sparar...' : 'Markera som slutförd'}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {completed && (
-            <View style={[styles.completedIndicator, { backgroundColor: theme.colors.success + '15' }]}>
-              <CheckCircle size={24} color={theme.colors.success} />
-              <Text style={[styles.completedIndicatorText, { color: theme.colors.success }]}>
-                Lektion slutförd!
-              </Text>
-            </View>
-          )}
         </View>
 
         <View style={styles.bottomPadding} />
@@ -417,7 +478,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 40,
   },
-  headerBackButton: {
+  headerButton: {
     padding: 8,
     marginLeft: 8,
   },
@@ -449,30 +510,75 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
   },
-  lessonHeader: {
+  heroSection: {
     marginBottom: 24,
   },
-  headerGradient: {
-    paddingTop: 24,
-    paddingBottom: 32,
+  heroGradient: {
+    paddingTop: 100,
     paddingHorizontal: 24,
+    paddingBottom: 32,
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
+    overflow: 'hidden',
   },
-  headerContent: {},
+  decorativeCircle1: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    top: -40,
+    right: -40,
+  },
+  decorativeCircle2: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    bottom: 30,
+    left: -30,
+  },
+  heroContent: {},
+  moduleBreadcrumb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  moduleBreadcrumbText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    fontWeight: '500' as const,
+    marginLeft: 4,
+  },
+  lessonBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
   lessonTypeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    marginBottom: 16,
   },
   lessonTypeText: {
     color: 'white',
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  lessonNumberBadge: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  lessonNumberText: {
+    color: 'rgba(255,255,255,0.9)',
     fontSize: 12,
     fontWeight: '600' as const,
   },
@@ -486,17 +592,12 @@ const styles = StyleSheet.create({
   lessonMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
+    gap: 16,
   },
-  moduleName: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 14,
-    fontWeight: '500' as const,
-  },
-  metaSeparator: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 14,
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   metaText: {
     color: 'rgba(255,255,255,0.85)',
@@ -510,17 +611,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(16, 185, 129, 0.3)',
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 20,
     marginTop: 16,
   },
-  completedText: {
+  completedBadgeText: {
     color: '#10B981',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
   contentSection: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   contentCard: {
     borderRadius: 20,
@@ -531,35 +632,44 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
   },
+  noContent: {
+    alignItems: 'center',
+    padding: 32,
+  },
+  noContentText: {
+    marginTop: 16,
+    fontSize: 15,
+    textAlign: 'center',
+  },
   paragraph: {
     fontSize: 16,
-    lineHeight: 26,
-    marginBottom: 16,
+    lineHeight: 28,
+    marginBottom: 18,
   },
   heading: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '700' as const,
-    marginTop: 8,
-    marginBottom: 12,
-    lineHeight: 26,
+    marginTop: 12,
+    marginBottom: 14,
+    lineHeight: 28,
   },
   bold: {
     fontWeight: '600' as const,
   },
   bulletList: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   bulletItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   bulletDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: 10,
-    marginRight: 12,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 8,
+    marginRight: 14,
   },
   bulletText: {
     flex: 1,
@@ -567,39 +677,80 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   numberedList: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   numberedItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   numberBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
   numberText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700' as const,
   },
   numberedText: {
     flex: 1,
     fontSize: 16,
     lineHeight: 26,
-    paddingTop: 2,
+    paddingTop: 4,
   },
-  navigationSection: {
-    paddingHorizontal: 24,
+  actionSection: {
+    paddingHorizontal: 20,
     marginTop: 32,
+  },
+  completeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 18,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 16,
+  },
+  completeButtonDisabled: {
+    opacity: 0.7,
+  },
+  completeButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  completedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  completedIndicatorInfo: {
+    flex: 1,
+  },
+  completedIndicatorTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  completedIndicatorSubtitle: {
+    fontSize: 14,
   },
   navigationButtons: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
   },
   navButton: {
     flex: 1,
@@ -607,7 +758,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -620,39 +771,6 @@ const styles = StyleSheet.create({
   },
   navButtonText: {
     fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  completeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  completeButtonDisabled: {
-    opacity: 0.7,
-  },
-  completeButtonText: {
-    color: 'white',
-    fontSize: 17,
-    fontWeight: '600' as const,
-  },
-  completedIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: 14,
-  },
-  completedIndicatorText: {
-    fontSize: 17,
     fontWeight: '600' as const,
   },
   bottomPadding: {

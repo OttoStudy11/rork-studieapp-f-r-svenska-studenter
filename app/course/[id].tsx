@@ -13,7 +13,8 @@ import {
   Modal,
   TextInput,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  RefreshControl
 } from 'react-native';
 import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,7 +30,6 @@ import {
   FileText,
   Target,
   TrendingUp,
-  Star,
   Lock,
   Award,
   Edit3,
@@ -37,7 +37,9 @@ import {
   Brain,
   Sparkles,
   Zap,
-  Trophy
+  Trophy,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Database } from '@/lib/database.types';
@@ -116,6 +118,7 @@ export default function CourseDetailScreen() {
   const [modules, setModules] = useState<ModuleWithLessons[]>([]);
   const [studyGuides, setStudyGuides] = useState<StudyGuide[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [userProgress, setUserProgress] = useState({ completed: 0, total: 0, percentage: 0 });
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
@@ -124,6 +127,7 @@ export default function CourseDetailScreen() {
   const [editProgress, setEditProgress] = useState<string>('0');
   const [editTargetGrade, setEditTargetGrade] = useState<string>('');
   const [userCourseData, setUserCourseData] = useState<any>(null);
+  const [hasContent, setHasContent] = useState(false);
 
   useEffect(() => {
     if (id && user?.id) {
@@ -142,24 +146,56 @@ export default function CourseDetailScreen() {
     }, [id, user?.id])
   );
 
-  const loadCourseData = async () => {
+  const loadCourseData = async (showRefresh = false) => {
     try {
-      setIsLoading(true);
+      if (showRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
       console.log('Loading course data for ID:', id);
 
-      const { data: courseData, error: courseError} = await supabase
+      // Try to find course by ID directly first, then by course_code
+      let courseData = null;
+      let courseError = null;
+
+      // First try direct ID lookup
+      const { data: directData, error: directError } = await supabase
         .from('courses')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (courseError) {
+      if (directData) {
+        courseData = directData;
+        console.log('✅ Found course by ID:', id);
+      } else {
+        // Try finding by course_code
+        const { data: codeData, error: codeError } = await supabase
+          .from('courses')
+          .select('*')
+          .eq('course_code', id)
+          .maybeSingle();
+
+        if (codeData) {
+          courseData = codeData;
+          console.log('✅ Found course by course_code:', id);
+        } else {
+          courseError = directError || codeError;
+          console.error('❌ Course not found by ID or course_code:', id);
+        }
+      }
+
+      if (!courseData) {
         console.error('Error loading course:', courseError);
         Alert.alert('Fel', 'Kunde inte ladda kursen');
         return;
       }
 
       setCourse(courseData);
+      const actualCourseId = courseData.id;
+      console.log('📌 Using actual course ID:', actualCourseId);
+
       if (courseData && courseData.subject) {
         setCourseStyle(getCourseStyle(courseData.subject));
       }
@@ -168,18 +204,18 @@ export default function CourseDetailScreen() {
         .from('user_courses')
         .select('*')
         .eq('user_id', user!.id)
-        .eq('course_id', id || '')
-        .single();
+        .eq('course_id', actualCourseId)
+        .maybeSingle();
 
-      if (userCourseError) {
+      if (userCourseError && userCourseError.code !== 'PGRST116') {
         console.error('Error loading user course:', userCourseError);
-      } else {
+      } else if (userCourse) {
         setUserCourseData(userCourse);
         setEditProgress(userCourse?.progress?.toString() || '0');
         setEditTargetGrade(userCourse?.target_grade || '');
       }
 
-      console.log('🔍 Fetching modules for course:', id);
+      console.log('🔍 Fetching modules for course:', actualCourseId);
       
       const { data: modulesData, error: modulesError } = await supabase
         .from('course_modules')
@@ -192,67 +228,68 @@ export default function CourseDetailScreen() {
             )
           )
         `)
-        .eq('course_id', id || '')
+        .eq('course_id', actualCourseId)
         .eq('is_published', true)
         .order('order_index');
 
-      console.log('📦 Modules data:', modulesData);
-      console.log('❌ Modules error:', modulesError);
+      console.log('📦 Modules data:', modulesData?.length || 0, 'modules found');
+      if (modulesError) console.log('❌ Modules error:', modulesError);
 
       if (modulesError) {
         console.error('Error loading modules:', modulesError);
-        Alert.alert('Fel vid laddning av moduler', modulesError.message);
-      } else {
-        const processedModules: ModuleWithLessons[] = (modulesData?.map(module => ({
-          ...module,
-          description: module.description || '',
-          lessons: (module.course_lessons || [])
-            .filter((lesson: any) => lesson.is_published)
-            .sort((a: any, b: any) => a.order_index - b.order_index)
-            .map((lesson: any) => ({
-              ...lesson,
-              progress: lesson.user_lesson_progress?.find(
-                (p: any) => p.user_id === user?.id
-              )
-            }))
-        })) || []) as ModuleWithLessons[];
-        
-        console.log('✅ Processed modules:', processedModules.length);
-        console.log('📝 Total lessons found:', processedModules.reduce((sum, m) => sum + m.lessons.length, 0));
-        
-        setModules(processedModules);
-        
-        const totalLessons = processedModules.reduce((sum, module) => sum + module.lessons.length, 0);
-        const completedLessons = processedModules.reduce(
-          (sum, module) => sum + module.lessons.filter(lesson => lesson.progress?.status === 'completed').length, 
-          0
-        );
-        
-        setUserProgress({
-          completed: completedLessons,
-          total: totalLessons,
-          percentage: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
-        });
-        
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.spring(slideAnim, {
-            toValue: 0,
-            tension: 50,
-            friction: 8,
-            useNativeDriver: true,
-          }),
-        ]).start();
       }
+
+      const processedModules: ModuleWithLessons[] = (modulesData?.map(module => ({
+        ...module,
+        description: module.description || '',
+        lessons: (module.course_lessons || [])
+          .filter((lesson: any) => lesson.is_published)
+          .sort((a: any, b: any) => a.order_index - b.order_index)
+          .map((lesson: any) => ({
+            ...lesson,
+            progress: lesson.user_lesson_progress?.find(
+              (p: any) => p.user_id === user?.id
+            )
+          }))
+      })) || []) as ModuleWithLessons[];
+      
+      console.log('✅ Processed modules:', processedModules.length);
+      const totalLessonCount = processedModules.reduce((sum, m) => sum + m.lessons.length, 0);
+      console.log('📝 Total lessons found:', totalLessonCount);
+      
+      setModules(processedModules);
+      setHasContent(processedModules.length > 0 && totalLessonCount > 0);
+      
+      const totalLessons = processedModules.reduce((sum, module) => sum + module.lessons.length, 0);
+      const completedLessons = processedModules.reduce(
+        (sum, module) => sum + module.lessons.filter(lesson => lesson.progress?.status === 'completed').length, 
+        0
+      );
+      
+      setUserProgress({
+        completed: completedLessons,
+        total: totalLessons,
+        percentage: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+      });
+      
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
 
       const { data: guidesData, error: guidesError } = await supabase
         .from('study_guides')
         .select('*')
-        .eq('course_id', id || '')
+        .eq('course_id', actualCourseId)
         .eq('is_published', true);
 
       if (guidesError) {
@@ -270,8 +307,13 @@ export default function CourseDetailScreen() {
       Alert.alert('Fel', 'Ett oväntat fel inträffade');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
+
+  const onRefresh = useCallback(() => {
+    loadCourseData(true);
+  }, [id, user?.id]);
 
   const navigateToLesson = (lesson: CourseLesson) => {
     router.push(`/lesson/${lesson.id}`);
@@ -377,7 +419,18 @@ export default function CourseDetailScreen() {
         }} 
       />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
+      >
         <Animated.View 
           style={{
             opacity: fadeAnim,
@@ -625,11 +678,26 @@ export default function CourseDetailScreen() {
 
         {modules.length === 0 && (
           <View style={styles.emptyState}>
-            <BookOpen size={64} color={theme.colors.textMuted} />
+            <View style={[styles.emptyIconContainer, { backgroundColor: theme.colors.primary + '15' }]}>
+              <BookOpen size={48} color={theme.colors.primary} />
+            </View>
             <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Inget innehåll tillgängligt</Text>
             <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-              Det finns inget kursinnehåll tillgängligt för denna kurs än.
+              Kursinnehåll med moduler och lektioner har inte lagts till för denna kurs ännu.
             </Text>
+            <View style={styles.emptyInfoCard}>
+              <AlertCircle size={20} color={theme.colors.warning} />
+              <Text style={[styles.emptyInfoText, { color: theme.colors.textSecondary }]}>
+                Kursen fungerar fortfarande för flashcards och studieplanering.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.refreshButton, { backgroundColor: theme.colors.primary }]}
+              onPress={onRefresh}
+            >
+              <RefreshCw size={18} color="white" />
+              <Text style={styles.refreshButtonText}>Uppdatera</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -1082,19 +1150,56 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 64,
+    paddingVertical: 48,
     paddingHorizontal: 32,
+    marginBottom: 32,
+  },
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold' as const,
-    marginTop: 16,
     marginBottom: 8,
+    textAlign: 'center',
   },
   emptyText: {
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
+    marginBottom: 20,
+  },
+  emptyInfoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    gap: 12,
+  },
+  emptyInfoText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  refreshButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
   editButton: {
     position: 'absolute',

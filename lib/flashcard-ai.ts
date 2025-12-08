@@ -1,4 +1,5 @@
-import { generateText } from '@rork-ai/toolkit-sdk';
+import { generateObject } from '@rork-ai/toolkit-sdk';
+import { z } from 'zod';
 import { supabase } from './supabase';
 
 export interface GenerateFlashcardsOptions {
@@ -179,9 +180,21 @@ export async function generateFlashcardsFromContent(
 
     console.log('🤖 Generating flashcards with AI based on course name and subject...');
     
+    const flashcardSchema = z.object({
+      flashcards: z.array(z.object({
+        question: z.string(),
+        answer: z.string(),
+        difficulty: z.number().min(1).max(3),
+        explanation: z.string().optional(),
+        context: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+      })),
+    });
+
     let result: any;
     try {
-      const textOutput = await generateText({
+      result = await generateObject({
+        schema: flashcardSchema as any,
         messages: [
           {
             role: 'user',
@@ -243,14 +256,6 @@ Fokusera på att täcka hela kursens centrala innehåll jämnt, med betoning på
           },
         ],
       });
-      
-      try {
-        result = JSON.parse(textOutput);
-      } catch (parseError) {
-        console.error('❌ Failed to parse AI output as JSON:', parseError);
-        console.log('Raw output:', textOutput);
-        throw new Error('AI returnerade ogiltigt format');
-      }
     } catch (genError: any) {
       console.error('❌ Error generating flashcards with AI:', genError);
       throw new Error(`AI-generering misslyckades: ${genError?.message || 'Okänt fel'}`);
@@ -314,9 +319,21 @@ export async function generateFlashcardsFromText(
 
     console.log('🤖 Generating flashcards with AI from user-provided text...');
     
+    const flashcardSchema = z.object({
+      flashcards: z.array(z.object({
+        question: z.string(),
+        answer: z.string(),
+        difficulty: z.number().min(1).max(3),
+        explanation: z.string().optional(),
+        context: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+      })),
+    });
+
     let result: any;
     try {
-      const textOutput = await generateText({
+      result = await generateObject({
+        schema: flashcardSchema as any,
         messages: [
           {
             role: 'user',
@@ -365,33 +382,10 @@ ${text}
    - Täck olika teman och områden inom texten
    - Blanda olika typer av frågor
 
-8. FORMAT:
-   - Returnera svaret som en JSON-struktur:
-   {
-     "flashcards": [
-       {
-         "question": "Frågan här",
-         "answer": "Svaret här",
-         "difficulty": 1,
-         "explanation": "Förklaring här (valfritt)",
-         "context": "Kontext här",
-         "tags": ["tagg1", "tagg2"]
-       }
-     ]
-   }
-
 ✅ SKAPA NU ${count} HÖGKVALITATIVA FLASHCARDS FRÅN TEXTEN OVAN.`,
           },
         ],
       });
-      
-      try {
-        result = JSON.parse(textOutput);
-      } catch (parseError) {
-        console.error('❌ Failed to parse AI output as JSON:', parseError);
-        console.log('Raw output:', textOutput);
-        throw new Error('AI returnerade ogiltigt format');
-      }
     } catch (genError: any) {
       console.error('❌ Error generating flashcards with AI:', genError);
       throw new Error(`AI-generering misslyckades: ${genError?.message || 'Okänt fel'}`);
@@ -446,10 +440,16 @@ export async function generateAIExplanation(
   userConfusion?: string
 ): Promise<string> {
   try {
-    const messages = [
-      {
-        role: 'user' as const,
-        content: `Du är en tålmodig och pedagogisk lärare för svenska gymnasieelever.
+    const explanationSchema = z.object({
+      explanation: z.string(),
+    });
+
+    const result = await generateObject({
+      schema: explanationSchema as any,
+      messages: [
+        {
+          role: 'user',
+          content: `Du är en tålmodig och pedagogisk lärare för svenska gymnasieelever.
 
 Fråga: ${question}
 Svar: ${answer}
@@ -458,11 +458,11 @@ ${userConfusion ? `Eleven undrar: ${userConfusion}` : ''}
 Ge en tydlig, steg-för-steg förklaring på svenska som hjälper eleven att förstå svaret bättre.
 Använd exempel och analogier där det är relevant.
 Håll förklaringen koncis men grundlig (max 200 ord).`,
-      },
-    ];
-
-    const textResult = await generateText({ messages });
-    return textResult;
+        },
+      ],
+    });
+    
+    return result.explanation;
   } catch (error: any) {
     console.error('❌ Error generating AI explanation:', error);
     throw new Error(`Kunde inte generera förklaring: ${error?.message || 'Okänt fel'}`);

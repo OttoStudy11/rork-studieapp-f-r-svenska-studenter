@@ -16,8 +16,9 @@ import { useToast } from '@/contexts/ToastContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight, GraduationCap } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight, GraduationCap, AlertCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
 import { Skeleton, SkeletonStats, SkeletonList } from '@/components/Skeleton';
@@ -33,6 +34,7 @@ export default function HomeScreen() {
   const { isPremium, limits, isDemoMode, canAddCourse, canAddNote, showPremiumModal } = usePremium();
   const { theme, isDark } = useTheme();
   const { user: authUser } = useAuth();
+  const { upcomingExams } = useExams();
   const [totalPoints, setTotalPoints] = useState(0);
   
   // Load total points from user_progress
@@ -444,6 +446,85 @@ export default function HomeScreen() {
                   </View>
                 </View>
               </TouchableOpacity>
+            </View>
+          </SlideInView>
+        )}
+
+        {/* Upcoming Exams Section */}
+        {upcomingExams.length > 0 && (
+          <SlideInView direction="up" delay={750}>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleContainer}>
+                  <Calendar size={20} color={theme.colors.warning} />
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
+                </View>
+              </View>
+              
+              {upcomingExams.slice(0, 3).map((exam, index) => {
+                const daysUntil = Math.ceil((exam.examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                const isUrgent = daysUntil <= 3;
+                
+                return (
+                  <FadeInView key={exam.id} delay={800 + index * 100}>
+                    <View style={[
+                      styles.examCard,
+                      { backgroundColor: theme.colors.card },
+                      isUrgent && { borderLeftWidth: 4, borderLeftColor: theme.colors.error }
+                    ]}>
+                      <View style={styles.examCardContent}>
+                        <View style={[
+                          styles.examDateBadge,
+                          { backgroundColor: isUrgent ? theme.colors.error + '15' : theme.colors.warning + '15' }
+                        ]}>
+                          <Text style={[
+                            styles.examDateDay,
+                            { color: isUrgent ? theme.colors.error : theme.colors.warning }
+                          ]}>
+                            {exam.examDate.getDate()}
+                          </Text>
+                          <Text style={[
+                            styles.examDateMonth,
+                            { color: isUrgent ? theme.colors.error : theme.colors.warning }
+                          ]}>
+                            {exam.examDate.toLocaleDateString('sv-SE', { month: 'short' }).toUpperCase()}
+                          </Text>
+                        </View>
+                        
+                        <View style={styles.examInfo}>
+                          <Text style={[styles.examTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                            {exam.title}
+                          </Text>
+                          <View style={styles.examMeta}>
+                            <View style={styles.examMetaItem}>
+                              <Clock size={12} color={theme.colors.textMuted} />
+                              <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>
+                                {exam.examDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                              </Text>
+                            </View>
+                            {exam.location && (
+                              <>
+                                <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>•</Text>
+                                <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]} numberOfLines={1}>
+                                  {exam.location}
+                                </Text>
+                              </>
+                            )}
+                          </View>
+                          {isUrgent && (
+                            <View style={[styles.urgentBadge, { backgroundColor: theme.colors.error + '15' }]}>
+                              <AlertCircle size={12} color={theme.colors.error} />
+                              <Text style={[styles.urgentText, { color: theme.colors.error }]}>
+                                {daysUntil === 0 ? 'Idag' : daysUntil === 1 ? 'Imorgon' : `Om ${daysUntil} dagar`}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </FadeInView>
+                );
+              })}
             </View>
           </SlideInView>
         )}
@@ -1058,5 +1139,78 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     flex: 1,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  examCard: {
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  examCardContent: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  examDateBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  examDateDay: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    lineHeight: 24,
+  },
+  examDateMonth: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    letterSpacing: 0.5,
+  },
+  examInfo: {
+    flex: 1,
+  },
+  examTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  examMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  examMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  examMetaText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  urgentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  urgentText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
   },
 });

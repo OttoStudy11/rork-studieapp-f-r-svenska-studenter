@@ -31,6 +31,8 @@ interface ExamContextType {
   refreshExams: () => Promise<void>;
   upcomingExams: Exam[];
   completedExams: Exam[];
+  getExamsForCourse: (courseId: string) => Exam[];
+  getUpcomingExamsForCourse: (courseId: string) => Exam[];
 }
 
 const dbExamToExam = (dbExam: any): Exam => ({
@@ -229,6 +231,19 @@ export const [ExamProvider, useExams] = createContextHook((): ExamContextType =>
     return exam.status === 'completed' || exam.status === 'missed';
   });
 
+  const getExamsForCourse = useCallback((courseId: string) => {
+    return exams.filter(exam => exam.courseId === courseId);
+  }, [exams]);
+
+  const getUpcomingExamsForCourse = useCallback((courseId: string) => {
+    const now = new Date();
+    return exams.filter(exam => {
+      return exam.courseId === courseId && 
+             exam.status === 'scheduled' && 
+             exam.examDate >= now;
+    }).sort((a, b) => a.examDate.getTime() - b.examDate.getTime());
+  }, [exams]);
+
   return {
     exams,
     isLoading,
@@ -237,6 +252,8 @@ export const [ExamProvider, useExams] = createContextHook((): ExamContextType =>
     deleteExam,
     refreshExams,
     upcomingExams,
-    completedExams
+    completedExams,
+    getExamsForCourse,
+    getUpcomingExamsForCourse
   };
 });

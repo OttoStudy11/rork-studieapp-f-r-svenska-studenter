@@ -20,11 +20,15 @@ import {
   Clock,
   Sparkles,
   BookOpen,
-  Zap
+  Zap,
+  Calendar,
+  Plus
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCourseContent } from '@/contexts/CourseContentContext';
 import { CourseHeader, getCourseStyle } from '@/components/CourseHeader';
+import AddExamModal from '@/components/AddExamModal';
+import { useExams } from '@/contexts/ExamContext';
 import * as Haptics from 'expo-haptics';
 
 export default function ContentCourseDetailScreen() {
@@ -41,6 +45,10 @@ export default function ContentCourseDetailScreen() {
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [showExamModal, setShowExamModal] = React.useState(false);
+  
+  const { exams } = useExams();
+  const courseExams = id ? exams.filter(exam => exam.courseId === id) : [];
 
   const course = id ? getCourseById(id) : undefined;
   const progress = id ? getCourseProgress(id) : undefined;
@@ -207,6 +215,104 @@ export default function ContentCourseDetailScreen() {
             <ChevronRight size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
 
+          <View style={styles.examsSection}>
+            <View style={styles.examsSectionHeader}>
+              <View style={styles.examsSectionTitleContainer}>
+                <Calendar size={20} color={theme.colors.primary} />
+                <Text style={[styles.examsSectionTitle, { color: theme.colors.text }]}>Prov</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.addExamButton, { backgroundColor: theme.colors.primary }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowExamModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Plus size={16} color="white" />
+                <Text style={styles.addExamButtonText}>Lägg till</Text>
+              </TouchableOpacity>
+            </View>
+
+            {courseExams.length > 0 ? (
+              <View style={styles.examsList}>
+                {courseExams
+                  .filter(exam => exam.status === 'scheduled')
+                  .sort((a, b) => a.examDate.getTime() - b.examDate.getTime())
+                  .slice(0, 3)
+                  .map((exam) => {
+                    const daysUntil = Math.ceil((exam.examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                    const isUpcoming = daysUntil <= 7 && daysUntil >= 0;
+                    
+                    return (
+                      <View
+                        key={exam.id}
+                        style={[
+                          styles.examCard,
+                          { backgroundColor: theme.colors.card },
+                          isUpcoming && { borderLeftWidth: 3, borderLeftColor: theme.colors.warning }
+                        ]}
+                      >
+                        <View style={styles.examCardHeader}>
+                          <View style={[styles.examDateBadge, { backgroundColor: isUpcoming ? theme.colors.warning + '15' : theme.colors.primary + '15' }]}>
+                            <Text style={[styles.examDateDay, { color: isUpcoming ? theme.colors.warning : theme.colors.primary }]}>
+                              {exam.examDate.getDate()}
+                            </Text>
+                            <Text style={[styles.examDateMonth, { color: isUpcoming ? theme.colors.warning : theme.colors.primary }]}>
+                              {exam.examDate.toLocaleDateString('sv-SE', { month: 'short' }).toUpperCase()}
+                            </Text>
+                          </View>
+                          <View style={styles.examCardInfo}>
+                            <Text style={[styles.examCardTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                              {exam.title}
+                            </Text>
+                            <View style={styles.examCardMeta}>
+                              <View style={styles.examMetaItem}>
+                                <Clock size={12} color={theme.colors.textMuted} />
+                                <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>
+                                  {exam.examDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                                </Text>
+                              </View>
+                              {exam.location && (
+                                <View style={styles.examMetaItem}>
+                                  <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>•</Text>
+                                  <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]} numberOfLines={1}>
+                                    {exam.location}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+                        </View>
+                        {isUpcoming && (
+                          <View style={[styles.examWarning, { backgroundColor: theme.colors.warning + '10' }]}>
+                            <Text style={[styles.examWarningText, { color: theme.colors.warning }]}>
+                              Om {daysUntil} {daysUntil === 1 ? 'dag' : 'dagar'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                {courseExams.filter(e => e.status === 'scheduled').length > 3 && (
+                  <Text style={[styles.moreExamsText, { color: theme.colors.textMuted }]}>
+                    +{courseExams.filter(e => e.status === 'scheduled').length - 3} fler prov
+                  </Text>
+                )}
+              </View>
+            ) : (
+              <View style={[styles.noExamsCard, { backgroundColor: theme.colors.card }]}>
+                <Calendar size={32} color={theme.colors.textMuted} />
+                <Text style={[styles.noExamsText, { color: theme.colors.textSecondary }]}>
+                  Inga prov planerade än
+                </Text>
+                <Text style={[styles.noExamsHint, { color: theme.colors.textMuted }]}>
+                  Tryck på &quot;Lägg till&quot; för att schemalägga ett prov
+                </Text>
+              </View>
+            )}
+          </View>
+
           <View style={styles.modulesSection}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
               Kursinnehåll
@@ -340,6 +446,13 @@ export default function ContentCourseDetailScreen() {
           </View>
         </Animated.View>
       </ScrollView>
+
+      <AddExamModal
+        visible={showExamModal}
+        onClose={() => setShowExamModal(false)}
+        courseId={id}
+        courseTitle={course?.title}
+      />
     </View>
   );
 }
@@ -552,5 +665,128 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500' as const,
     lineHeight: 18,
+  },
+  examsSection: {
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  examsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  examsSectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  examsSectionTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    letterSpacing: -0.3,
+  },
+  addExamButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 4,
+  },
+  addExamButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  examsList: {
+    gap: 12,
+  },
+  examCard: {
+    borderRadius: 12,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  examCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  examDateBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  examDateDay: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    lineHeight: 24,
+  },
+  examDateMonth: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    letterSpacing: 0.5,
+  },
+  examCardInfo: {
+    flex: 1,
+  },
+  examCardTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  examCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  examMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  examMetaText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  examWarning: {
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  examWarningText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  moreExamsText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    textAlign: 'center',
+    paddingVertical: 8,
+  },
+  noExamsCard: {
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noExamsText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  noExamsHint: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    textAlign: 'center',
   },
 });

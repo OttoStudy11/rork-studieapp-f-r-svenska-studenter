@@ -19,7 +19,8 @@ import {
   Lock,
   Clock,
   Sparkles,
-  BookOpen
+  BookOpen,
+  Zap
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCourseContent } from '@/contexts/CourseContentContext';
@@ -187,6 +188,24 @@ export default function ContentCourseDetailScreen() {
               <Text style={styles.startButtonText}>Börja kursen</Text>
             </TouchableOpacity>
           )}
+
+          <TouchableOpacity
+            style={[styles.flashcardButton, { backgroundColor: theme.colors.card, borderColor: courseStyle.primaryColor }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push(`/flashcards-v2/${id}` as never);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.flashcardIcon, { backgroundColor: courseStyle.primaryColor + '15' }]}>
+              <Zap size={20} color={courseStyle.primaryColor} />
+            </View>
+            <View style={styles.flashcardContent}>
+              <Text style={[styles.flashcardTitle, { color: theme.colors.text }]}>AI Flashcards</Text>
+              <Text style={[styles.flashcardSubtitle, { color: theme.colors.textSecondary }]}>Generera och öva med intelligenta flashcards</Text>
+            </View>
+            <ChevronRight size={20} color={theme.colors.textMuted} />
+          </TouchableOpacity>
 
           <View style={styles.modulesSection}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -499,5 +518,39 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
     textAlign: 'center',
     paddingVertical: 8,
+  },
+  flashcardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 24,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: 12,
+  },
+  flashcardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  flashcardContent: {
+    flex: 1,
+  },
+  flashcardTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  flashcardSubtitle: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    lineHeight: 18,
   },
 });

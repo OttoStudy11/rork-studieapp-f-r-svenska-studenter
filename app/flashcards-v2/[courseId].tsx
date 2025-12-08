@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,6 +28,7 @@ import { calculateSM2, getQualityFromSwipe } from '@/lib/sm2-algorithm';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Sparkles, BarChart3, BookOpen, RefreshCw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function FlashcardsScreenV2() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
@@ -34,6 +37,9 @@ export default function FlashcardsScreenV2() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [aiExplanation, setAiExplanation] = useState<string | undefined>();
   const [generationCount, setGenerationCount] = useState(20);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customText, setCustomText] = useState('');
+  const { theme } = useTheme();
 
   const { data: course } = useQuery({
     queryKey: ['course', courseId],
@@ -109,29 +115,36 @@ export default function FlashcardsScreenV2() {
   }, [flashcards, progressMap]);
 
   const generateMutation = useMutation({
-    mutationFn: async (count: number) => {
+    mutationFn: async (params: { count: number; customText?: string }) => {
       console.log('🚀 [Flashcards] Starting generation for:', courseId);
       if (!courseId) {
         throw new Error('Ingen kurs vald');
       }
 
+      let courseDescription = course?.description;
+      if (params.customText && params.customText.trim()) {
+        courseDescription = `${course?.description || ''}\n\nAnvändarens text att generera flashcards från:\n${params.customText}`;
+      }
+
       const result = await generateFlashcardsWithAI({
         courseName: course?.title || courseId,
-        courseDescription: course?.description,
+        courseDescription,
         subject: course?.subject,
-        targetCount: count,
+        targetCount: params.count,
         difficulty: 'all',
         language: 'sv',
       });
 
       if (!result.success || result.flashcards.length === 0) {
-        throw new Error(result.error || 'AI kunde inte generera flashcards');
+        throw new Error(result.error || 'AI kunde inte generera flashcards. Försök igen eller kontakta support.');
       }
+
+      console.log(`✅ [Flashcards] Generated ${result.flashcards.length} flashcards`);
 
       const saveResult = await saveFlashcardBatch(result.flashcards, courseId);
 
       if (!saveResult.success) {
-        throw new Error(saveResult.error || 'Kunde inte spara flashcards');
+        throw new Error(saveResult.error || 'Kunde inte spara flashcards i databasen.');
       }
 
       return saveResult;
@@ -139,11 +152,20 @@ export default function FlashcardsScreenV2() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['flashcards-v2', courseId] });
       queryClient.invalidateQueries({ queryKey: ['flashcard-stats'] });
-      Alert.alert('✅ Klart!', 'Flashcards har genererats!');
+      setShowCustomInput(false);
+      setCustomText('');
+      Alert.alert('✅ Klart!', 'Flashcards har genererats och sparats!');
     },
     onError: (error: any) => {
       console.error('❌ [Flashcards] Generation failed:', error);
-      Alert.alert('Fel', error?.message || 'Kunde inte generera flashcards');
+      Alert.alert(
+        'Kunde inte generera flashcards',
+        error?.message || 'Ett oväntat fel uppstod. Försök igen om en stund.',
+        [
+          { text: 'OK', style: 'default' },
+          { text: 'Försök igen', onPress: () => {}, style: 'cancel' }
+        ]
+      );
     },
   });
 
@@ -258,7 +280,7 @@ export default function FlashcardsScreenV2() {
 
           <TouchableOpacity
             style={styles.generateButton}
-            onPress={() => generateMutation.mutate(generationCount)}
+            onPress={() => generateMutation.mutate({ count: generationCount })}
             disabled={generateMutation.isPending}
           >
             <LinearGradient
@@ -280,7 +302,69 @@ export default function FlashcardsScreenV2() {
               )}
             </LinearGradient>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.customTextButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+            onPress={() => setShowCustomInput(true)}
+            disabled={generateMutation.isPending}
+          >
+            <Text style={[styles.customTextButtonText, { color: theme.colors.primary }]}>
+              📝 Generera från egen text
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
+
+        <Modal
+          visible={showCustomInput}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowCustomInput(false)}
+        >
+          <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+              <TouchableOpacity onPress={() => setShowCustomInput(false)}>
+                <Text style={[styles.modalCancel, { color: theme.colors.textSecondary }]}>Avbryt</Text>
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Egen text</Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  if (customText.trim().length < 20) {
+                    Alert.alert('För lite text', 'Skriv minst 20 tecken för att generera bra flashcards.');
+                    return;
+                  }
+                  generateMutation.mutate({ count: generationCount, customText });
+                }}
+                disabled={generateMutation.isPending || customText.trim().length < 20}
+              >
+                <Text style={[
+                  styles.modalDone, 
+                  { color: (generateMutation.isPending || customText.trim().length < 20) ? theme.colors.textMuted : theme.colors.primary }
+                ]}>
+                  Generera
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalContent}>
+              <Text style={[styles.modalDescription, { color: theme.colors.textSecondary }]}>
+                Klistra in text från anteckningar, lärobok eller sammanfattning. AI:n kommer att skapa flashcards baserat på innehållet.
+              </Text>
+              <TextInput
+                style={[styles.textInput, { backgroundColor: theme.colors.surface, color: theme.colors.text, borderColor: theme.colors.border }]}
+                value={customText}
+                onChangeText={setCustomText}
+                placeholder="Skriv eller klistra in text här...\n\nExempel:\nFotosyntesen är processen där växter använder solenergi för att omvandla koldioxid och vatten till glukos och syrgas."
+                placeholderTextColor={theme.colors.textMuted}
+                multiline
+                textAlignVertical="top"
+                autoFocus
+              />
+              <Text style={[styles.charCount, { color: theme.colors.textMuted }]}>
+                {customText.length} tecken (minst 20 behövs)
+              </Text>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -333,7 +417,7 @@ export default function FlashcardsScreenV2() {
               style={styles.generateMoreButton}
               onPress={() => {
                 setCurrentIndex(0);
-                generateMutation.mutate(20);
+                generateMutation.mutate({ count: 20 });
               }}
               disabled={generateMutation.isPending}
             >
@@ -630,5 +714,62 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#E0E7FF',
+  },
+  customTextButton: {
+    marginTop: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1.5,
+  },
+  customTextButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalCancel: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  modalDone: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  modalDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  textInput: {
+    minHeight: 200,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    lineHeight: 24,
+    borderWidth: 1,
+  },
+  charCount: {
+    fontSize: 13,
+    marginTop: 12,
+    textAlign: 'right',
   },
 });

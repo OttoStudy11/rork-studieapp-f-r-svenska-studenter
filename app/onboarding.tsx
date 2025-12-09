@@ -615,7 +615,7 @@ export default function OnboardingScreen() {
               <TextInput
                 style={styles.searchInput}
                 placeholder="Sök gymnasium, stad eller kommun..."
-                placeholderTextColor="rgba(255, 255, 255, 0.6)"
+                placeholderTextColor="#94A3B8"
                 value={gymnasiumSearchQuery}
                 onChangeText={setGymnasiumSearchQuery}
               />
@@ -943,49 +943,58 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#0EA5E9', '#06B6D4', '#10B981']}
+        colors={['#F8FAFC', '#EFF6FF', '#F0F9FF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 7 : 5)) * 100}%` }]} />
+        <SafeAreaView style={styles.safeArea}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent} 
+            showsVerticalScrollIndicator={false}
+            bounces={true}
+          >
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBarOuter}>
+                <View style={[styles.progressBarInner, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 7 : 5)) * 100}%` }]} />
+              </View>
+              <Text style={styles.progressText}>Steg {step + 1} av {data.studyLevel === 'gymnasie' ? '7' : '5'}</Text>
             </View>
-            <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '7' : '5'}</Text>
-          </View>
 
-          <FadeInView key={step} duration={300}>
-            {renderStep()}
-          </FadeInView>
+            <FadeInView key={step} duration={400}>
+              <View style={styles.cardContainer}>
+                {renderStep()}
+              </View>
+            </FadeInView>
 
-          <View style={styles.buttonContainer}>
-            {step > 0 && (
-              <AnimatedPressable
-                style={styles.backButton}
-                onPress={() => setStep(step - 1)}
+            <View style={styles.buttonContainer}>
+              {step > 0 && (
+                <AnimatedPressable
+                  style={styles.backButton}
+                  onPress={() => setStep(step - 1)}
+                >
+                  <Text style={styles.backButtonText}>← Tillbaka</Text>
+                </AnimatedPressable>
+              )}
+              
+              <RippleButton
+                style={[
+                  styles.nextButton,
+                  step === 0 && styles.nextButtonFullWidth,
+                  !canProceed() && styles.disabledButton
+                ]}
+                onPress={handleNext}
+                disabled={!canProceed()}
+                rippleColor="rgba(255, 255, 255, 0.3)"
+                rippleOpacity={0.5}
               >
-                <Text style={styles.backButtonText}>Tillbaka</Text>
-              </AnimatedPressable>
-            )}
-            
-            <RippleButton
-              style={[
-                styles.nextButton,
-                !canProceed() && styles.disabledButton
-              ]}
-              onPress={handleNext}
-              disabled={!canProceed()}
-              rippleColor="#1F2937"
-              rippleOpacity={0.2}
-            >
-              <Text style={styles.nextButtonText}>
-                {step === (data.studyLevel === 'gymnasie' ? 6 : 4) ? 'Slutför' : 'Nästa'}
-              </Text>
-            </RippleButton>
-          </View>
-        </ScrollView>
+                <Text style={styles.nextButtonText}>
+                  {step === (data.studyLevel === 'gymnasie' ? 6 : 4) ? '✓ Slutför' : 'Fortsätt →'}
+                </Text>
+              </RippleButton>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
       </LinearGradient>
     </View>
   );
@@ -999,106 +1008,105 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
   },
+  safeArea: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
     padding: 24,
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
   progressContainer: {
-    marginTop: 16,
-    marginBottom: 32,
-    paddingHorizontal: 8,
+    marginBottom: 24,
   },
-  progressBar: {
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: 8,
+  progressBarOuter: {
+    height: 8,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 16,
     marginBottom: 12,
     overflow: 'hidden',
   },
-  progressFill: {
+  progressBarInner: {
     height: '100%',
-    backgroundColor: 'white',
-    borderRadius: 8,
+    backgroundColor: '#0EA5E9',
+    borderRadius: 16,
   },
   progressText: {
-    color: 'white',
-    fontSize: 13,
+    color: '#475569',
+    fontSize: 14,
     textAlign: 'center',
     fontWeight: '600' as const,
-    opacity: 0.9,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+  },
+  cardContainer: {
+    backgroundColor: 'white',
+    borderRadius: 24,
+    padding: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
   stepContainer: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 8,
   },
   icon: {
     marginBottom: 24,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700' as const,
-    color: 'white',
+    fontSize: 28,
+    fontWeight: '800' as const,
+    color: '#1E293B',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
     letterSpacing: -0.5,
+    lineHeight: 36,
   },
   subtitle: {
-    fontSize: 17,
-    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 16,
+    color: '#64748B',
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
-    fontWeight: '400' as const,
+    fontWeight: '500' as const,
+    paddingHorizontal: 8,
   },
   input: {
     width: '100%',
-    backgroundColor: 'white',
+    backgroundColor: '#F8FAFC',
     borderRadius: 16,
     padding: 18,
     fontSize: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    color: '#1E293B',
   },
   optionsContainer: {
     width: '100%',
-    gap: 16,
+    gap: 12,
   },
   optionButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#F8FAFC',
     borderRadius: 16,
-    padding: 24,
+    padding: 20,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: '#E2E8F0',
   },
   selectedOption: {
-    backgroundColor: 'white',
-    borderColor: 'white',
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
+    backgroundColor: '#EFF6FF',
+    borderColor: '#0EA5E9',
   },
   optionText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600' as const,
-    color: 'rgba(255, 255, 255, 0.95)',
+    color: '#475569',
     textAlign: 'center',
   },
   selectedOptionText: {
-    color: '#1E293B',
+    color: '#0EA5E9',
   },
   multiSelectContainer: {
     width: '100%',
@@ -1131,63 +1139,62 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: 24,
     gap: 12,
-    paddingHorizontal: 8,
   },
   backButton: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#F1F5F9',
     borderRadius: 16,
     padding: 18,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
   },
   backButtonText: {
-    color: 'white',
+    color: '#64748B',
     fontSize: 16,
     fontWeight: '600' as const,
     textAlign: 'center',
   },
   nextButton: {
     flex: 2,
-    backgroundColor: 'white',
+    backgroundColor: '#0EA5E9',
     borderRadius: 16,
-    padding: 18,
-    shadowColor: '#000',
+    padding: 20,
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 5,
+  },
+  nextButtonFullWidth: {
+    flex: 1,
   },
   inputContainer: {
     width: '100%',
     marginBottom: 24,
   },
   inputLabel: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600' as const,
-    color: 'white',
-    marginBottom: 10,
+    color: '#475569',
+    marginBottom: 8,
     letterSpacing: 0.2,
   },
   usernameInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#F8FAFC',
     borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
   },
   atSymbol: {
     fontSize: 17,
     fontWeight: '600' as const,
-    color: '#475569',
+    color: '#94A3B8',
     marginRight: 4,
   },
   usernameInput: {
@@ -1197,16 +1204,16 @@ const styles = StyleSheet.create({
   },
 
   inputHint: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 12,
+    color: '#94A3B8',
     marginTop: 8,
-    lineHeight: 18,
+    lineHeight: 16,
   },
   disabledButton: {
-    opacity: 0.4,
+    opacity: 0.5,
   },
   nextButtonText: {
-    color: '#1E293B',
+    color: 'white',
     fontSize: 17,
     fontWeight: '700' as const,
     textAlign: 'center',
@@ -1217,46 +1224,38 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   programScrollView: {
-    maxHeight: 450,
+    maxHeight: 400,
     width: '100%',
     marginVertical: 24,
   },
   programGrid: {
-    gap: 12,
+    gap: 8,
   },
   programCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    minHeight: 68,
+    borderColor: '#E2E8F0',
+    minHeight: 60,
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
   },
   selectedProgramCard: {
-    backgroundColor: 'white',
-    borderColor: 'white',
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    backgroundColor: '#EFF6FF',
+    borderColor: '#0EA5E9',
   },
   programCardText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600' as const,
-    color: '#1E293B',
+    color: '#475569',
     textAlign: 'center',
   },
   programCardCity: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500' as const,
-    color: '#64748B',
+    color: '#94A3B8',
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
   searchInputContainer: {
     width: '100%',
@@ -1264,37 +1263,37 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#F8FAFC',
     borderRadius: 16,
     padding: 16,
     fontSize: 16,
-    color: 'white',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    color: '#1E293B',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
   },
   cityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 12,
-    marginBottom: 12,
+    paddingVertical: 8,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 8,
+    marginBottom: 8,
     marginTop: 12,
-    gap: 8,
+    gap: 6,
   },
   cityHeaderText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700' as const,
-    color: 'rgba(255, 255, 255, 0.95)',
+    color: '#64748B',
     textTransform: 'uppercase' as const,
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   gymnasiumTypeBadge: {
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#E2E8F0',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1302,100 +1301,84 @@ const styles = StyleSheet.create({
   gymnasiumTypeText: {
     fontSize: 9,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#64748B',
     textTransform: 'uppercase',
   },
   selectedProgramCardText: {
-    color: '#1E293B',
+    color: '#0EA5E9',
   },
   yearContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
     marginTop: 24,
   },
   yearButton: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#F8FAFC',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: '#E2E8F0',
   },
   selectedYearButton: {
-    backgroundColor: 'white',
-    borderColor: 'white',
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    backgroundColor: '#EFF6FF',
+    borderColor: '#0EA5E9',
   },
   yearButtonText: {
-    fontSize: 17,
-    fontWeight: '600' as const,
-    color: 'rgba(255, 255, 255, 0.95)',
-    textAlign: 'center',
-  },
-  selectedYearButtonText: {
-    color: '#1E293B',
-  },
-  coursesScrollView: {
-    maxHeight: 450,
-    width: '100%',
-    marginVertical: 24,
-  },
-  coursesContainer: {
-    gap: 12,
-  },
-  courseCardLarge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    minHeight: 72,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative' as const,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  selectedCourseCardLarge: {
-    backgroundColor: 'white',
-    borderColor: 'white',
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  mandatoryCourseCardLarge: {
-    opacity: 0.7,
-  },
-  courseCardLargeText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600' as const,
     color: '#475569',
     textAlign: 'center',
   },
+  selectedYearButtonText: {
+    color: '#0EA5E9',
+  },
+  coursesScrollView: {
+    maxHeight: 400,
+    width: '100%',
+    marginVertical: 24,
+  },
+  coursesContainer: {
+    gap: 8,
+  },
+  courseCardLarge: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    minHeight: 64,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative' as const,
+  },
+  selectedCourseCardLarge: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#0EA5E9',
+  },
+  mandatoryCourseCardLarge: {
+    opacity: 0.6,
+  },
+  courseCardLargeText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#64748B',
+    textAlign: 'center',
+  },
   selectedCourseCardLargeText: {
-    color: '#1E293B',
+    color: '#0EA5E9',
   },
   mandatoryBadgeLarge: {
     position: 'absolute',
     top: 8,
     right: 8,
     backgroundColor: '#10B981',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   mandatoryTextLarge: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: 'white',
     textTransform: 'uppercase',
@@ -1405,20 +1388,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noCoursesText: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 15,
+    color: '#94A3B8',
     textAlign: 'center',
   },
   coursesSummary: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 14,
     marginTop: 16,
   },
   summaryText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-    color: 'white',
+    color: '#64748B',
     textAlign: 'center',
     letterSpacing: 0.3,
   },
@@ -1426,20 +1409,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#667eea',
+    backgroundColor: '#F8FAFC',
   },
   loadingText: {
-    fontSize: 18,
-    color: 'white',
+    fontSize: 16,
+    color: '#64748B',
     fontWeight: '600',
   },
   logoContainer: {
-    marginBottom: 32,
+    marginBottom: 24,
     alignItems: 'center',
   },
   logo: {
-    width: 160,
-    height: 160,
+    width: 120,
+    height: 120,
   },
   avatarBuilderContainer: {
     flex: 1,
@@ -1449,65 +1432,59 @@ const styles = StyleSheet.create({
   dailyGoalContainer: {
     alignItems: 'center',
     marginVertical: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 24,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 20,
     padding: 32,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
   },
   dailyGoalValue: {
-    fontSize: 80,
+    fontSize: 64,
     fontWeight: '800' as const,
-    color: 'white',
+    color: '#0EA5E9',
     letterSpacing: -2,
   },
   dailyGoalLabel: {
-    fontSize: 17,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 16,
+    color: '#64748B',
     marginTop: 8,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
   },
   goalOptionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
     justifyContent: 'center',
     marginTop: 24,
     width: '100%',
   },
   goalOption: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    minWidth: 80,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    minWidth: 70,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: '#E2E8F0',
   },
   selectedGoalOption: {
-    backgroundColor: 'white',
-    borderColor: 'white',
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    backgroundColor: '#EFF6FF',
+    borderColor: '#0EA5E9',
   },
   goalOptionText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700' as const,
-    color: 'rgba(255, 255, 255, 0.95)',
+    color: '#64748B',
     textAlign: 'center',
   },
   selectedGoalOptionText: {
-    color: '#1E293B',
+    color: '#0EA5E9',
   },
   goalHintText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 13,
+    color: '#94A3B8',
     textAlign: 'center',
-    marginTop: 32,
+    marginTop: 24,
     lineHeight: 20,
   },
   universityPickerWrapper: {
@@ -1523,7 +1500,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   goalsScrollView: {
-    maxHeight: 450,
+    maxHeight: 400,
     width: '100%',
     marginVertical: 24,
   },
@@ -1532,47 +1509,38 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
     justifyContent: 'space-between',
-    paddingHorizontal: 4,
   },
   goalCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderRadius: 20,
-    padding: 18,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
     width: '48%',
-    minHeight: 140,
+    minHeight: 130,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderColor: '#E2E8F0',
     position: 'relative' as const,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
   },
   selectedGoalCard: {
-    backgroundColor: 'white',
-    borderWidth: 2.5,
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 4,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 2,
   },
   goalIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
   goalEmoji: {
-    fontSize: 26,
+    fontSize: 28,
   },
   goalText: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: '#334155',
+    color: '#64748B',
     textAlign: 'center',
     lineHeight: 18,
     paddingHorizontal: 4,
@@ -1589,19 +1557,19 @@ const styles = StyleSheet.create({
   },
   checkMarkText: {
     color: 'white',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700' as const,
   },
   goalsSummary: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 14,
     marginTop: 16,
   },
   goalsSummaryText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-    color: 'white',
+    color: '#64748B',
     textAlign: 'center',
     letterSpacing: 0.3,
   },

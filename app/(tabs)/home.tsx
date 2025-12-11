@@ -325,7 +325,7 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => console.log('Navigate to all study tips')}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -362,7 +362,7 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => console.log('Navigate to all study techniques')}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -505,7 +505,10 @@ export default function HomeScreen() {
             {activeCourses.length > 0 ? (
               activeCourses.slice(0, 3).map((course, index) => (
                 <FadeInView key={course.id} delay={900 + index * 100}>
-                  <TouchableOpacity style={[styles.courseCard, { backgroundColor: theme.colors.card }]}>
+                  <TouchableOpacity 
+                    style={[styles.courseCard, { backgroundColor: theme.colors.card }]}
+                    onPress={() => router.push(`/content-course/${course.id}`)}
+                  >
                     <View style={styles.courseHeader}>
                       <View style={styles.courseInfo}>
                         <Text style={[styles.courseTitle, { color: theme.colors.text }]}>{course.title}</Text>

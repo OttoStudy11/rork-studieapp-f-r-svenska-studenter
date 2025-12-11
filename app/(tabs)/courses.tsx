@@ -405,7 +405,7 @@ export default function CoursesScreen() {
   };
 
   const navigateToCourse = (courseId: string) => {
-    router.push(`/course/${courseId}` as any);
+    router.push(`/content-course/${courseId}` as any);
   };
 
   if (isLoading) {

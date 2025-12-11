@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -12,53 +12,25 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
 import { useAchievements } from '@/contexts/AchievementContext';
-import { useToast } from '@/contexts/ToastContext';
+import { usePoints } from '@/contexts/PointsContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Award, Zap, Star, Crown, User, StickyNote, Edit3, TrendingUp, Calendar, Flame, Lightbulb, Brain, CheckCircle, ArrowRight, GraduationCap, AlertCircle } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Award, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, GraduationCap, AlertCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { AnimatedPressable, FadeInView, SlideInView } from '@/components/Animations';
-import { Skeleton, SkeletonStats, SkeletonList } from '@/components/Skeleton';
+import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
-import { supabase } from '@/lib/supabase';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
-  const { user, courses, notes, pomodoroSessions, isLoading } = useStudy();
-  const { totalPoints: achievementPoints, getUserLevel, getRecentAchievements, currentStreak } = useAchievements();
-  const { showSuccess } = useToast();
-  const { isPremium, limits, isDemoMode, canAddCourse, canAddNote, showPremiumModal } = usePremium();
+  const { user, courses, pomodoroSessions, isLoading } = useStudy();
+  const { getRecentAchievements, currentStreak } = useAchievements();
+  const { totalPoints, level: pointsLevel } = usePoints();
+  const { isPremium, isDemoMode, canAddCourse, showPremiumModal } = usePremium();
   const { theme, isDark } = useTheme();
-  const { user: authUser } = useAuth();
   const { upcomingExams } = useExams();
-  const [totalPoints, setTotalPoints] = useState(0);
-  
-  // Load total points from user_progress
-  useEffect(() => {
-    const loadTotalPoints = async () => {
-      if (!authUser) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('user_progress')
-          .select('total_points')
-          .eq('user_id', authUser.id)
-          .maybeSingle();
-        
-        if (!error && data) {
-          setTotalPoints(data.total_points || 0);
-        }
-      } catch (err) {
-        console.warn('Could not load total points:', err);
-      }
-    };
-    
-    loadTotalPoints();
-  }, [authUser, pomodoroSessions]);
 
   const handleAddCourse = () => {
     if (!canAddCourse(courses.length)) {
@@ -66,14 +38,6 @@ export default function HomeScreen() {
       return;
     }
     router.push('/courses');
-  };
-  
-  const handleAddNote = () => {
-    if (!canAddNote(notes.length)) {
-      showPremiumModal('Obegränsat antal anteckningar');
-      return;
-    }
-    showSuccess('Anteckningar', 'Anteckningsfunktionen kommer snart!');
   };
 
   // Handle loading
@@ -94,7 +58,6 @@ export default function HomeScreen() {
   }
 
   const activeCourses = courses.filter(course => course.isActive);
-  const recentNotes = notes.slice(-3);
   const todaySessions = pomodoroSessions.filter(session => {
     const today = new Date().toDateString();
     const sessionDate = new Date(session.endTime).toDateString();
@@ -105,7 +68,7 @@ export default function HomeScreen() {
     ? Math.round(courses.reduce((sum, course) => sum + course.progress, 0) / courses.length)
     : 0;
 
-  const userLevel = getUserLevel();
+  const userLevel = pointsLevel;
   const recentAchievements = getRecentAchievements(3);
   const totalStudyTime = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
 
@@ -570,7 +533,7 @@ export default function HomeScreen() {
                 <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>Lägg till kurser för att komma igång</Text>
                 <TouchableOpacity 
                   style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
-                  onPress={() => router.push('/courses')}
+                  onPress={handleAddCourse}
                 >
                   <Plus size={20} color="white" />
                   <Text style={styles.addButtonText}>Lägg till kurs</Text>

@@ -615,7 +615,7 @@ export default function OnboardingScreen() {
               <TextInput
                 style={styles.searchInput}
                 placeholder="Sök gymnasium, stad eller kommun..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor="rgba(255, 255, 255, 0.6)"
                 value={gymnasiumSearchQuery}
                 onChangeText={setGymnasiumSearchQuery}
               />
@@ -943,58 +943,49 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#F8FAFC', '#EFF6FF', '#F0F9FF']}
+        colors={['#0EA5E9', '#06B6D4', '#10B981']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView 
-            contentContainerStyle={styles.scrollContent} 
-            showsVerticalScrollIndicator={false}
-            bounces={true}
-          >
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBarOuter}>
-                <View style={[styles.progressBarInner, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 7 : 5)) * 100}%` }]} />
-              </View>
-              <Text style={styles.progressText}>Steg {step + 1} av {data.studyLevel === 'gymnasie' ? '7' : '5'}</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 7 : 5)) * 100}%` }]} />
             </View>
+            <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '7' : '5'}</Text>
+          </View>
 
-            <FadeInView key={step} duration={400}>
-              <View style={styles.cardContainer}>
-                {renderStep()}
-              </View>
-            </FadeInView>
+          <FadeInView key={step} duration={300}>
+            {renderStep()}
+          </FadeInView>
 
-            <View style={styles.buttonContainer}>
-              {step > 0 && (
-                <AnimatedPressable
-                  style={styles.backButton}
-                  onPress={() => setStep(step - 1)}
-                >
-                  <Text style={styles.backButtonText}>← Tillbaka</Text>
-                </AnimatedPressable>
-              )}
-              
-              <RippleButton
-                style={[
-                  styles.nextButton,
-                  step === 0 && styles.nextButtonFullWidth,
-                  !canProceed() && styles.disabledButton
-                ]}
-                onPress={handleNext}
-                disabled={!canProceed()}
-                rippleColor="rgba(255, 255, 255, 0.3)"
-                rippleOpacity={0.5}
+          <View style={styles.buttonContainer}>
+            {step > 0 && (
+              <AnimatedPressable
+                style={styles.backButton}
+                onPress={() => setStep(step - 1)}
               >
-                <Text style={styles.nextButtonText}>
-                  {step === (data.studyLevel === 'gymnasie' ? 6 : 4) ? '✓ Slutför' : 'Fortsätt →'}
-                </Text>
-              </RippleButton>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
+                <Text style={styles.backButtonText}>Tillbaka</Text>
+              </AnimatedPressable>
+            )}
+            
+            <RippleButton
+              style={[
+                styles.nextButton,
+                !canProceed() && styles.disabledButton
+              ]}
+              onPress={handleNext}
+              disabled={!canProceed()}
+              rippleColor="#1F2937"
+              rippleOpacity={0.2}
+            >
+              <Text style={styles.nextButtonText}>
+                {step === (data.studyLevel === 'gymnasie' ? 6 : 4) ? 'Slutför' : 'Nästa'}
+              </Text>
+            </RippleButton>
+          </View>
+        </ScrollView>
       </LinearGradient>
     </View>
   );
@@ -1008,105 +999,106 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
   },
-  safeArea: {
-    flex: 1,
-  },
   scrollContent: {
     flexGrow: 1,
     padding: 24,
-    paddingTop: 16,
-    paddingBottom: 32,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   progressContainer: {
-    marginBottom: 24,
+    marginTop: 16,
+    marginBottom: 32,
+    paddingHorizontal: 8,
   },
-  progressBarOuter: {
-    height: 8,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 16,
+  progressBar: {
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 8,
     marginBottom: 12,
     overflow: 'hidden',
   },
-  progressBarInner: {
+  progressFill: {
     height: '100%',
-    backgroundColor: '#0EA5E9',
-    borderRadius: 16,
+    backgroundColor: 'white',
+    borderRadius: 8,
   },
   progressText: {
-    color: '#475569',
-    fontSize: 14,
+    color: 'white',
+    fontSize: 13,
     textAlign: 'center',
     fontWeight: '600' as const,
-    letterSpacing: 0.3,
-  },
-  cardContainer: {
-    backgroundColor: 'white',
-    borderRadius: 24,
-    padding: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
+    opacity: 0.9,
+    letterSpacing: 0.5,
   },
   stepContainer: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingHorizontal: 8,
   },
   icon: {
     marginBottom: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '800' as const,
-    color: '#1E293B',
+    fontSize: 32,
+    fontWeight: '700' as const,
+    color: 'white',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
     letterSpacing: -0.5,
-    lineHeight: 36,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#64748B',
+    fontSize: 17,
+    color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
-    fontWeight: '500' as const,
-    paddingHorizontal: 8,
+    fontWeight: '400' as const,
   },
   input: {
     width: '100%',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: 'white',
     borderRadius: 16,
     padding: 18,
     fontSize: 16,
     marginBottom: 16,
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-    color: '#1E293B',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   optionsContainer: {
     width: '100%',
-    gap: 12,
+    gap: 16,
   },
   optionButton: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 16,
-    padding: 20,
+    padding: 24,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   selectedOption: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#0EA5E9',
+    backgroundColor: 'white',
+    borderColor: 'white',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
   },
   optionText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600' as const,
-    color: '#475569',
+    color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
   },
   selectedOptionText: {
-    color: '#0EA5E9',
+    color: '#1E293B',
   },
   multiSelectContainer: {
     width: '100%',
@@ -1139,62 +1131,63 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 32,
     gap: 12,
+    paddingHorizontal: 8,
   },
   backButton: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 16,
     padding: 18,
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   backButtonText: {
-    color: '#64748B',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600' as const,
     textAlign: 'center',
   },
   nextButton: {
     flex: 2,
-    backgroundColor: '#0EA5E9',
+    backgroundColor: 'white',
     borderRadius: 16,
-    padding: 20,
-    shadowColor: '#0EA5E9',
+    padding: 18,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 5,
-  },
-  nextButtonFullWidth: {
-    flex: 1,
   },
   inputContainer: {
     width: '100%',
     marginBottom: 24,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600' as const,
-    color: '#475569',
-    marginBottom: 8,
+    color: 'white',
+    marginBottom: 10,
     letterSpacing: 0.2,
   },
   usernameInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: 'white',
     borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 18,
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   atSymbol: {
     fontSize: 17,
     fontWeight: '600' as const,
-    color: '#94A3B8',
+    color: '#475569',
     marginRight: 4,
   },
   usernameInput: {
@@ -1204,16 +1197,16 @@ const styles = StyleSheet.create({
   },
 
   inputHint: {
-    fontSize: 12,
-    color: '#94A3B8',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.75)',
     marginTop: 8,
-    lineHeight: 16,
+    lineHeight: 18,
   },
   disabledButton: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   nextButtonText: {
-    color: 'white',
+    color: '#1E293B',
     fontSize: 17,
     fontWeight: '700' as const,
     textAlign: 'center',
@@ -1224,38 +1217,46 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   programScrollView: {
-    maxHeight: 400,
+    maxHeight: 450,
     width: '100%',
     marginVertical: 24,
   },
   programGrid: {
-    gap: 8,
+    gap: 12,
   },
   programCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
-    minHeight: 60,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    minHeight: 68,
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   selectedProgramCard: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#0EA5E9',
+    backgroundColor: 'white',
+    borderColor: 'white',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   programCardText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600' as const,
-    color: '#475569',
+    color: '#1E293B',
     textAlign: 'center',
   },
   programCardCity: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500' as const,
-    color: '#94A3B8',
+    color: '#64748B',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 6,
   },
   searchInputContainer: {
     width: '100%',
@@ -1263,37 +1264,37 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchInput: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 16,
     padding: 16,
     fontSize: 16,
-    color: '#1E293B',
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
+    color: 'white',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   cityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-    marginBottom: 8,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 12,
+    marginBottom: 12,
     marginTop: 12,
-    gap: 6,
+    gap: 8,
   },
   cityHeaderText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700' as const,
-    color: '#64748B',
+    color: 'rgba(255, 255, 255, 0.95)',
     textTransform: 'uppercase' as const,
-    letterSpacing: 0.8,
+    letterSpacing: 1,
   },
   gymnasiumTypeBadge: {
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1301,84 +1302,100 @@ const styles = StyleSheet.create({
   gymnasiumTypeText: {
     fontSize: 9,
     fontWeight: '600',
-    color: '#64748B',
+    color: 'rgba(255, 255, 255, 0.8)',
     textTransform: 'uppercase',
   },
   selectedProgramCardText: {
-    color: '#0EA5E9',
+    color: '#1E293B',
   },
   yearContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
     marginTop: 24,
   },
   yearButton: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   selectedYearButton: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#0EA5E9',
+    backgroundColor: 'white',
+    borderColor: 'white',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   yearButtonText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600' as const,
-    color: '#475569',
+    color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
   },
   selectedYearButtonText: {
-    color: '#0EA5E9',
+    color: '#1E293B',
   },
   coursesScrollView: {
-    maxHeight: 400,
+    maxHeight: 450,
     width: '100%',
     marginVertical: 24,
   },
   coursesContainer: {
-    gap: 8,
+    gap: 12,
   },
   courseCardLarge: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
-    minHeight: 64,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    minHeight: 72,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   selectedCourseCardLarge: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#0EA5E9',
+    backgroundColor: 'white',
+    borderColor: 'white',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   mandatoryCourseCardLarge: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   courseCardLargeText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600' as const,
-    color: '#64748B',
+    color: '#475569',
     textAlign: 'center',
   },
   selectedCourseCardLargeText: {
-    color: '#0EA5E9',
+    color: '#1E293B',
   },
   mandatoryBadgeLarge: {
     position: 'absolute',
     top: 8,
     right: 8,
     backgroundColor: '#10B981',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   mandatoryTextLarge: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
     color: 'white',
     textTransform: 'uppercase',
@@ -1388,20 +1405,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noCoursesText: {
-    fontSize: 15,
-    color: '#94A3B8',
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
   },
   coursesSummary: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 16,
+    padding: 16,
     marginTop: 16,
   },
   summaryText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600' as const,
-    color: '#64748B',
+    color: 'white',
     textAlign: 'center',
     letterSpacing: 0.3,
   },
@@ -1409,20 +1426,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#667eea',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#64748B',
+    fontSize: 18,
+    color: 'white',
     fontWeight: '600',
   },
   logoContainer: {
-    marginBottom: 24,
+    marginBottom: 32,
     alignItems: 'center',
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 160,
+    height: 160,
   },
   avatarBuilderContainer: {
     flex: 1,
@@ -1432,59 +1449,65 @@ const styles = StyleSheet.create({
   dailyGoalContainer: {
     alignItems: 'center',
     marginVertical: 32,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 24,
     padding: 32,
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
   },
   dailyGoalValue: {
-    fontSize: 64,
+    fontSize: 80,
     fontWeight: '800' as const,
-    color: '#0EA5E9',
+    color: 'white',
     letterSpacing: -2,
   },
   dailyGoalLabel: {
-    fontSize: 16,
-    color: '#64748B',
+    fontSize: 17,
+    color: 'rgba(255, 255, 255, 0.9)',
     marginTop: 8,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
   },
   goalOptionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
     justifyContent: 'center',
     marginTop: 24,
     width: '100%',
   },
   goalOption: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    minWidth: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    minWidth: 80,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   selectedGoalOption: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#0EA5E9',
+    backgroundColor: 'white',
+    borderColor: 'white',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   goalOptionText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700' as const,
-    color: '#64748B',
+    color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
   },
   selectedGoalOptionText: {
-    color: '#0EA5E9',
+    color: '#1E293B',
   },
   goalHintText: {
-    fontSize: 13,
-    color: '#94A3B8',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.75)',
     textAlign: 'center',
-    marginTop: 24,
+    marginTop: 32,
     lineHeight: 20,
   },
   universityPickerWrapper: {
@@ -1500,7 +1523,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   goalsScrollView: {
-    maxHeight: 400,
+    maxHeight: 450,
     width: '100%',
     marginVertical: 24,
   },
@@ -1509,38 +1532,47 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
     justifyContent: 'space-between',
+    paddingHorizontal: 4,
   },
   goalCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 20,
+    padding: 18,
     alignItems: 'center',
     justifyContent: 'center',
     width: '48%',
-    minHeight: 130,
+    minHeight: 140,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
+    borderColor: 'rgba(255, 255, 255, 0.25)',
     position: 'relative' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   selectedGoalCard: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 2,
+    backgroundColor: 'white',
+    borderWidth: 2.5,
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 4,
   },
   goalIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
   goalEmoji: {
-    fontSize: 28,
+    fontSize: 26,
   },
   goalText: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: '#64748B',
+    color: '#334155',
     textAlign: 'center',
     lineHeight: 18,
     paddingHorizontal: 4,
@@ -1557,19 +1589,19 @@ const styles = StyleSheet.create({
   },
   checkMarkText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700' as const,
   },
   goalsSummary: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 16,
+    padding: 16,
     marginTop: 16,
   },
   goalsSummaryText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600' as const,
-    color: '#64748B',
+    color: 'white',
     textAlign: 'center',
     letterSpacing: 0.3,
   },

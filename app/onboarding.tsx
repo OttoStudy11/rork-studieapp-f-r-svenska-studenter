@@ -199,6 +199,7 @@ export default function OnboardingScreen() {
     if (data.studyLevel && data.displayName && data.username && usernameAvailable) {
       try {
         console.log('Completing onboarding with data:', data);
+        console.log('Study level:', data.studyLevel);
         console.log('Selected courses:', Array.from(data.selectedCourses));
         
         const programName = data.studyLevel === 'gymnasie' 
@@ -237,76 +238,144 @@ export default function OnboardingScreen() {
           dailyGoalHours: data.dailyGoalHours
         });
         
-        // Sync courses to Supabase using the same logic as CoursePickerModal
-        if (data.selectedCourses.size > 0 && user?.id) {
-          console.log('Syncing selected courses to Supabase...');
-          
-          for (const courseId of Array.from(data.selectedCourses)) {
-            // Find the course data from available courses
-            const courseData = availableCourses.find(c => c.id === courseId);
-            if (!courseData) continue;
+        // Sync courses to Supabase
+        if (user?.id) {
+          if (data.studyLevel === 'gymnasie' && data.selectedCourses.size > 0) {
+            console.log('Syncing gymnasium courses to Supabase...');
             
-            // Extract subject from course name
-            const subject = extractSubjectFromCourseName(courseData.name);
-            
-            // Check if course exists in database
-            const { data: existingCourse } = await supabase
-              .from('courses')
-              .select('id')
-              .eq('id', courseData.code)
-              .maybeSingle();
-            
-            if (!existingCourse) {
-              console.log('Creating course in database:', courseData.code);
-              const { error: insertError } = await supabase
+            for (const courseId of Array.from(data.selectedCourses)) {
+              const courseData = availableCourses.find(c => c.id === courseId);
+              if (!courseData) continue;
+              
+              const subject = extractSubjectFromCourseName(courseData.name);
+              
+              const { data: existingCourse } = await supabase
                 .from('courses')
-                .insert({
-                  id: courseData.code,
-                  course_code: courseData.code,
-                  title: courseData.name,
-                  description: `${courseData.name} - ${courseData.points} poäng`,
-                  subject: subject,
-                  level: 'gymnasie',
-                  points: courseData.points,
-                  resources: ['Kursmaterial', 'Övningsuppgifter'],
-                  tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
-                  related_courses: [],
-                  progress: 0
-                });
+                .select('id')
+                .eq('id', courseData.code)
+                .maybeSingle();
               
-              if (insertError) {
-                console.error('Error inserting course:', insertError);
+              if (!existingCourse) {
+                console.log('Creating gymnasium course in database:', courseData.code);
+                const { error: insertError } = await supabase
+                  .from('courses')
+                  .insert({
+                    id: courseData.code,
+                    course_code: courseData.code,
+                    title: courseData.name,
+                    description: `${courseData.name} - ${courseData.points} poäng`,
+                    subject: subject,
+                    level: 'gymnasie',
+                    points: courseData.points,
+                    resources: ['Kursmaterial', 'Övningsuppgifter'],
+                    tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+                    related_courses: [],
+                    progress: 0
+                  });
+                
+                if (insertError) {
+                  console.error('Error inserting gymnasium course:', insertError);
+                }
               }
-            }
-            
-            // Check if user already has this course
-            const { data: userCourseExists } = await supabase
-              .from('user_courses')
-              .select('id')
-              .eq('user_id', user.id)
-              .eq('course_id', courseData.code)
-              .maybeSingle();
-            
-            if (!userCourseExists) {
-              console.log('Creating user course record:', courseData.code);
-              const userCourseId = `${user.id}-${courseData.code}`;
-              const { error: userCourseError } = await supabase
+              
+              const { data: userCourseExists } = await supabase
                 .from('user_courses')
-                .insert({
-                  id: userCourseId,
-                  user_id: user.id,
-                  course_id: courseData.code,
-                  is_active: true,
-                  progress: 0
-                });
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('course_id', courseData.code)
+                .maybeSingle();
               
-              if (userCourseError) {
-                console.error('Error creating user course:', userCourseError);
+              if (!userCourseExists) {
+                console.log('Creating user gymnasium course record:', courseData.code);
+                const userCourseId = `${user.id}-${courseData.code}`;
+                const { error: userCourseError } = await supabase
+                  .from('user_courses')
+                  .insert({
+                    id: userCourseId,
+                    user_id: user.id,
+                    course_id: courseData.code,
+                    is_active: true,
+                    progress: 0
+                  });
+                
+                if (userCourseError) {
+                  console.error('Error creating user gymnasium course:', userCourseError);
+                }
               }
             }
+            
+            console.log('Successfully synced gymnasium courses to Supabase');
+          } else if (data.studyLevel === 'högskola' && data.universityProgram) {
+            console.log('Syncing university courses to Supabase...');
+            console.log('University program:', data.universityProgram.name);
+            console.log('University year:', data.universityYear);
+            
+            // Generate university courses based on program and year
+            const universityCourses = getUniversityProgramCourses(
+              data.universityProgram.name, 
+              data.universityYear ? String(data.universityYear) : '1'
+            );
+            
+            console.log('Generated university courses:', universityCourses.length);
+            
+            for (const course of universityCourses) {
+              const { data: existingCourse } = await supabase
+                .from('courses')
+                .select('id')
+                .eq('id', course.id)
+                .maybeSingle();
+              
+              if (!existingCourse) {
+                console.log('Creating university course in database:', course.id);
+                const { error: insertError } = await supabase
+                  .from('courses')
+                  .insert({
+                    id: course.id,
+                    course_code: course.id,
+                    title: course.title,
+                    description: course.description,
+                    subject: course.subject,
+                    level: 'högskola',
+                    points: 7.5,
+                    resources: course.resources,
+                    tips: course.tips,
+                    related_courses: [],
+                    progress: 0
+                  });
+                
+                if (insertError) {
+                  console.error('Error inserting university course:', insertError);
+                }
+              }
+              
+              const { data: userCourseExists } = await supabase
+                .from('user_courses')
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('course_id', course.id)
+                .maybeSingle();
+              
+              if (!userCourseExists) {
+                console.log('Creating user university course record:', course.id);
+                const userCourseId = `${user.id}-${course.id}`;
+                const { error: userCourseError } = await supabase
+                  .from('user_courses')
+                  .insert({
+                    id: userCourseId,
+                    user_id: user.id,
+                    course_id: course.id,
+                    is_active: true,
+                    progress: 0
+                  });
+                
+                if (userCourseError) {
+                  console.error('Error creating user university course:', userCourseError);
+                }
+              }
+            }
+            
+            console.log('Successfully synced university courses to Supabase');
           }
-          
-          console.log('Successfully synced courses to Supabase');
         }
         
         console.log('Onboarding completed successfully');
@@ -316,6 +385,63 @@ export default function OnboardingScreen() {
         showError('Något gick fel. Försök igen.');
       }
     }
+  };
+  
+  // Helper function to get university program courses
+  const getUniversityProgramCourses = (programName: string, year: string | null | undefined): { id: string; title: string; description: string; subject: string; resources: string[]; tips: string[] }[] => {
+    const yearNum = year ? parseInt(year, 10) : 1;
+    
+    const programCourseTemplates: Record<string, { id: string; title: string; description: string; subject: string; resources: string[]; tips: string[] }[][]> = {
+      'Civilingenjör - Datateknik': [
+        [
+          { id: 'LINALG-1', title: 'Linjär Algebra', description: 'Grundläggande linjär algebra med vektorer, matriser och linjära avbildningar', subject: 'Matematik', resources: ['Kurslitteratur', 'Övningsuppgifter'], tips: ['Öva matrisberäkningar dagligen', 'Visualisera geometriskt'] },
+          { id: 'PROG-1', title: 'Programmering I', description: 'Introduktion till programmering med Python eller Java', subject: 'Datavetenskap', resources: ['Python dokumentation', 'Kodexempel'], tips: ['Programmera varje dag', 'Bygg egna projekt'] },
+          { id: 'ANALYS-1', title: 'Analys I', description: 'Envariabelanalys: derivata, integraler och differentialekvationer', subject: 'Matematik', resources: ['Formelsamling', 'Övningsbok'], tips: ['Förstå teorin bakom formlerna', 'Öva på gamla tentor'] },
+          { id: 'DISKMAT-1', title: 'Diskret Matematik', description: 'Logik, mängdlära, kombinatorik och grafteori', subject: 'Matematik', resources: ['Kurslitteratur', 'Problemsamling'], tips: ['Träna på bevis', 'Koppla till programmering'] }
+        ],
+        [
+          { id: 'ANALYS-2', title: 'Analys II', description: 'Flervariabelanalys: partiella derivator och multipla integraler', subject: 'Matematik', resources: ['Kurslitteratur', 'Videoföreläsningar'], tips: ['Visualisera i 3D', 'Repetera från Analys I'] },
+          { id: 'PROG-2', title: 'Programmering II', description: 'Objektorienterad programmering och datastrukturer', subject: 'Datavetenskap', resources: ['Java/C++ guide', 'Design patterns'], tips: ['Bygg större projekt', 'Lär dig debugging'] },
+          { id: 'DATORSYS-1', title: 'Datorsystem', description: 'Datorarkitektur, operativsystem och nätverk', subject: 'Datavetenskap', resources: ['Referensmaterial', 'Labhandledningar'], tips: ['Experimentera med Linux', 'Förstå lågnivådetaljer'] },
+          { id: 'ALGO-1', title: 'Algoritmer', description: 'Algoritmer och komplexitetsanalys', subject: 'Datavetenskap', resources: ['Algoritmbok', 'Leetcode'], tips: ['Implementera själv', 'Analysera tidskomplexitet'] }
+        ]
+      ],
+      'Civilingenjör - Industriell ekonomi': [
+        [
+          { id: 'LINALG-IE', title: 'Linjär Algebra', description: 'Grundläggande linjär algebra för ingenjörer', subject: 'Matematik', resources: ['Kurslitteratur', 'Övningar'], tips: ['Förstå matriser', 'Koppla till ekonomiska modeller'] },
+          { id: 'ANALYS-IE', title: 'Analys', description: 'Matematisk analys med tillämpningar', subject: 'Matematik', resources: ['Kurslitteratur', 'Formelsamling'], tips: ['Öva dagligen', 'Förstå koncepten'] },
+          { id: 'EKON-1', title: 'Företagsekonomi', description: 'Grundläggande företagsekonomi och redovisning', subject: 'Ekonomi', resources: ['Lärobok', 'Case-studier'], tips: ['Läs affärstidningar', 'Följ företag'] },
+          { id: 'PROG-IE', title: 'Programmering', description: 'Programmering för ingenjörer', subject: 'Datavetenskap', resources: ['Python guide', 'Övningar'], tips: ['Automatisera beräkningar', 'Bygg ekonomiska modeller'] }
+        ]
+      ]
+    };
+    
+    const defaultCourses: { id: string; title: string; description: string; subject: string; resources: string[]; tips: string[] }[][] = [
+      [
+        { id: 'MATH-G1', title: 'Matematik Grundkurs', description: 'Grundläggande högskolematematik', subject: 'Matematik', resources: ['Kurslitteratur', 'Övningsbok'], tips: ['Öva regelbundet', 'Fråga om hjälp'] },
+        { id: 'COMM-G1', title: 'Akademiskt skrivande', description: 'Vetenskapligt skrivande och kommunikation', subject: 'Kommunikation', resources: ['Skrivguide', 'Exempel'], tips: ['Skriv ofta', 'Få feedback'] },
+        { id: 'INTRO-G1', title: 'Introduktionskurs', description: 'Introduktion till ämnesområdet', subject: 'Allmänt', resources: ['Kurslitteratur', 'Föreläsningar'], tips: ['Delta aktivt', 'Nätverka'] },
+        { id: 'METH-G1', title: 'Vetenskaplig metod', description: 'Forskningsmetodik och källkritik', subject: 'Metod', resources: ['Metodbok', 'Databaser'], tips: ['Läs vetenskapliga artiklar', 'Träna källkritik'] }
+      ],
+      [
+        { id: 'SPEC-G2', title: 'Fördjupningskurs I', description: 'Första fördjupningen inom valt område', subject: 'Specialisering', resources: ['Speciallitteratur', 'Seminarier'], tips: ['Välj intresseområde', 'Fördjupa dig'] },
+        { id: 'PROJ-G2', title: 'Projektarbete', description: 'Grupprojekt inom ämnet', subject: 'Projekt', resources: ['Projektguide', 'Verktyg'], tips: ['Planera tidigt', 'Kommunicera med gruppen'] },
+        { id: 'STAT-G2', title: 'Statistik', description: 'Grundläggande statistik och dataanalys', subject: 'Matematik', resources: ['Statistikbok', 'SPSS/R'], tips: ['Förstå teori', 'Tillämpa på data'] },
+        { id: 'ELEC-G2', title: 'Valfri kurs', description: 'Valfri kurs inom programmet', subject: 'Valfritt', resources: ['Varierar'], tips: ['Välj efter intresse', 'Komplettera din profil'] }
+      ]
+    ];
+    
+    const programCourses = programCourseTemplates[programName];
+    
+    if (programCourses && programCourses[yearNum - 1]) {
+      return programCourses[yearNum - 1];
+    }
+    
+    if (defaultCourses[yearNum - 1]) {
+      return defaultCourses[yearNum - 1];
+    }
+    
+    return defaultCourses[0];
   };
   
   const extractSubjectFromCourseName = (name: string): string => {

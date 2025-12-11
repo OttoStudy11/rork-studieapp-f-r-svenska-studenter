@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,25 +11,113 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router';
 import { 
-  CheckCircle,
-  ChevronRight,
   Play,
   FileText,
-  HelpCircle,
-  Lock,
   Clock,
   Sparkles,
   BookOpen,
   Zap,
   Calendar,
-  Plus
+  Award,
+  TrendingUp,
+  Layers
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCourseContent } from '@/contexts/CourseContentContext';
 import { CourseHeader, getCourseStyle } from '@/components/CourseHeader';
+import {
+  LearningObjectives,
+  MotivationCard,
+  CourseIntro,
+  ModuleCardEnhanced,
+  QuickActionButton,
+  SectionHeader,
+  ProgressSummary,
+  InfoBox
+} from '@/components/CourseComponents';
 import AddExamModal from '@/components/AddExamModal';
 import { useExams } from '@/contexts/ExamContext';
 import * as Haptics from 'expo-haptics';
+
+const getLearningObjectives = (courseTitle: string): string[] => {
+  const title = courseTitle.toLowerCase();
+  
+  if (title.includes('matematik')) {
+    return [
+      'Lösa matematiska problem med säkerhet',
+      'Förstå grundläggande algebraiska begrepp',
+      'Tillämpa matematiska metoder i praktiken',
+      'Analysera och tolka matematiska resultat'
+    ];
+  }
+  if (title.includes('svenska')) {
+    return [
+      'Skriva välstrukturerade texter',
+      'Analysera och tolka litterära verk',
+      'Uttrycka dig tydligt i tal och skrift',
+      'Förstå språkets struktur och regler'
+    ];
+  }
+  if (title.includes('engelska')) {
+    return [
+      'Kommunicera flytande på engelska',
+      'Förstå och analysera engelska texter',
+      'Skriva grammatiskt korrekt engelska',
+      'Använda engelskan i olika sammanhang'
+    ];
+  }
+  if (title.includes('studieteknik')) {
+    return [
+      'Använda effektiva inlärningsstrategier',
+      'Planera och organisera dina studier',
+      'Hantera stress och prestationsångest',
+      'Maximera din studietid och motivation'
+    ];
+  }
+  if (title.includes('stress')) {
+    return [
+      'Identifiera och hantera stressorer',
+      'Använda avslappningstekniker effektivt',
+      'Skapa hälsosamma rutiner',
+      'Balansera studier och återhämtning'
+    ];
+  }
+  
+  return [
+    'Förstå kursens grundläggande koncept',
+    'Tillämpa kunskapen praktiskt',
+    'Utveckla analytiskt tänkande',
+    'Förbereda dig för examination'
+  ];
+};
+
+const getMotivationQuote = (courseTitle: string): { quote: string; author: string } => {
+  const title = courseTitle.toLowerCase();
+  
+  if (title.includes('matematik')) {
+    return {
+      quote: 'Matematik är inte om siffror, ekvationer eller algoritmer: det handlar om att förstå.',
+      author: 'William Paul Thurston'
+    };
+  }
+  if (title.includes('svenska')) {
+    return {
+      quote: 'Språket är nyckeln till tanken.',
+      author: 'Ludwig Wittgenstein'
+    };
+  }
+  if (title.includes('studieteknik')) {
+    return {
+      quote: 'Framgång kommer inte till dig, du måste gå och hämta den.',
+      author: 'Marva Collins'
+    };
+  }
+  
+  return {
+    quote: 'Utbildning är det mest kraftfulla vapnet du kan använda för att förändra världen.',
+    author: 'Nelson Mandela'
+  };
+};
 
 export default function ContentCourseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,6 +132,7 @@ export default function ContentCourseDetailScreen() {
   } = useCourseContent();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [showExamModal, setShowExamModal] = React.useState(false);
   
@@ -53,6 +142,16 @@ export default function ContentCourseDetailScreen() {
   const course = id ? getCourseById(id) : undefined;
   const progress = id ? getCourseProgress(id) : undefined;
   const courseStyle = course ? getCourseStyle(course.title.split(' ')[0]) : getCourseStyle('default');
+
+  const learningObjectives = useMemo(() => 
+    course ? getLearningObjectives(course.title) : [], 
+    [course]
+  );
+
+  const motivationQuote = useMemo(() => 
+    course ? getMotivationQuote(course.title) : { quote: '', author: '' }, 
+    [course]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -64,12 +163,19 @@ export default function ContentCourseDetailScreen() {
   );
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -78,14 +184,6 @@ export default function ContentCourseDetailScreen() {
     }
     setTimeout(() => setIsRefreshing(false), 500);
   }, [id, updateLastAccessed]);
-
-  const getLessonTypeIcon = (type: string) => {
-    switch (type) {
-      case 'video': return Play;
-      case 'quiz': return HelpCircle;
-      default: return FileText;
-    }
-  };
 
   const navigateToLesson = (lessonId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -102,6 +200,18 @@ export default function ContentCourseDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigateToLesson(course.modules[0].lessons[0].id);
     }
+  };
+
+  const getNextIncompleteLesson = () => {
+    if (!course || !id) return null;
+    for (const module of course.modules) {
+      for (const lesson of module.lessons) {
+        if (!isLessonCompleted(id, lesson.id)) {
+          return lesson;
+        }
+      }
+    }
+    return null;
   };
 
   if (isLoading) {
@@ -148,6 +258,7 @@ export default function ContentCourseDetailScreen() {
   );
   const estimatedHours = Math.ceil(totalDuration / 60);
   const isCompleted = progress?.percentComplete === 100;
+  const nextLesson = getNextIncompleteLesson();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -185,54 +296,104 @@ export default function ContentCourseDetailScreen() {
           } : undefined}
         />
 
-        <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
+        <Animated.View style={[
+          styles.mainContent, 
+          { 
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}>
           {progress && progress.percentComplete === 0 && (
-            <TouchableOpacity
-              style={[styles.startButton, { backgroundColor: courseStyle.primaryColor }]}
+            <QuickActionButton
+              icon={<Sparkles size={24} color="white" />}
+              label="Börja kursen"
+              sublabel="Starta din läranderesa nu"
               onPress={handleStartCourse}
-              activeOpacity={0.8}
-            >
-              <Sparkles size={22} color="white" />
-              <Text style={styles.startButtonText}>Börja kursen</Text>
-            </TouchableOpacity>
+              courseStyle={courseStyle}
+              variant="primary"
+            />
           )}
 
-          <TouchableOpacity
-            style={[styles.flashcardButton, { backgroundColor: theme.colors.card, borderColor: courseStyle.primaryColor }]}
+          {progress && progress.percentComplete > 0 && progress.percentComplete < 100 && nextLesson && (
+            <QuickActionButton
+              icon={<Play size={24} color="white" />}
+              label="Fortsätt studera"
+              sublabel={nextLesson.title}
+              onPress={() => navigateToLesson(nextLesson.id)}
+              courseStyle={courseStyle}
+              variant="primary"
+            />
+          )}
+
+          {isCompleted && (
+            <View style={[styles.completedBanner, { backgroundColor: theme.colors.success + '15' }]}>
+              <View style={[styles.completedBannerIcon, { backgroundColor: theme.colors.success + '20' }]}>
+                <Award size={28} color={theme.colors.success} />
+              </View>
+              <View style={styles.completedBannerContent}>
+                <Text style={[styles.completedBannerTitle, { color: theme.colors.success }]}>
+                  Kurs slutförd! 🎉
+                </Text>
+                <Text style={[styles.completedBannerSubtitle, { color: theme.colors.textSecondary }]}>
+                  Bra jobbat! Du har klarat alla lektioner i denna kurs.
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {progress && progress.percentComplete > 0 && (
+            <ProgressSummary
+              completed={progress.lessonsCompleted}
+              total={progress.totalLessons || totalLessons}
+              percentage={progress.percentComplete}
+              courseStyle={courseStyle}
+            />
+          )}
+
+          <CourseIntro
+            title={course.title}
+            description={course.description}
+            courseStyle={courseStyle}
+            difficulty="Nybörjare"
+          />
+
+          <LearningObjectives
+            objectives={learningObjectives}
+            courseStyle={courseStyle}
+          />
+
+          <MotivationCard
+            quote={motivationQuote.quote}
+            author={motivationQuote.author}
+            courseStyle={courseStyle}
+          />
+
+          <QuickActionButton
+            icon={<Zap size={20} color={courseStyle.primaryColor} />}
+            label="AI Flashcards"
+            sublabel="Generera och öva med intelligenta flashcards"
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               router.push(`/flashcards-v2/${id}` as never);
             }}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.flashcardIcon, { backgroundColor: courseStyle.primaryColor + '15' }]}>
-              <Zap size={20} color={courseStyle.primaryColor} />
-            </View>
-            <View style={styles.flashcardContent}>
-              <Text style={[styles.flashcardTitle, { color: theme.colors.text }]}>AI Flashcards</Text>
-              <Text style={[styles.flashcardSubtitle, { color: theme.colors.textSecondary }]}>Generera och öva med intelligenta flashcards</Text>
-            </View>
-            <ChevronRight size={20} color={theme.colors.textMuted} />
-          </TouchableOpacity>
+            courseStyle={courseStyle}
+            variant="secondary"
+          />
 
           <View style={styles.examsSection}>
-            <View style={styles.examsSectionHeader}>
-              <View style={styles.examsSectionTitleContainer}>
-                <Calendar size={20} color={theme.colors.primary} />
-                <Text style={[styles.examsSectionTitle, { color: theme.colors.text }]}>Prov</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.addExamButton, { backgroundColor: theme.colors.primary }]}
-                onPress={() => {
+            <SectionHeader
+              title="Prov"
+              subtitle="Planerade examinationer"
+              icon={<Calendar size={20} color={theme.colors.primary} />}
+              courseStyle={courseStyle}
+              action={{
+                label: 'Lägg till',
+                onPress: () => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setShowExamModal(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Plus size={16} color="white" />
-                <Text style={styles.addExamButtonText}>Lägg till</Text>
-              </TouchableOpacity>
-            </View>
+                }
+              }}
+            />
 
             {courseExams.length > 0 ? (
               <View style={styles.examsList}>
@@ -254,11 +415,11 @@ export default function ContentCourseDetailScreen() {
                         ]}
                       >
                         <View style={styles.examCardHeader}>
-                          <View style={[styles.examDateBadge, { backgroundColor: isUpcoming ? theme.colors.warning + '15' : theme.colors.primary + '15' }]}>
-                            <Text style={[styles.examDateDay, { color: isUpcoming ? theme.colors.warning : theme.colors.primary }]}>
+                          <View style={[styles.examDateBadge, { backgroundColor: isUpcoming ? theme.colors.warning + '15' : courseStyle.primaryColor + '15' }]}>
+                            <Text style={[styles.examDateDay, { color: isUpcoming ? theme.colors.warning : courseStyle.primaryColor }]}>
                               {exam.examDate.getDate()}
                             </Text>
-                            <Text style={[styles.examDateMonth, { color: isUpcoming ? theme.colors.warning : theme.colors.primary }]}>
+                            <Text style={[styles.examDateMonth, { color: isUpcoming ? theme.colors.warning : courseStyle.primaryColor }]}>
                               {exam.examDate.toLocaleDateString('sv-SE', { month: 'short' }).toUpperCase()}
                             </Text>
                           </View>
@@ -294,11 +455,6 @@ export default function ContentCourseDetailScreen() {
                       </View>
                     );
                   })}
-                {courseExams.filter(e => e.status === 'scheduled').length > 3 && (
-                  <Text style={[styles.moreExamsText, { color: theme.colors.textMuted }]}>
-                    +{courseExams.filter(e => e.status === 'scheduled').length - 3} fler prov
-                  </Text>
-                )}
               </View>
             ) : (
               <View style={[styles.noExamsCard, { backgroundColor: theme.colors.card }]}>
@@ -307,16 +463,26 @@ export default function ContentCourseDetailScreen() {
                   Inga prov planerade än
                 </Text>
                 <Text style={[styles.noExamsHint, { color: theme.colors.textMuted }]}>
-                  Tryck på &quot;Lägg till&quot; för att schemalägga ett prov
+                  Tryck på Lägg till för att schemalägga ett prov
                 </Text>
               </View>
             )}
           </View>
 
           <View style={styles.modulesSection}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              Kursinnehåll
-            </Text>
+            <SectionHeader
+              title="Kursinnehåll"
+              subtitle={`${course.modules.length} moduler • ${totalLessons} lektioner`}
+              icon={<Layers size={20} color={courseStyle.primaryColor} />}
+              courseStyle={courseStyle}
+            />
+
+            <InfoBox
+              type="tip"
+              title="Tips för att lyckas"
+              content="Arbeta igenom modulerna i ordning för bästa inlärningsresultat. Varje modul bygger på tidigare kunskap."
+              courseStyle={courseStyle}
+            />
 
             {course.modules.map((module, moduleIndex) => {
               const moduleProgress = id ? getModuleProgress(id, module.id) : undefined;
@@ -325,124 +491,54 @@ export default function ContentCourseDetailScreen() {
               const moduleDuration = module.lessons.reduce((sum, l) => sum + (l.durationMinutes || 0), 0);
 
               return (
-                <TouchableOpacity
+                <ModuleCardEnhanced
                   key={module.id}
-                  style={[
-                    styles.moduleCard,
-                    { backgroundColor: theme.colors.card },
-                    isModuleCompleted && { borderLeftWidth: 3, borderLeftColor: theme.colors.success }
-                  ]}
+                  moduleIndex={moduleIndex}
+                  title={module.title}
+                  description={module.description}
+                  lessonsCount={module.lessons.length}
+                  durationMinutes={moduleDuration}
+                  isCompleted={isModuleCompleted}
+                  isLocked={isModuleLocked}
+                  progressPercent={moduleProgress?.percentComplete || 0}
+                  courseStyle={courseStyle}
                   onPress={() => !isModuleLocked && navigateToModule(module.id)}
-                  disabled={isModuleLocked}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.moduleHeader}>
-                    <View style={[
-                      styles.moduleNumber,
-                      { backgroundColor: isModuleCompleted ? theme.colors.success + '15' : courseStyle.primaryColor + '15' }
-                    ]}>
-                      {isModuleCompleted ? (
-                        <CheckCircle size={18} color={theme.colors.success} />
-                      ) : isModuleLocked ? (
-                        <Lock size={16} color={theme.colors.textMuted} />
-                      ) : (
-                        <Text style={[styles.moduleNumberText, { color: courseStyle.primaryColor }]}>
-                          {moduleIndex + 1}
-                        </Text>
-                      )}
-                    </View>
-                    
-                    <View style={styles.moduleInfo}>
-                      <Text 
-                        style={[
-                          styles.moduleTitle, 
-                          { color: isModuleLocked ? theme.colors.textMuted : theme.colors.text }
-                        ]}
-                        numberOfLines={2}
-                      >
-                        {module.title}
-                      </Text>
-                      <View style={styles.moduleMeta}>
-                        <View style={styles.moduleMetaItem}>
-                          <FileText size={12} color={theme.colors.textMuted} />
-                          <Text style={[styles.moduleMetaText, { color: theme.colors.textMuted }]}>
-                            {module.lessons.length} lektioner
-                          </Text>
-                        </View>
-                        <View style={styles.moduleMetaItem}>
-                          <Clock size={12} color={theme.colors.textMuted} />
-                          <Text style={[styles.moduleMetaText, { color: theme.colors.textMuted }]}>
-                            {moduleDuration} min
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    <View style={styles.moduleRight}>
-                      {moduleProgress && moduleProgress.percentComplete > 0 && !isModuleCompleted && (
-                        <View style={[styles.progressPill, { backgroundColor: courseStyle.primaryColor + '15' }]}>
-                          <Text style={[styles.progressPillText, { color: courseStyle.primaryColor }]}>
-                            {moduleProgress.percentComplete}%
-                          </Text>
-                        </View>
-                      )}
-                      {!isModuleLocked && <ChevronRight size={20} color={theme.colors.textMuted} />}
-                    </View>
-                  </View>
-
-                  <View style={styles.lessonsPreview}>
-                    {module.lessons.slice(0, 3).map((lesson, lessonIndex) => {
-                      const LessonIcon = getLessonTypeIcon(lesson.type);
-                      const completed = id ? isLessonCompleted(id, lesson.id) : false;
-                      
-                      return (
-                        <TouchableOpacity
-                          key={lesson.id}
-                          style={[
-                            styles.lessonItem,
-                            { backgroundColor: theme.colors.surface },
-                            completed && { backgroundColor: theme.colors.success + '08' }
-                          ]}
-                          onPress={() => !isModuleLocked && navigateToLesson(lesson.id)}
-                          disabled={isModuleLocked}
-                          activeOpacity={0.7}
-                        >
-                          <View style={[
-                            styles.lessonIcon,
-                            { backgroundColor: completed ? theme.colors.success + '15' : theme.colors.borderLight }
-                          ]}>
-                            {completed ? (
-                              <CheckCircle size={14} color={theme.colors.success} />
-                            ) : (
-                              <LessonIcon size={14} color={theme.colors.textMuted} />
-                            )}
-                          </View>
-                          <Text 
-                            style={[
-                              styles.lessonTitle,
-                              { color: completed ? theme.colors.success : theme.colors.text }
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {lessonIndex + 1}. {lesson.title}
-                          </Text>
-                          {lesson.durationMinutes && (
-                            <Text style={[styles.lessonDuration, { color: theme.colors.textMuted }]}>
-                              {lesson.durationMinutes}m
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })}
-                    {module.lessons.length > 3 && (
-                      <Text style={[styles.moreLessons, { color: theme.colors.textMuted }]}>
-                        +{module.lessons.length - 3} fler lektioner
-                      </Text>
-                    )}
-                  </View>
-                </TouchableOpacity>
+                />
               );
             })}
+          </View>
+
+          <View style={styles.statsGrid}>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIcon, { backgroundColor: courseStyle.primaryColor + '15' }]}>
+                <BookOpen size={20} color={courseStyle.primaryColor} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>{course.modules.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Moduler</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIcon, { backgroundColor: theme.colors.info + '15' }]}>
+                <FileText size={20} color={theme.colors.info} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>{totalLessons}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Lektioner</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIcon, { backgroundColor: theme.colors.warning + '15' }]}>
+                <Clock size={20} color={theme.colors.warning} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>
+                {estimatedHours > 0 ? `${estimatedHours}h` : `${totalDuration}m`}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Studietid</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIcon, { backgroundColor: theme.colors.success + '15' }]}>
+                <TrendingUp size={20} color={theme.colors.success} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>{progress?.percentComplete || 0}%</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Klart</Text>
+            </View>
           </View>
         </Animated.View>
       </ScrollView>
@@ -465,7 +561,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 50,
   },
   loadingContainer: {
     flex: 1,
@@ -508,225 +604,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 24,
   },
-  startButton: {
+  completedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: 14,
-    marginBottom: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  startButtonText: {
-    color: 'white',
-    fontSize: 17,
-    fontWeight: '700' as const,
-  },
-  modulesSection: {},
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    marginBottom: 16,
-    letterSpacing: -0.3,
-  },
-  moduleCard: {
+    padding: 18,
     borderRadius: 16,
-    marginBottom: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  moduleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  moduleNumber: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  moduleNumberText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  moduleInfo: {
-    flex: 1,
-  },
-  moduleTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    marginBottom: 6,
-    lineHeight: 20,
-  },
-  moduleMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: 20,
     gap: 14,
   },
-  moduleMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  moduleMetaText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-  },
-  moduleRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  progressPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  progressPillText: {
-    fontSize: 12,
-    fontWeight: '700' as const,
-  },
-  lessonsPreview: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 6,
-  },
-  lessonItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 10,
-    gap: 10,
-  },
-  lessonIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+  completedBannerIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  lessonTitle: {
+  completedBannerContent: {
     flex: 1,
+  },
+  completedBannerTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  completedBannerSubtitle: {
     fontSize: 14,
     fontWeight: '500' as const,
+    lineHeight: 20,
   },
-  lessonDuration: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-  },
-  moreLessons: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    textAlign: 'center',
-    paddingVertical: 8,
-  },
-  flashcardButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 14,
-    marginBottom: 24,
-    borderWidth: 1.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    gap: 12,
-  },
-  flashcardIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  flashcardContent: {
-    flex: 1,
-  },
-  flashcardTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    marginBottom: 2,
-  },
-  flashcardSubtitle: {
-    fontSize: 13,
-    fontWeight: '500' as const,
-    lineHeight: 18,
+  modulesSection: {
+    marginTop: 8,
   },
   examsSection: {
     marginTop: 8,
     marginBottom: 24,
   },
-  examsSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  examsSectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  examsSectionTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    letterSpacing: -0.3,
-  },
-  addExamButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 4,
-  },
-  addExamButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
   examsList: {
     gap: 12,
   },
   examCard: {
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 14,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   examCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
   },
   examDateBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 10,
+    width: 56,
+    height: 56,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   examDateDay: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700' as const,
-    lineHeight: 24,
+    lineHeight: 26,
   },
   examDateMonth: {
     fontSize: 10,
@@ -737,9 +677,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   examCardTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600' as const,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   examCardMeta: {
     flexDirection: 'row',
@@ -752,41 +692,76 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   examMetaText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '500' as const,
   },
   examWarning: {
-    marginTop: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
     alignItems: 'center',
   },
   examWarningText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600' as const,
-  },
-  moreExamsText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    textAlign: 'center',
-    paddingVertical: 8,
   },
   noExamsCard: {
-    borderRadius: 12,
-    padding: 24,
+    borderRadius: 14,
+    padding: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   noExamsText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600' as const,
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: 14,
+    marginBottom: 6,
   },
   noExamsHint: {
     fontSize: 13,
     fontWeight: '500' as const,
     textAlign: 'center',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 28,
+    marginBottom: 20,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: '45%',
+    borderRadius: 16,
+    padding: 18,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '800' as const,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 13,
+    fontWeight: '500' as const,
   },
 });

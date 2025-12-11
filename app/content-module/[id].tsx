@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,15 +15,89 @@ import {
   CheckCircle,
   ChevronRight,
   Play,
-  FileText,
-  HelpCircle,
   Clock,
-  ChevronLeft
+  ChevronLeft,
+  Target,
+  Award,
+  TrendingUp
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCourseContent } from '@/contexts/CourseContentContext';
 import { CourseHeader, getCourseStyle } from '@/components/CourseHeader';
+import {
+  LessonCardEnhanced,
+  SectionHeader,
+  InfoBox,
+  ProgressSummary
+} from '@/components/CourseComponents';
 import * as Haptics from 'expo-haptics';
+
+const getModuleObjectives = (moduleTitle: string): string[] => {
+  const title = moduleTitle.toLowerCase();
+  
+  if (title.includes('grunderna') || title.includes('introduktion')) {
+    return [
+      'Förstå de grundläggande koncepten',
+      'Bygga en stabil kunskapsbas',
+      'Förbereda dig för mer avancerade ämnen'
+    ];
+  }
+  if (title.includes('praktisk') || title.includes('övning')) {
+    return [
+      'Tillämpa teorin i praktiken',
+      'Utveckla problemlösningsförmåga',
+      'Öka din självständighet'
+    ];
+  }
+  if (title.includes('minnes') || title.includes('repetition')) {
+    return [
+      'Förstärka din minneskapacitet',
+      'Lära dig effektiva repetitionstekniker',
+      'Skapa långsiktiga kunskaper'
+    ];
+  }
+  if (title.includes('strategier') || title.includes('prov')) {
+    return [
+      'Förbereda dig optimalt för examination',
+      'Hantera stress och prestationsångest',
+      'Maximera dina resultat'
+    ];
+  }
+  
+  return [
+    'Förstå modulens huvudbegrepp',
+    'Utveckla praktiska färdigheter',
+    'Förbereda dig för nästa steg'
+  ];
+};
+
+const getModuleTip = (moduleTitle: string): { title: string; content: string } => {
+  const title = moduleTitle.toLowerCase();
+  
+  if (title.includes('grunderna')) {
+    return {
+      title: 'Starta rätt',
+      content: 'Ta dig tid att verkligen förstå grunderna. En stark grund gör allt annat lättare.'
+    };
+  }
+  if (title.includes('minnes')) {
+    return {
+      title: 'Repetera smart',
+      content: 'Använd spaced repetition för bästa resultat. Repetera inte allt på en gång.'
+    };
+  }
+  if (title.includes('strategier')) {
+    return {
+      title: 'Var förberedd',
+      content: 'Börja förbereda dig i god tid. Stressa inte kvällen innan provet.'
+    };
+  }
+  
+  return {
+    title: 'Håll fokus',
+    content: 'Arbeta genom lektionerna i ordning och ta pauser regelbundet för bästa inlärning.'
+  };
+};
 
 export default function ContentModuleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,6 +110,7 @@ export default function ContentModuleDetailScreen() {
   } = useCourseContent();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const moduleData = id ? findModuleById(id) : undefined;
@@ -45,6 +120,16 @@ export default function ContentModuleDetailScreen() {
   const courseStyle = course ? getCourseStyle(course.title.split(' ')[0]) : getCourseStyle('default');
   const moduleProgress = course && module ? getModuleProgress(course.id, module.id) : undefined;
 
+  const moduleObjectives = useMemo(() => 
+    module ? getModuleObjectives(module.title) : [], 
+    [module]
+  );
+
+  const moduleTip = useMemo(() => 
+    module ? getModuleTip(module.title) : { title: '', content: '' }, 
+    [module]
+  );
+
   useFocusEffect(
     useCallback(() => {
       console.log('Module screen focused');
@@ -52,25 +137,24 @@ export default function ContentModuleDetailScreen() {
   );
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
     setTimeout(() => setIsRefreshing(false), 500);
   }, []);
-
-  const getLessonTypeIcon = (type: string) => {
-    switch (type) {
-      case 'video': return Play;
-      case 'quiz': return HelpCircle;
-      default: return FileText;
-    }
-  };
 
   const navigateToLesson = (lessonId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -188,117 +272,160 @@ export default function ContentModuleDetailScreen() {
           } : undefined}
         />
 
-        <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
+        <Animated.View style={[
+          styles.mainContent, 
+          { 
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}>
+          {isModuleCompleted && (
+            <View style={[styles.completedBanner, { backgroundColor: theme.colors.success + '15' }]}>
+              <View style={[styles.completedBannerIcon, { backgroundColor: theme.colors.success + '20' }]}>
+                <Award size={28} color={theme.colors.success} />
+              </View>
+              <View style={styles.completedBannerContent}>
+                <Text style={[styles.completedBannerTitle, { color: theme.colors.success }]}>
+                  Modul slutförd! 🎉
+                </Text>
+                <Text style={[styles.completedBannerSubtitle, { color: theme.colors.textSecondary }]}>
+                  Bra jobbat! Du har klarat alla lektioner i denna modul.
+                </Text>
+              </View>
+            </View>
+          )}
+
           {!isModuleCompleted && nextIncompleteLesson && (
             <TouchableOpacity
-              style={[styles.continueCard, { backgroundColor: theme.colors.card }]}
+              style={[styles.continueCard, { backgroundColor: courseStyle.primaryColor }]}
               onPress={handleContinueModule}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
-              <View style={[styles.continueIcon, { backgroundColor: courseStyle.primaryColor + '15' }]}>
-                <Play size={22} color={courseStyle.primaryColor} />
+              <View style={styles.continueCardContent}>
+                <View style={styles.continueCardIcon}>
+                  <Play size={24} color="white" />
+                </View>
+                <View style={styles.continueCardText}>
+                  <Text style={styles.continueCardLabel}>
+                    {completedLessons === 0 ? 'Börja modulen' : 'Fortsätt där du slutade'}
+                  </Text>
+                  <Text style={styles.continueCardTitle} numberOfLines={1}>
+                    {nextIncompleteLesson.title}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.continueInfo}>
-                <Text style={[styles.continueLabel, { color: theme.colors.textSecondary }]}>
-                  Fortsätt där du slutade
-                </Text>
-                <Text style={[styles.continueTitle, { color: theme.colors.text }]} numberOfLines={1}>
-                  {nextIncompleteLesson.title}
-                </Text>
-              </View>
-              <View style={[styles.continueButton, { backgroundColor: courseStyle.primaryColor }]}>
-                <Text style={styles.continueButtonText}>Fortsätt</Text>
-                <ChevronRight size={16} color="white" />
-              </View>
+              <ChevronRight size={24} color="white" />
             </TouchableOpacity>
           )}
 
-          <View style={styles.lessonsSection}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              Lektioner
+          {moduleProgress && moduleProgress.percentComplete > 0 && (
+            <ProgressSummary
+              completed={completedLessons}
+              total={module.lessons.length}
+              percentage={moduleProgress.percentComplete}
+              courseStyle={courseStyle}
+            />
+          )}
+
+          <View style={[styles.moduleIntroCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.moduleIntroHeader}>
+              <View style={[styles.moduleIntroIcon, { backgroundColor: courseStyle.primaryColor + '15' }]}>
+                <BookOpen size={22} color={courseStyle.primaryColor} />
+              </View>
+              <View style={styles.moduleIntroTitleContainer}>
+                <Text style={[styles.moduleIntroTitle, { color: theme.colors.text }]}>
+                  Om modulen
+                </Text>
+                <Text style={[styles.moduleIntroSubtitle, { color: theme.colors.textSecondary }]}>
+                  {module.lessons.length} lektioner • {totalDuration} min
+                </Text>
+              </View>
+            </View>
+            <Text style={[styles.moduleIntroDescription, { color: theme.colors.text }]}>
+              {module.description}
             </Text>
+          </View>
+
+          <View style={[styles.objectivesCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.objectivesHeader}>
+              <View style={[styles.objectivesIcon, { backgroundColor: courseStyle.primaryColor + '15' }]}>
+                <Target size={20} color={courseStyle.primaryColor} />
+              </View>
+              <Text style={[styles.objectivesTitle, { color: theme.colors.text }]}>
+                Lärandemål
+              </Text>
+            </View>
+            <View style={styles.objectivesList}>
+              {moduleObjectives.map((objective, index) => (
+                <View key={index} style={styles.objectiveItem}>
+                  <View style={[styles.objectiveCheck, { backgroundColor: courseStyle.primaryColor }]}>
+                    <CheckCircle size={12} color="white" />
+                  </View>
+                  <Text style={[styles.objectiveText, { color: theme.colors.text }]}>
+                    {objective}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <InfoBox
+            type="tip"
+            title={moduleTip.title}
+            content={moduleTip.content}
+            courseStyle={courseStyle}
+          />
+
+          <View style={styles.lessonsSection}>
+            <SectionHeader
+              title="Lektioner"
+              subtitle={`${completedLessons} av ${module.lessons.length} klara`}
+              icon={<BookOpen size={20} color={courseStyle.primaryColor} />}
+              courseStyle={courseStyle}
+            />
 
             {module.lessons.map((lesson, lessonIndex) => {
-              const LessonIcon = getLessonTypeIcon(lesson.type);
               const completed = course ? isLessonCompleted(course.id, lesson.id) : false;
               const isCurrentLesson = nextIncompleteLesson?.id === lesson.id;
               
               return (
-                <TouchableOpacity
+                <LessonCardEnhanced
                   key={lesson.id}
-                  style={[
-                    styles.lessonCard,
-                    { backgroundColor: theme.colors.card },
-                    completed && { borderLeftWidth: 3, borderLeftColor: theme.colors.success },
-                    isCurrentLesson && !completed && { borderLeftWidth: 3, borderLeftColor: courseStyle.primaryColor }
-                  ]}
+                  lessonIndex={lessonIndex}
+                  title={lesson.title}
+                  type={lesson.type as 'text' | 'video' | 'quiz'}
+                  durationMinutes={lesson.durationMinutes}
+                  isCompleted={completed}
+                  isNext={isCurrentLesson}
+                  courseStyle={courseStyle}
                   onPress={() => navigateToLesson(lesson.id)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[
-                    styles.lessonIconContainer,
-                    { 
-                      backgroundColor: completed 
-                        ? theme.colors.success + '15' 
-                        : isCurrentLesson
-                        ? courseStyle.primaryColor + '15'
-                        : theme.colors.borderLight
-                    }
-                  ]}>
-                    {completed ? (
-                      <CheckCircle size={20} color={theme.colors.success} />
-                    ) : (
-                      <LessonIcon size={20} color={isCurrentLesson ? courseStyle.primaryColor : theme.colors.textSecondary} />
-                    )}
-                  </View>
-                  
-                  <View style={styles.lessonInfo}>
-                    <View style={styles.lessonTitleRow}>
-                      <Text style={[styles.lessonNumber, { color: theme.colors.textMuted }]}>
-                        Lektion {lessonIndex + 1}
-                      </Text>
-                      {completed && (
-                        <View style={[styles.statusTag, { backgroundColor: theme.colors.success + '15' }]}>
-                          <Text style={[styles.statusTagText, { color: theme.colors.success }]}>Klar</Text>
-                        </View>
-                      )}
-                      {isCurrentLesson && !completed && (
-                        <View style={[styles.statusTag, { backgroundColor: courseStyle.primaryColor + '15' }]}>
-                          <Text style={[styles.statusTagText, { color: courseStyle.primaryColor }]}>Nästa</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text 
-                      style={[
-                        styles.lessonTitle, 
-                        { color: theme.colors.text },
-                        completed && { color: theme.colors.success }
-                      ]}
-                      numberOfLines={2}
-                    >
-                      {lesson.title}
-                    </Text>
-                    <View style={styles.lessonMeta}>
-                      {lesson.durationMinutes && (
-                        <View style={styles.lessonMetaItem}>
-                          <Clock size={12} color={theme.colors.textMuted} />
-                          <Text style={[styles.lessonMetaText, { color: theme.colors.textMuted }]}>
-                            {lesson.durationMinutes} min
-                          </Text>
-                        </View>
-                      )}
-                      <View style={[styles.lessonTypeBadge, { backgroundColor: theme.colors.borderLight }]}>
-                        <Text style={[styles.lessonTypeText, { color: theme.colors.textMuted }]}>
-                          {lesson.type === 'text' ? 'Läsning' : lesson.type === 'video' ? 'Video' : 'Quiz'}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  
-                  <ChevronRight size={20} color={theme.colors.textMuted} />
-                </TouchableOpacity>
+                />
               );
             })}
+          </View>
+
+          <View style={styles.statsRow}>
+            <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIcon, { backgroundColor: courseStyle.primaryColor + '15' }]}>
+                <BookOpen size={18} color={courseStyle.primaryColor} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>{module.lessons.length}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Lektioner</Text>
+            </View>
+            <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIcon, { backgroundColor: theme.colors.warning + '15' }]}>
+                <Clock size={18} color={theme.colors.warning} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>{totalDuration}m</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Studietid</Text>
+            </View>
+            <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIcon, { backgroundColor: theme.colors.success + '15' }]}>
+                <TrendingUp size={18} color={theme.colors.success} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>{moduleProgress?.percentComplete || 0}%</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Klart</Text>
+            </View>
           </View>
 
           <View style={styles.navigationSection}>
@@ -312,31 +439,51 @@ export default function ContentModuleDetailScreen() {
                 onPress={() => prevModule && router.replace(`/content-module/${prevModule.id}` as never)}
                 disabled={!prevModule}
               >
-                <ChevronLeft size={18} color={prevModule ? theme.colors.text : theme.colors.textMuted} />
-                <Text style={[
-                  styles.navButtonText,
-                  { color: prevModule ? theme.colors.text : theme.colors.textMuted }
-                ]}>
-                  Föregående
-                </Text>
+                <ChevronLeft size={20} color={prevModule ? courseStyle.primaryColor : theme.colors.textMuted} />
+                <View style={styles.navButtonContent}>
+                  <Text style={[
+                    styles.navButtonLabel,
+                    { color: prevModule ? theme.colors.textSecondary : theme.colors.textMuted }
+                  ]}>
+                    Föregående
+                  </Text>
+                  {prevModule && (
+                    <Text 
+                      style={[styles.navButtonTitle, { color: theme.colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {prevModule.title}
+                    </Text>
+                  )}
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
                   styles.navButton,
-                  { backgroundColor: theme.colors.card },
+                  { backgroundColor: nextModule ? courseStyle.primaryColor : theme.colors.card },
                   !nextModule && styles.navButtonDisabled
                 ]}
                 onPress={() => nextModule && router.replace(`/content-module/${nextModule.id}` as never)}
                 disabled={!nextModule}
               >
-                <Text style={[
-                  styles.navButtonText,
-                  { color: nextModule ? theme.colors.text : theme.colors.textMuted }
-                ]}>
-                  Nästa
-                </Text>
-                <ChevronRight size={18} color={nextModule ? theme.colors.text : theme.colors.textMuted} />
+                <View style={styles.navButtonContent}>
+                  <Text style={[
+                    styles.navButtonLabel,
+                    { color: nextModule ? 'rgba(255,255,255,0.8)' : theme.colors.textMuted }
+                  ]}>
+                    Nästa
+                  </Text>
+                  {nextModule && (
+                    <Text 
+                      style={[styles.navButtonTitle, { color: 'white' }]}
+                      numberOfLines={1}
+                    >
+                      {nextModule.title}
+                    </Text>
+                  )}
+                </View>
+                <ChevronRight size={20} color={nextModule ? 'white' : theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
           </View>
@@ -354,7 +501,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 50,
   },
   loadingContainer: {
     flex: 1,
@@ -397,135 +544,204 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 24,
   },
+  completedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 20,
+    gap: 14,
+  },
+  completedBannerIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completedBannerContent: {
+    flex: 1,
+  },
+  completedBannerTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  completedBannerSubtitle: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    lineHeight: 20,
+  },
   continueCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'space-between',
+    padding: 20,
+    borderRadius: 18,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  continueCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 16,
+  },
+  continueCardIcon: {
+    width: 52,
+    height: 52,
     borderRadius: 16,
-    marginBottom: 28,
-    gap: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  continueCardText: {
+    flex: 1,
+  },
+  continueCardLabel: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 13,
+    fontWeight: '500' as const,
+    marginBottom: 4,
+  },
+  continueCardTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  moduleIntroCard: {
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  continueIcon: {
+  moduleIntroHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    gap: 14,
+  },
+  moduleIntroIcon: {
     width: 48,
     height: 48,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  continueInfo: {
+  moduleIntroTitleContainer: {
     flex: 1,
   },
-  continueLabel: {
-    fontSize: 12,
+  moduleIntroTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  moduleIntroSubtitle: {
+    fontSize: 13,
     fontWeight: '500' as const,
-    marginBottom: 2,
   },
-  continueTitle: {
+  moduleIntroDescription: {
     fontSize: 15,
-    fontWeight: '600' as const,
+    lineHeight: 24,
+    fontWeight: '500' as const,
   },
-  continueButton: {
+  objectivesCard: {
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  objectivesHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 4,
-  },
-  continueButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  lessonsSection: {},
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
     marginBottom: 16,
-    letterSpacing: -0.3,
+    gap: 12,
   },
-  lessonCard: {
+  objectivesIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  objectivesTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+  },
+  objectivesList: {
+    gap: 12,
+  },
+  objectiveItem: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  objectiveCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  objectiveText: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '500' as const,
+  },
+  lessonsSection: {
+    marginTop: 8,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  statItem: {
+    flex: 1,
     alignItems: 'center',
     padding: 16,
     borderRadius: 14,
-    marginBottom: 10,
-    gap: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
   },
-  lessonIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  statIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 10,
   },
-  lessonInfo: {
-    flex: 1,
-  },
-  lessonTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  statValue: {
+    fontSize: 20,
+    fontWeight: '800' as const,
     marginBottom: 4,
   },
-  lessonNumber: {
-    fontSize: 11,
-    fontWeight: '600' as const,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-  },
-  statusTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  statusTagText: {
-    fontSize: 10,
-    fontWeight: '700' as const,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.3,
-  },
-  lessonTitle: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    marginBottom: 6,
-    lineHeight: 20,
-  },
-  lessonMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  lessonMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  lessonMetaText: {
+  statLabel: {
     fontSize: 12,
     fontWeight: '500' as const,
   },
-  lessonTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  lessonTypeText: {
-    fontSize: 11,
-    fontWeight: '500' as const,
-  },
   navigationSection: {
-    marginTop: 28,
+    marginTop: 12,
+    marginBottom: 20,
   },
   moduleNavigation: {
     flexDirection: 'row',
@@ -535,20 +751,27 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 14,
-    borderRadius: 12,
+    padding: 16,
+    borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 3,
+    gap: 10,
   },
   navButtonDisabled: {
     opacity: 0.5,
   },
-  navButtonText: {
+  navButtonContent: {
+    flex: 1,
+  },
+  navButtonLabel: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    marginBottom: 4,
+  },
+  navButtonTitle: {
     fontSize: 14,
     fontWeight: '600' as const,
   },

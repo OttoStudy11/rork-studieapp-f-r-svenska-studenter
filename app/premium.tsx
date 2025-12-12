@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
   Linking,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -146,6 +147,12 @@ export default function PremiumScreen() {
 
   // Load offerings with exponential backoff retry
   const loadOfferings = useCallback(async (attempt: number = 0) => {
+    if (Platform.OS === 'web') {
+      setIsLoadingOfferings(false);
+      setLoadError('RevenueCat stöds inte på web. Testa på iOS eller Android.');
+      return;
+    }
+    
     setIsLoadingOfferings(true);
     setLoadError(null);
     
@@ -576,18 +583,22 @@ export default function PremiumScreen() {
               <View style={[styles.errorContainer, { backgroundColor: theme.colors.card }]}>
                 <AlertCircle size={32} color={theme.colors.warning} />
                 <Text style={[styles.errorTitle, { color: theme.colors.text }]}>
-                  Produkter ej tillgängliga
+                  {Platform.OS === 'web' ? 'Endast tillgängligt på mobil' : 'Produkter ej tillgängliga'}
                 </Text>
                 <Text style={[styles.errorDescription, { color: theme.colors.textSecondary }]}>
-                  Vi kunde inte ladda produkterna just nu. Försök igen om en stund.
+                  {Platform.OS === 'web' 
+                    ? 'RevenueCat in-app purchases fungerar endast på iOS och Android. Scanna QR-koden för att testa på din mobil.' 
+                    : 'Vi kunde inte ladda produkterna just nu. Försök igen om en stund.'}
                 </Text>
-                <TouchableOpacity 
-                  style={[styles.errorRetryButton, { backgroundColor: theme.colors.primary }]}
-                  onPress={handleRetry}
-                >
-                  <RefreshCw size={18} color="#FFF" />
-                  <Text style={styles.errorRetryText}>Försök igen</Text>
-                </TouchableOpacity>
+                {Platform.OS !== 'web' && (
+                  <TouchableOpacity 
+                    style={[styles.errorRetryButton, { backgroundColor: theme.colors.primary }]}
+                    onPress={handleRetry}
+                  >
+                    <RefreshCw size={18} color="#FFF" />
+                    <Text style={styles.errorRetryText}>Försök igen</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ) : (
               <View style={styles.pricingContainer}>

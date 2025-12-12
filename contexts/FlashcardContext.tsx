@@ -179,19 +179,22 @@ export function FlashcardProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
+  const { mutateAsync: reviewCardMutateAsync } = reviewCardMutation;
+  const { mutateAsync: generateFlashcardsMutateAsync } = generateFlashcardsMutation;
+
   const reviewCard = useCallback(
     async (flashcardId: string, correct: boolean) => {
-      await reviewCardMutation.mutateAsync({ flashcardId, correct });
+      await reviewCardMutateAsync({ flashcardId, correct });
     },
-    [reviewCardMutation]
+    [reviewCardMutateAsync]
   );
 
   const generateFlashcards = useCallback(
     async (courseId: string) => {
       setSelectedCourseId(courseId);
-      await generateFlashcardsMutation.mutateAsync(courseId);
+      await generateFlashcardsMutateAsync(courseId);
     },
-    [generateFlashcardsMutation]
+    [generateFlashcardsMutateAsync]
   );
 
   const getDueCards = useCallback(

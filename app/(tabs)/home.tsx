@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
 import { useAchievements } from '@/contexts/AchievementContext';
 import { usePoints } from '@/contexts/PointsContext';
+import { useChallenges } from '@/contexts/ChallengesContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
@@ -28,6 +29,7 @@ export default function HomeScreen() {
   const { user, courses, pomodoroSessions, isLoading } = useStudy();
   const { getRecentAchievements, currentStreak } = useAchievements();
   const { totalPoints, level: pointsLevel } = usePoints();
+  const { todaysChallenges, claimChallenge } = useChallenges();
   const { isPremium, isDemoMode, canAddCourse, showPremiumModal } = usePremium();
   const { theme, isDark } = useTheme();
   const { upcomingExams } = useExams();
@@ -316,6 +318,72 @@ export default function HomeScreen() {
                   ))}
                 </View>
               )}
+            </View>
+          </View>
+        </SlideInView>
+
+        {/* Challenges */}
+        <SlideInView direction="up" delay={480}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dagens utmaningar</Text>
+              <TouchableOpacity onPress={() => console.log('Challenges: see all pressed')}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Uppdateras</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.challengesList}>
+              {todaysChallenges.map((c) => {
+                const isClaimable = c.status === 'completed';
+                const isClaimed = c.status === 'claimed';
+
+                return (
+                  <View key={c.id} style={[styles.challengeCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                    <View style={styles.challengeTop}>
+                      <View style={styles.challengeLeft}>
+                        <Text style={styles.challengeEmoji}>{c.emoji}</Text>
+                        <View style={styles.challengeTextCol}>
+                          <Text style={[styles.challengeTitle, { color: theme.colors.text }]}>{c.title}</Text>
+                          <Text style={[styles.challengeDesc, { color: theme.colors.textSecondary }]} numberOfLines={2}>{c.description}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.challengeRight}>
+                        <View style={[styles.challengePointsPill, { backgroundColor: theme.colors.primary + '15' }]}>
+                          <Star size={14} color={theme.colors.primary} />
+                          <Text style={[styles.challengePointsText, { color: theme.colors.primary }]}>+{c.rewardPoints}</Text>
+                        </View>
+                        <TouchableOpacity
+                          testID={`challenge-claim-${c.id}`}
+                          style={[
+                            styles.challengeButton,
+                            { backgroundColor: isClaimable ? theme.colors.primary : (isClaimed ? theme.colors.success : theme.colors.border) },
+                          ]}
+                          onPress={() => {
+                            if (isClaimable) {
+                              void claimChallenge(c.id);
+                            }
+                          }}
+                          disabled={!isClaimable}
+                        >
+                          <Text style={[styles.challengeButtonText, { color: isClaimable || isClaimed ? 'white' : theme.colors.textSecondary }]}>
+                            {isClaimed ? 'Claimad' : isClaimable ? 'Hämta' : 'Pågår'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View style={[styles.challengeProgressTrack, { backgroundColor: theme.colors.border }]}>
+                      <View style={[styles.challengeProgressFill, { width: `${c.percent}%`, backgroundColor: theme.colors.primary }]} />
+                    </View>
+                    <Text style={[styles.challengeProgressText, { color: theme.colors.textSecondary }]}
+                      testID={`challenge-progress-${c.id}`}
+                    >
+                      {c.current}/{c.target}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         </SlideInView>
@@ -767,6 +835,91 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 16,
+    fontWeight: '600',
+  },
+  challengesList: {
+    gap: 12,
+  },
+  challengeCard: {
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  challengeTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  challengeLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flex: 1,
+    gap: 12,
+  },
+  challengeEmoji: {
+    fontSize: 22,
+    marginTop: 1,
+  },
+  challengeTextCol: {
+    flex: 1,
+  },
+  challengeTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  challengeDesc: {
+    fontSize: 13,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  challengeRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  challengePointsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  challengePointsText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  challengeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    minWidth: 84,
+    alignItems: 'center',
+  },
+  challengeButtonText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  challengeProgressTrack: {
+    height: 8,
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginTop: 14,
+  },
+  challengeProgressFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  challengeProgressText: {
+    marginTop: 8,
+    fontSize: 12,
     fontWeight: '600',
   },
   levelCard: {

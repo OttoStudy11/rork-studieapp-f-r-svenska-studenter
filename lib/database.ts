@@ -883,6 +883,110 @@ export const calculateUserStreak = async (userId: string) => {
   }
 };
 
+// Points / Progress helpers
+export const getUserProgress = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('user_progress')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+
+  return data;
+};
+
+export const rpcCalculateUserPoints = async (userId: string) => {
+  const { data, error } = await (supabase as any).rpc('calculate_user_points', { p_user_id: userId });
+  if (error) throw error;
+  const points = typeof data === 'number' ? data : Number(data ?? 0);
+  return Number.isFinite(points) ? points : 0;
+};
+
+export type PointsAdjustments = {
+  userId: string;
+  bonusPoints: number;
+  claimedChallengeIds: string[];
+  updatedAt?: string;
+};
+
+const ADJUSTMENTS_TABLE = 'user_points_adjustments';
+
+export const getUserPointsAdjustments = async (userId: string): Promise<PointsAdjustments | null> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from(ADJUSTMENTS_TABLE)
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return { userId, bonusPoints: 0, claimedChallengeIds: [] };
+      if (error.code === '42P01' || String(error.message ?? '').includes('does not exist')) {
+        return null;
+      }
+      throw error;
+    }
+
+    const bonusPoints = typeof data?.bonus_points === 'number' ? data.bonus_points : Number(data?.bonus_points ?? 0);
+    const claimed = Array.isArray(data?.claimed_challenge_ids)
+      ? (data.claimed_challenge_ids as unknown[]).map(String)
+      : [];
+
+    return {
+      userId,
+      bonusPoints: Number.isFinite(bonusPoints) ? bonusPoints : 0,
+      claimedChallengeIds: claimed,
+      updatedAt: typeof data?.updated_at === 'string' ? data.updated_at : undefined,
+    };
+  } catch (error: any) {
+    if (String(error?.message ?? '').includes('does not exist')) return null;
+    throw error;
+  }
+};
+
+export const upsertUserPointsAdjustments = async (input: PointsAdjustments) => {
+  const row = {
+    user_id: input.userId,
+    bonus_points: input.bonusPoints,
+    claimed_challenge_ids: input.claimedChallengeIds,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await (supabase as any)
+    .from(ADJUSTMENTS_TABLE)
+    .upsert(row, { onConflict: 'user_id' })
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '42P01' || String(error.message ?? '').includes('does not exist')) {
+      return null;
+    }
+    throw error;
+  }
+
+  return data;
+};
+
+export const upsertUserProgressPoints = async (userId: string, totalPoints: number) => {
+  const { data, error } = await supabase
+    .from('user_progress')
+    .upsert({
+      user_id: userId,
+      total_points: totalPoints,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
 // Leaderboard functions
 export const getFriendsLeaderboard = async (userId: string, timeframe: 'week' | 'month' | 'all' = 'week') => {
   try {

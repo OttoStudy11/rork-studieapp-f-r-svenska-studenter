@@ -15,6 +15,7 @@ import { ExamProvider } from "@/contexts/ExamContext";
 import { CourseContentProvider } from "@/contexts/CourseContentContext";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { PointsProvider } from "@/contexts/PointsContext";
+import { ChallengesProvider } from "@/contexts/ChallengesContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -62,7 +63,9 @@ export default function RootLayout() {
                         <GestureHandlerRootView style={{ flex: 1 }}>
                           <AchievementProvider>
                             <PointsProvider>
-                              <RootLayoutNav />
+                              <ChallengesProvider>
+                                <RootLayoutNav />
+                              </ChallengesProvider>
                             </PointsProvider>
                           </AchievementProvider>
                         </GestureHandlerRootView>

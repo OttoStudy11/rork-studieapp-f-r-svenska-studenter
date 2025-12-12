@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,11 @@ import {
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
-  Dimensions,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
+import { fetchTotalStudyMinutesForUser } from '@/lib/study-stats';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import Avatar from '@/components/Avatar';
@@ -60,21 +60,18 @@ interface ComparisonStat {
 export default function FriendStatsScreen() {
   const { friendId } = useLocalSearchParams<{ friendId: string }>();
   const { user } = useAuth();
+  const { user: studyUser } = useStudy();
   const { theme, isDark } = useTheme();
   const [friend, setFriend] = useState<FriendData | null>(null);
-  const [yourStats, setYourStats] = useState<any>(null);
+  const [yourStats, setYourStats] = useState<{ studyTime: number; sessionCount: number; streak: number; courseCount: number } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (friendId && user) {
-      loadStats();
-    }
-  }, [friendId, user]);
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     if (!friendId || !user) return;
 
     try {
+      setErrorMessage(null);
       setIsLoading(true);
 
       // Load friend profile
@@ -91,7 +88,7 @@ export default function FriendStatsScreen() {
         .from('user_progress')
         .select('*')
         .eq('user_id', friendId)
-        .single();
+        .maybeSingle();
 
       // Load friend courses
       const { data: friendCourses } = await supabase
@@ -110,7 +107,7 @@ export default function FriendStatsScreen() {
         .from('user_progress')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       // Load your courses
       const { data: yourCourses } = await supabase
@@ -124,9 +121,8 @@ export default function FriendStatsScreen() {
         .select('*')
         .eq('user_id', user.id);
 
-      // Convert study time from minutes to hours for display
-      const friendStudyTimeMinutes = friendProgress?.total_study_time || 0;
-      const yourStudyTimeMinutes = yourProgress?.total_study_time || 0;
+      const friendStudyTimeMinutes = await fetchTotalStudyMinutesForUser(friendId);
+      const yourStudyTimeMinutes = await fetchTotalStudyMinutesForUser(user.id);
 
       setFriend({
         id: friendProfile.id,
@@ -135,7 +131,14 @@ export default function FriendStatsScreen() {
         program: friendProfile.program,
         level: friendProfile.level as 'gymnasie' | 'högskola',
         gymnasium_grade: friendProfile.gymnasium_grade,
-        avatar: friendProfile.avatar_url ? JSON.parse(friendProfile.avatar_url) : undefined,
+        avatar: (() => {
+          if (!friendProfile.avatar_url) return undefined;
+          try {
+            return JSON.parse(friendProfile.avatar_url) as AvatarConfig;
+          } catch {
+            return undefined;
+          }
+        })(),
         studyTime: friendStudyTimeMinutes, // Keep in minutes for calculations
         sessionCount: friendSessions?.length || 0,
         streak: friendProgress?.current_streak || 0,
@@ -143,17 +146,35 @@ export default function FriendStatsScreen() {
       });
 
       setYourStats({
-        studyTime: yourStudyTimeMinutes, // Keep in minutes for calculations
+        studyTime: yourStudyTimeMinutes,
         sessionCount: yourSessions?.length || 0,
         streak: yourProgress?.current_streak || 0,
         courseCount: yourCourses?.length || 0,
       });
-    } catch (error) {
-      console.error('Error loading stats:', error);
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Kunde inte ladda statistik');
+      setFriend(null);
+      setYourStats(null);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [friendId, user]);
+
+  useEffect(() => {
+    if (friendId && user) {
+      void loadStats();
+    }
+  }, [friendId, loadStats, user]);
+
+  useEffect(() => {
+    if (!friendId || !user) return;
+
+    const intervalId = setInterval(() => {
+      void loadStats();
+    }, 20000);
+
+    return () => clearInterval(intervalId);
+  }, [friendId, loadStats, user]);
 
   const calculateComparison = (yourValue: number, friendValue: number): 'better' | 'worse' | 'equal' => {
     if (yourValue > friendValue) return 'better';
@@ -161,7 +182,7 @@ export default function FriendStatsScreen() {
     return 'equal';
   };
 
-  const getComparisonStats = (): ComparisonStat[] => {
+  const comparisonStats = useMemo<ComparisonStat[]>(() => {
     if (!friend || !yourStats) return [];
 
     return [
@@ -206,7 +227,7 @@ export default function FriendStatsScreen() {
         difference: Math.abs(yourStats.courseCount - friend.courseCount),
       },
     ];
-  };
+  }, [friend, theme.colors.primary, theme.colors.secondary, theme.colors.success, theme.colors.warning, yourStats]);
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -226,12 +247,11 @@ export default function FriendStatsScreen() {
     return `-${diffText} mindre än ${friend?.display_name}`;
   };
 
-  const getOverallScore = (): { you: number; friend: number } => {
-    const stats = getComparisonStats();
-    const youWins = stats.filter(s => s.comparison === 'better').length;
-    const friendWins = stats.filter(s => s.comparison === 'worse').length;
+  const overallScore = useMemo((): { you: number; friend: number } => {
+    const youWins = comparisonStats.filter((s) => s.comparison === 'better').length;
+    const friendWins = comparisonStats.filter((s) => s.comparison === 'worse').length;
     return { you: youWins, friend: friendWins };
-  };
+  }, [comparisonStats]);
 
   if (isLoading) {
     return (
@@ -242,16 +262,23 @@ export default function FriendStatsScreen() {
     );
   }
 
-  if (!friend) {
+  if (!friend || !yourStats) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
-        <Text style={[styles.loadingText, { color: theme.colors.text }]}>Kunde inte ladda vändata</Text>
+        <Text style={[styles.loadingText, { color: theme.colors.text }]}>Kunde inte ladda data</Text>
+        {errorMessage ? (
+          <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>{errorMessage}</Text>
+        ) : null}
+        <TouchableOpacity
+          testID="retry-friend-stats"
+          style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
+          onPress={() => void loadStats()}
+        >
+          <Text style={styles.retryButtonText}>Försök igen</Text>
+        </TouchableOpacity>
       </View>
     );
   }
-
-  const comparisonStats = getComparisonStats();
-  const overallScore = getOverallScore();
 
   return (
     <PremiumGate feature="battle">
@@ -286,8 +313,12 @@ export default function FriendStatsScreen() {
             >
               <View style={styles.vsContainer}>
                 <View style={styles.avatarSection}>
-                  <View style={[styles.avatarCircle, { borderColor: theme.colors.primary }]}>
-                    <Text style={styles.avatarText}>Du</Text>
+                  <View style={[styles.avatarCircle, { borderColor: theme.colors.primary }]}> 
+                    {studyUser?.avatar ? (
+                      <Avatar config={studyUser.avatar} size={84} />
+                    ) : (
+                      <Text style={styles.avatarText}>Du</Text>
+                    )}
                   </View>
                   <Text style={styles.scoreBadge}>{overallScore.you}</Text>
                 </View>
@@ -311,11 +342,22 @@ export default function FriendStatsScreen() {
 
               <View style={styles.friendInfoBox}>
                 <View style={styles.friendNameRow}>
-                  <Text style={styles.friendName}>{friend.display_name}</Text>
+                  <Text style={styles.friendName} numberOfLines={1}>
+                    {friend.display_name}
+                  </Text>
                 </View>
-                <Text style={styles.friendProgram}>
+                <Text style={styles.friendProgram} numberOfLines={1}>
                   {friend.program}{friend.gymnasium_grade ? ` • Årskurs ${friend.gymnasium_grade}` : ''}
                 </Text>
+                <View style={styles.aheadPill}>
+                  <Text style={styles.aheadPillText}>
+                    {friend.studyTime === yourStats.studyTime
+                      ? 'Ni är lika'
+                      : yourStats.studyTime > friend.studyTime
+                        ? 'Du leder'
+                        : `${friend.display_name} leder`}
+                  </Text>
+                </View>
               </View>
             </LinearGradient>
           </View>
@@ -570,6 +612,36 @@ const styles = StyleSheet.create({
   comparisonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  errorText: {
+    marginTop: 8,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    lineHeight: 20,
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  aheadPill: {
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  aheadPillText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.92)',
   },
   motivationCard: {
     marginHorizontal: 24,

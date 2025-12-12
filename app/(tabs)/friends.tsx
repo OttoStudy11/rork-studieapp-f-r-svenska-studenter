@@ -9,22 +9,22 @@ import {
   Modal,
   ActivityIndicator,
   StatusBar,
-  SafeAreaView
+  SafeAreaView,
+  Platform,
+  Share,
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
-import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy, User, Target, TrendingUp, Flame, UsersRound, Lock, Globe, BookOpen } from 'lucide-react-native';
+import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy, User, Target, TrendingUp, Flame, UsersRound, Globe } from 'lucide-react-native';
 import Avatar from '@/components/Avatar';
 import FriendSearch from '@/components/FriendSearch';
 import type { AvatarConfig } from '@/constants/avatar-config';
 import * as Clipboard from 'expo-clipboard';
-import { Platform } from 'react-native';
-import { Share } from 'react-native';
 import { supabase } from '@/lib/supabase';
+import { fetchGlobalLeaderboardTop15 } from '@/lib/study-stats';
 import { useTheme } from '@/contexts/ThemeContext';
 
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { FadeInView, SlideInView } from '@/components/Animations';
 
@@ -77,6 +77,9 @@ export default function FriendsScreen() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [globalLeaderboard, setGlobalLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [globalLeaderboardLoading, setGlobalLeaderboardLoading] = useState(false);
+  const [globalLeaderboardError, setGlobalLeaderboardError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('week');
   const [leaderboardView, setLeaderboardView] = useState<'friends' | 'global'>('friends');
@@ -100,12 +103,20 @@ export default function FriendsScreen() {
 
   const [currentUserProgress, setCurrentUserProgress] = useState<{ current_streak?: number; total_study_time?: number } | null>(null);
 
+  const safeParseAvatar = useCallback((raw: string | null | undefined): AvatarConfig | undefined => {
+    if (!raw) return undefined;
+    try {
+      return JSON.parse(raw) as AvatarConfig;
+    } catch {
+      return undefined;
+    }
+  }, []);
+
   const loadFriends = useCallback(async () => {
     if (!user) return;
-    
+
     try {
       setIsLoading(true);
-      console.log('Loading friends for user:', user.id);
       
       const { data: friendsDataSent, error: friendsErrorSent } = await supabase
         .from('friends')
@@ -175,12 +186,7 @@ export default function FriendsScreen() {
       
       const friendsData = [...(friendsDataSent || []), ...(friendsDataReceived || [])];
       
-      console.log('Friends loaded (sent):', friendsDataSent?.length || 0);
-      console.log('Friends loaded (received):', friendsDataReceived?.length || 0);
-      console.log('Total friends loaded:', friendsData.length);
-      console.log('Friend requests loaded:', requestsData?.length || 0);
-      
-      const uniqueFriendsMap = new Map();
+      const uniqueFriendsMap = new Map<string, any>();
       friendsData.forEach((f: any) => {
         if (f.friend && f.friend.id) {
           uniqueFriendsMap.set(f.friend.id, f);
@@ -188,8 +194,6 @@ export default function FriendsScreen() {
       });
       
       const uniqueFriends = Array.from(uniqueFriendsMap.values());
-      console.log('Unique friends after deduplication:', uniqueFriends.length);
-      
       const friendIds = uniqueFriends
         .filter((f: any) => f.friend)
         .map((f: any) => f.friend.id);
@@ -219,7 +223,7 @@ export default function FriendsScreen() {
           display_name: f.friend.display_name,
           program: f.friend.program,
           level: f.friend.level,
-          avatar: f.friend.avatar_url ? JSON.parse(f.friend.avatar_url) : undefined,
+          avatar: safeParseAvatar(f.friend.avatar_url),
           studyTime: progress?.total_study_time || 0,
           streak: progress?.current_streak || 0
         };
@@ -236,7 +240,7 @@ export default function FriendsScreen() {
           display_name: r.requester.display_name,
           program: r.requester.program || 'Okänd program',
           level: r.requester.level || 'gymnasie',
-          avatar: r.requester.avatar_url ? JSON.parse(r.requester.avatar_url) : undefined,
+          avatar: safeParseAvatar(r.requester.avatar_url),
           request_id: r.id
         };
       }).filter(Boolean) as FriendRequest[];
@@ -275,27 +279,24 @@ export default function FriendsScreen() {
         .select('user_id')
         .eq('user_id', user.id);
       
-      // Create array of all users including current user
-      // Convert study time from minutes to hours for proper leaderboard display
       const allUsersForLeaderboard = [
         ...mappedFriends.map((friend) => ({
           ...friend,
-          studyTime: Math.round((friend.studyTime || 0) / 60), // Convert minutes to hours
+          studyTime: friend.studyTime || 0,
           sessionCount: sessionCountMap[friend.id] || 0,
-          position: 0
+          position: 0,
         })),
-        // Add current user
         {
           id: user.id,
           username: studyUser?.username || 'Du',
           display_name: studyUser?.displayName || 'Du',
           program: studyUser?.program || '',
-          level: studyUser?.studyLevel || 'gymnasie' as 'gymnasie' | 'högskola',
+          level: (studyUser?.studyLevel || 'gymnasie') as 'gymnasie' | 'högskola',
           avatar: studyUser?.avatar,
-          studyTime: Math.round((fetchedUserProgress?.total_study_time || 0) / 60), // Convert minutes to hours
+          studyTime: fetchedUserProgress?.total_study_time || 0,
           sessionCount: currentUserSessions?.length || 0,
-          position: 0
-        }
+          position: 0,
+        },
       ];
       
       // Sort by study time and assign positions
@@ -305,16 +306,53 @@ export default function FriendsScreen() {
       
       setLeaderboard(leaderboardData);
     } catch (error: any) {
-      console.error('Error loading friends:', error);
       showError(error?.message || 'Kunde inte ladda vänner');
     } finally {
       setIsLoading(false);
     }
-  }, [user, studyUser, showError]);
+  }, [safeParseAvatar, showError, studyUser, user]);
+
+  const loadGlobalLeaderboard = useCallback(async () => {
+    setGlobalLeaderboardLoading(true);
+    setGlobalLeaderboardError(null);
+
+    try {
+      const entries = await fetchGlobalLeaderboardTop15();
+
+      const mapped: LeaderboardEntry[] = entries.map((e) => {
+        const level = e.level === 'högskola' ? 'högskola' : 'gymnasie';
+        return {
+          id: e.userId,
+          username: e.username,
+          display_name: e.displayName,
+          program: e.program,
+          level,
+          avatar: safeParseAvatar(e.avatarUrl),
+          studyTime: e.totalMinutes,
+          sessionCount: e.totalSessions,
+          position: e.rank,
+        };
+      });
+
+      setGlobalLeaderboard(mapped);
+    } catch (error: any) {
+      const message = error?.message || 'Kunde inte ladda global topplista';
+      setGlobalLeaderboardError(message);
+      setGlobalLeaderboard([]);
+    } finally {
+      setGlobalLeaderboardLoading(false);
+    }
+  }, [safeParseAvatar]);
 
   useEffect(() => {
     loadFriends();
   }, [loadFriends]);
+
+  useEffect(() => {
+    if (showLeaderboard && leaderboardView === 'global') {
+      void loadGlobalLeaderboard();
+    }
+  }, [leaderboardView, loadGlobalLeaderboard, showLeaderboard]);
 
   const handleAddFriend = () => {
     setShowAddModal(true);
@@ -413,12 +451,8 @@ export default function FriendsScreen() {
     return `${mins}m`;
   };
 
-  const formatLeaderboardTime = (hours: number) => {
-    // Input is already in hours
-    if (hours >= 1) {
-      return `${hours}h`;
-    }
-    return `${hours}h`;
+  const formatLeaderboardTime = (minutes: number) => {
+    return formatStudyTime(minutes);
   };
 
   if (isLoading) {
@@ -585,9 +619,17 @@ export default function FriendsScreen() {
                         >
                           <View style={styles.friendContent}>
                             <View style={styles.friendLeft}>
-                              <View style={[styles.emojiContainer, { backgroundColor: colorScheme.bg }]}>
-                                <User size={20} color={colorScheme.accent} />
-                              </View>
+                              {friend.avatar ? (
+                                <View style={styles.avatarWrap}>
+                                  <Avatar config={friend.avatar} size={48} />
+                                </View>
+                              ) : (
+                                <View style={[styles.fallbackAvatar, { backgroundColor: colorScheme.bg }]}> 
+                                  <Text style={[styles.fallbackAvatarText, { color: colorScheme.accent }]}>
+                                    {(friend.display_name?.[0] ?? '?').toUpperCase()}
+                                  </Text>
+                                </View>
+                              )}
                               <View style={styles.friendInfo}>
                                 <Text style={[styles.friendName, { color: theme.colors.text }]} numberOfLines={1}>
                                   {friend.display_name}
@@ -663,9 +705,17 @@ export default function FriendsScreen() {
                       <View style={[styles.requestCard, { backgroundColor: theme.colors.card }]}>
                         <View style={styles.requestContent}>
                           <View style={styles.requestLeft}>
-                            <View style={[styles.emojiContainer, { backgroundColor: colorScheme.bg }]}>
-                              <User size={20} color={colorScheme.accent} />
-                            </View>
+                            {request.avatar ? (
+                              <View style={styles.avatarWrap}>
+                                <Avatar config={request.avatar} size={48} />
+                              </View>
+                            ) : (
+                              <View style={[styles.fallbackAvatar, { backgroundColor: colorScheme.bg }]}> 
+                                <Text style={[styles.fallbackAvatarText, { color: colorScheme.accent }]}>
+                                  {(request.display_name?.[0] ?? '?').toUpperCase()}
+                                </Text>
+                              </View>
+                            )}
                             <View style={styles.friendInfo}>
                               <Text style={[styles.friendName, { color: theme.colors.text }]} numberOfLines={1}>
                                 {request.display_name}
@@ -845,9 +895,32 @@ export default function FriendsScreen() {
 
             {/* Leaderboard List */}
             <ScrollView style={styles.leaderboardContainer} showsVerticalScrollIndicator={false}>
-              {leaderboard.length > 0 ? (
-                (leaderboardView === 'global' ? leaderboard.slice(0, 15) : leaderboard).map((entry, index) => (
-                  <FadeInView key={entry.id} delay={100 + index * 50}>
+              {leaderboardView === 'global' ? (
+                globalLeaderboardLoading ? (
+                  <View style={styles.leaderboardLoading}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Laddar global topplista...</Text>
+                  </View>
+                ) : globalLeaderboardError ? (
+                  <View style={styles.emptyLeaderboard}>
+                    <Trophy size={48} color={theme.colors.textMuted} />
+                    <Text style={[styles.emptyLeaderboardTitle, { color: theme.colors.text }]}>
+                      Kunde inte ladda
+                    </Text>
+                    <Text style={[styles.emptyLeaderboardText, { color: theme.colors.textSecondary }]}>
+                      {globalLeaderboardError}
+                    </Text>
+                    <TouchableOpacity
+                      testID="retry-global-leaderboard"
+                      style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
+                      onPress={() => void loadGlobalLeaderboard()}
+                    >
+                      <Text style={styles.retryButtonText}>Försök igen</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : globalLeaderboard.length > 0 ? (
+                  globalLeaderboard.map((entry, index) => (
+                    <FadeInView key={entry.id} delay={100 + index * 50}>
                     <View style={[
                       styles.leaderboardItem,
                       { backgroundColor: theme.colors.card },
@@ -897,16 +970,74 @@ export default function FriendsScreen() {
                       </View>
                     </View>
                   </FadeInView>
+                  ))
+                ) : (
+                  <View style={styles.emptyLeaderboard}>
+                    <Trophy size={48} color={theme.colors.textMuted} />
+                    <Text style={[styles.emptyLeaderboardTitle, { color: theme.colors.text }]}>Ingen data än</Text>
+                    <Text style={[styles.emptyLeaderboardText, { color: theme.colors.textSecondary }]}>Inga studieminuter hittades</Text>
+                  </View>
+                )
+              ) : leaderboard.length > 0 ? (
+                leaderboard.map((entry, index) => (
+                  <FadeInView key={entry.id} delay={100 + index * 50}>
+                    <View style={[
+                      styles.leaderboardItem,
+                      { backgroundColor: theme.colors.card },
+                      entry.id === user?.id && {
+                        borderWidth: 2,
+                        borderColor: theme.colors.primary,
+                        backgroundColor: theme.colors.primary + '10',
+                      },
+                    ]}>
+                      <View style={styles.leaderboardPosition}>
+                        {entry.position <= 3 ? (
+                          getPositionIcon(entry.position)
+                        ) : (
+                          <Text style={[styles.positionText, { color: theme.colors.textSecondary }]}>
+                            {entry.position}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={styles.leaderboardUserInfo}>
+                        {entry.avatar ? (
+                          <Avatar config={entry.avatar} size={40} />
+                        ) : (
+                          <View style={[styles.leaderboardAvatar, { backgroundColor: theme.colors.primary + '15' }]}>
+                            <User size={20} color={theme.colors.primary} />
+                          </View>
+                        )}
+                        <View style={styles.userDetails}>
+                          <Text
+                            style={[
+                              styles.leaderboardUserName,
+                              { color: theme.colors.text },
+                              entry.id === user?.id && { color: theme.colors.primary, fontWeight: '700' },
+                            ]}
+                          >
+                            {entry.display_name}
+                          </Text>
+                          <Text style={[styles.leaderboardUserProgram, { color: theme.colors.textSecondary }]}>
+                            {entry.program}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.leaderboardStats}>
+                        <Text style={[styles.studyTime, { color: theme.colors.text }]}>
+                          {formatLeaderboardTime(entry.studyTime)}
+                        </Text>
+                        <Text style={[styles.sessionCount, { color: theme.colors.textSecondary }]}>
+                          {entry.sessionCount} sessioner
+                        </Text>
+                      </View>
+                    </View>
+                  </FadeInView>
                 ))
               ) : (
                 <View style={styles.emptyLeaderboard}>
                   <Trophy size={48} color={theme.colors.textMuted} />
-                  <Text style={[styles.emptyLeaderboardTitle, { color: theme.colors.text }]}>
-                    Ingen data än
-                  </Text>
-                  <Text style={[styles.emptyLeaderboardText, { color: theme.colors.textSecondary }]}>
-                    Lägg till vänner för att se topplistan
-                  </Text>
+                  <Text style={[styles.emptyLeaderboardTitle, { color: theme.colors.text }]}>Ingen data än</Text>
+                  <Text style={[styles.emptyLeaderboardText, { color: theme.colors.textSecondary }]}>Lägg till vänner för att se topplistan</Text>
                 </View>
               )}
             </ScrollView>
@@ -1187,7 +1318,14 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
-  emojiContainer: {
+  avatarWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  fallbackAvatar: {
     width: 48,
     height: 48,
     borderRadius: 16,
@@ -1195,8 +1333,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  friendEmojiLarge: {
-    fontSize: 24,
+  fallbackAvatarText: {
+    fontSize: 18,
+    fontWeight: '800',
   },
   friendInfo: {
     flex: 1,
@@ -1234,6 +1373,7 @@ const styles = StyleSheet.create({
   friendRight: {
     alignItems: 'flex-end',
     gap: 6,
+    minWidth: 92,
   },
   statPill: {
     paddingHorizontal: 12,
@@ -1436,11 +1576,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 16,
     marginBottom: 8,
+    textAlign: 'center',
   },
   emptyLeaderboardText: {
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: 16,
+  },
+  leaderboardLoading: {
+    paddingVertical: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
   },
   shareSection: {
     marginBottom: 24,

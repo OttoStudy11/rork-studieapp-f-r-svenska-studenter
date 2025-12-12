@@ -231,7 +231,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
             email: session.user.email!,
             createdAt: session.user.created_at
           };
-          setUser(authUser);
+          setUser(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(authUser)) return prev;
+            return authUser;
+          });
           await checkOnboardingStatus(session.user.id);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);

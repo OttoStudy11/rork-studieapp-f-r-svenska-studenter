@@ -285,7 +285,10 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           subscriptionType: 'free'
         };
         
-        setUser(localUser);
+        setUser(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(localUser)) return prev;
+        return localUser;
+      });
         setCourses([]);
         setNotes([]);
         setPomodoroSessions([]);
@@ -320,7 +323,10 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           subscriptionType: 'free'
         };
         
-        setUser(localUser);
+        setUser(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(localUser)) return prev;
+        return localUser;
+      });
         setCourses([]);
         setNotes([]);
         setPomodoroSessions([]);
@@ -329,7 +335,10 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       
       // Convert database profile to user
       const user = dbUserToUser(profile, userEmail);
-      setUser(user);
+      setUser(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(user)) return prev;
+        return user;
+      });
       
       // Load user courses
       const { data: userCourses, error: coursesError } = await supabase
@@ -399,7 +408,10 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         subscriptionType: 'free'
       };
       
-      setUser(localUser);
+      setUser(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(localUser)) return prev;
+        return localUser;
+      });
       setCourses([]);
       setNotes([]);
       setPomodoroSessions([]);
@@ -485,7 +497,10 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         onboardingCompleted: true
       };
       
-      setUser(completedUser);
+      setUser(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(completedUser)) return prev;
+        return completedUser;
+      });
       
       // Create courses based on selection or defaults
       let courses: Course[];
@@ -724,7 +739,10 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       
       // Update user locally
       const updatedUser = { ...user, ...updates };
-      setUser(updatedUser);
+      setUser(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(updatedUser)) return prev;
+        return updatedUser;
+      });
       console.log('User updated locally:', updatedUser.name);
     } catch (error) {
       console.error('Error updating user:', error);

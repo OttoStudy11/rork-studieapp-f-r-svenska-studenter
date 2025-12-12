@@ -185,11 +185,47 @@ export default function QuizScreen() {
 
   const checkAnswer = (answer: string | number): boolean => {
     const correctAnswer = correctAnswers[currentQuestionIndex];
+    const currentQuestion = questions[currentQuestionIndex];
     
-    if (typeof correctAnswer === 'number' && typeof answer === 'number') {
-      return correctAnswer === answer;
+    console.log('Checking answer:', { answer, correctAnswer, type: typeof answer, correctType: typeof correctAnswer });
+    
+    // If answer is an index number (from multiple choice)
+    if (typeof answer === 'number' && currentQuestion.options) {
+      const selectedOptionText = currentQuestion.options[answer];
+      const normalizedSelected = selectedOptionText?.toLowerCase().trim();
+      const normalizedCorrect = String(correctAnswer).toLowerCase().trim();
+      
+      // Check if correct answer is the index itself
+      if (correctAnswer === answer) {
+        console.log('Match: correct answer is index');
+        return true;
+      }
+      
+      // Check if correct answer is a letter (A, B, C, D)
+      const letterIndex = normalizedCorrect.charCodeAt(0) - 97; // 'a' = 0, 'b' = 1, etc.
+      if (normalizedCorrect.length === 1 && letterIndex >= 0 && letterIndex < 26) {
+        const isMatch = letterIndex === answer;
+        console.log('Letter comparison:', { letterIndex, answer, isMatch });
+        return isMatch;
+      }
+      
+      // Check if correct answer matches the option text
+      if (normalizedSelected === normalizedCorrect) {
+        console.log('Match: option text matches correct answer');
+        return true;
+      }
+      
+      // Check if correct answer is a number string matching the index
+      if (String(answer) === normalizedCorrect) {
+        console.log('Match: string index matches');
+        return true;
+      }
+      
+      console.log('No match found:', { normalizedSelected, normalizedCorrect });
+      return false;
     }
     
+    // For text answers (short_answer type)
     const normalizedAnswer = String(answer).toLowerCase().trim();
     const normalizedCorrect = String(correctAnswer).toLowerCase().trim();
     

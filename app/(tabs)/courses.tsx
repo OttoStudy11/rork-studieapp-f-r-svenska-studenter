@@ -405,7 +405,8 @@ export default function CoursesScreen() {
   };
 
   const navigateToCourse = (courseId: string) => {
-    router.push(`/content-course/${courseId}` as any);
+    console.log('Navigating to course detail:', { courseId });
+    router.push({ pathname: '/course/[id]', params: { id: courseId } } as any);
   };
 
   if (isLoading) {

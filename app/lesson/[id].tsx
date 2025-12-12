@@ -222,7 +222,7 @@ export default function LessonDetailScreen() {
   };
 
   const navigateToExercise = (exercise: CourseExercise) => {
-    router.push(`/exercise/${exercise.id}` as any);
+    router.push(`/quiz/${exercise.id}` as never);
   };
 
   const getDifficultyColor = (level: string) => {

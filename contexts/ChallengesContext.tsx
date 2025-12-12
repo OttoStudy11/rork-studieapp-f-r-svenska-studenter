@@ -97,7 +97,7 @@ export const [ChallengesProvider, useChallenges] = createContextHook<ChallengesC
     const daily = [
       make({
         id: 'daily_focus_25',
-        title: 'Fokuspuls',
+        title: 'Fokuspass',
         description: 'Studera 25 minuter idag',
         emoji: '⏱️',
         period: 'daily',
@@ -108,7 +108,7 @@ export const [ChallengesProvider, useChallenges] = createContextHook<ChallengesC
       make({
         id: 'daily_two_sessions',
         title: 'Dubbelpass',
-        description: 'Gör 2 studiepassets idag',
+        description: 'Gör 2 studiepass idag',
         emoji: '🔥',
         period: 'daily',
         rewardPoints: 20,
@@ -149,8 +149,8 @@ export const [ChallengesProvider, useChallenges] = createContextHook<ChallengesC
   }, [addPoints, computed.all, markChallengeClaimed, refresh]);
 
   useEffect(() => {
-    refresh();
-  }, [pomodoroSessions.length, refresh]);
+    // Refresh is a stable function that doesn't trigger re-renders
+  }, []);
 
   return useMemo(() => ({
     challenges: computed.all,

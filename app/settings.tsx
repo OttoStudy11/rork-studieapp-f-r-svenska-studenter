@@ -16,7 +16,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTimerSettings } from '@/contexts/TimerSettingsContext';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
-import { Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star, ChevronRight, Volume2, Vibrate, Timer as TimerIcon, Battery, ArrowLeft } from 'lucide-react-native';
+import { Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star, ChevronRight, Volume2, Vibrate, Battery, ArrowLeft } from 'lucide-react-native';
 import { router, Stack, useRouter } from 'expo-router';
 import { AnimatedPressable, FadeInView } from '@/components/Animations';
 
@@ -39,14 +39,27 @@ export default function SettingsScreen() {
   const { settings, setSoundEnabled, setHapticsEnabled, setNotificationsEnabled, setBackgroundTimerEnabled } = useTimerSettings();
 
   const themeOptions: { mode: ThemeMode; label: string; icon: React.ReactNode }[] = [
-    { mode: 'light', label: 'Ljust', icon: <Sun size={20} color={theme.colors.textSecondary} /> },
-    { mode: 'dark', label: 'Mörkt', icon: <Moon size={20} color={theme.colors.textSecondary} /> },
-    { mode: 'system', label: 'Systemets', icon: <Smartphone size={20} color={theme.colors.textSecondary} /> },
+    { 
+      mode: 'light', 
+      label: 'Ljust', 
+      icon: <Sun size={20} color={themeMode === 'light' ? theme.colors.primary : theme.colors.textSecondary} /> 
+    },
+    { 
+      mode: 'dark', 
+      label: 'Mörkt', 
+      icon: <Moon size={20} color={themeMode === 'dark' ? theme.colors.primary : theme.colors.textSecondary} /> 
+    },
+    { 
+      mode: 'system', 
+      label: 'Systemets', 
+      icon: <Smartphone size={20} color={themeMode === 'system' ? theme.colors.primary : theme.colors.textSecondary} /> 
+    },
   ];
 
-  const handleThemeChange = (mode: ThemeMode) => {
-    setThemeMode(mode);
-    showSuccess('Tema uppdaterat', `Bytte till ${mode === 'light' ? 'ljust' : mode === 'dark' ? 'mörkt' : 'systemets'} tema`);
+  const handleThemeChange = async (mode: ThemeMode) => {
+    await setThemeMode(mode);
+    const themeName = mode === 'light' ? 'ljust' : mode === 'dark' ? 'mörkt' : 'systemets';
+    showSuccess('Tema uppdaterat', `Bytte till ${themeName} tema`);
   };
 
   const handleSignOut = () => {

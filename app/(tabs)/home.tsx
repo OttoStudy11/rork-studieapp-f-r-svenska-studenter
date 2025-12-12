@@ -326,7 +326,7 @@ export default function HomeScreen() {
         <SlideInView direction="up" delay={480}>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dagens utmaningar</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dagliga utmaningar</Text>
               <TouchableOpacity onPress={() => console.log('Challenges: see all pressed')}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Uppdateras</Text>
               </TouchableOpacity>
@@ -367,7 +367,7 @@ export default function HomeScreen() {
                           disabled={!isClaimable}
                         >
                           <Text style={[styles.challengeButtonText, { color: isClaimable || isClaimed ? 'white' : theme.colors.textSecondary }]}>
-                            {isClaimed ? 'Claimad' : isClaimable ? 'Hämta' : 'Pågår'}
+                            {isClaimed ? 'Hämtad' : isClaimable ? 'Hämta' : 'Pågår'}
                           </Text>
                         </TouchableOpacity>
                       </View>

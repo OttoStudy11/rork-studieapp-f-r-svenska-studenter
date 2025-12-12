@@ -141,13 +141,11 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
   }, []);
 
   // Save theme preference
-  const updateThemeMode = useCallback(async (mode: ThemeMode) => {
-    try {
-      await AsyncStorage.setItem('theme_mode', mode);
-      setThemeMode(mode);
-    } catch (error) {
+  const updateThemeMode = useCallback((mode: ThemeMode) => {
+    setThemeMode(mode);
+    AsyncStorage.setItem('theme_mode', mode).catch(error => {
       console.log('Error saving theme:', error);
-    }
+    });
   }, []);
 
   // Calculate current theme

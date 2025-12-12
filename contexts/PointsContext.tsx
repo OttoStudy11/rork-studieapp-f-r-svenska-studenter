@@ -222,11 +222,15 @@ export const [PointsProvider, usePoints] = createContextHook<PointsContextValue>
         setHistory(fallback.history);
       }
 
+      const finalBonus = adjustments?.bonusPoints ?? 0;
+      const finalClaimed = adjustments?.claimedChallengeIds ?? [];
+      
       if (!adjustments) {
-        await persistFallback(bonusPoints, claimedChallengeIds, history);
+        const fallback = await loadFallback();
+        await persistFallback(fallback.bonusPoints, fallback.claimedChallengeIds, fallback.history);
       }
 
-      await syncTotalToDb(resolvedStudy, adjustments?.bonusPoints ?? bonusPoints, adjustments?.claimedChallengeIds ?? claimedChallengeIds);
+      await syncTotalToDb(resolvedStudy, finalBonus, finalClaimed);
     } catch (error) {
       console.log('Failed to refresh points from server', error);
       const fallback = await loadFallback();
@@ -236,11 +240,21 @@ export const [PointsProvider, usePoints] = createContextHook<PointsContextValue>
     } finally {
       setIsReady(true);
     }
-  }, [authUser, bonusPoints, claimedChallengeIds, history, isAuthenticated, loadFallback, persistFallback, syncTotalToDb]);
+  }, [authUser, isAuthenticated, loadFallback, persistFallback, syncTotalToDb]);
 
   useEffect(() => {
-    refreshFromServer();
-  }, [refreshFromServer]);
+    let isMounted = true;
+    const refresh = async () => {
+      if (isMounted) {
+        await refreshFromServer();
+      }
+    };
+    void refresh();
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.id, isAuthenticated]);
 
   const updateBonusState = useCallback(async (adjustment: number, meta?: Partial<PointsHistoryEntry>) => {
     setBonusPoints((prevBonus) => {

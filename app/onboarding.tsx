@@ -591,7 +591,7 @@ export default function OnboardingScreen() {
       case 1:
         return (
           <View style={styles.stepContainer}>
-            <BookOpen size={80} color="#1F2937" style={styles.icon} />
+            <BookOpen size={60} color="#1F2937" style={styles.icon} />
             <Text style={styles.title}>Välj program och årskurs</Text>
             <Text style={styles.subtitle}>Vilken nivå studerar du på?</Text>
             
@@ -628,7 +628,7 @@ export default function OnboardingScreen() {
             
             {data.studyLevel === 'gymnasie' && (
               <>
-                <Text style={[styles.subtitle, { marginTop: 30 }]}>Välj ditt program</Text>
+                <Text style={[styles.subtitle, { marginTop: 20 }]}>Välj ditt program</Text>
                 <ScrollView style={styles.programScrollView} showsVerticalScrollIndicator={false}>
                   <View style={styles.programGrid}>
                     {GYMNASIUM_PROGRAMS.map((program) => {
@@ -1127,14 +1127,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
-    paddingTop: 60,
-    paddingBottom: 40,
+    padding: 20,
+    paddingTop: 50,
+    paddingBottom: 30,
   },
   progressContainer: {
-    marginTop: 16,
-    marginBottom: 32,
-    paddingHorizontal: 8,
+    marginBottom: 24,
+    paddingHorizontal: 4,
   },
   progressBar: {
     height: 6,
@@ -1157,29 +1156,31 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   stepContainer: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    minHeight: 400,
   },
   icon: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700' as const,
     color: 'white',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
     letterSpacing: -0.5,
+    paddingHorizontal: 8,
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 16,
     color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
+    marginBottom: 24,
+    lineHeight: 22,
     fontWeight: '400' as const,
+    paddingHorizontal: 8,
   },
   input: {
     width: '100%',
@@ -1257,9 +1258,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: 24,
     gap: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   backButton: {
     flex: 1,
@@ -1288,7 +1289,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     width: '100%',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   inputLabel: {
     fontSize: 15,
@@ -1343,9 +1344,10 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   programScrollView: {
-    maxHeight: 450,
+    maxHeight: 350,
     width: '100%',
-    marginVertical: 24,
+    marginTop: 16,
+    marginBottom: 16,
   },
   programGrid: {
     gap: 12,
@@ -1469,9 +1471,10 @@ const styles = StyleSheet.create({
     color: '#1E293B',
   },
   coursesScrollView: {
-    maxHeight: 450,
+    maxHeight: 350,
     width: '100%',
-    marginVertical: 24,
+    marginTop: 16,
+    marginBottom: 16,
   },
   coursesContainer: {
     gap: 12,
@@ -1560,12 +1563,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   logoContainer: {
-    marginBottom: 32,
+    marginBottom: 24,
     alignItems: 'center',
   },
   logo: {
-    width: 160,
-    height: 160,
+    width: 120,
+    height: 120,
   },
   avatarBuilderContainer: {
     flex: 1,
@@ -1574,13 +1577,13 @@ const styles = StyleSheet.create({
   },
   dailyGoalContainer: {
     alignItems: 'center',
-    marginVertical: 32,
+    marginVertical: 24,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 24,
-    padding: 32,
+    padding: 24,
   },
   dailyGoalValue: {
-    fontSize: 80,
+    fontSize: 64,
     fontWeight: '800' as const,
     color: 'white',
     letterSpacing: -2,
@@ -1649,9 +1652,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   goalsScrollView: {
-    maxHeight: 420,
+    maxHeight: 350,
     width: '100%',
-    marginVertical: 16,
+    marginTop: 16,
+    marginBottom: 12,
   },
   goalsGrid: {
     flexDirection: 'row',

@@ -14,7 +14,7 @@ import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { Image } from 'expo-image';
-import { GraduationCap, BookOpen, MapPin, Flame } from 'lucide-react-native';
+import { GraduationCap, BookOpen, MapPin, Flame, FileText, Shield, Check } from 'lucide-react-native';
 import { SWEDISH_GYMNASIUMS } from '@/constants/gymnasiums';
 import { AnimatedPressable, RippleButton, FadeInView } from '@/components/Animations';
 import UniversityPicker from '@/components/UniversityPicker';
@@ -45,7 +45,172 @@ interface OnboardingData {
   year: 1 | 2 | 3 | null;
   avatarConfig: AvatarConfig;
   dailyGoalHours: number;
+  acceptedTerms: boolean;
+  acceptedPrivacy: boolean;
 }
+
+const TERMS_OF_SERVICE = `ANVÄNDARVILLKOR FÖR STUDIESTUGAN
+
+Senast uppdaterad: ${new Date().toLocaleDateString('sv-SE')}
+
+1. GODKÄNNANDE AV VILLKOR
+
+Genom att använda Studiestugan-appen ("Tjänsten") godkänner du dessa användarvillkor. Om du inte godkänner villkoren, vänligen använd inte Tjänsten.
+
+2. BESKRIVNING AV TJÄNSTEN
+
+Studiestugan är en studieapp utformad för att hjälpa studenter att:
+- Organisera och planera sina studier
+- Följa sin studieframgång
+- Använda studietekniker och verktyg
+- Interagera med andra studenter
+
+3. ANVÄNDARKONTO
+
+3.1 Du måste skapa ett konto för att använda Tjänsten.
+3.2 Du ansvarar för att hålla dina inloggningsuppgifter säkra.
+3.3 Du måste vara minst 13 år för att använda Tjänsten.
+3.4 All information du anger måste vara korrekt och aktuell.
+
+4. ANVÄNDARENS ANSVAR
+
+4.1 Du får inte använda Tjänsten för olagliga ändamål.
+4.2 Du får inte dela innehåll som är stötande, hotfullt eller kränkande.
+4.3 Du får inte försöka få obehörig åtkomst till Tjänsten.
+4.4 Du ansvarar för allt innehåll du delar via Tjänsten.
+
+5. IMMATERIELLA RÄTTIGHETER
+
+5.1 Allt innehåll i Tjänsten tillhör Studiestugan eller dess licensgivare.
+5.2 Du får inte kopiera, modifiera eller distribuera innehåll utan tillstånd.
+5.3 Innehåll du skapar förblir din egendom, men du ger oss rätt att använda det inom Tjänsten.
+
+6. PREMIUM-FUNKTIONER
+
+6.1 Vissa funktioner kräver en premiumprenonumeration.
+6.2 Betalning hanteras via App Store eller Google Play.
+6.3 Prenumerationer förnyas automatiskt om de inte avbryts.
+6.4 Återbetalningar hanteras enligt respektive butiks policyer.
+
+7. UPPSÄGNING
+
+7.1 Du kan avsluta ditt konto när som helst.
+7.2 Vi förbehåller oss rätten att stänga av eller avsluta konton som bryter mot dessa villkor.
+
+8. ANSVARSBEGRÄNSNING
+
+8.1 Tjänsten tillhandahålls "som den är" utan garantier.
+8.2 Vi ansvarar inte för eventuella förluster eller skador som uppstår genom användning av Tjänsten.
+8.3 Studiestugan är ett studieverktyg och ersätter inte professionell utbildning.
+
+9. ÄNDRINGAR
+
+Vi förbehåller oss rätten att ändra dessa villkor. Fortsatt användning efter ändringar innebär godkännande av de nya villkoren.
+
+10. KONTAKT
+
+Frågor om dessa villkor kan skickas till: support@studiestugan.se`;
+
+const PRIVACY_POLICY = `INTEGRITETSPOLICY FÖR STUDIESTUGAN
+
+Senast uppdaterad: ${new Date().toLocaleDateString('sv-SE')}
+
+1. INTRODUKTION
+
+Denna integritetspolicy beskriver hur Studiestugan ("vi", "oss", "vår") samlar in, använder och skyddar dina personuppgifter när du använder vår app.
+
+2. VILKA UPPGIFTER VI SAMLAR IN
+
+2.1 Kontoinformation:
+- E-postadress
+- Användarnamn och visningsnamn
+- Lösenord (krypterat)
+
+2.2 Profilinformation:
+- Studienivå (gymnasium/högskola)
+- Skola och program
+- Årskurs
+- Avatar-inställningar
+
+2.3 Användningsdata:
+- Studietid och sessioner
+- Kursframsteg
+- Poäng och prestationer
+- Appinteraktioner
+
+2.4 Teknisk information:
+- Enhetstyp och operativsystem
+- App-version
+- Kraschloggar (anonymiserade)
+
+3. HUR VI ANVÄNDER DINA UPPGIFTER
+
+Vi använder dina uppgifter för att:
+- Tillhandahålla och förbättra Tjänsten
+- Spåra din studieframgång
+- Möjliggöra sociala funktioner (vänner, topplistor)
+- Skicka viktiga meddelanden om Tjänsten
+- Analysera och förbättra användarupplevelsen
+
+4. DELNING AV INFORMATION
+
+4.1 Vi säljer aldrig dina personuppgifter.
+4.2 Vi kan dela anonymiserad, aggregerad data för analysändamål.
+4.3 Vi delar information med tjänsteleverantörer som hjälper oss att driva Tjänsten (t.ex. Supabase för datalagring).
+4.4 Vi kan dela information om det krävs enligt lag.
+
+5. DATALAGRING OCH SÄKERHET
+
+5.1 Dina data lagras säkert hos Supabase med kryptering.
+5.2 Vi behåller dina uppgifter så länge ditt konto är aktivt.
+5.3 Du kan begära radering av dina uppgifter när som helst.
+
+6. DINA RÄTTIGHETER (GDPR)
+
+Du har rätt att:
+- Få tillgång till dina personuppgifter
+- Rätta felaktiga uppgifter
+- Radera dina uppgifter
+- Begränsa behandlingen av dina uppgifter
+- Invända mot behandling
+- Dataportabilitet
+- Återkalla samtycke
+
+7. BARN OCH MINDERÅRIGA
+
+7.1 Tjänsten är avsedd för användare som är minst 13 år.
+7.2 Vi samlar inte medvetet in uppgifter från barn under 13 år.
+7.3 För användare under 16 år rekommenderar vi föräldrarnas godkännande.
+
+8. COOKIES OCH LIKNANDE TEKNIKER
+
+Vi använder lokal lagring för att:
+- Hålla dig inloggad
+- Spara dina preferenser
+- Förbättra prestanda
+
+9. TREDJEPARTSTJÄNSTER
+
+Vi använder följande tredjepartstjänster:
+- Supabase (autentisering och datalagring)
+- Expo (app-plattform)
+- App Store/Google Play (betalningar)
+
+10. INTERNATIONELLA ÖVERFÖRINGAR
+
+Dina uppgifter kan överföras till och behandlas i länder utanför EES. Vi säkerställer att lämpliga skyddsåtgärder finns på plats.
+
+11. ÄNDRINGAR I POLICYN
+
+Vi kan uppdatera denna policy. Vi meddelar dig om väsentliga ändringar via appen eller e-post.
+
+12. KONTAKT
+
+För frågor om integritet eller för att utöva dina rättigheter:
+E-post: privacy@studiestugan.se
+
+Dataskyddsombud:
+privacy@studiestugan.se`;
 
 const goalOptions = [
   { id: 'better_grades', label: 'Få högre betyg', icon: '📈', color: '#10B981' },
@@ -85,8 +250,11 @@ export default function OnboardingScreen() {
     selectedCourses: new Set(),
     year: null,
     avatarConfig: DEFAULT_AVATAR_CONFIG,
-    dailyGoalHours: 2
+    dailyGoalHours: 2,
+    acceptedTerms: false,
+    acceptedPrivacy: false
   });
+  const [expandedPolicy, setExpandedPolicy] = useState<'terms' | 'privacy' | null>(null);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [availableCourses, setAvailableCourses] = useState<GymnasiumCourse[]>([]);
@@ -187,7 +355,7 @@ export default function OnboardingScreen() {
   // Username is checked directly in onChangeText to avoid delays
 
   const handleNext = () => {
-    const maxSteps = data.studyLevel === 'gymnasie' ? 6 : 4;
+    const maxSteps = data.studyLevel === 'gymnasie' ? 7 : 5;
     if (step < maxSteps) {
       setStep(step + 1);
     } else {
@@ -196,7 +364,7 @@ export default function OnboardingScreen() {
   };
 
   const handleComplete = async () => {
-    if (data.studyLevel && data.displayName && data.username && usernameAvailable) {
+    if (data.studyLevel && data.displayName && data.username && usernameAvailable && data.acceptedTerms && data.acceptedPrivacy) {
       try {
         console.log('Completing onboarding with data:', data);
         console.log('Study level:', data.studyLevel);
@@ -515,8 +683,13 @@ export default function OnboardingScreen() {
         if (data.studyLevel === 'gymnasie') {
           return data.goals.length > 0;
         }
+        return data.acceptedTerms && data.acceptedPrivacy;
+      case 6: 
+        if (data.studyLevel === 'gymnasie') {
+          return true;
+        }
         return true;
-      case 6: return true;
+      case 7: return data.acceptedTerms && data.acceptedPrivacy;
       default: return false;
     }
   };
@@ -999,76 +1172,181 @@ export default function OnboardingScreen() {
         );
 
       case 5:
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.title}>Vad vill du uppnå?</Text>
-            <Text style={styles.subtitle}>Välj ett eller flera mål som passar dig</Text>
-            
-            <ScrollView style={styles.goalsScrollView} showsVerticalScrollIndicator={false}>
-              <View style={styles.goalsContainer}>
-                {goalOptions.map((goal) => {
-                  const isSelected = data.goals.includes(goal.id);
-                  
-                  return (
-                    <AnimatedPressable
-                      key={goal.id}
-                      style={[
-                        styles.goalCardFullWidth,
-                        isSelected && [styles.selectedGoalCardFullWidth, { borderColor: goal.color }]
-                      ]}
-                      onPress={() => toggleGoal(goal.id)}
-                    >
-                      <View style={[
-                        styles.goalIconContainerFullWidth,
-                        { backgroundColor: goal.color + '20' }
-                      ]}>
-                        <Text style={styles.goalEmojiFullWidth}>{goal.icon}</Text>
-                      </View>
-                      <Text style={[
-                        styles.goalTextFullWidth,
-                        isSelected && { color: goal.color }
-                      ]} numberOfLines={1}>
-                        {goal.label}
-                      </Text>
-                      {isSelected && (
-                        <View style={[styles.checkMarkFullWidth, { backgroundColor: goal.color }]}>
-                          <Text style={styles.checkMarkTextFullWidth}>✓</Text>
+        if (data.studyLevel === 'gymnasie') {
+          return (
+            <View style={styles.stepContainer}>
+              <Text style={styles.title}>Vad vill du uppnå?</Text>
+              <Text style={styles.subtitle}>Välj ett eller flera mål som passar dig</Text>
+              
+              <ScrollView style={styles.goalsScrollView} showsVerticalScrollIndicator={false}>
+                <View style={styles.goalsContainer}>
+                  {goalOptions.map((goal) => {
+                    const isSelected = data.goals.includes(goal.id);
+                    
+                    return (
+                      <AnimatedPressable
+                        key={goal.id}
+                        style={[
+                          styles.goalCardFullWidth,
+                          isSelected && [styles.selectedGoalCardFullWidth, { borderColor: goal.color }]
+                        ]}
+                        onPress={() => toggleGoal(goal.id)}
+                      >
+                        <View style={[
+                          styles.goalIconContainerFullWidth,
+                          { backgroundColor: goal.color + '20' }
+                        ]}>
+                          <Text style={styles.goalEmojiFullWidth}>{goal.icon}</Text>
                         </View>
-                      )}
-                    </AnimatedPressable>
-                  );
-                })}
+                        <Text style={[
+                          styles.goalTextFullWidth,
+                          isSelected && { color: goal.color }
+                        ]} numberOfLines={1}>
+                          {goal.label}
+                        </Text>
+                        {isSelected && (
+                          <View style={[styles.checkMarkFullWidth, { backgroundColor: goal.color }]}>
+                            <Text style={styles.checkMarkTextFullWidth}>✓</Text>
+                          </View>
+                        )}
+                      </AnimatedPressable>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+              
+              <View style={styles.goalsSummary}>
+                <Text style={styles.goalsSummaryText}>
+                  {data.goals.length > 0 ? `${data.goals.length} mål valda` : 'Välj minst ett mål'}
+                </Text>
               </View>
-            </ScrollView>
-            
-            <View style={styles.goalsSummary}>
-              <Text style={styles.goalsSummaryText}>
-                {data.goals.length > 0 ? `${data.goals.length} mål valda` : 'Välj minst ett mål'}
-              </Text>
             </View>
-          </View>
-        );
+          );
+        }
+        return renderLegalStep();
       
       case 6:
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.title}>Skapa din avatar</Text>
-            <Text style={styles.subtitle}>Designa din personliga karaktär</Text>
-            <View style={styles.avatarBuilderContainer}>
-              <AvatarBuilder
-                initialConfig={data.avatarConfig}
-                onSave={(config) => {
-                  setData({ ...data, avatarConfig: config });
-                }}
-              />
+        if (data.studyLevel === 'gymnasie') {
+          return (
+            <View style={styles.stepContainer}>
+              <Text style={styles.title}>Skapa din avatar</Text>
+              <Text style={styles.subtitle}>Designa din personliga karaktär</Text>
+              <View style={styles.avatarBuilderContainer}>
+                <AvatarBuilder
+                  initialConfig={data.avatarConfig}
+                  onSave={(config) => {
+                    setData({ ...data, avatarConfig: config });
+                  }}
+                />
+              </View>
             </View>
-          </View>
-        );
+          );
+        }
+        return null;
+
+      case 7:
+        return renderLegalStep();
 
       default:
         return null;
     }
   };
+
+  const renderLegalStep = () => (
+    <View style={styles.stepContainer}>
+      <Shield size={60} color="#1F2937" style={styles.icon} />
+      <Text style={styles.title}>Villkor & Integritet</Text>
+      <Text style={styles.subtitle}>Läs och godkänn våra villkor för att fortsätta</Text>
+      
+      <ScrollView style={styles.legalScrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.legalContainer}>
+          <AnimatedPressable
+            style={styles.policyCard}
+            onPress={() => setExpandedPolicy(expandedPolicy === 'terms' ? null : 'terms')}
+          >
+            <View style={styles.policyHeader}>
+              <View style={styles.policyIconContainer}>
+                <FileText size={24} color="#0EA5E9" />
+              </View>
+              <View style={styles.policyTitleContainer}>
+                <Text style={styles.policyTitle}>Användarvillkor</Text>
+                <Text style={styles.policySubtitle}>Tryck för att {expandedPolicy === 'terms' ? 'dölja' : 'läsa'}</Text>
+              </View>
+            </View>
+          </AnimatedPressable>
+          
+          {expandedPolicy === 'terms' && (
+            <View style={styles.policyContent}>
+              <ScrollView style={styles.policyTextScroll} nestedScrollEnabled={true}>
+                <Text style={styles.policyText}>{TERMS_OF_SERVICE}</Text>
+              </ScrollView>
+            </View>
+          )}
+          
+          <AnimatedPressable
+            style={styles.policyCard}
+            onPress={() => setExpandedPolicy(expandedPolicy === 'privacy' ? null : 'privacy')}
+          >
+            <View style={styles.policyHeader}>
+              <View style={styles.policyIconContainer}>
+                <Shield size={24} color="#10B981" />
+              </View>
+              <View style={styles.policyTitleContainer}>
+                <Text style={styles.policyTitle}>Integritetspolicy</Text>
+                <Text style={styles.policySubtitle}>Tryck för att {expandedPolicy === 'privacy' ? 'dölja' : 'läsa'}</Text>
+              </View>
+            </View>
+          </AnimatedPressable>
+          
+          {expandedPolicy === 'privacy' && (
+            <View style={styles.policyContent}>
+              <ScrollView style={styles.policyTextScroll} nestedScrollEnabled={true}>
+                <Text style={styles.policyText}>{PRIVACY_POLICY}</Text>
+              </ScrollView>
+            </View>
+          )}
+          
+          <View style={styles.acceptanceContainer}>
+            <AnimatedPressable
+              style={[
+                styles.checkboxRow,
+                data.acceptedTerms && styles.checkboxRowChecked
+              ]}
+              onPress={() => setData({ ...data, acceptedTerms: !data.acceptedTerms })}
+            >
+              <View style={[
+                styles.checkbox,
+                data.acceptedTerms && styles.checkboxChecked
+              ]}>
+                {data.acceptedTerms && <Check size={16} color="white" />}
+              </View>
+              <Text style={styles.checkboxLabel}>
+                Jag har läst och godkänner användarvillkoren
+              </Text>
+            </AnimatedPressable>
+            
+            <AnimatedPressable
+              style={[
+                styles.checkboxRow,
+                data.acceptedPrivacy && styles.checkboxRowChecked
+              ]}
+              onPress={() => setData({ ...data, acceptedPrivacy: !data.acceptedPrivacy })}
+            >
+              <View style={[
+                styles.checkbox,
+                data.acceptedPrivacy && styles.checkboxChecked
+              ]}>
+                {data.acceptedPrivacy && <Check size={16} color="white" />}
+              </View>
+              <Text style={styles.checkboxLabel}>
+                Jag har läst och godkänner integritetspolicyn
+              </Text>
+            </AnimatedPressable>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -1081,9 +1359,9 @@ export default function OnboardingScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 7 : 5)) * 100}%` }]} />
+              <View style={[styles.progressFill, { width: `${((step + 1) / (data.studyLevel === 'gymnasie' ? 8 : 6)) * 100}%` }]} />
             </View>
-            <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '7' : '5'}</Text>
+            <Text style={styles.progressText}>{step + 1} av {data.studyLevel === 'gymnasie' ? '8' : '6'}</Text>
           </View>
 
           <FadeInView key={step} duration={300}>
@@ -1111,7 +1389,7 @@ export default function OnboardingScreen() {
               rippleOpacity={0.2}
             >
               <Text style={styles.nextButtonText}>
-                {step === (data.studyLevel === 'gymnasie' ? 6 : 4) ? 'Slutför' : 'Nästa'}
+                {step === (data.studyLevel === 'gymnasie' ? 7 : 5) ? 'Slutför' : 'Nästa'}
               </Text>
             </RippleButton>
           </View>
@@ -1913,5 +2191,102 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     letterSpacing: 0.3,
+  },
+  legalScrollView: {
+    maxHeight: 450,
+    width: '100%',
+    marginTop: 16,
+  },
+  legalContainer: {
+    gap: 16,
+  },
+  policyCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  policyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  policyIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  policyTitleContainer: {
+    flex: 1,
+  },
+  policyTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  policySubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  policyContent: {
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: -8,
+  },
+  policyTextScroll: {
+    maxHeight: 200,
+  },
+  policyText: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#475569',
+  },
+  acceptanceContainer: {
+    gap: 12,
+    marginTop: 8,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  checkboxRowChecked: {
+    borderColor: '#10B981',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+  },
+  checkbox: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#CBD5E1',
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  checkboxChecked: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: '#1E293B',
+    lineHeight: 20,
   },
 });

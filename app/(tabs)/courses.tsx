@@ -486,7 +486,7 @@ export default function CoursesScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Aktiva kurser</Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => console.log('Show all active courses')}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -552,7 +552,7 @@ export default function CoursesScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/study-tips')}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -589,7 +589,7 @@ export default function CoursesScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/study-techniques')}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>

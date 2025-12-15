@@ -630,7 +630,7 @@ export default function OnboardingScreen() {
               <>
                 <Text style={[styles.subtitle, { marginTop: 20 }]}>Välj ditt program</Text>
                 <ScrollView style={styles.programScrollView} showsVerticalScrollIndicator={false}>
-                  <View style={styles.programGrid}>
+                  <View style={styles.programContainer}>
                     {GYMNASIUM_PROGRAMS.map((program) => {
                       const isSelected = data.gymnasiumProgram?.id === program.id;
                       
@@ -638,8 +638,8 @@ export default function OnboardingScreen() {
                         <AnimatedPressable
                           key={program.id}
                           style={[
-                            styles.programCard,
-                            isSelected && styles.selectedProgramCard
+                            styles.programCardFullWidth,
+                            isSelected && styles.selectedProgramCardFullWidth
                           ]}
                           onPress={() => {
                             console.log('Selected program:', program.name);
@@ -647,8 +647,8 @@ export default function OnboardingScreen() {
                           }}
                         >
                           <Text style={[
-                            styles.programCardText,
-                            isSelected && styles.selectedProgramCardText
+                            styles.programCardFullWidthText,
+                            isSelected && styles.selectedProgramCardFullWidthText
                           ]} numberOfLines={1}>
                             {program.name}
                           </Text>
@@ -754,7 +754,7 @@ export default function OnboardingScreen() {
                     <MapPin size={16} color="rgba(255, 255, 255, 0.8)" />
                     <Text style={styles.cityHeaderText}>{city}</Text>
                   </View>
-                  <View style={styles.programGrid}>
+                  <View style={styles.programContainer}>
                     {groupedGymnasiums[city].map((gym) => {
                       const isSelected = data.gymnasium?.id === gym.id;
                       
@@ -762,30 +762,34 @@ export default function OnboardingScreen() {
                         <AnimatedPressable
                           key={gym.id}
                           style={[
-                            styles.programCard,
-                            isSelected && styles.selectedProgramCard
+                            styles.gymnasiumCardFullWidth,
+                            isSelected && styles.selectedGymnasiumCardFullWidth
                           ]}
                           onPress={() => {
                             console.log('Selected gymnasium:', gym.name);
                             setData({ ...data, gymnasium: gym });
                           }}
                         >
-                          <Text style={[
-                            styles.programCardText,
-                            isSelected && styles.selectedProgramCardText
-                          ]} numberOfLines={2}>
-                            {gym.name}
-                          </Text>
-                          <Text style={[
-                            styles.programCardCity,
-                            isSelected && styles.selectedProgramCardText
-                          ]} numberOfLines={1}>
-                            {gym.city}
-                          </Text>
-                          <View style={styles.gymnasiumTypeBadge}>
-                            <Text style={styles.gymnasiumTypeText}>
-                              {gym.type === 'kommunal' ? 'Kommunal' : gym.type === 'friskola' ? 'Friskola' : 'Privat'}
-                            </Text>
+                          <View style={styles.gymnasiumCardContent}>
+                            <View style={styles.gymnasiumTextContainer}>
+                              <Text style={[
+                                styles.gymnasiumCardFullWidthText,
+                                isSelected && styles.selectedGymnasiumCardFullWidthText
+                              ]} numberOfLines={1}>
+                                {gym.name}
+                              </Text>
+                              <Text style={[
+                                styles.gymnasiumCardCity,
+                                isSelected && styles.selectedGymnasiumCardCityText
+                              ]} numberOfLines={1}>
+                                {gym.city}
+                              </Text>
+                            </View>
+                            <View style={styles.gymnasiumTypeBadgeFullWidth}>
+                              <Text style={styles.gymnasiumTypeTextFullWidth}>
+                                {gym.type === 'kommunal' ? 'Kommunal' : gym.type === 'friskola' ? 'Friskola' : 'Privat'}
+                              </Text>
+                            </View>
                           </View>
                         </AnimatedPressable>
                       );
@@ -805,7 +809,7 @@ export default function OnboardingScreen() {
               <Text style={styles.subtitle}>Välj ett eller flera mål som passar dig</Text>
               
               <ScrollView style={styles.goalsScrollView} showsVerticalScrollIndicator={false}>
-                <View style={styles.goalsGrid}>
+                <View style={styles.goalsContainer}>
                   {goalOptions.map((goal) => {
                     const isSelected = data.goals.includes(goal.id);
                     
@@ -813,26 +817,26 @@ export default function OnboardingScreen() {
                       <AnimatedPressable
                         key={goal.id}
                         style={[
-                          styles.goalCard,
-                          isSelected && [styles.selectedGoalCard, { borderColor: goal.color }]
+                          styles.goalCardFullWidth,
+                          isSelected && [styles.selectedGoalCardFullWidth, { borderColor: goal.color }]
                         ]}
                         onPress={() => toggleGoal(goal.id)}
                       >
                         <View style={[
-                          styles.goalIconContainer,
+                          styles.goalIconContainerFullWidth,
                           { backgroundColor: goal.color + '20' }
                         ]}>
-                          <Text style={styles.goalEmoji}>{goal.icon}</Text>
+                          <Text style={styles.goalEmojiFullWidth}>{goal.icon}</Text>
                         </View>
                         <Text style={[
-                          styles.goalText,
+                          styles.goalTextFullWidth,
                           isSelected && { color: goal.color }
-                        ]} numberOfLines={2}>
+                        ]} numberOfLines={1}>
                           {goal.label}
                         </Text>
                         {isSelected && (
-                          <View style={[styles.checkMark, { backgroundColor: goal.color }]}>
-                            <Text style={styles.checkMarkText}>✓</Text>
+                          <View style={[styles.checkMarkFullWidth, { backgroundColor: goal.color }]}>
+                            <Text style={styles.checkMarkTextFullWidth}>✓</Text>
                           </View>
                         )}
                       </AnimatedPressable>
@@ -1001,7 +1005,7 @@ export default function OnboardingScreen() {
             <Text style={styles.subtitle}>Välj ett eller flera mål som passar dig</Text>
             
             <ScrollView style={styles.goalsScrollView} showsVerticalScrollIndicator={false}>
-              <View style={styles.goalsGrid}>
+              <View style={styles.goalsContainer}>
                 {goalOptions.map((goal) => {
                   const isSelected = data.goals.includes(goal.id);
                   
@@ -1009,26 +1013,26 @@ export default function OnboardingScreen() {
                     <AnimatedPressable
                       key={goal.id}
                       style={[
-                        styles.goalCard,
-                        isSelected && [styles.selectedGoalCard, { borderColor: goal.color }]
+                        styles.goalCardFullWidth,
+                        isSelected && [styles.selectedGoalCardFullWidth, { borderColor: goal.color }]
                       ]}
                       onPress={() => toggleGoal(goal.id)}
                     >
                       <View style={[
-                        styles.goalIconContainer,
+                        styles.goalIconContainerFullWidth,
                         { backgroundColor: goal.color + '20' }
                       ]}>
-                        <Text style={styles.goalEmoji}>{goal.icon}</Text>
+                        <Text style={styles.goalEmojiFullWidth}>{goal.icon}</Text>
                       </View>
                       <Text style={[
-                        styles.goalText,
+                        styles.goalTextFullWidth,
                         isSelected && { color: goal.color }
-                      ]} numberOfLines={2}>
+                      ]} numberOfLines={1}>
                         {goal.label}
                       </Text>
                       {isSelected && (
-                        <View style={[styles.checkMark, { backgroundColor: goal.color }]}>
-                          <Text style={styles.checkMarkText}>✓</Text>
+                        <View style={[styles.checkMarkFullWidth, { backgroundColor: goal.color }]}>
+                          <Text style={styles.checkMarkTextFullWidth}>✓</Text>
                         </View>
                       )}
                     </AnimatedPressable>
@@ -1356,6 +1360,41 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 2,
   },
+  programContainer: {
+    gap: 12,
+  },
+  programCardFullWidth: {
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    minHeight: 72,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  selectedProgramCardFullWidth: {
+    backgroundColor: 'white',
+    borderColor: '#10B981',
+    borderWidth: 2.5,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  programCardFullWidthText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#475569',
+    textAlign: 'center',
+  },
+  selectedProgramCardFullWidthText: {
+    color: '#1E293B',
+  },
   programCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 16,
@@ -1446,6 +1485,67 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: 'white',
     textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  gymnasiumCardFullWidth: {
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    minHeight: 72,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  selectedGymnasiumCardFullWidth: {
+    backgroundColor: 'white',
+    borderColor: '#10B981',
+    borderWidth: 2.5,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  gymnasiumCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  gymnasiumTextContainer: {
+    flex: 1,
+    marginRight: 12,
+  },
+  gymnasiumCardFullWidthText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#475569',
+    marginBottom: 4,
+  },
+  selectedGymnasiumCardFullWidthText: {
+    color: '#1E293B',
+  },
+  gymnasiumCardCity: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: '#94A3B8',
+  },
+  selectedGymnasiumCardCityText: {
+    color: '#64748B',
+  },
+  gymnasiumTypeBadgeFullWidth: {
+    backgroundColor: 'rgba(16, 185, 129, 0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  gymnasiumTypeTextFullWidth: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    color: 'white',
+    textTransform: 'uppercase' as const,
     letterSpacing: 0.3,
   },
   selectedProgramCardText: {
@@ -1683,6 +1783,62 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 4,
     gap: 10,
+  },
+  goalsContainer: {
+    gap: 12,
+  },
+  goalCardFullWidth: {
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    minHeight: 72,
+    position: 'relative' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  selectedGoalCardFullWidth: {
+    backgroundColor: 'white',
+    borderWidth: 2.5,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  goalIconContainerFullWidth: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  goalEmojiFullWidth: {
+    fontSize: 26,
+  },
+  goalTextFullWidth: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#475569',
+  },
+  checkMarkFullWidth: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  checkMarkTextFullWidth: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '700' as const,
   },
   goalCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',

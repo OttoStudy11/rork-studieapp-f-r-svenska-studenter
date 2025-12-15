@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { LoadingScreen } from '@/components/LoadingScreen';
+
+const FTUE_COMPLETED_KEY = 'ftue_completed_v1';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -14,17 +17,37 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const [hasRedirected, setHasRedirected] = useState(false);
   const [initialCheckDone, setInitialCheckDone] = useState(false);
   const [timeoutReached, setTimeoutReached] = useState(false);
+  const [ftueCompleted, setFtueCompleted] = useState<boolean | null>(null);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isLoading = authLoading || studyLoading;
+  const isLoading = authLoading || studyLoading || ftueCompleted === null;
+
+  // Check FTUE completion status on mount
+  useEffect(() => {
+    const checkFTUEStatus = async () => {
+      try {
+        const completed = await AsyncStorage.getItem(FTUE_COMPLETED_KEY);
+        console.log('FTUE completion status:', completed);
+        setFtueCompleted(completed === 'true');
+      } catch (error) {
+        console.error('Error checking FTUE status:', error);
+        setFtueCompleted(false);
+      }
+    };
+    checkFTUEStatus();
+  }, []);
 
   // Add timeout to prevent infinite loading
   useEffect(() => {
     timeoutRef.current = setTimeout(() => {
-      console.log('AuthGuard timeout reached - forcing navigation to auth');
+      console.log('AuthGuard timeout reached - forcing navigation');
       setTimeoutReached(true);
-      router.replace('/auth');
+      if (ftueCompleted === false) {
+        router.replace('/ftue');
+      } else {
+        router.replace('/auth');
+      }
     }, 10000); // 10 second timeout
     
     return () => {
@@ -32,7 +55,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, []);
+  }, [ftueCompleted]);
 
   useEffect(() => {
     // Clear any existing timer
@@ -42,8 +65,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     }
 
     // Only redirect once the initial auth check is complete and we haven't redirected yet
-    if (!isLoading && !hasRedirected && !initialCheckDone && !timeoutReached) {
-      console.log('AuthGuard - Initial auth check:', { isAuthenticated, hasCompletedOnboarding, authLoading, studyLoading });
+    if (!isLoading && !hasRedirected && !initialCheckDone && !timeoutReached && ftueCompleted !== null) {
+      console.log('AuthGuard - Initial auth check:', { isAuthenticated, hasCompletedOnboarding, authLoading, studyLoading, ftueCompleted });
       
       // Mark initial check as done
       setInitialCheckDone(true);
@@ -53,7 +76,11 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         if (!timeoutReached) {
           setHasRedirected(true);
           
-          if (!isAuthenticated) {
+          // Check FTUE first - this takes priority for first-time users
+          if (!ftueCompleted) {
+            console.log('AuthGuard - Redirecting to FTUE (first time user)');
+            router.replace('/ftue');
+          } else if (!isAuthenticated) {
             console.log('AuthGuard - Redirecting to auth (not authenticated)');
             router.replace('/auth');
           } else if (!hasCompletedOnboarding && (!studyUser || !studyUser.onboardingCompleted)) {
@@ -81,7 +108,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         redirectTimerRef.current = null;
       }
     };
-  }, [isAuthenticated, isLoading, hasCompletedOnboarding, hasRedirected, initialCheckDone, timeoutReached, authLoading, studyLoading, studyUser]);
+  }, [isAuthenticated, isLoading, hasCompletedOnboarding, hasRedirected, initialCheckDone, timeoutReached, authLoading, studyLoading, studyUser, ftueCompleted]);
 
   if ((isLoading || !initialCheckDone) && !timeoutReached) {
     return <LoadingScreen message="Startar din studieplats..." />;

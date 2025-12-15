@@ -233,6 +233,201 @@ const studyTechniquesData: StudyTechnique[] = [
       'Lära sig matematiska koncept'
     ],
     bestFor: ['Komplexa ämnen', 'Konceptuell förståelse', 'Kritisk analys']
+  },
+  {
+    id: 4,
+    title: 'Leitner-systemet',
+    description: 'Flashcard-system med repetitionsintervaller baserat på prestation',
+    steps: ['Skapa kort', 'Sortera i lådor', 'Repetera', 'Flytta kort'],
+    icon: '📦',
+    timeNeeded: '15-25 min',
+    detailedDescription: 'Leitner-systemet är en flashcard-baserad inlärningsmetod som använder spaced repetition. Korten sorteras i lådor baserat på hur väl du kan dem - kort du kan bra repeteras mer sällan, medan svåra kort repeteras oftare.',
+    benefits: [
+      'Effektivt användande av studietid',
+      'Fokuserar på svårt material automatiskt',
+      'Bygger långsiktigt minne',
+      'Ger tydlig feedback på framsteg',
+      'Enkelt att följa och implementera'
+    ],
+    detailedSteps: [
+      {
+        title: 'Skapa flashcards',
+        description: 'Gör kort med fråga på ena sidan och svar på andra',
+        tips: [
+          'En idé per kort',
+          'Använd egna ord',
+          'Inkludera bilder om möjligt',
+          'Håll svaren korta och koncisa'
+        ]
+      },
+      {
+        title: 'Sätt upp lådor',
+        description: 'Skapa 3-5 lådor för olika repetitionsintervaller',
+        tips: [
+          'Låda 1: Varje dag',
+          'Låda 2: Varannan dag',
+          'Låda 3: Varje vecka',
+          'Låda 4-5: Varannan vecka / Månatligt'
+        ]
+      },
+      {
+        title: 'Repetera systematiskt',
+        description: 'Öva på korten enligt schemat för varje låda',
+        tips: [
+          'Börja med låda 1 varje session',
+          'Gå igenom högre lådor enligt schema',
+          'Var ärlig med dig själv',
+          'Ta tid på dig att tänka innan du vänder kortet'
+        ]
+      },
+      {
+        title: 'Flytta kort',
+        description: 'Flytta kort mellan lådor baserat på resultat',
+        tips: [
+          'Rätt svar: Flytta upp en låda',
+          'Fel svar: Tillbaka till låda 1',
+          'Var konsekvent med reglerna',
+          'Låt inte kort stanna kvar i fel låda'
+        ]
+      }
+    ],
+    examples: [
+      'Glosor och språkinlärning',
+      'Medicinska termer och definitioner',
+      'Historiska datum och händelser',
+      'Formler och ekvationer'
+    ],
+    bestFor: ['Faktakunskap', 'Språkinlärning', 'Terminologi']
+  },
+  {
+    id: 5,
+    title: 'Retrieval Practice',
+    description: 'Träna på att hämta information från minnet aktivt',
+    steps: ['Studera material', 'Stäng allt', 'Skriv ner allt', 'Kontrollera'],
+    icon: '🔄',
+    timeNeeded: '20-30 min',
+    detailedDescription: 'Retrieval Practice, eller återhämtningsövning, är en av de mest forskningsstödda inlärningsmetoderna. Istället för att läsa om material tränar du på att hämta information från minnet, vilket stärker minnessparen dramatiskt.',
+    benefits: [
+      'Stärker minnessparen betydligt',
+      'Identifierar kunskapsluckor omedelbart',
+      'Förbättrar långsiktig retention',
+      'Ökar överföring till nya situationer',
+      'Mer effektivt än omläsning'
+    ],
+    detailedSteps: [
+      {
+        title: 'Första genomgången',
+        description: 'Läs eller studera materialet grundligt',
+        tips: [
+          'Läs aktivt och tänk över innehållet',
+          'Gör första anteckningar',
+          'Identifiera huvudkoncept',
+          'Spendera lagom tid - inte för lång'
+        ]
+      },
+      {
+        title: 'Stäng allt material',
+        description: 'Lägg undan böcker och anteckningar',
+        tips: [
+          'Inga fusklappar',
+          'Stäng av skärmar med material',
+          'Motstå frestelsen att titta',
+          'Acceptera obehaget - det är lärande'
+        ]
+      },
+      {
+        title: 'Skriv ner allt du minns',
+        description: 'Återkalla så mycket som möjligt från minnet',
+        tips: [
+          'Skriv fritt utan att censurera',
+          'Rita diagram om det hjälper',
+          'Försök organisera informationen',
+          'Ta den tid du behöver'
+        ]
+      },
+      {
+        title: 'Kontrollera och komplettera',
+        description: 'Jämför med originalet och notera luckor',
+        tips: [
+          'Markera vad du missade',
+          'Fokusera extra på luckor nästa gång',
+          'Fira det du kom ihåg',
+          'Upprepa processen efter en paus'
+        ]
+      }
+    ],
+    examples: [
+      'Föreläsningsinnehåll',
+      'Lärobokskapitel',
+      'Historiska händelser',
+      'Vetenskapliga processer'
+    ],
+    bestFor: ['Tentamensförberedelse', 'Djup förståelse', 'Långsiktigt minne']
+  },
+  {
+    id: 6,
+    title: 'Dual Coding',
+    description: 'Kombinera text med visuella element för bättre inlärning',
+    steps: ['Läs text', 'Skapa bilder', 'Koppla samman', 'Repetera båda'],
+    icon: '🎨',
+    timeNeeded: '25-45 min',
+    detailedDescription: 'Dual Coding bygger på teorin att hjärnan bearbetar verbal och visuell information i separata kanaler. Genom att kombinera båda skapar du två olika minnessppr, vilket gör informationen lättare att komma ihåg.',
+    benefits: [
+      'Skapar flera vägar till minnet',
+      'Förbättrar förståelse av komplexa koncept',
+      'Gör abstrakt information konkret',
+      'Engagerar båda hjärnhalvorna',
+      'Stöder olika inlärningsstilar'
+    ],
+    detailedSteps: [
+      {
+        title: 'Läs och förstå',
+        description: 'Läs texten och försäkra dig om att du förstår innehållet',
+        tips: [
+          'Läs aktivt och kritiskt',
+          'Identifiera nyckelkoncept',
+          'Notera relationer mellan idéer',
+          'Ställ frågor till texten'
+        ]
+      },
+      {
+        title: 'Skapa visuella representationer',
+        description: 'Gör diagram, skisser eller bilder av informationen',
+        tips: [
+          'Rita flödesscheman för processer',
+          'Gör mind maps för relationer',
+          'Skissa koncept även om du inte kan rita',
+          'Använd färger för kategorier'
+        ]
+      },
+      {
+        title: 'Integrera text och bild',
+        description: 'Koppla samman visuella element med verbala förklaringar',
+        tips: [
+          'Lägg till korta etiketter på bilder',
+          'Referera till bilder i anteckningar',
+          'Förklara bilder med egna ord',
+          'Skapa legender för diagram'
+        ]
+      },
+      {
+        title: 'Repetera med båda',
+        description: 'Gå igenom både text och bilder vid repetition',
+        tips: [
+          'Titta på bilden och återkalla texten',
+          'Läs texten och återskapa bilden',
+          'Förklara konceptet med båda',
+          'Testa dig själv med enbart bilder'
+        ]
+      }
+    ],
+    examples: [
+      'Biologiska processer',
+      'Geografiska koncept',
+      'Historiska tidslinjer',
+      'Matematiska relationer'
+    ],
+    bestFor: ['Visuella ämnen', 'Komplexa processer', 'Abstrakt innehåll']
   }
 ];
 

@@ -123,6 +123,30 @@ export default function HomeScreen() {
       icon: '🏠',
       category: 'Miljö',
       difficulty: 'Nybörjare'
+    },
+    {
+      id: 7,
+      title: 'Chunking',
+      description: 'Dela upp information i mindre, hanterbara delar',
+      icon: '🧩',
+      category: 'Minnestekniker',
+      difficulty: 'Nybörjare'
+    },
+    {
+      id: 8,
+      title: 'Interleaving',
+      description: 'Variera mellan olika ämnen för effektivare inlärning',
+      icon: '🔀',
+      category: 'Inlärning',
+      difficulty: 'Medel'
+    },
+    {
+      id: 9,
+      title: 'Sömn & vila',
+      description: 'Optimera din sömn för bättre minneskonsolidering',
+      icon: '😴',
+      category: 'Hälsa',
+      difficulty: 'Nybörjare'
     }
   ];
 
@@ -150,6 +174,30 @@ export default function HomeScreen() {
       steps: ['Läs fakta', 'Fråga varför', 'Förklara samband', 'Koppla till tidigare kunskap'],
       icon: '❓',
       timeNeeded: '20-40 min'
+    },
+    {
+      id: 4,
+      title: 'Leitner-systemet',
+      description: 'Flashcard-system med repetitionsintervaller baserat på prestation',
+      steps: ['Skapa kort', 'Sortera i lådor', 'Repetera', 'Flytta kort'],
+      icon: '📦',
+      timeNeeded: '15-25 min'
+    },
+    {
+      id: 5,
+      title: 'Retrieval Practice',
+      description: 'Träna på att hämta information från minnet aktivt',
+      steps: ['Studera material', 'Stäng allt', 'Skriv ner allt', 'Kontrollera'],
+      icon: '🔄',
+      timeNeeded: '20-30 min'
+    },
+    {
+      id: 6,
+      title: 'Dual Coding',
+      description: 'Kombinera text med visuella element för bättre inlärning',
+      steps: ['Läs text', 'Skapa bilder', 'Koppla samman', 'Repetera båda'],
+      icon: '🎨',
+      timeNeeded: '25-45 min'
     }
   ];
 
@@ -393,7 +441,7 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
-              <TouchableOpacity onPress={() => console.log('Navigate to all study tips')}>
+              <TouchableOpacity onPress={() => router.push('/study-tips')}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -430,7 +478,7 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
-              <TouchableOpacity onPress={() => console.log('Navigate to all study techniques')}>
+              <TouchableOpacity onPress={() => router.push('/study-techniques')}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>

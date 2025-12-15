@@ -223,6 +223,102 @@ const studyTipsData: StudyTip[] = [
     ],
     timeRequired: 'Ingen extra tid krävs',
     bestFor: ['Alla typer av studier', 'Långsiktiga projekt', 'Motivation']
+  },
+  {
+    id: 7,
+    title: 'Chunking',
+    description: 'Dela upp information i mindre, hanterbara delar',
+    icon: '🧩',
+    category: 'Minnestekniker',
+    difficulty: 'Nybörjare',
+    detailedDescription: 'Chunking är en kognitiv strategi som innebär att gruppera enskilda informationsbitar till större, meningsfulla enheter. Hjärnan kan bara hålla cirka 7 ± 2 objekt i arbetsminnet, men genom chunking kan du utöka denna kapacitet avsevärt.',
+    benefits: [
+      'Förbättrar arbetsminneskapaciteten',
+      'Gör komplex information lättare att förstå',
+      'Underlättar återkallning av information',
+      'Minskar kognitiv belastning',
+      'Hjälper vid memorering av sekvenser'
+    ],
+    howToUse: [
+      'Identifiera informationen som ska läras',
+      'Leta efter naturliga grupperingar eller mönster',
+      'Skapa meningsfulla kategorier',
+      'Begränsa varje grupp till 3-5 objekt',
+      'Använd akronymer eller minnesramsor',
+      'Repetera grupperna som enheter'
+    ],
+    tips: [
+      'Telefonnummer är ett klassiskt exempel: 070-123-4567',
+      'Gruppera historiska datum efter årtionde',
+      'Dela upp långa listor i tematiska kategorier',
+      'Använd visuella grupperingar i anteckningar'
+    ],
+    timeRequired: '10-20 minuter',
+    bestFor: ['Memorering av fakta', 'Telefonnummer och koder', 'Komplexa processer']
+  },
+  {
+    id: 8,
+    title: 'Interleaving',
+    description: 'Variera mellan olika ämnen för effektivare inlärning',
+    icon: '🔀',
+    category: 'Inlärning',
+    difficulty: 'Medel',
+    detailedDescription: 'Interleaving innebär att blanda olika ämnen eller problemtyper under en studiesession istället för att fokusera på en sak i taget (blockerad övning). Forskning visar att detta förbättrar långsiktig retention och problemlösningsförmåga.',
+    benefits: [
+      'Förbättrar diskrimineringförmåga mellan koncept',
+      'Stärker långtidsminnet',
+      'Förbereder för obekanta problem',
+      'Ökar flexibilitet i tänkandet',
+      'Förbättrar transfer av kunskap'
+    ],
+    howToUse: [
+      'Välj 2-3 relaterade ämnen att studera',
+      'Studera ämne A i 15-20 minuter',
+      'Byt till ämne B',
+      'Byt till ämne C',
+      'Återvänd till ämne A',
+      'Fortsätt rotera mellan ämnena'
+    ],
+    tips: [
+      'Känns svårare men ger bättre resultat',
+      'Perfekt för matematik och naturvetenskap',
+      'Blanda liknande men olika problem',
+      'Kombinera med spaced repetition för maximal effekt'
+    ],
+    timeRequired: '45-60 minuter per session',
+    bestFor: ['Matematik', 'Naturvetenskap', 'Språkinlärning']
+  },
+  {
+    id: 9,
+    title: 'Sömn & vila',
+    description: 'Optimera din sömn för bättre minneskonsolidering',
+    icon: '😴',
+    category: 'Hälsa',
+    difficulty: 'Nybörjare',
+    detailedDescription: 'Sömn är avgörande för inlärning och minne. Under sömnen konsoliderar hjärnan nya minnen, stärker neuronala kopplingar och rensar ut toxiner. Utan tillräcklig sömn försämras både inlärningsförmåga och minnesretention dramatiskt.',
+    benefits: [
+      'Konsoliderar daglig inlärning till långtidsminne',
+      'Förbättrar koncentration och fokus',
+      'Ökar kreativitet och problemlösning',
+      'Stärker immunförsvaret',
+      'Förbättrar emotionell stabilitet'
+    ],
+    howToUse: [
+      'Sikta på 7-9 timmars sömn per natt',
+      'Håll regelbundna sömn- och uppvakningstider',
+      'Undvik skärmar 1 timme före läggdags',
+      'Repetera viktig information innan du somnar',
+      'Ta korta tupplurer (20-30 min) vid behov',
+      'Skapa en mörk, sval sovmiljö'
+    ],
+    tips: [
+      'Studera svårt material på kvällen - det konsolideras under natten',
+      'En tupplur efter lunch kan öka eftermiddagens produktivitet',
+      'Koffein tar 6 timmar att lämna kroppen - undvik sent på dagen',
+      'Motion förbättrar sömnkvaliteten men inte nära läggdags'
+    ],
+    timeRequired: '7-9 timmar per natt',
+    bestFor: ['Alla typer av studier', 'Tentamensperioder', 'Långsiktig hälsa']
   }
 ];
 

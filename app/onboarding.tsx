@@ -1368,6 +1368,97 @@ export default function OnboardingScreen() {
         }
 
       case 11:
+        if (data.studyLevel === 'gymnasie') {
+          return (
+            <View style={styles.stepContainer}>
+              <BookOpen size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Vilken kurs vill du börja med?</Text>
+              <Text style={styles.subtitle}>Välj en kurs för att komma igång</Text>
+              
+              <ScrollView style={styles.startingCoursesList} showsVerticalScrollIndicator={false}>
+                {assignedCourses.slice(0, 5).map((course) => (
+                  <AnimatedPressable
+                    key={course.id}
+                    style={[
+                      styles.startingCourseCard,
+                      data.selectedStartingCourse === course.id && styles.selectedStartingCourseCard
+                    ]}
+                    onPress={() => setData({ ...data, selectedStartingCourse: course.id })}
+                  >
+                    <View style={styles.startingCourseContent}>
+                      <Text style={styles.startingCourseEmoji}>📚</Text>
+                      <View style={styles.startingCourseInfo}>
+                        <Text style={[
+                          styles.startingCourseTitle,
+                          data.selectedStartingCourse === course.id && styles.selectedStartingCourseTitle
+                        ]}>
+                          {course.name}
+                        </Text>
+                        <Text style={styles.startingCourseDescription}>
+                          Börja med grunderna
+                        </Text>
+                      </View>
+                    </View>
+                    {data.selectedStartingCourse === course.id && (
+                      <Check size={20} color="#10B981" />
+                    )}
+                  </AnimatedPressable>
+                ))}
+              </ScrollView>
+              
+              <Text style={styles.skipText}>Du kan också hoppa över och utforska alla kurser senare</Text>
+            </View>
+          );
+        } else {
+          return (
+            <View style={styles.stepContainer}>
+              <Sparkles size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Välkommen ombord! 🎉</Text>
+              <Text style={styles.subtitle}>Du är nu redo att börja din studieresa</Text>
+              
+              <View style={styles.welcomeChecklistContainer}>
+                <View style={styles.checklistItem}>
+                  <Check size={20} color="#10B981" />
+                  <Text style={styles.checklistText}>Profil skapad</Text>
+                </View>
+                <View style={styles.checklistItem}>
+                  <Check size={20} color="#10B981" />
+                  <Text style={styles.checklistText}>Kurser tilldelade</Text>
+                </View>
+                <View style={styles.checklistItem}>
+                  <Check size={20} color="#10B981" />
+                  <Text style={styles.checklistText}>Inställningar konfigurerade</Text>
+                </View>
+                <View style={styles.checklistItem}>
+                  <Check size={20} color="#10B981" />
+                  <Text style={styles.checklistText}>Redo att börja studera</Text>
+                </View>
+              </View>
+              
+              <View style={styles.quickTipsContainer}>
+                <Text style={styles.quickTipsTitle}>Snabbtips för att komma igång:</Text>
+                <View style={styles.tipItem}>
+                  <Text style={styles.tipEmoji}>📖</Text>
+                  <Text style={styles.tipText}>Slutför lektioner i din egen takt</Text>
+                </View>
+                <View style={styles.tipItem}>
+                  <Text style={styles.tipEmoji}>🔥</Text>
+                  <Text style={styles.tipText}>Håll din streak igång genom att studera dagligen</Text>
+                </View>
+                <View style={styles.tipItem}>
+                  <Text style={styles.tipEmoji}>🏆</Text>
+                  <Text style={styles.tipText}>Lås upp prestationer när du lär dig</Text>
+                </View>
+                <View style={styles.tipItem}>
+                  <Text style={styles.tipEmoji}>👥</Text>
+                  <Text style={styles.tipText}>Lägg till vänner för att jämföra framsteg</Text>
+                </View>
+              </View>
+            </View>
+          );
+        }
+
+      case 12:
         return (
           <View style={styles.stepContainer}>
             <Sparkles size={60} color="white" style={styles.icon} />
@@ -1390,6 +1481,26 @@ export default function OnboardingScreen() {
               <View style={styles.checklistItem}>
                 <Check size={20} color="#10B981" />
                 <Text style={styles.checklistText}>Redo att börja studera</Text>
+              </View>
+            </View>
+            
+            <View style={styles.quickTipsContainer}>
+              <Text style={styles.quickTipsTitle}>Snabbtips för att komma igång:</Text>
+              <View style={styles.tipItem}>
+                <Text style={styles.tipEmoji}>📖</Text>
+                <Text style={styles.tipText}>Slutför lektioner i din egen takt</Text>
+              </View>
+              <View style={styles.tipItem}>
+                <Text style={styles.tipEmoji}>🔥</Text>
+                <Text style={styles.tipText}>Håll din streak igång genom att studera dagligen</Text>
+              </View>
+              <View style={styles.tipItem}>
+                <Text style={styles.tipEmoji}>🏆</Text>
+                <Text style={styles.tipText}>Lås upp prestationer när du lär dig</Text>
+              </View>
+              <View style={styles.tipItem}>
+                <Text style={styles.tipEmoji}>👥</Text>
+                <Text style={styles.tipText}>Lägg till vänner för att jämföra framsteg</Text>
               </View>
             </View>
           </View>
@@ -2018,5 +2129,90 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#1E293B',
+  },
+  startingCoursesList: {
+    maxHeight: 400,
+    width: '100%',
+    marginTop: 16,
+  },
+  startingCourseCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  selectedStartingCourseCard: {
+    borderColor: '#10B981',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  startingCourseContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  startingCourseEmoji: {
+    fontSize: 48,
+  },
+  startingCourseInfo: {
+    flex: 1,
+  },
+  startingCourseTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#1E293B',
+    marginBottom: 6,
+  },
+  selectedStartingCourseTitle: {
+    color: '#10B981',
+  },
+  startingCourseDescription: {
+    fontSize: 14,
+    color: '#64748B',
+    lineHeight: 20,
+  },
+  skipText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.75)',
+    textAlign: 'center',
+    marginTop: 16,
+    lineHeight: 20,
+  },
+  quickTipsContainer: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 24,
+    gap: 12,
+  },
+  quickTipsTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: 'white',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 14,
+  },
+  tipEmoji: {
+    fontSize: 24,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 14,
+    color: 'white',
+    fontWeight: '500' as const,
+    lineHeight: 20,
   },
 });

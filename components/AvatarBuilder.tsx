@@ -35,7 +35,9 @@ import {
 
 interface AvatarBuilderProps {
   initialConfig?: AvatarConfig;
-  onSave: (config: AvatarConfig) => void;
+  config?: AvatarConfig;
+  onSave?: (config: AvatarConfig) => void;
+  onConfigChange?: (config: AvatarConfig) => void;
   onCancel?: () => void;
 }
 
@@ -49,11 +51,15 @@ type CustomizationCategory =
   | 'background';
 
 export default function AvatarBuilder({ 
-  initialConfig = DEFAULT_AVATAR_CONFIG,
+  initialConfig,
+  config: externalConfig,
   onSave, 
+  onConfigChange,
   onCancel 
 }: AvatarBuilderProps) {
-  const [config, setConfig] = useState<AvatarConfig>(initialConfig);
+  const [internalConfig, setInternalConfig] = useState<AvatarConfig>(initialConfig || externalConfig || DEFAULT_AVATAR_CONFIG);
+  
+  const config = externalConfig || internalConfig;
   const [activeCategory, setActiveCategory] = useState<CustomizationCategory>('skin');
 
   const categories = [
@@ -67,7 +73,12 @@ export default function AvatarBuilder({
   ];
 
   const updateConfig = (key: keyof AvatarConfig, value: string) => {
-    setConfig({ ...config, [key]: value });
+    const newConfig = { ...config, [key]: value };
+    if (onConfigChange) {
+      onConfigChange(newConfig);
+    } else {
+      setInternalConfig(newConfig);
+    }
   };
 
   const renderCategoryContent = () => {
@@ -423,22 +434,24 @@ export default function AvatarBuilder({
         </TouchableOpacity>
       </View>
 
-      <View style={styles.footer}>
-        {onCancel && (
+      {onSave && (
+        <View style={styles.footer}>
+          {onCancel && (
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={onCancel}
+            >
+              <Text style={styles.cancelButtonText}>Avbryt</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity 
-            style={styles.cancelButton}
-            onPress={onCancel}
+            style={styles.saveButton}
+            onPress={() => onSave(config)}
           >
-            <Text style={styles.cancelButtonText}>Avbryt</Text>
+            <Text style={styles.saveButtonText}>Spara avatar</Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity 
-          style={styles.saveButton}
-          onPress={() => onSave(config)}
-        >
-          <Text style={styles.saveButtonText}>Spara avatar</Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

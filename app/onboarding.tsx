@@ -36,7 +36,7 @@ import UniversityPicker from '@/components/UniversityPicker';
 import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
 import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 import { getGymnasiumCourses, type GymnasiumCourse } from '@/constants/gymnasium-courses';
-import { GYMNASIUM_PROGRAMS } from '@/constants/gymnasium-programs';
+
 import { type University, type UniversityProgram, type UniversityProgramYear } from '@/constants/universities';
 
 import type { AvatarConfig } from '@/constants/avatar-config';
@@ -870,6 +870,531 @@ export default function OnboardingScreen() {
           </View>
         );
 
+      case 4:
+        if (data.studyLevel === 'gymnasie') {
+          return (
+            <View style={styles.stepContainer}>
+              <MapPin size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Vilken skola går du på?</Text>
+              <Text style={styles.subtitle}>Välj ditt gymnasium</Text>
+              
+              <View style={styles.searchContainer}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Sök gymnasium..."
+                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  value={gymnasiumSearchQuery}
+                  onChangeText={setGymnasiumSearchQuery}
+                />
+              </View>
+              
+              <ScrollView style={styles.selectionList} showsVerticalScrollIndicator={false}>
+                {SWEDISH_GYMNASIUMS
+                  .filter(g => g.name.toLowerCase().includes(gymnasiumSearchQuery.toLowerCase()))
+                  .slice(0, 20)
+                  .map((gymnasium) => (
+                    <AnimatedPressable
+                      key={gymnasium.id}
+                      style={[
+                        styles.selectionCard,
+                        data.gymnasium?.id === gymnasium.id && styles.selectedCard
+                      ]}
+                      onPress={() => setData({ ...data, gymnasium })}
+                    >
+                      <View style={styles.selectionCardContent}>
+                        <Text style={[
+                          styles.selectionCardTitle,
+                          data.gymnasium?.id === gymnasium.id && styles.selectedCardTitle
+                        ]}>
+                          {gymnasium.name}
+                        </Text>
+                        <Text style={styles.selectionCardSubtitle}>
+                          {gymnasium.city} • {gymnasium.type}
+                        </Text>
+                      </View>
+                      {data.gymnasium?.id === gymnasium.id && (
+                        <Check size={20} color="#10B981" />
+                      )}
+                    </AnimatedPressable>
+                  ))}
+              </ScrollView>
+            </View>
+          );
+        } else {
+          return (
+            <View style={styles.stepContainer}>
+              <UniversityPicker
+                selectedUniversity={data.university}
+                selectedProgram={data.universityProgram}
+                selectedYear={data.universityYear}
+                onSelect={(university, program, year) => {
+                  setData({ 
+                    ...data, 
+                    university: university || null, 
+                    universityProgram: program || null, 
+                    universityYear: year || null 
+                  });
+                }}
+              />
+            </View>
+          );
+        }
+
+      case 5:
+        if (data.studyLevel === 'gymnasie') {
+          return (
+            <View style={styles.stepContainer}>
+              <BookOpen size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Välj kurser</Text>
+              <Text style={styles.subtitle}>Välj de kurser du läser just nu</Text>
+              
+              <ScrollView style={styles.coursesList} showsVerticalScrollIndicator={false}>
+                {availableCourses.map((course) => (
+                  <AnimatedPressable
+                    key={course.id}
+                    style={[
+                      styles.courseCard,
+                      data.selectedCourses.has(course.id) && styles.selectedCourseCard
+                    ]}
+                    onPress={() => {
+                      const newSelected = new Set(data.selectedCourses);
+                      if (newSelected.has(course.id)) {
+                        if (!course.mandatory) newSelected.delete(course.id);
+                      } else {
+                        newSelected.add(course.id);
+                      }
+                      setData({ ...data, selectedCourses: newSelected });
+                    }}
+                  >
+                    <View style={styles.courseCardContent}>
+                      <Text style={styles.courseEmoji}>📚</Text>
+                      <View style={styles.courseCardInfo}>
+                        <Text style={[
+                          styles.courseCardTitle,
+                          data.selectedCourses.has(course.id) && styles.selectedCourseCardTitle
+                        ]}>
+                          {course.name}
+                        </Text>
+                        {course.mandatory && (
+                          <View style={styles.mandatoryBadge}>
+                            <Text style={styles.mandatoryText}>Obligatorisk</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                    {data.selectedCourses.has(course.id) && (
+                      <Check size={20} color="#10B981" />
+                    )}
+                  </AnimatedPressable>
+                ))}
+              </ScrollView>
+            </View>
+          );
+        } else {
+          return (
+            <View style={styles.stepContainer}>
+              <Target size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Vad är dina studiemål?</Text>
+              <Text style={styles.subtitle}>Välj minst ett mål (kan välja flera)</Text>
+              
+              <ScrollView style={styles.goalsList} showsVerticalScrollIndicator={false}>
+                {goalOptions.map((goal) => (
+                  <AnimatedPressable
+                    key={goal.id}
+                    style={[
+                      styles.goalCard,
+                      { borderColor: goal.color },
+                      data.goals.includes(goal.id) && { backgroundColor: goal.color + '20', borderWidth: 2 }
+                    ]}
+                    onPress={() => toggleGoal(goal.id)}
+                  >
+                    <Text style={styles.goalEmoji}>{goal.icon}</Text>
+                    <Text style={[
+                      styles.goalLabel,
+                      data.goals.includes(goal.id) && { color: goal.color, fontWeight: '700' as const }
+                    ]}>
+                      {goal.label}
+                    </Text>
+                    {data.goals.includes(goal.id) && (
+                      <Check size={20} color={goal.color} />
+                    )}
+                  </AnimatedPressable>
+                ))}
+              </ScrollView>
+            </View>
+          );
+        }
+
+      case 6:
+        if (data.studyLevel === 'gymnasie') {
+          return (
+            <View style={styles.stepContainer}>
+              <Target size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Vad är dina studiemål?</Text>
+              <Text style={styles.subtitle}>Välj minst ett mål (kan välja flera)</Text>
+              
+              <ScrollView style={styles.goalsList} showsVerticalScrollIndicator={false}>
+                {goalOptions.map((goal) => (
+                  <AnimatedPressable
+                    key={goal.id}
+                    style={[
+                      styles.goalCard,
+                      { borderColor: goal.color },
+                      data.goals.includes(goal.id) && { backgroundColor: goal.color + '20', borderWidth: 2 }
+                    ]}
+                    onPress={() => toggleGoal(goal.id)}
+                  >
+                    <Text style={styles.goalEmoji}>{goal.icon}</Text>
+                    <Text style={[
+                      styles.goalLabel,
+                      data.goals.includes(goal.id) && { color: goal.color, fontWeight: '700' as const }
+                    ]}>
+                      {goal.label}
+                    </Text>
+                    {data.goals.includes(goal.id) && (
+                      <Check size={20} color={goal.color} />
+                    )}
+                  </AnimatedPressable>
+                ))}
+              </ScrollView>
+            </View>
+          );
+        } else {
+          return (
+            <View style={styles.stepContainer}>
+              <Flame size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Vilket studietempo passar dig?</Text>
+              <Text style={styles.subtitle}>Välj hur du vill lära dig</Text>
+              
+              <View style={styles.paceContainer}>
+                {learningPaceOptions.map((pace) => (
+                  <AnimatedPressable
+                    key={pace.id}
+                    style={[
+                      styles.paceCard,
+                      { borderColor: pace.color },
+                      data.learningPace === pace.id && { 
+                        backgroundColor: pace.color + '20', 
+                        borderWidth: 3,
+                        borderColor: pace.color
+                      }
+                    ]}
+                    onPress={() => setData({ ...data, learningPace: pace.id as any })}
+                  >
+                    <Text style={styles.paceEmoji}>{pace.icon}</Text>
+                    <Text style={[
+                      styles.paceTitle,
+                      data.learningPace === pace.id && { color: pace.color }
+                    ]}>
+                      {pace.title}
+                    </Text>
+                    <Text style={styles.paceSubtitle}>{pace.subtitle}</Text>
+                    <Text style={styles.paceDescription}>{pace.description}</Text>
+                  </AnimatedPressable>
+                ))}
+              </View>
+            </View>
+          );
+        }
+
+      case 7:
+        if (data.studyLevel === 'gymnasie') {
+          return (
+            <View style={styles.stepContainer}>
+              <Flame size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Vilket studietempo passar dig?</Text>
+              <Text style={styles.subtitle}>Välj hur du vill lära dig</Text>
+              
+              <View style={styles.paceContainer}>
+                {learningPaceOptions.map((pace) => (
+                  <AnimatedPressable
+                    key={pace.id}
+                    style={[
+                      styles.paceCard,
+                      { borderColor: pace.color },
+                      data.learningPace === pace.id && { 
+                        backgroundColor: pace.color + '20', 
+                        borderWidth: 3,
+                        borderColor: pace.color
+                      }
+                    ]}
+                    onPress={() => setData({ ...data, learningPace: pace.id as any })}
+                  >
+                    <Text style={styles.paceEmoji}>{pace.icon}</Text>
+                    <Text style={[
+                      styles.paceTitle,
+                      data.learningPace === pace.id && { color: pace.color }
+                    ]}>
+                      {pace.title}
+                    </Text>
+                    <Text style={styles.paceSubtitle}>{pace.subtitle}</Text>
+                    <Text style={styles.paceDescription}>{pace.description}</Text>
+                  </AnimatedPressable>
+                ))}
+              </View>
+            </View>
+          );
+        } else {
+          return (
+            <View style={styles.stepContainer}>
+              <Bell size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Notifikationer</Text>
+              <Text style={styles.subtitle}>Anpassa dina påminnelser</Text>
+              
+              <View style={styles.notificationsContainer}>
+                <View style={styles.notificationItem}>
+                  <View style={styles.notificationInfo}>
+                    <Text style={styles.notificationTitle}>Dagliga påminnelser</Text>
+                    <Text style={styles.notificationDescription}>Få påminnelser att studera</Text>
+                  </View>
+                  <Switch
+                    value={data.notificationPreferences.dailyReminders}
+                    onValueChange={(val) => setData({
+                      ...data,
+                      notificationPreferences: { ...data.notificationPreferences, dailyReminders: val }
+                    })}
+                  />
+                </View>
+                
+                <View style={styles.notificationItem}>
+                  <View style={styles.notificationInfo}>
+                    <Text style={styles.notificationTitle}>Achievement-notiser</Text>
+                    <Text style={styles.notificationDescription}>När du låser upp prestationer</Text>
+                  </View>
+                  <Switch
+                    value={data.notificationPreferences.achievements}
+                    onValueChange={(val) => setData({
+                      ...data,
+                      notificationPreferences: { ...data.notificationPreferences, achievements: val }
+                    })}
+                  />
+                </View>
+                
+                <View style={styles.notificationItem}>
+                  <View style={styles.notificationInfo}>
+                    <Text style={styles.notificationTitle}>Dagliga utmaningar</Text>
+                    <Text style={styles.notificationDescription}>Påminnelser om challenges</Text>
+                  </View>
+                  <Switch
+                    value={data.notificationPreferences.dailyChallenges}
+                    onValueChange={(val) => setData({
+                      ...data,
+                      notificationPreferences: { ...data.notificationPreferences, dailyChallenges: val }
+                    })}
+                  />
+                </View>
+                
+                <View style={styles.notificationItem}>
+                  <View style={styles.notificationInfo}>
+                    <Text style={styles.notificationTitle}>Streak-påminnelser</Text>
+                    <Text style={styles.notificationDescription}>Behåll din streak igång</Text>
+                  </View>
+                  <Switch
+                    value={data.notificationPreferences.streakReminders}
+                    onValueChange={(val) => setData({
+                      ...data,
+                      notificationPreferences: { ...data.notificationPreferences, streakReminders: val }
+                    })}
+                  />
+                </View>
+              </View>
+            </View>
+          );
+        }
+
+      case 8:
+        if (data.studyLevel === 'gymnasie') {
+          return (
+            <View style={styles.stepContainer}>
+              <Bell size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Notifikationer</Text>
+              <Text style={styles.subtitle}>Anpassa dina påminnelser</Text>
+              
+              <View style={styles.notificationsContainer}>
+                <View style={styles.notificationItem}>
+                  <View style={styles.notificationInfo}>
+                    <Text style={styles.notificationTitle}>Dagliga påminnelser</Text>
+                    <Text style={styles.notificationDescription}>Få påminnelser att studera</Text>
+                  </View>
+                  <Switch
+                    value={data.notificationPreferences.dailyReminders}
+                    onValueChange={(val) => setData({
+                      ...data,
+                      notificationPreferences: { ...data.notificationPreferences, dailyReminders: val }
+                    })}
+                  />
+                </View>
+                
+                <View style={styles.notificationItem}>
+                  <View style={styles.notificationInfo}>
+                    <Text style={styles.notificationTitle}>Achievement-notiser</Text>
+                    <Text style={styles.notificationDescription}>När du låser upp prestationer</Text>
+                  </View>
+                  <Switch
+                    value={data.notificationPreferences.achievements}
+                    onValueChange={(val) => setData({
+                      ...data,
+                      notificationPreferences: { ...data.notificationPreferences, achievements: val }
+                    })}
+                  />
+                </View>
+                
+                <View style={styles.notificationItem}>
+                  <View style={styles.notificationInfo}>
+                    <Text style={styles.notificationTitle}>Dagliga utmaningar</Text>
+                    <Text style={styles.notificationDescription}>Påminnelser om challenges</Text>
+                  </View>
+                  <Switch
+                    value={data.notificationPreferences.dailyChallenges}
+                    onValueChange={(val) => setData({
+                      ...data,
+                      notificationPreferences: { ...data.notificationPreferences, dailyChallenges: val }
+                    })}
+                  />
+                </View>
+                
+                <View style={styles.notificationItem}>
+                  <View style={styles.notificationInfo}>
+                    <Text style={styles.notificationTitle}>Streak-påminnelser</Text>
+                    <Text style={styles.notificationDescription}>Behåll din streak igång</Text>
+                  </View>
+                  <Switch
+                    value={data.notificationPreferences.streakReminders}
+                    onValueChange={(val) => setData({
+                      ...data,
+                      notificationPreferences: { ...data.notificationPreferences, streakReminders: val }
+                    })}
+                  />
+                </View>
+              </View>
+            </View>
+          );
+        } else {
+          return (
+            <View style={styles.stepContainer}>
+              <Users size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Skapa din profil</Text>
+              <Text style={styles.subtitle}>Anpassa din avatar</Text>
+              
+              <View style={styles.avatarContainer}>
+                <AvatarBuilder
+                  config={data.avatarConfig}
+                  onConfigChange={(config) => setData({ ...data, avatarConfig: config })}
+                />
+              </View>
+            </View>
+          );
+        }
+
+      case 9:
+        if (data.studyLevel === 'gymnasie') {
+          return (
+            <View style={styles.stepContainer}>
+              <Users size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Skapa din profil</Text>
+              <Text style={styles.subtitle}>Anpassa din avatar</Text>
+              
+              <View style={styles.avatarContainer}>
+                <AvatarBuilder
+                  config={data.avatarConfig}
+                  onConfigChange={(config) => setData({ ...data, avatarConfig: config })}
+                />
+              </View>
+            </View>
+          );
+        } else {
+          return (
+            <View style={styles.stepContainer}>
+              <ActivityIndicator size="large" color="white" />
+              <Text style={styles.title}>Förbereder dina kurser...</Text>
+              <Text style={styles.subtitle}>Detta tar bara några sekunder</Text>
+            </View>
+          );
+        }
+
+      case 10:
+        if (data.studyLevel === 'gymnasie') {
+          if (isLoadingCourses) {
+            return (
+              <View style={styles.stepContainer}>
+                <ActivityIndicator size="large" color="white" />
+                <Text style={styles.title}>Förbereder dina kurser...</Text>
+                <Text style={styles.subtitle}>Detta tar bara några sekunder</Text>
+              </View>
+            );
+          }
+          return (
+            <View style={styles.stepContainer}>
+              <Trophy size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Dina kurser är redo!</Text>
+              <Text style={styles.subtitle}>Du har tilldelats {assignedCourses.length} kurser</Text>
+              
+              <ScrollView style={styles.assignedCoursesList} showsVerticalScrollIndicator={false}>
+                {assignedCourses.map((course) => (
+                  <View key={course.id} style={styles.assignedCourseCard}>
+                    <Text style={styles.assignedCourseEmoji}>📚</Text>
+                    <Text style={styles.assignedCourseName}>{course.name}</Text>
+                    <Check size={20} color="#10B981" />
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          );
+        } else {
+          return (
+            <View style={styles.stepContainer}>
+              <Trophy size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Allt klart!</Text>
+              <Text style={styles.subtitle}>Din profil är nu komplett</Text>
+              
+              <View style={styles.summaryContainer}>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Skola</Text>
+                  <Text style={styles.summaryValue}>{data.university?.name || 'Ingen vald'}</Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Program</Text>
+                  <Text style={styles.summaryValue}>{data.universityProgram?.name || 'Inget valt'}</Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Studietempo</Text>
+                  <Text style={styles.summaryValue}>
+                    {learningPaceOptions.find(p => p.id === data.learningPace)?.title || 'Ej valt'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          );
+        }
+
+      case 11:
+        return (
+          <View style={styles.stepContainer}>
+            <Sparkles size={60} color="white" style={styles.icon} />
+            <Text style={styles.title}>Välkommen ombord! 🎉</Text>
+            <Text style={styles.subtitle}>Du är nu redo att börja din studieresa</Text>
+            
+            <View style={styles.welcomeChecklistContainer}>
+              <View style={styles.checklistItem}>
+                <Check size={20} color="#10B981" />
+                <Text style={styles.checklistText}>Profil skapad</Text>
+              </View>
+              <View style={styles.checklistItem}>
+                <Check size={20} color="#10B981" />
+                <Text style={styles.checklistText}>Kurser tilldelade</Text>
+              </View>
+              <View style={styles.checklistItem}>
+                <Check size={20} color="#10B981" />
+                <Text style={styles.checklistText}>Inställningar konfigurerade</Text>
+              </View>
+              <View style={styles.checklistItem}>
+                <Check size={20} color="#10B981" />
+                <Text style={styles.checklistText}>Redo att börja studera</Text>
+              </View>
+            </View>
+          </View>
+        );
+
       default:
         return <Text style={styles.title}>Steg {step + 1} - Under utveckling</Text>;
     }
@@ -1250,5 +1775,248 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
+  },
+  searchContainer: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  searchInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 18,
+    fontSize: 16,
+    color: '#1E293B',
+  },
+  selectionList: {
+    maxHeight: 400,
+    width: '100%',
+  },
+  selectionCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedCard: {
+    borderColor: '#10B981',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+  },
+  selectionCardContent: {
+    flex: 1,
+  },
+  selectionCardTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  selectedCardTitle: {
+    color: '#10B981',
+  },
+  selectionCardSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  coursesList: {
+    maxHeight: 400,
+    width: '100%',
+  },
+  courseCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedCourseCard: {
+    borderColor: '#10B981',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+  },
+  courseCardContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  courseEmoji: {
+    fontSize: 32,
+  },
+  courseCardInfo: {
+    flex: 1,
+  },
+  courseCardTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  selectedCourseCardTitle: {
+    color: '#10B981',
+  },
+  mandatoryBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  mandatoryText: {
+    fontSize: 11,
+    color: '#D97706',
+    fontWeight: '600' as const,
+  },
+  goalsList: {
+    maxHeight: 400,
+    width: '100%',
+  },
+  goalCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 2,
+  },
+  goalEmoji: {
+    fontSize: 24,
+  },
+  goalLabel: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1E293B',
+    fontWeight: '500' as const,
+  },
+  paceContainer: {
+    width: '100%',
+    gap: 16,
+    marginTop: 16,
+  },
+  paceCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  paceEmoji: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  paceTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#1E293B',
+    marginBottom: 8,
+  },
+  paceSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    marginBottom: 8,
+  },
+  paceDescription: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  notificationsContainer: {
+    width: '100%',
+    gap: 16,
+    marginTop: 16,
+  },
+  notificationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 18,
+  },
+  notificationInfo: {
+    flex: 1,
+  },
+  notificationTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  notificationDescription: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  avatarContainer: {
+    width: '100%',
+    marginTop: 16,
+  },
+  assignedCoursesList: {
+    maxHeight: 400,
+    width: '100%',
+    marginTop: 16,
+  },
+  assignedCourseCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    gap: 12,
+  },
+  assignedCourseEmoji: {
+    fontSize: 32,
+  },
+  assignedCourseName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#1E293B',
+  },
+  summaryContainer: {
+    width: '100%',
+    gap: 16,
+    marginTop: 24,
+  },
+  summaryItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 18,
+  },
+  summaryLabel: {
+    fontSize: 13,
+    color: '#64748B',
+    marginBottom: 6,
+  },
+  summaryValue: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#1E293B',
+  },
+  welcomeChecklistContainer: {
+    width: '100%',
+    gap: 16,
+    marginTop: 24,
+  },
+  checklistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 18,
+    gap: 12,
+  },
+  checklistText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#1E293B',
   },
 });

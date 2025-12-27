@@ -42,6 +42,7 @@ import {
   AlertCircle
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import type { Database } from '@/lib/database.types';
 
 type Course = Database['public']['Tables']['courses']['Row'];
@@ -127,7 +128,6 @@ export default function CourseDetailScreen() {
   const [editProgress, setEditProgress] = useState<string>('0');
   const [editTargetGrade, setEditTargetGrade] = useState<string>('');
   const [userCourseData, setUserCourseData] = useState<any>(null);
-  const [hasContent, setHasContent] = useState(false);
 
   useEffect(() => {
     if (id && user?.id) {
@@ -143,6 +143,7 @@ export default function CourseDetailScreen() {
         console.log('Screen focused, reloading course data');
         loadCourseData();
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, user?.id])
   );
 
@@ -258,7 +259,6 @@ export default function CourseDetailScreen() {
       console.log('📝 Total lessons found:', totalLessonCount);
       
       setModules(processedModules);
-      setHasContent(processedModules.length > 0 && totalLessonCount > 0);
       
       const totalLessons = processedModules.reduce((sum, module) => sum + module.lessons.length, 0);
       const completedLessons = processedModules.reduce(
@@ -313,15 +313,20 @@ export default function CourseDetailScreen() {
 
   const onRefresh = useCallback(() => {
     loadCourseData(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
 
   const navigateToLesson = (lesson: CourseLesson) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/lesson/${lesson.id}`);
   };
 
   const navigateToStudyGuide = (guide: StudyGuide) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/study-guide/${guide.id}`);
   };
+
+
 
   const handleSaveProgress = async () => {
     try {

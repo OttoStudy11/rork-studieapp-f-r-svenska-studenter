@@ -19,7 +19,6 @@ import {
   ChevronLeft,
   Target,
   Award,
-  TrendingUp
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCourseContent } from '@/contexts/CourseContentContext';
@@ -163,9 +162,12 @@ export default function ContentModuleDetailScreen() {
 
   const navigateToCourse = () => {
     if (course) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       router.push(`/content-course/${course.id}` as never);
     }
   };
+
+
 
   const getNextIncompleteLesson = () => {
     if (!course || !module) return null;
@@ -231,7 +233,12 @@ export default function ContentModuleDetailScreen() {
   const totalDuration = module.lessons.reduce((sum, l) => sum + (l.durationMinutes || 0), 0);
   const isModuleCompleted = moduleProgress?.percentComplete === 100;
   const completedLessons = moduleProgress?.lessonsCompleted || 0;
+  const inProgressLessons = module.lessons.filter(l => !isLessonCompleted(course.id, l.id)).length;
   const nextIncompleteLesson = getNextIncompleteLesson();
+  
+  const estimatedTimeRemaining = module.lessons
+    .filter(l => !isLessonCompleted(course.id, l.id))
+    .reduce((sum, l) => sum + (l.durationMinutes || 0), 0);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -404,28 +411,65 @@ export default function ContentModuleDetailScreen() {
             })}
           </View>
 
-          <View style={styles.statsRow}>
-            <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
-              <View style={[styles.statIcon, { backgroundColor: courseStyle.primaryColor + '15' }]}>
-                <BookOpen size={18} color={courseStyle.primaryColor} />
+          <View style={[styles.statsCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.statsCardHeader}>
+              <Text style={[styles.statsCardTitle, { color: theme.colors.text }]}>Modulstatistik</Text>
+              <View style={[styles.statsCardBadge, { backgroundColor: courseStyle.primaryColor + '15' }]}>
+                <Text style={[styles.statsCardBadgeText, { color: courseStyle.primaryColor }]}>Översikt</Text>
               </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>{module.lessons.length}</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Lektioner</Text>
             </View>
-            <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
-              <View style={[styles.statIcon, { backgroundColor: theme.colors.warning + '15' }]}>
-                <Clock size={18} color={theme.colors.warning} />
+            <View style={styles.statsGrid}>
+              <View style={styles.statItem}>
+                <View style={[styles.statIcon, { backgroundColor: courseStyle.primaryColor + '15' }]}>
+                  <BookOpen size={20} color={courseStyle.primaryColor} />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statValue, { color: theme.colors.text }]}>{module.lessons.length}</Text>
+                  <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Totalt lektioner</Text>
+                </View>
               </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>{totalDuration}m</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Studietid</Text>
-            </View>
-            <View style={[styles.statItem, { backgroundColor: theme.colors.card }]}>
-              <View style={[styles.statIcon, { backgroundColor: theme.colors.success + '15' }]}>
-                <TrendingUp size={18} color={theme.colors.success} />
+              <View style={styles.statItem}>
+                <View style={[styles.statIcon, { backgroundColor: theme.colors.success + '15' }]}>
+                  <CheckCircle size={20} color={theme.colors.success} />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statValue, { color: theme.colors.text }]}>{completedLessons}</Text>
+                  <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Slutförda</Text>
+                </View>
               </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>{moduleProgress?.percentComplete || 0}%</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Klart</Text>
+              <View style={styles.statItem}>
+                <View style={[styles.statIcon, { backgroundColor: theme.colors.info + '15' }]}>
+                  <Play size={20} color={theme.colors.info} />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statValue, { color: theme.colors.text }]}>{inProgressLessons}</Text>
+                  <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Återstående</Text>
+                </View>
+              </View>
+              <View style={styles.statItem}>
+                <View style={[styles.statIcon, { backgroundColor: theme.colors.warning + '15' }]}>
+                  <Clock size={20} color={theme.colors.warning} />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statValue, { color: theme.colors.text }]}>{estimatedTimeRemaining}m</Text>
+                  <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Tid kvar</Text>
+                </View>
+              </View>
             </View>
+            <View style={[styles.progressBarContainer, { backgroundColor: theme.colors.surface }]}>
+              <View 
+                style={[
+                  styles.progressBarFill,
+                  { 
+                    width: `${moduleProgress?.percentComplete || 0}%`,
+                    backgroundColor: courseStyle.primaryColor 
+                  }
+                ]} 
+              />
+            </View>
+            <Text style={[styles.progressText, { color: theme.colors.textSecondary }]}>
+              {moduleProgress?.percentComplete || 0}% slutfört • {estimatedTimeRemaining > 0 ? `${estimatedTimeRemaining} minuter kvar` : 'Allt klart!'}
+            </Text>
           </View>
 
           <View style={styles.navigationSection}>
@@ -774,5 +818,59 @@ const styles = StyleSheet.create({
   navButtonTitle: {
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  statsCard: {
+    borderRadius: 18,
+    padding: 20,
+    marginTop: 24,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  statsCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  statsCardTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  statsCardBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  statsCardBadgeText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  statContent: {
+    flex: 1,
+  },
+  progressBarContainer: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    textAlign: 'center',
   },
 });

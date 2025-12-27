@@ -40,6 +40,7 @@ export default function ContentLessonScreen() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [localCompleted, setLocalCompleted] = useState(false);
   const [readingProgress, setReadingProgress] = useState(0);
+  const scrollProgress = useRef(new Animated.Value(0)).current;
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -76,11 +77,18 @@ export default function ContentLessonScreen() {
     ]).start();
   }, [fadeAnim, slideAnim]);
 
-  const handleScroll = (event: any) => {
+  const handleScroll = useCallback((event: any) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const scrollPercentage = (contentOffset.y / (contentSize.height - layoutMeasurement.height)) * 100;
-    setReadingProgress(Math.min(100, Math.max(0, scrollPercentage)));
-  };
+    const progress = Math.min(100, Math.max(0, scrollPercentage));
+    setReadingProgress(progress);
+    
+    Animated.timing(scrollProgress, {
+      toValue: progress,
+      duration: 100,
+      useNativeDriver: false,
+    }).start();
+  }, [scrollProgress]);
 
   const handleMarkCompleted = async () => {
     if (!course || !lesson || completed || isCompleting) return;
@@ -336,8 +344,17 @@ export default function ContentLessonScreen() {
             </View>
           )}
 
-          <View style={[styles.lessonMetaCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.lessonMetaRow}>
+          <View style={[styles.progressInfoCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.progressInfoHeader}>
+              <View style={styles.progressInfoTextContainer}>
+                <Text style={[styles.progressInfoTitle, { color: theme.colors.text }]}>Läsframsteg</Text>
+                <Text style={[styles.progressInfoSubtitle, { color: theme.colors.textSecondary }]}>Scrolla för att läsa lektionen</Text>
+              </View>
+              <View style={styles.progressPercentContainer}>
+                <Text style={[styles.progressPercentValue, { color: courseStyle.primaryColor }]}>{Math.round(readingProgress)}%</Text>
+              </View>
+            </View>
+            <View style={[styles.lessonMetaRow, { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: theme.colors.border }]}>
               <View style={styles.lessonMetaItem}>
                 <View style={[styles.lessonMetaIcon, { backgroundColor: courseStyle.primaryColor + '15' }]}>
                   <BookOpen size={16} color={courseStyle.primaryColor} />
@@ -586,6 +603,43 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 3,
+  },
+  progressInfoCard: {
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  progressInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  progressInfoTextContainer: {
+    flex: 1,
+  },
+  progressInfoTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  progressInfoSubtitle: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  progressPercentContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  progressPercentValue: {
+    fontSize: 20,
+    fontWeight: '800' as const,
   },
   lessonMetaRow: {
     flexDirection: 'row',

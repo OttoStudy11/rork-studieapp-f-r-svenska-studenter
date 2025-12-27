@@ -12,6 +12,7 @@ import {
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
+import { useGamification } from '@/contexts/GamificationContext';
 import { fetchTotalStudyMinutesForUser } from '@/lib/study-stats';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/lib/supabase';
@@ -29,6 +30,8 @@ import {
 import { FadeInView, SlideInView } from '@/components/Animations';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PremiumGate } from '@/components/PremiumGate';
+import { LevelComparison } from '@/components/LevelProgress';
+import { getLevelForXp } from '@/constants/gamification';
 
 
 
@@ -44,6 +47,8 @@ interface FriendData {
   sessionCount: number;
   streak: number;
   courseCount: number;
+  totalXp: number;
+  currentLevel: number;
 }
 
 interface ComparisonStat {
@@ -62,8 +67,9 @@ export default function FriendStatsScreen() {
   const { user } = useAuth();
   const { user: studyUser } = useStudy();
   const { theme, isDark } = useTheme();
+  const { totalXp, currentLevel } = useGamification();
   const [friend, setFriend] = useState<FriendData | null>(null);
-  const [yourStats, setYourStats] = useState<{ studyTime: number; sessionCount: number; streak: number; courseCount: number } | null>(null);
+  const [yourStats, setYourStats] = useState<{ studyTime: number; sessionCount: number; streak: number; courseCount: number; totalXp: number } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -121,6 +127,13 @@ export default function FriendStatsScreen() {
         .select('*')
         .eq('user_id', user.id);
 
+      // Load friend's XP/level data
+      const { data: friendLevelData } = await (supabase as any)
+        .from('user_levels')
+        .select('total_xp, current_level')
+        .eq('user_id', friendId)
+        .maybeSingle();
+
       const friendStudyTimeMinutes = await fetchTotalStudyMinutesForUser(friendId);
       const yourStudyTimeMinutes = await fetchTotalStudyMinutesForUser(user.id);
 
@@ -139,10 +152,12 @@ export default function FriendStatsScreen() {
             return undefined;
           }
         })(),
-        studyTime: friendStudyTimeMinutes, // Keep in minutes for calculations
+        studyTime: friendStudyTimeMinutes,
         sessionCount: friendSessions?.length || 0,
         streak: friendProgress?.current_streak || 0,
         courseCount: friendCourses?.length || 0,
+        totalXp: friendLevelData?.total_xp || 0,
+        currentLevel: friendLevelData?.current_level || 1,
       });
 
       setYourStats({
@@ -150,6 +165,7 @@ export default function FriendStatsScreen() {
         sessionCount: yourSessions?.length || 0,
         streak: yourProgress?.current_streak || 0,
         courseCount: yourCourses?.length || 0,
+        totalXp: totalXp,
       });
     } catch (error: any) {
       setErrorMessage(error?.message || 'Kunde inte ladda statistik');
@@ -158,7 +174,7 @@ export default function FriendStatsScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [friendId, user]);
+  }, [friendId, user, totalXp]);
 
   useEffect(() => {
     if (friendId && user) {
@@ -369,7 +385,22 @@ export default function FriendStatsScreen() {
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Jämförelse</Text>
           </SlideInView>
 
-          {comparisonStats.map((stat, index) => {
+            {/* Level Comparison Card */}
+        {friend && yourStats && (
+          <SlideInView direction="up" delay={100}>
+            <View style={styles.levelComparisonSection}>
+              <LevelComparison
+                yourLevel={currentLevel}
+                yourXp={totalXp}
+                friendLevel={getLevelForXp(friend.totalXp)}
+                friendXp={friend.totalXp}
+                friendName={friend.display_name}
+              />
+            </View>
+          </SlideInView>
+        )}
+
+      {comparisonStats.map((stat, index) => {
             const Icon = stat.icon;
             return (
               <SlideInView key={stat.label} direction="up" delay={200 + index * 100}>
@@ -539,6 +570,9 @@ const styles = StyleSheet.create({
   statsSection: {
     paddingHorizontal: 24,
     marginBottom: 24,
+  },
+  levelComparisonSection: {
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 24,

@@ -16,6 +16,7 @@ import { CourseContentProvider } from "@/contexts/CourseContentContext";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { ChallengesProvider } from "@/contexts/ChallengesContext";
+import { GamificationProvider } from "@/contexts/GamificationContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -65,7 +66,9 @@ export default function RootLayout() {
                           <AchievementProvider>
                             <PointsProvider>
                               <ChallengesProvider>
-                                <RootLayoutNav />
+                                <GamificationProvider>
+                                  <RootLayoutNav />
+                                </GamificationProvider>
                               </ChallengesProvider>
                             </PointsProvider>
                           </AchievementProvider>

@@ -9,21 +9,19 @@ import {
   TextInput,
   Modal,
   StatusBar,
-  Dimensions,
   Alert as RNAlert,
 } from 'react-native';
-import { Stack, router as routerNav } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useGamification } from '@/contexts/GamificationContext';
 import { 
   Edit3, 
   Settings, 
   BookOpen, 
   Clock, 
-  Target, 
-  TrendingUp,
   Award,
   Star,
   Flame,
@@ -31,24 +29,32 @@ import {
   ChevronRight,
   User,
   Mail,
-  Calendar,
+  Zap,
   Sparkles,
   ArrowLeft
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AnimatedPressable, FadeInView } from '@/components/Animations';
-import { router } from 'expo-router';
+import { AnimatedPressable } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
 import type { AvatarConfig } from '@/constants/avatar-config';
 import AvatarBuilder from '@/components/AvatarBuilder';
-
-const { width } = Dimensions.get('window');
+import { LevelCard } from '@/components/LevelProgress';
+import { TIER_COLORS, RARITY_COLORS, formatXp } from '@/constants/gamification';
 
 export default function ProfileScreen() {
   const { user, courses, pomodoroSessions, updateUser } = useStudy();
   const { user: authUser } = useAuth();
   const { theme, isDark } = useTheme();
   const { showSuccess } = useToast();
+  const { 
+    totalXp, 
+    currentLevel, 
+    xpProgress, 
+    streak, 
+    achievements,
+    dailyChallenges,
+    unclaimedAchievements,
+  } = useGamification();
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
     name: user?.name || '',
@@ -58,10 +64,6 @@ export default function ProfileScreen() {
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
   const totalStudyTime = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
-  const averageProgress = courses.length > 0 
-    ? Math.round(courses.reduce((sum, course) => sum + course.progress, 0) / courses.length)
-    : 0;
-  const activeCourses = courses.filter(course => course.isActive).length;
 
   const handleSaveProfile = async () => {
     try {
@@ -72,31 +74,9 @@ export default function ProfileScreen() {
       });
       setShowEditModal(false);
       RNAlert.alert('Profil uppdaterad! ✅');
-    } catch (error) {
+    } catch {
       RNAlert.alert('Fel', 'Kunde inte uppdatera profil');
     }
-  };
-
-  const handleExportData = () => {
-    RNAlert.alert(
-      'Exportera data',
-      'Din studiedata kommer att exporteras som en fil',
-      [
-        { text: 'Avbryt', style: 'cancel' },
-        { text: 'Exportera', onPress: () => RNAlert.alert('Export startar...') }
-      ]
-    );
-  };
-
-  const handleSignOut = () => {
-    RNAlert.alert(
-      'Logga ut',
-      'Är du säker på att du vill logga ut?',
-      [
-        { text: 'Avbryt', style: 'cancel' },
-        { text: 'Logga ut', style: 'destructive', onPress: () => RNAlert.alert('Utloggad') }
-      ]
-    );
   };
 
   const handleSaveAvatar = async (config: AvatarConfig & { emoji?: string }) => {
@@ -104,21 +84,8 @@ export default function ProfileScreen() {
       await updateUser({ avatar: config as AvatarConfig });
       setShowAvatarModal(false);
       showSuccess('Avatar uppdaterad! ✅');
-    } catch (error) {
-      console.error('Error updating avatar:', error);
+    } catch {
       showSuccess('Kunde inte uppdatera avatar');
-    }
-  };
-
-  const getMotivationalMessage = () => {
-    if (totalStudyTime === 0) {
-      return "Välkommen! Dags att börja plugga! 🚀";
-    } else if (totalStudyTime < 60) {
-      return "Bra start! Fortsätt så här! 💪";
-    } else if (totalStudyTime < 300) {
-      return "Du är på rätt väg! 🌟";
-    } else {
-      return "Fantastiskt arbete! Du är en studiemästare! 🏆";
     }
   };
 
@@ -148,7 +115,7 @@ export default function ProfileScreen() {
         headerShadowVisible: false,
         headerLeft: () => (
           <TouchableOpacity 
-            onPress={() => routerNav.back()}
+            onPress={() => router.back()}
             style={{ padding: 8, marginLeft: -8 }}
             activeOpacity={0.7}
           >
@@ -215,9 +182,34 @@ export default function ProfileScreen() {
           </View>
         </LinearGradient>
 
+        {/* Level Card */}
+        <View style={styles.levelSection}>
+          <LevelCard
+            currentLevel={currentLevel}
+            xpProgress={xpProgress}
+            totalXp={totalXp}
+            streak={streak}
+            onPress={() => router.push('/achievements')}
+          />
+        </View>
+
         {/* Quick Stats Grid */}
         <View style={styles.statsContainer}>
           <View style={styles.statsGrid}>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIconCircle, { backgroundColor: TIER_COLORS[currentLevel.tier] + '15' }]}>
+                <Zap size={24} color={TIER_COLORS[currentLevel.tier]} />
+              </View>
+              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{formatXp(totalXp)}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Total XP</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.statIconCircle, { backgroundColor: theme.colors.warning + '15' }]}>
+                <Flame size={24} color={theme.colors.warning} />
+              </View>
+              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{streak}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Streak</Text>
+            </View>
             <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
               <View style={[styles.statIconCircle, { backgroundColor: theme.colors.primary + '15' }]}>
                 <BookOpen size={24} color={theme.colors.primary} />
@@ -226,28 +218,97 @@ export default function ProfileScreen() {
               <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Kurser</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-              <View style={[styles.statIconCircle, { backgroundColor: theme.colors.secondary + '15' }]}>
-                <Target size={24} color={theme.colors.secondary} />
-              </View>
-              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{activeCourses}</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Aktiva</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-              <View style={[styles.statIconCircle, { backgroundColor: theme.colors.warning + '15' }]}>
-                <Clock size={24} color={theme.colors.warning} />
+              <View style={[styles.statIconCircle, { backgroundColor: theme.colors.success + '15' }]}>
+                <Clock size={24} color={theme.colors.success} />
               </View>
               <Text style={[styles.statNumber, { color: theme.colors.text }]}>{totalStudyTime}</Text>
               <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Minuter</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-              <View style={[styles.statIconCircle, { backgroundColor: theme.colors.success + '15' }]}>
-                <TrendingUp size={24} color={theme.colors.success} />
-              </View>
-              <Text style={[styles.statNumber, { color: theme.colors.text }]}>{averageProgress}%</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Genomsnitt</Text>
-            </View>
           </View>
         </View>
+
+        {/* Daily Challenges Preview */}
+        {dailyChallenges.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dagens utmaningar</Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/home')}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.challengesPreview}>
+              {dailyChallenges.slice(0, 3).map((challenge, index) => (
+                <View
+                  key={challenge.id}
+                  style={[
+                    styles.challengeItem,
+                    { backgroundColor: theme.colors.card },
+                    challenge.isCompleted && { borderColor: theme.colors.success, borderWidth: 1 },
+                  ]}
+                >
+                  <Text style={styles.challengeEmoji}>{challenge.emoji}</Text>
+                  <View style={styles.challengeInfo}>
+                    <Text style={[styles.challengeTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                      {challenge.title}
+                    </Text>
+                    <View style={styles.challengeProgressRow}>
+                      <View style={[styles.challengeProgressTrack, { backgroundColor: theme.colors.borderLight }]}>
+                        <View
+                          style={[
+                            styles.challengeProgressFill,
+                            {
+                              width: `${Math.min(100, (challenge.currentProgress / challenge.targetValue) * 100)}%`,
+                              backgroundColor: challenge.isCompleted ? theme.colors.success : theme.colors.primary,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={[styles.challengeXp, { color: theme.colors.textSecondary }]}>
+                        +{challenge.xpReward} XP
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Achievements Preview */}
+        {achievements.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                Prestationer
+                {unclaimedAchievements > 0 && (
+                  <Text style={{ color: theme.colors.primary }}> ({unclaimedAchievements} nya)</Text>
+                )}
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/achievements')}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.achievementsScroll}>
+              {achievements
+                .filter(a => a.isUnlocked)
+                .slice(0, 6)
+                .map((achievement) => (
+                  <View
+                    key={achievement.id}
+                    style={[
+                      styles.achievementBadge,
+                      { backgroundColor: RARITY_COLORS[achievement.rarity] + '20', borderColor: RARITY_COLORS[achievement.rarity] },
+                    ]}
+                  >
+                    <Text style={styles.achievementIcon}>{achievement.icon}</Text>
+                    <Text style={[styles.achievementTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                      {achievement.title}
+                    </Text>
+                  </View>
+                ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Study Goals */}
         {user.purpose && (
@@ -486,10 +547,86 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
   },
-  statsContainer: {
+  levelSection: {
     paddingHorizontal: 20,
     marginTop: -32,
     marginBottom: 24,
+  },
+  statsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  challengesPreview: {
+    gap: 10,
+  },
+  challengeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 14,
+    gap: 12,
+  },
+  challengeEmoji: {
+    fontSize: 24,
+  },
+  challengeInfo: {
+    flex: 1,
+  },
+  challengeTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  challengeProgressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  challengeProgressTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  challengeProgressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  challengeXp: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  achievementsScroll: {
+    marginHorizontal: -20,
+    paddingHorizontal: 20,
+  },
+  achievementBadge: {
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 16,
+    marginRight: 12,
+    borderWidth: 1,
+    minWidth: 80,
+  },
+  achievementIcon: {
+    fontSize: 28,
+    marginBottom: 6,
+  },
+  achievementTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    maxWidth: 70,
   },
   statIconCircle: {
     width: 48,

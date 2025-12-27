@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,13 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Animated,
+  RefreshControl
 } from 'react-native';
-import { useLocalSearchParams, router, Stack } from 'expo-router';
+import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import { 
   BookOpen, 
@@ -18,101 +21,68 @@ import {
   CheckCircle,
   Play,
   Target,
-  ArrowLeft,
-  ArrowRight
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Award
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import type { Database } from '@/lib/database.types';
 
 type CourseLesson = Database['public']['Tables']['course_lessons']['Row'];
 type UserLessonProgress = Database['public']['Tables']['user_lesson_progress']['Row'];
 type CourseExercise = Database['public']['Tables']['course_exercises']['Row'];
+type CourseModule = Database['public']['Tables']['course_modules']['Row'];
+type Course = Database['public']['Tables']['courses']['Row'];
+
+interface LessonWithRelations extends CourseLesson {
+  module?: CourseModule;
+  course?: Course;
+}
+
+const getCourseStyle = (subject: string) => {
+  const styles: Record<string, { gradient: string[]; primaryColor: string }> = {
+    'Matematik': { gradient: ['#3B82F6', '#2563EB'], primaryColor: '#3B82F6' },
+    'Svenska': { gradient: ['#EC4899', '#DB2777'], primaryColor: '#EC4899' },
+    'Engelska': { gradient: ['#10B981', '#059669'], primaryColor: '#10B981' },
+    'Biologi': { gradient: ['#14B8A6', '#0D9488'], primaryColor: '#14B8A6' },
+    'Fysik': { gradient: ['#F59E0B', '#D97706'], primaryColor: '#F59E0B' },
+    'Kemi': { gradient: ['#8B5CF6', '#7C3AED'], primaryColor: '#8B5CF6' },
+    'Historia': { gradient: ['#F97316', '#EA580C'], primaryColor: '#F97316' },
+    'default': { gradient: ['#6366F1', '#4F46E5'], primaryColor: '#6366F1' }
+  };
+  return styles[subject] || styles.default;
+};
 
 export default function LessonDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-  const [lesson, setLesson] = useState<CourseLesson | null>(null);
+  const { theme } = useTheme();
+  const [lesson, setLesson] = useState<LessonWithRelations | null>(null);
   const [progress, setProgress] = useState<UserLessonProgress | null>(null);
   const [exercises, setExercises] = useState<CourseExercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [startTime] = useState(new Date());
+  const [readingProgress, setReadingProgress] = useState(0);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [nextLesson, setNextLesson] = useState<CourseLesson | null>(null);
+  
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  useEffect(() => {
-    if (id && user?.id) {
-      loadLessonData();
-    }
-  }, [id, user?.id]);
-
-  const loadLessonData = async () => {
-    try {
-      setIsLoading(true);
-      console.log('Loading lesson data for ID:', id);
-
-      // Load lesson details
-      const { data: lessonData, error: lessonError } = await supabase
-        .from('course_lessons')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (lessonError) {
-        console.error('Error loading lesson:', lessonError);
-        Alert.alert('Fel', 'Kunde inte ladda lektionen');
-        return;
-      }
-
-      setLesson(lessonData);
-
-      // Load user progress
-      const { data: progressData, error: progressError } = await supabase
-        .from('user_lesson_progress')
-        .select('*')
-        .eq('lesson_id', id)
-        .eq('user_id', user?.id || '')
-        .single();
-
-      if (progressError && progressError.code !== 'PGRST116') {
-        console.error('Error loading progress:', progressError);
-      } else if (progressData) {
-        setProgress(progressData);
-      }
-
-      // Load exercises
-      const { data: exercisesData, error: exercisesError } = await supabase
-        .from('course_exercises')
-        .select('*')
-        .eq('lesson_id', id)
-        .eq('is_published', true);
-
-      if (exercisesError) {
-        console.error('Error loading exercises:', exercisesError);
-      } else {
-        setExercises(exercisesData || []);
-      }
-
-      // Mark lesson as started if not already
-      if (!progressData) {
-        await markLessonStarted();
-      }
-
-    } catch (error) {
-      console.error('Error in loadLessonData:', error);
-      Alert.alert('Fel', 'Ett oväntat fel inträffade');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const markLessonStarted = async () => {
-    if (!lesson || !user?.id) return;
+  const markLessonStarted = useCallback(async (lessonToMark: LessonWithRelations) => {
+    if (!lessonToMark || !user?.id) return;
 
     try {
       const { data, error } = await supabase
         .from('user_lesson_progress')
         .upsert({
           user_id: user.id,
-          lesson_id: lesson.id,
-          course_id: lesson.course_id,
+          lesson_id: lessonToMark.id,
+          course_id: lessonToMark.course_id,
           status: 'in_progress',
           progress_percentage: 0,
           time_spent_minutes: 0,
@@ -132,11 +102,160 @@ export default function LessonDetailScreen() {
     } catch (error) {
       console.error('Error in markLessonStarted:', error);
     }
+  }, [user?.id]);
+
+  const loadLessonData = useCallback(async (showRefresh = false) => {
+    try {
+      if (showRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+      console.log('Loading lesson data for ID:', id);
+
+      const { data: lessonData, error: lessonError } = await supabase
+        .from('course_lessons')
+        .select(`
+          *,
+          course_modules!inner (
+            id,
+            title,
+            description,
+            course_id,
+            order_index,
+            estimated_hours
+          )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (lessonError) {
+        console.error('Error loading lesson:', lessonError);
+        Alert.alert('Fel', 'Kunde inte ladda lektionen');
+        return;
+      }
+
+      const enrichedLesson: LessonWithRelations = {
+        ...lessonData,
+        module: Array.isArray(lessonData.course_modules) 
+          ? lessonData.course_modules[0] 
+          : lessonData.course_modules
+      };
+
+      if (enrichedLesson.module?.course_id) {
+        const { data: courseData } = await supabase
+          .from('courses')
+          .select('*')
+          .eq('id', enrichedLesson.module.course_id)
+          .single();
+        
+        if (courseData) {
+          enrichedLesson.course = courseData;
+        }
+      }
+
+      setLesson(enrichedLesson);
+
+      // Load user progress
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_lesson_progress')
+        .select('*')
+        .eq('lesson_id', id)
+        .eq('user_id', user?.id || '')
+        .single();
+
+      if (progressError && progressError.code !== 'PGRST116') {
+        console.error('Error loading progress:', progressError);
+      } else if (progressData) {
+        setProgress(progressData);
+      }
+
+      const { data: exercisesData, error: exercisesError } = await supabase
+        .from('course_exercises')
+        .select('*')
+        .eq('lesson_id', id)
+        .eq('is_published', true);
+
+      if (exercisesError) {
+        console.error('Error loading exercises:', exercisesError);
+      } else {
+        setExercises(exercisesData || []);
+      }
+
+      if (enrichedLesson.module_id) {
+        const { data: moduleLessons } = await supabase
+          .from('course_lessons')
+          .select('*')
+          .eq('module_id', enrichedLesson.module_id)
+          .eq('is_published', true)
+          .order('order_index');
+        
+        if (moduleLessons) {
+          const currentIndex = moduleLessons.findIndex(l => l.id === id);
+          if (currentIndex < moduleLessons.length - 1) {
+            setNextLesson(moduleLessons[currentIndex + 1]);
+          }
+        }
+      }
+
+      if (!progressData) {
+        await markLessonStarted(enrichedLesson);
+      }
+
+    } catch (error) {
+      console.error('Error in loadLessonData:', error);
+      Alert.alert('Fel', 'Ett oväntat fel inträffade');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [id, user?.id, markLessonStarted]);
+
+  useEffect(() => {
+    if (id && user?.id) {
+      loadLessonData();
+    }
+  }, [id, user?.id, loadLessonData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (id && user?.id) {
+        console.log('Lesson screen focused, reloading data');
+        loadLessonData();
+      }
+    }, [id, user?.id, loadLessonData])
+  );
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, [fadeAnim, slideAnim]);
+
+  const onRefresh = useCallback(() => {
+    loadLessonData(true);
+  }, [loadLessonData]);
+
+  const handleScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const scrollPercentage = (contentOffset.y / (contentSize.height - layoutMeasurement.height)) * 100;
+    setReadingProgress(Math.min(100, Math.max(0, scrollPercentage)));
   };
 
   const markLessonCompleted = async () => {
-    if (!lesson || !user?.id) return;
+    if (!lesson || !user?.id || isCompleting) return;
 
+    setIsCompleting(true);
+    
     try {
       const timeSpent = Math.round((new Date().getTime() - startTime.getTime()) / (1000 * 60));
       
@@ -162,13 +281,14 @@ export default function LessonDetailScreen() {
 
       if (error) {
         console.error('❌ Error marking lesson as completed:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
         Alert.alert('Fel', 'Kunde inte markera lektionen som slutförd');
+        setIsCompleting(false);
         return;
       }
       
       console.log('✅ Lesson progress saved:', data);
       setProgress(data);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
       // Update user_courses progress
       try {
@@ -215,14 +335,45 @@ export default function LessonDetailScreen() {
         console.error('❌ Error updating course progress:', courseProgressError);
       }
       
-      Alert.alert('Grattis! 🎉', 'Du har slutfört lektionen!');
+      Alert.alert(
+        'Bra jobbat! 🎉',
+        'Du har slutfört lektionen!',
+        [
+          {
+            text: nextLesson ? 'Fortsätt till nästa' : 'OK',
+            onPress: () => {
+              if (nextLesson) {
+                router.replace(`/lesson/${nextLesson.id}` as never);
+              }
+            }
+          },
+          {
+            text: 'Stanna kvar',
+            style: 'cancel'
+          }
+        ]
+      );
     } catch (error) {
       console.error('❌ Error in markLessonCompleted:', error);
+    } finally {
+      setIsCompleting(false);
     }
   };
 
   const navigateToExercise = (exercise: CourseExercise) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/quiz/${exercise.id}` as never);
+  };
+
+  const getLessonTypeIcon = () => {
+    if (!lesson) return BookOpen;
+    switch (lesson.lesson_type) {
+      case 'video': return Play;
+      case 'reading': return BookOpen;
+      case 'exercise': return Target;
+      case 'quiz': return Award;
+      default: return BookOpen;
+    }
   };
 
   const getDifficultyColor = (level: string) => {
@@ -234,22 +385,13 @@ export default function LessonDetailScreen() {
     }
   };
 
-  const getLessonTypeIcon = (type: string) => {
-    switch (type) {
-      case 'video': return Play;
-      case 'reading': return BookOpen;
-      case 'exercise': return Target;
-      default: return BookOpen;
-    }
-  };
-
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: 'Laddar...', headerShown: true }} />
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <Stack.Screen options={{ title: 'Laddar...', headerShown: false }} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4F46E5" />
-          <Text style={styles.loadingText}>Laddar lektion...</Text>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Laddar lektion...</Text>
         </View>
       </SafeAreaView>
     );
@@ -257,12 +399,16 @@ export default function LessonDetailScreen() {
 
   if (!lesson) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: 'Lektion ej hittad', headerShown: true }} />
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <Stack.Screen options={{ title: 'Lektion ej hittad', headerShown: false }} />
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Lektionen kunde inte hittas</Text>
+          <FileText size={64} color={theme.colors.textMuted} />
+          <Text style={[styles.errorTitle, { color: theme.colors.text }]}>Lektionen hittades inte</Text>
+          <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>
+            Den lektion du söker finns inte längre.
+          </Text>
           <TouchableOpacity 
-            style={styles.backButton}
+            style={[styles.backButton, { backgroundColor: theme.colors.primary }]}
             onPress={() => router.back()}
           >
             <Text style={styles.backButtonText}>Gå tillbaka</Text>
@@ -272,24 +418,47 @@ export default function LessonDetailScreen() {
     );
   }
 
-  const LessonIcon = getLessonTypeIcon(lesson.lesson_type);
   const isCompleted = progress?.status === 'completed';
+  const courseStyle = lesson.course ? getCourseStyle(lesson.course.subject) : getCourseStyle('default');
+  const LessonIcon = getLessonTypeIcon();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Stack.Screen 
-        options={{ 
-          title: lesson.title,
-          headerShown: true,
-          headerStyle: { backgroundColor: '#4F46E5' },
-          headerTintColor: 'white'
-        }} 
-      />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Stack.Screen options={{ headerShown: false }} />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Lesson Header */}
+      <View style={styles.readingProgressContainer}>
+        <View 
+          style={[
+            styles.readingProgressBar, 
+            { 
+              width: `${readingProgress}%`,
+              backgroundColor: courseStyle.primaryColor 
+            }
+          ]} 
+        />
+      </View>
+
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
+      >
+        <Animated.View style={{
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }]
+        }}>
         <LinearGradient
-          colors={['#4F46E5', '#7C3AED']}
+          colors={courseStyle.gradient as any}
           style={styles.lessonHeader}
         >
           <View style={styles.lessonTypeContainer}>
@@ -350,62 +519,90 @@ export default function LessonDetailScreen() {
         {/* Lesson Content */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📖 Innehåll</Text>
-          <View style={styles.contentContainer}>
+          <View style={[styles.contentContainer, { backgroundColor: theme.colors.card }]}>
             {lesson.content ? (
-              <Text style={styles.contentText}>{lesson.content}</Text>
+              <Text style={[styles.contentText, { color: theme.colors.text }]}>{lesson.content}</Text>
             ) : (
-              <Text style={styles.noContentText}>
+              <Text style={[styles.noContentText, { color: theme.colors.textMuted }]}>
                 Inget innehåll tillgängligt för denna lektion.
               </Text>
             )}
           </View>
         </View>
 
-        {/* Exercises */}
         {exercises.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>✏️ Övningar</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>✏️ Övningar</Text>
             {exercises.map((exercise) => (
               <TouchableOpacity
                 key={exercise.id}
-                style={styles.exerciseCard}
+                style={[styles.exerciseCard, { backgroundColor: theme.colors.card }]}
                 onPress={() => navigateToExercise(exercise)}
               >
                 <View style={styles.exerciseInfo}>
-                  <Text style={styles.exerciseTitle}>{exercise.title}</Text>
-                  <Text style={styles.exerciseDescription}>{exercise.description}</Text>
+                  <Text style={[styles.exerciseTitle, { color: theme.colors.text }]}>{exercise.title}</Text>
+                  <Text style={[styles.exerciseDescription, { color: theme.colors.textSecondary }]}>{exercise.description}</Text>
                   <View style={styles.exerciseMetadata}>
-                    <Text style={styles.exercisePoints}>{exercise.points} poäng</Text>
+                    <Text style={[styles.exercisePoints, { color: courseStyle.primaryColor }]}>{exercise.points} poäng</Text>
                     {exercise.time_limit_minutes && (
-                      <Text style={styles.exerciseTime}>
+                      <Text style={[styles.exerciseTime, { color: theme.colors.textMuted }]}>
                         {exercise.time_limit_minutes} min
                       </Text>
                     )}
                   </View>
                 </View>
-                <ArrowRight size={20} color="#9CA3AF" />
+                <ChevronRight size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
             ))}
           </View>
         )}
 
-        {/* Action Button */}
         <View style={styles.actionContainer}>
           {!isCompleted ? (
             <TouchableOpacity
-              style={styles.completeButton}
+              style={[styles.completeButton, { backgroundColor: theme.colors.success }]}
               onPress={markLessonCompleted}
+              disabled={isCompleting}
+              activeOpacity={0.8}
             >
               <CheckCircle size={20} color="white" />
-              <Text style={styles.completeButtonText}>Markera som slutförd</Text>
+              <Text style={styles.completeButtonText}>
+                {isCompleting ? 'Sparar...' : 'Markera som slutförd'}
+              </Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.completedContainer}>
-              <CheckCircle size={24} color="#10B981" />
-              <Text style={styles.completedMessage}>Lektion slutförd!</Text>
+              <CheckCircle size={24} color={theme.colors.success} />
+              <Text style={[styles.completedMessage, { color: theme.colors.success }]}>Lektion slutförd!</Text>
+            </View>
+          )}
+
+          {(nextLesson || lesson.module) && (
+            <View style={styles.navigationButtons}>
+              {lesson.module && (
+                <TouchableOpacity
+                  style={[styles.navButton, { backgroundColor: theme.colors.surface }]}
+                  onPress={() => router.back()}
+                >
+                  <ChevronLeft size={20} color={theme.colors.textSecondary} />
+                  <Text style={[styles.navButtonText, { color: theme.colors.textSecondary }]}>
+                    Tillbaka till modul
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {nextLesson && (
+                <TouchableOpacity
+                  style={[styles.navButton, styles.navButtonPrimary, { backgroundColor: courseStyle.primaryColor }]}
+                  onPress={() => router.replace(`/lesson/${nextLesson.id}` as never)}
+                >
+                  <Text style={styles.navButtonTextWhite}>Nästa lektion</Text>
+                  <ChevronRight size={20} color="white" />
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -414,7 +611,18 @@ export default function LessonDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+  },
+  readingProgressContainer: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    zIndex: 100,
+  },
+  readingProgressBar: {
+    height: '100%',
   },
   loadingContainer: {
     flex: 1,
@@ -429,21 +637,26 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    padding: 32,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginTop: 16,
+    marginBottom: 8,
   },
   errorText: {
-    fontSize: 18,
-    color: '#EF4444',
-    marginBottom: 20,
-    textAlign: 'center',
+    fontSize: 15,
+    textAlign: 'center' as const,
+    lineHeight: 22,
+    marginBottom: 24,
   },
   backButton: {
-    backgroundColor: '#4F46E5',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   backButtonText: {
     color: 'white',
@@ -526,12 +739,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontWeight: '700' as const,
     marginBottom: 12,
   },
   objectivesContainer: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -547,18 +758,15 @@ const styles = StyleSheet.create({
   },
   objectiveBullet: {
     fontSize: 16,
-    color: '#4F46E5',
     marginRight: 8,
-    fontWeight: 'bold',
+    fontWeight: '700' as const,
   },
   objectiveText: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
     lineHeight: 20,
   },
   contentContainer: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -569,22 +777,19 @@ const styles = StyleSheet.create({
   },
   contentText: {
     fontSize: 16,
-    color: '#374151',
     lineHeight: 24,
   },
   noContentText: {
     fontSize: 16,
-    color: '#9CA3AF',
-    fontStyle: 'italic',
-    textAlign: 'center',
+    fontStyle: 'italic' as const,
+    textAlign: 'center' as const,
   },
   exerciseCard: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -596,57 +801,87 @@ const styles = StyleSheet.create({
   },
   exerciseTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontWeight: '600' as const,
     marginBottom: 4,
   },
   exerciseDescription: {
     fontSize: 14,
-    color: '#6B7280',
     marginBottom: 8,
   },
   exerciseMetadata: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: 12,
   },
   exercisePoints: {
     fontSize: 12,
-    color: '#4F46E5',
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   exerciseTime: {
     fontSize: 12,
-    color: '#9CA3AF',
   },
   actionContainer: {
     paddingHorizontal: 20,
     paddingBottom: 32,
+    gap: 16,
   },
   completeButton: {
-    backgroundColor: '#10B981',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   completeButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   completedContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     paddingVertical: 16,
     gap: 8,
   },
   completedMessage: {
     fontSize: 16,
-    color: '#10B981',
-    fontWeight: '600',
+    fontWeight: '600' as const,
+  },
+  navigationButtons: {
+    flexDirection: 'row' as const,
+    gap: 12,
+  },
+  navButton: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  navButtonPrimary: {
+    shadowOpacity: 0.15,
+  },
+  navButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  navButtonTextWhite: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: 'white',
   },
 });

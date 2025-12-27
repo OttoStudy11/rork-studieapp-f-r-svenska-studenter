@@ -621,7 +621,7 @@ export default function FriendsScreen() {
                             <View style={styles.friendLeft}>
                               {friend.avatar ? (
                                 <View style={styles.avatarWrap}>
-                                  <Avatar config={friend.avatar} size={48} />
+                                  <Avatar config={friend.avatar} size={56} />
                                 </View>
                               ) : (
                                 <View style={[styles.fallbackAvatar, { backgroundColor: colorScheme.bg }]}> 
@@ -707,7 +707,7 @@ export default function FriendsScreen() {
                           <View style={styles.requestLeft}>
                             {request.avatar ? (
                               <View style={styles.avatarWrap}>
-                                <Avatar config={request.avatar} size={48} />
+                                <Avatar config={request.avatar} size={56} />
                               </View>
                             ) : (
                               <View style={[styles.fallbackAvatar, { backgroundColor: colorScheme.bg }]}> 
@@ -941,7 +941,7 @@ export default function FriendsScreen() {
                       </View>
                       <View style={styles.leaderboardUserInfo}>
                         {entry.avatar ? (
-                          <Avatar config={entry.avatar} size={40} />
+                          <Avatar config={entry.avatar} size={48} />
                         ) : (
                           <View style={[styles.leaderboardAvatar, { backgroundColor: theme.colors.primary + '15' }]}>
                             <User size={20} color={theme.colors.primary} />
@@ -1001,7 +1001,7 @@ export default function FriendsScreen() {
                       </View>
                       <View style={styles.leaderboardUserInfo}>
                         {entry.avatar ? (
-                          <Avatar config={entry.avatar} size={40} />
+                          <Avatar config={entry.avatar} size={48} />
                         ) : (
                           <View style={[styles.leaderboardAvatar, { backgroundColor: theme.colors.primary + '15' }]}>
                             <User size={20} color={theme.colors.primary} />
@@ -1319,22 +1319,22 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   avatarWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     overflow: 'hidden',
-    marginRight: 12,
+    marginRight: 14,
   },
   fallbackAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
   fallbackAvatarText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
   },
   friendInfo: {
@@ -1342,13 +1342,15 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   friendName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     letterSpacing: -0.3,
+    marginBottom: 1,
   },
   friendUsername: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '600',
+    marginBottom: 1,
   },
   programRow: {
     flexDirection: 'row',
@@ -1536,20 +1538,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   leaderboardAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
   userDetails: {
     flex: 1,
   },
   leaderboardUserName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 3,
+    letterSpacing: -0.3,
   },
   leaderboardUserProgram: {
     fontSize: 12,

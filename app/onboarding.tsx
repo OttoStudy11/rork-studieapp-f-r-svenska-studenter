@@ -824,7 +824,7 @@ export default function OnboardingScreen() {
       case 3:
         return (
           <View style={styles.stepContainer}>
-            <BookOpen size={60} color="white" style={styles.icon} />
+            <GraduationCap size={72} color="white" style={styles.icon} />
             <Text style={styles.title}>Välj studienivå</Text>
             <Text style={styles.subtitle}>Studerar du på gymnasiet eller högskola?</Text>
             
@@ -836,14 +836,22 @@ export default function OnboardingScreen() {
                 ]}
                 onPress={() => setData({ ...data, studyLevel: 'gymnasie' })}
               >
-                <GraduationCap size={40} color={data.studyLevel === 'gymnasie' ? '#10B981' : 'white'} />
+                <View style={[
+                  styles.optionIconContainer,
+                  data.studyLevel === 'gymnasie' && { backgroundColor: 'rgba(16, 185, 129, 0.15)' }
+                ]}>
+                  <GraduationCap size={48} color={data.studyLevel === 'gymnasie' ? '#10B981' : 'white'} />
+                </View>
                 <Text style={[
                   styles.optionTitle,
                   data.studyLevel === 'gymnasie' && styles.selectedOptionTitle
                 ]}>
                   Gymnasiet
                 </Text>
-                <Text style={styles.optionDescription}>
+                <Text style={[
+                  styles.optionDescription,
+                  data.studyLevel === 'gymnasie' && { color: 'rgba(255, 255, 255, 0.95)' }
+                ]}>
                   Välj ditt program och årskurs
                 </Text>
               </AnimatedPressable>
@@ -855,18 +863,99 @@ export default function OnboardingScreen() {
                 ]}
                 onPress={() => setData({ ...data, studyLevel: 'högskola' })}
               >
-                <GraduationCap size={40} color={data.studyLevel === 'högskola' ? '#10B981' : 'white'} />
+                <View style={[
+                  styles.optionIconContainer,
+                  data.studyLevel === 'högskola' && { backgroundColor: 'rgba(16, 185, 129, 0.15)' }
+                ]}>
+                  <BookOpen size={48} color={data.studyLevel === 'högskola' ? '#10B981' : 'white'} />
+                </View>
                 <Text style={[
                   styles.optionTitle,
                   data.studyLevel === 'högskola' && styles.selectedOptionTitle
                 ]}>
                   Högskola/Universitet
                 </Text>
-                <Text style={styles.optionDescription}>
+                <Text style={[
+                  styles.optionDescription,
+                  data.studyLevel === 'högskola' && { color: 'rgba(255, 255, 255, 0.95)' }
+                ]}>
                   Välj ditt program och termin
                 </Text>
               </AnimatedPressable>
             </View>
+
+            {data.studyLevel === 'gymnasie' && (
+              <View style={styles.programYearSelector}>
+                <Text style={styles.programYearTitle}>Välj program och årskurs</Text>
+                
+                <ScrollView style={styles.programScroll} showsVerticalScrollIndicator={false}>
+                  <View style={styles.programGrid}>
+                    {[
+                      { id: 'na', name: 'Naturvetenskap', emoji: '🔬', color: '#10B981' },
+                      { id: 'te', name: 'Teknik', emoji: '⚙️', color: '#F59E0B' },
+                      { id: 'sa', name: 'Samhällsvetenskap', emoji: '🏛️', color: '#3B82F6' },
+                      { id: 'ek', name: 'Ekonomi', emoji: '💼', color: '#8B5CF6' },
+                      { id: 'es', name: 'Estetiska', emoji: '🎨', color: '#EC4899' },
+                      { id: 'hu', name: 'Humanistiska', emoji: '📚', color: '#06B6D4' },
+                    ].map(program => (
+                      <AnimatedPressable
+                        key={program.id}
+                        style={[
+                          styles.programMiniCard,
+                          data.gymnasiumProgram?.id === program.id && {
+                            backgroundColor: program.color + '25',
+                            borderColor: program.color,
+                            borderWidth: 2.5
+                          }
+                        ]}
+                        onPress={() => setData({ 
+                          ...data, 
+                          gymnasiumProgram: { 
+                            id: program.id, 
+                            name: program.name + 'programmet', 
+                            abbreviation: program.id.toUpperCase(), 
+                            category: 'högskoleförberedande' 
+                          } 
+                        })}
+                      >
+                        <Text style={styles.programMiniEmoji}>{program.emoji}</Text>
+                        <Text style={[
+                          styles.programMiniName,
+                          data.gymnasiumProgram?.id === program.id && { color: program.color, fontWeight: '700' as const }
+                        ]}>
+                          {program.name}
+                        </Text>
+                      </AnimatedPressable>
+                    ))}
+                  </View>
+                </ScrollView>
+
+                {data.gymnasiumProgram && (
+                  <View style={styles.yearSelector}>
+                    <Text style={styles.yearSelectorTitle}>Välj årskurs</Text>
+                    <View style={styles.yearButtons}>
+                      {[1, 2, 3].map(year => (
+                        <AnimatedPressable
+                          key={year}
+                          style={[
+                            styles.yearButton,
+                            data.year === year && styles.selectedYearButton
+                          ]}
+                          onPress={() => setData({ ...data, year: year as 1 | 2 | 3 })}
+                        >
+                          <Text style={[
+                            styles.yearButtonText,
+                            data.year === year && styles.selectedYearButtonText
+                          ]}>
+                            År {year}
+                          </Text>
+                        </AnimatedPressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         );
 
@@ -1857,35 +1946,136 @@ const styles = StyleSheet.create({
   },
   optionsContainer: {
     width: '100%',
-    gap: 16,
-    marginTop: 24,
+    gap: 20,
+    marginTop: 32,
   },
   optionCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 20,
-    padding: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 24,
+    padding: 28,
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 2.5,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
   selectedOptionCard: {
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
     borderColor: '#10B981',
+    borderWidth: 3,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  optionIconContainer: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   optionTitle: {
-    fontSize: 22,
-    fontWeight: '700' as const,
+    fontSize: 24,
+    fontWeight: '800' as const,
     color: 'white',
-    marginTop: 16,
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   selectedOptionTitle: {
     color: '#1E293B',
   },
   optionDescription: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
+    lineHeight: 22,
+  },
+  programYearSelector: {
+    width: '100%',
+    marginTop: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 20,
+  },
+  programYearTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#1E293B',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  programScroll: {
+    maxHeight: 180,
+  },
+  programGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'center',
+  },
+  programMiniCard: {
+    backgroundColor: 'rgba(14, 165, 233, 0.08)',
+    borderRadius: 14,
+    padding: 14,
+    alignItems: 'center',
+    width: '30%',
+    minWidth: 95,
+    borderWidth: 2,
+    borderColor: 'rgba(14, 165, 233, 0.2)',
+  },
+  programMiniEmoji: {
+    fontSize: 32,
+    marginBottom: 6,
+  },
+  programMiniName: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#1E293B',
+    textAlign: 'center',
+  },
+  yearSelector: {
+    marginTop: 20,
+  },
+  yearSelectorTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#1E293B',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  yearButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  yearButton: {
+    flex: 1,
+    backgroundColor: 'rgba(14, 165, 233, 0.08)',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(14, 165, 233, 0.2)',
+  },
+  selectedYearButton: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  yearButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#1E293B',
+  },
+  selectedYearButtonText: {
+    color: 'white',
+    fontWeight: '700' as const,
   },
   searchContainer: {
     width: '100%',

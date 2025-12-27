@@ -1,7 +1,6 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useCallback, useEffect, useMemo } from 'react';
-import { useStudy } from '@/contexts/StudyContext';
-import { usePoints } from '@/contexts/PointsContext';
+import { useGamification } from '@/contexts/GamificationContext';
 
 export type ChallengePeriod = 'daily' | 'weekly';
 
@@ -28,135 +27,44 @@ interface ChallengesContextValue {
   refresh: () => void;
 }
 
-const startOfDayKey = (date: Date) => {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
-};
-
-const startOfWeekKey = (date: Date) => {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day;
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
-};
-
 export const [ChallengesProvider, useChallenges] = createContextHook<ChallengesContextValue>(() => {
-  const { pomodoroSessions } = useStudy();
-  const { addPoints, claimedChallengeIds, markChallengeClaimed } = usePoints();
+  const gamification = useGamification();
 
   const refresh = useCallback(() => {
-    // Derived from pomodoroSessions + claimedChallengeIds; kept for a stable API.
-  }, []);
+    gamification.refreshAll();
+  }, [gamification]);
 
-  const computed = useMemo(() => {
-    const now = new Date();
-    const todayKey = startOfDayKey(now);
-    const weekKey = startOfWeekKey(now);
+  const challenges = useMemo(() => {
+    return gamification.dailyChallenges.map(c => ({
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      emoji: c.emoji,
+      period: 'daily' as ChallengePeriod,
+      rewardPoints: c.xpReward,
+      target: c.targetValue,
+      current: c.currentProgress,
+      percent: c.targetValue > 0 ? Math.min(100, (c.currentProgress / c.targetValue) * 100) : 0,
+      status: c.isClaimed ? 'claimed' : c.isCompleted ? 'completed' : 'available' as ChallengeStatus
+    }));
+  }, [gamification.dailyChallenges]);
 
-    const sessionsToday = pomodoroSessions.filter((s) => {
-      const end = new Date(s.endTime);
-      return startOfDayKey(end) === todayKey;
-    });
-
-    const minutesToday = sessionsToday.reduce((sum, s) => sum + (Number.isFinite(s.duration) ? s.duration : 0), 0);
-
-    const sessionsThisWeek = pomodoroSessions.filter((s) => {
-      const end = new Date(s.endTime);
-      return startOfWeekKey(end) === weekKey;
-    });
-
-    const minutesThisWeek = sessionsThisWeek.reduce((sum, s) => sum + (Number.isFinite(s.duration) ? s.duration : 0), 0);
-
-    const make = (base: Omit<Challenge, 'current' | 'percent' | 'status'> & { current: number }) => {
-      const percent = base.target <= 0 ? 0 : Math.min(100, Math.max(0, (base.current / base.target) * 100));
-      const completed = base.current >= base.target;
-
-      const scopedId = base.period === 'daily'
-        ? `${base.id}:${todayKey}`
-        : `${base.id}:${weekKey}`;
-
-      const claimed = claimedChallengeIds.includes(scopedId);
-
-      const status: ChallengeStatus = claimed
-        ? 'claimed'
-        : completed
-          ? 'completed'
-          : 'available';
-
-      return {
-        ...base,
-        percent,
-        status,
-        id: scopedId,
-      };
-    };
-
-    const daily = [
-      make({
-        id: 'daily_focus_25',
-        title: 'Fokuspass',
-        description: 'Studera 25 minuter idag',
-        emoji: '⏱️',
-        period: 'daily',
-        rewardPoints: 15,
-        target: 25,
-        current: minutesToday,
-      }),
-      make({
-        id: 'daily_two_sessions',
-        title: 'Dubbelpass',
-        description: 'Gör 2 studiepass idag',
-        emoji: '🔥',
-        period: 'daily',
-        rewardPoints: 20,
-        target: 2,
-        current: sessionsToday.length,
-      }),
-    ];
-
-    const weekly = [
-      make({
-        id: 'weekly_300',
-        title: 'Veckorutin',
-        description: 'Studera 300 minuter denna vecka',
-        emoji: '📈',
-        period: 'weekly',
-        rewardPoints: 60,
-        target: 300,
-        current: minutesThisWeek,
-      }),
-    ];
-
-    return { all: [...daily, ...weekly], daily, weekly };
-  }, [claimedChallengeIds, pomodoroSessions]);
+  const todaysChallenges = useMemo(() => challenges, [challenges]);
+  const weeklyChallenges = useMemo(() => [], []);
 
   const claimChallenge = useCallback(async (challengeId: string) => {
-    const challenge = computed.all.find((c) => c.id === challengeId);
-    if (!challenge) return;
-    if (challenge.status !== 'completed') return;
-
-    await markChallengeClaimed(challengeId);
-    await addPoints(challenge.rewardPoints, {
-      type: 'challenge',
-      description: `Utmaning avklarad: ${challenge.title}`,
-      sourceId: challengeId,
-    });
-
-    refresh();
-  }, [addPoints, computed.all, markChallengeClaimed, refresh]);
+    await gamification.claimChallenge(challengeId);
+  }, [gamification]);
 
   useEffect(() => {
-    // Refresh is a stable function that doesn't trigger re-renders
+    // Auto-refresh on mount
   }, []);
 
   return useMemo(() => ({
-    challenges: computed.all,
-    todaysChallenges: computed.daily,
-    weeklyChallenges: computed.weekly,
+    challenges,
+    todaysChallenges,
+    weeklyChallenges,
     claimChallenge,
     refresh,
-  }), [claimChallenge, computed.all, computed.daily, computed.weekly, refresh]);
+  }), [challenges, todaysChallenges, weeklyChallenges, claimChallenge, refresh]);
 });

@@ -997,7 +997,10 @@ export default function OnboardingScreen() {
                         ]}>
                           {gymnasium.name}
                         </Text>
-                        <Text style={styles.selectionCardSubtitle}>
+                        <Text style={[
+                          styles.selectionCardSubtitle,
+                          data.gymnasium?.id === gymnasium.id && { color: '#059669', fontWeight: '600' as const }
+                        ]}>
                           {gymnasium.city} • {gymnasium.type}
                         </Text>
                       </View>
@@ -1012,19 +1015,25 @@ export default function OnboardingScreen() {
         } else {
           return (
             <View style={styles.stepContainer}>
-              <UniversityPicker
-                selectedUniversity={data.university}
-                selectedProgram={data.universityProgram}
-                selectedYear={data.universityYear}
-                onSelect={(university, program, year) => {
-                  setData({ 
-                    ...data, 
-                    university: university || null, 
-                    universityProgram: program || null, 
-                    universityYear: year || null 
-                  });
-                }}
-              />
+              <MapPin size={60} color="white" style={styles.icon} />
+              <Text style={styles.title}>Välj högskola och program</Text>
+              <Text style={styles.subtitle}>Välj din högskola, program och termin</Text>
+              
+              <View style={styles.universityPickerContainer}>
+                <UniversityPicker
+                  selectedUniversity={data.university}
+                  selectedProgram={data.universityProgram}
+                  selectedYear={data.universityYear}
+                  onSelect={(university, program, year) => {
+                    setData({ 
+                      ...data, 
+                      university: university || null, 
+                      universityProgram: program || null, 
+                      universityYear: year || null 
+                    });
+                  }}
+                />
+              </View>
             </View>
           );
         }
@@ -1177,8 +1186,14 @@ export default function OnboardingScreen() {
                     ]}>
                       {pace.title}
                     </Text>
-                    <Text style={styles.paceSubtitle}>{pace.subtitle}</Text>
-                    <Text style={styles.paceDescription}>{pace.description}</Text>
+                    <Text style={[
+                      styles.paceSubtitle,
+                      data.learningPace === pace.id && { color: pace.color }
+                    ]}>{pace.subtitle}</Text>
+                    <Text style={[
+                      styles.paceDescription,
+                      data.learningPace === pace.id && { color: '#1E293B' }
+                    ]}>{pace.description}</Text>
                   </AnimatedPressable>
                 ))}
               </View>
@@ -1216,8 +1231,14 @@ export default function OnboardingScreen() {
                     ]}>
                       {pace.title}
                     </Text>
-                    <Text style={styles.paceSubtitle}>{pace.subtitle}</Text>
-                    <Text style={styles.paceDescription}>{pace.description}</Text>
+                    <Text style={[
+                      styles.paceSubtitle,
+                      data.learningPace === pace.id && { color: pace.color }
+                    ]}>{pace.subtitle}</Text>
+                    <Text style={[
+                      styles.paceDescription,
+                      data.learningPace === pace.id && { color: '#1E293B' }
+                    ]}>{pace.description}</Text>
                   </AnimatedPressable>
                 ))}
               </View>
@@ -2121,6 +2142,7 @@ const styles = StyleSheet.create({
   selectionCardSubtitle: {
     fontSize: 13,
     color: '#64748B',
+    fontWeight: '500' as const,
   },
   coursesList: {
     maxHeight: 400,
@@ -2169,8 +2191,8 @@ const styles = StyleSheet.create({
   },
   mandatoryText: {
     fontSize: 11,
-    color: '#D97706',
-    fontWeight: '600' as const,
+    color: '#92400E',
+    fontWeight: '700' as const,
   },
   goalsList: {
     maxHeight: 400,
@@ -2221,10 +2243,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748B',
     marginBottom: 8,
+    fontWeight: '600' as const,
   },
   paceDescription: {
     fontSize: 13,
-    color: '#64748B',
+    color: '#475569',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -2246,13 +2269,14 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
     color: '#1E293B',
     marginBottom: 4,
   },
   notificationDescription: {
     fontSize: 13,
     color: '#64748B',
+    fontWeight: '500' as const,
   },
   avatarContainer: {
     width: '100%',
@@ -2295,10 +2319,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#64748B',
     marginBottom: 6,
+    fontWeight: '600' as const,
   },
   summaryValue: {
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
     color: '#1E293B',
   },
   welcomeChecklistContainer: {
@@ -2364,6 +2389,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748B',
     lineHeight: 20,
+    fontWeight: '500' as const,
   },
   skipText: {
     fontSize: 13,
@@ -2404,5 +2430,9 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '500' as const,
     lineHeight: 20,
+  },
+  universityPickerContainer: {
+    width: '100%',
+    marginTop: 16,
   },
 });

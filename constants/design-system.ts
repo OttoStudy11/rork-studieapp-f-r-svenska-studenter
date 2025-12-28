@@ -1,6 +1,72 @@
 // Design System Constants
-// This file defines all spacing, typography, shadows, and other design tokens
+// This file defines all spacing, typography, shadows, colors, and other design tokens
 // used throughout the app for consistency
+
+// Color Palette
+export const COLORS = {
+  // Primary Colors
+  primary: '#6366F1',
+  primaryDark: '#4F46E5',
+  primaryLight: '#818CF8',
+  primaryGradientStart: '#6366F1',
+  primaryGradientEnd: '#8B5CF6',
+  
+  // Secondary Colors
+  secondary: '#F59E0B',
+  secondaryDark: '#D97706',
+  secondaryLight: '#FBBF24',
+  
+  // Neutral Colors - Dark Mode
+  backgroundDark: '#0F172A',
+  backgroundMedium: '#1A1F36',
+  backgroundLight: '#1E293B',
+  surfaceDark: '#1E293B',
+  surfaceMedium: '#334155',
+  surfaceLight: '#475569',
+  
+  // Text Colors
+  textPrimary: '#F1F5F9',
+  textSecondary: '#94A3B8',
+  textMuted: '#64748B',
+  textDisabled: '#475569',
+  
+  // Border Colors
+  border: '#334155',
+  borderLight: '#475569',
+  divider: '#1E293B',
+  
+  // Functional Colors
+  success: '#10B981',
+  successLight: '#34D399',
+  successDark: '#059669',
+  
+  warning: '#F59E0B',
+  warningLight: '#FBBF24',
+  warningDark: '#D97706',
+  
+  error: '#EF4444',
+  errorLight: '#F87171',
+  errorDark: '#DC2626',
+  
+  info: '#06B6D4',
+  infoLight: '#22D3EE',
+  infoDark: '#0891B2',
+  
+  // Difficulty Colors
+  easy: '#10B981',
+  medium: '#F59E0B',
+  hard: '#EF4444',
+  
+  // Special Colors
+  white: '#FFFFFF',
+  black: '#000000',
+  transparent: 'transparent',
+  
+  // Overlay Colors
+  overlay: 'rgba(0, 0, 0, 0.5)',
+  overlayLight: 'rgba(0, 0, 0, 0.3)',
+  overlayDark: 'rgba(0, 0, 0, 0.7)',
+} as const
 
 export const SPACING = {
   xs: 4,

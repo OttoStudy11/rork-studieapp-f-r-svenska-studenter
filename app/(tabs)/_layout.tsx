@@ -2,14 +2,14 @@ import { Tabs, useRouter, useSegments } from "expo-router";
 import React, { useRef } from "react";
 import { Home, BookOpen, Timer, Users, MessageCircle } from "lucide-react-native";
 import { Platform, PanResponder, Dimensions, View } from "react-native";
-import { useTheme } from "@/contexts/ThemeContext";
+import { COLORS, SPACING, ICON_SIZES } from "@/constants/design-system";
+import { t } from "@/constants/translations";
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const TAB_ROUTES = ['home', 'courses', 'timer', 'friends', 'ai-chat'];
 
 export default function TabLayout() {
-  const { theme, isDark } = useTheme();
   const router = useRouter();
   const segments = useSegments();
   const panResponder = useRef(
@@ -53,28 +53,28 @@ export default function TabLayout() {
     <View style={{ flex: 1 }} {...panResponder.panHandlers}>
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textMuted,
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textMuted,
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: COLORS.backgroundLight,
           borderTopWidth: 1,
-          borderTopColor: theme.colors.border,
-          paddingTop: 12,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
-          paddingHorizontal: 20,
-          height: Platform.OS === 'ios' ? 95 : 85,
-          shadowColor: theme.colors.shadow,
+          borderTopColor: COLORS.border,
+          paddingTop: SPACING.md,
+          paddingBottom: Platform.OS === 'ios' ? 28 : SPACING.md,
+          paddingHorizontal: SPACING.xl,
+          height: Platform.OS === 'ios' ? 88 : 68,
+          shadowColor: COLORS.black,
           shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: isDark ? 0.3 : 0.1,
+          shadowOpacity: 0.15,
           shadowRadius: 12,
           elevation: 12,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
+          fontSize: 11,
+          fontWeight: '600' as const,
           marginTop: 4,
-          letterSpacing: 0.5,
+          letterSpacing: 0.3,
         },
         tabBarIconStyle: {
           marginTop: 2,
@@ -84,11 +84,11 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: "Hem",
+          title: t('navigation.home'),
           tabBarIcon: ({ color, size, focused }) => (
             <Home 
               color={color} 
-              size={focused ? 26 : 24} 
+              size={ICON_SIZES.lg} 
               strokeWidth={focused ? 2.5 : 2}
             />
           ),
@@ -97,11 +97,11 @@ export default function TabLayout() {
       <Tabs.Screen
         name="courses"
         options={{
-          title: "Kurser",
+          title: t('navigation.courses'),
           tabBarIcon: ({ color, size, focused }) => (
             <BookOpen 
               color={color} 
-              size={focused ? 26 : 24} 
+              size={ICON_SIZES.lg} 
               strokeWidth={focused ? 2.5 : 2}
             />
           ),
@@ -110,11 +110,11 @@ export default function TabLayout() {
       <Tabs.Screen
         name="timer"
         options={{
-          title: "Fokus",
+          title: t('timer.focus'),
           tabBarIcon: ({ color, size, focused }) => (
             <Timer 
               color={color} 
-              size={focused ? 26 : 24} 
+              size={ICON_SIZES.lg} 
               strokeWidth={focused ? 2.5 : 2}
             />
           ),
@@ -123,11 +123,11 @@ export default function TabLayout() {
       <Tabs.Screen
         name="friends"
         options={{
-          title: "Vänner",
+          title: t('navigation.friends'),
           tabBarIcon: ({ color, size, focused }) => (
             <Users 
               color={color} 
-              size={focused ? 26 : 24} 
+              size={ICON_SIZES.lg} 
               strokeWidth={focused ? 2.5 : 2}
             />
           ),
@@ -136,11 +136,11 @@ export default function TabLayout() {
       <Tabs.Screen
         name="ai-chat"
         options={{
-          title: "StudieStugan AI",
+          title: t('navigation.aiChat'),
           tabBarIcon: ({ color, size, focused }) => (
             <MessageCircle 
               color={color} 
-              size={focused ? 26 : 24} 
+              size={ICON_SIZES.lg} 
               strokeWidth={focused ? 2.5 : 2}
             />
           ),

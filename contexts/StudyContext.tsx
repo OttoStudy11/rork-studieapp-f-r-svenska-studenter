@@ -918,8 +918,8 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
             
             console.log('Calculated new streak:', newStreak);
             
-            // Calculate points: 1 point per 5 minutes of studying
-            const pointsEarned = Math.floor(session.duration / 5);
+            // Calculate points: 1 point per minute of studying
+            const pointsEarned = session.duration;
             
             const currentTotalPoints = existingProgress?.total_points || 0;
             const newTotalPoints = currentTotalPoints + pointsEarned;
@@ -950,7 +950,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
               console.error('Progress error details:', JSON.stringify(progressError, null, 2));
             } else {
               console.log('✅ User progress updated successfully:', updatedProgress);
-              console.log(`🎯 Points earned: +${pointsEarned} pts (${session.duration} min ÷ 5)`);
+              console.log(`🎯 Points earned: +${pointsEarned} pts (${session.duration} min × 1)`);
               console.log(`💰 Total points: ${newTotalPoints} pts (was ${currentTotalPoints})`);
             }
             

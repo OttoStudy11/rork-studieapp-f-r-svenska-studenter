@@ -576,7 +576,7 @@ export default function TimerScreen() {
         
         setSessionCount(prev => prev + 1);
         
-        const pointsEarned = Math.floor(focusTime / 5);
+        const pointsEarned = focusTime;
         
         // Check for achievements after session is saved
         try {
@@ -1465,8 +1465,8 @@ export default function TimerScreen() {
         </View>
 
         {/* Statistics Section */}
-        <View style={styles.section}>
         <PremiumGate feature="statistics">
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
           </View>
@@ -1613,8 +1613,8 @@ export default function TimerScreen() {
               </View>
             </LinearGradient>
           )}
-        </PremiumGate>
         </View>
+        </PremiumGate>
       </ScrollView>
 
       {/* Completion Screen Modal */}

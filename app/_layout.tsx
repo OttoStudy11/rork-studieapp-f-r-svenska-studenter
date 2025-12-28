@@ -63,15 +63,15 @@ export default function RootLayout() {
                     <ExamProvider>
                       <CourseContentProvider>
                         <GestureHandlerRootView style={{ flex: 1 }}>
-                          <AchievementProvider>
-                            <PointsProvider>
-                              <ChallengesProvider>
-                                <GamificationProvider>
+                          <GamificationProvider>
+                            <AchievementProvider>
+                              <PointsProvider>
+                                <ChallengesProvider>
                                   <RootLayoutNav />
-                                </GamificationProvider>
-                              </ChallengesProvider>
-                            </PointsProvider>
-                          </AchievementProvider>
+                                </ChallengesProvider>
+                              </PointsProvider>
+                            </AchievementProvider>
+                          </GamificationProvider>
                         </GestureHandlerRootView>
                       </CourseContentProvider>
                     </ExamProvider>

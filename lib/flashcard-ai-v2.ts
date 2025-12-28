@@ -68,10 +68,20 @@ export async function generateFlashcardsWithAI(
 
     console.log('📝 [AI Flashcards] Calling AI with prompts...');
 
-    let result: any;
+    let result: { flashcards: {
+      question: string;
+      answer: string;
+      difficulty: number;
+      explanation?: string;
+      context?: string;
+      tags?: string[];
+    }[] };
+    
     try {
-      result = await generateObject({
-        schema: flashcardsResponseSchema as any,
+      console.log('📡 [AI Flashcards] Sending request to AI service...');
+      
+      const response = await generateObject({
+        schema: flashcardsResponseSchema,
         messages: [
           {
             role: 'user',
@@ -79,16 +89,35 @@ export async function generateFlashcardsWithAI(
           },
         ],
       });
+      
+      result = response as typeof result;
+      
+      console.log('📥 [AI Flashcards] Received response from AI:', {
+        hasFlashcards: !!result?.flashcards,
+        count: result?.flashcards?.length || 0,
+      });
     } catch (aiError: any) {
       console.error('❌ [AI Flashcards] AI generation failed:', {
         message: aiError?.message,
         name: aiError?.name,
-        stack: aiError?.stack?.substring(0, 200),
+        code: aiError?.code,
+        status: aiError?.status,
+        stack: aiError?.stack?.substring(0, 300),
       });
       
-      throw new Error(
-        `AI generation failed: ${aiError?.message || 'Unknown error from AI service'}`
-      );
+      const errorMessage = aiError?.message || 'Okänt fel från AI-tjänsten';
+      
+      if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+        throw new Error('AI-tjänsten svarade inte i tid. Försök igen.');
+      }
+      if (errorMessage.includes('rate') || errorMessage.includes('limit')) {
+        throw new Error('För många förfrågningar. Vänta en stund och försök igen.');
+      }
+      if (errorMessage.includes('network') || errorMessage.includes('Network')) {
+        throw new Error('Nätverksfel. Kontrollera din internetanslutning.');
+      }
+      
+      throw new Error(`AI-generering misslyckades: ${errorMessage}`);
     }
 
     if (!result || !result.flashcards || !Array.isArray(result.flashcards)) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,7 @@ import {
 } from '@/services/flashcards';
 import { calculateSM2, getQualityFromSwipe } from '@/lib/sm2-algorithm';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Sparkles, BarChart3, BookOpen, RefreshCw } from 'lucide-react-native';
+import { ArrowLeft, Sparkles, BarChart3, BookOpen, RefreshCw, AlertCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -114,9 +114,20 @@ export default function FlashcardsScreenV2() {
     });
   }, [flashcards, progressMap]);
 
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (generationError) {
+      const timer = setTimeout(() => setGenerationError(null), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [generationError]);
+
   const generateMutation = useMutation({
     mutationFn: async (params: { count: number; customText?: string }) => {
       console.log('🚀 [Flashcards] Starting generation for:', courseId);
+      setGenerationError(null);
+      
       if (!courseId) {
         throw new Error('Ingen kurs vald');
       }
@@ -126,6 +137,7 @@ export default function FlashcardsScreenV2() {
         courseDescription = `${course?.description || ''}\n\nAnvändarens text att generera flashcards från:\n${params.customText}`;
       }
 
+      console.log('📡 [Flashcards] Calling AI service...');
       const result = await generateFlashcardsWithAI({
         courseName: course?.title || courseId,
         courseDescription,
@@ -136,34 +148,44 @@ export default function FlashcardsScreenV2() {
       });
 
       if (!result.success || result.flashcards.length === 0) {
-        throw new Error(result.error || 'AI kunde inte generera flashcards. Försök igen eller kontakta support.');
+        console.error('❌ [Flashcards] AI generation failed:', result.error);
+        throw new Error(result.error || 'AI kunde inte generera flashcards. Försök igen.');
       }
 
-      console.log(`✅ [Flashcards] Generated ${result.flashcards.length} flashcards`);
+      console.log(`✅ [Flashcards] Generated ${result.flashcards.length} flashcards, saving to database...`);
 
       const saveResult = await saveFlashcardBatch(result.flashcards, courseId);
 
       if (!saveResult.success) {
+        console.error('❌ [Flashcards] Save failed:', saveResult.error);
         throw new Error(saveResult.error || 'Kunde inte spara flashcards i databasen.');
       }
 
+      console.log(`✅ [Flashcards] Saved ${saveResult.savedCount} flashcards`);
       return saveResult;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['flashcards-v2', courseId] });
       queryClient.invalidateQueries({ queryKey: ['flashcard-stats'] });
       setShowCustomInput(false);
       setCustomText('');
-      Alert.alert('✅ Klart!', 'Flashcards har genererats och sparats!');
+      setGenerationError(null);
+      Alert.alert('✅ Klart!', `${data.savedCount} flashcards har genererats och sparats!`);
     },
     onError: (error: any) => {
       console.error('❌ [Flashcards] Generation failed:', error);
+      const errorMessage = error?.message || 'Ett oväntat fel uppstod.';
+      setGenerationError(errorMessage);
       Alert.alert(
         'Kunde inte generera flashcards',
-        error?.message || 'Ett oväntat fel uppstod. Försök igen om en stund.',
+        errorMessage,
         [
           { text: 'OK', style: 'default' },
-          { text: 'Försök igen', onPress: () => {}, style: 'cancel' }
+          { 
+            text: 'Försök igen', 
+            onPress: () => generateMutation.mutate({ count: generationCount }), 
+            style: 'cancel' 
+          }
         ]
       );
     },
@@ -278,6 +300,13 @@ export default function FlashcardsScreenV2() {
             </View>
           </View>
 
+          {generationError && (
+            <View style={styles.errorBanner}>
+              <AlertCircle size={18} color="#F87171" />
+              <Text style={styles.errorBannerText}>{generationError}</Text>
+            </View>
+          )}
+
           <TouchableOpacity
             style={styles.generateButton}
             onPress={() => generateMutation.mutate({ count: generationCount })}
@@ -292,7 +321,7 @@ export default function FlashcardsScreenV2() {
               {generateMutation.isPending ? (
                 <>
                   <ActivityIndicator size="small" color="#fff" />
-                  <Text style={styles.generateButtonText}>Genererar...</Text>
+                  <Text style={styles.generateButtonText}>Genererar flashcards...</Text>
                 </>
               ) : (
                 <>
@@ -302,6 +331,12 @@ export default function FlashcardsScreenV2() {
               )}
             </LinearGradient>
           </TouchableOpacity>
+
+          {generateMutation.isPending && (
+            <Text style={styles.generatingHint}>
+              AI:n skapar {generationCount} flashcards baserat på kursinnehåll...
+            </Text>
+          )}
 
           <TouchableOpacity
             style={[styles.customTextButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
@@ -770,6 +805,31 @@ const styles = StyleSheet.create({
   charCount: {
     fontSize: 13,
     marginTop: 12,
-    textAlign: 'right',
+    textAlign: 'right' as const,
+  },
+  errorBanner: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: 'rgba(248, 113, 113, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(248, 113, 113, 0.3)',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    gap: 10,
+  },
+  errorBannerText: {
+    flex: 1,
+    color: '#F87171',
+    fontSize: 14,
+    fontWeight: '500' as const,
+    lineHeight: 20,
+  },
+  generatingHint: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textAlign: 'center' as const,
+    marginTop: 12,
+    fontStyle: 'italic' as const,
   },
 });

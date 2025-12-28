@@ -148,7 +148,17 @@ export async function saveFlashcardBatch(
   error?: string;
 }> {
   try {
-    console.log(`💾 [Flashcards Service] Saving ${flashcards.length} flashcards...`);
+    console.log(`💾 [Flashcards Service] Saving ${flashcards.length} flashcards for course ${courseId}...`);
+
+    if (!flashcards || flashcards.length === 0) {
+      console.warn('⚠️ [Flashcards Service] No flashcards to save');
+      return { success: false, savedCount: 0, error: 'Inga flashcards att spara' };
+    }
+
+    if (!courseId) {
+      console.error('❌ [Flashcards Service] Missing courseId');
+      return { success: false, savedCount: 0, error: 'Kurs-ID saknas' };
+    }
 
     const flashcardsToInsert = flashcards.map((fc) => ({
       course_id: courseId,
@@ -162,27 +172,50 @@ export async function saveFlashcardBatch(
       tags: fc.tags || null,
     }));
 
+    console.log(`📤 [Flashcards Service] Inserting ${flashcardsToInsert.length} flashcards to database...`);
+
     const { data, error } = await supabase
       .from('flashcards')
       .insert(flashcardsToInsert)
       .select();
 
     if (error) {
-      console.error('❌ [Flashcards Service] Error saving flashcards:', {
+      console.error('❌ [Flashcards Service] Database error saving flashcards:', {
         message: error.message,
         code: error.code,
         details: error.details,
+        hint: error.hint,
       });
-      return { success: false, savedCount: 0, error: error.message };
+      
+      if (error.code === '42501' || error.message?.includes('policy')) {
+        return { 
+          success: false, 
+          savedCount: 0, 
+          error: 'Behörighetsproblem med databasen. Kontakta support.' 
+        };
+      }
+      if (error.code === '23503') {
+        return { 
+          success: false, 
+          savedCount: 0, 
+          error: 'Kursen finns inte i databasen.' 
+        };
+      }
+      
+      return { success: false, savedCount: 0, error: `Databasfel: ${error.message}` };
     }
 
     const savedCount = data?.length || 0;
-    console.log(`✅ [Flashcards Service] Saved ${savedCount} flashcards`);
+    console.log(`✅ [Flashcards Service] Successfully saved ${savedCount} flashcards`);
 
     return { success: true, savedCount };
   } catch (err: any) {
-    console.error('❌ [Flashcards Service] Exception saving flashcards:', err);
-    return { success: false, savedCount: 0, error: err?.message || 'Unknown error' };
+    console.error('❌ [Flashcards Service] Exception saving flashcards:', {
+      message: err?.message,
+      name: err?.name,
+      stack: err?.stack?.substring(0, 200),
+    });
+    return { success: false, savedCount: 0, error: err?.message || 'Ett oväntat fel uppstod' };
   }
 }
 

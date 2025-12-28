@@ -46,15 +46,16 @@ export default function ProfileScreen() {
   const { user: authUser } = useAuth();
   const { theme, isDark } = useTheme();
   const { showSuccess } = useToast();
+  const gamificationData = useGamification();
   const { 
-    totalXp, 
+    totalXp = 0, 
     currentLevel, 
     xpProgress, 
-    streak, 
-    achievements,
-    dailyChallenges,
-    unclaimedAchievements,
-  } = useGamification();
+    streak = 0, 
+    achievements = [],
+    dailyChallenges = [],
+    unclaimedAchievements = 0,
+  } = gamificationData || {};
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
     name: user?.name || '',
@@ -183,22 +184,24 @@ export default function ProfileScreen() {
         </LinearGradient>
 
         {/* Level Card */}
-        <View style={styles.levelSection}>
-          <LevelCard
-            currentLevel={currentLevel}
-            xpProgress={xpProgress}
-            totalXp={totalXp}
-            streak={streak}
-            onPress={() => router.push('/achievements')}
-          />
-        </View>
+        {currentLevel && xpProgress && (
+          <View style={styles.levelSection}>
+            <LevelCard
+              currentLevel={currentLevel}
+              xpProgress={xpProgress}
+              totalXp={totalXp}
+              streak={streak}
+              onPress={() => router.push('/achievements')}
+            />
+          </View>
+        )}
 
         {/* Quick Stats Grid */}
         <View style={styles.statsContainer}>
           <View style={styles.statsGrid}>
             <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-              <View style={[styles.statIconCircle, { backgroundColor: TIER_COLORS[currentLevel.tier] + '15' }]}>
-                <Zap size={24} color={TIER_COLORS[currentLevel.tier]} />
+              <View style={[styles.statIconCircle, { backgroundColor: (currentLevel?.tier ? TIER_COLORS[currentLevel.tier] : '#C7D2FE') + '15' }]}>
+                <Zap size={24} color={currentLevel?.tier ? TIER_COLORS[currentLevel.tier] : '#C7D2FE'} />
               </View>
               <Text style={[styles.statNumber, { color: theme.colors.text }]}>{formatXp(totalXp)}</Text>
               <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Total XP</Text>
@@ -228,7 +231,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Daily Challenges Preview */}
-        {dailyChallenges.length > 0 && (
+        {dailyChallenges && dailyChallenges.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dagens utmaningar</Text>
@@ -275,7 +278,7 @@ export default function ProfileScreen() {
         )}
 
         {/* Achievements Preview */}
-        {achievements.length > 0 && (
+        {achievements && achievements.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>

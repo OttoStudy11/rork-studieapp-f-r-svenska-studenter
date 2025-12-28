@@ -67,7 +67,8 @@ export default function FriendStatsScreen() {
   const { user } = useAuth();
   const { user: studyUser } = useStudy();
   const { theme, isDark } = useTheme();
-  const { totalXp, currentLevel } = useGamification();
+  const gamificationData = useGamification();
+  const { totalXp = 0, currentLevel } = gamificationData || {};
   const [friend, setFriend] = useState<FriendData | null>(null);
   const [yourStats, setYourStats] = useState<{ studyTime: number; sessionCount: number; streak: number; courseCount: number; totalXp: number } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -165,7 +166,7 @@ export default function FriendStatsScreen() {
         sessionCount: yourSessions?.length || 0,
         streak: yourProgress?.current_streak || 0,
         courseCount: yourCourses?.length || 0,
-        totalXp: totalXp,
+        totalXp: totalXp ?? 0,
       });
     } catch (error: any) {
       setErrorMessage(error?.message || 'Kunde inte ladda statistik');
@@ -386,12 +387,12 @@ export default function FriendStatsScreen() {
           </SlideInView>
 
             {/* Level Comparison Card */}
-        {friend && yourStats && (
+        {friend && yourStats && currentLevel && (
           <SlideInView direction="up" delay={100}>
             <View style={styles.levelComparisonSection}>
               <LevelComparison
                 yourLevel={currentLevel}
-                yourXp={totalXp}
+                yourXp={totalXp ?? 0}
                 friendLevel={getLevelForXp(friend.totalXp)}
                 friendXp={friend.totalXp}
                 friendName={friend.display_name}

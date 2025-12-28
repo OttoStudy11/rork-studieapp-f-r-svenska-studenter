@@ -56,14 +56,28 @@ interface PointsContextValue {
 export const [PointsProvider, usePoints] = createContextHook<PointsContextValue>(() => {
   const gamification = useGamification();
 
-  const totalPoints = gamification.totalXp;
+  if (!gamification) {
+    throw new Error('useGamification must be used within GamificationProvider');
+  }
+
+  const totalPoints = gamification.totalXp ?? 0;
   const studyPoints = totalPoints;
   const bonusPoints = 0;
-  const achievementPoints = gamification.achievements
+  const achievementPoints = (gamification.achievements || [])
     .filter(a => a.isUnlocked && a.isClaimed)
     .reduce((sum, a) => sum + a.xpReward, 0);
 
   const level: LevelDefinition = useMemo(() => {
+    if (!gamification.currentLevel) {
+      return {
+        level: 1,
+        min: 0,
+        max: 100,
+        title: 'Nybörjare',
+        badge: '🌱 Nybörjare',
+        accent: '#C7D2FE'
+      };
+    }
     const nextLevelIndex = gamification.currentLevel.level;
     const maxXp = nextLevelIndex < 50 ? gamification.xpProgress.current + gamification.xpProgress.required : undefined;
     return {
@@ -78,10 +92,10 @@ export const [PointsProvider, usePoints] = createContextHook<PointsContextValue>
               gamification.currentLevel.tier === 'expert' ? '#FECACA' :
               gamification.currentLevel.tier === 'master' ? '#FBE6FF' : '#FBCFE8'
     };
-  }, [gamification.currentLevel, gamification.xpProgress]);
+  }, [gamification?.currentLevel, gamification?.xpProgress]);
 
   const progress: ProgressSlice = useMemo(() => {
-    if (!gamification.xpProgress.nextLevel) {
+    if (!gamification.xpProgress || !gamification.xpProgress.nextLevel) {
       return {
         current: gamification.xpProgress.current,
         required: gamification.xpProgress.required,
@@ -111,22 +125,22 @@ export const [PointsProvider, usePoints] = createContextHook<PointsContextValue>
                 gamification.xpProgress.nextLevel.tier === 'master' ? '#FBE6FF' : '#FBCFE8'
       }
     };
-  }, [gamification.xpProgress]);
+  }, [gamification?.xpProgress]);
 
-  const history: PointsHistoryEntry[] = useMemo(() => gamification.recentTransactions.map(t => ({
+  const history: PointsHistoryEntry[] = useMemo(() => (gamification.recentTransactions || []).map(t => ({
     id: t.id,
     amount: t.amount,
     type: t.sourceType as PointsEntryType,
     description: t.sourceType,
     sourceId: t.sourceId,
     createdAt: t.createdAt
-  })), [gamification.recentTransactions]);
+  })), [gamification?.recentTransactions]);
 
-  const claimedChallengeIds: string[] = useMemo(() => gamification.dailyChallenges
+  const claimedChallengeIds: string[] = useMemo(() => (gamification.dailyChallenges || [])
     .filter(c => c.isClaimed)
-    .map(c => c.id), [gamification.dailyChallenges]);
+    .map(c => c.id), [gamification?.dailyChallenges]);
 
-  const isReady = gamification.isReady;
+  const isReady = gamification.isReady ?? false;
 
   const addPoints = useCallback(async (amount: number, meta?: Partial<PointsHistoryEntry>) => {
     if (amount <= 0) return;

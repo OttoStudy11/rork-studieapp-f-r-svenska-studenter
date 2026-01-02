@@ -9,7 +9,8 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { Search, X, ChevronRight, GraduationCap, MapPin, Building, Briefcase } from 'lucide-react-native';
-import { AnimatedPressable, PressableCard } from '@/components/Animations';
+import { AnimatedPressable, PressableCard, FadeInView } from '@/components/Animations';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SWEDISH_UNIVERSITIES, UNIVERSITY_PROGRAMS, type University, type UniversityProgram, type UniversityProgramYear } from '@/constants/universities';
 
 interface UniversityPickerProps {
@@ -158,58 +159,74 @@ export default function UniversityPicker({
   const renderProgramStep = () => (
     <>
       <View style={styles.searchContainer}>
-        <Search size={20} color="#9CA3AF" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Sök program..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor="#9CA3AF"
-          autoFocus
-        />
-        {searchQuery.length > 0 && (
-          <AnimatedPressable onPress={() => setSearchQuery('')}>
-            <X size={20} color="#9CA3AF" />
-          </AnimatedPressable>
-        )}
+        <View style={styles.searchBar}>
+          <Search size={20} color="#94A3B8" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Sök program..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#94A3B8"
+            autoFocus
+          />
+          {searchQuery.length > 0 && (
+            <AnimatedPressable onPress={() => setSearchQuery('')}>
+              <X size={20} color="#94A3B8" />
+            </AnimatedPressable>
+          )}
+        </View>
       </View>
 
-      <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.contentScroll} showsVerticalScrollIndicator={false}>
         {Object.keys(groupedPrograms).sort().map(field => (
-          <View key={field}>
-            <View style={styles.categoryHeader}>
-              <Text style={styles.categoryTitle}>{field}</Text>
+          <View key={field} style={styles.programSection}>
+            <View style={styles.categoryHeaderContainer}>
+              <View style={[styles.categoryBadge, { backgroundColor: getProgramColor(groupedPrograms[field][0]?.field || '') + '15' }]}>
+                <Text style={[styles.categoryBadgeText, { color: getProgramColor(groupedPrograms[field][0]?.field || '') }]}>
+                  {field.toUpperCase()}
+                </Text>
+              </View>
             </View>
             <View style={styles.programGrid}>
-              {groupedPrograms[field].map(program => {
+              {groupedPrograms[field].map((program, index) => {
                 const IconComponent = getProgramIcon(program.degreeType);
                 const color = getProgramColor(program.field);
                 const isSelected = tempProgram?.id === program.id;
                 
                 return (
-                  <PressableCard
-                    key={program.id}
-                    style={[
-                      styles.programCard,
-                      isSelected && styles.selectedProgramCard,
-                      { borderColor: color }
-                    ]}
-                    onPress={() => handleProgramSelect(program)}
-                  >
-                    <View style={[styles.programIconContainer, { backgroundColor: color + '20' }]}>
-                      <IconComponent size={18} color={color} />
-                    </View>
-                    <Text style={[styles.programCardName, isSelected && { color }]} numberOfLines={3}>
-                      {program.name}
-                    </Text>
-                    {program.abbreviation && (
-                      <Text style={styles.programCardAbbr}>{program.abbreviation}</Text>
-                    )}
-                    <View style={styles.programMetaRow}>
-                      <Text style={styles.programCardMeta}>{program.credits} hp</Text>
-                      <Text style={styles.programCardMeta}>{program.durationYears} år</Text>
-                    </View>
-                  </PressableCard>
+                  <FadeInView key={program.id} delay={index * 50}>
+                    <PressableCard
+                      style={[
+                        styles.premiumProgramCard,
+                        isSelected && [styles.selectedPremiumCard, { borderColor: color }]
+                      ]}
+                      onPress={() => handleProgramSelect(program)}
+                    >
+                      <LinearGradient
+                        colors={isSelected ? [color + '15', color + '08'] : ['#F8FAFC', '#F1F5F9']}
+                        style={styles.cardGradient}
+                      >
+                        <View style={[styles.premiumIconContainer, { backgroundColor: color + '15' }]}>
+                          <IconComponent size={28} color={color} />
+                        </View>
+                        <Text style={[styles.premiumProgramName, isSelected && { color }]} numberOfLines={3}>
+                          {program.name}
+                        </Text>
+                        {program.abbreviation && (
+                          <Text style={styles.premiumProgramAbbr}>{program.abbreviation}</Text>
+                        )}
+                        <View style={styles.programMetaRow}>
+                          <Text style={styles.programCardMeta}>{program.credits} hp</Text>
+                          <Text style={styles.programCardMeta}>{program.durationYears} år</Text>
+                        </View>
+                        {isSelected && (
+                          <View style={[styles.selectedBadge, { backgroundColor: color }]}>
+                            <Text style={styles.selectedBadgeText}>VALD</Text>
+                          </View>
+                        )}
+                      </LinearGradient>
+                    </PressableCard>
+                  </FadeInView>
                 );
               })}
             </View>
@@ -221,54 +238,88 @@ export default function UniversityPicker({
 
   const renderUniversityStep = () => (
     <>
+      {tempProgram && (
+        <View style={styles.selectedProgramBanner}>
+          <LinearGradient
+            colors={[getProgramColor(tempProgram.field) + '20', getProgramColor(tempProgram.field) + '10']}
+            style={styles.bannerGradient}
+          >
+            <View style={[styles.bannerIcon, { backgroundColor: getProgramColor(tempProgram.field) + '25' }]}>
+              {React.createElement(getProgramIcon(tempProgram.degreeType), { 
+                size: 24, 
+                color: getProgramColor(tempProgram.field) 
+              })}
+            </View>
+            <View style={styles.bannerInfo}>
+              <Text style={styles.bannerTitle}>{tempProgram.name}</Text>
+              <Text style={styles.bannerSubtitle}>Välj ditt universitet</Text>
+            </View>
+          </LinearGradient>
+        </View>
+      )}
+
       <View style={styles.searchContainer}>
-        <Search size={20} color="#9CA3AF" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Sök högskola, stad eller typ..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor="#9CA3AF"
-          autoFocus
-        />
-        {searchQuery.length > 0 && (
-          <AnimatedPressable onPress={() => setSearchQuery('')}>
-            <X size={20} color="#9CA3AF" />
-          </AnimatedPressable>
-        )}
+        <View style={styles.searchBar}>
+          <Search size={20} color="#94A3B8" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Sök högskola, stad eller typ..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#94A3B8"
+            autoFocus
+          />
+          {searchQuery.length > 0 && (
+            <AnimatedPressable onPress={() => setSearchQuery('')}>
+              <X size={20} color="#94A3B8" />
+            </AnimatedPressable>
+          )}
+        </View>
       </View>
 
-      <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.contentScroll} showsVerticalScrollIndicator={false}>
         {Object.keys(groupedUniversities).sort().map(category => (
-          <View key={category} style={styles.citySection}>
-            <View style={styles.cityHeader}>
-              <GraduationCap size={16} color="#6B7280" />
-              <Text style={styles.cityTitle}>{category}</Text>
+          <View key={category} style={styles.cityGroup}>
+            <View style={styles.cityHeaderPremium}>
+              <GraduationCap size={16} color="#4F46E5" />
+              <Text style={styles.cityTitlePremium}>{category}</Text>
+              <View style={styles.cityLine} />
             </View>
-            {groupedUniversities[category].map(university => (
-              <AnimatedPressable
-                key={university.id}
-                style={[
-                  styles.universityItem,
-                  tempUniversity?.id === university.id && styles.selectedItem
-                ]}
-                onPress={() => handleUniversitySelect(university)}
-              >
-                <View style={styles.universityInfo}>
-                  <Text style={[
-                    styles.universityName,
-                    tempUniversity?.id === university.id && styles.selectedText
-                  ]}>
-                    {university.name}
-                  </Text>
-                  <View style={styles.universityMetaRow}>
-                    <MapPin size={12} color="#9CA3AF" />
-                    <Text style={styles.universityCity}>{university.city}</Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} color="#9CA3AF" />
-              </AnimatedPressable>
-            ))}
+            
+            <View style={styles.universitiesList}>
+              {groupedUniversities[category].map(university => {
+                const isSelected = tempUniversity?.id === university.id;
+                return (
+                  <AnimatedPressable
+                    key={university.id}
+                    style={[
+                      styles.universityCardPremium,
+                      isSelected && styles.selectedUniversityCard
+                    ]}
+                    onPress={() => handleUniversitySelect(university)}
+                  >
+                    <View style={styles.universityCardContent}>
+                      <View style={[styles.universityIconContainer, isSelected && { backgroundColor: '#4F46E915' }]}>
+                        <GraduationCap size={24} color={isSelected ? '#4F46E5' : '#64748B'} />
+                      </View>
+                      <View style={styles.universityCardInfo}>
+                        <Text style={[
+                          styles.universityNamePremium,
+                          isSelected && styles.selectedUniversityName
+                        ]}>
+                          {university.name}
+                        </Text>
+                        <View style={styles.universityMetaRow}>
+                          <MapPin size={12} color="#94A3B8" />
+                          <Text style={styles.universityCityPremium}>{university.city}</Text>
+                        </View>
+                      </View>
+                    </View>
+                    <ChevronRight size={22} color={isSelected ? '#4F46E5' : '#CBD5E1'} />
+                  </AnimatedPressable>
+                );
+              })}
+            </View>
           </View>
         ))}
       </ScrollView>
@@ -277,53 +328,85 @@ export default function UniversityPicker({
 
   const renderYearStep = () => (
     <>
-      <View style={styles.selectedProgramHeader}>
-        <View style={[styles.programIconContainer, { backgroundColor: getProgramColor(tempProgram?.field || '') + '20' }]}>
-          {React.createElement(getProgramIcon(tempProgram?.degreeType || ''), { size: 24, color: getProgramColor(tempProgram?.field || '') })}
+      {tempProgram && (
+        <View style={styles.selectedProgramBanner}>
+          <LinearGradient
+            colors={[getProgramColor(tempProgram.field) + '20', getProgramColor(tempProgram.field) + '10']}
+            style={styles.bannerGradient}
+          >
+            <View style={[styles.bannerIcon, { backgroundColor: getProgramColor(tempProgram.field) + '25' }]}>
+              {React.createElement(getProgramIcon(tempProgram.degreeType), { 
+                size: 24, 
+                color: getProgramColor(tempProgram.field) 
+              })}
+            </View>
+            <View style={styles.bannerInfo}>
+              <Text style={styles.bannerTitle}>{tempProgram.name}</Text>
+              <Text style={styles.bannerSubtitle}>{tempProgram.abbreviation || tempProgram.degreeType}</Text>
+            </View>
+          </LinearGradient>
         </View>
-        <View style={styles.selectedProgramInfo}>
-          <Text style={styles.selectedProgramName}>{tempProgram?.name}</Text>
-          <Text style={styles.selectedProgramAbbr}>
-            {tempProgram?.abbreviation || tempProgram?.degreeType}
+      )}
+
+      {tempUniversity && (
+        <View style={styles.selectedUniversityBanner}>
+          <View style={styles.universityBannerContent}>
+            <View style={styles.universityBannerIcon}>
+              <GraduationCap size={20} color="#4F46E5" />
+            </View>
+            <View style={styles.universityBannerInfo}>
+              <Text style={styles.universityBannerName}>{tempUniversity.name}</Text>
+              <Text style={styles.universityBannerCity}>{tempUniversity.city}</Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      <ScrollView style={styles.contentScroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.yearSection}>
+          <Text style={styles.yearSectionTitle}>Välj termin</Text>
+          <Text style={styles.yearSectionSubtitle}>
+            Vilken termin läser du?
           </Text>
-        </View>
-      </View>
-
-      <View style={styles.selectedUniversityHeader}>
-        <GraduationCap size={24} color="#4F46E5" />
-        <View style={styles.selectedUniversityInfo}>
-          <Text style={styles.selectedUniversityName}>{tempUniversity?.name}</Text>
-          <Text style={styles.selectedUniversityCity}>{tempUniversity?.city}</Text>
-        </View>
-      </View>
-
-      <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Välj termin</Text>
-        
-        <View style={styles.yearGrid}>
-          {Array.from({ length: tempProgram?.durationYears || 5 }, (_, i) => (i + 1) as UniversityProgramYear).map(year => (
-            <PressableCard
-              key={year}
-              style={[
-                styles.yearCard,
-                tempYear === year && styles.selectedYearCard
-              ]}
-              onPress={() => handleYearSelect(year)}
-            >
-              <Text style={[
-                styles.yearNumber,
-                tempYear === year && styles.selectedYearNumber
-              ]}>
-                {year}
-              </Text>
-              <Text style={[
-                styles.yearLabel,
-                tempYear === year && styles.selectedYearLabel
-              ]}>
-                Termin {year}
-              </Text>
-            </PressableCard>
-          ))}
+          
+          <View style={styles.yearGridPremium}>
+            {Array.from({ length: tempProgram?.durationYears || 5 }, (_, i) => (i + 1) as UniversityProgramYear).map((year, index) => {
+              const isSelected = tempYear === year;
+              const color = getProgramColor(tempProgram?.field || '');
+              
+              return (
+                <FadeInView key={year} delay={index * 100}>
+                  <PressableCard
+                    style={[
+                      styles.yearCardPremium,
+                      isSelected && [styles.selectedYearCardPremium, { borderColor: color }]
+                    ]}
+                    onPress={() => handleYearSelect(year)}
+                  >
+                    <LinearGradient
+                      colors={isSelected ? [color + '20', color + '10'] : ['#FFFFFF', '#F8FAFC']}
+                      style={styles.yearCardGradient}
+                    >
+                      <View style={[styles.yearNumberCircle, isSelected && { backgroundColor: color }]}>
+                        <Text style={[
+                          styles.yearNumberPremium,
+                          isSelected && styles.selectedYearNumberPremium
+                        ]}>
+                          {year}
+                        </Text>
+                      </View>
+                      <Text style={[
+                        styles.yearLabelPremium,
+                        isSelected && { color, fontWeight: '700' as const }
+                      ]}>
+                        Termin {year}
+                      </Text>
+                    </LinearGradient>
+                  </PressableCard>
+                </FadeInView>
+              );
+            })}
+          </View>
         </View>
       </ScrollView>
     </>
@@ -337,17 +420,17 @@ export default function UniversityPicker({
       >
         <View style={styles.selectorContent}>
           {selectedUniversity && selectedProgram && selectedYear ? (
-            <View>
+            <>
               <Text style={styles.selectedValue}>{selectedUniversity.name}</Text>
               <Text style={styles.selectedSubValue}>
-                Termin {selectedYear} - {selectedProgram.name}
+                Termin {selectedYear} • {selectedProgram.name}
               </Text>
-            </View>
+            </>
           ) : (
             <Text style={styles.placeholder}>{placeholder}</Text>
           )}
         </View>
-        <ChevronRight size={20} color="#9CA3AF" />
+        <ChevronRight size={20} color="#94A3B8" />
       </AnimatedPressable>
 
       <Modal
@@ -358,15 +441,22 @@ export default function UniversityPicker({
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <AnimatedPressable onPress={handleBack} style={styles.backButton}>
-              <X size={24} color="#374151" />
+            <AnimatedPressable onPress={handleBack} style={styles.backButtonContainer}>
+              <X size={24} color="#1E293B" />
             </AnimatedPressable>
-            <Text style={styles.modalTitle}>
-              {step === 'program' ? 'Välj program' : 
-               step === 'university' ? 'Välj högskola' : 
-               'Välj termin'}
-            </Text>
-            <View style={styles.backButton} />
+            <View style={styles.modalTitleContainer}>
+              <Text style={styles.modalTitle}>
+                {step === 'program' ? 'Välj program' : 
+                 step === 'university' ? 'Välj högskola' : 
+                 'Välj termin'}
+              </Text>
+              <View style={styles.stepIndicator}>
+                <View style={[styles.stepDot, step === 'program' && styles.activeStepDot]} />
+                <View style={[styles.stepDot, step === 'university' && styles.activeStepDot]} />
+                <View style={[styles.stepDot, step === 'year' && styles.activeStepDot]} />
+              </View>
+            </View>
+            <View style={styles.backButtonContainer} />
           </View>
 
           {step === 'program' ? renderProgramStep() : 
@@ -381,221 +471,186 @@ export default function UniversityPicker({
 const styles = StyleSheet.create({
   selector: {
     backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   selectorContent: {
     flex: 1,
   },
   selectedValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+    letterSpacing: -0.3,
   },
   selectedSubValue: {
     fontSize: 14,
-    color: '#6B7280',
-    marginTop: 2,
+    color: '#64748B',
+    fontWeight: '500',
   },
   placeholder: {
     fontSize: 16,
-    color: '#9CA3AF',
+    color: '#94A3B8',
+    fontWeight: '500',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8FAFC',
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
   },
-  backButton: {
+  backButtonContainer: {
     padding: 4,
-    width: 32,
+    width: 40,
+  },
+  modalTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.5,
+  },
+  stepIndicator: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  stepDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#CBD5E1',
+  },
+  activeStepDot: {
+    backgroundColor: '#4F46E5',
+    width: 20,
   },
   searchContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    margin: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
-    color: '#111827',
-  },
-  listContainer: {
-    flex: 1,
-  },
-  citySection: {
-    marginBottom: 24,
-  },
-  cityHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#F3F4F6',
-  },
-  cityTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginLeft: 8,
-  },
-  universityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: 'white',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: 12,
   },
-  selectedItem: {
-    backgroundColor: '#EEF2FF',
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#0F172A',
+    fontWeight: '500',
   },
-  universityInfo: {
+  contentScroll: {
     flex: 1,
   },
-  universityName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 4,
+  programSection: {
+    paddingHorizontal: 20,
+    marginBottom: 28,
   },
-  universityMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  categoryHeaderContainer: {
+    marginBottom: 16,
   },
-  universityCity: {
-    fontSize: 13,
-    color: '#6B7280',
+  categoryBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
-  selectedText: {
-    color: '#4F46E5',
-  },
-  selectedUniversityHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  selectedUniversityInfo: {
-    marginLeft: 12,
-  },
-  selectedUniversityName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  selectedUniversityCity: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  categoryHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F3F4F6',
-    marginBottom: 8,
-  },
-  categoryTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  categoryBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
   },
   programGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    gap: 12,
   },
-  programCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-    width: '48%',
+  premiumProgramCard: {
+    width: '48.5%',
+    borderRadius: 20,
+    overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
+  },
+  selectedPremiumCard: {
+    borderWidth: 2.5,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    minHeight: 140,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
   },
-  selectedProgramCard: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 2,
+  cardGradient: {
+    padding: 18,
+    minHeight: 160,
+    justifyContent: 'space-between',
   },
-  programIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  premiumIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  programCardName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 6,
-    lineHeight: 16,
-    minHeight: 48,
-  },
-  programCardAbbr: {
-    fontSize: 10,
-    color: '#6B7280',
-    fontWeight: '600',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
+  premiumProgramName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
     marginBottom: 4,
+    letterSpacing: -0.3,
+    lineHeight: 20,
+  },
+  premiumProgramAbbr: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '700',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+    letterSpacing: 0.5,
   },
   programMetaRow: {
     flexDirection: 'row',
@@ -604,75 +659,248 @@ const styles = StyleSheet.create({
   },
   programCardMeta: {
     fontSize: 10,
-    color: '#6B7280',
+    color: '#94A3B8',
     fontWeight: '500',
   },
-  selectedProgramHeader: {
+  selectedBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  selectedBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: 'white',
+    letterSpacing: 0.8,
+  },
+  selectedProgramBanner: {
+    marginHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  bannerGradient: {
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    gap: 14,
   },
-  selectedProgramInfo: {
-    marginLeft: 12,
+  bannerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bannerInfo: {
     flex: 1,
   },
-  selectedProgramName: {
-    fontSize: 16,
+  bannerTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 3,
+    letterSpacing: -0.3,
+  },
+  bannerSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
     fontWeight: '600',
-    color: '#111827',
   },
-  selectedProgramAbbr: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 2,
+  cityGroup: {
+    marginBottom: 28,
   },
-  yearGrid: {
+  cityHeaderPremium: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    gap: 8,
   },
-  yearCard: {
+  cityTitlePremium: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  cityLine: {
+    flex: 1,
+    height: 1.5,
+    backgroundColor: '#E2E8F0',
+    marginLeft: 12,
+  },
+  universitiesList: {
+    gap: 10,
+    paddingHorizontal: 20,
+  },
+  universityCardPremium: {
     backgroundColor: 'white',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    width: '30%',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  selectedYearCard: {
-    backgroundColor: '#EEF2FF',
+  selectedUniversityCard: {
     borderColor: '#4F46E5',
+    backgroundColor: '#EEF2FF',
+    borderWidth: 2,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  yearNumber: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#6B7280',
-    marginBottom: 6,
+  universityCardContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
-  selectedYearNumber: {
+  universityIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  universityCardInfo: {
+    flex: 1,
+  },
+  universityNamePremium: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+    letterSpacing: -0.3,
+  },
+  selectedUniversityName: {
     color: '#4F46E5',
   },
-  yearLabel: {
+  universityMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  universityCityPremium: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#6B7280',
+    color: '#64748B',
+    fontWeight: '600',
   },
-  selectedYearLabel: {
-    color: '#4F46E5',
+  selectedUniversityBanner: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  universityBannerContent: {
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  universityBannerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#4F46E915',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  universityBannerInfo: {
+    flex: 1,
+  },
+  universityBannerName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 3,
+    letterSpacing: -0.3,
+  },
+  universityBannerCity: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  yearSection: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  yearSectionTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  yearSectionSubtitle: {
+    fontSize: 15,
+    color: '#64748B',
+    marginBottom: 32,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  yearGridPremium: {
+    gap: 16,
+  },
+  yearCardPremium: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+  },
+  selectedYearCardPremium: {
+    borderWidth: 2.5,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+  },
+  yearCardGradient: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  yearNumberCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  yearNumberPremium: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -1,
+  },
+  selectedYearNumberPremium: {
+    color: 'white',
+  },
+  yearLabelPremium: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+    letterSpacing: -0.5,
   },
 });

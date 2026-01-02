@@ -24,12 +24,11 @@ import { TimerPersistence } from '@/lib/timer-persistence';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
 import { PremiumGate } from '@/components/PremiumGate';
-import { AppState } from 'react-native';
 import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen, FileText, CheckCircle } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
+import AddExamModal from '@/components/AddExamModal';
 
 import * as Notifications from 'expo-notifications';
-import * as Haptics from 'expo-haptics';
 
 
 
@@ -44,12 +43,6 @@ interface PlannedSession {
   duration: number;
   notes?: string;
   completed: boolean;
-}
-
-interface SessionHistoryItem extends PlannedSession {
-  startTime: string;
-  endTime: string;
-  actualDuration: number;
 }
 
 interface CompletionScreenProps {
@@ -103,7 +96,6 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
   if (!data) return null;
 
   const progressPercentage = Math.round((currentSessions / dailyGoal) * 100);
-  const isBreak = data.sessionType === 'break';
 
   // Generate random star positions
   const stars = Array.from({ length: 20 }, (_, i) => ({
@@ -257,8 +249,7 @@ export default function TimerScreen() {
   const { theme, isDark } = useTheme();
   const { currentStreak, checkAchievements, refreshAchievements } = useAchievements();
   const { settings } = useTimerSettings();
-  const { isPremium } = usePremium();
-  const appState = useRef(AppState.currentState);
+  usePremium();
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [sessionType, setSessionType] = useState<SessionType>('focus');
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
@@ -289,15 +280,6 @@ export default function TimerScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const [showAddExam, setShowAddExam] = useState(false);
-  const [newExamTitle, setNewExamTitle] = useState('');
-  const [newExamCourse, setNewExamCourse] = useState('');
-  const [newExamDate, setNewExamDate] = useState(new Date());
-  const [newExamDuration, setNewExamDuration] = useState(120);
-  const [newExamLocation, setNewExamLocation] = useState('');
-  const [newExamType, setNewExamType] = useState<'written' | 'oral' | 'practical' | 'online' | 'other'>('written');
-  const [newExamNotes, setNewExamNotes] = useState('');
-  const [showExamDatePicker, setShowExamDatePicker] = useState(false);
-  const [showExamTimePicker, setShowExamTimePicker] = useState(false);
   
   // Suppress unused variable warnings for now
   void motivationalQuote;
@@ -480,7 +462,7 @@ export default function TimerScreen() {
         }),
       ])
     ).start();
-  }, [calculateStats, motivationalQuotes, pulseAnim, scaleAnim]);
+  }, [calculateStats, motivationalQuotes, pulseAnim, scaleAnim, settings.backgroundTimerEnabled, settings.hapticsEnabled, settings.soundEnabled]);
 
   const checkNotificationPermissions = async () => {
     if (Platform.OS === 'web') {
@@ -632,7 +614,7 @@ export default function TimerScreen() {
     
     // Update motivational quote
     setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
-  }, [sessionType, isDndActive, disableDoNotDisturb, addPomodoroSession, selectedCourse, courses, focusTime, sessionStartTime, sessionCount, dailyGoal, showAchievement, breakTime, motivationalQuotes]);
+  }, [sessionType, isDndActive, disableDoNotDisturb, addPomodoroSession, selectedCourse, courses, focusTime, sessionStartTime, sessionCount, dailyGoal, showAchievement, breakTime, motivationalQuotes, checkAchievements, refreshAchievements, settings.notificationsEnabled]);
 
   useEffect(() => {
     if (timerState === 'running') {
@@ -1730,6 +1712,12 @@ export default function TimerScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Add Exam Modal */}
+      <AddExamModal
+        visible={showAddExam}
+        onClose={() => setShowAddExam(false)}
+      />
 
       {/* Add Session Modal */}
       <Modal

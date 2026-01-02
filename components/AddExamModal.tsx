@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Alert
 } from 'react-native';
-import { X, Calendar, Clock, MapPin, FileText, AlertCircle } from 'lucide-react-native';
+import { X, Calendar, Clock, AlertCircle } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import * as Haptics from 'expo-haptics';
@@ -327,7 +327,7 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
             }]}>
               <AlertCircle size={18} color={theme.colors.info} />
               <Text style={[styles.infoText, { color: theme.colors.info }]}>
-                Du kommer att få en påminnelse 1 dag innan provet
+                Du kan ställa in påminnelser för dina prov (kommer snart)
               </Text>
             </View>
           </ScrollView>

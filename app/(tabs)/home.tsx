@@ -370,6 +370,88 @@ export default function HomeScreen() {
           </View>
         </SlideInView>
 
+        {/* Upcoming Exams Section */}
+        {upcomingExams.length > 0 && (
+          <SlideInView direction="up" delay={450}>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleContainer}>
+                  <Calendar size={20} color={theme.colors.warning} />
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
+                </View>
+                <TouchableOpacity onPress={() => router.push('/timer')}>  
+                  <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
+                </TouchableOpacity>
+              </View>
+              
+              {upcomingExams.slice(0, 3).map((exam, index) => {
+                const daysUntil = Math.ceil((exam.examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                const isUrgent = daysUntil <= 3;
+                
+                return (
+                  <FadeInView key={exam.id} delay={500 + index * 100}>
+                    <View style={[
+                      styles.examCard,
+                      { backgroundColor: theme.colors.card },
+                      isUrgent && { borderLeftWidth: 4, borderLeftColor: theme.colors.error }
+                    ]}>
+                      <View style={styles.examCardContent}>
+                        <View style={[
+                          styles.examDateBadge,
+                          { backgroundColor: isUrgent ? theme.colors.error + '15' : theme.colors.warning + '15' }
+                        ]}>
+                          <Text style={[
+                            styles.examDateDay,
+                            { color: isUrgent ? theme.colors.error : theme.colors.warning }
+                          ]}>
+                            {exam.examDate.getDate()}
+                          </Text>
+                          <Text style={[
+                            styles.examDateMonth,
+                            { color: isUrgent ? theme.colors.error : theme.colors.warning }
+                          ]}>
+                            {exam.examDate.toLocaleDateString('sv-SE', { month: 'short' }).toUpperCase()}
+                          </Text>
+                        </View>
+                        
+                        <View style={styles.examInfo}>
+                          <Text style={[styles.examTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                            {exam.title}
+                          </Text>
+                          <View style={styles.examMeta}>
+                            <View style={styles.examMetaItem}>
+                              <Clock size={12} color={theme.colors.textMuted} />
+                              <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>
+                                {exam.examDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                              </Text>
+                            </View>
+                            {exam.location && (
+                              <>
+                                <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>•</Text>
+                                <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]} numberOfLines={1}>
+                                  {exam.location}
+                                </Text>
+                              </>
+                            )}
+                          </View>
+                          {isUrgent && (
+                            <View style={[styles.urgentBadge, { backgroundColor: theme.colors.error + '15' }]}>
+                              <AlertCircle size={12} color={theme.colors.error} />
+                              <Text style={[styles.urgentText, { color: theme.colors.error }]}>
+                                {daysUntil === 0 ? 'Idag' : daysUntil === 1 ? 'Imorgon' : `Om ${daysUntil} dagar`}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </FadeInView>
+                );
+              })}
+            </View>
+          </SlideInView>
+        )}
+
         {/* Challenges */}
         <SlideInView direction="up" delay={480}>
           <View style={styles.section}>
@@ -503,88 +585,6 @@ export default function HomeScreen() {
             </View>
           </View>
         </SlideInView>
-
-        {/* Upcoming Exams Section */}
-        {upcomingExams.length > 0 && (
-          <SlideInView direction="up" delay={750}>
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionTitleContainer}>
-                  <Calendar size={20} color={theme.colors.warning} />
-                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
-                </View>
-                <TouchableOpacity onPress={() => router.push('/timer')}>
-                  <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
-                </TouchableOpacity>
-              </View>
-              
-              {upcomingExams.slice(0, 3).map((exam, index) => {
-                const daysUntil = Math.ceil((exam.examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                const isUrgent = daysUntil <= 3;
-                
-                return (
-                  <FadeInView key={exam.id} delay={800 + index * 100}>
-                    <View style={[
-                      styles.examCard,
-                      { backgroundColor: theme.colors.card },
-                      isUrgent && { borderLeftWidth: 4, borderLeftColor: theme.colors.error }
-                    ]}>
-                      <View style={styles.examCardContent}>
-                        <View style={[
-                          styles.examDateBadge,
-                          { backgroundColor: isUrgent ? theme.colors.error + '15' : theme.colors.warning + '15' }
-                        ]}>
-                          <Text style={[
-                            styles.examDateDay,
-                            { color: isUrgent ? theme.colors.error : theme.colors.warning }
-                          ]}>
-                            {exam.examDate.getDate()}
-                          </Text>
-                          <Text style={[
-                            styles.examDateMonth,
-                            { color: isUrgent ? theme.colors.error : theme.colors.warning }
-                          ]}>
-                            {exam.examDate.toLocaleDateString('sv-SE', { month: 'short' }).toUpperCase()}
-                          </Text>
-                        </View>
-                        
-                        <View style={styles.examInfo}>
-                          <Text style={[styles.examTitle, { color: theme.colors.text }]} numberOfLines={1}>
-                            {exam.title}
-                          </Text>
-                          <View style={styles.examMeta}>
-                            <View style={styles.examMetaItem}>
-                              <Clock size={12} color={theme.colors.textMuted} />
-                              <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>
-                                {exam.examDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
-                              </Text>
-                            </View>
-                            {exam.location && (
-                              <>
-                                <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>•</Text>
-                                <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]} numberOfLines={1}>
-                                  {exam.location}
-                                </Text>
-                              </>
-                            )}
-                          </View>
-                          {isUrgent && (
-                            <View style={[styles.urgentBadge, { backgroundColor: theme.colors.error + '15' }]}>
-                              <AlertCircle size={12} color={theme.colors.error} />
-                              <Text style={[styles.urgentText, { color: theme.colors.error }]}>
-                                {daysUntil === 0 ? 'Idag' : daysUntil === 1 ? 'Imorgon' : `Om ${daysUntil} dagar`}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                  </FadeInView>
-                );
-              })}
-            </View>
-          </SlideInView>
-        )}
 
         {/* Premium Upgrade Banner */}
         {!isPremium && (

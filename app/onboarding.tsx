@@ -32,7 +32,7 @@ import {
 } from 'lucide-react-native';
 import { SWEDISH_GYMNASIUMS } from '@/constants/gymnasiums';
 import { AnimatedPressable, RippleButton, FadeInView } from '@/components/Animations';
-import UniversityPicker from '@/components/UniversityPicker';
+import { SWEDISH_UNIVERSITIES, UNIVERSITY_PROGRAMS } from '@/constants/universities';
 import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
 import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 import { getGymnasiumCourses, type GymnasiumCourse } from '@/constants/gymnasium-courses';
@@ -332,6 +332,8 @@ export default function OnboardingScreen() {
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [availableCourses, setAvailableCourses] = useState<GymnasiumCourse[]>([]);
   const [gymnasiumSearchQuery, setGymnasiumSearchQuery] = useState('');
+  const [universitySearchQuery, setUniversitySearchQuery] = useState('');
+  const [programSearchQuery, setProgramSearchQuery] = useState('');
   const [hasInitializedUsername, setHasInitializedUsername] = useState(false);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [assignedCourses, setAssignedCourses] = useState<any[]>([]);
@@ -537,12 +539,12 @@ export default function OnboardingScreen() {
         if (data.studyLevel === 'gymnasie') {
           return data.gymnasiumProgram !== null && data.year !== null;
         }
-        return data.studyLevel === 'högskola';
+        return data.universityProgram !== null && data.universityYear !== null;
       case 4: 
         if (data.studyLevel === 'gymnasie') {
           return data.gymnasium !== null;
         }
-        return data.university !== null && data.universityProgram !== null && data.universityYear !== null;
+        return data.university !== null;
       case 5: 
         if (data.studyLevel === 'gymnasie') {
           return data.selectedCourses.size > 0;
@@ -956,6 +958,102 @@ export default function OnboardingScreen() {
                 )}
               </View>
             )}
+
+            {data.studyLevel === 'högskola' && (
+              <View style={styles.programYearSelector}>
+                <Text style={styles.programYearTitle}>Välj program och termin</Text>
+                
+                <View style={styles.searchContainer}>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Sök program..."
+                    placeholderTextColor="rgba(255,255,255,0.5)"
+                    value={programSearchQuery}
+                    onChangeText={setProgramSearchQuery}
+                  />
+                </View>
+
+                <ScrollView style={styles.programScroll} showsVerticalScrollIndicator={false}>
+                  <View style={styles.universityProgramGrid}>
+                    {UNIVERSITY_PROGRAMS
+                      .filter(prog => 
+                        !programSearchQuery || 
+                        prog.name.toLowerCase().includes(programSearchQuery.toLowerCase()) ||
+                        prog.field.toLowerCase().includes(programSearchQuery.toLowerCase())
+                      )
+                      .slice(0, 20)
+                      .map(program => {
+                        const colors: Record<string, string> = {
+                          'Teknik': '#F59E0B',
+                          'Medicin': '#EF4444',
+                          'Naturvetenskap': '#10B981',
+                          'Ekonomi': '#8B5CF6',
+                          'Juridik': '#6366F1',
+                          'Samhällsvetenskap': '#3B82F6',
+                          'Humaniora': '#EC4899',
+                          'Utbildningsvetenskap': '#22C55E',
+                        };
+                        const color = colors[program.field] || '#6B7280';
+                        const isSelected = data.universityProgram?.id === program.id;
+                        
+                        return (
+                          <AnimatedPressable
+                            key={program.id}
+                            style={[
+                              styles.universityProgramCard,
+                              isSelected && {
+                                backgroundColor: color + '25',
+                                borderColor: color,
+                                borderWidth: 2.5
+                              }
+                            ]}
+                            onPress={() => setData({ 
+                              ...data, 
+                              universityProgram: program,
+                              universityYear: null
+                            })}
+                          >
+                            <Text style={[
+                              styles.universityProgramName,
+                              isSelected && { color: color, fontWeight: '700' as const }
+                            ]} numberOfLines={2}>
+                              {program.name}
+                            </Text>
+                            <Text style={styles.universityProgramMeta}>
+                              {program.durationYears} år • {program.credits} hp
+                            </Text>
+                          </AnimatedPressable>
+                        );
+                      })}
+                  </View>
+                </ScrollView>
+
+                {data.universityProgram && (
+                  <View style={styles.yearSelector}>
+                    <Text style={styles.yearSelectorTitle}>Välj termin</Text>
+                    <View style={styles.yearButtons}>
+                      {Array.from({ length: data.universityProgram.durationYears }, (_, i) => i + 1).map(year => (
+                        <AnimatedPressable
+                          key={year}
+                          style={[
+                            styles.yearButton,
+                            data.universityYear === year && styles.selectedYearButton
+                          ]}
+                          onPress={() => setData({ ...data, universityYear: year as 1 | 2 | 3 | 4 | 5 })}
+                        >
+                          <Text style={[
+                            styles.yearButtonText,
+                            data.universityYear === year && styles.selectedYearButtonText
+                          ]}>
+                            Termin {year}
+                          </Text>
+                        </AnimatedPressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         );
 
@@ -1016,24 +1114,55 @@ export default function OnboardingScreen() {
           return (
             <View style={styles.stepContainer}>
               <MapPin size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Välj högskola och program</Text>
-              <Text style={styles.subtitle}>Välj din högskola, program och termin</Text>
+              <Text style={styles.title}>Vilken högskola går du på?</Text>
+              <Text style={styles.subtitle}>Välj ditt universitet eller högskola</Text>
               
-              <View style={styles.universityPickerContainer}>
-                <UniversityPicker
-                  selectedUniversity={data.university}
-                  selectedProgram={data.universityProgram}
-                  selectedYear={data.universityYear}
-                  onSelect={(university, program, year) => {
-                    setData({ 
-                      ...data, 
-                      university: university || null, 
-                      universityProgram: program || null, 
-                      universityYear: year || null 
-                    });
-                  }}
+              <View style={styles.searchContainer}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Sök högskola..."
+                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  value={universitySearchQuery}
+                  onChangeText={setUniversitySearchQuery}
                 />
               </View>
+              
+              <ScrollView style={styles.selectionList} showsVerticalScrollIndicator={false}>
+                {SWEDISH_UNIVERSITIES
+                  .filter(u => 
+                    u.name.toLowerCase().includes(universitySearchQuery.toLowerCase()) ||
+                    u.city.toLowerCase().includes(universitySearchQuery.toLowerCase())
+                  )
+                  .slice(0, 20)
+                  .map((university) => (
+                    <AnimatedPressable
+                      key={university.id}
+                      style={[
+                        styles.selectionCard,
+                        data.university?.id === university.id && styles.selectedCard
+                      ]}
+                      onPress={() => setData({ ...data, university })}
+                    >
+                      <View style={styles.selectionCardContent}>
+                        <Text style={[
+                          styles.selectionCardTitle,
+                          data.university?.id === university.id && styles.selectedCardTitle
+                        ]}>
+                          {university.name}
+                        </Text>
+                        <Text style={[
+                          styles.selectionCardSubtitle,
+                          data.university?.id === university.id && { color: '#059669', fontWeight: '600' as const }
+                        ]}>
+                          {university.city} • {university.category}
+                        </Text>
+                      </View>
+                      {data.university?.id === university.id && (
+                        <Check size={20} color="#10B981" />
+                      )}
+                    </AnimatedPressable>
+                  ))}
+              </ScrollView>
             </View>
           );
         }
@@ -2434,5 +2563,37 @@ const styles = StyleSheet.create({
   universityPickerContainer: {
     width: '100%',
     marginTop: 16,
+  },
+  universityProgramGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'center',
+  },
+  universityProgramCard: {
+    backgroundColor: 'rgba(14, 165, 233, 0.08)',
+    borderRadius: 14,
+    padding: 14,
+    alignItems: 'center',
+    width: '48%',
+    minWidth: 140,
+    borderWidth: 2,
+    borderColor: 'rgba(14, 165, 233, 0.2)',
+    minHeight: 100,
+    justifyContent: 'space-between',
+  },
+  universityProgramName: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#1E293B',
+    textAlign: 'center',
+    marginBottom: 6,
+    lineHeight: 18,
+  },
+  universityProgramMeta: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '500' as const,
+    textAlign: 'center',
   },
 });

@@ -4,10 +4,10 @@ import { Platform } from 'react-native';
 export type SoundType = 'start' | 'complete' | 'achievement' | 'reminder';
 
 const SOUND_URLS = {
-  start: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3',
-  complete: 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3',
-  achievement: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3',
-  reminder: 'https://assets.mixkit.co/active_storage/sfx/2357/2357-preview.mp3',
+  start: 'https://cdn.pixabay.com/audio/2022/03/24/audio_c3c6d6e4fa.mp3',
+  complete: 'https://cdn.pixabay.com/audio/2021/08/04/audio_0625c1539c.mp3',
+  achievement: 'https://cdn.pixabay.com/audio/2021/08/04/audio_12b0c7443c.mp3',
+  reminder: 'https://cdn.pixabay.com/audio/2022/03/24/audio_c8e7dc40d6.mp3',
 };
 
 class SoundManager {
@@ -48,14 +48,15 @@ class SoundManager {
     try {
       const { sound } = await Audio.Sound.createAsync(
         { uri: SOUND_URLS[type] },
-        { shouldPlay: false, volume: 0.6 }
+        { shouldPlay: false, volume: 0.6 },
+        null,
+        false
       );
 
       this.sounds.set(type, sound);
       console.log(`Sound loaded: ${type}`);
-    } catch (error) {
-      console.error(`Failed to load sound ${type}:`, error);
-      console.log(`Attempted URL: ${SOUND_URLS[type]}`);
+    } catch {
+      console.warn(`Failed to load sound ${type}, will retry on play`);
     }
   }
 
@@ -69,33 +70,36 @@ class SoundManager {
   }
 
   async playSound(type: SoundType): Promise<void> {
-    if (!this.isEnabled) {
-      console.log('Sound disabled, skipping playback');
-      return;
-    }
+    if (!this.isEnabled) return;
 
-    if (Platform.OS === 'web') {
-      console.log(`Sound playback not supported on web: ${type}`);
-      return;
-    }
+    if (Platform.OS === 'web') return;
 
     try {
-      await this.loadSound(type);
+      let sound = this.sounds.get(type);
       
-      const sound = this.sounds.get(type);
       if (!sound) {
-        console.warn(`Sound not found: ${type}`);
-        return;
+        try {
+          const { sound: newSound } = await Audio.Sound.createAsync(
+            { uri: SOUND_URLS[type] },
+            { shouldPlay: false, volume: 0.6 },
+            null,
+            false
+          );
+          sound = newSound;
+          this.sounds.set(type, sound);
+        } catch {
+          console.warn(`Could not load sound ${type}, skipping playback`);
+          return;
+        }
       }
 
       const status = await sound.getStatusAsync();
       if (status.isLoaded) {
         await sound.setPositionAsync(0);
         await sound.playAsync();
-        console.log(`Playing sound: ${type}`);
       }
-    } catch (error) {
-      console.error(`Failed to play sound ${type}:`, error);
+    } catch {
+      console.warn(`Sound playback failed for ${type}, continuing without sound`);
     }
   }
 

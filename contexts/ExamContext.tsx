@@ -2,6 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { NotificationManager } from '@/lib/notification-manager';
 
 export interface Exam {
   id: string;
@@ -136,6 +137,16 @@ export const [ExamProvider, useExams] = createContextHook((): ExamContextType =>
         const newExam = dbExamToExam(data);
         setExams(prev => [...prev, newExam].sort((a, b) => a.examDate.getTime() - b.examDate.getTime()));
         console.log('Exam added successfully');
+        
+        // Schedule notifications for the exam
+        if (exam.notificationEnabled) {
+          await NotificationManager.scheduleExamNotifications(
+            data.id,
+            exam.title,
+            exam.examDate,
+            exam.courseId
+          );
+        }
       }
     } catch (error) {
       console.error('Exception adding exam:', error);
@@ -183,6 +194,19 @@ export const [ExamProvider, useExams] = createContextHook((): ExamContextType =>
         const updatedExam = dbExamToExam(data);
         setExams(prev => prev.map(exam => exam.id === id ? updatedExam : exam).sort((a, b) => a.examDate.getTime() - b.examDate.getTime()));
         console.log('Exam updated successfully');
+        
+        // Reschedule notifications if notification settings changed
+        if (updates.notificationEnabled !== undefined || updates.examDate !== undefined) {
+          await NotificationManager.cancelExamNotifications(id);
+          if (updatedExam.notificationEnabled) {
+            await NotificationManager.scheduleExamNotifications(
+              id,
+              updatedExam.title,
+              updatedExam.examDate,
+              updatedExam.courseId
+            );
+          }
+        }
       }
     } catch (error) {
       console.error('Exception updating exam:', error);
@@ -212,6 +236,9 @@ export const [ExamProvider, useExams] = createContextHook((): ExamContextType =>
 
       setExams(prev => prev.filter(exam => exam.id !== id));
       console.log('Exam deleted successfully');
+      
+      // Cancel notifications for the deleted exam
+      await NotificationManager.cancelExamNotifications(id);
     } catch (error) {
       console.error('Exception deleting exam:', error);
       throw error;

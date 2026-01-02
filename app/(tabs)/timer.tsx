@@ -295,6 +295,7 @@ export default function TimerScreen() {
   } | null>(null);
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const backgroundUpdateRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const progressAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -627,10 +628,30 @@ export default function TimerScreen() {
           return prev - 1;
         });
       }, 1000);
+      
+      // Update background notification every 10 seconds when timer is running
+      const courseName = selectedCourse 
+        ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
+        : 'Allmän session';
+      
+      backgroundUpdateRef.current = setInterval(async () => {
+        if (settings.notificationsEnabled && settings.backgroundTimerEnabled) {
+          await TimerPersistence.updateBackgroundNotification(
+            timeLeft,
+            sessionType,
+            courseName
+          );
+        }
+      }, 10000); // Update every 10 seconds
+      
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
+      }
+      if (backgroundUpdateRef.current) {
+        clearInterval(backgroundUpdateRef.current);
+        backgroundUpdateRef.current = null;
       }
     }
 
@@ -638,8 +659,11 @@ export default function TimerScreen() {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      if (backgroundUpdateRef.current) {
+        clearInterval(backgroundUpdateRef.current);
+      }
     };
-  }, [timerState, handleTimerComplete]);
+  }, [timerState, handleTimerComplete, timeLeft, sessionType, selectedCourse, courses, settings.notificationsEnabled, settings.backgroundTimerEnabled]);
 
   useEffect(() => {
     Animated.timing(progressAnim, {
@@ -683,6 +707,15 @@ export default function TimerScreen() {
         sessionType,
         courseName
       );
+      
+      // Show initial background notification
+      if (settings.backgroundTimerEnabled) {
+        await TimerPersistence.updateBackgroundNotification(
+          timeLeft,
+          sessionType,
+          courseName
+        );
+      }
       
       if (sessionType === 'focus' && timeLeft > 600) {
         await TimerPersistence.scheduleProgressNotification(

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
+import { NotificationManager } from '@/lib/notification-manager';
 import { Platform } from 'react-native';
 
 const TIMER_STATE_KEY = '@timer_state';
@@ -79,30 +79,16 @@ export class TimerPersistence {
     try {
       await this.cancelNotification();
 
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Notification permission not granted');
-        return;
+      const notificationId = await NotificationManager.scheduleTimerNotification(
+        remainingSeconds,
+        sessionType,
+        courseName
+      );
+
+      if (notificationId) {
+        await AsyncStorage.setItem(TIMER_NOTIFICATION_ID_KEY, notificationId);
+        console.log('⏰ Timer completion notification scheduled');
       }
-
-      const notificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: sessionType === 'focus' ? '🎯 Focus Session Complete!' : '☕ Break Complete!',
-          body: sessionType === 'focus' 
-            ? `Great work on ${courseName}! Time for a break.`
-            : 'Break is over. Ready for another session?',
-          sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-          badge: 1,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: remainingSeconds,
-        } as Notifications.TimeIntervalTriggerInput,
-      });
-
-      await AsyncStorage.setItem(TIMER_NOTIFICATION_ID_KEY, notificationId);
-      console.log('Completion notification scheduled for', remainingSeconds, 'seconds');
     } catch (error) {
       console.error('Failed to schedule notification:', error);
     }
@@ -116,23 +102,13 @@ export class TimerPersistence {
     if (Platform.OS === 'web') return;
 
     try {
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== 'granted') return;
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '💪 Fortsätt kämpa!',
-          body: `Du har varit fokuserad på ${courseName} i ${delaySeconds / 60} minuter!`,
-          sound: false,
-          priority: Notifications.AndroidNotificationPriority.LOW,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: delaySeconds,
-        } as Notifications.TimeIntervalTriggerInput,
-      });
-
-      console.log('Progress notification scheduled for', delaySeconds, 'seconds');
+      const remainingSeconds = delaySeconds;
+      await NotificationManager.showTimerInProgress(
+        remainingSeconds,
+        sessionType,
+        courseName
+      );
+      console.log('⏰ Progress notification shown');
     } catch (error) {
       console.error('Failed to schedule progress notification:', error);
     }
@@ -144,12 +120,11 @@ export class TimerPersistence {
     try {
       const storedId = await AsyncStorage.getItem(TIMER_NOTIFICATION_ID_KEY);
       if (storedId) {
-        await Notifications.cancelScheduledNotificationAsync(storedId);
         await AsyncStorage.removeItem(TIMER_NOTIFICATION_ID_KEY);
-        console.log('Cancelled scheduled notification');
+        console.log('✅ Cancelled timer notification');
       }
 
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      await NotificationManager.dismissTimerNotifications();
     } catch (error) {
       console.error('Failed to cancel notifications:', error);
     }
@@ -162,18 +137,11 @@ export class TimerPersistence {
     if (Platform.OS === 'web') return;
 
     try {
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== 'granted') return;
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title,
-          body,
-          sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-        },
-        trigger: null,
-      });
+      await NotificationManager.scheduleTimerNotification(
+        0,
+        'focus',
+        body
+      );
     } catch (error) {
       console.error('Failed to show immediate notification:', error);
     }
@@ -183,18 +151,28 @@ export class TimerPersistence {
     if (Platform.OS === 'web') return false;
 
     try {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-
-      return finalStatus === 'granted';
+      return await NotificationManager.requestPermissions();
     } catch (error) {
       console.error('Failed to request notification permissions:', error);
       return false;
+    }
+  }
+
+  static async updateBackgroundNotification(
+    remainingSeconds: number,
+    sessionType: TimerSessionType,
+    courseName: string
+  ): Promise<void> {
+    if (Platform.OS === 'web') return;
+
+    try {
+      await NotificationManager.showTimerInProgress(
+        remainingSeconds,
+        sessionType,
+        courseName
+      );
+    } catch (error) {
+      console.error('Failed to update background notification:', error);
     }
   }
 }

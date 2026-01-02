@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
+import * as Notifications from 'expo-notifications';
+import { NotificationManager } from '@/lib/notification-manager';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { StudyProvider } from "@/contexts/StudyContext";
@@ -49,6 +51,23 @@ function RootLayoutNav() {
 export default function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
+    
+    // Initialize notification manager
+    NotificationManager.initialize();
+    
+    // Setup notification listeners
+    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+      console.log('📬 Notification received:', notification);
+    });
+
+    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('📱 Notification response:', response);
+    });
+
+    return () => {
+      notificationListener.remove();
+      responseListener.remove();
+    };
   }, []);
 
   return (

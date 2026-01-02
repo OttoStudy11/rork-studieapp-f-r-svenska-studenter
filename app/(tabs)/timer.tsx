@@ -1101,6 +1101,158 @@ export default function TimerScreen() {
           </LinearGradient>
         </View>
 
+        {/* Statistics Section */}
+        <PremiumGate feature="statistics">
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
+          </View>
+
+          {/* View Toggle with gradient */}
+          <LinearGradient
+            colors={[theme.colors.card, theme.colors.card + 'DD'] as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.viewToggle}
+          >
+            <TouchableOpacity 
+              style={[
+                styles.viewButton,
+                selectedStatView === 'day' && { backgroundColor: theme.colors.primary }
+              ]}
+              onPress={() => setSelectedStatView('day')}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.viewButtonText,
+                { color: selectedStatView === 'day' ? '#FFFFFF' : theme.colors.textSecondary }
+              ]}>Idag</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                styles.viewButton,
+                selectedStatView === 'week' && { backgroundColor: theme.colors.primary }
+              ]}
+              onPress={() => setSelectedStatView('week')}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.viewButtonText,
+                { color: selectedStatView === 'week' ? '#FFFFFF' : theme.colors.textSecondary }
+              ]}>Vecka</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+
+          {/* Enhanced Stats Cards with gradients */}
+          <View style={styles.statsGrid}>
+            <LinearGradient
+              colors={[theme.colors.primary + '20', theme.colors.primary + '10'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.statCard}
+            >
+              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.primary + '30' }]}>
+                <Brain size={20} color={theme.colors.primary} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>
+                {selectedStatView === 'day' ? todayStats.sessions : weekStats.sessions}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+                Sessioner
+              </Text>
+            </LinearGradient>
+            
+            <LinearGradient
+              colors={[theme.colors.secondary + '20', theme.colors.secondary + '10'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.statCard}
+            >
+              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.secondary + '30' }]}>
+                <Zap size={20} color={theme.colors.secondary} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>
+                {selectedStatView === 'day' 
+                  ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m`
+                  : `${Math.floor(weekStats.minutes / 60)}h`
+                }
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+                Total tid
+              </Text>
+            </LinearGradient>
+            
+            <LinearGradient
+              colors={[theme.colors.warning + '20', theme.colors.warning + '10'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.statCard}
+            >
+              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.warning + '30' }]}>
+                <Flame size={20} color={theme.colors.warning} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>
+                {streakStats.longest}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+                Bästa streak
+              </Text>
+            </LinearGradient>
+          </View>
+
+          {/* Enhanced Weekly Graph */}
+          {selectedStatView === 'week' && (
+            <LinearGradient
+              colors={[theme.colors.card, theme.colors.card + 'EE'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.weeklyGraph}
+            >
+              <Text style={[styles.graphTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
+              <View style={styles.graphBars}>
+                {weekStats.dailyStats.map((day: any, i: number) => {
+                  const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
+                  const isToday = day.date.toDateString() === new Date().toDateString();
+                  const maxMinutes = Math.max(60, Math.max(...weekStats.dailyStats.map(d => d.minutes)));
+                  const barHeight = Math.max(4, (day.minutes / maxMinutes) * 100);
+                  
+                  return (
+                    <View key={`day-${i}`} style={styles.dayColumn}>
+                      <View style={styles.barContainer}>
+                        <LinearGradient
+                          colors={isToday 
+                            ? theme.colors.gradient as any
+                            : [theme.colors.border, theme.colors.border + 'AA'] as any
+                          }
+                          start={{ x: 0, y: 1 }}
+                          end={{ x: 0, y: 0 }}
+                          style={[
+                            styles.dayBar, 
+                            { height: `${barHeight}%` }
+                          ]} 
+                        />
+                        {day.minutes > 0 && (
+                          <Text style={[styles.barValue, { color: theme.colors.text }]}>
+                            {Math.round(day.minutes / 60)}h
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={[
+                        styles.dayLabel, 
+                        { 
+                          color: isToday ? theme.colors.primary : theme.colors.textSecondary,
+                          fontWeight: isToday ? '700' : '500'
+                        }
+                      ]}>{dayName}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </LinearGradient>
+          )}
+        </View>
+        </PremiumGate>
+
         {/* Study Planner Section */}
         <View style={styles.section}>
           <TouchableOpacity 
@@ -1121,9 +1273,166 @@ export default function TimerScreen() {
 
           {showPlanner && (
             <View style={styles.plannerContainer}>
-              {/* Upcoming Sessions */}
+              {/* Exams Section - Moved to top */}
               <TouchableOpacity 
                 style={styles.plannerSectionHeader}
+                onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'exams' ? null : 'exams')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.plannerSectionLeft}>
+                  <FileText size={20} color={theme.colors.warning} />
+                  <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Prov</Text>
+                </View>
+                <View style={styles.plannerSectionRight}>
+                  <TouchableOpacity
+                    style={[styles.addSessionButton, { backgroundColor: theme.colors.warning }]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setShowAddExam(true);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Plus size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  {expandedSectionPlanner === 'exams' ? (
+                    <ChevronUp size={20} color={theme.colors.textSecondary} />
+                  ) : (
+                    <ChevronDown size={20} color={theme.colors.textSecondary} />
+                  )}
+                </View>
+              </TouchableOpacity>
+
+              {expandedSectionPlanner === 'exams' && (
+                <View style={styles.sessionsList}>
+                  {upcomingExams.length === 0 && completedExams.length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <FileText size={48} color={theme.colors.textSecondary} opacity={0.3} />
+                      <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
+                        Inga prov schemalagda
+                      </Text>
+                      <Text style={[styles.emptyStateSubtext, { color: theme.colors.textSecondary }]}>
+                        Tryck på + för att lägga till ett prov
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      {upcomingExams.length > 0 && (
+                        <View style={styles.examSection}>
+                          <Text style={[styles.examSectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
+                          {upcomingExams.map((exam) => {
+                            const courseName = exam.courseId 
+                              ? courses.find((c) => c.id === exam.courseId)?.title || 'Allmän kurs'
+                              : 'Allmänt prov';
+                            
+                            return (
+                              <View key={exam.id} style={[styles.examCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.warning }]}>
+                                <View style={styles.examCardHeader}>
+                                  <View style={styles.examCardLeft}>
+                                    <FileText size={20} color={theme.colors.warning} />
+                                    <View>
+                                      <Text style={[styles.examTitle, { color: theme.colors.text }]}>
+                                        {exam.title}
+                                      </Text>
+                                      <Text style={[styles.examCourse, { color: theme.colors.textSecondary }]}>
+                                        {courseName}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                </View>
+                                <View style={styles.examCardDetails}>
+                                  <View style={styles.examDetailRow}>
+                                    <Calendar size={16} color={theme.colors.textSecondary} />
+                                    <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
+                                      {new Date(exam.examDate).toLocaleDateString('sv-SE', { 
+                                        weekday: 'long',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </Text>
+                                  </View>
+                                  {exam.location && (
+                                    <View style={styles.examDetailRow}>
+                                      <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
+                                        📍 {exam.location}
+                                      </Text>
+                                    </View>
+                                  )}
+                                  {exam.durationMinutes && (
+                                    <View style={styles.examDetailRow}>
+                                      <Clock size={16} color={theme.colors.textSecondary} />
+                                      <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
+                                        {exam.durationMinutes} minuter
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+                                {exam.notes && (
+                                  <Text style={[styles.examNotes, { color: theme.colors.textSecondary }]} numberOfLines={2}>
+                                    {exam.notes}
+                                  </Text>
+                                )}
+                              </View>
+                            );
+                          })}
+                        </View>
+                      )}
+
+                      {completedExams.length > 0 && (
+                        <View style={[styles.examSection, { marginTop: 16 }]}>
+                          <Text style={[styles.examSectionTitle, { color: theme.colors.text }]}>Genomförda prov</Text>
+                          {completedExams.slice(0, 5).map((exam) => {
+                            const courseName = exam.courseId 
+                              ? courses.find((c) => c.id === exam.courseId)?.title || 'Allmän kurs'
+                              : 'Allmänt prov';
+                            
+                            return (
+                              <View key={exam.id} style={[styles.examCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.success, opacity: 0.7 }]}>
+                                <View style={styles.examCardHeader}>
+                                  <View style={styles.examCardLeft}>
+                                    <CheckCircle size={20} color={theme.colors.success} />
+                                    <View>
+                                      <Text style={[styles.examTitle, { color: theme.colors.text }]}>
+                                        {exam.title}
+                                      </Text>
+                                      <Text style={[styles.examCourse, { color: theme.colors.textSecondary }]}>
+                                        {courseName}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                  {exam.grade && (
+                                    <View style={[styles.gradeBadge, { backgroundColor: theme.colors.success + '20' }]}>
+                                      <Text style={[styles.gradeText, { color: theme.colors.success }]}>
+                                        {exam.grade}
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+                                <View style={styles.examCardDetails}>
+                                  <View style={styles.examDetailRow}>
+                                    <Calendar size={16} color={theme.colors.textSecondary} />
+                                    <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
+                                      {new Date(exam.examDate).toLocaleDateString('sv-SE', { 
+                                        month: 'short',
+                                        day: 'numeric'
+                                      })}
+                                    </Text>
+                                  </View>
+                                </View>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </>
+                  )}
+                </View>
+              )}
+
+              {/* Upcoming Sessions */}
+              <TouchableOpacity 
+                style={[styles.plannerSectionHeader, { marginTop: 16 }]}
                 onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'upcoming' ? null : 'upcoming')}
                 activeOpacity={0.7}
               >
@@ -1285,318 +1594,9 @@ export default function TimerScreen() {
                   )}
                 </View>
               )}
-
-              {/* Exams Section */}
-              <TouchableOpacity 
-                style={[styles.plannerSectionHeader, { marginTop: 16 }]}
-                onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'exams' ? null : 'exams')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.plannerSectionLeft}>
-                  <FileText size={20} color={theme.colors.warning} />
-                  <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Prov</Text>
-                </View>
-                <View style={styles.plannerSectionRight}>
-                  <TouchableOpacity
-                    style={[styles.addSessionButton, { backgroundColor: theme.colors.warning }]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setShowAddExam(true);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Plus size={16} color="#FFFFFF" />
-                  </TouchableOpacity>
-                  {expandedSectionPlanner === 'exams' ? (
-                    <ChevronUp size={20} color={theme.colors.textSecondary} />
-                  ) : (
-                    <ChevronDown size={20} color={theme.colors.textSecondary} />
-                  )}
-                </View>
-              </TouchableOpacity>
-
-              {expandedSectionPlanner === 'exams' && (
-                <View style={styles.sessionsList}>
-                  {upcomingExams.length === 0 && completedExams.length === 0 ? (
-                    <View style={styles.emptyState}>
-                      <FileText size={48} color={theme.colors.textSecondary} opacity={0.3} />
-                      <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
-                        Inga prov schemalagda
-                      </Text>
-                      <Text style={[styles.emptyStateSubtext, { color: theme.colors.textSecondary }]}>
-                        Tryck på + för att lägga till ett prov
-                      </Text>
-                    </View>
-                  ) : (
-                    <>
-                      {upcomingExams.length > 0 && (
-                        <View style={styles.examSection}>
-                          <Text style={[styles.examSectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
-                          {upcomingExams.map((exam) => {
-                            const courseName = exam.courseId 
-                              ? courses.find((c) => c.id === exam.courseId)?.title || 'Allmän kurs'
-                              : 'Allmänt prov';
-                            
-                            return (
-                              <View key={exam.id} style={[styles.examCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.warning }]}>
-                                <View style={styles.examCardHeader}>
-                                  <View style={styles.examCardLeft}>
-                                    <FileText size={20} color={theme.colors.warning} />
-                                    <View>
-                                      <Text style={[styles.examTitle, { color: theme.colors.text }]}>
-                                        {exam.title}
-                                      </Text>
-                                      <Text style={[styles.examCourse, { color: theme.colors.textSecondary }]}>
-                                        {courseName}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                </View>
-                                <View style={styles.examCardDetails}>
-                                  <View style={styles.examDetailRow}>
-                                    <Calendar size={16} color={theme.colors.textSecondary} />
-                                    <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
-                                      {new Date(exam.examDate).toLocaleDateString('sv-SE', { 
-                                        weekday: 'long',
-                                        month: 'long',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
-                                    </Text>
-                                  </View>
-                                  {exam.location && (
-                                    <View style={styles.examDetailRow}>
-                                      <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
-                                        📍 {exam.location}
-                                      </Text>
-                                    </View>
-                                  )}
-                                  {exam.durationMinutes && (
-                                    <View style={styles.examDetailRow}>
-                                      <Clock size={16} color={theme.colors.textSecondary} />
-                                      <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
-                                        {exam.durationMinutes} minuter
-                                      </Text>
-                                    </View>
-                                  )}
-                                </View>
-                                {exam.notes && (
-                                  <Text style={[styles.examNotes, { color: theme.colors.textSecondary }]} numberOfLines={2}>
-                                    {exam.notes}
-                                  </Text>
-                                )}
-                              </View>
-                            );
-                          })}
-                        </View>
-                      )}
-
-                      {completedExams.length > 0 && (
-                        <View style={[styles.examSection, { marginTop: 16 }]}>
-                          <Text style={[styles.examSectionTitle, { color: theme.colors.text }]}>Genomförda prov</Text>
-                          {completedExams.slice(0, 5).map((exam) => {
-                            const courseName = exam.courseId 
-                              ? courses.find((c) => c.id === exam.courseId)?.title || 'Allmän kurs'
-                              : 'Allmänt prov';
-                            
-                            return (
-                              <View key={exam.id} style={[styles.examCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.success, opacity: 0.7 }]}>
-                                <View style={styles.examCardHeader}>
-                                  <View style={styles.examCardLeft}>
-                                    <CheckCircle size={20} color={theme.colors.success} />
-                                    <View>
-                                      <Text style={[styles.examTitle, { color: theme.colors.text }]}>
-                                        {exam.title}
-                                      </Text>
-                                      <Text style={[styles.examCourse, { color: theme.colors.textSecondary }]}>
-                                        {courseName}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                  {exam.grade && (
-                                    <View style={[styles.gradeBadge, { backgroundColor: theme.colors.success + '20' }]}>
-                                      <Text style={[styles.gradeText, { color: theme.colors.success }]}>
-                                        {exam.grade}
-                                      </Text>
-                                    </View>
-                                  )}
-                                </View>
-                                <View style={styles.examCardDetails}>
-                                  <View style={styles.examDetailRow}>
-                                    <Calendar size={16} color={theme.colors.textSecondary} />
-                                    <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
-                                      {new Date(exam.examDate).toLocaleDateString('sv-SE', { 
-                                        month: 'short',
-                                        day: 'numeric'
-                                      })}
-                                    </Text>
-                                  </View>
-                                </View>
-                              </View>
-                            );
-                          })}
-                        </View>
-                      )}
-                    </>
-                  )}
-                </View>
-              )}
             </View>
           )}
         </View>
-
-        {/* Statistics Section */}
-        <PremiumGate feature="statistics">
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
-          </View>
-
-          {/* View Toggle with gradient */}
-          <LinearGradient
-            colors={[theme.colors.card, theme.colors.card + 'DD'] as any}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.viewToggle}
-          >
-            <TouchableOpacity 
-              style={[
-                styles.viewButton,
-                selectedStatView === 'day' && { backgroundColor: theme.colors.primary }
-              ]}
-              onPress={() => setSelectedStatView('day')}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.viewButtonText,
-                { color: selectedStatView === 'day' ? '#FFFFFF' : theme.colors.textSecondary }
-              ]}>Idag</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                styles.viewButton,
-                selectedStatView === 'week' && { backgroundColor: theme.colors.primary }
-              ]}
-              onPress={() => setSelectedStatView('week')}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.viewButtonText,
-                { color: selectedStatView === 'week' ? '#FFFFFF' : theme.colors.textSecondary }
-              ]}>Vecka</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-
-          {/* Enhanced Stats Cards with gradients */}
-          <View style={styles.statsGrid}>
-            <LinearGradient
-              colors={[theme.colors.primary + '20', theme.colors.primary + '10'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statCard}
-            >
-              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.primary + '30' }]}>
-                <Brain size={20} color={theme.colors.primary} />
-              </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {selectedStatView === 'day' ? todayStats.sessions : weekStats.sessions}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                Sessioner
-              </Text>
-            </LinearGradient>
-            
-            <LinearGradient
-              colors={[theme.colors.secondary + '20', theme.colors.secondary + '10'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statCard}
-            >
-              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.secondary + '30' }]}>
-                <Zap size={20} color={theme.colors.secondary} />
-              </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {selectedStatView === 'day' 
-                  ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m`
-                  : `${Math.floor(weekStats.minutes / 60)}h`
-                }
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                Total tid
-              </Text>
-            </LinearGradient>
-            
-            <LinearGradient
-              colors={[theme.colors.warning + '20', theme.colors.warning + '10'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statCard}
-            >
-              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.warning + '30' }]}>
-                <Flame size={20} color={theme.colors.warning} />
-              </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {streakStats.longest}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                Bästa streak
-              </Text>
-            </LinearGradient>
-          </View>
-
-          {/* Enhanced Weekly Graph */}
-          {selectedStatView === 'week' && (
-            <LinearGradient
-              colors={[theme.colors.card, theme.colors.card + 'EE'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.weeklyGraph}
-            >
-              <Text style={[styles.graphTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
-              <View style={styles.graphBars}>
-                {weekStats.dailyStats.map((day: any, i: number) => {
-                  const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
-                  const isToday = day.date.toDateString() === new Date().toDateString();
-                  const maxMinutes = Math.max(60, Math.max(...weekStats.dailyStats.map(d => d.minutes)));
-                  const barHeight = Math.max(4, (day.minutes / maxMinutes) * 100);
-                  
-                  return (
-                    <View key={`day-${i}`} style={styles.dayColumn}>
-                      <View style={styles.barContainer}>
-                        <LinearGradient
-                          colors={isToday 
-                            ? theme.colors.gradient as any
-                            : [theme.colors.border, theme.colors.border + 'AA'] as any
-                          }
-                          start={{ x: 0, y: 1 }}
-                          end={{ x: 0, y: 0 }}
-                          style={[
-                            styles.dayBar, 
-                            { height: `${barHeight}%` }
-                          ]} 
-                        />
-                        {day.minutes > 0 && (
-                          <Text style={[styles.barValue, { color: theme.colors.text }]}>
-                            {Math.round(day.minutes / 60)}h
-                          </Text>
-                        )}
-                      </View>
-                      <Text style={[
-                        styles.dayLabel, 
-                        { 
-                          color: isToday ? theme.colors.primary : theme.colors.textSecondary,
-                          fontWeight: isToday ? '700' : '500'
-                        }
-                      ]}>{dayName}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </LinearGradient>
-          )}
-        </View>
-        </PremiumGate>
       </ScrollView>
 
       {/* Completion Screen Modal */}

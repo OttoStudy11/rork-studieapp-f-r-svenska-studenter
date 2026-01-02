@@ -504,31 +504,6 @@ export default function HomeScreen() {
           </View>
         </SlideInView>
 
-        {/* Premium Upgrade Banner */}
-        {!isPremium && (
-          <SlideInView direction="up" delay={700}>
-            <View style={styles.section}>
-              <TouchableOpacity 
-                style={[styles.premiumBanner, { backgroundColor: theme.colors.warning + '15', borderColor: theme.colors.warning + '30' }]}
-                onPress={() => router.push('/premium')}
-              >
-                <View style={styles.premiumBannerContent}>
-                  <View style={styles.premiumBannerLeft}>
-                    <Crown size={24} color={theme.colors.warning} />
-                    <View style={styles.premiumBannerText}>
-                      <Text style={[styles.premiumBannerTitle, { color: theme.colors.text }]}>Uppgradera till Premium</Text>
-                      <Text style={[styles.premiumBannerSubtitle, { color: theme.colors.textSecondary }]}>Obegränsade kurser, avancerad statistik och mer</Text>
-                    </View>
-                  </View>
-                  <View style={[styles.premiumBannerButton, { backgroundColor: theme.colors.warning }]}>
-                    <Text style={styles.premiumBannerButtonText}>Uppgradera</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </SlideInView>
-        )}
-
         {/* Upcoming Exams Section */}
         {upcomingExams.length > 0 && (
           <SlideInView direction="up" delay={750}>
@@ -538,6 +513,9 @@ export default function HomeScreen() {
                   <Calendar size={20} color={theme.colors.warning} />
                   <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
                 </View>
+                <TouchableOpacity onPress={() => router.push('/timer')}>
+                  <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
+                </TouchableOpacity>
               </View>
               
               {upcomingExams.slice(0, 3).map((exam, index) => {
@@ -604,6 +582,31 @@ export default function HomeScreen() {
                   </FadeInView>
                 );
               })}
+            </View>
+          </SlideInView>
+        )}
+
+        {/* Premium Upgrade Banner */}
+        {!isPremium && (
+          <SlideInView direction="up" delay={700}>
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={[styles.premiumBanner, { backgroundColor: theme.colors.warning + '15', borderColor: theme.colors.warning + '30' }]}
+                onPress={() => router.push('/premium')}
+              >
+                <View style={styles.premiumBannerContent}>
+                  <View style={styles.premiumBannerLeft}>
+                    <Crown size={24} color={theme.colors.warning} />
+                    <View style={styles.premiumBannerText}>
+                      <Text style={[styles.premiumBannerTitle, { color: theme.colors.text }]}>Uppgradera till Premium</Text>
+                      <Text style={[styles.premiumBannerSubtitle, { color: theme.colors.textSecondary }]}>Obegränsade kurser, avancerad statistik och mer</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.premiumBannerButton, { backgroundColor: theme.colors.warning }]}>
+                    <Text style={styles.premiumBannerButtonText}>Uppgradera</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             </View>
           </SlideInView>
         )}

@@ -1,9 +1,10 @@
 import { Tabs, useRouter, useSegments } from "expo-router";
 import React, { useRef } from "react";
 import { Home, BookOpen, Timer, Users, MessageCircle } from "lucide-react-native";
-import { Platform, PanResponder, Dimensions, View } from "react-native";
-import { COLORS, SPACING, ICON_SIZES } from "@/constants/design-system";
+import { Platform, PanResponder, Dimensions, View, StyleSheet } from "react-native";
+import { COLORS } from "@/constants/design-system";
 import { t } from "@/constants/translations";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -12,6 +13,7 @@ const TAB_ROUTES = ['home', 'courses', 'timer', 'friends', 'ai-chat'];
 export default function TabLayout() {
   const router = useRouter();
   const segments = useSegments();
+  const { isDark } = useTheme();
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
@@ -54,30 +56,40 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textMuted,
+        tabBarInactiveTintColor: isDark ? '#6B7280' : '#9CA3AF',
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: COLORS.backgroundLight,
-          borderTopWidth: 1,
-          borderTopColor: COLORS.border,
-          paddingTop: SPACING.md,
-          paddingBottom: Platform.OS === 'ios' ? 28 : SPACING.md,
-          paddingHorizontal: SPACING.xl,
-          height: Platform.OS === 'ios' ? 88 : 68,
-          shadowColor: COLORS.black,
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 12,
-          elevation: 12,
+          position: 'absolute' as const,
+          bottom: Platform.OS === 'ios' ? 24 : 16,
+          left: 20,
+          right: 20,
+          backgroundColor: isDark ? 'rgba(30, 41, 59, 0.92)' : 'rgba(255, 255, 255, 0.92)',
+          borderTopWidth: 0,
+          borderRadius: 28,
+          paddingTop: 0,
+          paddingBottom: 0,
+          paddingHorizontal: 8,
+          height: 64,
+          shadowColor: isDark ? '#6366F1' : '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: isDark ? 0.25 : 0.15,
+          shadowRadius: 24,
+          elevation: 20,
+          borderWidth: 1,
+          borderColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(0, 0, 0, 0.05)',
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600' as const,
-          marginTop: 4,
-          letterSpacing: 0.3,
+          marginTop: 2,
+          marginBottom: Platform.OS === 'ios' ? 0 : 4,
+          letterSpacing: 0.2,
         },
         tabBarIconStyle: {
-          marginTop: 2,
+          marginTop: Platform.OS === 'ios' ? 6 : 4,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 6,
         },
       }}
     >
@@ -85,12 +97,14 @@ export default function TabLayout() {
         name="home"
         options={{
           title: t('navigation.home'),
-          tabBarIcon: ({ color, size, focused }) => (
-            <Home 
-              color={color} 
-              size={ICON_SIZES.lg} 
-              strokeWidth={focused ? 2.5 : 2}
-            />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.activeIconContainer : undefined}>
+              <Home 
+                color={focused ? COLORS.primary : color} 
+                size={22} 
+                strokeWidth={focused ? 2.5 : 1.8}
+              />
+            </View>
           ),
         }}
       />
@@ -98,12 +112,14 @@ export default function TabLayout() {
         name="courses"
         options={{
           title: t('navigation.courses'),
-          tabBarIcon: ({ color, size, focused }) => (
-            <BookOpen 
-              color={color} 
-              size={ICON_SIZES.lg} 
-              strokeWidth={focused ? 2.5 : 2}
-            />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.activeIconContainer : undefined}>
+              <BookOpen 
+                color={focused ? COLORS.primary : color} 
+                size={22} 
+                strokeWidth={focused ? 2.5 : 1.8}
+              />
+            </View>
           ),
         }}
       />
@@ -111,12 +127,14 @@ export default function TabLayout() {
         name="timer"
         options={{
           title: t('timer.focus'),
-          tabBarIcon: ({ color, size, focused }) => (
-            <Timer 
-              color={color} 
-              size={ICON_SIZES.lg} 
-              strokeWidth={focused ? 2.5 : 2}
-            />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.activeIconContainer : undefined}>
+              <Timer 
+                color={focused ? COLORS.primary : color} 
+                size={22} 
+                strokeWidth={focused ? 2.5 : 1.8}
+              />
+            </View>
           ),
         }}
       />
@@ -124,12 +142,14 @@ export default function TabLayout() {
         name="friends"
         options={{
           title: t('navigation.friends'),
-          tabBarIcon: ({ color, size, focused }) => (
-            <Users 
-              color={color} 
-              size={ICON_SIZES.lg} 
-              strokeWidth={focused ? 2.5 : 2}
-            />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.activeIconContainer : undefined}>
+              <Users 
+                color={focused ? COLORS.primary : color} 
+                size={22} 
+                strokeWidth={focused ? 2.5 : 1.8}
+              />
+            </View>
           ),
         }}
       />
@@ -137,12 +157,14 @@ export default function TabLayout() {
         name="ai-chat"
         options={{
           title: t('navigation.aiChat'),
-          tabBarIcon: ({ color, size, focused }) => (
-            <MessageCircle 
-              color={color} 
-              size={ICON_SIZES.lg} 
-              strokeWidth={focused ? 2.5 : 2}
-            />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.activeIconContainer : undefined}>
+              <MessageCircle 
+                color={focused ? COLORS.primary : color} 
+                size={22} 
+                strokeWidth={focused ? 2.5 : 1.8}
+              />
+            </View>
           ),
         }}
       />
@@ -150,3 +172,12 @@ export default function TabLayout() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  activeIconContainer: {
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+    borderRadius: 12,
+    padding: 6,
+    marginBottom: -4,
+  },
+});

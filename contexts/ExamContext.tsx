@@ -23,6 +23,16 @@ export interface Exam {
   updatedAt: Date;
 }
 
+interface ExamStatistics {
+  totalExams: number;
+  completedExams: number;
+  upcomingExams: number;
+  thisWeekExams: number;
+  thisMonthExams: number;
+  passRate: number;
+  averageGrade: string;
+}
+
 interface ExamContextType {
   exams: Exam[];
   isLoading: boolean;
@@ -34,6 +44,9 @@ interface ExamContextType {
   completedExams: Exam[];
   getExamsForCourse: (courseId: string) => Exam[];
   getUpcomingExamsForCourse: (courseId: string) => Exam[];
+  statistics: ExamStatistics;
+  getExamById: (id: string) => Exam | undefined;
+  urgentExams: Exam[];
 }
 
 const dbExamToExam = (dbExam: any): Exam => ({
@@ -271,6 +284,43 @@ export const [ExamProvider, useExams] = createContextHook((): ExamContextType =>
     }).sort((a, b) => a.examDate.getTime() - b.examDate.getTime());
   }, [exams]);
 
+  const getExamById = useCallback((id: string) => {
+    return exams.find(exam => exam.id === id);
+  }, [exams]);
+
+  const urgentExams = exams.filter(exam => {
+    const now = new Date();
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    return exam.status === 'scheduled' && exam.examDate >= now && exam.examDate <= threeDaysFromNow;
+  });
+
+  const statistics: ExamStatistics = (() => {
+    const now = new Date();
+    const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const monthFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    const completed = exams.filter(e => e.status === 'completed' || e.status === 'missed');
+    const upcoming = exams.filter(e => e.status === 'scheduled' && e.examDate >= now);
+    const thisWeek = upcoming.filter(e => e.examDate <= weekFromNow);
+    const thisMonth = upcoming.filter(e => e.examDate <= monthFromNow);
+    
+    const passed = completed.filter(e => e.grade && !['F', 'IG'].includes(e.grade.toUpperCase()));
+    const passRate = completed.length > 0 ? Math.round((passed.length / completed.length) * 100) : 0;
+    
+    const gradesWithValue = completed.filter(e => e.grade);
+    const averageGrade = gradesWithValue.length > 0 ? gradesWithValue[0]?.grade || '-' : '-';
+    
+    return {
+      totalExams: exams.length,
+      completedExams: completed.length,
+      upcomingExams: upcoming.length,
+      thisWeekExams: thisWeek.length,
+      thisMonthExams: thisMonth.length,
+      passRate,
+      averageGrade,
+    };
+  })();
+
   return {
     exams,
     isLoading,
@@ -281,6 +331,9 @@ export const [ExamProvider, useExams] = createContextHook((): ExamContextType =>
     upcomingExams,
     completedExams,
     getExamsForCourse,
-    getUpcomingExamsForCourse
+    getUpcomingExamsForCourse,
+    statistics,
+    getExamById,
+    urgentExams
   };
 });

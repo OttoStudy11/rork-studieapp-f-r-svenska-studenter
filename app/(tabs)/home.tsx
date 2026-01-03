@@ -18,7 +18,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Award, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, GraduationCap, AlertCircle } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Award, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, GraduationCap, AlertCircle, ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
@@ -371,16 +371,15 @@ export default function HomeScreen() {
         </SlideInView>
 
         {/* Upcoming Exams Section */}
-        {upcomingExams.length > 0 && (
-          <SlideInView direction="up" delay={450}>
+        <SlideInView direction="up" delay={450}>
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleContainer}>
                   <Calendar size={20} color={theme.colors.warning} />
                   <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
                 </View>
-                <TouchableOpacity onPress={() => router.push('/timer')}>  
-                  <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
+                <TouchableOpacity onPress={() => router.push('/planning' as any)}>
+                  <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Planering →</Text>
                 </TouchableOpacity>
               </View>
               
@@ -448,9 +447,23 @@ export default function HomeScreen() {
                   </FadeInView>
                 );
               })}
-            </View>
-          </SlideInView>
-        )}
+            {upcomingExams.length === 0 && (
+              <TouchableOpacity
+                style={[styles.addExamPrompt, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                onPress={() => router.push('/planning' as any)}
+              >
+                <View style={[styles.addExamIcon, { backgroundColor: theme.colors.primary + '15' }]}>
+                  <Calendar size={24} color={theme.colors.primary} />
+                </View>
+                <View style={styles.addExamContent}>
+                  <Text style={[styles.addExamTitle, { color: theme.colors.text }]}>Inga planerade prov</Text>
+                  <Text style={[styles.addExamSubtitle, { color: theme.colors.textSecondary }]}>Lägg till prov för att få påminnelser</Text>
+                </View>
+                <ChevronRight size={20} color={theme.colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </SlideInView>
 
         {/* Challenges */}
         <SlideInView direction="up" delay={480}>
@@ -1382,5 +1395,33 @@ const styles = StyleSheet.create({
   urgentText: {
     fontSize: 11,
     fontWeight: '700' as const,
+  },
+  addExamPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  addExamIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  addExamContent: {
+    flex: 1,
+  },
+  addExamTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  addExamSubtitle: {
+    fontSize: 13,
+    fontWeight: '400' as const,
   },
 });

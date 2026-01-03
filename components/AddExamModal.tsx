@@ -36,6 +36,8 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
   const [duration, setDuration] = useState('');
   const [location, setLocation] = useState('');
   const [examType, setExamType] = useState<'written' | 'oral' | 'practical' | 'online' | 'other'>('written');
+  const [importance, setImportance] = useState<'low' | 'medium' | 'high'>('medium');
+  const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const examTypes = [
@@ -44,6 +46,12 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
     { value: 'practical' as const, label: 'Praktiskt', icon: '🔧' },
     { value: 'online' as const, label: 'Online', icon: '💻' },
     { value: 'other' as const, label: 'Annat', icon: '📋' }
+  ];
+
+  const importanceLevels = [
+    { value: 'low' as const, label: 'Låg', color: '#10B981', icon: '🟢' },
+    { value: 'medium' as const, label: 'Medel', color: '#F59E0B', icon: '🟡' },
+    { value: 'high' as const, label: 'Hög', color: '#EF4444', icon: '🔴' }
   ];
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -95,6 +103,8 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
       setDuration('');
       setLocation('');
       setExamType('written');
+      setImportance('medium');
+      setNotificationEnabled(true);
       
       onClose();
     } catch (error) {
@@ -321,15 +331,77 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
               </View>
             </View>
 
-            <View style={[styles.infoBox, { 
-              backgroundColor: theme.colors.info + '10',
-              borderColor: theme.colors.info + '30'
-            }]}>
-              <AlertCircle size={18} color={theme.colors.info} />
-              <Text style={[styles.infoText, { color: theme.colors.info }]}>
-                Du kan ställa in påminnelser för dina prov (kommer snart)
-              </Text>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: theme.colors.text }]}>Prioritet</Text>
+              <View style={styles.importanceGrid}>
+                {importanceLevels.map((level) => (
+                  <TouchableOpacity
+                    key={level.value}
+                    style={[
+                      styles.importanceButton,
+                      { 
+                        backgroundColor: importance === level.value 
+                          ? level.color + '20'
+                          : theme.colors.card,
+                        borderColor: importance === level.value
+                          ? level.color
+                          : theme.colors.border
+                      }
+                    ]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setImportance(level.value);
+                    }}
+                  >
+                    <Text style={styles.importanceIcon}>{level.icon}</Text>
+                    <Text style={[
+                      styles.importanceLabel,
+                      { color: importance === level.value ? level.color : theme.colors.text }
+                    ]}>
+                      {level.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
+
+            <TouchableOpacity
+              style={[
+                styles.notificationToggle,
+                { 
+                  backgroundColor: notificationEnabled ? theme.colors.primary + '15' : theme.colors.card,
+                  borderColor: notificationEnabled ? theme.colors.primary : theme.colors.border
+                }
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setNotificationEnabled(!notificationEnabled);
+              }}
+            >
+              <View style={styles.notificationContent}>
+                <AlertCircle size={20} color={notificationEnabled ? theme.colors.primary : theme.colors.textMuted} />
+                <View style={styles.notificationText}>
+                  <Text style={[styles.notificationTitle, { color: theme.colors.text }]}>
+                    Påminnelser
+                  </Text>
+                  <Text style={[styles.notificationSubtitle, { color: theme.colors.textSecondary }]}>
+                    Få notiser 1 vecka, 3 dagar och 1 dag innan
+                  </Text>
+                </View>
+              </View>
+              <View style={[
+                styles.toggleIndicator,
+                { backgroundColor: notificationEnabled ? theme.colors.primary : theme.colors.border }
+              ]}>
+                <View style={[
+                  styles.toggleDot,
+                  { 
+                    backgroundColor: 'white',
+                    transform: [{ translateX: notificationEnabled ? 16 : 0 }]
+                  }
+                ]} />
+              </View>
+            </TouchableOpacity>
           </ScrollView>
 
           <View style={[styles.footer, { borderTopColor: theme.colors.border }]}>
@@ -507,5 +579,66 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '700' as const,
+  },
+  importanceGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  importanceButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    gap: 6,
+  },
+  importanceIcon: {
+    fontSize: 16,
+  },
+  importanceLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  notificationToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    marginBottom: 20,
+  },
+  notificationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  notificationText: {
+    flex: 1,
+  },
+  notificationTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  notificationSubtitle: {
+    fontSize: 12,
+    fontWeight: '400' as const,
+  },
+  toggleIndicator: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  toggleDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
   },
 });

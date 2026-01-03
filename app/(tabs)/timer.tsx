@@ -1134,9 +1134,9 @@ export default function TimerScreen() {
           </LinearGradient>
         </View>
 
-        {/* Statistics Section */}
+        {/* Statistics Section - PREMIUM FEATURE */}
         <PremiumGate feature="statistics">
-        <View style={styles.section}>
+          <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
           </View>
@@ -1283,10 +1283,10 @@ export default function TimerScreen() {
               </View>
             </LinearGradient>
           )}
-        </View>
+          </View>
         </PremiumGate>
 
-        {/* Study Planner Section */}
+        {/* Planning & History Section - FREE FOR ALL USERS */}
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.sectionHeaderButton}

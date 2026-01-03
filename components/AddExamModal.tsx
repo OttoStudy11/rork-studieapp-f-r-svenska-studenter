@@ -82,6 +82,12 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
       setIsSubmitting(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+      console.log('📝 Adding exam with data:', {
+        title: title.trim(),
+        examDate: examDate.toISOString(),
+        status: 'scheduled'
+      });
+
       await addExam({
         courseId: courseId,
         title: title.trim(),
@@ -95,6 +101,7 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
         notificationTimeBeforeMinutes: 1440
       });
 
+      console.log('✅ Exam added successfully');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
       setTitle('');
@@ -106,9 +113,11 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
       setImportance('medium');
       setNotificationEnabled(true);
       
-      onClose();
+      Alert.alert('Klart!', 'Provet har lagts till i din planering', [
+        { text: 'OK', onPress: onClose }
+      ]);
     } catch (error) {
-      console.error('Error adding exam:', error);
+      console.error('❌ Error adding exam:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Fel', 'Kunde inte lägga till provet. Försök igen.');
     } finally {

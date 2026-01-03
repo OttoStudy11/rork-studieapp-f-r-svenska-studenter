@@ -114,12 +114,16 @@ export const [ExamProvider, useExams] = createContextHook((): ExamContextType =>
 
   const addExam = useCallback(async (exam: Omit<Exam, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!user) {
-      console.error('Cannot add exam: No authenticated user');
-      return;
+      console.error('❌ Cannot add exam: No authenticated user');
+      throw new Error('User not authenticated');
     }
 
     try {
-      console.log('Adding exam:', exam.title);
+      console.log('📝 Adding exam to database:', {
+        title: exam.title,
+        date: exam.examDate.toISOString(),
+        status: exam.status
+      });
 
       const { data, error } = await supabase
         .from('exams')
@@ -142,30 +146,47 @@ export const [ExamProvider, useExams] = createContextHook((): ExamContextType =>
         .single();
 
       if (error) {
-        console.error('Error adding exam:', error);
+        console.error('❌ Database error adding exam:', error);
         throw error;
       }
 
       if (data) {
+        console.log('✅ Exam saved to database:', data.id);
         const newExam = dbExamToExam(data);
-        setExams(prev => [...prev, newExam].sort((a, b) => a.examDate.getTime() - b.examDate.getTime()));
-        console.log('Exam added successfully');
+        console.log('📋 Parsed exam object:', newExam);
+        
+        setExams(prev => {
+          const updated = [...prev, newExam].sort((a, b) => a.examDate.getTime() - b.examDate.getTime());
+          console.log('📊 Updated exams list, total count:', updated.length);
+          return updated;
+        });
         
         // Schedule notifications for the exam
         if (exam.notificationEnabled) {
-          await NotificationManager.scheduleExamNotifications(
-            data.id,
-            exam.title,
-            exam.examDate,
-            exam.courseId
-          );
+          try {
+            await NotificationManager.scheduleExamNotifications(
+              data.id,
+              exam.title,
+              exam.examDate,
+              exam.courseId
+            );
+            console.log('🔔 Notifications scheduled for exam');
+          } catch (notifError) {
+            console.log('⚠️ Could not schedule notifications:', notifError);
+          }
         }
+        
+        // Trigger a refresh to ensure UI is in sync
+        setTimeout(() => {
+          console.log('🔄 Triggering refresh after exam addition');
+          loadExams();
+        }, 500);
       }
     } catch (error) {
-      console.error('Exception adding exam:', error);
+      console.error('❌ Exception adding exam:', error);
       throw error;
     }
-  }, [user]);
+  }, [user, loadExams]);
 
   const updateExam = useCallback(async (id: string, updates: Partial<Omit<Exam, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>) => {
     if (!user) {

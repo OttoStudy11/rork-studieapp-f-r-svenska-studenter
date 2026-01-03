@@ -333,7 +333,7 @@ export default function OnboardingScreen() {
   const [availableCourses, setAvailableCourses] = useState<GymnasiumCourse[]>([]);
   const [gymnasiumSearchQuery, setGymnasiumSearchQuery] = useState('');
   const [universitySearchQuery, setUniversitySearchQuery] = useState('');
-  const [programSearchQuery, setProgramSearchQuery] = useState('');
+
   const [hasInitializedUsername, setHasInitializedUsername] = useState(false);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [assignedCourses, setAssignedCourses] = useState<any[]>([]);
@@ -963,89 +963,122 @@ export default function OnboardingScreen() {
               <View style={styles.programYearSelector}>
                 <Text style={styles.programYearTitle}>Välj program och termin</Text>
                 
-                <View style={styles.searchContainer}>
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Sök program..."
-                    placeholderTextColor="rgba(255,255,255,0.5)"
-                    value={programSearchQuery}
-                    onChangeText={setProgramSearchQuery}
-                  />
-                </View>
-
                 <ScrollView style={styles.programScroll} showsVerticalScrollIndicator={false}>
-                  <View style={styles.universityProgramGrid}>
-                    {UNIVERSITY_PROGRAMS
-                      .filter(prog => 
-                        !programSearchQuery || 
-                        prog.name.toLowerCase().includes(programSearchQuery.toLowerCase()) ||
-                        prog.field.toLowerCase().includes(programSearchQuery.toLowerCase())
-                      )
-                      .slice(0, 20)
-                      .map(program => {
-                        const colors: Record<string, string> = {
-                          'Teknik': '#F59E0B',
-                          'Medicin': '#EF4444',
-                          'Naturvetenskap': '#10B981',
-                          'Ekonomi': '#8B5CF6',
-                          'Juridik': '#6366F1',
-                          'Samhällsvetenskap': '#3B82F6',
-                          'Humaniora': '#EC4899',
-                          'Utbildningsvetenskap': '#22C55E',
-                        };
-                        const color = colors[program.field] || '#6B7280';
-                        const isSelected = data.universityProgram?.id === program.id;
-                        
-                        return (
-                          <AnimatedPressable
-                            key={program.id}
-                            style={[
-                              styles.universityProgramCard,
-                              isSelected && {
-                                backgroundColor: color + '25',
-                                borderColor: color,
-                                borderWidth: 2.5
-                              }
-                            ]}
-                            onPress={() => setData({ 
-                              ...data, 
-                              universityProgram: program,
-                              universityYear: null
-                            })}
-                          >
-                            <Text style={[
-                              styles.universityProgramName,
-                              isSelected && { color: color, fontWeight: '700' as const }
-                            ]} numberOfLines={2}>
-                              {program.name}
-                            </Text>
-                            <Text style={styles.universityProgramMeta}>
-                              {program.durationYears} år • {program.credits} hp
-                            </Text>
-                          </AnimatedPressable>
-                        );
-                      })}
+                  <View style={styles.programGrid}>
+                    {[
+                      { id: 'teknik', name: 'Teknik', emoji: '⚙️', color: '#F59E0B', field: 'Teknik' },
+                      { id: 'medicin', name: 'Medicin & Vård', emoji: '🏥', color: '#EF4444', field: 'Medicin' },
+                      { id: 'naturvetenskap', name: 'Naturvetenskap', emoji: '🔬', color: '#10B981', field: 'Naturvetenskap' },
+                      { id: 'ekonomi', name: 'Ekonomi', emoji: '💼', color: '#8B5CF6', field: 'Ekonomi' },
+                      { id: 'juridik', name: 'Juridik', emoji: '⚖️', color: '#6366F1', field: 'Juridik' },
+                      { id: 'samhallsvetenskap', name: 'Samhällsvetenskap', emoji: '🏛️', color: '#3B82F6', field: 'Samhällsvetenskap' },
+                      { id: 'humaniora', name: 'Humaniora', emoji: '📚', color: '#EC4899', field: 'Humaniora' },
+                      { id: 'utbildning', name: 'Utbildning', emoji: '🎓', color: '#22C55E', field: 'Utbildningsvetenskap' },
+                      { id: 'it', name: 'IT & Data', emoji: '💻', color: '#0EA5E9', field: 'IT' },
+                    ].map(category => {
+                      const matchingPrograms = UNIVERSITY_PROGRAMS.filter(p => 
+                        p.field === category.field || 
+                        p.field.includes(category.field) ||
+                        (category.field === 'Medicin' && (p.field === 'Vårdvetenskap' || p.field === 'Psykologi'))
+                      );
+                      const isSelected = data.universityProgram && matchingPrograms.some(p => p.id === data.universityProgram?.id);
+                      
+                      return (
+                        <AnimatedPressable
+                          key={category.id}
+                          style={[
+                            styles.programMiniCard,
+                            isSelected && {
+                              backgroundColor: category.color + '25',
+                              borderColor: category.color,
+                              borderWidth: 2.5
+                            }
+                          ]}
+                          onPress={() => {
+                            const defaultProgram = matchingPrograms[0];
+                            if (defaultProgram) {
+                              setData({ 
+                                ...data, 
+                                universityProgram: defaultProgram,
+                                universityYear: null
+                              });
+                            }
+                          }}
+                        >
+                          <Text style={styles.programMiniEmoji}>{category.emoji}</Text>
+                          <Text style={[
+                            styles.programMiniName,
+                            isSelected && { color: category.color, fontWeight: '700' as const }
+                          ]}>
+                            {category.name}
+                          </Text>
+                        </AnimatedPressable>
+                      );
+                    })}
                   </View>
                 </ScrollView>
 
                 {data.universityProgram && (
-                  <View style={styles.yearSelector}>
+                  <View style={styles.universitySubProgramSelector}>
+                    <Text style={styles.subProgramTitle}>Välj specifikt program</Text>
+                    <ScrollView style={styles.subProgramScroll} horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={styles.subProgramRow}>
+                        {UNIVERSITY_PROGRAMS
+                          .filter(p => {
+                            const currentField = data.universityProgram?.field || '';
+                            return p.field === currentField || 
+                              p.field.includes(currentField) ||
+                              (currentField === 'Medicin' && (p.field === 'Vårdvetenskap' || p.field === 'Psykologi')) ||
+                              (currentField === 'Vårdvetenskap' && p.field === 'Medicin') ||
+                              (currentField === 'Psykologi' && p.field === 'Medicin');
+                          })
+                          .map(program => {
+                            const isSelected = data.universityProgram?.id === program.id;
+                            return (
+                              <AnimatedPressable
+                                key={program.id}
+                                style={[
+                                  styles.subProgramChip,
+                                  isSelected && styles.selectedSubProgramChip
+                                ]}
+                                onPress={() => setData({ 
+                                  ...data, 
+                                  universityProgram: program,
+                                  universityYear: null
+                                })}
+                              >
+                                <Text style={[
+                                  styles.subProgramChipText,
+                                  isSelected && styles.selectedSubProgramChipText
+                                ]} numberOfLines={1}>
+                                  {program.name.replace('Civilingenjör - ', '').replace('Högskoleingenjör - ', '').replace('Kandidatprogram i ', '').replace('programmet', '')}
+                                </Text>
+                              </AnimatedPressable>
+                            );
+                          })}
+                      </View>
+                    </ScrollView>
+                  </View>
+                )}
+
+                {data.universityProgram && (
+                  <View style={styles.yearSelectorInline}>
                     <Text style={styles.yearSelectorTitle}>Välj termin</Text>
-                    <View style={styles.yearButtons}>
-                      {Array.from({ length: data.universityProgram.durationYears }, (_, i) => i + 1).map(year => (
+                    <View style={styles.termButtonsGrid}>
+                      {Array.from({ length: Math.min(data.universityProgram.durationYears * 2, 10) }, (_, i) => i + 1).map(term => (
                         <AnimatedPressable
-                          key={year}
+                          key={term}
                           style={[
-                            styles.yearButton,
-                            data.universityYear === year && styles.selectedYearButton
+                            styles.termButton,
+                            data.universityYear === term && styles.selectedTermButton
                           ]}
-                          onPress={() => setData({ ...data, universityYear: year as 1 | 2 | 3 | 4 | 5 })}
+                          onPress={() => setData({ ...data, universityYear: term as 1 | 2 | 3 | 4 | 5 })}
                         >
                           <Text style={[
-                            styles.yearButtonText,
-                            data.universityYear === year && styles.selectedYearButtonText
+                            styles.termButtonText,
+                            data.universityYear === term && styles.selectedTermButtonText
                           ]}>
-                            Termin {year}
+                            T{term}
                           </Text>
                         </AnimatedPressable>
                       ))}
@@ -2595,5 +2628,81 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500' as const,
     textAlign: 'center',
+  },
+  universitySubProgramSelector: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(14, 165, 233, 0.15)',
+  },
+  subProgramTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#64748B',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  subProgramScroll: {
+    maxHeight: 50,
+  },
+  subProgramRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 4,
+  },
+  subProgramChip: {
+    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(14, 165, 233, 0.2)',
+  },
+  selectedSubProgramChip: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  subProgramChipText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#1E293B',
+  },
+  selectedSubProgramChipText: {
+    color: 'white',
+  },
+  yearSelectorInline: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(14, 165, 233, 0.15)',
+  },
+  termButtonsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  termButton: {
+    backgroundColor: 'rgba(14, 165, 233, 0.08)',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minWidth: 50,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(14, 165, 233, 0.2)',
+  },
+  selectedTermButton: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  termButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#1E293B',
+  },
+  selectedTermButtonText: {
+    color: 'white',
+    fontWeight: '700' as const,
   },
 });

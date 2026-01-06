@@ -14,6 +14,8 @@ import {
 import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useGamification } from '@/contexts/GamificationContext';
+import { XP_VALUES } from '@/constants/xp-system';
 import { supabase } from '@/lib/supabase';
 import { 
   BookOpen, 
@@ -59,6 +61,7 @@ export default function LessonDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { addXp, isReady: gamificationReady } = useGamification();
   const [lesson, setLesson] = useState<LessonWithRelations | null>(null);
   const [progress, setProgress] = useState<UserLessonProgress | null>(null);
   const [exercises, setExercises] = useState<CourseExercise[]>([]);
@@ -335,9 +338,32 @@ export default function LessonDetailScreen() {
         console.error('❌ Error updating course progress:', courseProgressError);
       }
       
+      // Award XP for lesson completion
+      if (gamificationReady) {
+        try {
+          const difficulty = lesson.difficulty_level || 'medium';
+          let xpAmount: number = XP_VALUES.LESSON_MEDIUM_COMPLETE;
+          if (difficulty === 'easy') xpAmount = XP_VALUES.LESSON_EASY_COMPLETE;
+          else if (difficulty === 'hard') xpAmount = XP_VALUES.LESSON_HARD_COMPLETE;
+          
+          console.log(`🎯 Awarding ${xpAmount} XP for ${difficulty} lesson completion`);
+          const levelUpResult = await addXp(xpAmount, 'lesson_complete', lesson.id, {
+            lessonTitle: lesson.title,
+            difficulty: difficulty,
+            courseId: lesson.course_id,
+          });
+          
+          if (levelUpResult) {
+            console.log('🎉 Level up!', levelUpResult);
+          }
+        } catch (xpError) {
+          console.error('Error awarding XP:', xpError);
+        }
+      }
+      
       Alert.alert(
         'Bra jobbat! 🎉',
-        'Du har slutfört lektionen!',
+        `Du har slutfört lektionen! +${lesson.difficulty_level === 'easy' ? XP_VALUES.LESSON_EASY_COMPLETE : lesson.difficulty_level === 'hard' ? XP_VALUES.LESSON_HARD_COMPLETE : XP_VALUES.LESSON_MEDIUM_COMPLETE} XP`,
         [
           {
             text: nextLesson ? 'Fortsätt till nästa' : 'OK',

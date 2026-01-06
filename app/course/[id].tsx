@@ -121,8 +121,8 @@ export default function CourseDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [userProgress, setUserProgress] = useState({ completed: 0, total: 0, percentage: 0 });
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [slideAnim] = useState(new Animated.Value(50));
+  const [fadeAnim] = useState(new Animated.Value(1));
+  const [slideAnim] = useState(new Animated.Value(0));
   const [courseStyle, setCourseStyle] = useState<CourseStyle>(courseStyles.default);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editProgress, setEditProgress] = useState<string>('0');
@@ -419,6 +419,7 @@ export default function CourseDetailScreen() {
         options={{ 
           title: course.title,
           headerShown: true,
+          headerBackTitle: 'Kurser',
           headerStyle: { backgroundColor: courseStyle.primaryColor },
           headerTintColor: 'white'
         }} 

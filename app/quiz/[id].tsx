@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,6 @@ import {
   CheckCircle,
   XCircle,
   ChevronRight,
-  ChevronLeft,
   Clock,
   Trophy,
   Target,
@@ -28,7 +27,8 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { usePoints } from '@/contexts/PointsContext';
+import { useGamification } from '@/contexts/GamificationContext';
+import { XP_VALUES } from '@/constants/xp-system';
 import * as Haptics from 'expo-haptics';
 import type { Database } from '@/lib/database.types';
 
@@ -51,7 +51,7 @@ export default function QuizScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { addPoints } = usePoints();
+  const { addXp, isReady: gamificationReady } = useGamification();
 
   const [exercise, setExercise] = useState<CourseExercise | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -289,13 +289,37 @@ export default function QuizScreen() {
     
     const correctCount = userAnswers.filter(a => a.isCorrect).length;
     const scorePercent = Math.round((correctCount / questions.length) * 100);
-    const pointsEarned = Math.round((correctCount / questions.length) * (exercise?.points || 10));
+    
+    // Calculate XP based on score percentage using unified XP system
+    let xpEarned = 0;
+    if (scorePercent >= 90) {
+      xpEarned = XP_VALUES.QUIZ_90_100_PERCENT;
+      if (scorePercent === 100) {
+        xpEarned += XP_VALUES.PERFECT_QUIZ_BONUS;
+      }
+    } else if (scorePercent >= 75) {
+      xpEarned = XP_VALUES.QUIZ_75_90_PERCENT;
+    } else if (scorePercent >= 50) {
+      xpEarned = XP_VALUES.QUIZ_50_75_PERCENT;
+    }
 
-    if (pointsEarned > 0) {
-      await addPoints(pointsEarned, { 
-        type: 'bonus', 
-        description: `Quiz slutförd: ${exercise?.title || 'Quiz'}` 
-      });
+    // Award XP using gamification system
+    if (gamificationReady && xpEarned > 0) {
+      try {
+        console.log(`🎯 Awarding ${xpEarned} XP for quiz completion (${scorePercent}%)`);
+        const levelUpResult = await addXp(xpEarned, 'quiz_complete', exercise?.id, {
+          quizTitle: exercise?.title,
+          scorePercent,
+          correctCount,
+          totalQuestions: questions.length,
+        });
+        
+        if (levelUpResult) {
+          console.log('🎉 Level up!', levelUpResult);
+        }
+      } catch (xpError) {
+        console.error('Error awarding XP:', xpError);
+      }
     }
 
     console.log('Quiz completed:', {
@@ -303,7 +327,7 @@ export default function QuizScreen() {
       exerciseId: exercise?.id,
       score: scorePercent,
       timeElapsed,
-      pointsEarned
+      xpEarned
     });
 
     Haptics.notificationAsync(
@@ -381,7 +405,16 @@ export default function QuizScreen() {
   if (quizCompleted) {
     const correctCount = userAnswers.filter(a => a.isCorrect).length;
     const scorePercent = Math.round((correctCount / questions.length) * 100);
-    const pointsEarned = Math.round((correctCount / questions.length) * (exercise.points || 10));
+    // Calculate XP earned based on score
+    let xpEarned = 0;
+    if (scorePercent >= 90) {
+      xpEarned = XP_VALUES.QUIZ_90_100_PERCENT;
+      if (scorePercent === 100) xpEarned += XP_VALUES.PERFECT_QUIZ_BONUS;
+    } else if (scorePercent >= 75) {
+      xpEarned = XP_VALUES.QUIZ_75_90_PERCENT;
+    } else if (scorePercent >= 50) {
+      xpEarned = XP_VALUES.QUIZ_50_75_PERCENT;
+    }
 
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -447,7 +480,7 @@ export default function QuizScreen() {
                 <View style={[styles.statIcon, { backgroundColor: theme.colors.warning + '15' }]}>
                   <Award size={20} color={theme.colors.warning} />
                 </View>
-                <Text style={[styles.statValue, { color: theme.colors.text }]}>+{pointsEarned}</Text>
+                <Text style={[styles.statValue, { color: theme.colors.text }]}>+{xpEarned}</Text>
                 <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Poäng</Text>
               </View>
             </View>

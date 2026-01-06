@@ -1134,158 +1134,6 @@ export default function TimerScreen() {
           </LinearGradient>
         </View>
 
-        {/* Statistics Section - PREMIUM FEATURE */}
-        <PremiumGate feature="statistics">
-          <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
-          </View>
-
-          {/* View Toggle with gradient */}
-          <LinearGradient
-            colors={[theme.colors.card, theme.colors.card + 'DD'] as any}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.viewToggle}
-          >
-            <TouchableOpacity 
-              style={[
-                styles.viewButton,
-                selectedStatView === 'day' && { backgroundColor: theme.colors.primary }
-              ]}
-              onPress={() => setSelectedStatView('day')}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.viewButtonText,
-                { color: selectedStatView === 'day' ? '#FFFFFF' : theme.colors.textSecondary }
-              ]}>Idag</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                styles.viewButton,
-                selectedStatView === 'week' && { backgroundColor: theme.colors.primary }
-              ]}
-              onPress={() => setSelectedStatView('week')}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.viewButtonText,
-                { color: selectedStatView === 'week' ? '#FFFFFF' : theme.colors.textSecondary }
-              ]}>Vecka</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-
-          {/* Enhanced Stats Cards with gradients */}
-          <View style={styles.statsGrid}>
-            <LinearGradient
-              colors={[theme.colors.primary + '20', theme.colors.primary + '10'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statCard}
-            >
-              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.primary + '30' }]}>
-                <Brain size={20} color={theme.colors.primary} />
-              </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {selectedStatView === 'day' ? todayStats.sessions : weekStats.sessions}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                Sessioner
-              </Text>
-            </LinearGradient>
-            
-            <LinearGradient
-              colors={[theme.colors.secondary + '20', theme.colors.secondary + '10'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statCard}
-            >
-              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.secondary + '30' }]}>
-                <Zap size={20} color={theme.colors.secondary} />
-              </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {selectedStatView === 'day' 
-                  ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m`
-                  : `${Math.floor(weekStats.minutes / 60)}h`
-                }
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                Total tid
-              </Text>
-            </LinearGradient>
-            
-            <LinearGradient
-              colors={[theme.colors.warning + '20', theme.colors.warning + '10'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statCard}
-            >
-              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.warning + '30' }]}>
-                <Flame size={20} color={theme.colors.warning} />
-              </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {streakStats.longest}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                Bästa streak
-              </Text>
-            </LinearGradient>
-          </View>
-
-          {/* Enhanced Weekly Graph */}
-          {selectedStatView === 'week' && (
-            <LinearGradient
-              colors={[theme.colors.card, theme.colors.card + 'EE'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.weeklyGraph}
-            >
-              <Text style={[styles.graphTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
-              <View style={styles.graphBars}>
-                {weekStats.dailyStats.map((day: any, i: number) => {
-                  const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
-                  const isToday = day.date.toDateString() === new Date().toDateString();
-                  const maxMinutes = Math.max(60, Math.max(...weekStats.dailyStats.map(d => d.minutes)));
-                  const barHeight = Math.max(4, (day.minutes / maxMinutes) * 100);
-                  
-                  return (
-                    <View key={`day-${i}`} style={styles.dayColumn}>
-                      <View style={styles.barContainer}>
-                        <LinearGradient
-                          colors={isToday 
-                            ? theme.colors.gradient as any
-                            : [theme.colors.border, theme.colors.border + 'AA'] as any
-                          }
-                          start={{ x: 0, y: 1 }}
-                          end={{ x: 0, y: 0 }}
-                          style={[
-                            styles.dayBar, 
-                            { height: `${barHeight}%` }
-                          ]} 
-                        />
-                        {day.minutes > 0 && (
-                          <Text style={[styles.barValue, { color: theme.colors.text }]}>
-                            {Math.round(day.minutes / 60)}h
-                          </Text>
-                        )}
-                      </View>
-                      <Text style={[
-                        styles.dayLabel, 
-                        { 
-                          color: isToday ? theme.colors.primary : theme.colors.textSecondary,
-                          fontWeight: isToday ? '700' : '500'
-                        }
-                      ]}>{dayName}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </LinearGradient>
-          )}
-          </View>
-        </PremiumGate>
-
         {/* Planning & History Section - FREE FOR ALL USERS */}
         <View style={styles.section}>
           <TouchableOpacity 
@@ -1630,6 +1478,158 @@ export default function TimerScreen() {
             </View>
           )}
         </View>
+
+        {/* Statistics Section - PREMIUM FEATURE */}
+        <PremiumGate feature="statistics">
+          <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
+          </View>
+
+          {/* View Toggle with gradient */}
+          <LinearGradient
+            colors={[theme.colors.card, theme.colors.card + 'DD'] as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.viewToggle}
+          >
+            <TouchableOpacity 
+              style={[
+                styles.viewButton,
+                selectedStatView === 'day' && { backgroundColor: theme.colors.primary }
+              ]}
+              onPress={() => setSelectedStatView('day')}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.viewButtonText,
+                { color: selectedStatView === 'day' ? '#FFFFFF' : theme.colors.textSecondary }
+              ]}>Idag</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                styles.viewButton,
+                selectedStatView === 'week' && { backgroundColor: theme.colors.primary }
+              ]}
+              onPress={() => setSelectedStatView('week')}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.viewButtonText,
+                { color: selectedStatView === 'week' ? '#FFFFFF' : theme.colors.textSecondary }
+              ]}>Vecka</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+
+          {/* Enhanced Stats Cards with gradients */}
+          <View style={styles.statsGrid}>
+            <LinearGradient
+              colors={[theme.colors.primary + '20', theme.colors.primary + '10'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.statCard}
+            >
+              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.primary + '30' }]}>
+                <Brain size={20} color={theme.colors.primary} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>
+                {selectedStatView === 'day' ? todayStats.sessions : weekStats.sessions}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+                Sessioner
+              </Text>
+            </LinearGradient>
+            
+            <LinearGradient
+              colors={[theme.colors.secondary + '20', theme.colors.secondary + '10'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.statCard}
+            >
+              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.secondary + '30' }]}>
+                <Zap size={20} color={theme.colors.secondary} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>
+                {selectedStatView === 'day' 
+                  ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m`
+                  : `${Math.floor(weekStats.minutes / 60)}h`
+                }
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+                Total tid
+              </Text>
+            </LinearGradient>
+            
+            <LinearGradient
+              colors={[theme.colors.warning + '20', theme.colors.warning + '10'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.statCard}
+            >
+              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.warning + '30' }]}>
+                <Flame size={20} color={theme.colors.warning} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>
+                {streakStats.longest}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+                Bästa streak
+              </Text>
+            </LinearGradient>
+          </View>
+
+          {/* Enhanced Weekly Graph */}
+          {selectedStatView === 'week' && (
+            <LinearGradient
+              colors={[theme.colors.card, theme.colors.card + 'EE'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.weeklyGraph}
+            >
+              <Text style={[styles.graphTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
+              <View style={styles.graphBars}>
+                {weekStats.dailyStats.map((day: any, i: number) => {
+                  const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
+                  const isToday = day.date.toDateString() === new Date().toDateString();
+                  const maxMinutes = Math.max(60, Math.max(...weekStats.dailyStats.map(d => d.minutes)));
+                  const barHeight = Math.max(4, (day.minutes / maxMinutes) * 100);
+                  
+                  return (
+                    <View key={`day-${i}`} style={styles.dayColumn}>
+                      <View style={styles.barContainer}>
+                        <LinearGradient
+                          colors={isToday 
+                            ? theme.colors.gradient as any
+                            : [theme.colors.border, theme.colors.border + 'AA'] as any
+                          }
+                          start={{ x: 0, y: 1 }}
+                          end={{ x: 0, y: 0 }}
+                          style={[
+                            styles.dayBar, 
+                            { height: `${barHeight}%` }
+                          ]} 
+                        />
+                        {day.minutes > 0 && (
+                          <Text style={[styles.barValue, { color: theme.colors.text }]}>
+                            {Math.round(day.minutes / 60)}h
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={[
+                        styles.dayLabel, 
+                        { 
+                          color: isToday ? theme.colors.primary : theme.colors.textSecondary,
+                          fontWeight: isToday ? '700' : '500'
+                        }
+                      ]}>{dayName}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </LinearGradient>
+          )}
+          </View>
+        </PremiumGate>
       </ScrollView>
 
       {/* Completion Screen Modal */}

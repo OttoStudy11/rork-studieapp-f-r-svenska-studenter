@@ -195,7 +195,7 @@ export default function ContentLessonScreen() {
             {items.map((item, itemIndex) => (
               <View key={itemIndex} style={styles.bulletItem}>
                 <View style={[styles.bulletDot, { backgroundColor: courseStyle.primaryColor }]} />
-                <Text style={[styles.bulletText, { color: theme.colors.text }]}>
+                <Text style={styles.bulletText}>
                   {item.replace(/^- /, '')}
                 </Text>
               </View>
@@ -218,7 +218,7 @@ export default function ContentLessonScreen() {
                         {match[1]}
                       </Text>
                     </View>
-                    <Text style={[styles.numberedText, { color: theme.colors.text }]}>
+                    <Text style={styles.numberedText}>
                       {match[2]}
                     </Text>
                   </View>
@@ -234,7 +234,7 @@ export default function ContentLessonScreen() {
       const parts = paragraph.split(boldRegex);
       
       return (
-        <Text key={index} style={[styles.paragraph, { color: theme.colors.text }]}>
+        <Text key={index} style={styles.paragraph}>
           {parts.map((part, partIndex) => {
             if (partIndex % 2 === 1) {
               return (
@@ -746,6 +746,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 28,
     marginBottom: 18,
+    color: '#1F2937',
   },
   bold: {
     fontWeight: '600' as const,
@@ -769,6 +770,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     lineHeight: 26,
+    color: '#1F2937',
   },
   numberedList: {
     marginBottom: 18,
@@ -795,6 +797,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 26,
     paddingTop: 4,
+    color: '#1F2937',
   },
   actionSection: {
     gap: 16,

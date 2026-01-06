@@ -535,6 +535,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
+    overflow: 'hidden',
   },
   winnerAvatar: {
     width: 60,
@@ -542,6 +543,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     borderWidth: 3,
     borderColor: '#FFD700',
+    overflow: 'hidden',
   },
   podiumAvatarText: {
     color: '#fff',
@@ -612,13 +614,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold' as const,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
     position: 'relative',
+    overflow: 'hidden',
   },
   avatarText: {
     color: '#fff',

@@ -21,7 +21,8 @@ import {
   Edit3,
   CheckCircle,
   Target,
-  History
+  History,
+  ChevronLeft
 } from 'lucide-react-native';
 import { router, Stack } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -267,6 +268,15 @@ export default function PlanningScreen() {
       
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+          <TouchableOpacity
+            style={[styles.backButton, { backgroundColor: theme.colors.card }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}
+          >
+            <ChevronLeft size={24} color={theme.colors.text} />
+          </TouchableOpacity>
           <View>
             <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Planering</Text>
             <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
@@ -404,6 +414,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
+    gap: 12,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   headerTitle: {
     fontSize: 28,

@@ -160,8 +160,59 @@ export async function saveFlashcardBatch(
       return { success: false, savedCount: 0, error: 'Kurs-ID saknas' };
     }
 
+    // First, check if course exists in database
+    console.log(`🔍 [Flashcards Service] Checking if course ${courseId} exists...`);
+    const { data: courseData } = await supabase
+      .from('courses')
+      .select('id')
+      .eq('id', courseId)
+      .maybeSingle();
+
+    let effectiveCourseId = courseId;
+
+    // If course doesn't exist, try to create a placeholder or use a different approach
+    if (!courseData) {
+      console.warn(`⚠️ [Flashcards Service] Course ${courseId} not found in database`);
+      
+      // Try to find a course by code instead (courseId might be a course code)
+      const { data: courseByCode } = await supabase
+        .from('courses')
+        .select('id')
+        .eq('course_code', courseId)
+        .maybeSingle();
+      
+      if (courseByCode) {
+        effectiveCourseId = courseByCode.id;
+        console.log(`✅ [Flashcards Service] Found course by code: ${effectiveCourseId}`);
+      } else {
+        // Create a minimal course entry for flashcards
+        console.log(`📝 [Flashcards Service] Creating placeholder course for flashcards...`);
+        const { data: newCourse, error: createError } = await supabase
+          .from('courses')
+          .insert({
+            title: courseId,
+            course_code: courseId,
+            subject: 'Övrigt',
+            description: 'Automatiskt skapad kurs för flashcards',
+            level: 'gymnasium',
+          })
+          .select('id')
+          .single();
+
+        if (createError) {
+          console.error('❌ [Flashcards Service] Failed to create placeholder course:', createError);
+          // Continue anyway - the insert might still work if RLS allows it
+        } else if (newCourse) {
+          effectiveCourseId = newCourse.id;
+          console.log(`✅ [Flashcards Service] Created placeholder course: ${effectiveCourseId}`);
+        }
+      }
+    } else {
+      console.log(`✅ [Flashcards Service] Course ${courseId} exists in database`);
+    }
+
     const flashcardsToInsert = flashcards.map((fc) => ({
-      course_id: courseId,
+      course_id: effectiveCourseId,
       module_id: moduleId || null,
       lesson_id: lessonId || null,
       question: fc.question,
@@ -173,6 +224,7 @@ export async function saveFlashcardBatch(
     }));
 
     console.log(`📤 [Flashcards Service] Inserting ${flashcardsToInsert.length} flashcards to database...`);
+    console.log(`📤 [Flashcards Service] Sample flashcard:`, JSON.stringify(flashcardsToInsert[0], null, 2));
 
     const { data, error } = await supabase
       .from('flashcards')
@@ -191,14 +243,14 @@ export async function saveFlashcardBatch(
         return { 
           success: false, 
           savedCount: 0, 
-          error: 'Behörighetsproblem med databasen. Kontakta support.' 
+          error: 'Behörighetsproblem med databasen. Kör SQL-filen fix-flashcards-rls-policies.sql i Supabase.' 
         };
       }
       if (error.code === '23503') {
         return { 
           success: false, 
           savedCount: 0, 
-          error: 'Kursen finns inte i databasen.' 
+          error: 'Kursen kunde inte hittas eller skapas. Kontrollera kurs-ID.' 
         };
       }
       

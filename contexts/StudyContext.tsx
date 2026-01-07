@@ -16,6 +16,120 @@ interface UniversityCourseTemplate {
   tips: string[];
 }
 
+// Map program names to program_id used in database
+const PROGRAM_NAME_TO_ID: Record<string, string> = {
+  'Civilingenjör - Datateknik': 'civ_datateknik',
+  'Civilingenjör - Elektroteknik': 'civ_elektroteknik',
+  'Civilingenjör - Maskinteknik': 'civ_maskinteknik',
+  'Civilingenjör - Teknisk fysik': 'civ_teknisk_fysik',
+  'Civilingenjör - Kemiteknik': 'civ_kemiteknik',
+  'Civilingenjör - Industriell ekonomi': 'civ_industriell_ekonomi',
+  'Civilingenjör - Samhällsbyggnad': 'civ_samhallsbyggnad',
+  'Civilingenjör - Bioteknik': 'civ_bioteknik',
+  'Högskoleingenjör - Datateknik': 'hsk_datateknik',
+  'Högskoleingenjör - Elektroteknik': 'hsk_elektroteknik',
+  'Högskoleingenjör - Maskinteknik': 'hsk_maskinteknik',
+  'Högskoleingenjör - Byggteknik': 'hsk_byggteknik',
+  'Läkarprogrammet': 'lakarprogrammet',
+  'Tandläkarprogrammet': 'tandlakarprogrammet',
+  'Sjuksköterskeprogrammet': 'sjukskoterskeprogrammet',
+  'Fysioterapeutprogrammet': 'fysioterapeutprogrammet',
+  'Psykologprogrammet': 'psykologprogrammet',
+  'Kandidatprogram i biologi': 'kand_biologi',
+  'Kandidatprogram i kemi': 'kand_kemi',
+  'Kandidatprogram i fysik': 'kand_fysik',
+  'Kandidatprogram i matematik': 'kand_matematik',
+  'Kandidatprogram i datavetenskap': 'kand_datavetenskap',
+  'Juristprogrammet': 'juristprogrammet',
+  'Ekonomprogrammet': 'ekonomprogrammet',
+  'Civilekonomprogrammet': 'civilekonomprogrammet',
+  'Socionomprogrammet': 'socionomprogrammet',
+  'Politices kandidatprogram': 'politices_kandidat',
+  'Kandidatprogram i statsvetenskap': 'kand_statsvetenskap',
+  'Kandidatprogram i sociologi': 'kand_sociologi',
+  'Kandidatprogram i historia': 'kand_historia',
+  'Kandidatprogram i filosofi': 'kand_filosofi',
+  'Kandidatprogram i litteraturvetenskap': 'kand_litteraturvetenskap',
+  'Kandidatprogram i språkvetenskap': 'kand_sprakvetenskap',
+  'Förskollärarprogrammet': 'forskollararprogrammet',
+  'Grundlärarprogrammet F-3': 'grundlararprogrammet_f3',
+  'Grundlärarprogrammet 4-6': 'grundlararprogrammet_46',
+  'Ämneslärarprogrammet 7-9': 'amneslararprogrammet_79',
+  'Ämneslärarprogrammet gymnasiet': 'amneslararprogrammet_gym',
+  'Journalistprogrammet': 'journalistprogrammet',
+  'Medie- och kommunikationsvetenskap': 'medie_kommunikation',
+  'Systemvetenskap': 'systemvetenskap',
+  'Business and Economics': 'business_economics',
+  'International Business': 'international_business',
+  'Företagsekonomi': 'foretagsekonomi',
+  'Veterinärprogrammet': 'veterinarprogrammet',
+  'Agronomprogram': 'agronomprogram',
+  'Jägmästarprogrammet': 'jagmastarprogrammet',
+};
+
+// Fetch university courses from database
+const fetchUniversityCoursesFromDatabase = async (programId: string, year: number): Promise<UniversityCourseTemplate[] | null> => {
+  try {
+    console.log('Fetching university courses from database for program:', programId, 'year:', year);
+    
+    const { data: courses, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('program_id', programId)
+      .eq('education_level', 'högskola')
+      .eq('education_year', year)
+      .order('semester', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching university courses:', error);
+      return null;
+    }
+    
+    if (courses && courses.length > 0) {
+      console.log('Found', courses.length, 'courses in database for program:', programId);
+      return courses.map(course => {
+        let resources: string[] = [];
+        let tips: string[] = [];
+        
+        if (Array.isArray(course.resources)) {
+          resources = course.resources as string[];
+        } else if (typeof course.resources === 'string') {
+          try {
+            resources = JSON.parse(course.resources);
+          } catch {
+            resources = [];
+          }
+        }
+        
+        if (Array.isArray(course.tips)) {
+          tips = course.tips as string[];
+        } else if (typeof course.tips === 'string') {
+          try {
+            tips = JSON.parse(course.tips);
+          } catch {
+            tips = [];
+          }
+        }
+        
+        return {
+          id: course.id,
+          title: course.title,
+          description: course.description || '',
+          subject: course.subject,
+          resources,
+          tips,
+        };
+      });
+    }
+    
+    console.log('No courses found in database for program:', programId);
+    return null;
+  } catch (error) {
+    console.error('Exception fetching university courses:', error);
+    return null;
+  }
+};
+
 const getUniversityProgramCourses = (programName: string, year: string | null | undefined): UniversityCourseTemplate[] => {
   const yearNum = year ? parseInt(year, 10) : 1;
   
@@ -181,7 +295,9 @@ const dbUserToUser = (dbUser: DbUser, email: string): User => ({
   universityYear: null
 });
 
-const userToDbUser = (user: Partial<User> & { id: string }): Database['public']['Tables']['profiles']['Insert'] => ({
+// Helper to convert user to database format (kept for future use)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _userToDbUser = (user: Partial<User> & { id: string }): Database['public']['Tables']['profiles']['Insert'] => ({
   id: user.id,
   name: user.name!,
   username: user.username!,
@@ -592,8 +708,21 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         // Generate university courses based on selected program
         console.log('Creating university courses for program:', userData.program);
         
-        // Get university program courses
-        const universityCourses = getUniversityProgramCourses(userData.program, userData.universityYear);
+        // First try to get courses from database
+        const programId = PROGRAM_NAME_TO_ID[userData.program] || userData.program.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const yearNum = userData.universityYear ? parseInt(userData.universityYear, 10) : 1;
+        
+        let universityCourses: UniversityCourseTemplate[] | null = null;
+        
+        if (dbConnected) {
+          universityCourses = await fetchUniversityCoursesFromDatabase(programId, yearNum);
+        }
+        
+        // Fall back to hardcoded courses if database didn't return any
+        if (!universityCourses || universityCourses.length === 0) {
+          console.log('No database courses found, using hardcoded courses');
+          universityCourses = getUniversityProgramCourses(userData.program, userData.universityYear);
+        }
         
         courses = universityCourses.map((courseData, index) => ({
           id: courseData.id,

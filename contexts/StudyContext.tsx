@@ -81,7 +81,8 @@ const fetchUniversityCoursesFromDatabase = async (programId: string, year: numbe
       .order('semester', { ascending: true });
     
     if (error) {
-      console.error('Error fetching university courses:', error);
+      console.error('Error fetching university courses:', error.message || error);
+      console.error('Full error details:', JSON.stringify(error, null, 2));
       return null;
     }
     
@@ -767,7 +768,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
                   });
                 
                 if (insertError) {
-                  console.error('Error inserting university course:', insertError);
+                  console.error('Error inserting university course:', insertError.message || insertError);
+                  console.error('Course data:', JSON.stringify({ id: course.id, title: course.title }));
+                  console.error('Full error:', JSON.stringify(insertError, null, 2));
                 }
               }
               
@@ -784,7 +787,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
                 });
               
               if (userCourseError) {
-                console.error('Error syncing user university course:', userCourseError);
+                console.error('Error syncing user university course:', userCourseError.message || userCourseError);
+                console.error('User course data:', JSON.stringify({ userId: authUser.id, courseId: course.id }));
+                console.error('Full error:', JSON.stringify(userCourseError, null, 2));
               }
             }
             

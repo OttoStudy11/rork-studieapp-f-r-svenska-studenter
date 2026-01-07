@@ -145,6 +145,14 @@ export interface Database {
           progress: number
           related_courses: Json
           created_at: string
+          education_level: string | null
+          education_year: number | null
+          program_id: string | null
+          semester: number | null
+          credits: number | null
+          is_mandatory: boolean | null
+          field: string | null
+          school_id: string | null
         }
         Insert: {
           id?: string
@@ -159,6 +167,14 @@ export interface Database {
           progress?: number
           related_courses?: Json
           created_at?: string
+          education_level?: string | null
+          education_year?: number | null
+          program_id?: string | null
+          semester?: number | null
+          credits?: number | null
+          is_mandatory?: boolean | null
+          field?: string | null
+          school_id?: string | null
         }
         Update: {
           id?: string
@@ -173,6 +189,14 @@ export interface Database {
           progress?: number
           related_courses?: Json
           created_at?: string
+          education_level?: string | null
+          education_year?: number | null
+          program_id?: string | null
+          semester?: number | null
+          credits?: number | null
+          is_mandatory?: boolean | null
+          field?: string | null
+          school_id?: string | null
         }
         Relationships: []
       }

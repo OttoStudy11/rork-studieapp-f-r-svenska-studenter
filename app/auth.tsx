@@ -1,21 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { Image } from 'expo-image';
-import { Home, Flame, Mail, Lock, Eye, EyeOff, Check } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, Check, ArrowRight, Sparkles } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+
 
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -27,11 +30,72 @@ export default function AuthScreen() {
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
   
+  const insets = useSafeAreaInsets();
   const { signIn, signUp, resetPassword, resendConfirmation, isAuthenticated, hasCompletedOnboarding } = useAuth();
   const { showError, showSuccess } = useToast();
 
-  // Navigate immediately when authentication state changes
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const logoScale = useRef(new Animated.Value(0.8)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const orb1Anim = useRef(new Animated.Value(0)).current;
+  const orb2Anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(logoScale, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Floating orb animations
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(orb1Anim, {
+          toValue: 1,
+          duration: 4000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(orb1Anim, {
+          toValue: 0,
+          duration: 4000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(orb2Anim, {
+          toValue: 1,
+          duration: 5000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(orb2Anim, {
+          toValue: 0,
+          duration: 5000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
       console.log('User authenticated, navigating...', { hasCompletedOnboarding });
@@ -42,6 +106,21 @@ export default function AuthScreen() {
       }
     }
   }, [isAuthenticated, hasCompletedOnboarding, isLoading]);
+
+  const handleButtonPressIn = () => {
+    Animated.spring(buttonScale, {
+      toValue: 0.96,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleButtonPressOut = () => {
+    Animated.spring(buttonScale, {
+      toValue: 1,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const handleAuth = async () => {
     if (!email.trim()) {
@@ -71,14 +150,12 @@ export default function AuthScreen() {
         const errorCode = (error as any)?.code || '';
         console.error('ERROR Auth error:', errorMessage);
         
-        // Handle email not confirmed error specifically
         if (errorCode === 'EMAIL_NOT_CONFIRMED') {
           setPendingEmail(email);
           setShowEmailConfirmation(true);
           return;
         }
         
-        // Use the improved error message from AuthContext if available
         if (errorMessage) {
           showError(errorMessage);
         } else {
@@ -87,10 +164,8 @@ export default function AuthScreen() {
       } else {
         if (isSignUp) {
           showSuccess('Konto skapat! Kolla din e-post för att bekräfta kontot innan du loggar in.');
-          // Switch to sign in mode after successful signup
           setIsSignUp(false);
         } else {
-          // Don't show success message for login, just let navigation happen
           console.log('Login successful, waiting for navigation...');
         }
       }
@@ -153,184 +228,312 @@ export default function AuthScreen() {
     }
   };
 
+  const orb1TranslateY = orb1Anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -30],
+  });
 
+  const orb2TranslateY = orb2Anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 20],
+  });
 
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#06B6D4', '#10B981']}
+        colors={['#0A0A0F', '#12121A', '#0A0A0F']}
         style={styles.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       >
+        {/* Decorative orbs */}
+        <Animated.View 
+          style={[
+            styles.orb,
+            styles.orb1,
+            { transform: [{ translateY: orb1TranslateY }] }
+          ]} 
+        />
+        <Animated.View 
+          style={[
+            styles.orb,
+            styles.orb2,
+            { transform: [{ translateY: orb2TranslateY }] }
+          ]} 
+        />
+        <View style={styles.orb3} />
+
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
         >
           <ScrollView 
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }
+            ]}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <View style={styles.content}>
+            <Animated.View 
+              style={[
+                styles.content,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }]
+                }
+              ]}
+            >
+              {/* Header */}
               <View style={styles.header}>
-                <View style={styles.logoContainer}>
+                <Animated.View 
+                  style={[
+                    styles.logoContainer,
+                    { transform: [{ scale: logoScale }] }
+                  ]}
+                >
+                  <LinearGradient
+                    colors={['rgba(99, 102, 241, 0.2)', 'rgba(139, 92, 246, 0.2)']}
+                    style={styles.logoGlow}
+                  />
                   <Image
                     source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
                     style={styles.logo}
                     contentFit="contain"
                   />
-                </View>
+                </Animated.View>
+                
                 <Text style={styles.title}>StudieStugan</Text>
-                <Text style={styles.subtitle}>
-                  {showEmailConfirmation
-                    ? 'Bekräfta din e-post'
-                    : showForgotPassword 
-                      ? 'Återställ ditt lösenord'
-                      : isSignUp 
-                        ? 'Skapa ditt konto'
-                        : 'Välkommen tillbaka!'
-                  }
-                </Text>
-              </View>
-
-              <View style={styles.form}>
-                {showEmailConfirmation ? (
-                  <View style={styles.confirmationContainer}>
-                    <Text style={styles.confirmationText}>
-                      Vi har skickat en bekräftelselänk till:
-                    </Text>
-                    <Text style={styles.confirmationEmail}>{pendingEmail}</Text>
-                    <Text style={styles.confirmationInstructions}>
-                      Kolla din inkorg och spam-mapp. Klicka på länken för att bekräfta ditt konto.
-                    </Text>
-                  </View>
-                ) : (
-                  <>
-                    <View style={styles.inputContainer}>
-                      <Mail size={20} color="#666" style={styles.inputIcon} />
-                      <TextInput
-                        style={styles.input}
-                        placeholder="E-postadress"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        autoComplete="email"
-                        autoFocus
-                      />
-                    </View>
-
-                    {!showForgotPassword && (
-                      <View style={styles.inputContainer}>
-                        <Lock size={20} color="#666" style={styles.inputIcon} />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Lösenord"
-                          value={password}
-                          onChangeText={setPassword}
-                          secureTextEntry={!showPassword}
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                          autoComplete="password"
-                        />
-                        <TouchableOpacity
-                          onPress={() => setShowPassword(!showPassword)}
-                          style={styles.eyeButton}
-                        >
-                          {showPassword ? (
-                            <EyeOff size={20} color="#666" />
-                          ) : (
-                            <Eye size={20} color="#666" />
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </>
-                )}
-
-                <TouchableOpacity
-                  style={[styles.authButton, isLoading && styles.disabledButton]}
-                  onPress={
-                    showEmailConfirmation 
-                      ? handleResendConfirmation 
+                
+                <View style={styles.subtitleContainer}>
+                  <Sparkles size={14} color="#8B5CF6" style={styles.sparkleIcon} />
+                  <Text style={styles.subtitle}>
+                    {showEmailConfirmation
+                      ? 'Bekräfta din e-post'
                       : showForgotPassword 
-                        ? handleForgotPassword 
-                        : handleAuth
-                  }
-                  disabled={isLoading}
-                >
-                  <Text style={styles.authButtonText}>
-                    {isLoading 
-                      ? (showEmailConfirmation 
-                          ? 'Skickar...' 
-                          : showForgotPassword 
-                            ? 'Skickar...' 
-                            : isSignUp 
-                              ? 'Skapar konto...' 
-                              : 'Loggar in...'
-                        )
-                      : (showEmailConfirmation 
-                          ? 'Skicka bekräftelselänk igen' 
-                          : showForgotPassword 
-                            ? 'Skicka återställningslänk' 
-                            : isSignUp 
-                              ? 'Skapa konto' 
-                              : 'Logga in'
-                        )
+                        ? 'Återställ ditt lösenord'
+                        : isSignUp 
+                          ? 'Skapa ditt konto'
+                          : 'Välkommen tillbaka'
                     }
                   </Text>
-                </TouchableOpacity>
+                  <Sparkles size={14} color="#8B5CF6" style={styles.sparkleIcon} />
+                </View>
 
-                {!showForgotPassword && !showEmailConfirmation && (
-                  <>
-                    {!isSignUp && (
-                      <TouchableOpacity
-                        style={styles.rememberMeContainer}
-                        onPress={() => setRememberMe(!rememberMe)}
-                      >
-                        <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                          {rememberMe && <Check size={16} color="white" />}
-                        </View>
-                        <Text style={styles.rememberMeText}>Kom ihåg mig</Text>
-                      </TouchableOpacity>
-                    )}
-
-                    <TouchableOpacity
-                      style={styles.linkButton}
-                      onPress={() => setShowForgotPassword(true)}
-                    >
-                      <Text style={styles.linkText}>Glömt lösenord?</Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.switchContainer}>
-                      <Text style={styles.switchText}>
-                        {isSignUp ? 'Har du redan ett konto?' : 'Har du inget konto?'}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => setIsSignUp(!isSignUp)}
-                        style={styles.switchButton}
-                      >
-                        <Text style={styles.switchButtonText}>
-                          {isSignUp ? 'Logga in' : 'Skapa konto'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                )}
-
-                {(showForgotPassword || showEmailConfirmation) && (
-                  <TouchableOpacity
-                    style={styles.linkButton}
-                    onPress={() => {
-                      setShowForgotPassword(false);
-                      setShowEmailConfirmation(false);
-                      setPendingEmail('');
-                    }}
-                  >
-                    <Text style={styles.linkText}>Tillbaka till inloggning</Text>
-                  </TouchableOpacity>
+                {!showEmailConfirmation && !showForgotPassword && (
+                  <Text style={styles.description}>
+                    {isSignUp 
+                      ? 'Börja din studieresa idag'
+                      : 'Fortsätt där du slutade'
+                    }
+                  </Text>
                 )}
               </View>
-            </View>
+
+              {/* Form Card */}
+              <View style={styles.formCard}>
+                <LinearGradient
+                  colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.02)']}
+                  style={styles.formCardGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                >
+                  {showEmailConfirmation ? (
+                    <View style={styles.confirmationContainer}>
+                      <View style={styles.confirmationIconContainer}>
+                        <Mail size={32} color="#8B5CF6" />
+                      </View>
+                      <Text style={styles.confirmationText}>
+                        Vi har skickat en bekräftelselänk till:
+                      </Text>
+                      <Text style={styles.confirmationEmail}>{pendingEmail}</Text>
+                      <Text style={styles.confirmationInstructions}>
+                        Kolla din inkorg och spam-mapp. Klicka på länken för att bekräfta ditt konto.
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      <View style={[
+                        styles.inputContainer,
+                        focusedInput === 'email' && styles.inputContainerFocused
+                      ]}>
+                        <View style={styles.inputIconContainer}>
+                          <Mail size={20} color={focusedInput === 'email' ? '#8B5CF6' : '#6B7280'} />
+                        </View>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="E-postadress"
+                          placeholderTextColor="#6B7280"
+                          value={email}
+                          onChangeText={setEmail}
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          autoComplete="email"
+                          onFocus={() => setFocusedInput('email')}
+                          onBlur={() => setFocusedInput(null)}
+                        />
+                      </View>
+
+                      {!showForgotPassword && (
+                        <View style={[
+                          styles.inputContainer,
+                          focusedInput === 'password' && styles.inputContainerFocused
+                        ]}>
+                          <View style={styles.inputIconContainer}>
+                            <Lock size={20} color={focusedInput === 'password' ? '#8B5CF6' : '#6B7280'} />
+                          </View>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Lösenord"
+                            placeholderTextColor="#6B7280"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={!showPassword}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            autoComplete="password"
+                            onFocus={() => setFocusedInput('password')}
+                            onBlur={() => setFocusedInput(null)}
+                          />
+                          <TouchableOpacity
+                            onPress={() => setShowPassword(!showPassword)}
+                            style={styles.eyeButton}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            {showPassword ? (
+                              <EyeOff size={20} color="#6B7280" />
+                            ) : (
+                              <Eye size={20} color="#6B7280" />
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </>
+                  )}
+
+                  {/* Main Action Button */}
+                  <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                    <TouchableOpacity
+                      style={[styles.authButton, isLoading && styles.disabledButton]}
+                      onPress={
+                        showEmailConfirmation 
+                          ? handleResendConfirmation 
+                          : showForgotPassword 
+                            ? handleForgotPassword 
+                            : handleAuth
+                      }
+                      onPressIn={handleButtonPressIn}
+                      onPressOut={handleButtonPressOut}
+                      disabled={isLoading}
+                      activeOpacity={0.9}
+                    >
+                      <LinearGradient
+                        colors={isLoading ? ['#4B5563', '#374151'] : ['#6366F1', '#8B5CF6']}
+                        style={styles.authButtonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      >
+                        <Text style={styles.authButtonText}>
+                          {isLoading 
+                            ? (showEmailConfirmation 
+                                ? 'Skickar...' 
+                                : showForgotPassword 
+                                  ? 'Skickar...' 
+                                  : isSignUp 
+                                    ? 'Skapar konto...' 
+                                    : 'Loggar in...'
+                              )
+                            : (showEmailConfirmation 
+                                ? 'Skicka bekräftelselänk igen' 
+                                : showForgotPassword 
+                                  ? 'Skicka återställningslänk' 
+                                  : isSignUp 
+                                    ? 'Skapa konto' 
+                                    : 'Logga in'
+                              )
+                          }
+                        </Text>
+                        {!isLoading && (
+                          <ArrowRight size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                        )}
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </Animated.View>
+
+                  {!showForgotPassword && !showEmailConfirmation && (
+                    <>
+                      {!isSignUp && (
+                        <View style={styles.optionsRow}>
+                          <TouchableOpacity
+                            style={styles.rememberMeContainer}
+                            onPress={() => setRememberMe(!rememberMe)}
+                            activeOpacity={0.7}
+                          >
+                            <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                              {rememberMe && <Check size={12} color="#FFFFFF" />}
+                            </View>
+                            <Text style={styles.rememberMeText}>Kom ihåg mig</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            onPress={() => setShowForgotPassword(true)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.forgotText}>Glömt lösenord?</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </>
+                  )}
+
+                  {(showForgotPassword || showEmailConfirmation) && (
+                    <TouchableOpacity
+                      style={styles.backButton}
+                      onPress={() => {
+                        setShowForgotPassword(false);
+                        setShowEmailConfirmation(false);
+                        setPendingEmail('');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.backButtonText}>← Tillbaka till inloggning</Text>
+                    </TouchableOpacity>
+                  )}
+                </LinearGradient>
+              </View>
+
+              {/* Switch Auth Mode */}
+              {!showForgotPassword && !showEmailConfirmation && (
+                <View style={styles.switchContainer}>
+                  <View style={styles.dividerContainer}>
+                    <View style={styles.divider} />
+                    <Text style={styles.dividerText}>eller</Text>
+                    <View style={styles.divider} />
+                  </View>
+                  
+                  <TouchableOpacity
+                    onPress={() => setIsSignUp(!isSignUp)}
+                    style={styles.switchButton}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.switchButtonInner}>
+                      <Text style={styles.switchText}>
+                        {isSignUp ? 'Har du redan ett konto?' : 'Ny här?'}
+                      </Text>
+                      <Text style={styles.switchButtonText}>
+                        {isSignUp ? 'Logga in' : 'Skapa konto'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Footer */}
+              <Text style={styles.footerText}>
+                Genom att fortsätta godkänner du våra villkor
+              </Text>
+            </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
       </LinearGradient>
@@ -341,9 +544,37 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0A0A0F',
   },
   gradient: {
     flex: 1,
+  },
+  orb: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  orb1: {
+    width: 300,
+    height: 300,
+    top: -100,
+    right: -100,
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+  },
+  orb2: {
+    width: 250,
+    height: 250,
+    bottom: 100,
+    left: -80,
+    backgroundColor: 'rgba(139, 92, 246, 0.12)',
+  },
+  orb3: {
+    width: 180,
+    height: 180,
+    bottom: -50,
+    right: 50,
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    position: 'absolute',
+    borderRadius: 999,
   },
   keyboardView: {
     flex: 1,
@@ -351,156 +582,246 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    minHeight: '100%',
+    paddingHorizontal: 24,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
+  },
+  logoContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    position: 'relative',
+  },
+  logoGlow: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
+    fontSize: 34,
+    fontWeight: '800' as const,
+    color: '#FFFFFF',
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  subtitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
+  sparkleIcon: {
+    marginHorizontal: 8,
   },
-  form: {
-    width: '100%',
+  subtitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: '#E5E7EB',
+  },
+  description: {
+    fontSize: 15,
+    color: '#9CA3AF',
+    marginTop: 4,
+  },
+  formCard: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  formCardGradient: {
+    padding: 24,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 16,
     marginBottom: 16,
     paddingHorizontal: 16,
-    height: 56,
+    height: 58,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  inputIcon: {
-    marginRight: 12,
+  inputContainerFocused: {
+    borderColor: 'rgba(139, 92, 246, 0.5)',
+    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+  },
+  inputIconContainer: {
+    width: 32,
+    alignItems: 'center',
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: '#FFFFFF',
+    paddingVertical: 0,
   },
   eyeButton: {
-    padding: 4,
+    padding: 8,
   },
-
   authButton: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 16,
+    overflow: 'hidden',
     marginTop: 8,
-    marginBottom: 16,
+  },
+  authButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 58,
+    paddingHorizontal: 24,
   },
   disabledButton: {
     opacity: 0.7,
   },
   authButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontSize: 17,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
   },
-  linkButton: {
-    alignItems: 'center',
-    marginTop: 16,
+  buttonIcon: {
+    marginLeft: 8,
   },
-  linkText: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  },
-  switchContainer: {
+  optionsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 24,
-    flexWrap: 'wrap',
-  },
-  switchText: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 14,
-    marginRight: 8,
-  },
-  switchButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  switchButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    marginTop: 20,
   },
   rememberMeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 8,
   },
   checkbox: {
     width: 20,
     height: 20,
-    borderRadius: 4,
+    borderRadius: 6,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.8)',
-    marginRight: 12,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderColor: 'white',
+    backgroundColor: '#8B5CF6',
+    borderColor: '#8B5CF6',
   },
   rememberMeText: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#9CA3AF',
     fontSize: 14,
   },
-  confirmationContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 20,
+  forgotText: {
+    color: '#8B5CF6',
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  backButton: {
+    alignItems: 'center',
+    marginTop: 20,
+    paddingVertical: 8,
+  },
+  backButtonText: {
+    color: '#8B5CF6',
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  switchContainer: {
+    marginTop: 32,
+    alignItems: 'center',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
     marginBottom: 24,
   },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  dividerText: {
+    color: '#6B7280',
+    fontSize: 13,
+    marginHorizontal: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  switchButton: {
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+  },
+  switchButtonInner: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  switchText: {
+    color: '#9CA3AF',
+    fontSize: 15,
+    marginRight: 6,
+  },
+  switchButtonText: {
+    color: '#8B5CF6',
+    fontSize: 15,
+    fontWeight: '700' as const,
+  },
+  confirmationContainer: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  confirmationIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   confirmationText: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 16,
+    color: '#D1D5DB',
+    fontSize: 15,
     textAlign: 'center',
     marginBottom: 8,
   },
   confirmationEmail: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700' as const,
     textAlign: 'center',
     marginBottom: 16,
   },
   confirmationInstructions: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#9CA3AF',
     fontSize: 14,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
   },
-  logoContainer: {
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  logo: {
-    width: 180,
-    height: 180,
+  footerText: {
+    color: '#6B7280',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 32,
   },
 });

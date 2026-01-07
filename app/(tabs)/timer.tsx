@@ -1512,8 +1512,8 @@ export default function TimerScreen() {
         </View>
 
         {/* Statistics Section - PREMIUM FEATURE */}
-        <PremiumGate feature="statistics">
-          <View style={styles.section}>
+        <View style={styles.section}>
+          <PremiumGate feature="statistics">
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
           </View>
@@ -1660,8 +1660,8 @@ export default function TimerScreen() {
               </View>
             </LinearGradient>
           )}
-          </View>
-        </PremiumGate>
+          </PremiumGate>
+        </View>
       </ScrollView>
 
       {/* Completion Screen Modal */}

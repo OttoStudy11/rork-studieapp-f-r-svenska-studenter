@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     borderRadius: 20,
-    minHeight: 280,
+    minHeight: 200,
   },
   childrenWrapper: {
     opacity: 0.15,
@@ -250,11 +250,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   contentContainer: {
-    width: '100%',
+    width: '90%',
+    maxWidth: 400,
     borderRadius: 20,
-    padding: 24,
+    padding: 28,
     alignItems: 'center',
-    margin: 12,
+    marginHorizontal: 20,
+    marginVertical: 20,
   },
   premiumBadge: {
     marginBottom: 16,

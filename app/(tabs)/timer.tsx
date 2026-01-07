@@ -17,6 +17,7 @@ import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAchievements } from '@/contexts/AchievementContext';
+import { useGamification } from '@/contexts/GamificationContext';
 import { useTimerSettings } from '@/contexts/TimerSettingsContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useExams } from '@/contexts/ExamContext';
@@ -248,6 +249,7 @@ export default function TimerScreen() {
   const { upcomingExams, completedExams } = useExams();
   const { theme, isDark } = useTheme();
   const { currentStreak, checkAchievements, refreshAchievements } = useAchievements();
+  const { awardStudySession } = useGamification();
   const { settings } = useTimerSettings();
   usePremium();
   const [timerState, setTimerState] = useState<TimerState>('idle');
@@ -559,17 +561,28 @@ export default function TimerScreen() {
         
         setSessionCount(prev => prev + 1);
         
-        const pointsEarned = focusTime;
+        // Award XP and update challenge progress
+        let pointsEarned = focusTime;
+        try {
+          console.log('🎯 Awarding study session XP and updating challenges...');
+          const levelUpEvent = await awardStudySession(focusTime, selectedCourse || undefined);
+          if (levelUpEvent) {
+            console.log(`🎉 Level up! ${levelUpEvent.previousLevel} -> ${levelUpEvent.newLevel}`);
+          }
+          pointsEarned = Math.floor(focusTime / 5) * 5; // XP earned based on 5min intervals
+          console.log('✅ Study session XP awarded successfully');
+        } catch (xpError) {
+          console.log('⚠️ Could not award study session XP:', xpError);
+        }
         
         // Check for achievements after session is saved
         try {
-          console.log('\ud83c\udfc6 Checking for achievements after session...');
+          console.log('🏆 Checking for achievements after session...');
           await checkAchievements();
-          // Refresh achievements to ensure UI is updated
           await refreshAchievements();
-          console.log('\u2705 Achievements checked and refreshed successfully');
+          console.log('✅ Achievements checked and refreshed successfully');
         } catch (achError) {
-          console.log('\u26a0\ufe0f Could not check achievements:', achError);
+          console.log('⚠️ Could not check achievements:', achError);
         }
         
         setCompletedSessionData({
@@ -615,7 +628,7 @@ export default function TimerScreen() {
     
     // Update motivational quote
     setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
-  }, [sessionType, isDndActive, disableDoNotDisturb, addPomodoroSession, selectedCourse, courses, focusTime, sessionStartTime, sessionCount, dailyGoal, showAchievement, breakTime, motivationalQuotes, checkAchievements, refreshAchievements, settings.notificationsEnabled]);
+  }, [sessionType, isDndActive, disableDoNotDisturb, addPomodoroSession, selectedCourse, courses, focusTime, sessionStartTime, sessionCount, dailyGoal, showAchievement, breakTime, motivationalQuotes, checkAchievements, refreshAchievements, settings.notificationsEnabled, awardStudySession]);
 
   useEffect(() => {
     if (timerState === 'running') {

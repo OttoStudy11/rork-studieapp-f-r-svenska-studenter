@@ -115,6 +115,7 @@ interface GamificationContextValue extends GamificationState {
   checkAchievements: () => Promise<void>;
   refreshAll: () => Promise<void>;
   getLeaderboardPosition: () => Promise<number>;
+  updateChallengeProgress: (type: 'study_minutes' | 'sessions_count', amount: number) => Promise<void>;
 }
 
 const STORAGE_KEY = 'gamification_state_v2';
@@ -480,13 +481,78 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
     return null;
   }, [addXp]);
 
+  const updateChallengeProgress = useCallback(async (type: 'study_minutes' | 'sessions_count', amount: number) => {
+    console.log(`📊 Updating challenge progress: ${type} +${amount}`);
+    
+    setState(prev => {
+      const updatedChallenges = prev.dailyChallenges.map(challenge => {
+        if (challenge.type === type && !challenge.isCompleted) {
+          const newProgress = challenge.currentProgress + amount;
+          const isNowCompleted = newProgress >= challenge.targetValue;
+          
+          console.log(`  Challenge "${challenge.title}": ${challenge.currentProgress} -> ${newProgress} / ${challenge.targetValue}`);
+          
+          if (isNowCompleted && !challenge.isCompleted) {
+            console.log(`  🎉 Challenge "${challenge.title}" completed!`);
+          }
+          
+          return {
+            ...challenge,
+            currentProgress: Math.min(newProgress, challenge.targetValue),
+            isCompleted: isNowCompleted,
+            completedAt: isNowCompleted ? new Date().toISOString() : undefined,
+          };
+        }
+        return challenge;
+      });
+      
+      const unclaimedChallenges = updatedChallenges.filter(c => c.isCompleted && !c.isClaimed).length;
+      
+      return {
+        ...prev,
+        dailyChallenges: updatedChallenges,
+        unclaimedChallenges,
+      };
+    });
+
+    if (authUser && isAuthenticated) {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        for (const challenge of state.dailyChallenges) {
+          if (challenge.type === type) {
+            const newProgress = Math.min(challenge.currentProgress + amount, challenge.targetValue);
+            const isCompleted = newProgress >= challenge.targetValue;
+            
+            await (supabase as any).from('user_daily_challenges').upsert({
+              user_id: authUser.id,
+              challenge_id: challenge.id,
+              challenge_date: today,
+              current_progress: newProgress,
+              is_completed: isCompleted,
+              completed_at: isCompleted && !challenge.isCompleted ? new Date().toISOString() : challenge.completedAt,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'user_id,challenge_id' });
+          }
+        }
+      } catch (error) {
+        console.log('Error syncing challenge progress to database:', error);
+      }
+    }
+  }, [authUser, isAuthenticated, state.dailyChallenges]);
+
   const awardStudySession = useCallback(async (minutes: number, courseId?: string): Promise<LevelUpEvent | null> => {
+    console.log(`🎯 Awarding study session: ${minutes} minutes`);
+    
+    await updateChallengeProgress('study_minutes', minutes);
+    await updateChallengeProgress('sessions_count', 1);
+    
     const xp = calculateStudySessionXp(minutes);
     if (xp > 0) {
       return addXp(xp, 'study_session', courseId, { minutes });
     }
     return null;
-  }, [addXp]);
+  }, [addXp, updateChallengeProgress]);
 
   const awardChallengeComplete = useCallback(async (challengeId: string): Promise<LevelUpEvent | null> => {
     const challenge = state.dailyChallenges.find(c => c.id === challengeId);
@@ -606,6 +672,7 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
     checkAchievements,
     refreshAll,
     getLeaderboardPosition,
+    updateChallengeProgress,
   }), [
     state,
     isLoading,
@@ -620,6 +687,7 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
     checkAchievements,
     refreshAll,
     getLeaderboardPosition,
+    updateChallengeProgress,
   ]);
 });
 

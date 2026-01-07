@@ -14,6 +14,7 @@ import { useStudy } from '@/contexts/StudyContext';
 import { useAchievements } from '@/contexts/AchievementContext';
 import { usePoints } from '@/contexts/PointsContext';
 import { useChallenges } from '@/contexts/ChallengesContext';
+import { useGamification, TIER_COLORS, DIFFICULTY_CONFIG } from '@/contexts/GamificationContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
@@ -29,7 +30,8 @@ export default function HomeScreen() {
   const { user, courses, pomodoroSessions, isLoading } = useStudy();
   const { getRecentAchievements, currentStreak } = useAchievements();
   const { totalPoints, level: pointsLevel } = usePoints();
-  const { todaysChallenges, claimChallenge } = useChallenges();
+  const { claimChallenge } = useChallenges();
+  const { currentLevel, xpProgress, totalXp, dailyChallenges, unclaimedChallenges } = useGamification();
   const { isPremium, isDemoMode, canAddCourse, showPremiumModal } = usePremium();
   const { theme, isDark } = useTheme();
   const { upcomingExams } = useExams();
@@ -465,28 +467,109 @@ export default function HomeScreen() {
           </View>
         </SlideInView>
 
-        {/* Challenges */}
+        {/* XP Level & Challenges Section */}
         <SlideInView direction="up" delay={480}>
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dagliga utmaningar</Text>
-              <TouchableOpacity onPress={() => console.log('Challenges: see all pressed')}>
-                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Uppdateras</Text>
-              </TouchableOpacity>
+            {/* XP Level Header */}
+            <LinearGradient
+              colors={[TIER_COLORS[currentLevel.tier] + '25', TIER_COLORS[currentLevel.tier] + '10']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.xpLevelCard, { borderColor: TIER_COLORS[currentLevel.tier] + '40' }]}
+            >
+              <View style={styles.xpLevelHeader}>
+                <View style={[styles.xpLevelBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] + '30', borderColor: TIER_COLORS[currentLevel.tier] }]}>
+                  <Text style={styles.xpLevelEmoji}>{currentLevel.iconEmoji}</Text>
+                  <View style={[styles.xpLevelNumberBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] }]}>
+                    <Text style={styles.xpLevelNumber}>{currentLevel.level}</Text>
+                  </View>
+                </View>
+                <View style={styles.xpLevelInfo}>
+                  <Text style={[styles.xpLevelTitle, { color: theme.colors.text }]}>
+                    Nivå {currentLevel.level} - {currentLevel.titleSv}
+                  </Text>
+                  <View style={[styles.xpTierBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] }]}>
+                    <Text style={styles.xpTierText}>
+                      {currentLevel.tier === 'beginner' ? 'Nybörjare' :
+                       currentLevel.tier === 'intermediate' ? 'Student' :
+                       currentLevel.tier === 'advanced' ? 'Avancerad' :
+                       currentLevel.tier === 'expert' ? 'Expert' :
+                       currentLevel.tier === 'master' ? 'Mästare' : 'Legend'}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.xpTotalContainer}>
+                  <Text style={[styles.xpTotalNumber, { color: TIER_COLORS[currentLevel.tier] }]}>{totalXp}</Text>
+                  <Text style={[styles.xpTotalLabel, { color: theme.colors.textSecondary }]}>Total XP</Text>
+                </View>
+              </View>
+              
+              {/* XP Progress Bar */}
+              <View style={styles.xpProgressContainer}>
+                <View style={styles.xpProgressLabels}>
+                  <Text style={[styles.xpProgressCurrent, { color: theme.colors.text }]}>
+                    {xpProgress.current} XP
+                  </Text>
+                  <Text style={[styles.xpProgressRequired, { color: theme.colors.textSecondary }]}>
+                    {xpProgress.required > 0 ? `${xpProgress.required} XP till nästa` : 'Max nivå!'}
+                  </Text>
+                </View>
+                <View style={[styles.xpProgressTrack, { backgroundColor: theme.colors.borderLight }]}>
+                  <View 
+                    style={[
+                      styles.xpProgressFill, 
+                      { 
+                        width: `${Math.min(100, xpProgress.percent)}%`, 
+                        backgroundColor: TIER_COLORS[currentLevel.tier] 
+                      }
+                    ]} 
+                  />
+                </View>
+                {xpProgress.nextLevel && (
+                  <View style={styles.xpNextLevelPreview}>
+                    <TrendingUp size={12} color={theme.colors.textSecondary} />
+                    <Text style={[styles.xpNextLevelText, { color: theme.colors.textSecondary }]}>
+                      Nästa: {xpProgress.nextLevel.iconEmoji} {xpProgress.nextLevel.titleSv}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </LinearGradient>
+
+            {/* Challenges Header */}
+            <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+              <View style={styles.challengesHeaderLeft}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dagliga utmaningar</Text>
+                {unclaimedChallenges > 0 && (
+                  <View style={[styles.unclaimedBadge, { backgroundColor: theme.colors.success }]}>
+                    <Text style={styles.unclaimedBadgeText}>{unclaimedChallenges}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.challengesRefreshText, { color: theme.colors.textSecondary }]}>Uppdateras dagligen</Text>
             </View>
 
             <View style={styles.challengesList}>
-              {todaysChallenges.map((c) => {
-                const isClaimable = c.status === 'completed';
-                const isClaimed = c.status === 'claimed';
+              {dailyChallenges.map((c) => {
+                const isClaimable = c.isCompleted && !c.isClaimed;
+                const isClaimed = c.isClaimed;
+                const progressPercent = c.targetValue > 0 ? Math.min(100, (c.currentProgress / c.targetValue) * 100) : 0;
+                const difficultyConfig = DIFFICULTY_CONFIG[c.difficulty] || DIFFICULTY_CONFIG.easy;
 
                 return (
                   <View key={c.id} style={[styles.challengeCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
                     <View style={styles.challengeTop}>
                       <View style={styles.challengeLeft}>
-                        <Text style={styles.challengeEmoji}>{c.emoji}</Text>
+                        <View style={[styles.challengeEmojiContainer, { backgroundColor: difficultyConfig.color + '15' }]}>
+                          <Text style={styles.challengeEmoji}>{c.emoji}</Text>
+                        </View>
                         <View style={styles.challengeTextCol}>
-                          <Text style={[styles.challengeTitle, { color: theme.colors.text }]}>{c.title}</Text>
+                          <View style={styles.challengeTitleRow}>
+                            <Text style={[styles.challengeTitle, { color: theme.colors.text }]}>{c.title}</Text>
+                            <View style={[styles.difficultyBadge, { backgroundColor: difficultyConfig.color + '20' }]}>
+                              <Text style={[styles.difficultyText, { color: difficultyConfig.color }]}>{difficultyConfig.label}</Text>
+                            </View>
+                          </View>
                           <Text style={[styles.challengeDesc, { color: theme.colors.textSecondary }]} numberOfLines={2}>{c.description}</Text>
                         </View>
                       </View>
@@ -494,7 +577,7 @@ export default function HomeScreen() {
                       <View style={styles.challengeRight}>
                         <View style={[styles.challengePointsPill, { backgroundColor: theme.colors.primary + '15' }]}>
                           <Star size={14} color={theme.colors.primary} />
-                          <Text style={[styles.challengePointsText, { color: theme.colors.primary }]}>+{c.rewardPoints}</Text>
+                          <Text style={[styles.challengePointsText, { color: theme.colors.primary }]}>+{c.xpReward}</Text>
                         </View>
                         <TouchableOpacity
                           testID={`challenge-claim-${c.id}`}
@@ -510,23 +593,31 @@ export default function HomeScreen() {
                           disabled={!isClaimable}
                         >
                           <Text style={[styles.challengeButtonText, { color: isClaimable || isClaimed ? 'white' : theme.colors.textSecondary }]}>
-                            {isClaimed ? 'Hämtad' : isClaimable ? 'Hämta' : 'Pågår'}
+                            {isClaimed ? '✓ Klar' : isClaimable ? 'Hämta XP' : 'Pågår'}
                           </Text>
                         </TouchableOpacity>
                       </View>
                     </View>
 
                     <View style={[styles.challengeProgressTrack, { backgroundColor: theme.colors.border }]}>
-                      <View style={[styles.challengeProgressFill, { width: `${c.percent}%`, backgroundColor: theme.colors.primary }]} />
+                      <View style={[styles.challengeProgressFill, { width: `${progressPercent}%`, backgroundColor: isClaimed ? theme.colors.success : (isClaimable ? theme.colors.primary : difficultyConfig.color) }]} />
                     </View>
                     <Text style={[styles.challengeProgressText, { color: theme.colors.textSecondary }]}
                       testID={`challenge-progress-${c.id}`}
                     >
-                      {c.current}/{c.target}
+                      {c.currentProgress}/{c.targetValue} {c.type === 'study_minutes' ? 'min' : 'pass'}
                     </Text>
                   </View>
                 );
               })}
+              
+              {dailyChallenges.length === 0 && (
+                <View style={[styles.emptyChallenges, { backgroundColor: theme.colors.card }]}>
+                  <Target size={32} color={theme.colors.textMuted} />
+                  <Text style={[styles.emptyChallengesText, { color: theme.colors.textSecondary }]}>Inga utmaningar just nu</Text>
+                  <Text style={[styles.emptyChallengesSubtext, { color: theme.colors.textMuted }]}>Nya utmaningar kommer snart!</Text>
+                </View>
+              )}
             </View>
           </View>
         </SlideInView>
@@ -1421,6 +1512,173 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   addExamSubtitle: {
+    fontSize: 13,
+    fontWeight: '400' as const,
+  },
+  xpLevelCard: {
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  xpLevelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  xpLevelBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    marginRight: 14,
+    position: 'relative' as const,
+  },
+  xpLevelEmoji: {
+    fontSize: 24,
+  },
+  xpLevelNumberBadge: {
+    position: 'absolute' as const,
+    bottom: -4,
+    right: -4,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  xpLevelNumber: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
+  xpLevelInfo: {
+    flex: 1,
+  },
+  xpLevelTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 6,
+  },
+  xpTierBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    alignSelf: 'flex-start' as const,
+  },
+  xpTierText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  xpTotalContainer: {
+    alignItems: 'flex-end' as const,
+  },
+  xpTotalNumber: {
+    fontSize: 24,
+    fontWeight: '800' as const,
+  },
+  xpTotalLabel: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+    marginTop: 2,
+  },
+  xpProgressContainer: {
+    marginTop: 4,
+  },
+  xpProgressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  xpProgressCurrent: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  xpProgressRequired: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  xpProgressTrack: {
+    height: 10,
+    borderRadius: 5,
+    overflow: 'hidden' as const,
+  },
+  xpProgressFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  xpNextLevelPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
+  xpNextLevelText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  challengesHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  unclaimedBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  unclaimedBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
+  challengesRefreshText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  challengeEmojiContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  challengeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap' as const,
+  },
+  difficultyBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  difficultyText: {
+    fontSize: 9,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+  },
+  emptyChallenges: {
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyChallengesText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  emptyChallengesSubtext: {
     fontSize: 13,
     fontWeight: '400' as const,
   },

@@ -1,5 +1,5 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from './AuthContext';
@@ -118,6 +118,7 @@ interface GamificationContextValue extends GamificationState {
 }
 
 const STORAGE_KEY = 'gamification_state_v2';
+const XP_AWARD_COOLDOWN_MS = 2000;
 
 const defaultState: GamificationState = {
   totalXp: 0,
@@ -138,6 +139,9 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
   const [state, setState] = useState<GamificationState>(defaultState);
   const [isLoading, setIsLoading] = useState(true);
   const [isReady, setIsReady] = useState(false);
+  
+  const recentAwardsRef = useRef<Map<string, number>>(new Map());
+  const pendingLevelUpBonusRef = useRef<boolean>(false);
 
   const loadFromStorage = useCallback(async (): Promise<Partial<GamificationState>> => {
     try {
@@ -348,6 +352,23 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
   ): Promise<LevelUpEvent | null> => {
     if (amount <= 0) return null;
 
+    const awardKey = `${sourceType}-${sourceId || 'no-id'}-${amount}`;
+    const now = Date.now();
+    const lastAward = recentAwardsRef.current.get(awardKey);
+    
+    if (lastAward && (now - lastAward) < XP_AWARD_COOLDOWN_MS) {
+      console.log(`⏳ Skipping duplicate XP award: ${awardKey} (cooldown active)`);
+      return null;
+    }
+    
+    recentAwardsRef.current.set(awardKey, now);
+    
+    if (recentAwardsRef.current.size > 50) {
+      const entries = Array.from(recentAwardsRef.current.entries());
+      const oldEntries = entries.filter(([, time]) => now - time > 60000);
+      oldEntries.forEach(([key]) => recentAwardsRef.current.delete(key));
+    }
+
     const previousLevel = state.currentLevel.level;
     const previousTier = state.currentLevel.tier;
     
@@ -417,16 +438,24 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
       const tierChanged = newLevel.tier !== previousTier;
       const bonusXp = POINT_SOURCES.level_up_bonus.baseXp;
       
-      showAchievement(
-        `🎉 Nivå ${newLevel.level}!`,
-        `${newLevel.iconEmoji} ${newLevel.titleSv} - ${tierChanged ? 'Ny tier!' : ''} +${bonusXp} XP`
-      );
+      if (sourceType !== 'level_up_bonus') {
+        showAchievement(
+          `🎉 Nivå ${newLevel.level}!`,
+          `${newLevel.iconEmoji} ${newLevel.titleSv} - ${tierChanged ? 'Ny tier!' : ''} +${bonusXp} XP`
+        );
 
-      try {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch {}
+        try {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } catch {}
+      }
 
-      setTimeout(() => addXp(bonusXp, 'level_up_bonus', `level_${newLevel.level}`), 500);
+      if (!pendingLevelUpBonusRef.current && sourceType !== 'level_up_bonus') {
+        pendingLevelUpBonusRef.current = true;
+        setTimeout(() => {
+          pendingLevelUpBonusRef.current = false;
+          addXp(bonusXp, 'level_up_bonus', `level_${newLevel.level}`);
+        }, 500);
+      }
 
       return {
         previousLevel,

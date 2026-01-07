@@ -25,7 +25,7 @@ import { TimerPersistence } from '@/lib/timer-persistence';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
 import { PremiumGate } from '@/components/PremiumGate';
-import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen, FileText, CheckCircle } from 'lucide-react-native';
+import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen, FileText, CheckCircle, Crown } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import AddExamModal from '@/components/AddExamModal';
 
@@ -1166,35 +1166,35 @@ export default function TimerScreen() {
           </View>
         </View>
 
-        {/* Planning & History Section - FREE FOR ALL USERS */}
-        <View style={styles.section}>
+        {/* Planning & History Section */}
+        <View style={styles.plannerSection}>
           <TouchableOpacity 
-            style={[styles.plannerHeaderCard, { backgroundColor: theme.colors.card }]}
+            style={[styles.plannerCard, { backgroundColor: theme.colors.card }]}
             onPress={() => setShowPlanner(!showPlanner)}
             activeOpacity={0.8}
           >
-            <View style={styles.plannerHeaderLeft}>
+            <View style={styles.plannerHeader}>
               <LinearGradient
                 colors={[theme.colors.primary, theme.colors.secondary] as any}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.plannerIconGradient}
+                style={styles.plannerIcon}
               >
-                <Calendar size={20} color="#FFF" />
+                <Calendar size={22} color="#FFF" />
               </LinearGradient>
-              <View>
-                <Text style={[styles.plannerHeaderTitle, { color: theme.colors.text }]}>Planering & Historik</Text>
-                <Text style={[styles.plannerHeaderSubtitle, { color: theme.colors.textSecondary }]}>
-                  {upcomingExams.length > 0 ? `${upcomingExams.length} kommande prov` : 'Hantera dina sessioner'}
+              <View style={styles.plannerInfo}>
+                <Text style={[styles.plannerTitle, { color: theme.colors.text }]}>Planering & Prov</Text>
+                <Text style={[styles.plannerSubtitle, { color: theme.colors.textSecondary }]}>
+                  {upcomingExams.length > 0 ? `${upcomingExams.length} kommande prov` : 'Planera dina sessioner'}
                 </Text>
               </View>
-            </View>
-            <View style={[styles.expandIndicator, { backgroundColor: theme.colors.background }]}>
-              {showPlanner ? (
-                <ChevronUp size={20} color={theme.colors.primary} />
-              ) : (
-                <ChevronDown size={20} color={theme.colors.primary} />
-              )}
+              <View style={[styles.chevronContainer, { backgroundColor: theme.colors.background }]}>
+                {showPlanner ? (
+                  <ChevronUp size={18} color={theme.colors.primary} />
+                ) : (
+                  <ChevronDown size={18} color={theme.colors.primary} />
+                )}
+              </View>
             </View>
           </TouchableOpacity>
 
@@ -1526,11 +1526,20 @@ export default function TimerScreen() {
         </View>
 
         {/* Statistics Section - PREMIUM FEATURE */}
-        <View style={styles.section}>
-          <PremiumGate feature="statistics">
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
+        <View style={styles.statsSection}>
+          <View style={styles.statsSectionHeader}>
+            <Text style={[styles.statsSectionTitle, { color: theme.colors.text }]}>Avancerad Statistik</Text>
+            <LinearGradient
+              colors={['#FFD700', '#FFA500']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.premiumBadge}
+            >
+              <Crown size={12} color="#FFF" />
+              <Text style={styles.premiumBadgeText}>PRO</Text>
+            </LinearGradient>
           </View>
+          <PremiumGate feature="statistics" fullScreen={false}>
 
           {/* View Toggle with gradient */}
           <LinearGradient
@@ -2231,21 +2240,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  section: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
+
+
   dateSelector: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2262,20 +2258,19 @@ const styles = StyleSheet.create({
   },
   viewToggle: {
     flexDirection: 'row',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 4,
-    marginBottom: 24,
-    alignSelf: 'center',
-  },
-  viewButton: {
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 12,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 2,
+  },
+  viewButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
   viewButtonText: {
     fontSize: 14,
@@ -2284,13 +2279,18 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   statCard: {
     flex: 1,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
   statValue: {
     fontSize: 22,
@@ -2311,8 +2311,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   weeklyGraph: {
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 18,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   graphTitle: {
     fontSize: 16,
@@ -2445,12 +2450,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 4,
   },
-  statsSectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
+
   quickStatsRow: {
     flexDirection: 'row',
     paddingHorizontal: 24,
@@ -2496,46 +2496,90 @@ const styles = StyleSheet.create({
     marginTop: 2,
     letterSpacing: 0.2,
   },
-  plannerHeaderCard: {
+  plannerSection: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  plannerCard: {
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  plannerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
+    padding: 20,
+    gap: 16,
+  },
+  plannerIcon: {
+    width: 48,
+    height: 48,
     borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  plannerHeaderLeft: {
+  plannerInfo: {
+    flex: 1,
+  },
+  plannerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.4,
+    marginBottom: 4,
+  },
+  plannerSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    opacity: 0.8,
+  },
+  chevronContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statsSection: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  statsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  statsSectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  premiumBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-  },
-  plannerIconGradient: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  plannerHeaderTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  plannerHeaderSubtitle: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  expandIndicator: {
-    width: 36,
-    height: 36,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    gap: 4,
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  premiumBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   statIconContainer: {
     width: 40,

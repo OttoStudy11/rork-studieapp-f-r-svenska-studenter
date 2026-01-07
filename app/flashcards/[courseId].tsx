@@ -472,7 +472,7 @@ export default function FlashcardsScreen() {
   }
 
   return (
-    <PremiumGate feature="flashcards">
+    <PremiumGate feature="flashcards" fullScreen={true}>
     <SafeAreaView style={styles.container}>
       <Stack.Screen
         options={{

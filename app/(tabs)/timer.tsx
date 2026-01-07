@@ -907,71 +907,67 @@ export default function TimerScreen() {
 
         {/* Hero Timer Card */}
         <View style={styles.timerSection}>
-          <LinearGradient
-            colors={sessionType === 'focus' 
-              ? [theme.colors.primary + '08', theme.colors.primary + '15'] as any
-              : [theme.colors.secondary + '08', theme.colors.secondary + '15'] as any
-            }
-            style={styles.timerCardGradient}
-          >
-            <View style={styles.timerContainer}>
-              <Svg width={280} height={280} style={styles.timerSvg}>
-                {/* Background circle with subtle gradient */}
+          <View style={[styles.timerCardContainer, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.timerWrapper}>
+              <Svg width={260} height={260} style={styles.timerSvg}>
                 <Circle
-                  cx={140}
-                  cy={140}
-                  r={120}
-                  stroke={isDark ? theme.colors.border : theme.colors.border + '40'}
-                  strokeWidth={12}
+                  cx={130}
+                  cy={130}
+                  r={110}
+                  stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'}
+                  strokeWidth={8}
                   fill="none"
                 />
-                {/* Progress circle with enhanced gradient */}
                 <Circle
-                  cx={140}
-                  cy={140}
-                  r={120}
+                  cx={130}
+                  cy={130}
+                  r={110}
                   stroke={sessionType === 'focus' ? theme.colors.primary : theme.colors.secondary}
-                  strokeWidth={12}
-                  fill={sessionType === 'focus' ? theme.colors.primary + '08' : theme.colors.secondary + '08'}
+                  strokeWidth={8}
+                  fill="none"
                   strokeDasharray={circumference}
                   strokeDashoffset={circumference * (1 - progress)}
                   strokeLinecap="round"
-                  transform={`rotate(-90 140 140)`}
+                  transform={`rotate(-90 130 130)`}
                 />
               </Svg>
               
-              <View style={styles.timerContent}>
-                <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+              <View style={styles.timerInnerContent}>
+                <Animated.View>
                   <Text style={[styles.timerText, { color: theme.colors.text }]}>
                     {formatTime(timeLeft)}
                   </Text>
                 </Animated.View>
-                <Text style={[styles.sessionLabel, { color: theme.colors.textSecondary }]}>
-                  {getSelectedCourseTitle()}
-                </Text>
-                <LinearGradient
-                  colors={sessionType === 'focus' 
-                    ? [theme.colors.primary, theme.colors.primary + 'DD'] as any
-                    : [theme.colors.secondary, theme.colors.secondary + 'DD'] as any
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.sessionTypeBadgeGradient}
-                >
-                  <View style={styles.sessionTypeBadge}>
-                    {sessionType === 'focus' ? (
-                      <Brain size={18} color="#FFFFFF" strokeWidth={2.5} />
-                    ) : (
-                      <Coffee size={18} color="#FFFFFF" strokeWidth={2.5} />
-                    )}
-                    <Text style={styles.sessionTypeText}>
-                      {sessionType === 'focus' ? 'Fokus' : 'Paus'}
-                    </Text>
+                
+                <View style={styles.timerMetaContainer}>
+                  <Text style={[styles.sessionCourse, { color: theme.colors.textSecondary }]}>
+                    {getSelectedCourseTitle()}
+                  </Text>
+                  
+                  <View style={styles.sessionBadgeWrapper}>
+                    <LinearGradient
+                      colors={sessionType === 'focus' 
+                        ? [theme.colors.primary, theme.colors.primary + 'DD'] as any
+                        : [theme.colors.secondary, theme.colors.secondary + 'DD'] as any
+                      }
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.sessionBadgeGradient}
+                    >
+                      {sessionType === 'focus' ? (
+                        <Brain size={14} color="#FFFFFF" strokeWidth={2.5} />
+                      ) : (
+                        <Coffee size={14} color="#FFFFFF" strokeWidth={2.5} />
+                      )}
+                      <Text style={styles.sessionBadgeText}>
+                        {sessionType === 'focus' ? 'Fokus' : 'Paus'}
+                      </Text>
+                    </LinearGradient>
                   </View>
-                </LinearGradient>
+                </View>
               </View>
             </View>
-          </LinearGradient>
+          </View>
         </View>
 
         {/* Course Selection */}
@@ -2101,50 +2097,76 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timerSection: {
-    paddingHorizontal: 20,
-    marginBottom: 28,
+    paddingHorizontal: 24,
+    marginBottom: 32,
   },
-  timerCardGradient: {
-    borderRadius: 32,
-    padding: 24,
+  timerCardContainer: {
+    borderRadius: 28,
+    padding: 32,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  timerContainer: {
+  timerWrapper: {
     alignItems: 'center',
     position: 'relative',
-    paddingVertical: 20,
   },
   timerSvg: {
     position: 'absolute',
   },
-  timerContent: {
-    width: 280,
-    height: 280,
+  timerInnerContent: {
+    width: 260,
+    height: 260,
     justifyContent: 'center',
     alignItems: 'center',
   },
   timerText: {
-    fontSize: 64,
-    fontWeight: '300',
-    marginBottom: 8,
+    fontSize: 56,
+    fontWeight: '200',
     fontVariant: ['tabular-nums'],
     textAlign: 'center',
-    letterSpacing: -2,
+    letterSpacing: -1,
+    marginBottom: 12,
     fontFamily: Platform.select({
       ios: 'SF Pro Display',
       android: 'Roboto',
       default: 'system',
     }),
   },
-  sessionLabel: {
-    fontSize: 16,
-    fontWeight: '500',
+  timerMetaContainer: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  sessionCourse: {
+    fontSize: 15,
+    fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 16,
+    letterSpacing: 0.2,
+  },
+  sessionBadgeWrapper: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  sessionBadgeGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    gap: 6,
+  },
+  sessionBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    color: '#FFFFFF',
   },
   sessionTypeIndicator: {
     alignItems: 'center',

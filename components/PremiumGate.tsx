@@ -80,7 +80,6 @@ export function PremiumGate({
 
   // User does not have premium - show gate with inline overlay
   const featureConfig = FEATURE_CONFIGS[feature];
-  const FeatureIcon = featureConfig.icon;
 
   const handleUpgrade = () => {
     router.push('/premium');
@@ -93,83 +92,114 @@ export function PremiumGate({
       </View>
       <View style={fullScreen ? styles.fullScreenOverlayWrapper : styles.overlayWrapper}>
         <BlurView
-          intensity={isDark ? 60 : 90}
+          intensity={isDark ? 80 : 95}
           style={styles.blurOverlay}
           tint={isDark ? 'dark' : 'light'}
         >
-          <View style={[
-            styles.contentContainer, 
-            { backgroundColor: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)' }
-          ]}>
-            {/* Premium badge */}
-            <View style={styles.premiumBadge}>
-              <LinearGradient
-                colors={['#FFD700', '#FFA500']}
-                style={styles.badgeGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Crown size={14} color="#FFF" strokeWidth={2.5} />
-                <Text style={styles.badgeText}>PREMIUM</Text>
-              </LinearGradient>
-            </View>
-
-            {/* Feature-specific icon */}
-            <LinearGradient
-              colors={featureConfig.gradient}
-              style={styles.iconContainer}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <FeatureIcon size={32} color="#FFF" />
-            </LinearGradient>
-
-            {/* Title and description */}
-            <Text style={[styles.title, { color: theme.colors.text }]}>
-              {featureConfig.title}
-            </Text>
-            <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-              {featureConfig.description}
-            </Text>
-
-            {/* Offline notice */}
-            {isOffline && (
-              <View style={[styles.offlineNotice, { backgroundColor: theme.colors.warning + '20' }]}>
-                <Text style={[styles.offlineText, { color: theme.colors.warning }]}>
-                  Du är offline. Anslut till internet för att uppgradera.
-                </Text>
+          <LinearGradient
+            colors={isDark 
+              ? ['rgba(0,0,0,0.7)', 'rgba(20,20,30,0.85)', 'rgba(0,0,0,0.7)']
+              : ['rgba(255,255,255,0.85)', 'rgba(250,250,255,0.92)', 'rgba(255,255,255,0.85)']
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.gradientBackground}
+          >
+            <View style={styles.contentContainer}>
+              {/* Premium crown badge with glow */}
+              <View style={styles.crownContainer}>
+                <LinearGradient
+                  colors={['#FFD700', '#FFA500', '#FF8C00']}
+                  style={styles.crownGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Crown size={48} color="#FFF" strokeWidth={2} fill="#FFF" />
+                </LinearGradient>
               </View>
-            )}
 
-            {/* Upgrade button */}
-            <TouchableOpacity
-              style={styles.upgradeButton}
-              onPress={handleUpgrade}
-              disabled={isOffline}
-              activeOpacity={0.8}
-            >
+              {/* Premium badge */}
               <LinearGradient
-                colors={isOffline ? ['#9CA3AF', '#6B7280'] : ['#FFD700', '#FFA500']}
-                style={styles.upgradeGradient}
+                colors={['#FFD700', '#FFA500', '#FF8C00']}
+                style={styles.premiumBadgeGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
-                <Crown size={18} color="#FFF" strokeWidth={2.5} />
-                <Text style={styles.upgradeButtonText}>Uppgradera till Premium</Text>
+                <Sparkles size={12} color="#FFF" strokeWidth={2.5} />
+                <Text style={styles.badgeText}>PREMIUM FEATURE</Text>
+                <Sparkles size={12} color="#FFF" strokeWidth={2.5} />
               </LinearGradient>
-            </TouchableOpacity>
 
-            {/* Learn more link */}
-            <TouchableOpacity
-              style={styles.learnMoreButton}
-              onPress={handleUpgrade}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.learnMoreText, { color: theme.colors.primary }]}>
-                Se alla Premium-fördelar
+              {/* Title and description */}
+              <Text style={[styles.title, { color: theme.colors.text }]}>
+                {featureConfig.title}
               </Text>
-            </TouchableOpacity>
-          </View>
+              <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
+                {featureConfig.description}
+              </Text>
+
+              {/* Feature highlights */}
+              <View style={styles.featuresContainer}>
+                <View style={styles.featureRow}>
+                  <View style={[styles.checkmark, { backgroundColor: '#FFD700' + '20' }]}>
+                    <Text style={styles.checkmarkText}>✓</Text>
+                  </View>
+                  <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Obegränsad tillgång</Text>
+                </View>
+                <View style={styles.featureRow}>
+                  <View style={[styles.checkmark, { backgroundColor: '#FFD700' + '20' }]}>
+                    <Text style={styles.checkmarkText}>✓</Text>
+                  </View>
+                  <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Premium funktioner</Text>
+                </View>
+                <View style={styles.featureRow}>
+                  <View style={[styles.checkmark, { backgroundColor: '#FFD700' + '20' }]}>
+                    <Text style={styles.checkmarkText}>✓</Text>
+                  </View>
+                  <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Avancerad analys</Text>
+                </View>
+              </View>
+
+              {/* Offline notice */}
+              {isOffline && (
+                <View style={[styles.offlineNotice, { backgroundColor: theme.colors.warning + '20' }]}>
+                  <Text style={[styles.offlineText, { color: theme.colors.warning }]}>
+                    Du är offline. Anslut till internet för att uppgradera.
+                  </Text>
+                </View>
+              )}
+
+              {/* Upgrade button */}
+              <TouchableOpacity
+                style={styles.upgradeButton}
+                onPress={handleUpgrade}
+                disabled={isOffline}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  colors={isOffline ? ['#9CA3AF', '#6B7280'] : ['#FFD700', '#FFA500', '#FF8C00']}
+                  style={styles.upgradeGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Crown size={20} color="#FFF" strokeWidth={2.5} fill="#FFF" />
+                  <Text style={styles.upgradeButtonText}>Uppgradera till Premium</Text>
+                  <Sparkles size={16} color="#FFF" strokeWidth={2.5} />
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Learn more link */}
+              <TouchableOpacity
+                style={styles.learnMoreButton}
+                onPress={handleUpgrade}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.learnMoreText, { color: '#FFD700' }]}>
+                  Se alla Premium-fördelar →
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
         </BlurView>
       </View>
     </View>
@@ -228,11 +258,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   childrenWrapper: {
-    opacity: 0.15,
+    opacity: 0.12,
     pointerEvents: 'none',
   },
   fullScreenChildrenWrapper: {
-    opacity: 0.1,
+    opacity: 0.08,
     pointerEvents: 'none',
   },
   overlayWrapper: {
@@ -262,106 +292,147 @@ const styles = StyleSheet.create({
   },
   blurOverlay: {
     flex: 1,
+  },
+  gradientBackground: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
   },
   contentContainer: {
-    width: '90%',
-    maxWidth: 400,
-    borderRadius: 20,
-    padding: 28,
+    width: '88%',
+    maxWidth: 420,
+    borderRadius: 28,
+    padding: 32,
     alignItems: 'center',
-    marginHorizontal: 20,
-    marginVertical: 20,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.2)',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  premiumBadge: {
-    marginBottom: 16,
-    borderRadius: 20,
+  crownContainer: {
+    marginBottom: 20,
+    borderRadius: 50,
     overflow: 'hidden',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  badgeGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    gap: 6,
-  },
-  badgeText: {
-    color: '#FFF',
-    fontSize: 11,
-    fontWeight: '800' as const,
-    letterSpacing: 1,
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  crownGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
+  },
+  premiumBadgeGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    gap: 6,
+    marginBottom: 20,
+    shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
   },
+  badgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '800' as const,
+    letterSpacing: 1.2,
+  },
   title: {
-    fontSize: 20,
-    fontWeight: '700' as const,
+    fontSize: 24,
+    fontWeight: '800' as const,
     textAlign: 'center',
-    marginBottom: 8,
-    letterSpacing: -0.3,
+    marginBottom: 12,
+    letterSpacing: -0.5,
   },
   description: {
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-    paddingHorizontal: 8,
-    opacity: 0.8,
+    lineHeight: 22,
+    marginBottom: 24,
+    paddingHorizontal: 4,
+    fontWeight: '500' as const,
+  },
+  featuresContainer: {
+    width: '100%',
+    gap: 12,
+    marginBottom: 28,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  checkmark: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmarkText: {
+    color: '#FFD700',
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  featureText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   offlineNotice: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginBottom: 20,
   },
   offlineText: {
     fontSize: 13,
+    fontWeight: '600' as const,
     textAlign: 'center',
   },
   upgradeButton: {
     width: '100%',
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 12,
+    marginBottom: 16,
     shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10,
   },
   upgradeGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     gap: 10,
   },
   upgradeButtonText: {
     color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700' as const,
-    letterSpacing: 0.3,
+    fontSize: 16,
+    fontWeight: '800' as const,
+    letterSpacing: 0.5,
   },
   learnMoreButton: {
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   learnMoreText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
+    fontSize: 15,
+    fontWeight: '700' as const,
   },
 });
 

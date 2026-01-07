@@ -123,9 +123,7 @@ export const POINT_SOURCES: Record<string, PointSource> = {
   challenge_hard: { type: 'challenge_complete', baseXp: 150, description: 'Svår utmaning' },
   first_achievement: { type: 'achievement_unlock', baseXp: 25, description: 'Första prestationen' },
   level_up_bonus: { type: 'level_up_bonus', baseXp: 50, description: 'Nivå upp bonus' },
-  course_complete_short: { type: 'course_complete', baseXp: 200, description: 'Kort kurs klar' },
-  course_complete_medium: { type: 'course_complete', baseXp: 350, description: 'Medellång kurs klar' },
-  course_complete_long: { type: 'course_complete', baseXp: 500, description: 'Lång kurs klar' },
+  module_complete: { type: 'module_complete', baseXp: 50, description: 'Modul slutförd' },
   off_peak_bonus: { type: 'off_peak_bonus', baseXp: 10, description: 'Studera under lugna timmar' },
   study_session: { type: 'lesson_complete', baseXp: 5, description: 'Per 5 minuter studietid' },
 };

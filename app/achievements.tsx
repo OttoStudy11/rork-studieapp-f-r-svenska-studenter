@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,62 +7,65 @@ import {
   TouchableOpacity,
   StatusBar,
   Platform,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
-import { useAchievements, Achievement } from '@/contexts/AchievementContext';
+import { 
+  ArrowLeft, 
+  Info, 
+  X, 
+  Zap, 
+  Trophy, 
+  Target, 
+  Flame,
+  ChevronRight,
+  Gift,
+  CheckCircle,
+  Lock
+} from 'lucide-react-native';
+import { useGamification, TIER_COLORS, RARITY_COLORS, DIFFICULTY_CONFIG, Achievement, DailyChallenge } from '@/contexts/GamificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { FadeInView, SlideInView } from '@/components/Animations';
-import { SPACING, BORDER_RADIUS, TYPOGRAPHY, SHADOWS } from '@/constants/design-system';
+import { SPACING, BORDER_RADIUS, SHADOWS } from '@/constants/design-system';
+import { LEVELS, formatXp, TIER_NAMES, RARITY_NAMES, TierType } from '@/constants/gamification';
+import * as Haptics from 'expo-haptics';
 
-type CategoryFilter = 'all' | 'study' | 'social' | 'streak' | 'milestone';
 
-const ACHIEVEMENT_CATEGORIES = [
-  { id: 'all' as const, label: 'Alla', icon: '🎯', gradient: ['#6366F1', '#8B5CF6'] },
-  { id: 'study' as const, label: 'Studier', icon: '📚', gradient: ['#3B82F6', '#2563EB'] },
-  { id: 'social' as const, label: 'Socialt', icon: '👥', gradient: ['#10B981', '#059669'] },
-  { id: 'streak' as const, label: 'Streak', icon: '🔥', gradient: ['#F59E0B', '#D97706'] },
-  { id: 'milestone' as const, label: 'Milstolpar', icon: '🏆', gradient: ['#8B5CF6', '#7C3AED'] },
+
+type TabType = 'overview' | 'achievements' | 'challenges' | 'levels';
+
+const TABS = [
+  { id: 'overview' as const, label: 'Översikt', icon: '📊' },
+  { id: 'achievements' as const, label: 'Prestationer', icon: '🏆' },
+  { id: 'challenges' as const, label: 'Utmaningar', icon: '🎯' },
+  { id: 'levels' as const, label: 'Nivåer', icon: '⭐' },
 ];
 
 interface AchievementCardProps {
   achievement: Achievement;
   isDark: boolean;
-  onPress?: () => void;
+  onClaim?: () => void;
 }
 
-const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, onPress }) => {
-  const isUnlocked = !!achievement.unlockedAt;
+const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, onClaim }) => {
+  const isUnlocked = achievement.isUnlocked;
+  const canClaim = isUnlocked && !achievement.isClaimed;
   const progress = Math.min(100, achievement.progress);
-  
-  const categoryGradient = ACHIEVEMENT_CATEGORIES.find(c => c.id === achievement.category)?.gradient || ['#6366F1', '#8B5CF6'];
+  const rarityColor = RARITY_COLORS[achievement.rarity];
 
   return (
-    <TouchableOpacity 
+    <View 
       style={[
         styles.achievementCard,
         { 
           backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-          opacity: isUnlocked ? 1 : 0.7,
+          borderLeftWidth: 4,
+          borderLeftColor: isUnlocked ? rarityColor : (isDark ? '#374151' : '#E5E7EB'),
         }
       ]}
-      onPress={onPress}
-      activeOpacity={0.8}
-      disabled={!onPress}
     >
-      {isUnlocked && (
-        <View style={styles.shimmerOverlay}>
-          <LinearGradient
-            colors={['transparent', 'rgba(255, 255, 255, 0.1)', 'transparent']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.shimmer}
-          />
-        </View>
-      )}
-      
       <View style={styles.achievementContent}>
         <View style={styles.achievementLeft}>
           <View
@@ -70,7 +73,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
               styles.achievementIconContainer,
               { 
                 backgroundColor: isUnlocked 
-                  ? categoryGradient[0] + '20' 
+                  ? rarityColor + '20' 
                   : (isDark ? '#374151' : '#F3F4F6')
               }
             ]}
@@ -83,19 +86,26 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
             </Text>
             {!isUnlocked && (
               <View style={styles.lockOverlay}>
-                <Text style={styles.lockIcon}>🔒</Text>
+                <Lock size={16} color="#9CA3AF" />
               </View>
             )}
           </View>
           
           <View style={styles.achievementInfo}>
-            <Text style={[
-              styles.achievementTitle,
-              { color: isDark ? '#FFFFFF' : '#111827' },
-              !isUnlocked && { opacity: 0.6 }
-            ]}>
-              {achievement.title}
-            </Text>
+            <View style={styles.achievementHeader}>
+              <Text style={[
+                styles.achievementTitle,
+                { color: isDark ? '#FFFFFF' : '#111827' },
+                !isUnlocked && { opacity: 0.6 }
+              ]}>
+                {achievement.title}
+              </Text>
+              <View style={[styles.rarityBadge, { backgroundColor: rarityColor + '20' }]}>
+                <Text style={[styles.rarityText, { color: rarityColor }]}>
+                  {RARITY_NAMES[achievement.rarity].sv}
+                </Text>
+              </View>
+            </View>
             <Text style={[
               styles.achievementDescription,
               { color: isDark ? '#9CA3AF' : '#6B7280' }
@@ -105,9 +115,9 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
             
             {isUnlocked && achievement.unlockedAt && (
               <View style={styles.unlockedBadge}>
-                <Text style={styles.unlockedEmoji}>✨</Text>
+                <CheckCircle size={12} color="#10B981" />
                 <Text style={styles.unlockedText}>
-                  {new Date(achievement.unlockedAt).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })}
+                  Upplåst {new Date(achievement.unlockedAt).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })}
                 </Text>
               </View>
             )}
@@ -115,20 +125,27 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
         </View>
         
         <View style={styles.achievementRight}>
-          {isUnlocked ? (
-            <LinearGradient
-              colors={categoryGradient as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.pointsBadge}
+          {canClaim ? (
+            <TouchableOpacity
+              style={[styles.claimButton, { backgroundColor: rarityColor }]}
+              onPress={onClaim}
+              activeOpacity={0.8}
             >
-              <Text style={styles.pointsEmoji}>⭐</Text>
-              <Text style={styles.pointsText}>{achievement.reward.points}</Text>
-            </LinearGradient>
+              <Gift size={14} color="#FFFFFF" />
+              <Text style={styles.claimButtonText}>+{achievement.xpReward}</Text>
+            </TouchableOpacity>
+          ) : isUnlocked ? (
+            <View style={[styles.claimedBadge, { backgroundColor: '#10B981' + '20' }]}>
+              <CheckCircle size={14} color="#10B981" />
+              <Text style={[styles.claimedText, { color: '#10B981' }]}>
+                +{achievement.xpReward}
+              </Text>
+            </View>
           ) : (
-            <View style={[styles.lockedPointsBadge, { backgroundColor: isDark ? '#374151' : '#F3F4F6' }]}>
-              <Text style={[styles.lockedPointsText, { color: isDark ? '#6B7280' : '#9CA3AF' }]}>
-                {achievement.reward.points}p
+            <View style={[styles.xpPreview, { backgroundColor: isDark ? '#374151' : '#F3F4F6' }]}>
+              <Zap size={12} color={isDark ? '#6B7280' : '#9CA3AF'} />
+              <Text style={[styles.xpPreviewText, { color: isDark ? '#6B7280' : '#9CA3AF' }]}>
+                {achievement.xpReward} XP
               </Text>
             </View>
           )}
@@ -141,236 +158,665 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
             styles.progressBar,
             { backgroundColor: isDark ? '#374151' : '#E5E7EB' }
           ]}>
-            <LinearGradient
-              colors={categoryGradient as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[styles.progressFill, { width: `${progress}%` }]}
+            <View
+              style={[styles.progressFill, { width: `${progress}%`, backgroundColor: rarityColor }]}
             />
           </View>
           <Text style={[
             styles.progressText,
             { color: isDark ? '#6B7280' : '#9CA3AF' }
           ]}>
-            {Math.round(progress)}%
+            {Math.round(progress)}% klar
           </Text>
         </View>
       )}
-    </TouchableOpacity>
+    </View>
+  );
+};
+
+interface ChallengeCardProps {
+  challenge: DailyChallenge;
+  isDark: boolean;
+  onClaim?: () => void;
+}
+
+const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, isDark, onClaim }) => {
+  const difficultyConfig = DIFFICULTY_CONFIG[challenge.difficulty];
+  const progress = Math.min(100, (challenge.currentProgress / challenge.targetValue) * 100);
+  const canClaim = challenge.isCompleted && !challenge.isClaimed;
+
+  return (
+    <View 
+      style={[
+        styles.challengeCard,
+        { 
+          backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+          borderColor: challenge.isCompleted ? '#10B981' : (isDark ? '#374151' : '#E5E7EB'),
+          borderWidth: challenge.isCompleted ? 2 : 1,
+        }
+      ]}
+    >
+      <View style={styles.challengeHeader}>
+        <View style={styles.challengeLeft}>
+          <Text style={styles.challengeEmoji}>{challenge.emoji}</Text>
+          <View style={styles.challengeInfo}>
+            <Text style={[styles.challengeTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+              {challenge.title}
+            </Text>
+            <Text style={[styles.challengeDescription, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+              {challenge.description}
+            </Text>
+          </View>
+        </View>
+        
+        <View style={styles.challengeRight}>
+          <View style={[styles.difficultyBadge, { backgroundColor: difficultyConfig.color + '20' }]}>
+            <Text style={[styles.difficultyText, { color: difficultyConfig.color }]}>
+              {difficultyConfig.label}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.challengeProgress}>
+        <View style={[styles.challengeProgressBar, { backgroundColor: isDark ? '#374151' : '#E5E7EB' }]}>
+          <View
+            style={[
+              styles.challengeProgressFill, 
+              { 
+                width: `${progress}%`, 
+                backgroundColor: challenge.isCompleted ? '#10B981' : difficultyConfig.color 
+              }
+            ]}
+          />
+        </View>
+        <Text style={[styles.challengeProgressText, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+          {challenge.currentProgress}/{challenge.targetValue}
+        </Text>
+      </View>
+
+      <View style={styles.challengeFooter}>
+        <View style={styles.xpRewardContainer}>
+          <Zap size={14} color="#F59E0B" />
+          <Text style={[styles.xpRewardText, { color: '#F59E0B' }]}>
+            +{challenge.xpReward} XP
+          </Text>
+        </View>
+        
+        {canClaim ? (
+          <TouchableOpacity
+            style={styles.claimChallengeButton}
+            onPress={onClaim}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={['#10B981', '#059669']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.claimChallengeGradient}
+            >
+              <Gift size={14} color="#FFFFFF" />
+              <Text style={styles.claimChallengeText}>Hämta belöning</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        ) : challenge.isClaimed ? (
+          <View style={styles.challengeClaimedBadge}>
+            <CheckCircle size={14} color="#10B981" />
+            <Text style={styles.challengeClaimedText}>Hämtad</Text>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+};
+
+interface LevelCardProps {
+  level: typeof LEVELS[0];
+  isCurrentLevel: boolean;
+  isUnlocked: boolean;
+  isDark: boolean;
+}
+
+const LevelCard: React.FC<LevelCardProps> = ({ level, isCurrentLevel, isUnlocked, isDark }) => {
+  const tierColor = TIER_COLORS[level.tier];
+
+  return (
+    <View 
+      style={[
+        styles.levelCard,
+        { 
+          backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+          borderColor: isCurrentLevel ? tierColor : 'transparent',
+          borderWidth: isCurrentLevel ? 2 : 0,
+          opacity: isUnlocked ? 1 : 0.5,
+        }
+      ]}
+    >
+      {isCurrentLevel && (
+        <View style={[styles.currentLevelBadge, { backgroundColor: tierColor }]}>
+          <Text style={styles.currentLevelText}>Nu</Text>
+        </View>
+      )}
+      
+      <Text style={styles.levelEmoji}>{level.iconEmoji}</Text>
+      <Text style={[styles.levelNumber, { color: tierColor }]}>Nivå {level.level}</Text>
+      <Text style={[styles.levelTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+        {level.titleSv}
+      </Text>
+      <Text style={[styles.levelXp, { color: isDark ? '#6B7280' : '#9CA3AF' }]}>
+        {formatXp(level.requiredXp)} XP
+      </Text>
+      
+      {!isUnlocked && (
+        <View style={styles.levelLockOverlay}>
+          <Lock size={20} color="#9CA3AF" />
+        </View>
+      )}
+    </View>
   );
 };
 
 export default function AchievementsScreen() {
   const { theme, isDark } = useTheme();
   const {
+    totalXp,
+    currentLevel,
+    xpProgress,
+    streak,
     achievements,
-    totalPoints,
-    getUserLevel,
-    getProgressToNextLevel,
-    getAchievementsByCategory,
-    getUnlockedAchievements,
-    currentStreak,
-    isLoading
-  } = useAchievements();
+    dailyChallenges,
+    unclaimedAchievements,
+    unclaimedChallenges,
+    claimAchievement,
+    claimChallenge,
+    isLoading,
+    isReady,
+  } = useGamification();
   
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
-  
-  const userLevel = getUserLevel();
-  const levelProgress = getProgressToNextLevel();
-  const unlockedAchievements = getUnlockedAchievements();
-  const lockedAchievements = achievements.filter(a => !a.unlockedAt);
-  
-  const filteredAchievements = selectedCategory === 'all' 
-    ? achievements 
-    : getAchievementsByCategory(selectedCategory);
-  
-  if (isLoading) {
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [showInfoModal, setShowInfoModal] = useState(false);
+
+  const unlockedAchievements = achievements.filter(a => a.isUnlocked);
+  const lockedAchievements = achievements.filter(a => !a.isUnlocked);
+  const completedChallenges = dailyChallenges.filter(c => c.isCompleted);
+
+  const handleClaimAchievement = useCallback(async (achievementId: string) => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await claimAchievement(achievementId);
+    } catch (error) {
+      console.log('Error claiming achievement:', error);
+    }
+  }, [claimAchievement]);
+
+  const handleClaimChallenge = useCallback(async (challengeId: string) => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await claimChallenge(challengeId);
+    } catch (error) {
+      console.log('Error claiming challenge:', error);
+    }
+  }, [claimChallenge]);
+
+  if (isLoading || !isReady) {
     return <LoadingScreen />;
   }
-  
+
+  const tierColor = TIER_COLORS[currentLevel.tier];
+
+  const renderOverview = () => (
+    <>
+      {/* Hero Card */}
+      <SlideInView direction="up" delay={100}>
+        <LinearGradient
+          colors={[tierColor, tierColor + 'DD']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroCard}
+        >
+          <View style={styles.heroTop}>
+            <View style={styles.heroLevelSection}>
+              <Text style={styles.heroEmoji}>{currentLevel.iconEmoji}</Text>
+              <View>
+                <Text style={styles.heroLevelLabel}>Nivå {currentLevel.level}</Text>
+                <Text style={styles.heroLevelTitle}>{currentLevel.titleSv}</Text>
+              </View>
+            </View>
+            <TouchableOpacity 
+              style={styles.infoButton}
+              onPress={() => setShowInfoModal(true)}
+            >
+              <Info size={20} color="rgba(255,255,255,0.8)" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.heroXpSection}>
+            <View style={styles.xpRow}>
+              <Zap size={18} color="#FFFFFF" />
+              <Text style={styles.heroXpText}>{formatXp(totalXp)} XP totalt</Text>
+            </View>
+            {xpProgress.nextLevel && (
+              <>
+                <View style={styles.heroProgressBar}>
+                  <View style={[styles.heroProgressFill, { width: `${xpProgress.percent}%` }]} />
+                </View>
+                <Text style={styles.heroProgressText}>
+                  {xpProgress.current} / {xpProgress.required} XP till nivå {xpProgress.nextLevel.level}
+                </Text>
+              </>
+            )}
+          </View>
+
+          <View style={styles.heroStats}>
+            <View style={styles.heroStat}>
+              <Flame size={20} color="#FFFFFF" />
+              <Text style={styles.heroStatValue}>{streak}</Text>
+              <Text style={styles.heroStatLabel}>Streak</Text>
+            </View>
+            <View style={styles.heroStatDivider} />
+            <View style={styles.heroStat}>
+              <Trophy size={20} color="#FFFFFF" />
+              <Text style={styles.heroStatValue}>{unlockedAchievements.length}</Text>
+              <Text style={styles.heroStatLabel}>Prestationer</Text>
+            </View>
+            <View style={styles.heroStatDivider} />
+            <View style={styles.heroStat}>
+              <Target size={20} color="#FFFFFF" />
+              <Text style={styles.heroStatValue}>{completedChallenges.length}/{dailyChallenges.length}</Text>
+              <Text style={styles.heroStatLabel}>Utmaningar</Text>
+            </View>
+          </View>
+        </LinearGradient>
+      </SlideInView>
+
+      {/* Unclaimed Rewards Alert */}
+      {(unclaimedAchievements > 0 || unclaimedChallenges > 0) && (
+        <SlideInView direction="up" delay={200}>
+          <TouchableOpacity
+            style={[styles.unclaimedAlert, { backgroundColor: '#F59E0B' + '15' }]}
+            onPress={() => setActiveTab(unclaimedAchievements > 0 ? 'achievements' : 'challenges')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.unclaimedContent}>
+              <Gift size={20} color="#F59E0B" />
+              <Text style={[styles.unclaimedText, { color: '#F59E0B' }]}>
+                Du har {unclaimedAchievements + unclaimedChallenges} belöningar att hämta!
+              </Text>
+            </View>
+            <ChevronRight size={20} color="#F59E0B" />
+          </TouchableOpacity>
+        </SlideInView>
+      )}
+
+      {/* Today's Challenges */}
+      <SlideInView direction="up" delay={300}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dagens utmaningar</Text>
+          <TouchableOpacity onPress={() => setActiveTab('challenges')}>
+            <Text style={[styles.sectionLink, { color: tierColor }]}>Visa alla</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {dailyChallenges.slice(0, 3).map((challenge) => (
+          <ChallengeCard
+            key={challenge.id}
+            challenge={challenge}
+            isDark={isDark}
+            onClaim={() => handleClaimChallenge(challenge.id)}
+          />
+        ))}
+      </SlideInView>
+
+      {/* Recent Achievements */}
+      {unlockedAchievements.length > 0 && (
+        <SlideInView direction="up" delay={400}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Senaste prestationer</Text>
+            <TouchableOpacity onPress={() => setActiveTab('achievements')}>
+              <Text style={[styles.sectionLink, { color: tierColor }]}>Visa alla</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {unlockedAchievements.slice(0, 3).map((achievement) => (
+            <AchievementCard
+              key={achievement.id}
+              achievement={achievement}
+              isDark={isDark}
+              onClaim={() => handleClaimAchievement(achievement.id)}
+            />
+          ))}
+        </SlideInView>
+      )}
+    </>
+  );
+
+  const renderAchievements = () => (
+    <>
+      {/* Stats Summary */}
+      <SlideInView direction="up" delay={100}>
+        <View style={styles.achievementStats}>
+          <View style={[styles.achievementStatCard, { backgroundColor: theme.colors.card }]}>
+            <Text style={styles.achievementStatEmoji}>🏆</Text>
+            <Text style={[styles.achievementStatValue, { color: theme.colors.text }]}>
+              {unlockedAchievements.length}/{achievements.length}
+            </Text>
+            <Text style={[styles.achievementStatLabel, { color: theme.colors.textSecondary }]}>
+              Upplåsta
+            </Text>
+          </View>
+          <View style={[styles.achievementStatCard, { backgroundColor: theme.colors.card }]}>
+            <Text style={styles.achievementStatEmoji}>✨</Text>
+            <Text style={[styles.achievementStatValue, { color: theme.colors.text }]}>
+              {Math.round((unlockedAchievements.length / Math.max(1, achievements.length)) * 100)}%
+            </Text>
+            <Text style={[styles.achievementStatLabel, { color: theme.colors.textSecondary }]}>
+              Framsteg
+            </Text>
+          </View>
+        </View>
+      </SlideInView>
+
+      {/* Claimable Achievements */}
+      {achievements.filter(a => a.isUnlocked && !a.isClaimed).length > 0 && (
+        <SlideInView direction="up" delay={150}>
+          <Text style={[styles.achievementSectionTitle, { color: '#F59E0B' }]}>
+            🎁 Att hämta
+          </Text>
+          {achievements.filter(a => a.isUnlocked && !a.isClaimed).map((achievement, index) => (
+            <FadeInView key={achievement.id} delay={200 + index * 50}>
+              <AchievementCard
+                achievement={achievement}
+                isDark={isDark}
+                onClaim={() => handleClaimAchievement(achievement.id)}
+              />
+            </FadeInView>
+          ))}
+        </SlideInView>
+      )}
+
+      {/* Unlocked Achievements */}
+      {unlockedAchievements.filter(a => a.isClaimed).length > 0 && (
+        <SlideInView direction="up" delay={200}>
+          <Text style={[styles.achievementSectionTitle, { color: '#10B981' }]}>
+            ✅ Avklarade
+          </Text>
+          {unlockedAchievements.filter(a => a.isClaimed).map((achievement, index) => (
+            <FadeInView key={achievement.id} delay={250 + index * 50}>
+              <AchievementCard
+                achievement={achievement}
+                isDark={isDark}
+              />
+            </FadeInView>
+          ))}
+        </SlideInView>
+      )}
+
+      {/* Locked Achievements */}
+      {lockedAchievements.length > 0 && (
+        <SlideInView direction="up" delay={300}>
+          <Text style={[styles.achievementSectionTitle, { color: theme.colors.textSecondary }]}>
+            🔒 Låsta ({lockedAchievements.length})
+          </Text>
+          {lockedAchievements.map((achievement, index) => (
+            <FadeInView key={achievement.id} delay={350 + index * 50}>
+              <AchievementCard
+                achievement={achievement}
+                isDark={isDark}
+              />
+            </FadeInView>
+          ))}
+        </SlideInView>
+      )}
+
+      {achievements.length === 0 && (
+        <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
+          <Text style={styles.emptyEmoji}>🎯</Text>
+          <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
+            Inga prestationer än
+          </Text>
+          <Text style={[styles.emptyDescription, { color: theme.colors.textSecondary }]}>
+            Fortsätt studera för att låsa upp prestationer!
+          </Text>
+        </View>
+      )}
+    </>
+  );
+
+  const renderChallenges = () => (
+    <>
+      <SlideInView direction="up" delay={100}>
+        <View style={[styles.challengeHeader, { backgroundColor: theme.colors.card }]}>
+          <View style={styles.challengeHeaderContent}>
+            <Text style={styles.challengeHeaderEmoji}>🎯</Text>
+            <View>
+              <Text style={[styles.challengeHeaderTitle, { color: theme.colors.text }]}>
+                Dagliga utmaningar
+              </Text>
+              <Text style={[styles.challengeHeaderSubtitle, { color: theme.colors.textSecondary }]}>
+                Återställs vid midnatt
+              </Text>
+            </View>
+          </View>
+          <View style={styles.challengeHeaderStats}>
+            <Text style={[styles.challengeHeaderProgress, { color: tierColor }]}>
+              {completedChallenges.length}/{dailyChallenges.length}
+            </Text>
+          </View>
+        </View>
+      </SlideInView>
+
+      {dailyChallenges.map((challenge, index) => (
+        <FadeInView key={challenge.id} delay={150 + index * 50}>
+          <ChallengeCard
+            challenge={challenge}
+            isDark={isDark}
+            onClaim={() => handleClaimChallenge(challenge.id)}
+          />
+        </FadeInView>
+      ))}
+
+      {dailyChallenges.length === 0 && (
+        <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
+          <Text style={styles.emptyEmoji}>🎯</Text>
+          <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
+            Inga utmaningar idag
+          </Text>
+          <Text style={[styles.emptyDescription, { color: theme.colors.textSecondary }]}>
+            Kom tillbaka imorgon för nya utmaningar!
+          </Text>
+        </View>
+      )}
+    </>
+  );
+
+  const renderLevels = () => {
+    const tiers: TierType[] = ['beginner', 'intermediate', 'advanced', 'expert', 'master', 'legend'];
+    
+    return (
+      <>
+        {tiers.map((tier) => {
+          const tierLevels = LEVELS.filter(l => l.tier === tier);
+          const tierColor = TIER_COLORS[tier];
+          
+          return (
+            <SlideInView key={tier} direction="up" delay={100}>
+              <View style={styles.tierSection}>
+                <View style={[styles.tierHeader, { borderLeftColor: tierColor }]}>
+                  <Text style={[styles.tierTitle, { color: tierColor }]}>
+                    {TIER_NAMES[tier].sv}
+                  </Text>
+                  <Text style={[styles.tierRange, { color: theme.colors.textSecondary }]}>
+                    Nivå {tierLevels[0]?.level} - {tierLevels[tierLevels.length - 1]?.level}
+                  </Text>
+                </View>
+                
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.levelScroll}
+                >
+                  {tierLevels.map((level) => (
+                    <LevelCard
+                      key={level.level}
+                      level={level}
+                      isCurrentLevel={level.level === currentLevel.level}
+                      isUnlocked={totalXp >= level.requiredXp}
+                      isDark={isDark}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            </SlideInView>
+          );
+        })}
+      </>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar 
         barStyle={isDark ? 'light-content' : 'dark-content'} 
         backgroundColor={theme.colors.background}
       />
-      <Stack.Screen 
-        options={{
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+        <TouchableOpacity 
+          onPress={() => router.back()}
+          style={[styles.backButton, { backgroundColor: isDark ? '#1F2937' : '#F3F4F6' }]}
+        >
+          <ArrowLeft size={24} color={isDark ? '#FFFFFF' : '#111827'} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Framsteg & XP</Text>
+        <TouchableOpacity 
+          onPress={() => setShowInfoModal(true)}
+          style={[styles.infoHeaderButton, { backgroundColor: isDark ? '#1F2937' : '#F3F4F6' }]}
+        >
+          <Info size={20} color={isDark ? '#FFFFFF' : '#111827'} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Tabs */}
+      <View style={styles.tabContainer}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabScroll}
+        >
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[
+                  styles.tab,
+                  isActive && { backgroundColor: tierColor + '20', borderColor: tierColor }
+                ]}
+                onPress={() => setActiveTab(tab.id)}
+              >
+                <Text style={styles.tabIcon}>{tab.icon}</Text>
+                <Text style={[
+                  styles.tabLabel,
+                  { color: isActive ? tierColor : theme.colors.textSecondary }
+                ]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {/* Content */}
       <ScrollView 
-        style={styles.scrollView} 
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Custom Header */}
-        <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            style={[styles.backButton, { backgroundColor: isDark ? '#1F2937' : '#F3F4F6' }]}
-            activeOpacity={0.7}
-          >
-            <ArrowLeft size={24} color={isDark ? '#FFFFFF' : '#111827'} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Prestationer</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        {activeTab === 'overview' && renderOverview()}
+        {activeTab === 'achievements' && renderAchievements()}
+        {activeTab === 'challenges' && renderChallenges()}
+        {activeTab === 'levels' && renderLevels()}
+      </ScrollView>
 
-        {/* Hero Stats Card */}
-        <SlideInView direction="up" delay={100}>
-          <LinearGradient
-            colors={theme.colors.gradient as any}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroCard}
-          >
-            <View style={styles.heroHeader}>
-              <View style={styles.heroLevelBadge}>
-                <Text style={styles.heroLevelIcon}>👑</Text>
-                <Text style={styles.heroLevelNumber}>Nivå {userLevel.level}</Text>
-              </View>
-              <Text style={styles.heroLevelTitle}>{userLevel.title}</Text>
+      {/* Info Modal */}
+      <Modal
+        visible={showInfoModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowInfoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+                Hur fungerar XP-systemet?
+              </Text>
+              <TouchableOpacity onPress={() => setShowInfoModal(false)}>
+                <X size={24} color={theme.colors.text} />
+              </TouchableOpacity>
             </View>
             
-            <View style={styles.heroStats}>
-              <View style={styles.heroStatItem}>
-                <Text style={styles.heroStatEmoji}>🏆</Text>
-                <Text style={styles.heroStatNumber}>{unlockedAchievements.length}</Text>
-                <Text style={styles.heroStatLabel}>Upplåsta</Text>
-              </View>
-              
-              <View style={styles.heroStatDivider} />
-              
-              <View style={styles.heroStatItem}>
-                <Text style={styles.heroStatEmoji}>⭐</Text>
-                <Text style={styles.heroStatNumber}>{totalPoints}</Text>
-                <Text style={styles.heroStatLabel}>Poäng</Text>
-              </View>
-              
-              <View style={styles.heroStatDivider} />
-              
-              <View style={styles.heroStatItem}>
-                <Text style={styles.heroStatEmoji}>🔥</Text>
-                <Text style={styles.heroStatNumber}>{currentStreak}</Text>
-                <Text style={styles.heroStatLabel}>Streak</Text>
-              </View>
-            </View>
-            
-            {levelProgress.needed > 0 && (
-              <View style={styles.heroProgress}>
-                <Text style={styles.heroProgressText}>
-                  {levelProgress.current}/{levelProgress.needed} poäng till nästa nivå
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.infoSection}>
+                <Text style={styles.infoEmoji}>⚡</Text>
+                <Text style={[styles.infoTitle, { color: theme.colors.text }]}>Tjäna XP</Text>
+                <Text style={[styles.infoText, { color: theme.colors.textSecondary }]}>
+                  • Studera med timern: 5 XP per 5 minuter{'\n'}
+                  • Quiz 50-75%: 20 XP{'\n'}
+                  • Quiz 75-90%: 35 XP{'\n'}
+                  • Quiz 90-100%: 50 XP{'\n'}
+                  • Slutför lektioner: 10 XP{'\n'}
+                  • Dagliga utmaningar: 30-150 XP{'\n'}
+                  • Morgonbonus (05:00-08:00): +10 XP
                 </Text>
-                <View style={styles.heroProgressBar}>
-                  <View style={[styles.heroProgressFill, { width: `${levelProgress.progress}%` }]} />
-                </View>
               </View>
-            )}
-          </LinearGradient>
-        </SlideInView>
 
-        {/* Quick Stats */}
-        <SlideInView direction="up" delay={200}>
-          <View style={styles.quickStatsContainer}>
-            <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
-              <View style={[styles.quickStatIconContainer, { backgroundColor: '#10B981' + '20' }]}>
-                <Text style={styles.quickStatEmoji}>🎯</Text>
+              <View style={styles.infoSection}>
+                <Text style={styles.infoEmoji}>🏆</Text>
+                <Text style={[styles.infoTitle, { color: theme.colors.text }]}>Prestationer</Text>
+                <Text style={[styles.infoText, { color: theme.colors.textSecondary }]}>
+                  Lås upp prestationer genom att nå milstolpar. Varje prestation ger XP baserat på sällsynthet:{'\n\n'}
+                  • Vanlig: 25-50 XP{'\n'}
+                  • Ovanlig: 75-150 XP{'\n'}
+                  • Sällsynt: 200-350 XP{'\n'}
+                  • Episk: 400-600 XP{'\n'}
+                  • Legendarisk: 750-1000 XP
+                </Text>
               </View>
-              <Text style={[styles.quickStatNumber, { color: theme.colors.text }]}>
-                {Math.round((unlockedAchievements.length / achievements.length) * 100)}%
-              </Text>
-              <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Slutfört</Text>
-            </View>
-            
-            <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
-              <View style={[styles.quickStatIconContainer, { backgroundColor: '#F59E0B' + '20' }]}>
-                <Text style={styles.quickStatEmoji}>✨</Text>
-              </View>
-              <Text style={[styles.quickStatNumber, { color: theme.colors.text }]}>
-                {lockedAchievements.length}
-              </Text>
-              <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Återstår</Text>
-            </View>
-          </View>
-        </SlideInView>
 
-        {/* Category Filter */}
-        <SlideInView direction="up" delay={300}>
-          <View style={styles.categoryContainer}>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryScrollContent}
-            >
-              {ACHIEVEMENT_CATEGORIES.map((category, index) => {
-                const isSelected = selectedCategory === category.id;
-                
-                return (
-                  <FadeInView key={category.id} delay={350 + index * 50}>
-                    <TouchableOpacity
-                      style={[
-                        styles.categoryButton,
-                        { 
-                          backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-                          borderColor: isSelected ? category.gradient[0] : (isDark ? '#374151' : '#E5E7EB'),
-                          borderWidth: isSelected ? 2 : 1,
-                        }
-                      ]}
-                      onPress={() => setSelectedCategory(category.id)}
-                      activeOpacity={0.7}
-                    >
-                      {isSelected ? (
-                        <LinearGradient
-                          colors={category.gradient as any}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.categoryButtonSelected}
-                        >
-                          <Text style={styles.categoryIconSelected}>{category.icon}</Text>
-                          <Text style={styles.categoryLabelSelected}>{category.label}</Text>
-                        </LinearGradient>
-                      ) : (
-                        <>
-                          <Text style={styles.categoryIcon}>{category.icon}</Text>
-                          <Text style={[styles.categoryLabel, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-                            {category.label}
-                          </Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </FadeInView>
-                );
-              })}
+              <View style={styles.infoSection}>
+                <Text style={styles.infoEmoji}>⭐</Text>
+                <Text style={[styles.infoTitle, { color: theme.colors.text }]}>Nivåer & Tiers</Text>
+                <Text style={[styles.infoText, { color: theme.colors.textSecondary }]}>
+                  Det finns 50 nivåer fördelade på 6 tiers:{'\n\n'}
+                  • Nybörjare (1-9): Grå{'\n'}
+                  • Mellanliggande (10-19): Blå{'\n'}
+                  • Avancerad (20-29): Lila{'\n'}
+                  • Expert (30-39): Rosa{'\n'}
+                  • Mästare (40-49): Guld{'\n'}
+                  • Legend (50): Röd{'\n\n'}
+                  Du får +50 XP bonus vid varje nivåuppgång!
+                </Text>
+              </View>
+
+              <View style={styles.infoSection}>
+                <Text style={styles.infoEmoji}>🎯</Text>
+                <Text style={[styles.infoTitle, { color: theme.colors.text }]}>Dagliga utmaningar</Text>
+                <Text style={[styles.infoText, { color: theme.colors.textSecondary }]}>
+                  Nya utmaningar varje dag med olika svårighetsgrader:{'\n\n'}
+                  • Lätt: ~30 XP{'\n'}
+                  • Medel: ~60-75 XP{'\n'}
+                  • Svår: ~120-150 XP{'\n\n'}
+                  Slutför utmaningar för att få extra XP och hålla din streak igång!
+                </Text>
+              </View>
             </ScrollView>
           </View>
-        </SlideInView>
-        
-        {/* Achievements List */}
-        <View style={styles.achievementsContainer}>
-          {filteredAchievements.length === 0 ? (
-            <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
-              <Text style={styles.emptyEmoji}>🎯</Text>
-              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
-                Inga prestationer
-              </Text>
-              <Text style={[styles.emptyDescription, { color: theme.colors.textSecondary }]}>
-                Fortsätt studera för att låsa upp prestationer!
-              </Text>
-            </View>
-          ) : (
-            filteredAchievements.map((achievement, index) => (
-              <FadeInView key={achievement.id} delay={400 + index * 50}>
-                <AchievementCard
-                  achievement={achievement}
-                  isDark={isDark}
-                />
-              </FadeInView>
-            ))
-          )}
         </View>
-      </ScrollView>
+      </Modal>
     </View>
   );
 }
@@ -379,19 +825,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 32,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
     paddingTop: Platform.OS === 'ios' ? 60 : SPACING.xl,
-    paddingBottom: SPACING.lg,
+    paddingBottom: SPACING.md,
   },
   backButton: {
     width: 40,
@@ -399,183 +839,181 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.sm,
   },
   headerTitle: {
-    ...TYPOGRAPHY.h2,
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  infoHeaderButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tabContainer: {
+    paddingBottom: SPACING.sm,
+  },
+  tabScroll: {
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.round,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    gap: 6,
+  },
+  tabIcon: {
+    fontSize: 16,
+  },
+  tabLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: 32,
   },
   heroCard: {
-    marginHorizontal: SPACING.xl,
-    marginBottom: SPACING.xl,
     borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.xxl,
+    padding: SPACING.xl,
+    marginBottom: SPACING.lg,
     ...SHADOWS.lg,
   },
-  heroHeader: {
-    alignItems: 'center',
-    marginBottom: SPACING.xl,
+  heroTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.lg,
   },
-  heroLevelBadge: {
+  heroLevelSection: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.md,
+    gap: SPACING.md,
   },
-  heroLevelIcon: {
+  heroEmoji: {
     fontSize: 48,
-    marginBottom: 4,
   },
-  heroLevelNumber: {
-    fontSize: 28,
-    fontWeight: '800' as const,
-    color: 'white',
-    letterSpacing: -0.5,
+  heroLevelLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: 'rgba(255,255,255,0.8)',
   },
   heroLevelTitle: {
-    fontSize: 20,
-    fontWeight: '600' as const,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 24,
+    fontWeight: '800' as const,
+    color: '#FFFFFF',
+  },
+  infoButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroXpSection: {
+    marginBottom: SPACING.lg,
+  },
+  xpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: SPACING.sm,
+  },
+  heroXpText: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
+  },
+  heroProgressBar: {
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 4,
+    marginBottom: SPACING.xs,
+  },
+  heroProgressFill: {
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+  },
+  heroProgressText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.8)',
   },
   heroStats: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingVertical: SPACING.lg,
+    paddingTop: SPACING.lg,
     borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    marginBottom: SPACING.lg,
+    borderTopColor: 'rgba(255,255,255,0.2)',
   },
-  heroStatItem: {
+  heroStat: {
     alignItems: 'center',
     gap: 4,
   },
-  heroStatEmoji: {
-    fontSize: 28,
-  },
-  heroStatNumber: {
-    fontSize: 24,
+  heroStatValue: {
+    fontSize: 20,
     fontWeight: '700' as const,
-    color: 'white',
-    marginTop: 2,
+    color: '#FFFFFF',
   },
   heroStatLabel: {
     fontSize: 12,
     fontWeight: '500' as const,
-    color: 'rgba(255, 255, 255, 0.85)',
-    marginTop: 2,
+    color: 'rgba(255,255,255,0.8)',
   },
   heroStatDivider: {
     width: 1,
     height: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  heroProgress: {
-    gap: SPACING.sm,
-  },
-  heroProgressText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-  },
-  heroProgressBar: {
-    height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  heroProgressFill: {
-    height: '100%',
-    backgroundColor: 'white',
-    borderRadius: 4,
-  },
-  quickStatsContainer: {
+  unclaimedAlert: {
     flexDirection: 'row',
-    paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.xl,
-    gap: SPACING.md,
-  },
-  quickStatCard: {
-    flex: 1,
     alignItems: 'center',
-    padding: SPACING.lg,
+    justifyContent: 'space-between',
+    padding: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
-    ...SHADOWS.sm,
+    marginBottom: SPACING.lg,
   },
-  quickStatIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  quickStatEmoji: {
-    fontSize: 24,
-  },
-  quickStatNumber: {
-    ...TYPOGRAPHY.h3,
-    marginBottom: SPACING.xs,
-  },
-  quickStatLabel: {
-    ...TYPOGRAPHY.caption,
-  },
-  categoryContainer: {
-    marginBottom: SPACING.xl,
-  },
-  categoryScrollContent: {
-    paddingHorizontal: SPACING.xl,
-    gap: SPACING.md,
-  },
-  categoryButton: {
-    borderRadius: BORDER_RADIUS.xl,
-    overflow: 'hidden',
-    ...SHADOWS.sm,
-  },
-  categoryButtonSelected: {
+  unclaimedContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
     gap: SPACING.sm,
   },
-  categoryIconSelected: {
-    fontSize: 18,
-  },
-  categoryLabelSelected: {
-    fontSize: 15,
+  unclaimedText: {
+    fontSize: 14,
     fontWeight: '600' as const,
-    color: 'white',
   },
-  categoryIcon: {
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+    marginTop: SPACING.md,
+  },
+  sectionTitle: {
     fontSize: 18,
-    marginHorizontal: SPACING.lg,
-    marginVertical: SPACING.md,
+    fontWeight: '700' as const,
   },
-  categoryLabel: {
-    fontSize: 15,
+  sectionLink: {
+    fontSize: 14,
     fontWeight: '600' as const,
-    marginRight: SPACING.lg,
-  },
-  achievementsContainer: {
-    paddingHorizontal: SPACING.xl,
-    gap: SPACING.md,
   },
   achievementCard: {
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
-    ...SHADOWS.md,
-    overflow: 'hidden',
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     marginBottom: SPACING.sm,
-  },
-  shimmerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  shimmer: {
-    flex: 1,
+    ...SHADOWS.sm,
   },
   achievementContent: {
     flexDirection: 'row',
@@ -588,18 +1026,18 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   achievementIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   achievementIcon: {
-    fontSize: 36,
+    fontSize: 28,
   },
   achievementIconLocked: {
-    opacity: 0.4,
+    opacity: 0.3,
   },
   lockOverlay: {
     position: 'absolute',
@@ -607,23 +1045,36 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  lockIcon: {
-    fontSize: 24,
-  },
   achievementInfo: {
     flex: 1,
-    gap: SPACING.xs,
+    gap: 4,
+  },
+  achievementHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    flexWrap: 'wrap',
   },
   achievementTitle: {
-    ...TYPOGRAPHY.labelLarge,
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  rarityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  rarityText: {
+    fontSize: 10,
+    fontWeight: '600' as const,
   },
   achievementDescription: {
-    ...TYPOGRAPHY.bodySmall,
+    fontSize: 13,
     lineHeight: 18,
   },
   unlockedBadge: {
@@ -632,46 +1083,54 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 4,
   },
-  unlockedEmoji: {
-    fontSize: 12,
-  },
   unlockedText: {
     fontSize: 11,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
     color: '#10B981',
   },
   achievementRight: {
-    marginLeft: SPACING.md,
+    marginLeft: SPACING.sm,
   },
-  pointsBadge: {
+  claimButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
     gap: 4,
-    ...SHADOWS.sm,
   },
-  pointsEmoji: {
-    fontSize: 16,
-  },
-  pointsText: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: 'white',
-  },
-  lockedPointsBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  lockedPointsText: {
+  claimButtonText: {
     fontSize: 13,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
+  },
+  claimedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 4,
+  },
+  claimedText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  xpPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 4,
+  },
+  xpPreviewText: {
+    fontSize: 12,
     fontWeight: '600' as const,
   },
   progressSection: {
     marginTop: SPACING.md,
-    gap: SPACING.xs,
+    gap: 4,
   },
   progressBar: {
     height: 4,
@@ -684,27 +1143,293 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 11,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
     textAlign: 'right',
-    marginTop: 2,
+  },
+  challengeCard: {
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+    ...SHADOWS.sm,
+  },
+  challengeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.md,
+  },
+  challengeLeft: {
+    flexDirection: 'row',
+    flex: 1,
+    gap: SPACING.md,
+  },
+  challengeEmoji: {
+    fontSize: 32,
+  },
+  challengeInfo: {
+    flex: 1,
+  },
+  challengeTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  challengeDescription: {
+    fontSize: 13,
+  },
+  challengeRight: {},
+  difficultyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  difficultyText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+  },
+  challengeProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  challengeProgressBar: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  challengeProgressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  challengeProgressText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    minWidth: 40,
+    textAlign: 'right',
+  },
+  challengeFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  xpRewardContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  xpRewardText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  claimChallengeButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  claimChallengeGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  claimChallengeText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
+  },
+  challengeClaimedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  challengeClaimedText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#10B981',
+  },
+  achievementStats: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  achievementStatCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    ...SHADOWS.sm,
+  },
+  achievementStatEmoji: {
+    fontSize: 28,
+    marginBottom: SPACING.xs,
+  },
+  achievementStatValue: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  achievementStatLabel: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  achievementSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  challengeHeaderCard: {
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.sm,
+  },
+  challengeHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  challengeHeaderEmoji: {
+    fontSize: 32,
+  },
+  challengeHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  challengeHeaderSubtitle: {
+    fontSize: 13,
+  },
+  challengeHeaderStats: {},
+  challengeHeaderProgress: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  tierSection: {
+    marginBottom: SPACING.xl,
+  },
+  tierHeader: {
+    borderLeftWidth: 4,
+    paddingLeft: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  tierTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  tierRange: {
+    fontSize: 13,
+  },
+  levelScroll: {
+    gap: SPACING.md,
+    paddingRight: SPACING.md,
+  },
+  levelCard: {
+    width: 100,
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    position: 'relative',
+    ...SHADOWS.sm,
+  },
+  currentLevelBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  currentLevelText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
+  },
+  levelEmoji: {
+    fontSize: 28,
+    marginBottom: 4,
+  },
+  levelNumber: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  levelTitle: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  levelXp: {
+    fontSize: 10,
+  },
+  levelLockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: BORDER_RADIUS.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyState: {
     alignItems: 'center',
-    padding: SPACING.massive,
+    padding: SPACING.xxl,
     borderRadius: BORDER_RADIUS.xl,
     ...SHADOWS.sm,
   },
   emptyEmoji: {
-    fontSize: 64,
-    marginBottom: SPACING.lg,
+    fontSize: 48,
+    marginBottom: SPACING.md,
   },
   emptyTitle: {
-    ...TYPOGRAPHY.h3,
-    marginBottom: SPACING.sm,
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: SPACING.xs,
   },
   emptyDescription: {
-    ...TYPOGRAPHY.bodyMedium,
+    fontSize: 14,
     textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: BORDER_RADIUS.xxl,
+    borderTopRightRadius: BORDER_RADIUS.xxl,
+    padding: SPACING.xl,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  infoSection: {
+    marginBottom: SPACING.xl,
+  },
+  infoEmoji: {
+    fontSize: 32,
+    marginBottom: SPACING.sm,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: SPACING.sm,
+  },
+  infoText: {
+    fontSize: 14,
     lineHeight: 22,
   },
 });

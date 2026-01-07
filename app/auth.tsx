@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { Image } from 'expo-image';
-import { Mail, Lock, Eye, EyeOff, Check, ArrowRight, Sparkles } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, Check, ArrowRight, Sparkles, BookOpen, Target, Trophy } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
@@ -63,7 +63,6 @@ export default function AuthScreen() {
       }),
     ]).start();
 
-    // Floating orb animations
     Animated.loop(
       Animated.sequence([
         Animated.timing(orb1Anim, {
@@ -241,12 +240,11 @@ export default function AuthScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#0A0A0F', '#12121A', '#0A0A0F']}
+        colors={['#059669', '#10B981', '#34D399']}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        {/* Decorative orbs */}
         <Animated.View 
           style={[
             styles.orb,
@@ -284,7 +282,6 @@ export default function AuthScreen() {
                 }
               ]}
             >
-              {/* Header */}
               <View style={styles.header}>
                 <Animated.View 
                   style={[
@@ -292,10 +289,7 @@ export default function AuthScreen() {
                     { transform: [{ scale: logoScale }] }
                   ]}
                 >
-                  <LinearGradient
-                    colors={['rgba(99, 102, 241, 0.2)', 'rgba(139, 92, 246, 0.2)']}
-                    style={styles.logoGlow}
-                  />
+                  <View style={styles.logoGlow} />
                   <Image
                     source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
                     style={styles.logo}
@@ -306,7 +300,7 @@ export default function AuthScreen() {
                 <Text style={styles.title}>StudieStugan</Text>
                 
                 <View style={styles.subtitleContainer}>
-                  <Sparkles size={14} color="#8B5CF6" style={styles.sparkleIcon} />
+                  <Sparkles size={14} color="#FFFFFF" style={styles.sparkleIcon} />
                   <Text style={styles.subtitle}>
                     {showEmailConfirmation
                       ? 'Bekräfta din e-post'
@@ -317,7 +311,7 @@ export default function AuthScreen() {
                           : 'Välkommen tillbaka'
                     }
                   </Text>
-                  <Sparkles size={14} color="#8B5CF6" style={styles.sparkleIcon} />
+                  <Sparkles size={14} color="#FFFFFF" style={styles.sparkleIcon} />
                 </View>
 
                 {!showEmailConfirmation && !showForgotPassword && (
@@ -330,18 +324,29 @@ export default function AuthScreen() {
                 )}
               </View>
 
-              {/* Form Card */}
+              {!showEmailConfirmation && !showForgotPassword && !isSignUp && (
+                <View style={styles.featuresRow}>
+                  <View style={styles.featureChip}>
+                    <BookOpen size={14} color="#059669" />
+                    <Text style={styles.featureChipText}>Kurser</Text>
+                  </View>
+                  <View style={styles.featureChip}>
+                    <Target size={14} color="#059669" />
+                    <Text style={styles.featureChipText}>Framsteg</Text>
+                  </View>
+                  <View style={styles.featureChip}>
+                    <Trophy size={14} color="#059669" />
+                    <Text style={styles.featureChipText}>Prestationer</Text>
+                  </View>
+                </View>
+              )}
+
               <View style={styles.formCard}>
-                <LinearGradient
-                  colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.02)']}
-                  style={styles.formCardGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                >
+                <View style={styles.formCardInner}>
                   {showEmailConfirmation ? (
                     <View style={styles.confirmationContainer}>
                       <View style={styles.confirmationIconContainer}>
-                        <Mail size={32} color="#8B5CF6" />
+                        <Mail size={32} color="#059669" />
                       </View>
                       <Text style={styles.confirmationText}>
                         Vi har skickat en bekräftelselänk till:
@@ -358,12 +363,12 @@ export default function AuthScreen() {
                         focusedInput === 'email' && styles.inputContainerFocused
                       ]}>
                         <View style={styles.inputIconContainer}>
-                          <Mail size={20} color={focusedInput === 'email' ? '#8B5CF6' : '#6B7280'} />
+                          <Mail size={20} color={focusedInput === 'email' ? '#059669' : '#6B7280'} />
                         </View>
                         <TextInput
                           style={styles.input}
                           placeholder="E-postadress"
-                          placeholderTextColor="#6B7280"
+                          placeholderTextColor="#94A3B8"
                           value={email}
                           onChangeText={setEmail}
                           keyboardType="email-address"
@@ -381,12 +386,12 @@ export default function AuthScreen() {
                           focusedInput === 'password' && styles.inputContainerFocused
                         ]}>
                           <View style={styles.inputIconContainer}>
-                            <Lock size={20} color={focusedInput === 'password' ? '#8B5CF6' : '#6B7280'} />
+                            <Lock size={20} color={focusedInput === 'password' ? '#059669' : '#6B7280'} />
                           </View>
                           <TextInput
                             style={styles.input}
                             placeholder="Lösenord"
-                            placeholderTextColor="#6B7280"
+                            placeholderTextColor="#94A3B8"
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry={!showPassword}
@@ -412,7 +417,6 @@ export default function AuthScreen() {
                     </>
                   )}
 
-                  {/* Main Action Button */}
                   <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
                     <TouchableOpacity
                       style={[styles.authButton, isLoading && styles.disabledButton]}
@@ -429,7 +433,7 @@ export default function AuthScreen() {
                       activeOpacity={0.9}
                     >
                       <LinearGradient
-                        colors={isLoading ? ['#4B5563', '#374151'] : ['#6366F1', '#8B5CF6']}
+                        colors={isLoading ? ['#94A3B8', '#CBD5E1'] : ['#059669', '#10B981']}
                         style={styles.authButtonGradient}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
@@ -489,7 +493,7 @@ export default function AuthScreen() {
 
                   {(showForgotPassword || showEmailConfirmation) && (
                     <TouchableOpacity
-                      style={styles.backButton}
+                      style={styles.backToLoginButton}
                       onPress={() => {
                         setShowForgotPassword(false);
                         setShowEmailConfirmation(false);
@@ -497,13 +501,12 @@ export default function AuthScreen() {
                       }}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.backButtonText}>← Tillbaka till inloggning</Text>
+                      <Text style={styles.backToLoginText}>← Tillbaka till inloggning</Text>
                     </TouchableOpacity>
                   )}
-                </LinearGradient>
+                </View>
               </View>
 
-              {/* Switch Auth Mode */}
               {!showForgotPassword && !showEmailConfirmation && (
                 <View style={styles.switchContainer}>
                   <View style={styles.dividerContainer}>
@@ -529,7 +532,6 @@ export default function AuthScreen() {
                 </View>
               )}
 
-              {/* Footer */}
               <Text style={styles.footerText}>
                 Genom att fortsätta godkänner du våra villkor
               </Text>
@@ -544,7 +546,7 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0F',
+    backgroundColor: '#059669',
   },
   gradient: {
     flex: 1,
@@ -558,21 +560,21 @@ const styles = StyleSheet.create({
     height: 300,
     top: -100,
     right: -100,
-    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   orb2: {
     width: 250,
     height: 250,
     bottom: 100,
     left: -80,
-    backgroundColor: 'rgba(139, 92, 246, 0.12)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   orb3: {
     width: 180,
     height: 180,
     bottom: -50,
     right: 50,
-    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    backgroundColor: 'rgba(6, 95, 70, 0.25)',
     position: 'absolute',
     borderRadius: 999,
   },
@@ -590,7 +592,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   logoContainer: {
     width: 120,
@@ -606,6 +608,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
   logo: {
     width: 100,
@@ -630,36 +633,60 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 18,
     fontWeight: '600' as const,
-    color: '#E5E7EB',
+    color: '#FFFFFF',
   },
   description: {
     fontSize: 15,
-    color: '#9CA3AF',
+    color: 'rgba(255, 255, 255, 0.85)',
     marginTop: 4,
+  },
+  featuresRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 24,
+  },
+  featureChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  featureChipText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#059669',
   },
   formCard: {
     borderRadius: 24,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  formCardGradient: {
+  formCardInner: {
     padding: 24,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#F1F5F9',
     borderRadius: 16,
     marginBottom: 16,
     paddingHorizontal: 16,
     height: 58,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
   },
   inputContainerFocused: {
-    borderColor: 'rgba(139, 92, 246, 0.5)',
-    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+    borderColor: '#10B981',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
   },
   inputIconContainer: {
     width: 32,
@@ -668,7 +695,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#1E293B',
     paddingVertical: 0,
   },
   eyeButton: {
@@ -712,31 +739,31 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: '#CBD5E1',
     marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#8B5CF6',
-    borderColor: '#8B5CF6',
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
   },
   rememberMeText: {
-    color: '#9CA3AF',
+    color: '#64748B',
     fontSize: 14,
   },
   forgotText: {
-    color: '#8B5CF6',
+    color: '#059669',
     fontSize: 14,
     fontWeight: '600' as const,
   },
-  backButton: {
+  backToLoginButton: {
     alignItems: 'center',
     marginTop: 20,
     paddingVertical: 8,
   },
-  backButtonText: {
-    color: '#8B5CF6',
+  backToLoginText: {
+    color: '#059669',
     fontSize: 15,
     fontWeight: '600' as const,
   },
@@ -753,23 +780,24 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   dividerText: {
-    color: '#6B7280',
+    color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 13,
     marginHorizontal: 16,
     textTransform: 'uppercase',
     letterSpacing: 1,
+    fontWeight: '600' as const,
   },
   switchButton: {
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 24,
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   switchButtonInner: {
     flexDirection: 'row',
@@ -777,14 +805,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   switchText: {
-    color: '#9CA3AF',
+    color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 15,
     marginRight: 6,
   },
   switchButtonText: {
-    color: '#8B5CF6',
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700' as const,
+    textDecorationLine: 'underline',
   },
   confirmationContainer: {
     alignItems: 'center',
@@ -794,32 +823,32 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
   },
   confirmationText: {
-    color: '#D1D5DB',
+    color: '#475569',
     fontSize: 15,
     textAlign: 'center',
     marginBottom: 8,
   },
   confirmationEmail: {
-    color: '#FFFFFF',
+    color: '#1E293B',
     fontSize: 17,
     fontWeight: '700' as const,
     textAlign: 'center',
     marginBottom: 16,
   },
   confirmationInstructions: {
-    color: '#9CA3AF',
+    color: '#64748B',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
   },
   footerText: {
-    color: '#6B7280',
+    color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 12,
     textAlign: 'center',
     marginTop: 32,

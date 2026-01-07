@@ -907,57 +907,71 @@ export default function TimerScreen() {
 
         {/* Hero Timer Card */}
         <View style={styles.timerSection}>
-          <View style={styles.timerContainer}>
-            <Svg width={280} height={280} style={styles.timerSvg}>
-              {/* Background circle */}
-              <Circle
-                cx={140}
-                cy={140}
-                r={120}
-                stroke={theme.colors.border}
-                strokeWidth={8}
-                fill="none"
-              />
-              {/* Progress circle with gradient fill */}
-              <Circle
-                cx={140}
-                cy={140}
-                r={120}
-                stroke={sessionType === 'focus' ? theme.colors.primary : theme.colors.secondary}
-                strokeWidth={8}
-                fill={sessionType === 'focus' ? theme.colors.primary + '10' : theme.colors.secondary + '10'}
-                strokeDasharray={circumference}
-                strokeDashoffset={circumference * (1 - progress)}
-                strokeLinecap="round"
-                transform={`rotate(-90 140 140)`}
-              />
-            </Svg>
-            
-            <View style={styles.timerContent}>
-              <Text style={[styles.timerText, { color: theme.colors.text }]}>
-                {formatTime(timeLeft)}
-              </Text>
-              <Text style={[styles.sessionLabel, { color: theme.colors.textSecondary }]}>
-                {getSelectedCourseTitle()}
-              </Text>
-              <View style={styles.sessionTypeIndicator}>
-                <View style={[styles.sessionTypeBadge, { 
-                  backgroundColor: sessionType === 'focus' 
-                    ? theme.colors.primary + '20' 
-                    : theme.colors.secondary + '20'
-                }]}>
-                  {sessionType === 'focus' ? (
-                    <Brain size={16} color={theme.colors.primary} />
-                  ) : (
-                    <Coffee size={16} color={theme.colors.secondary} />
-                  )}
-                  <Text style={[styles.sessionTypeText, { color: theme.colors.text }]}>
-                    {sessionType === 'focus' ? 'Fokus' : 'Paus'}
+          <LinearGradient
+            colors={sessionType === 'focus' 
+              ? [theme.colors.primary + '08', theme.colors.primary + '15'] as any
+              : [theme.colors.secondary + '08', theme.colors.secondary + '15'] as any
+            }
+            style={styles.timerCardGradient}
+          >
+            <View style={styles.timerContainer}>
+              <Svg width={280} height={280} style={styles.timerSvg}>
+                {/* Background circle with subtle gradient */}
+                <Circle
+                  cx={140}
+                  cy={140}
+                  r={120}
+                  stroke={isDark ? theme.colors.border : theme.colors.border + '40'}
+                  strokeWidth={12}
+                  fill="none"
+                />
+                {/* Progress circle with enhanced gradient */}
+                <Circle
+                  cx={140}
+                  cy={140}
+                  r={120}
+                  stroke={sessionType === 'focus' ? theme.colors.primary : theme.colors.secondary}
+                  strokeWidth={12}
+                  fill={sessionType === 'focus' ? theme.colors.primary + '08' : theme.colors.secondary + '08'}
+                  strokeDasharray={circumference}
+                  strokeDashoffset={circumference * (1 - progress)}
+                  strokeLinecap="round"
+                  transform={`rotate(-90 140 140)`}
+                />
+              </Svg>
+              
+              <View style={styles.timerContent}>
+                <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                  <Text style={[styles.timerText, { color: theme.colors.text }]}>
+                    {formatTime(timeLeft)}
                   </Text>
-                </View>
+                </Animated.View>
+                <Text style={[styles.sessionLabel, { color: theme.colors.textSecondary }]}>
+                  {getSelectedCourseTitle()}
+                </Text>
+                <LinearGradient
+                  colors={sessionType === 'focus' 
+                    ? [theme.colors.primary, theme.colors.primary + 'DD'] as any
+                    : [theme.colors.secondary, theme.colors.secondary + 'DD'] as any
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.sessionTypeBadgeGradient}
+                >
+                  <View style={styles.sessionTypeBadge}>
+                    {sessionType === 'focus' ? (
+                      <Brain size={18} color="#FFFFFF" strokeWidth={2.5} />
+                    ) : (
+                      <Coffee size={18} color="#FFFFFF" strokeWidth={2.5} />
+                    )}
+                    <Text style={styles.sessionTypeText}>
+                      {sessionType === 'focus' ? 'Fokus' : 'Paus'}
+                    </Text>
+                  </View>
+                </LinearGradient>
               </View>
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Course Selection */}
@@ -2078,14 +2092,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timerSection: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
+    paddingHorizontal: 20,
+    marginBottom: 28,
   },
-
+  timerCardGradient: {
+    borderRadius: 32,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+  },
   timerContainer: {
     alignItems: 'center',
     position: 'relative',
-    paddingVertical: 24,
+    paddingVertical: 20,
   },
   timerSvg: {
     position: 'absolute',
@@ -2118,19 +2140,28 @@ const styles = StyleSheet.create({
   sessionTypeIndicator: {
     alignItems: 'center',
   },
+  sessionTypeBadgeGradient: {
+    borderRadius: 24,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
   sessionTypeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    gap: 8,
   },
   sessionTypeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    color: '#FFFFFF',
   },
   courseSection: {
     paddingHorizontal: 24,
@@ -2146,23 +2177,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   courseChip: {
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
     marginRight: 12,
-    borderWidth: 2,
+    borderWidth: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   courseChipActive: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
   },
   courseChipText: {
     fontSize: 14,
@@ -2430,19 +2461,19 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 16,
-    gap: 10,
+    padding: 16,
+    borderRadius: 18,
+    gap: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   quickStatIconWrapper: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -2450,9 +2481,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   quickStatValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.5,
     fontFamily: Platform.select({
       ios: 'SF Pro Display',
       android: 'Roboto',
@@ -2538,17 +2569,17 @@ const styles = StyleSheet.create({
     gap: 30,
   },
   mainButtonGradient: {
-    borderRadius: 40,
+    borderRadius: 44,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 12,
   },
   mainButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },

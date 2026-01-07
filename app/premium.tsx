@@ -516,7 +516,7 @@ export default function PremiumScreen() {
             <FadeInView delay={300}>
               <View style={[styles.trustBadge, { backgroundColor: theme.colors.card }]}>
                 <Check size={16} color={theme.colors.success} />
-                <Text style={[styles.trustText, { color: theme.colors.textSecondary }]}>Över 10,000+ nöjda studenter</Text>
+                <Text style={[styles.trustText, { color: theme.colors.textSecondary }]}>Hjälper studenter nå sina mål</Text>
               </View>
             </FadeInView>
           </View>
@@ -547,22 +547,22 @@ export default function PremiumScreen() {
                   <View style={[styles.valueIconContainer, { backgroundColor: theme.colors.primary + '15' }]}>
                     <Unlock size={24} color={theme.colors.primary} />
                   </View>
-                  <Text style={[styles.valueNumber, { color: theme.colors.text }]}>10+</Text>
+                  <Text style={[styles.valueNumber, { color: theme.colors.text }]}>8+</Text>
                   <Text style={[styles.valueLabel, { color: theme.colors.textSecondary }]}>Premium Funktioner</Text>
                 </View>
                 <View style={[styles.valueCard, { backgroundColor: theme.colors.card }]}>
                   <View style={[styles.valueIconContainer, { backgroundColor: theme.colors.success + '15' }]}>
                     <TrendingUp size={24} color={theme.colors.success} />
                   </View>
-                  <Text style={[styles.valueNumber, { color: theme.colors.text }]}>2.5x</Text>
-                  <Text style={[styles.valueLabel, { color: theme.colors.textSecondary }]}>Snabbare Framsteg</Text>
+                  <Text style={[styles.valueNumber, { color: theme.colors.text }]}>∞</Text>
+                  <Text style={[styles.valueLabel, { color: theme.colors.textSecondary }]}>Obegränsat</Text>
                 </View>
                 <View style={[styles.valueCard, { backgroundColor: theme.colors.card }]}>
                   <View style={[styles.valueIconContainer, { backgroundColor: theme.colors.warning + '15' }]}>
-                    <Award size={24} color={theme.colors.warning} />
+                    <Sparkles size={24} color={theme.colors.warning} />
                   </View>
-                  <Text style={[styles.valueNumber, { color: theme.colors.text }]}>98%</Text>
-                  <Text style={[styles.valueLabel, { color: theme.colors.textSecondary }]}>Rekommenderar</Text>
+                  <Text style={[styles.valueNumber, { color: theme.colors.text }]}>AI</Text>
+                  <Text style={[styles.valueLabel, { color: theme.colors.textSecondary }]}>Assisterad</Text>
                 </View>
               </View>
             </View>

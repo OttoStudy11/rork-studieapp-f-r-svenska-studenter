@@ -29,6 +29,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Sparkles, BarChart3, BookOpen, RefreshCw, AlertCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
+import { PremiumGate } from '@/components/PremiumGate';
 
 export default function FlashcardsScreenV2() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
@@ -249,15 +250,18 @@ export default function FlashcardsScreenV2() {
 
   if (isLoadingFlashcards) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6366F1" />
-        <Text style={styles.loadingText}>Laddar flashcards...</Text>
-      </View>
+      <PremiumGate feature="flashcards" fullScreen>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6366F1" />
+          <Text style={styles.loadingText}>Laddar flashcards...</Text>
+        </View>
+      </PremiumGate>
     );
   }
 
   if (flashcards.length === 0) {
     return (
+      <PremiumGate feature="flashcards" fullScreen>
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.header}>
@@ -401,11 +405,13 @@ export default function FlashcardsScreenV2() {
           </SafeAreaView>
         </Modal>
       </SafeAreaView>
+      </PremiumGate>
     );
   }
 
   if (currentIndex >= dueCards.length) {
     return (
+      <PremiumGate feature="flashcards" fullScreen>
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.header}>
@@ -462,10 +468,12 @@ export default function FlashcardsScreenV2() {
           </LinearGradient>
         </View>
       </SafeAreaView>
+      </PremiumGate>
     );
   }
 
   return (
+    <PremiumGate feature="flashcards" fullScreen>
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
@@ -514,6 +522,7 @@ export default function FlashcardsScreenV2() {
         </View>
       </View>
     </SafeAreaView>
+    </PremiumGate>
   );
 }
 

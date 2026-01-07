@@ -117,7 +117,7 @@ export default function AIChatScreen() {
   };
 
   return (
-    <PremiumGate feature="ai-chat">
+    <PremiumGate feature="ai-chat" fullScreen>
       <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
       <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
         <View style={styles.headerTop}>

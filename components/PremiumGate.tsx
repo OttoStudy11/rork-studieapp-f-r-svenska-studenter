@@ -49,12 +49,14 @@ interface PremiumGateProps {
   feature: FeatureType;
   children: React.ReactNode;
   showLoadingWhileChecking?: boolean;
+  fullScreen?: boolean;
 }
 
 export function PremiumGate({ 
   feature, 
   children, 
-  showLoadingWhileChecking = false 
+  showLoadingWhileChecking = false,
+  fullScreen = false 
 }: PremiumGateProps) {
   const { isPremium, isLoading, isOffline } = usePremium();
   const { theme, isDark } = useTheme();
@@ -85,13 +87,13 @@ export function PremiumGate({
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.childrenWrapper}>
+    <View style={fullScreen ? styles.fullScreenContainer : styles.container}>
+      <View style={fullScreen ? styles.fullScreenChildrenWrapper : styles.childrenWrapper}>
         {children}
       </View>
-      <View style={styles.overlayWrapper}>
+      <View style={fullScreen ? styles.fullScreenOverlayWrapper : styles.overlayWrapper}>
         <BlurView
-          intensity={isDark ? 40 : 80}
+          intensity={isDark ? 60 : 90}
           style={styles.blurOverlay}
           tint={isDark ? 'dark' : 'light'}
         >
@@ -221,8 +223,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     minHeight: 200,
   },
+  fullScreenContainer: {
+    flex: 1,
+    position: 'relative',
+  },
   childrenWrapper: {
     opacity: 0.15,
+    pointerEvents: 'none',
+  },
+  fullScreenChildrenWrapper: {
+    opacity: 0.1,
     pointerEvents: 'none',
   },
   overlayWrapper: {
@@ -233,6 +243,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: 20,
     overflow: 'hidden',
+  },
+  fullScreenOverlayWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   loadingContainer: {
     flex: 1,

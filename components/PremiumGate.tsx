@@ -4,17 +4,16 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   ActivityIndicator,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Crown, Lock, Sparkles, Zap, BarChart3, Users } from 'lucide-react-native';
+import { Crown, Sparkles, Zap, BarChart3, Users } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 
-const { width } = Dimensions.get('window');
+
 
 // Feature configurations for different premium features
 const FEATURE_CONFIGS = {
@@ -77,7 +76,7 @@ export function PremiumGate({
     return <>{children}</>;
   }
 
-  // User does not have premium - show gate
+  // User does not have premium - show gate with inline overlay
   const featureConfig = FEATURE_CONFIGS[feature];
   const FeatureIcon = featureConfig.icon;
 
@@ -87,86 +86,90 @@ export function PremiumGate({
 
   return (
     <View style={styles.container}>
-      {children}
-      <BlurView
-        intensity={isDark ? 40 : 80}
-        style={styles.blurOverlay}
-        tint={isDark ? 'dark' : 'light'}
-      >
-        <View style={[
-          styles.contentContainer, 
-          { backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)' }
-        ]}>
-          {/* Crown icon with gradient */}
-          <LinearGradient
-            colors={['#FFD700', '#FFA500', '#FF8C00']}
-            style={styles.iconContainer}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Crown size={48} color="#FFF" strokeWidth={2.5} />
-          </LinearGradient>
-
-          {/* Lock badge */}
-          <View style={styles.lockBadge}>
-            <Lock size={16} color="#FFF" />
-          </View>
-
-          {/* Feature-specific icon */}
-          <LinearGradient
-            colors={featureConfig.gradient}
-            style={styles.featureIconBadge}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <FeatureIcon size={16} color="#FFF" />
-          </LinearGradient>
-
-          {/* Title and description */}
-          <Text style={[styles.title, { color: theme.colors.text }]}>
-            {featureConfig.title}
-          </Text>
-          <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-            {featureConfig.description}
-          </Text>
-
-          {/* Offline notice */}
-          {isOffline && (
-            <View style={[styles.offlineNotice, { backgroundColor: theme.colors.warning + '20' }]}>
-              <Text style={[styles.offlineText, { color: theme.colors.warning }]}>
-                Du är offline. Anslut till internet för att uppgradera.
-              </Text>
+      <View style={styles.childrenWrapper}>
+        {children}
+      </View>
+      <View style={styles.overlayWrapper}>
+        <BlurView
+          intensity={isDark ? 40 : 80}
+          style={styles.blurOverlay}
+          tint={isDark ? 'dark' : 'light'}
+        >
+          <View style={[
+            styles.contentContainer, 
+            { backgroundColor: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)' }
+          ]}>
+            {/* Premium badge */}
+            <View style={styles.premiumBadge}>
+              <LinearGradient
+                colors={['#FFD700', '#FFA500']}
+                style={styles.badgeGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Crown size={14} color="#FFF" strokeWidth={2.5} />
+                <Text style={styles.badgeText}>PREMIUM</Text>
+              </LinearGradient>
             </View>
-          )}
 
-          {/* Upgrade button */}
-          <TouchableOpacity
-            style={styles.upgradeButton}
-            onPress={handleUpgrade}
-            disabled={isOffline}
-          >
+            {/* Feature-specific icon */}
             <LinearGradient
-              colors={isOffline ? ['#9CA3AF', '#6B7280'] : ['#FFD700', '#FFA500']}
-              style={styles.upgradeGradient}
+              colors={featureConfig.gradient}
+              style={styles.iconContainer}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+              end={{ x: 1, y: 1 }}
             >
-              <Crown size={20} color="#FFF" strokeWidth={2.5} />
-              <Text style={styles.upgradeButtonText}>Uppgradera till Premium</Text>
+              <FeatureIcon size={32} color="#FFF" />
             </LinearGradient>
-          </TouchableOpacity>
 
-          {/* Learn more link */}
-          <TouchableOpacity
-            style={styles.learnMoreButton}
-            onPress={handleUpgrade}
-          >
-            <Text style={[styles.learnMoreText, { color: theme.colors.primary }]}>
-              Se alla Premium-fördelar
+            {/* Title and description */}
+            <Text style={[styles.title, { color: theme.colors.text }]}>
+              {featureConfig.title}
             </Text>
-          </TouchableOpacity>
-        </View>
-      </BlurView>
+            <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
+              {featureConfig.description}
+            </Text>
+
+            {/* Offline notice */}
+            {isOffline && (
+              <View style={[styles.offlineNotice, { backgroundColor: theme.colors.warning + '20' }]}>
+                <Text style={[styles.offlineText, { color: theme.colors.warning }]}>
+                  Du är offline. Anslut till internet för att uppgradera.
+                </Text>
+              </View>
+            )}
+
+            {/* Upgrade button */}
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={handleUpgrade}
+              disabled={isOffline}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={isOffline ? ['#9CA3AF', '#6B7280'] : ['#FFD700', '#FFA500']}
+                style={styles.upgradeGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Crown size={18} color="#FFF" strokeWidth={2.5} />
+                <Text style={styles.upgradeButtonText}>Uppgradera till Premium</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Learn more link */}
+            <TouchableOpacity
+              style={styles.learnMoreButton}
+              onPress={handleUpgrade}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.learnMoreText, { color: theme.colors.primary }]}>
+                Se alla Premium-fördelar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </View>
     </View>
   );
 }
@@ -213,8 +216,23 @@ export function usePremiumFeature(feature: FeatureType) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 20,
+    minHeight: 280,
+  },
+  childrenWrapper: {
+    opacity: 0.15,
+    pointerEvents: 'none',
+  },
+  overlayWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   loadingContainer: {
     flex: 1,
@@ -226,74 +244,63 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   blurOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 100,
+    borderRadius: 20,
   },
   contentContainer: {
-    width: width - 48,
-    maxWidth: 400,
-    borderRadius: 24,
-    padding: 32,
+    width: '100%',
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
-    position: 'relative',
+    margin: 12,
+  },
+  premiumBadge: {
+    marginBottom: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  badgeGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    gap: 6,
+  },
+  badgeText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '800' as const,
+    letterSpacing: 1,
   },
   iconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  lockBadge: {
-    position: 'absolute',
-    top: 24,
-    right: 24,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  featureIconBadge: {
-    position: 'absolute',
-    top: 100,
-    left: '50%',
-    marginLeft: 24,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.9)',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800' as const,
+    fontSize: 20,
+    fontWeight: '700' as const,
     textAlign: 'center',
-    marginBottom: 12,
-    letterSpacing: -0.5,
+    marginBottom: 8,
+    letterSpacing: -0.3,
   },
   description: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 24,
+    lineHeight: 20,
+    marginBottom: 20,
     paddingHorizontal: 8,
+    opacity: 0.8,
   },
   offlineNotice: {
     paddingHorizontal: 16,
@@ -307,34 +314,34 @@ const styles = StyleSheet.create({
   },
   upgradeButton: {
     width: '100%',
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 12,
     shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowRadius: 8,
+    elevation: 6,
   },
   upgradeGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    gap: 10,
   },
   upgradeButtonText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700' as const,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   learnMoreButton: {
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   learnMoreText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
 });

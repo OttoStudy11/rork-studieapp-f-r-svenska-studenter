@@ -1117,52 +1117,71 @@ export default function TimerScreen() {
           )}
         </View>
 
-        {/* Hero Stats Card */}
-        <View style={styles.section}>
-          <LinearGradient
-            colors={[theme.colors.primary + '20', theme.colors.secondary + '20'] as any}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroStatsCard}
-          >
-            <View style={styles.heroStatsContent}>
-              <View style={styles.heroStatItem}>
-                <View style={[styles.heroStatIcon, { backgroundColor: theme.colors.warning + '30' }]}>
-                  <Flame size={20} color={theme.colors.warning} />
-                </View>
-                <Text style={[styles.heroStatNumber, { color: theme.colors.text }]}>{currentStreak}</Text>
-                <Text style={[styles.heroStatLabel, { color: theme.colors.textSecondary }]}>Dagars streak</Text>
-              </View>
-              <View style={styles.heroStatDivider} />
-              <View style={styles.heroStatItem}>
-                <View style={[styles.heroStatIcon, { backgroundColor: theme.colors.primary + '30' }]}>
-                  <Target size={20} color={theme.colors.primary} />
-                </View>
-                <Text style={[styles.heroStatNumber, { color: theme.colors.text }]}>
-                  {Math.round((sessionCount / dailyGoal) * 100)}%
-                </Text>
-                <Text style={[styles.heroStatLabel, { color: theme.colors.textSecondary }]}>Av dagsmål</Text>
-              </View>
+        {/* Quick Stats Row */}
+        <View style={styles.quickStatsRow}>
+          <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
+            <View style={[styles.quickStatIconWrapper, { backgroundColor: theme.colors.warning + '20' }]}>
+              <Flame size={18} color={theme.colors.warning} />
             </View>
-          </LinearGradient>
+            <View style={styles.quickStatContent}>
+              <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>{currentStreak}</Text>
+              <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Streak</Text>
+            </View>
+          </View>
+          
+          <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
+            <View style={[styles.quickStatIconWrapper, { backgroundColor: theme.colors.primary + '20' }]}>
+              <Target size={18} color={theme.colors.primary} />
+            </View>
+            <View style={styles.quickStatContent}>
+              <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>
+                {sessionCount}/{dailyGoal}
+              </Text>
+              <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Dagsmål</Text>
+            </View>
+          </View>
+          
+          <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
+            <View style={[styles.quickStatIconWrapper, { backgroundColor: theme.colors.secondary + '20' }]}>
+              <Zap size={18} color={theme.colors.secondary} />
+            </View>
+            <View style={styles.quickStatContent}>
+              <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>{todayStats.minutes}m</Text>
+              <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Idag</Text>
+            </View>
+          </View>
         </View>
 
         {/* Planning & History Section - FREE FOR ALL USERS */}
         <View style={styles.section}>
           <TouchableOpacity 
-            style={styles.sectionHeaderButton}
+            style={[styles.plannerHeaderCard, { backgroundColor: theme.colors.card }]}
             onPress={() => setShowPlanner(!showPlanner)}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
-            <View style={styles.sectionHeaderLeft}>
-              <Calendar size={24} color={theme.colors.primary} />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Planering & Historik</Text>
+            <View style={styles.plannerHeaderLeft}>
+              <LinearGradient
+                colors={[theme.colors.primary, theme.colors.secondary] as any}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.plannerIconGradient}
+              >
+                <Calendar size={20} color="#FFF" />
+              </LinearGradient>
+              <View>
+                <Text style={[styles.plannerHeaderTitle, { color: theme.colors.text }]}>Planering & Historik</Text>
+                <Text style={[styles.plannerHeaderSubtitle, { color: theme.colors.textSecondary }]}>
+                  {upcomingExams.length > 0 ? `${upcomingExams.length} kommande prov` : 'Hantera dina sessioner'}
+                </Text>
+              </View>
             </View>
-            {showPlanner ? (
-              <ChevronUp size={24} color={theme.colors.textSecondary} />
-            ) : (
-              <ChevronDown size={24} color={theme.colors.textSecondary} />
-            )}
+            <View style={[styles.expandIndicator, { backgroundColor: theme.colors.background }]}>
+              {showPlanner ? (
+                <ChevronUp size={20} color={theme.colors.primary} />
+              ) : (
+                <ChevronDown size={20} color={theme.colors.primary} />
+              )}
+            </View>
           </TouchableOpacity>
 
           {showPlanner && (
@@ -2401,55 +2420,91 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  heroStatsCard: {
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+  quickStatsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    marginBottom: 24,
+    gap: 12,
   },
-  heroStatsContent: {
+  quickStatCard: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    padding: 14,
+    borderRadius: 16,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  heroStatItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  heroStatIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  quickStatIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  heroStatNumber: {
-    fontSize: 28,
+  quickStatContent: {
+    flex: 1,
+  },
+  quickStatValue: {
+    fontSize: 18,
     fontWeight: '700',
-    marginBottom: 4,
-    textAlign: 'center',
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
     fontFamily: Platform.select({
       ios: 'SF Pro Display',
       android: 'Roboto',
       default: 'system',
     }),
   },
-  heroStatLabel: {
-    fontSize: 12,
+  quickStatLabel: {
+    fontSize: 11,
     fontWeight: '500',
-    textAlign: 'center',
-    letterSpacing: 0.3,
+    marginTop: 2,
+    letterSpacing: 0.2,
   },
-  heroStatDivider: {
-    width: 1,
-    height: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginHorizontal: 20,
+  plannerHeaderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  plannerHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  plannerIconGradient: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  plannerHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  plannerHeaderSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  expandIndicator: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statIconContainer: {
     width: 40,

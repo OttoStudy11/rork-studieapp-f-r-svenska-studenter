@@ -25,7 +25,7 @@ import { TimerPersistence } from '@/lib/timer-persistence';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
 import { PremiumGate } from '@/components/PremiumGate';
-import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen, FileText, CheckCircle } from 'lucide-react-native';
+import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen, FileText, CheckCircle, TrendingUp, TrendingDown, Award, BarChart3, PieChart, Sunrise, Sun, Moon, Lightbulb, Trophy, Activity } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import AddExamModal from '@/components/AddExamModal';
 
@@ -854,6 +854,193 @@ export default function TimerScreen() {
 
   const streakStats = useMemo(() => getStreakStats(), [getStreakStats]);
 
+  const courseDistribution = useMemo(() => {
+    const distribution: { [key: string]: { name: string; minutes: number; sessions: number; color: string } } = {};
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
+    let colorIndex = 0;
+    
+    pomodoroSessions.forEach(session => {
+      const courseId = session.courseId || 'general';
+      const courseName = session.courseId 
+        ? courses.find(c => c.id === session.courseId)?.title || 'Okänd kurs'
+        : 'Allmän session';
+      
+      if (!distribution[courseId]) {
+        distribution[courseId] = {
+          name: courseName,
+          minutes: 0,
+          sessions: 0,
+          color: colors[colorIndex % colors.length]
+        };
+        colorIndex++;
+      }
+      distribution[courseId].minutes += session.duration;
+      distribution[courseId].sessions += 1;
+    });
+    
+    return Object.values(distribution).sort((a, b) => b.minutes - a.minutes);
+  }, [pomodoroSessions, courses]);
+
+  const productivityByTimeOfDay = useMemo(() => {
+    const periods = {
+      morning: { label: 'Morgon', icon: 'sunrise', minutes: 0, sessions: 0, hours: '06-12' },
+      afternoon: { label: 'Eftermiddag', icon: 'sun', minutes: 0, sessions: 0, hours: '12-18' },
+      evening: { label: 'Kväll', icon: 'moon', minutes: 0, sessions: 0, hours: '18-24' },
+      night: { label: 'Natt', icon: 'star', minutes: 0, sessions: 0, hours: '00-06' }
+    };
+    
+    pomodoroSessions.forEach(session => {
+      const hour = new Date(session.startTime).getHours();
+      if (hour >= 6 && hour < 12) {
+        periods.morning.minutes += session.duration;
+        periods.morning.sessions += 1;
+      } else if (hour >= 12 && hour < 18) {
+        periods.afternoon.minutes += session.duration;
+        periods.afternoon.sessions += 1;
+      } else if (hour >= 18 && hour < 24) {
+        periods.evening.minutes += session.duration;
+        periods.evening.sessions += 1;
+      } else {
+        periods.night.minutes += session.duration;
+        periods.night.sessions += 1;
+      }
+    });
+    
+    const maxMinutes = Math.max(...Object.values(periods).map(p => p.minutes), 1);
+    return { periods, maxMinutes };
+  }, [pomodoroSessions]);
+
+  const weekComparison = useMemo(() => {
+    const now = new Date();
+    const thisWeekStart = new Date(now);
+    thisWeekStart.setDate(now.getDate() - now.getDay());
+    thisWeekStart.setHours(0, 0, 0, 0);
+    
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const lastWeekEnd = new Date(thisWeekStart);
+    
+    const thisWeekSessions = pomodoroSessions.filter(s => new Date(s.endTime) >= thisWeekStart);
+    const lastWeekSessions = pomodoroSessions.filter(s => {
+      const date = new Date(s.endTime);
+      return date >= lastWeekStart && date < lastWeekEnd;
+    });
+    
+    const thisWeekMinutes = thisWeekSessions.reduce((sum, s) => sum + s.duration, 0);
+    const lastWeekMinutes = lastWeekSessions.reduce((sum, s) => sum + s.duration, 0);
+    
+    const percentChange = lastWeekMinutes > 0 
+      ? Math.round(((thisWeekMinutes - lastWeekMinutes) / lastWeekMinutes) * 100)
+      : thisWeekMinutes > 0 ? 100 : 0;
+    
+    return {
+      thisWeek: { minutes: thisWeekMinutes, sessions: thisWeekSessions.length },
+      lastWeek: { minutes: lastWeekMinutes, sessions: lastWeekSessions.length },
+      percentChange,
+      isImprovement: percentChange >= 0
+    };
+  }, [pomodoroSessions]);
+
+  const focusScore = useMemo(() => {
+    if (pomodoroSessions.length === 0) return { score: 0, level: 'Nybörjare', description: 'Börja plugga för att bygga din poäng!' };
+    
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const recentSessions = pomodoroSessions.filter(s => new Date(s.endTime) >= thirtyDaysAgo);
+    
+    const totalMinutes = recentSessions.reduce((sum, s) => sum + s.duration, 0);
+    const avgSessionLength = recentSessions.length > 0 ? totalMinutes / recentSessions.length : 0;
+    const consistency = streakStats.current * 5;
+    const volume = Math.min(totalMinutes / 10, 40);
+    const quality = Math.min(avgSessionLength / 25 * 20, 20);
+    
+    const score = Math.min(Math.round(consistency + volume + quality), 100);
+    
+    let level = 'Nybörjare';
+    let description = 'Fortsätt plugga för att öka din poäng!';
+    
+    if (score >= 90) { level = 'Mästare'; description = 'Otroligt! Du är en studiemaskin!'; }
+    else if (score >= 75) { level = 'Expert'; description = 'Fantastiskt arbete, fortsätt så!'; }
+    else if (score >= 60) { level = 'Avancerad'; description = 'Bra jobbat! Du är på rätt väg.'; }
+    else if (score >= 40) { level = 'Mellanliggande'; description = 'Bra start! Öka konsistensen.'; }
+    else if (score >= 20) { level = 'Lärling'; description = 'Du kommer igång, fortsätt!'; }
+    
+    return { score, level, description };
+  }, [pomodoroSessions, streakStats]);
+
+  const monthlyHeatmap = useMemo(() => {
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+    
+    const heatmapData: { day: number; minutes: number; intensity: number }[] = [];
+    
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dayDate = new Date(now.getFullYear(), now.getMonth(), i);
+      const dayString = dayDate.toDateString();
+      
+      const dayMinutes = pomodoroSessions
+        .filter(s => new Date(s.endTime).toDateString() === dayString)
+        .reduce((sum, s) => sum + s.duration, 0);
+      
+      const intensity = dayMinutes === 0 ? 0 : 
+        dayMinutes < 30 ? 1 : 
+        dayMinutes < 60 ? 2 : 
+        dayMinutes < 120 ? 3 : 4;
+      
+      heatmapData.push({ day: i, minutes: dayMinutes, intensity });
+    }
+    
+    return { data: heatmapData, firstDayOffset: firstDayOfMonth, monthName: now.toLocaleDateString('sv-SE', { month: 'long' }) };
+  }, [pomodoroSessions]);
+
+  const studyInsights = useMemo(() => {
+    const insights: { icon: string; title: string; description: string; type: 'success' | 'warning' | 'info' }[] = [];
+    
+    if (streakStats.current >= 7) {
+      insights.push({ icon: '🔥', title: 'Imponerande streak!', description: `Du har pluggat ${streakStats.current} dagar i rad!`, type: 'success' });
+    }
+    
+    const { periods } = productivityByTimeOfDay;
+    const mostProductivePeriod = Object.entries(periods).sort((a, b) => b[1].minutes - a[1].minutes)[0];
+    if (mostProductivePeriod[1].minutes > 0) {
+      insights.push({ icon: '⏰', title: 'Bästa tiden', description: `Du är mest produktiv på ${mostProductivePeriod[1].label.toLowerCase()} (${mostProductivePeriod[1].hours})`, type: 'info' });
+    }
+    
+    if (weekComparison.isImprovement && weekComparison.percentChange > 20) {
+      insights.push({ icon: '📈', title: 'Stark vecka!', description: `${weekComparison.percentChange}% mer studietid än förra veckan!`, type: 'success' });
+    } else if (!weekComparison.isImprovement && weekComparison.percentChange < -20) {
+      insights.push({ icon: '💪', title: 'Tid att öka tempot', description: 'Du har studerat mindre denna vecka. Sätt igång!', type: 'warning' });
+    }
+    
+    if (courseDistribution.length > 0) {
+      const topCourse = courseDistribution[0];
+      insights.push({ icon: '📚', title: 'Favoritkurs', description: `${topCourse.name} - ${Math.round(topCourse.minutes / 60)}h totalt`, type: 'info' });
+    }
+    
+    const avgSession = pomodoroSessions.length > 0 
+      ? Math.round(pomodoroSessions.reduce((sum, s) => sum + s.duration, 0) / pomodoroSessions.length)
+      : 0;
+    if (avgSession >= 25) {
+      insights.push({ icon: '🎯', title: 'Bra sessioner', description: `Snitt ${avgSession} min per session - perfekt längd!`, type: 'success' });
+    }
+    
+    if (insights.length === 0) {
+      insights.push({ icon: '🚀', title: 'Börja plugga!', description: 'Slutför några sessioner för att se insikter', type: 'info' });
+    }
+    
+    return insights.slice(0, 4);
+  }, [streakStats, productivityByTimeOfDay, weekComparison, courseDistribution, pomodoroSessions]);
+
+  const longestSession = useMemo(() => {
+    if (pomodoroSessions.length === 0) return 0;
+    return Math.max(...pomodoroSessions.map(s => s.duration));
+  }, [pomodoroSessions]);
+
+  const totalAllTime = useMemo(() => {
+    return pomodoroSessions.reduce((sum, s) => sum + s.duration, 0);
+  }, [pomodoroSessions]);
+
   const circumference = 2 * Math.PI * 120;
 
   return (
@@ -1518,7 +1705,54 @@ export default function TimerScreen() {
           <Text style={[styles.statsSectionTitle, { color: theme.colors.text }]}>Avancerad Statistik</Text>
           <PremiumGate feature="statistics" fullScreen={false}>
 
-          {/* View Toggle with gradient */}
+          {/* Focus Score Hero Card */}
+          <LinearGradient
+            colors={theme.colors.gradient as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.focusScoreCard}
+          >
+            <View style={styles.focusScoreContent}>
+              <View style={styles.focusScoreLeft}>
+                <Text style={styles.focusScoreLabel}>FOKUSPOÄNG</Text>
+                <Text style={styles.focusScoreValue}>{focusScore.score}</Text>
+                <View style={styles.focusScoreBadge}>
+                  <Trophy size={14} color="#FFD700" />
+                  <Text style={styles.focusScoreLevel}>{focusScore.level}</Text>
+                </View>
+              </View>
+              <View style={styles.focusScoreRight}>
+                <Svg width={100} height={100}>
+                  <Circle
+                    cx={50}
+                    cy={50}
+                    r={42}
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeWidth={8}
+                    fill="none"
+                  />
+                  <Circle
+                    cx={50}
+                    cy={50}
+                    r={42}
+                    stroke="#FFFFFF"
+                    strokeWidth={8}
+                    fill="none"
+                    strokeDasharray={2 * Math.PI * 42}
+                    strokeDashoffset={2 * Math.PI * 42 * (1 - focusScore.score / 100)}
+                    strokeLinecap="round"
+                    transform="rotate(-90 50 50)"
+                  />
+                </Svg>
+                <View style={styles.focusScoreCenter}>
+                  <Award size={28} color="#FFFFFF" />
+                </View>
+              </View>
+            </View>
+            <Text style={styles.focusScoreDescription}>{focusScore.description}</Text>
+          </LinearGradient>
+
+          {/* View Toggle */}
           <LinearGradient
             colors={[theme.colors.card, theme.colors.card + 'DD'] as any}
             start={{ x: 0, y: 0 }}
@@ -1553,7 +1787,7 @@ export default function TimerScreen() {
             </TouchableOpacity>
           </LinearGradient>
 
-          {/* Enhanced Stats Cards with gradients */}
+          {/* Enhanced Stats Cards */}
           <View style={styles.statsGrid}>
             <LinearGradient
               colors={[theme.colors.primary + '20', theme.colors.primary + '10'] as any}
@@ -1610,7 +1844,46 @@ export default function TimerScreen() {
             </LinearGradient>
           </View>
 
-          {/* Enhanced Weekly Graph */}
+          {/* Week Comparison Card */}
+          <View style={[styles.weekComparisonCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.weekComparisonHeader}>
+              <BarChart3 size={20} color={theme.colors.primary} />
+              <Text style={[styles.weekComparisonTitle, { color: theme.colors.text }]}>Veckoförändring</Text>
+            </View>
+            <View style={styles.weekComparisonContent}>
+              <View style={styles.weekComparisonItem}>
+                <Text style={[styles.weekComparisonLabel, { color: theme.colors.textSecondary }]}>Denna vecka</Text>
+                <Text style={[styles.weekComparisonValue, { color: theme.colors.text }]}>
+                  {Math.floor(weekComparison.thisWeek.minutes / 60)}h {weekComparison.thisWeek.minutes % 60}m
+                </Text>
+              </View>
+              <View style={styles.weekComparisonDivider} />
+              <View style={styles.weekComparisonItem}>
+                <Text style={[styles.weekComparisonLabel, { color: theme.colors.textSecondary }]}>Förra veckan</Text>
+                <Text style={[styles.weekComparisonValue, { color: theme.colors.text }]}>
+                  {Math.floor(weekComparison.lastWeek.minutes / 60)}h {weekComparison.lastWeek.minutes % 60}m
+                </Text>
+              </View>
+              <View style={[
+                styles.weekComparisonBadge, 
+                { backgroundColor: weekComparison.isImprovement ? theme.colors.success + '20' : theme.colors.error + '20' }
+              ]}>
+                {weekComparison.isImprovement ? (
+                  <TrendingUp size={16} color={theme.colors.success} />
+                ) : (
+                  <TrendingDown size={16} color={theme.colors.error} />
+                )}
+                <Text style={[
+                  styles.weekComparisonBadgeText,
+                  { color: weekComparison.isImprovement ? theme.colors.success : theme.colors.error }
+                ]}>
+                  {weekComparison.percentChange > 0 ? '+' : ''}{weekComparison.percentChange}%
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Weekly Graph */}
           {selectedStatView === 'week' && (
             <LinearGradient
               colors={[theme.colors.card, theme.colors.card + 'EE'] as any}
@@ -1660,6 +1933,208 @@ export default function TimerScreen() {
               </View>
             </LinearGradient>
           )}
+
+          {/* Productivity by Time of Day */}
+          <View style={[styles.productivityCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.productivityHeader}>
+              <Activity size={20} color={theme.colors.secondary} />
+              <Text style={[styles.productivityTitle, { color: theme.colors.text }]}>Produktivitet per tid</Text>
+            </View>
+            <View style={styles.productivityBars}>
+              {Object.entries(productivityByTimeOfDay.periods).map(([key, period]) => {
+                const percentage = productivityByTimeOfDay.maxMinutes > 0 
+                  ? (period.minutes / productivityByTimeOfDay.maxMinutes) * 100 
+                  : 0;
+                const IconComponent = key === 'morning' ? Sunrise : key === 'afternoon' ? Sun : key === 'evening' ? Moon : Star;
+                
+                return (
+                  <View key={key} style={styles.productivityRow}>
+                    <View style={styles.productivityLabelContainer}>
+                      <View style={[styles.productivityIcon, { backgroundColor: theme.colors.secondary + '20' }]}>
+                        <IconComponent size={16} color={theme.colors.secondary} />
+                      </View>
+                      <View>
+                        <Text style={[styles.productivityLabel, { color: theme.colors.text }]}>{period.label}</Text>
+                        <Text style={[styles.productivityHours, { color: theme.colors.textSecondary }]}>{period.hours}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.productivityBarContainer}>
+                      <View style={[styles.productivityBarBg, { backgroundColor: theme.colors.border }]}>
+                        <LinearGradient
+                          colors={theme.colors.gradient as any}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={[styles.productivityBarFill, { width: `${Math.max(percentage, 2)}%` }]}
+                        />
+                      </View>
+                      <Text style={[styles.productivityValue, { color: theme.colors.text }]}>
+                        {Math.round(period.minutes / 60)}h
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Course Distribution */}
+          {courseDistribution.length > 0 && (
+            <View style={[styles.courseDistributionCard, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.courseDistributionHeader}>
+                <PieChart size={20} color={theme.colors.primary} />
+                <Text style={[styles.courseDistributionTitle, { color: theme.colors.text }]}>Kursfördelning</Text>
+              </View>
+              <View style={styles.courseDistributionList}>
+                {courseDistribution.slice(0, 5).map((course, index) => {
+                  const totalMinutes = courseDistribution.reduce((sum, c) => sum + c.minutes, 0);
+                  const percentage = totalMinutes > 0 ? Math.round((course.minutes / totalMinutes) * 100) : 0;
+                  
+                  return (
+                    <View key={index} style={styles.courseDistributionItem}>
+                      <View style={styles.courseDistributionLeft}>
+                        <View style={[styles.courseColorDot, { backgroundColor: course.color }]} />
+                        <Text style={[styles.courseDistributionName, { color: theme.colors.text }]} numberOfLines={1}>
+                          {course.name}
+                        </Text>
+                      </View>
+                      <View style={styles.courseDistributionRight}>
+                        <View style={[styles.courseDistributionBarBg, { backgroundColor: theme.colors.border }]}>
+                          <View style={[styles.courseDistributionBarFill, { width: `${percentage}%`, backgroundColor: course.color }]} />
+                        </View>
+                        <Text style={[styles.courseDistributionPercent, { color: theme.colors.textSecondary }]}>
+                          {percentage}%
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* Monthly Heatmap */}
+          <View style={[styles.heatmapCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.heatmapHeader}>
+              <Calendar size={20} color={theme.colors.warning} />
+              <Text style={[styles.heatmapTitle, { color: theme.colors.text }]}>
+                {monthlyHeatmap.monthName.charAt(0).toUpperCase() + monthlyHeatmap.monthName.slice(1)}
+              </Text>
+            </View>
+            <View style={styles.heatmapWeekdays}>
+              {['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'].map(day => (
+                <Text key={day} style={[styles.heatmapWeekday, { color: theme.colors.textSecondary }]}>{day}</Text>
+              ))}
+            </View>
+            <View style={styles.heatmapGrid}>
+              {Array.from({ length: monthlyHeatmap.firstDayOffset === 0 ? 6 : monthlyHeatmap.firstDayOffset - 1 }).map((_, i) => (
+                <View key={`empty-${i}`} style={styles.heatmapCell} />
+              ))}
+              {monthlyHeatmap.data.map((day) => {
+                const intensityColors = [
+                  theme.colors.border,
+                  theme.colors.primary + '40',
+                  theme.colors.primary + '70',
+                  theme.colors.primary + 'AA',
+                  theme.colors.primary
+                ];
+                const isToday = day.day === new Date().getDate();
+                
+                return (
+                  <View 
+                    key={day.day} 
+                    style={[
+                      styles.heatmapCell,
+                      { backgroundColor: intensityColors[day.intensity] },
+                      isToday && styles.heatmapCellToday
+                    ]}
+                  >
+                    <Text style={[
+                      styles.heatmapDayText,
+                      { color: day.intensity >= 2 ? '#FFFFFF' : theme.colors.textSecondary },
+                      isToday && { fontWeight: '700' as const }
+                    ]}>
+                      {day.day}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+            <View style={styles.heatmapLegend}>
+              <Text style={[styles.heatmapLegendText, { color: theme.colors.textSecondary }]}>Mindre</Text>
+              <View style={styles.heatmapLegendColors}>
+                {[0, 1, 2, 3, 4].map(i => (
+                  <View 
+                    key={i} 
+                    style={[
+                      styles.heatmapLegendCell,
+                      { backgroundColor: [
+                        theme.colors.border,
+                        theme.colors.primary + '40',
+                        theme.colors.primary + '70',
+                        theme.colors.primary + 'AA',
+                        theme.colors.primary
+                      ][i] }
+                    ]} 
+                  />
+                ))}
+              </View>
+              <Text style={[styles.heatmapLegendText, { color: theme.colors.textSecondary }]}>Mer</Text>
+            </View>
+          </View>
+
+          {/* Extra Stats Row */}
+          <View style={styles.extraStatsRow}>
+            <View style={[styles.extraStatCard, { backgroundColor: theme.colors.card }]}>
+              <Clock size={20} color={theme.colors.primary} />
+              <Text style={[styles.extraStatValue, { color: theme.colors.text }]}>{longestSession}m</Text>
+              <Text style={[styles.extraStatLabel, { color: theme.colors.textSecondary }]}>Längsta session</Text>
+            </View>
+            <View style={[styles.extraStatCard, { backgroundColor: theme.colors.card }]}>
+              <Target size={20} color={theme.colors.secondary} />
+              <Text style={[styles.extraStatValue, { color: theme.colors.text }]}>
+                {Math.floor(totalAllTime / 60)}h
+              </Text>
+              <Text style={[styles.extraStatLabel, { color: theme.colors.textSecondary }]}>Totalt all tid</Text>
+            </View>
+            <View style={[styles.extraStatCard, { backgroundColor: theme.colors.card }]}>
+              <Brain size={20} color={theme.colors.warning} />
+              <Text style={[styles.extraStatValue, { color: theme.colors.text }]}>
+                {pomodoroSessions.length > 0 ? Math.round(totalAllTime / pomodoroSessions.length) : 0}m
+              </Text>
+              <Text style={[styles.extraStatLabel, { color: theme.colors.textSecondary }]}>Snitt/session</Text>
+            </View>
+          </View>
+
+          {/* Study Insights */}
+          <View style={[styles.insightsCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.insightsHeader}>
+              <Lightbulb size={20} color="#FFD700" />
+              <Text style={[styles.insightsTitle, { color: theme.colors.text }]}>Insikter</Text>
+            </View>
+            <View style={styles.insightsList}>
+              {studyInsights.map((insight, index) => (
+                <View 
+                  key={index} 
+                  style={[
+                    styles.insightItem,
+                    { 
+                      backgroundColor: insight.type === 'success' ? theme.colors.success + '10' :
+                        insight.type === 'warning' ? theme.colors.warning + '10' : theme.colors.primary + '10'
+                    }
+                  ]}
+                >
+                  <Text style={styles.insightIcon}>{insight.icon}</Text>
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemTitle, { color: theme.colors.text }]}>{insight.title}</Text>
+                    <Text style={[styles.insightItemDescription, { color: theme.colors.textSecondary }]}>
+                      {insight.description}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
           </PremiumGate>
         </View>
       </ScrollView>
@@ -3061,5 +3536,408 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  focusScoreCard: {
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  focusScoreContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  focusScoreLeft: {
+    flex: 1,
+  },
+  focusScoreLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+  },
+  focusScoreValue: {
+    fontSize: 56,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -2,
+    lineHeight: 60,
+  },
+  focusScoreBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  focusScoreLevel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  focusScoreRight: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  focusScoreCenter: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  focusScoreDescription: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  weekComparisonCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  weekComparisonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  weekComparisonTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  weekComparisonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  weekComparisonItem: {
+    flex: 1,
+  },
+  weekComparisonLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  weekComparisonValue: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  weekComparisonDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    marginHorizontal: 16,
+  },
+  weekComparisonBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  weekComparisonBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  productivityCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  productivityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 20,
+  },
+  productivityTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  productivityBars: {
+    gap: 16,
+  },
+  productivityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  productivityLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    width: 110,
+  },
+  productivityIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  productivityLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  productivityHours: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  productivityBarContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  productivityBarBg: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  productivityBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  productivityValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    width: 35,
+    textAlign: 'right',
+  },
+  courseDistributionCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  courseDistributionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 20,
+  },
+  courseDistributionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  courseDistributionList: {
+    gap: 14,
+  },
+  courseDistributionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  courseDistributionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    maxWidth: '45%',
+  },
+  courseColorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  courseDistributionName: {
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  courseDistributionRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  courseDistributionBarBg: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  courseDistributionBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  courseDistributionPercent: {
+    fontSize: 13,
+    fontWeight: '700',
+    width: 40,
+    textAlign: 'right',
+  },
+  heatmapCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  heatmapHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  heatmapTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  heatmapWeekdays: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 8,
+  },
+  heatmapWeekday: {
+    fontSize: 11,
+    fontWeight: '600',
+    width: 36,
+    textAlign: 'center',
+  },
+  heatmapGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  heatmapCell: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heatmapCellToday: {
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  heatmapDayText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  heatmapLegend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    gap: 8,
+  },
+  heatmapLegendText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  heatmapLegendColors: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  heatmapLegendCell: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+  },
+  extraStatsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  extraStatCard: {
+    flex: 1,
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  extraStatValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  extraStatLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  insightsCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  insightsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  insightsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  insightsList: {
+    gap: 12,
+  },
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
+  },
+  insightIcon: {
+    fontSize: 20,
+  },
+  insightContent: {
+    flex: 1,
+  },
+  insightItemTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  insightItemDescription: {
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18,
   },
 });

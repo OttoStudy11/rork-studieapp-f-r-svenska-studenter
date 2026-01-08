@@ -817,6 +817,44 @@ export const getUserAchievementStats = async (userId: string) => {
   };
 };
 
+// Check and update achievements for a user
+export const checkAndUpdateAchievements = async (userId: string) => {
+  try {
+    console.log('🏆 Checking achievements for user:', userId);
+    
+    const { data, error } = await (supabase as any)
+      .rpc('check_user_achievements', {
+        p_user_id: userId
+      });
+    
+    if (error) {
+      console.error('Error checking achievements:', error);
+      // Don't throw, just log - achievements are not critical
+      return [];
+    }
+    
+    if (data && Array.isArray(data) && data.length > 0) {
+      console.log(`🎉 ${data.length} new achievement(s) unlocked!`);
+      return data;
+    }
+    
+    console.log('✅ No new achievements unlocked');
+    return [];
+  } catch (error: any) {
+    // Handle network errors silently
+    if (error?.message?.includes('Failed to fetch') || 
+        error?.message?.includes('timeout') || 
+        error?.message?.includes('Network connection failed') ||
+        error?.name === 'TypeError' ||
+        error?.name === 'AbortError') {
+      console.warn('Network connectivity issue - achievement check skipped');
+    } else {
+      console.error('Exception checking achievements:', error);
+    }
+    return [];
+  }
+};
+
 // Calculate streak from pomodoro sessions
 export const calculateUserStreak = async (userId: string) => {
   try {
@@ -1192,126 +1230,5 @@ export const getGlobalLeaderboardV2 = async (userId: string, period: 'daily' | '
   } catch (error) {
     console.error('Error getting global leaderboard:', error);
     throw error;
-  }
-};
-
-// Check and update achievements for a user
-export const checkAndUpdateAchievements = async (userId: string) => {
-  try {
-    console.log('Checking achievements for user:', userId);
-    
-    // Get user's current achievement progress
-    const userAchievements = await getUserAchievements(userId);
-    
-    // If no achievements exist, skip checking
-    if (userAchievements.length === 0) {
-      console.log('No user achievements found, skipping achievement check');
-      return [];
-    }
-    
-    // Get user's data for calculations
-    const [pomodoroSessions, userCourses, userNotes] = await Promise.all([
-      getUserPomodoroSessions(userId),
-      getUserCourses(userId),
-      getUserNotes(userId)
-    ]);
-    
-    const currentStreak = await calculateUserStreak(userId);
-    
-    const today = new Date();
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
-    weekStart.setHours(0, 0, 0, 0);
-    
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    
-    const newlyUnlocked: any[] = [];
-    
-    // Check each achievement
-    for (const userAchievement of userAchievements) {
-      const achievement = userAchievement.achievements;
-      if (!achievement || userAchievement.unlocked_at) continue; // Skip if already unlocked
-      
-      let currentValue = 0;
-      
-      switch (achievement.requirement_type) {
-        case 'study_time':
-          if (achievement.requirement_timeframe === 'day') {
-            const todayStart = new Date(today);
-            todayStart.setHours(0, 0, 0, 0);
-            currentValue = pomodoroSessions
-              .filter(session => new Date(session.end_time) >= todayStart)
-              .reduce((sum, session) => sum + session.duration, 0);
-          } else if (achievement.requirement_timeframe === 'week') {
-            currentValue = pomodoroSessions
-              .filter(session => new Date(session.end_time) >= weekStart)
-              .reduce((sum, session) => sum + session.duration, 0);
-          } else if (achievement.requirement_timeframe === 'month') {
-            currentValue = pomodoroSessions
-              .filter(session => new Date(session.end_time) >= monthStart)
-              .reduce((sum, session) => sum + session.duration, 0);
-          } else {
-            currentValue = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
-          }
-          break;
-          
-        case 'sessions':
-          if (achievement.requirement_timeframe === 'day') {
-            const todayStart = new Date(today);
-            todayStart.setHours(0, 0, 0, 0);
-            currentValue = pomodoroSessions.filter(session => 
-              new Date(session.end_time) >= todayStart
-            ).length;
-          } else if (achievement.requirement_timeframe === 'week') {
-            currentValue = pomodoroSessions.filter(session => 
-              new Date(session.end_time) >= weekStart
-            ).length;
-          } else if (achievement.requirement_timeframe === 'month') {
-            currentValue = pomodoroSessions.filter(session => 
-              new Date(session.end_time) >= monthStart
-            ).length;
-          } else {
-            currentValue = pomodoroSessions.length;
-          }
-          break;
-          
-        case 'courses':
-          currentValue = userCourses.length;
-          break;
-          
-        case 'notes':
-          currentValue = userNotes.length;
-          break;
-          
-        case 'streak':
-          currentValue = currentStreak;
-          break;
-          
-        default:
-          currentValue = 0;
-      }
-      
-      const progress = Math.min(100, (currentValue / achievement.requirement_target) * 100);
-      const isUnlocked = progress >= 100;
-      
-      // Update progress
-      const updatedAchievement = await updateUserAchievementProgress(
-        userId,
-        achievement.id,
-        progress,
-        isUnlocked ? new Date().toISOString() : undefined
-      );
-      
-      if (isUnlocked && !userAchievement.unlocked_at) {
-        newlyUnlocked.push(updatedAchievement);
-        console.log('Achievement unlocked:', achievement.title);
-      }
-    }
-    
-    return newlyUnlocked;
-  } catch (error) {
-    console.error('Error checking achievements:', error instanceof Error ? error.message : JSON.stringify(error, null, 2));
-    console.error('Full error object:', JSON.stringify(error, null, 2));
-    return [];
   }
 };

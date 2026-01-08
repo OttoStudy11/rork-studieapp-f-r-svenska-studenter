@@ -26,6 +26,10 @@ import {
   Flame,
   BookOpen,
   Zap,
+  Calendar,
+  Star,
+  TrendingUp,
+  Award,
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -54,6 +58,10 @@ interface FriendData {
   longestStreak: number;
   joinedAt: string | null;
   courses: { id: string; name: string; code: string }[];
+  studyTimeThisWeek: number;
+  sessionsThisWeek: number;
+  lastActive: string | null;
+  totalPoints: number;
 }
 
 interface ComparisonStat {
@@ -85,111 +93,192 @@ export default function FriendStatsScreen() {
     try {
       setErrorMessage(null);
       setIsLoading(true);
+      console.log('Loading friend stats for:', friendId);
 
-      // Load friend profile
-      const { data: friendProfile, error: friendError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', friendId)
-        .single();
+      // Try to use the RPC function first for comprehensive stats
+      const { data: friendStats, error: rpcError } = await (supabase as any)
+        .rpc('get_friend_stats', { p_friend_id: friendId });
 
-      if (friendError) throw friendError;
+      if (!rpcError && friendStats) {
+        console.log('Got friend stats from RPC:', friendStats);
+        const profile = friendStats.profile;
+        const levelData = friendStats.level_data;
+        const progress = friendStats.progress;
+        const courses = friendStats.courses || [];
+        const recentActivity = friendStats.recent_activity || {};
 
-      // Load friend progress
-      const { data: friendProgress } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', friendId)
-        .maybeSingle();
+        const mappedCourses = courses.map((c: any) => ({
+          id: c.id,
+          name: c.name || 'Okänd kurs',
+          code: c.course_code || '',
+        }));
 
-      // Load friend courses
-      const { data: friendCourses } = await supabase
-        .from('user_courses')
-        .select('*')
-        .eq('user_id', friendId);
+        setFriend({
+          id: profile?.id || friendId,
+          username: profile?.username || 'unknown',
+          display_name: profile?.display_name || 'Okänd användare',
+          program: profile?.program || '',
+          level: (profile?.level || 'gymnasie') as 'gymnasie' | 'högskola',
+          gymnasium_grade: profile?.gymnasium_grade || null,
+          avatar: (() => {
+            if (!profile?.avatar_url) return undefined;
+            try {
+              return JSON.parse(profile.avatar_url) as AvatarConfig;
+            } catch {
+              return undefined;
+            }
+          })(),
+          studyTime: progress?.total_study_time || 0,
+          sessionCount: friendStats.session_count || 0,
+          streak: progress?.current_streak || 0,
+          courseCount: courses.length,
+          totalXp: levelData?.total_xp || progress?.total_xp || 0,
+          currentLevel: levelData?.current_level || 1,
+          achievementCount: friendStats.achievement_count || 0,
+          completedChallenges: 0,
+          longestStreak: progress?.longest_streak || progress?.current_streak || 0,
+          joinedAt: profile?.created_at || null,
+          courses: mappedCourses,
+          studyTimeThisWeek: recentActivity?.study_time_this_week || 0,
+          sessionsThisWeek: recentActivity?.sessions_this_week || 0,
+          lastActive: recentActivity?.last_session || null,
+          totalPoints: progress?.total_points || 0,
+        });
+      } else {
+        // Fallback to individual queries if RPC fails
+        console.log('RPC failed, falling back to individual queries:', rpcError);
+        
+        // Load friend profile
+        const { data: friendProfile, error: friendError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', friendId)
+          .single();
 
-      // Load friend sessions from pomodoro_sessions
-      const { data: friendSessions } = await supabase
-        .from('pomodoro_sessions')
-        .select('*')
-        .eq('user_id', friendId);
+        if (friendError) throw friendError;
 
-      // Load your progress
+        // Load friend progress
+        const { data: friendProgress } = await supabase
+          .from('user_progress')
+          .select('*')
+          .eq('user_id', friendId)
+          .maybeSingle();
+
+        // Load friend courses count
+        const { data: friendCourses } = await supabase
+          .from('user_courses')
+          .select('course_id')
+          .eq('user_id', friendId)
+          .eq('is_active', true);
+
+        // Load friend sessions from pomodoro_sessions
+        const { data: friendSessions } = await supabase
+          .from('pomodoro_sessions')
+          .select('id, duration, start_time, end_time')
+          .eq('user_id', friendId);
+
+        // Load sessions from this week
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const { data: weekSessions } = await supabase
+          .from('pomodoro_sessions')
+          .select('id, duration')
+          .eq('user_id', friendId)
+          .gte('start_time', weekAgo.toISOString());
+
+        // Load friend's XP/level data
+        const { data: friendLevelData } = await (supabase as any)
+          .from('user_levels')
+          .select('total_xp, current_level')
+          .eq('user_id', friendId)
+          .maybeSingle();
+
+        // Load friend's achievements count
+        const { data: friendAchievements } = await supabase
+          .from('user_achievements')
+          .select('id')
+          .eq('user_id', friendId)
+          .not('unlocked_at', 'is', null);
+
+        // Load friend's course details
+        const { data: friendCourseDetails } = await supabase
+          .from('user_courses')
+          .select('course_id, courses(id, name, course_code)')
+          .eq('user_id', friendId)
+          .eq('is_active', true);
+
+        const friendStudyTimeMinutes = await fetchTotalStudyMinutesForUser(friendId);
+
+        const mappedCourses = (friendCourseDetails || []).map((fc: any) => ({
+          id: fc.course_id,
+          name: fc.courses?.name || 'Okänd kurs',
+          code: fc.courses?.course_code || '',
+        }));
+
+        // Calculate study time this week
+        const studyTimeThisWeek = (weekSessions || []).reduce(
+          (sum: number, s: any) => sum + (s.duration || 0),
+          0
+        );
+
+        // Get last active time
+        const sortedSessions = [...(friendSessions || [])].sort(
+          (a, b) => new Date(b.end_time || 0).getTime() - new Date(a.end_time || 0).getTime()
+        );
+        const lastSession = sortedSessions[0];
+
+        setFriend({
+          id: friendProfile.id,
+          username: friendProfile.username,
+          display_name: friendProfile.display_name,
+          program: friendProfile.program,
+          level: friendProfile.level as 'gymnasie' | 'högskola',
+          gymnasium_grade: friendProfile.gymnasium_grade,
+          avatar: (() => {
+            if (!friendProfile.avatar_url) return undefined;
+            try {
+              return JSON.parse(friendProfile.avatar_url) as AvatarConfig;
+            } catch {
+              return undefined;
+            }
+          })(),
+          studyTime: friendStudyTimeMinutes,
+          sessionCount: friendSessions?.length || 0,
+          streak: friendProgress?.current_streak || 0,
+          courseCount: friendCourses?.length || 0,
+          totalXp: friendLevelData?.total_xp || 0,
+          currentLevel: friendLevelData?.current_level || 1,
+          achievementCount: friendAchievements?.length || 0,
+          completedChallenges: 0,
+          longestStreak: friendProgress?.longest_streak || friendProgress?.current_streak || 0,
+          joinedAt: friendProfile.created_at || null,
+          courses: mappedCourses,
+          studyTimeThisWeek,
+          sessionsThisWeek: weekSessions?.length || 0,
+          lastActive: lastSession?.end_time || null,
+          totalPoints: friendProgress?.total_points || 0,
+        });
+      }
+
+      // Load your stats
       const { data: yourProgress } = await supabase
         .from('user_progress')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      // Load your courses
       const { data: yourCourses } = await supabase
         .from('user_courses')
-        .select('*')
-        .eq('user_id', user.id);
-
-      // Load your sessions from pomodoro_sessions
-      const { data: yourSessions } = await supabase
-        .from('pomodoro_sessions')
-        .select('*')
-        .eq('user_id', user.id);
-
-      // Load friend's XP/level data
-      const { data: friendLevelData } = await (supabase as any)
-        .from('user_levels')
-        .select('total_xp, current_level')
-        .eq('user_id', friendId)
-        .maybeSingle();
-
-      // Load friend's achievements count
-      const { data: friendAchievements } = await supabase
-        .from('user_achievements')
-        .select('id')
-        .eq('user_id', friendId)
-        .not('unlocked_at', 'is', null);
-
-      // Load friend's course details
-      const { data: friendCourseDetails } = await supabase
-        .from('user_courses')
-        .select('course_id, courses(id, name, course_code)')
-        .eq('user_id', friendId)
+        .select('course_id')
+        .eq('user_id', user.id)
         .eq('is_active', true);
 
-      const friendStudyTimeMinutes = await fetchTotalStudyMinutesForUser(friendId);
+      const { data: yourSessions } = await supabase
+        .from('pomodoro_sessions')
+        .select('id')
+        .eq('user_id', user.id);
+
       const yourStudyTimeMinutes = await fetchTotalStudyMinutesForUser(user.id);
-
-      const mappedCourses = (friendCourseDetails || []).map((fc: any) => ({
-        id: fc.course_id,
-        name: fc.courses?.name || 'Okänd kurs',
-        code: fc.courses?.course_code || '',
-      }));
-
-      setFriend({
-        id: friendProfile.id,
-        username: friendProfile.username,
-        display_name: friendProfile.display_name,
-        program: friendProfile.program,
-        level: friendProfile.level as 'gymnasie' | 'högskola',
-        gymnasium_grade: friendProfile.gymnasium_grade,
-        avatar: (() => {
-          if (!friendProfile.avatar_url) return undefined;
-          try {
-            return JSON.parse(friendProfile.avatar_url) as AvatarConfig;
-          } catch {
-            return undefined;
-          }
-        })(),
-        studyTime: friendStudyTimeMinutes,
-        sessionCount: friendSessions?.length || 0,
-        streak: friendProgress?.current_streak || 0,
-        courseCount: friendCourses?.length || 0,
-        totalXp: friendLevelData?.total_xp || 0,
-        currentLevel: friendLevelData?.current_level || 1,
-        achievementCount: friendAchievements?.length || 0,
-        completedChallenges: 0,
-        longestStreak: friendProgress?.longest_streak || friendProgress?.current_streak || 0,
-        joinedAt: friendProfile.created_at || null,
-        courses: mappedCourses,
-      });
 
       setYourStats({
         studyTime: yourStudyTimeMinutes,
@@ -199,6 +288,7 @@ export default function FriendStatsScreen() {
         totalXp: totalXp ?? 0,
       });
     } catch (error: any) {
+      console.error('Error loading friend stats:', error);
       setErrorMessage(error?.message || 'Kunde inte ladda statistik');
       setFriend(null);
       setYourStats(null);
@@ -292,6 +382,20 @@ export default function FriendStatsScreen() {
       return `+${diffText} mer än ${friend?.display_name}`;
     }
     return `-${diffText} mindre än ${friend?.display_name}`;
+  };
+
+  const formatLastActive = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffHours < 1) return 'Just nu';
+    if (diffHours < 24) return `${diffHours}h sedan`;
+    if (diffDays === 1) return 'Igår';
+    if (diffDays < 7) return `${diffDays} dagar sedan`;
+    return date.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
   };
 
   const overallScore = useMemo((): { you: number; friend: number } => {
@@ -491,6 +595,24 @@ export default function FriendStatsScreen() {
           <View style={styles.profileSection}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{friend.display_name}s profil</Text>
             
+            {/* Level Badge */}
+            <View style={[styles.levelBadgeCard, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.levelBadgeContent}>
+                <View style={[styles.levelCircle, { backgroundColor: theme.colors.primary }]}>
+                  <Text style={styles.levelNumber}>{friend.currentLevel}</Text>
+                </View>
+                <View style={styles.levelInfo}>
+                  <Text style={[styles.levelTitle, { color: theme.colors.text }]}>Nivå {friend.currentLevel}</Text>
+                  <Text style={[styles.levelXp, { color: theme.colors.textSecondary }]}>
+                    {friend.totalXp.toLocaleString()} XP totalt
+                  </Text>
+                </View>
+                <View style={[styles.tierBadge, { backgroundColor: theme.colors.warning + '20' }]}>
+                  <Star size={14} color={theme.colors.warning} />
+                </View>
+              </View>
+            </View>
+            
             <View style={[styles.profileCard, { backgroundColor: theme.colors.card }]}>
               <View style={styles.profileStatsGrid}>
                 <View style={styles.profileStatItem}>
@@ -533,6 +655,83 @@ export default function FriendStatsScreen() {
                   <Text style={[styles.profileStatLabel, { color: theme.colors.textSecondary }]}>Pluggat totalt</Text>
                 </View>
               </View>
+            </View>
+
+            {/* Weekly Activity */}
+            <View style={[styles.weeklyCard, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.weeklyHeader}>
+                <TrendingUp size={18} color={theme.colors.primary} />
+                <Text style={[styles.weeklyTitle, { color: theme.colors.text }]}>Denna vecka</Text>
+              </View>
+              <View style={styles.weeklyStats}>
+                <View style={styles.weeklyStat}>
+                  <Text style={[styles.weeklyValue, { color: theme.colors.text }]}>
+                    {formatTime(friend.studyTimeThisWeek || 0)}
+                  </Text>
+                  <Text style={[styles.weeklyLabel, { color: theme.colors.textSecondary }]}>Studietid</Text>
+                </View>
+                <View style={[styles.weeklyDivider, { backgroundColor: theme.colors.border }]} />
+                <View style={styles.weeklyStat}>
+                  <Text style={[styles.weeklyValue, { color: theme.colors.text }]}>
+                    {friend.sessionsThisWeek || 0}
+                  </Text>
+                  <Text style={[styles.weeklyLabel, { color: theme.colors.textSecondary }]}>Sessioner</Text>
+                </View>
+                <View style={[styles.weeklyDivider, { backgroundColor: theme.colors.border }]} />
+                <View style={styles.weeklyStat}>
+                  <Text style={[styles.weeklyValue, { color: theme.colors.text }]}>
+                    {friend.streak || 0}
+                  </Text>
+                  <Text style={[styles.weeklyLabel, { color: theme.colors.textSecondary }]}>Streak</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Additional Stats */}
+            <View style={[styles.additionalStatsCard, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.additionalStatRow}>
+                <View style={styles.additionalStatLeft}>
+                  <BookOpen size={16} color={theme.colors.textSecondary} />
+                  <Text style={[styles.additionalStatLabel, { color: theme.colors.textSecondary }]}>Totalt sessioner</Text>
+                </View>
+                <Text style={[styles.additionalStatValue, { color: theme.colors.text }]}>
+                  {friend.sessionCount}
+                </Text>
+              </View>
+              <View style={[styles.additionalStatDivider, { backgroundColor: theme.colors.border }]} />
+              <View style={styles.additionalStatRow}>
+                <View style={styles.additionalStatLeft}>
+                  <Award size={16} color={theme.colors.textSecondary} />
+                  <Text style={[styles.additionalStatLabel, { color: theme.colors.textSecondary }]}>Poäng</Text>
+                </View>
+                <Text style={[styles.additionalStatValue, { color: theme.colors.text }]}>
+                  {(friend.totalPoints || 0).toLocaleString()}
+                </Text>
+              </View>
+              <View style={[styles.additionalStatDivider, { backgroundColor: theme.colors.border }]} />
+              <View style={styles.additionalStatRow}>
+                <View style={styles.additionalStatLeft}>
+                  <Calendar size={16} color={theme.colors.textSecondary} />
+                  <Text style={[styles.additionalStatLabel, { color: theme.colors.textSecondary }]}>Medlem sedan</Text>
+                </View>
+                <Text style={[styles.additionalStatValue, { color: theme.colors.text }]}>
+                  {friend.joinedAt ? new Date(friend.joinedAt).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short' }) : '-'}
+                </Text>
+              </View>
+              {friend.lastActive && (
+                <>
+                  <View style={[styles.additionalStatDivider, { backgroundColor: theme.colors.border }]} />
+                  <View style={styles.additionalStatRow}>
+                    <View style={styles.additionalStatLeft}>
+                      <Clock size={16} color={theme.colors.textSecondary} />
+                      <Text style={[styles.additionalStatLabel, { color: theme.colors.textSecondary }]}>Senast aktiv</Text>
+                    </View>
+                    <Text style={[styles.additionalStatValue, { color: theme.colors.text }]}>
+                      {formatLastActive(friend.lastActive)}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
           </View>
         </SlideInView>
@@ -904,5 +1103,121 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
     paddingTop: 12,
+  },
+  levelBadgeCard: {
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  levelBadgeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  levelCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  levelNumber: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: 'white',
+  },
+  levelInfo: {
+    flex: 1,
+  },
+  levelTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  levelXp: {
+    fontSize: 14,
+  },
+  tierBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  weeklyCard: {
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  weeklyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  weeklyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  weeklyStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  weeklyStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  weeklyValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  weeklyLabel: {
+    fontSize: 12,
+  },
+  weeklyDivider: {
+    width: 1,
+    height: 40,
+  },
+  additionalStatsCard: {
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  additionalStatRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  additionalStatLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  additionalStatLabel: {
+    fontSize: 14,
+  },
+  additionalStatValue: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  additionalStatDivider: {
+    height: 1,
   },
 });

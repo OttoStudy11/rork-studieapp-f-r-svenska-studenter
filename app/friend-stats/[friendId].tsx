@@ -49,6 +49,11 @@ interface FriendData {
   courseCount: number;
   totalXp: number;
   currentLevel: number;
+  achievementCount: number;
+  completedChallenges: number;
+  longestStreak: number;
+  joinedAt: string | null;
+  courses: { id: string; name: string; code: string }[];
 }
 
 interface ComparisonStat {
@@ -135,8 +140,28 @@ export default function FriendStatsScreen() {
         .eq('user_id', friendId)
         .maybeSingle();
 
+      // Load friend's achievements count
+      const { data: friendAchievements } = await supabase
+        .from('user_achievements')
+        .select('id')
+        .eq('user_id', friendId)
+        .not('unlocked_at', 'is', null);
+
+      // Load friend's course details
+      const { data: friendCourseDetails } = await supabase
+        .from('user_courses')
+        .select('course_id, courses(id, name, course_code)')
+        .eq('user_id', friendId)
+        .eq('is_active', true);
+
       const friendStudyTimeMinutes = await fetchTotalStudyMinutesForUser(friendId);
       const yourStudyTimeMinutes = await fetchTotalStudyMinutesForUser(user.id);
+
+      const mappedCourses = (friendCourseDetails || []).map((fc: any) => ({
+        id: fc.course_id,
+        name: fc.courses?.name || 'Okänd kurs',
+        code: fc.courses?.course_code || '',
+      }));
 
       setFriend({
         id: friendProfile.id,
@@ -159,6 +184,11 @@ export default function FriendStatsScreen() {
         courseCount: friendCourses?.length || 0,
         totalXp: friendLevelData?.total_xp || 0,
         currentLevel: friendLevelData?.current_level || 1,
+        achievementCount: friendAchievements?.length || 0,
+        completedChallenges: 0,
+        longestStreak: friendProgress?.longest_streak || friendProgress?.current_streak || 0,
+        joinedAt: friendProfile.created_at || null,
+        courses: mappedCourses,
       });
 
       setYourStats({
@@ -456,6 +486,99 @@ export default function FriendStatsScreen() {
           })}
         </View>
 
+        {/* Friend Profile Details */}
+        <SlideInView direction="up" delay={500}>
+          <View style={styles.profileSection}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{friend.display_name}s profil</Text>
+            
+            <View style={[styles.profileCard, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.profileStatsGrid}>
+                <View style={styles.profileStatItem}>
+                  <View style={[styles.profileStatIcon, { backgroundColor: theme.colors.primary + '15' }]}>
+                    <Zap size={18} color={theme.colors.primary} />
+                  </View>
+                  <Text style={[styles.profileStatValue, { color: theme.colors.text }]}>
+                    {friend.totalXp.toLocaleString()}
+                  </Text>
+                  <Text style={[styles.profileStatLabel, { color: theme.colors.textSecondary }]}>Total XP</Text>
+                </View>
+                
+                <View style={styles.profileStatItem}>
+                  <View style={[styles.profileStatIcon, { backgroundColor: theme.colors.success + '15' }]}>
+                    <Trophy size={18} color={theme.colors.success} />
+                  </View>
+                  <Text style={[styles.profileStatValue, { color: theme.colors.text }]}>
+                    {friend.achievementCount}
+                  </Text>
+                  <Text style={[styles.profileStatLabel, { color: theme.colors.textSecondary }]}>Prestationer</Text>
+                </View>
+                
+                <View style={styles.profileStatItem}>
+                  <View style={[styles.profileStatIcon, { backgroundColor: theme.colors.warning + '15' }]}>
+                    <Flame size={18} color={theme.colors.warning} />
+                  </View>
+                  <Text style={[styles.profileStatValue, { color: theme.colors.text }]}>
+                    {friend.longestStreak}
+                  </Text>
+                  <Text style={[styles.profileStatLabel, { color: theme.colors.textSecondary }]}>Längsta streak</Text>
+                </View>
+                
+                <View style={styles.profileStatItem}>
+                  <View style={[styles.profileStatIcon, { backgroundColor: theme.colors.secondary + '15' }]}>
+                    <Clock size={18} color={theme.colors.secondary} />
+                  </View>
+                  <Text style={[styles.profileStatValue, { color: theme.colors.text }]}>
+                    {formatTime(friend.studyTime)}
+                  </Text>
+                  <Text style={[styles.profileStatLabel, { color: theme.colors.textSecondary }]}>Pluggat totalt</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </SlideInView>
+
+        {/* Friend's Courses */}
+        {friend.courses && friend.courses.length > 0 && (
+          <SlideInView direction="up" delay={550}>
+            <View style={styles.coursesSection}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Aktiva kurser</Text>
+              <View style={[styles.coursesCard, { backgroundColor: theme.colors.card }]}>
+                {friend.courses.slice(0, 5).map((course, index) => (
+                  <View
+                    key={course.id}
+                    style={[
+                      styles.courseItem,
+                      index < friend.courses.length - 1 && index < 4 && {
+                        borderBottomWidth: 1,
+                        borderBottomColor: theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <View style={[styles.courseIcon, { backgroundColor: theme.colors.primary + '15' }]}>
+                      <BookOpen size={16} color={theme.colors.primary} />
+                    </View>
+                    <View style={styles.courseInfo}>
+                      <Text style={[styles.courseName, { color: theme.colors.text }]} numberOfLines={1}>
+                        {course.name}
+                      </Text>
+                      {course.code ? (
+                        <Text style={[styles.courseCode, { color: theme.colors.textSecondary }]}>
+                          {course.code}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                ))}
+                {friend.courses.length > 5 && (
+                  <Text style={[styles.moreCoursesText, { color: theme.colors.textSecondary }]}>
+                    +{friend.courses.length - 5} fler kurser
+                  </Text>
+                )}
+              </View>
+            </View>
+          </SlideInView>
+        )}
+
         {/* Motivational Message */}
         <SlideInView direction="up" delay={600}>
           <View style={[styles.motivationCard, { backgroundColor: theme.colors.card }]}>
@@ -696,5 +819,90 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     lineHeight: 24,
+  },
+  profileSection: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  profileCard: {
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  profileStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  profileStatItem: {
+    width: '45%',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  profileStatIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  profileStatValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  profileStatLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  coursesSection: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  coursesCard: {
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  courseItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 12,
+  },
+  courseIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  courseInfo: {
+    flex: 1,
+  },
+  courseName: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  courseCode: {
+    fontSize: 12,
+  },
+  moreCoursesText: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    paddingTop: 12,
   },
 });

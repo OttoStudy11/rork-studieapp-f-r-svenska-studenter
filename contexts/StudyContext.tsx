@@ -116,13 +116,25 @@ const syncUniversityCoursesToUser = async (
     const programId = programData?.id || null;
     
     for (const course of courses) {
+      // Look up the actual course UUID from the database by title
+      const { data: dbCourse } = await supabase
+        .from('university_courses')
+        .select('id')
+        .eq('title', course.title)
+        .maybeSingle();
+      
+      if (!dbCourse) {
+        console.warn(`Course "${course.title}" not found in database, skipping sync`);
+        continue;
+      }
+      
       const { error } = await supabase
         .from('user_university_courses')
         .upsert({
-          id: `${userId}-${course.id}`,
+          id: `${userId}-${dbCourse.id}`,
           user_id: userId,
           program_id: programId,
-          course_id: course.id,
+          course_id: dbCourse.id,
           progress: 0,
           is_active: course.isActive,
           updated_at: new Date().toISOString()
@@ -131,11 +143,13 @@ const syncUniversityCoursesToUser = async (
         });
       
       if (error) {
-        console.error('Error syncing user university course:', error.message);
+        console.error(`Error syncing user university course "${course.title}":`, error.message);
+      } else {
+        console.log(`✅ Synced course: ${course.title} (UUID: ${dbCourse.id})`);
       }
     }
     
-    console.log('Successfully synced', courses.length, 'university courses for user');
+    console.log('Successfully synced university courses for user');
     return true;
   } catch (error) {
     console.error('Exception syncing university courses:', error);

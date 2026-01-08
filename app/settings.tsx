@@ -35,7 +35,7 @@ export default function SettingsScreen() {
   const { theme, themeMode, setThemeMode, isDark } = useTheme();
   const { showSuccess, showInfo } = useToast();
   const { user, signOut } = useAuth();
-  const { isPremium } = usePremium();
+  const { isPremium, devPremiumEnabled, setDevPremiumEnabled } = usePremium();
   const { settings, setSoundEnabled, setHapticsEnabled, setNotificationsEnabled, setBackgroundTimerEnabled } = useTimerSettings();
 
   const themeOptions: { mode: ThemeMode; label: string; icon: React.ReactNode }[] = [
@@ -89,6 +89,21 @@ export default function SettingsScreen() {
   };
 
   const settingsSections: { title: string; items: SettingItem[] }[] = [
+    ...(__DEV__ ? [{
+      title: '🛠️ Utvecklare',
+      items: [
+        {
+          icon: <Crown size={20} color={theme.colors.warning} />,
+          title: 'Dev Premium Mode',
+          subtitle: 'Aktivera premium utan RevenueCat (endast för testning)',
+          onPress: () => {
+            setDevPremiumEnabled(!devPremiumEnabled);
+          },
+          hasSwitch: true,
+          switchValue: devPremiumEnabled,
+        },
+      ],
+    }] : []),
     {
       title: 'Premium',
       items: [

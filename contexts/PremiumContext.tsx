@@ -1,6 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PurchasesOffering, PurchasesPackage, CustomerInfo } from 'react-native-purchases';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -68,6 +69,9 @@ export interface PremiumContextType {
   isDemoMode: boolean;
   enableDemoMode: () => void;
   exitDemoMode: () => void;
+  
+  devPremiumEnabled: boolean;
+  setDevPremiumEnabled: (enabled: boolean) => Promise<void>;
 }
 
 // ============================================================================
@@ -115,6 +119,7 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
   const [isLoading, setIsLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [devPremiumEnabled, setDevPremiumEnabledState] = useState(false);
   
   const listenerCleanupRef = useRef<(() => void) | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -167,11 +172,43 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
     await syncToDatabase(isPremium, expirationDate);
   }, [syncToDatabase]);
 
+  // Load dev premium override
+  const loadDevPremium = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem('dev_premium_override');
+      if (stored === 'true') {
+        setDevPremiumEnabledState(true);
+        console.log('[Premium] Dev premium override enabled');
+      }
+    } catch (error) {
+      console.error('[Premium] Failed to load dev premium:', error);
+    }
+  }, []);
+
+  // Set dev premium override
+  const setDevPremiumEnabled = useCallback(async (enabled: boolean) => {
+    try {
+      await AsyncStorage.setItem('dev_premium_override', enabled ? 'true' : 'false');
+      setDevPremiumEnabledState(enabled);
+      console.log('[Premium] Dev premium override:', enabled);
+      showSuccess(
+        enabled ? 'Dev Premium aktiverat' : 'Dev Premium inaktiverat',
+        enabled ? 'Alla premium-funktioner är nu upplåsta' : 'Premium-funktioner kräver nu prenumeration'
+      );
+    } catch (error) {
+      console.error('[Premium] Failed to save dev premium:', error);
+      showError('Fel', 'Kunde inte spara inställning');
+    }
+  }, [showSuccess, showError]);
+
   // Initialize RevenueCat and load premium status
   const initializePremium = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log('[Premium] Initializing...');
+      
+      // Load dev premium override first
+      await loadDevPremium();
       
       // First, load cached premium status for immediate UI response
       const cachedStatus = await loadPremiumStatus();
@@ -238,7 +275,7 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
     } finally {
       setIsLoading(false);
     }
-  }, [authUser?.id, processCustomerInfo]);
+  }, [authUser?.id, processCustomerInfo, loadDevPremium]);
 
   // Refresh premium status (manual sync)
   const refreshPremiumStatus = useCallback(async () => {
@@ -321,10 +358,13 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
 
   // Calculate if user is premium
   const isPremium = useMemo(() => {
+    // Dev override takes precedence
+    if (devPremiumEnabled) return true;
+    
     if (subscriptionType !== 'premium') return false;
     if (!subscriptionExpiresAt) return true; // Lifetime or no expiration set
     return subscriptionExpiresAt > new Date();
-  }, [subscriptionType, subscriptionExpiresAt]);
+  }, [subscriptionType, subscriptionExpiresAt, devPremiumEnabled]);
 
   // Get limits based on subscription
   const limits = useMemo(() => {
@@ -468,6 +508,8 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
     isDemoMode,
     enableDemoMode,
     exitDemoMode,
+    devPremiumEnabled,
+    setDevPremiumEnabled,
   }), [
     subscriptionType,
     subscriptionExpiresAt,
@@ -486,5 +528,7 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
     isDemoMode,
     enableDemoMode,
     exitDemoMode,
+    devPremiumEnabled,
+    setDevPremiumEnabled,
   ]);
 });

@@ -25,7 +25,7 @@ import { TimerPersistence } from '@/lib/timer-persistence';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
 import { PremiumGate } from '@/components/PremiumGate';
-import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen, FileText, CheckCircle, Crown } from 'lucide-react-native';
+import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen, FileText, CheckCircle } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import AddExamModal from '@/components/AddExamModal';
 
@@ -907,7 +907,6 @@ export default function TimerScreen() {
 
         {/* Hero Timer Card */}
         <View style={styles.timerSection}>
-          <View style={[styles.timerCardContainer, { backgroundColor: theme.colors.card }]}>
             <View style={styles.timerWrapper}>
               <Svg width={260} height={260} style={styles.timerSvg}>
                 <Circle
@@ -967,7 +966,6 @@ export default function TimerScreen() {
                 </View>
               </View>
             </View>
-          </View>
         </View>
 
         {/* Course Selection */}
@@ -1131,34 +1129,28 @@ export default function TimerScreen() {
         <View style={styles.quickStatsRow}>
           <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
             <View style={[styles.quickStatIconWrapper, { backgroundColor: theme.colors.warning + '20' }]}>
-              <Flame size={18} color={theme.colors.warning} />
+              <Flame size={24} color={theme.colors.warning} />
             </View>
-            <View style={styles.quickStatContent}>
-              <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>{currentStreak}</Text>
-              <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Streak</Text>
-            </View>
+            <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>{currentStreak}</Text>
+            <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Streak</Text>
           </View>
           
           <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
             <View style={[styles.quickStatIconWrapper, { backgroundColor: theme.colors.primary + '20' }]}>
-              <Target size={18} color={theme.colors.primary} />
+              <Target size={24} color={theme.colors.primary} />
             </View>
-            <View style={styles.quickStatContent}>
-              <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>
-                {sessionCount}/{dailyGoal}
-              </Text>
-              <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Dagsmål</Text>
-            </View>
+            <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>
+              {sessionCount}/{dailyGoal}
+            </Text>
+            <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Dagsmål</Text>
           </View>
           
           <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
             <View style={[styles.quickStatIconWrapper, { backgroundColor: theme.colors.secondary + '20' }]}>
-              <Zap size={18} color={theme.colors.secondary} />
+              <Zap size={24} color={theme.colors.secondary} />
             </View>
-            <View style={styles.quickStatContent}>
-              <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>{todayStats.minutes}m</Text>
-              <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Idag</Text>
-            </View>
+            <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>{todayStats.minutes}m</Text>
+            <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Idag</Text>
           </View>
         </View>
 
@@ -1523,18 +1515,7 @@ export default function TimerScreen() {
 
         {/* Statistics Section - PREMIUM FEATURE */}
         <View style={styles.statsSection}>
-          <View style={styles.statsSectionHeader}>
-            <Text style={[styles.statsSectionTitle, { color: theme.colors.text }]}>Avancerad Statistik</Text>
-            <LinearGradient
-              colors={['#FFD700', '#FFA500']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.premiumBadge}
-            >
-              <Crown size={12} color="#FFF" />
-              <Text style={styles.premiumBadgeText}>PRO</Text>
-            </LinearGradient>
-          </View>
+          <Text style={[styles.statsSectionTitle, { color: theme.colors.text }]}>Avancerad Statistik</Text>
           <PremiumGate feature="statistics" fullScreen={false}>
 
           {/* View Toggle with gradient */}
@@ -2100,15 +2081,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginBottom: 32,
   },
-  timerCardContainer: {
-    borderRadius: 28,
-    padding: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 6,
-  },
   timerWrapper: {
     alignItems: 'center',
     position: 'relative',
@@ -2481,11 +2453,9 @@ const styles = StyleSheet.create({
   },
   quickStatCard: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 18,
-    gap: 12,
+    padding: 20,
+    borderRadius: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -2493,19 +2463,19 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   quickStatIconWrapper: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  quickStatContent: {
-    flex: 1,
+    marginBottom: 12,
   },
   quickStatValue: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '800',
     letterSpacing: -0.5,
+    textAlign: 'center',
+    marginBottom: 4,
     fontFamily: Platform.select({
       ios: 'SF Pro Display',
       android: 'Roboto',
@@ -2513,10 +2483,10 @@ const styles = StyleSheet.create({
     }),
   },
   quickStatLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    marginTop: 2,
-    letterSpacing: 0.2,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
   plannerSection: {
     paddingHorizontal: 24,
@@ -2573,35 +2543,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginBottom: 32,
   },
-  statsSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
   statsSectionTitle: {
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.5,
-  },
-  premiumBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 4,
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  premiumBadgeText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    marginBottom: 20,
   },
   statIconContainer: {
     width: 40,

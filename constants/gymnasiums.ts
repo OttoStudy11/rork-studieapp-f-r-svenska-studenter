@@ -506,6 +506,7 @@ export const SWEDISH_GYMNASIUMS: Gymnasium[] = [
 
   // Sandviken
   { id: 'san-1', name: 'Bessemerskolan', city: 'Sandviken', municipality: 'Sandviken', type: 'kommunal' },
+  { id: 'san-2', name: 'Göranssonska skolan', city: 'Sandviken', municipality: 'Sandviken', type: 'friskola' },
 
   // Hudiksvall
   { id: 'hudk-1', name: 'Bromangymnasiet', city: 'Hudiksvall', municipality: 'Hudiksvall', type: 'kommunal' },

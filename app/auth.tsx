@@ -99,9 +99,9 @@ export default function AuthScreen() {
     if (isAuthenticated && !isLoading) {
       console.log('User authenticated, navigating...', { hasCompletedOnboarding });
       if (hasCompletedOnboarding) {
-        router.replace('/(tabs)/home');
+        router.replace('/(tabs)/home' as any);
       } else {
-        router.replace('/onboarding');
+        router.replace('/onboarding' as any);
       }
     }
   }, [isAuthenticated, hasCompletedOnboarding, isLoading]);

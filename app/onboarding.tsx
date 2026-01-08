@@ -490,7 +490,7 @@ export default function OnboardingScreen() {
         
         console.log('Onboarding completed successfully');
         showSuccess('Välkommen! Din profil är nu klar.');
-        router.replace('/(tabs)/home');
+        router.replace('/(tabs)/home' as any);
       } catch (error) {
         console.error('Onboarding error:', error);
         showError('Något gick fel. Försök igen.');

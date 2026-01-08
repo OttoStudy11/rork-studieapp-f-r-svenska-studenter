@@ -440,7 +440,7 @@ export default function CoursesScreen() {
             )}
             <TouchableOpacity 
               style={[styles.profileButton, { backgroundColor: theme.colors.primary + '15' }]}
-              onPress={() => router.push('/profile')}
+              onPress={() => router.push('/profile' as any)}
             >
               <User size={22} color={theme.colors.primary} />
             </TouchableOpacity>
@@ -552,7 +552,7 @@ export default function CoursesScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
-              <TouchableOpacity onPress={() => router.push('/study-tips')}>
+              <TouchableOpacity onPress={() => router.push('/study-tips' as any)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -562,7 +562,7 @@ export default function CoursesScreen() {
                 <FadeInView key={tip.id} delay={500 + index * 50}>
                   <TouchableOpacity 
                     style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
-                    onPress={() => router.push(`/study-tip/${tip.id}`)}
+                    onPress={() => router.push(`/study-tip/${tip.id}` as any)}
                   >
                     <Text style={styles.compactTipIcon}>{tip.icon}</Text>
                     <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
@@ -589,7 +589,7 @@ export default function CoursesScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
-              <TouchableOpacity onPress={() => router.push('/study-techniques')}>
+              <TouchableOpacity onPress={() => router.push('/study-techniques' as any)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -599,7 +599,7 @@ export default function CoursesScreen() {
                 <FadeInView key={technique.id} delay={700 + index * 50}>
                   <TouchableOpacity 
                     style={[styles.compactTechniqueCard, { backgroundColor: theme.colors.card }]}
-                    onPress={() => router.push(`/study-technique/${technique.id}`)}
+                    onPress={() => router.push(`/study-technique/${technique.id}` as any)}
                   >
                     <Text style={styles.compactTechniqueIcon}>{technique.icon}</Text>
                     <Text style={[styles.compactTechniqueTitle, { color: theme.colors.text }]}>{technique.title}</Text>

@@ -41,7 +41,7 @@ export default function HomeScreen() {
       showPremiumModal('Obegränsat antal kurser');
       return;
     }
-    router.push('/courses');
+    router.push('/courses' as any);
   };
 
   // Handle loading

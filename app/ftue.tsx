@@ -213,10 +213,10 @@ export default function FTUEScreen() {
     try {
       await AsyncStorage.setItem(FTUE_COMPLETED_KEY, 'true');
       console.log('FTUE completed, navigating to auth');
-      router.replace('/auth');
+      router.replace('/auth' as any);
     } catch (error) {
       console.error('Error saving FTUE completion:', error);
-      router.replace('/auth');
+      router.replace('/auth' as any);
     }
   };
 

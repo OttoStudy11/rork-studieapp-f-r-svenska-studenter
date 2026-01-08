@@ -318,12 +318,12 @@ export default function CourseDetailScreen() {
 
   const navigateToLesson = (lesson: CourseLesson) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/lesson/${lesson.id}`);
+    router.push(`/lesson/${lesson.id}` as any);
   };
 
   const navigateToStudyGuide = (guide: StudyGuide) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/study-guide/${guide.id}`);
+    router.push(`/study-guide/${guide.id}` as any);
   };
 
 

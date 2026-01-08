@@ -16,118 +16,130 @@ interface UniversityCourseTemplate {
   tips: string[];
 }
 
-// Map program names to program_id used in database
-const PROGRAM_NAME_TO_ID: Record<string, string> = {
-  'Civilingenjör - Datateknik': 'civ_datateknik',
-  'Civilingenjör - Elektroteknik': 'civ_elektroteknik',
-  'Civilingenjör - Maskinteknik': 'civ_maskinteknik',
-  'Civilingenjör - Teknisk fysik': 'civ_teknisk_fysik',
-  'Civilingenjör - Kemiteknik': 'civ_kemiteknik',
-  'Civilingenjör - Industriell ekonomi': 'civ_industriell_ekonomi',
-  'Civilingenjör - Samhällsbyggnad': 'civ_samhallsbyggnad',
-  'Civilingenjör - Bioteknik': 'civ_bioteknik',
-  'Högskoleingenjör - Datateknik': 'hsk_datateknik',
-  'Högskoleingenjör - Elektroteknik': 'hsk_elektroteknik',
-  'Högskoleingenjör - Maskinteknik': 'hsk_maskinteknik',
-  'Högskoleingenjör - Byggteknik': 'hsk_byggteknik',
-  'Läkarprogrammet': 'lakarprogrammet',
-  'Tandläkarprogrammet': 'tandlakarprogrammet',
-  'Sjuksköterskeprogrammet': 'sjukskoterskeprogrammet',
-  'Fysioterapeutprogrammet': 'fysioterapeutprogrammet',
-  'Psykologprogrammet': 'psykologprogrammet',
-  'Kandidatprogram i biologi': 'kand_biologi',
-  'Kandidatprogram i kemi': 'kand_kemi',
-  'Kandidatprogram i fysik': 'kand_fysik',
-  'Kandidatprogram i matematik': 'kand_matematik',
-  'Kandidatprogram i datavetenskap': 'kand_datavetenskap',
-  'Juristprogrammet': 'juristprogrammet',
-  'Ekonomprogrammet': 'ekonomprogrammet',
-  'Civilekonomprogrammet': 'civilekonomprogrammet',
-  'Socionomprogrammet': 'socionomprogrammet',
-  'Politices kandidatprogram': 'politices_kandidat',
-  'Kandidatprogram i statsvetenskap': 'kand_statsvetenskap',
-  'Kandidatprogram i sociologi': 'kand_sociologi',
-  'Kandidatprogram i historia': 'kand_historia',
-  'Kandidatprogram i filosofi': 'kand_filosofi',
-  'Kandidatprogram i litteraturvetenskap': 'kand_litteraturvetenskap',
-  'Kandidatprogram i språkvetenskap': 'kand_sprakvetenskap',
-  'Förskollärarprogrammet': 'forskollararprogrammet',
-  'Grundlärarprogrammet F-3': 'grundlararprogrammet_f3',
-  'Grundlärarprogrammet 4-6': 'grundlararprogrammet_46',
-  'Ämneslärarprogrammet 7-9': 'amneslararprogrammet_79',
-  'Ämneslärarprogrammet gymnasiet': 'amneslararprogrammet_gym',
-  'Journalistprogrammet': 'journalistprogrammet',
-  'Medie- och kommunikationsvetenskap': 'medie_kommunikation',
-  'Systemvetenskap': 'systemvetenskap',
-  'Business and Economics': 'business_economics',
-  'International Business': 'international_business',
-  'Företagsekonomi': 'foretagsekonomi',
-  'Veterinärprogrammet': 'veterinarprogrammet',
-  'Agronomprogram': 'agronomprogram',
-  'Jägmästarprogrammet': 'jagmastarprogrammet',
-};
-
-// Fetch university courses from database
-const fetchUniversityCoursesFromDatabase = async (programId: string, year: number): Promise<UniversityCourseTemplate[] | null> => {
+// Fetch university courses from the university_courses table via university_program_courses
+const fetchUniversityCoursesFromDatabase = async (programName: string, semester: number): Promise<UniversityCourseTemplate[] | null> => {
   try {
-    console.log('Fetching university courses from database for program:', programId, 'year:', year);
+    console.log('Fetching university courses from database for program:', programName, 'semester:', semester);
     
-    const { data: courses, error } = await supabase
-      .from('courses')
-      .select('*')
-      .eq('program_id', programId)
-      .eq('education_level', 'högskola')
-      .eq('education_year', year)
-      .order('semester', { ascending: true });
+    // First, find the program by name
+    const { data: programData, error: programError } = await supabase
+      .from('university_programs')
+      .select('id, name')
+      .ilike('name', `%${programName}%`)
+      .limit(1)
+      .maybeSingle();
     
-    if (error) {
-      console.error('Error fetching university courses:', error.message || error);
-      console.error('Full error details:', JSON.stringify(error, null, 2));
+    if (programError) {
+      console.error('Error finding university program:', programError.message);
       return null;
     }
     
-    if (courses && courses.length > 0) {
-      console.log('Found', courses.length, 'courses in database for program:', programId);
-      return courses.map(course => {
-        let resources: string[] = [];
-        let tips: string[] = [];
-        
-        if (Array.isArray(course.resources)) {
-          resources = course.resources as string[];
-        } else if (typeof course.resources === 'string') {
-          try {
-            resources = JSON.parse(course.resources);
-          } catch {
-            resources = [];
-          }
-        }
-        
-        if (Array.isArray(course.tips)) {
-          tips = course.tips as string[];
-        } else if (typeof course.tips === 'string') {
-          try {
-            tips = JSON.parse(course.tips);
-          } catch {
-            tips = [];
-          }
-        }
-        
-        return {
-          id: course.id,
-          title: course.title,
-          description: course.description || '',
-          subject: course.subject,
-          resources,
-          tips,
-        };
-      });
+    if (!programData) {
+      console.log('No program found matching:', programName);
+      return null;
     }
     
-    console.log('No courses found in database for program:', programId);
-    return null;
+    console.log('Found program:', programData.name, 'with ID:', programData.id);
+    
+    // Calculate which semesters to fetch (for the given year)
+    // Semester 1-2 = Year 1, Semester 3-4 = Year 2, etc.
+    const semesterStart = semester;
+    const semesterEnd = semester + 1;
+    
+    // Fetch courses linked to this program for the specific semester range
+    const { data: programCourses, error: coursesError } = await supabase
+      .from('university_program_courses')
+      .select(`
+        semester,
+        is_mandatory,
+        university_courses (
+          id,
+          course_code,
+          title,
+          description,
+          credits,
+          level,
+          subject_area
+        )
+      `)
+      .eq('program_id', programData.id)
+      .gte('semester', semesterStart)
+      .lte('semester', semesterEnd)
+      .order('semester', { ascending: true });
+    
+    if (coursesError) {
+      console.error('Error fetching university program courses:', coursesError.message);
+      return null;
+    }
+    
+    if (!programCourses || programCourses.length === 0) {
+      console.log('No courses found for program:', programData.name, 'semesters:', semesterStart, '-', semesterEnd);
+      return null;
+    }
+    
+    console.log('Found', programCourses.length, 'courses for program:', programData.name);
+    
+    return programCourses.map((pc: any) => {
+      const course = pc.university_courses;
+      return {
+        id: course.id,
+        title: course.title,
+        description: course.description || '',
+        subject: course.subject_area,
+        resources: ['Kurslitteratur', 'Föreläsningar', 'Övningar'],
+        tips: ['Studera regelbundet', 'Delta i övningar', 'Fråga vid behov'],
+      };
+    });
   } catch (error) {
     console.error('Exception fetching university courses:', error);
     return null;
+  }
+};
+
+// Sync university courses to user_university_courses table
+const syncUniversityCoursesToUser = async (
+  userId: string, 
+  programName: string, 
+  courses: { id: string; title: string; isActive: boolean }[]
+): Promise<boolean> => {
+  try {
+    console.log('Syncing university courses to user:', userId);
+    
+    // Find program ID
+    const { data: programData } = await supabase
+      .from('university_programs')
+      .select('id')
+      .ilike('name', `%${programName}%`)
+      .limit(1)
+      .maybeSingle();
+    
+    const programId = programData?.id || null;
+    
+    for (const course of courses) {
+      const { error } = await supabase
+        .from('user_university_courses')
+        .upsert({
+          id: `${userId}-${course.id}`,
+          user_id: userId,
+          program_id: programId,
+          course_id: course.id,
+          progress: 0,
+          is_active: course.isActive,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        });
+      
+      if (error) {
+        console.error('Error syncing user university course:', error.message);
+      }
+    }
+    
+    console.log('Successfully synced', courses.length, 'university courses for user');
+    return true;
+  } catch (error) {
+    console.error('Exception syncing university courses:', error);
+    return false;
   }
 };
 
@@ -709,19 +721,19 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         // Generate university courses based on selected program
         console.log('Creating university courses for program:', userData.program);
         
-        // First try to get courses from database
-        const programId = PROGRAM_NAME_TO_ID[userData.program] || userData.program.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        const yearNum = userData.universityYear ? parseInt(userData.universityYear, 10) : 1;
+        // Calculate semester from year (term 1 = semester 1, term 2 = semester 2, etc.)
+        const semester = userData.universityYear ? parseInt(userData.universityYear, 10) : 1;
         
         let universityCourses: UniversityCourseTemplate[] | null = null;
         
+        // First try to get courses from university_courses table
         if (dbConnected) {
-          universityCourses = await fetchUniversityCoursesFromDatabase(programId, yearNum);
+          universityCourses = await fetchUniversityCoursesFromDatabase(userData.program, semester);
         }
         
         // Fall back to hardcoded courses if database didn't return any
         if (!universityCourses || universityCourses.length === 0) {
-          console.log('No database courses found, using hardcoded courses');
+          console.log('No database courses found, using hardcoded courses for:', userData.program);
           universityCourses = getUniversityProgramCourses(userData.program, userData.universityYear);
         }
         
@@ -738,64 +750,21 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           relatedCourses: []
         }));
         
-        // Sync university courses to Supabase
+        // Sync university courses to user_university_courses table
         if (dbConnected && courses.length > 0) {
-          console.log('Syncing university courses to Supabase...');
-          try {
-            for (const course of courses) {
-              const { data: existingCourse } = await supabase
-                .from('courses')
-                .select('id')
-                .eq('id', course.id)
-                .maybeSingle();
-              
-              if (!existingCourse) {
-                console.log('Creating university course in database:', course.id);
-                const { error: insertError } = await supabase
-                  .from('courses')
-                  .insert({
-                    id: course.id,
-                    course_code: course.id,
-                    title: course.title,
-                    description: course.description,
-                    subject: course.subject,
-                    level: 'högskola',
-                    points: 7.5,
-                    resources: course.resources,
-                    tips: course.tips,
-                    related_courses: [],
-                    progress: 0
-                  });
-                
-                if (insertError) {
-                  console.error('Error inserting university course:', insertError.message || insertError);
-                  console.error('Course data:', JSON.stringify({ id: course.id, title: course.title }));
-                  console.error('Full error:', JSON.stringify(insertError, null, 2));
-                }
-              }
-              
-              const { error: userCourseError } = await supabase
-                .from('user_courses')
-                .upsert({
-                  id: `${authUser.id}-${course.id}`,
-                  user_id: authUser.id,
-                  course_id: course.id,
-                  progress: 0,
-                  is_active: course.isActive
-                }, {
-                  onConflict: 'id'
-                });
-              
-              if (userCourseError) {
-                console.error('Error syncing user university course:', userCourseError.message || userCourseError);
-                console.error('User course data:', JSON.stringify({ userId: authUser.id, courseId: course.id }));
-                console.error('Full error:', JSON.stringify(userCourseError, null, 2));
-              }
-            }
-            
-            console.log('Successfully synced', courses.length, 'university courses to Supabase');
-          } catch (error) {
-            console.error('Error syncing university courses to Supabase:', error);
+          console.log('Syncing university courses to user_university_courses...');
+          
+          // Use the new sync function for university courses
+          const syncSuccess = await syncUniversityCoursesToUser(
+            authUser.id,
+            userData.program,
+            courses.map(c => ({ id: c.id, title: c.title, isActive: c.isActive }))
+          );
+          
+          if (syncSuccess) {
+            console.log('Successfully synced university courses to user_university_courses');
+          } else {
+            console.warn('Failed to sync some university courses, using local data');
           }
         }
       } else {

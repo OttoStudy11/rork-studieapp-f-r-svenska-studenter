@@ -1782,6 +1782,210 @@ export interface Database {
           }
         ]
       }
+      universities: {
+        Row: {
+          id: string
+          name: string
+          city: string
+          type: string
+          category: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          city: string
+          type: string
+          category: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          city?: string
+          type?: string
+          category?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      university_programs: {
+        Row: {
+          id: string
+          university_id: string | null
+          name: string
+          abbreviation: string | null
+          degree_type: string
+          field: string
+          credits: number
+          duration_years: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          university_id?: string | null
+          name: string
+          abbreviation?: string | null
+          degree_type: string
+          field: string
+          credits: number
+          duration_years: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          university_id?: string | null
+          name?: string
+          abbreviation?: string | null
+          degree_type?: string
+          field?: string
+          credits?: number
+          duration_years?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_programs_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      university_courses: {
+        Row: {
+          id: string
+          course_code: string
+          title: string
+          description: string | null
+          credits: number
+          level: string
+          subject_area: string
+          prerequisites: string | null
+          learning_outcomes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          course_code: string
+          title: string
+          description?: string | null
+          credits?: number
+          level?: string
+          subject_area: string
+          prerequisites?: string | null
+          learning_outcomes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          course_code?: string
+          title?: string
+          description?: string | null
+          credits?: number
+          level?: string
+          subject_area?: string
+          prerequisites?: string | null
+          learning_outcomes?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      university_program_courses: {
+        Row: {
+          id: string
+          program_id: string
+          course_id: string
+          semester: number
+          is_mandatory: boolean
+        }
+        Insert: {
+          id?: string
+          program_id: string
+          course_id: string
+          semester?: number
+          is_mandatory?: boolean
+        }
+        Update: {
+          id?: string
+          program_id?: string
+          course_id?: string
+          semester?: number
+          is_mandatory?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_program_courses_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "university_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "university_program_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "university_courses"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_university_courses: {
+        Row: {
+          id: string
+          user_id: string
+          program_id: string | null
+          course_id: string
+          progress: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          program_id?: string | null
+          course_id: string
+          progress?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          program_id?: string | null
+          course_id?: string
+          progress?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_university_courses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_university_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "university_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_university_courses_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "university_programs"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

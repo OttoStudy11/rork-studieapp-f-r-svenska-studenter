@@ -1173,6 +1173,28 @@ export const getGlobalLeaderboard = async (limit = 50, timeframe: 'week' | 'mont
   }
 };
 
+export const getGlobalLeaderboardV2 = async (userId: string, period: 'daily' | 'weekly' | 'monthly' | 'alltime' = 'weekly', limit = 50) => {
+  try {
+    const functionMap = {
+      daily: 'get_global_daily_leaderboard',
+      weekly: 'get_global_weekly_leaderboard',
+      monthly: 'get_global_monthly_leaderboard',
+      alltime: 'get_global_alltime_leaderboard'
+    };
+
+    const { data, error } = await (supabase as any).rpc(functionMap[period], {
+      p_user_id: userId,
+      p_limit: limit
+    });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error getting global leaderboard:', error);
+    throw error;
+  }
+};
+
 // Check and update achievements for a user
 export const checkAndUpdateAchievements = async (userId: string) => {
   try {

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Trophy, Medal, Crown, Clock, TrendingUp, Users, Star, Award, Target, Zap } from 'lucide-react-native';
+import { Trophy, Medal, Crown, Clock, TrendingUp, Users, Star, Award, Target, Zap, Globe } from 'lucide-react-native';
 import { useFriends } from '../../contexts/FriendsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useState, useMemo } from 'react';
@@ -7,9 +7,12 @@ import { usePremium } from '../../contexts/PremiumContext';
 import { useProgress } from '../../contexts/ProgressContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { getGlobalLeaderboardV2 } from '../../../../lib/database';
+import { useQuery } from '@tanstack/react-query';
 
 type LeaderboardPeriod = 'daily' | 'weekly' | 'monthly' | 'alltime';
 type LeaderboardCategory = 'studyTime' | 'streak' | 'sessions';
+type LeaderboardMode = 'friends' | 'global';
 
 export default function Leaderboard() {
   const { friends } = useFriends();
@@ -19,12 +22,33 @@ export default function Leaderboard() {
   const insets = useSafeAreaInsets();
   const [selectedPeriod, setSelectedPeriod] = useState<LeaderboardPeriod>('weekly');
   const [selectedCategory, setSelectedCategory] = useState<LeaderboardCategory>('studyTime');
+  const [selectedMode, setSelectedMode] = useState<LeaderboardMode>('friends');
 
-  // Create leaderboard data including current user
+  const { data: globalLeaderboardData = [] } = useQuery({
+    queryKey: ['globalLeaderboard', user?.id, selectedPeriod],
+    queryFn: () => user?.id ? getGlobalLeaderboardV2(user.id, selectedPeriod) : [],
+    enabled: !!user?.id && selectedMode === 'global',
+  });
+
   const leaderboardData = useMemo(() => {
+    if (selectedMode === 'global') {
+      return globalLeaderboardData.map((item: any, index: number) => ({
+        id: item.user_id,
+        username: item.username || 'Unknown',
+        displayName: item.display_name || item.username || 'Unknown',
+        avatarUrl: item.avatar_url,
+        studyHours: Math.floor((item.study_time || 0) / 60),
+        streak: item.current_streak || item.streak || 0,
+        sessions: item.sessions || 0,
+        rank: index + 1,
+        isCurrentUser: item.user_id === user?.id,
+        status: 'online' as const,
+        lastActive: new Date().toISOString(),
+      }));
+    }
+
     const allUsers = [...friends];
     
-    // Add current user if they have progress data
     if (user && userProgress) {
       const currentUserData = {
         id: user.id,
@@ -32,7 +56,7 @@ export default function Leaderboard() {
         displayName: 'Du',
         avatarUrl: undefined,
         status: 'online' as const,
-        studyHours: Math.floor(userProgress.totalStudyTime / 60), // Convert minutes to hours
+        studyHours: Math.floor(userProgress.totalStudyTime / 60),
         streak: userProgress.currentStreak,
         sessions: userProgress.totalSessions,
         lastActive: userProgress.lastStudyDate?.toISOString() || new Date().toISOString()
@@ -40,7 +64,6 @@ export default function Leaderboard() {
       allUsers.push(currentUserData);
     }
 
-    // Sort based on selected category
     const sortedUsers = allUsers.sort((a, b) => {
       switch (selectedCategory) {
         case 'studyTime':
@@ -60,7 +83,7 @@ export default function Leaderboard() {
       rank: index + 1,
       isCurrentUser: userData.id === user?.id
     }));
-  }, [friends, user, userProgress, selectedCategory]);
+  }, [friends, user, userProgress, selectedCategory, selectedMode, globalLeaderboardData]);
 
   const periods = [
     { key: 'daily' as const, label: 'Idag', premium: false },
@@ -104,7 +127,6 @@ export default function Leaderboard() {
   const getStatValue = (userData: any) => {
     if (!userData || typeof userData !== 'object') return '0';
     
-    // Validate and sanitize input
     const studyHours = typeof userData.studyHours === 'number' ? userData.studyHours : 0;
     const streak = typeof userData.streak === 'number' ? userData.streak : 0;
     const sessions = typeof userData.sessions === 'number' ? userData.sessions : Math.floor(studyHours / 2);
@@ -126,18 +148,15 @@ export default function Leaderboard() {
   };
 
   const getCurrentUserRank = () => {
-    const currentUserEntry = leaderboardData.find(entry => entry.isCurrentUser);
+    const currentUserEntry = leaderboardData.find((entry: any) => entry.isCurrentUser);
     return currentUserEntry?.rank || null;
   };
-
-  // Removed unused function getTopPerformers
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-
       >
         <View style={styles.header}>
           <View style={styles.titleContainer}>
@@ -145,7 +164,11 @@ export default function Leaderboard() {
             <Text style={styles.title}>Topplista</Text>
             {isPremium && <Crown size={24} color="#FFD700" />}
           </View>
-          <Text style={styles.subtitle}>Tävla med dina vänner och se vem som studerar mest!</Text>
+          <Text style={styles.subtitle}>
+            {selectedMode === 'global' 
+              ? 'Tävla med alla användare över hela världen!' 
+              : 'Tävla med dina vänner och se vem som studerar mest!'}
+          </Text>
           
           {getCurrentUserRank() && (
             <View style={styles.userRankBadge}>
@@ -155,6 +178,43 @@ export default function Leaderboard() {
               <Zap size={16} color="#4ECDC4" />
             </View>
           )}
+        </View>
+
+        {/* Mode Selector */}
+        <View style={styles.selectorContainer}>
+          <Text style={styles.selectorTitle}>Läge</Text>
+          <View style={styles.modeSelector}>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                selectedMode === 'friends' && styles.modeButtonSelected
+              ]}
+              onPress={() => setSelectedMode('friends')}
+            >
+              <Users size={16} color={selectedMode === 'friends' ? '#fff' : '#4ECDC4'} />
+              <Text style={[
+                styles.modeButtonText,
+                selectedMode === 'friends' && styles.modeButtonTextSelected
+              ]}>
+                Vänner
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                selectedMode === 'global' && styles.modeButtonSelected
+              ]}
+              onPress={() => setSelectedMode('global')}
+            >
+              <Globe size={16} color={selectedMode === 'global' ? '#fff' : '#4ECDC4'} />
+              <Text style={[
+                styles.modeButtonText,
+                selectedMode === 'global' && styles.modeButtonTextSelected
+              ]}>
+                Globalt
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Period Selector */}
@@ -177,7 +237,6 @@ export default function Leaderboard() {
                     if (!isLocked) {
                       setSelectedPeriod(period.key);
                     } else {
-                      // Navigate directly to premium for locked features
                       handlePremiumUpgrade();
                     }
                   }}
@@ -294,18 +353,22 @@ export default function Leaderboard() {
               <Users size={64} color="#bdc3c7" />
               <Text style={styles.emptyTitle}>Ingen data än</Text>
               <Text style={styles.emptyText}>
-                Lägg till vänner för att se topplistor och tävla!
+                {selectedMode === 'global' 
+                  ? 'Börja studera för att synas på topplistan!'
+                  : 'Lägg till vänner för att se topplistor och tävla!'}
               </Text>
-              <TouchableOpacity 
-                style={styles.addFriendsButton}
-                onPress={() => router.push('/(tabs)/friends')}
-              >
-                <Users size={16} color="#fff" />
-                <Text style={styles.addFriendsButtonText}>Lägg till vänner</Text>
-              </TouchableOpacity>
+              {selectedMode === 'friends' && (
+                <TouchableOpacity 
+                  style={styles.addFriendsButton}
+                  onPress={() => router.push('/(tabs)/friends')}
+                >
+                  <Users size={16} color="#fff" />
+                  <Text style={styles.addFriendsButtonText}>Lägg till vänner</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
-            leaderboardData.map((userData, index) => (
+            leaderboardData.map((userData: any) => (
               <View 
                 key={userData.id} 
                 style={[
@@ -313,19 +376,21 @@ export default function Leaderboard() {
                   userData.isCurrentUser && styles.currentUserItem
                 ]}
               >
-                <View style={styles.rankContainer}>
-                  {getRankIcon(userData.rank) || (
-                    <Text style={[styles.rankText, { color: getRankColor(userData.rank) }]}>
-                      {userData.rank}
+                <View style={styles.itemLeftSection}>
+                  <View style={styles.rankContainer}>
+                    {getRankIcon(userData.rank) || (
+                      <Text style={[styles.rankText, { color: getRankColor(userData.rank) }]}>
+                        {userData.rank}
+                      </Text>
+                    )}
+                  </View>
+                  
+                  <View style={[styles.avatar, { backgroundColor: getAvatarColor(userData.displayName) }]}>
+                    <Text style={styles.avatarText}>
+                      {userData.displayName.charAt(0).toUpperCase()}
                     </Text>
-                  )}
-                </View>
-                
-                <View style={[styles.avatar, { backgroundColor: getAvatarColor(userData.displayName) }]}>
-                  <Text style={styles.avatarText}>
-                    {userData.displayName.charAt(0).toUpperCase()}
-                  </Text>
-                  {userData.status === 'studying' && <View style={styles.studyingIndicator} />}
+                    {userData.status === 'studying' && <View style={styles.studyingIndicator} />}
+                  </View>
                 </View>
                 
                 <View style={styles.userInfo}>
@@ -430,6 +495,34 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#2c3e50',
     marginBottom: 12,
+  },
+  modeSelector: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  modeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#4ECDC4',
+    gap: 6,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  modeButtonSelected: {
+    backgroundColor: '#4ECDC4',
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#4ECDC4',
+  },
+  modeButtonTextSelected: {
+    color: '#fff',
   },
   periodSelector: {
     flexDirection: 'row',
@@ -594,9 +687,15 @@ const styles = StyleSheet.create({
   leaderboardItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  itemLeftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
   },
   currentUserItem: {
     backgroundColor: '#f8f9fa',
@@ -606,20 +705,21 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   rankContainer: {
-    width: 40,
+    width: 32,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
   rankText: {
     fontSize: 18,
     fontWeight: 'bold' as const,
   },
   avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -641,12 +741,13 @@ const styles = StyleSheet.create({
   },
   userInfo: {
     flex: 1,
+    marginRight: 12,
   },
   userName: {
-    fontSize: 16,
-    fontWeight: '500' as const,
+    fontSize: 15,
+    fontWeight: '600' as const,
     color: '#2c3e50',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   currentUserName: {
     fontWeight: 'bold' as const,
@@ -659,10 +760,12 @@ const styles = StyleSheet.create({
   scoreContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    minWidth: 70,
+    justifyContent: 'flex-end',
   },
   scoreValue: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold' as const,
     color: '#2c3e50',
   },

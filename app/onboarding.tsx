@@ -963,103 +963,37 @@ export default function OnboardingScreen() {
               <View style={styles.programYearSelector}>
                 <Text style={styles.programYearTitle}>Välj program och termin</Text>
                 
-                <ScrollView style={styles.programScroll} showsVerticalScrollIndicator={false}>
-                  <View style={styles.programGrid}>
-                    {[
-                      { id: 'teknik', name: 'Teknik', emoji: '⚙️', color: '#F59E0B', field: 'Teknik' },
-                      { id: 'medicin', name: 'Medicin & Vård', emoji: '🏥', color: '#EF4444', field: 'Medicin' },
-                      { id: 'naturvetenskap', name: 'Naturvetenskap', emoji: '🔬', color: '#10B981', field: 'Naturvetenskap' },
-                      { id: 'ekonomi', name: 'Ekonomi', emoji: '💼', color: '#8B5CF6', field: 'Ekonomi' },
-                      { id: 'juridik', name: 'Juridik', emoji: '⚖️', color: '#6366F1', field: 'Juridik' },
-                      { id: 'samhallsvetenskap', name: 'Samhällsvetenskap', emoji: '🏛️', color: '#3B82F6', field: 'Samhällsvetenskap' },
-                      { id: 'humaniora', name: 'Humaniora', emoji: '📚', color: '#EC4899', field: 'Humaniora' },
-                      { id: 'utbildning', name: 'Utbildning', emoji: '🎓', color: '#22C55E', field: 'Utbildningsvetenskap' },
-                      { id: 'it', name: 'IT & Data', emoji: '💻', color: '#0EA5E9', field: 'IT' },
-                    ].map(category => {
-                      const matchingPrograms = UNIVERSITY_PROGRAMS.filter(p => 
-                        p.field === category.field || 
-                        p.field.includes(category.field) ||
-                        (category.field === 'Medicin' && (p.field === 'Vårdvetenskap' || p.field === 'Psykologi'))
-                      );
-                      const isSelected = data.universityProgram && matchingPrograms.some(p => p.id === data.universityProgram?.id);
-                      
-                      return (
-                        <AnimatedPressable
-                          key={category.id}
-                          style={[
-                            styles.programMiniCard,
-                            isSelected && {
-                              backgroundColor: category.color + '25',
-                              borderColor: category.color,
-                              borderWidth: 2.5
-                            }
-                          ]}
-                          onPress={() => {
-                            const defaultProgram = matchingPrograms[0];
-                            if (defaultProgram) {
-                              setData({ 
+                <View style={styles.universitySubProgramSelector}>
+                  <Text style={styles.subProgramTitle}>Välj program</Text>
+                  <ScrollView style={styles.subProgramScroll} horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.subProgramRow}>
+                      {UNIVERSITY_PROGRAMS.map(program => {
+                          const isSelected = data.universityProgram?.id === program.id;
+                          return (
+                            <AnimatedPressable
+                              key={program.id}
+                              style={[
+                                styles.subProgramChip,
+                                isSelected && styles.selectedSubProgramChip
+                              ]}
+                              onPress={() => setData({ 
                                 ...data, 
-                                universityProgram: defaultProgram,
+                                universityProgram: program,
                                 universityYear: null
-                              });
-                            }
-                          }}
-                        >
-                          <Text style={styles.programMiniEmoji}>{category.emoji}</Text>
-                          <Text style={[
-                            styles.programMiniName,
-                            isSelected && { color: category.color, fontWeight: '700' as const }
-                          ]}>
-                            {category.name}
-                          </Text>
-                        </AnimatedPressable>
-                      );
-                    })}
-                  </View>
-                </ScrollView>
-
-                {data.universityProgram && (
-                  <View style={styles.universitySubProgramSelector}>
-                    <Text style={styles.subProgramTitle}>Välj specifikt program</Text>
-                    <ScrollView style={styles.subProgramScroll} horizontal showsHorizontalScrollIndicator={false}>
-                      <View style={styles.subProgramRow}>
-                        {UNIVERSITY_PROGRAMS
-                          .filter(p => {
-                            const currentField = data.universityProgram?.field || '';
-                            return p.field === currentField || 
-                              p.field.includes(currentField) ||
-                              (currentField === 'Medicin' && (p.field === 'Vårdvetenskap' || p.field === 'Psykologi')) ||
-                              (currentField === 'Vårdvetenskap' && p.field === 'Medicin') ||
-                              (currentField === 'Psykologi' && p.field === 'Medicin');
-                          })
-                          .map(program => {
-                            const isSelected = data.universityProgram?.id === program.id;
-                            return (
-                              <AnimatedPressable
-                                key={program.id}
-                                style={[
-                                  styles.subProgramChip,
-                                  isSelected && styles.selectedSubProgramChip
-                                ]}
-                                onPress={() => setData({ 
-                                  ...data, 
-                                  universityProgram: program,
-                                  universityYear: null
-                                })}
-                              >
-                                <Text style={[
-                                  styles.subProgramChipText,
-                                  isSelected && styles.selectedSubProgramChipText
-                                ]} numberOfLines={1}>
-                                  {program.name.replace('Civilingenjör - ', '').replace('Högskoleingenjör - ', '').replace('Kandidatprogram i ', '').replace('programmet', '')}
-                                </Text>
-                              </AnimatedPressable>
-                            );
-                          })}
-                      </View>
-                    </ScrollView>
-                  </View>
-                )}
+                              })}
+                            >
+                              <Text style={[
+                                styles.subProgramChipText,
+                                isSelected && styles.selectedSubProgramChipText
+                              ]} numberOfLines={1}>
+                                {program.name.replace('Civilingenjör - ', '').replace('Högskoleingenjör - ', '').replace('Kandidatprogram i ', '').replace('programmet', '')}
+                              </Text>
+                            </AnimatedPressable>
+                          );
+                        })}
+                    </View>
+                  </ScrollView>
+                </View>
 
                 {data.universityProgram && (
                   <View style={styles.yearSelectorInline}>

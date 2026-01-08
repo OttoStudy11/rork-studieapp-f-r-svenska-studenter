@@ -1788,15 +1788,15 @@ export interface Database {
           name: string
           city: string
           type: string
-          category: string
+          category: string | null
           created_at: string
         }
         Insert: {
-          id?: string
+          id: string
           name: string
           city: string
           type: string
-          category: string
+          category?: string | null
           created_at?: string
         }
         Update: {
@@ -1804,7 +1804,7 @@ export interface Database {
           name?: string
           city?: string
           type?: string
-          category?: string
+          category?: string | null
           created_at?: string
         }
         Relationships: []
@@ -1822,7 +1822,7 @@ export interface Database {
           created_at: string
         }
         Insert: {
-          id?: string
+          id: string
           university_id?: string | null
           name: string
           abbreviation?: string | null
@@ -1867,12 +1867,12 @@ export interface Database {
           created_at: string
         }
         Insert: {
-          id?: string
+          id: string
           course_code: string
           title: string
           description?: string | null
           credits?: number
-          level?: string
+          level: string
           subject_area: string
           prerequisites?: string | null
           learning_outcomes?: string | null
@@ -1901,7 +1901,7 @@ export interface Database {
           is_mandatory: boolean
         }
         Insert: {
-          id?: string
+          id: string
           program_id: string
           course_id: string
           semester?: number
@@ -1943,7 +1943,7 @@ export interface Database {
           updated_at: string
         }
         Insert: {
-          id?: string
+          id: string
           user_id: string
           program_id?: string | null
           course_id: string

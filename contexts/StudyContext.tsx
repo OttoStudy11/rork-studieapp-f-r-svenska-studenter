@@ -1003,73 +1003,18 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           setPomodoroSessions(prev => [dbSession, ...prev]);
           console.log('✅ Pomodoro session added to local state');
           
-          // Update user_progress directly instead of saving duplicate study_sessions
+          // Note: user_progress is automatically updated by the database trigger
+          // 'sync_points_on_session_insert' after pomodoro_sessions insert
+          // So we don't need to manually update it here to avoid duplication
           try {
+            console.log('✅ Pomodoro session saved - user_progress will be updated by database trigger');
             
-            // Update user_progress table
-            console.log('Updating user_progress table...');
-            const { data: existingProgress, error: progressFetchError } = await supabase
-              .from('user_progress')
-              .select('total_study_time, total_sessions, current_streak, last_study_date, longest_streak, total_points')
-              .eq('user_id', authUser.id)
-              .maybeSingle();
-            
-            if (progressFetchError) {
-              console.warn('⚠️ Could not fetch existing progress:', progressFetchError.message);
-            }
-            
-            console.log('Existing progress:', existingProgress);
-            
-            const today = new Date().toISOString().split('T')[0];
-            const lastStudyDate = existingProgress?.last_study_date?.split('T')[0];
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-            
-            let newStreak = 1;
-            if (lastStudyDate === today) {
-              newStreak = existingProgress?.current_streak || 1;
-            } else if (lastStudyDate === yesterdayStr) {
-              newStreak = (existingProgress?.current_streak || 0) + 1;
-            }
-            
-            console.log('Calculated new streak:', newStreak);
-            
-            // Calculate points: 1 point per minute of studying
+            // Just log the points earned for user feedback
             const pointsEarned = session.duration;
+            console.log(`🎯 Points earned: +${pointsEarned} pts (${session.duration} min of study)`);
             
-            const currentTotalPoints = existingProgress?.total_points || 0;
-            const newTotalPoints = currentTotalPoints + pointsEarned;
-            
-            const progressUpdate = {
-              user_id: authUser.id,
-              total_study_time: (existingProgress?.total_study_time || 0) + session.duration,
-              total_sessions: (existingProgress?.total_sessions || 0) + 1,
-              current_streak: newStreak,
-              longest_streak: Math.max(newStreak, existingProgress?.longest_streak || 0),
-              last_study_date: session.endTime,
-              total_points: newTotalPoints,
-              updated_at: new Date().toISOString()
-            };
-            
-            console.log('Progress update data:', progressUpdate);
-            
-            const { data: updatedProgress, error: progressError } = await supabase
-              .from('user_progress')
-              .upsert(progressUpdate, {
-                onConflict: 'user_id'
-              })
-              .select()
-              .single();
-            
-            if (progressError) {
-              console.error('❌ Could not update user_progress:', progressError.message);
-              console.error('Progress error details:', JSON.stringify(progressError, null, 2));
-            } else {
-              console.log('✅ User progress updated successfully:', updatedProgress);
-              console.log(`🎯 Points earned: +${pointsEarned} pts (${session.duration} min × 1)`);
-              console.log(`💰 Total points: ${newTotalPoints} pts (was ${currentTotalPoints})`);
-            }
+            // Wait a moment for the trigger to complete
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             // Check for achievements using achievement context directly
             try {

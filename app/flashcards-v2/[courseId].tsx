@@ -282,7 +282,7 @@ export default function FlashcardsScreenV2() {
           <View style={styles.countSelector}>
             <Text style={styles.countLabel}>Antal flashcards</Text>
             <View style={styles.countButtons}>
-              {[10, 20, 30, 50].map((count) => (
+              {[10, 15, 20].map((count) => (
                 <TouchableOpacity
                   key={count}
                   style={[

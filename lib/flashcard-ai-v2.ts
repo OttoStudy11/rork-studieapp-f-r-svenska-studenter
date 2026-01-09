@@ -1,6 +1,8 @@
 import { generateObject } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
 
+const MAX_FLASHCARDS = 20 as const;
+
 export interface FlashcardGenerationRequest {
   courseName: string;
   courseDescription?: string;
@@ -50,21 +52,27 @@ export async function generateFlashcardsWithAI(
   const startTime = Date.now();
   
   try {
+    const targetCount = Math.min(request.targetCount, MAX_FLASHCARDS);
     console.log('🎯 [AI Flashcards] Starting generation:', {
       course: request.courseName,
-      count: request.targetCount,
+      count: targetCount,
+      requestedCount: request.targetCount,
       difficulty: request.difficulty,
     });
 
     const language = request.language || 'sv';
     
     const difficultyDistribution = getDifficultyDistribution(
-      request.targetCount,
+      targetCount,
       request.difficulty
     );
 
     const systemPrompt = buildSystemPrompt(language);
-    const userPrompt = buildUserPrompt(request, difficultyDistribution, language);
+    const userPrompt = buildUserPrompt(
+      { ...request, targetCount },
+      difficultyDistribution,
+      language
+    );
 
     console.log('📝 [AI Flashcards] Calling AI with prompts...');
 
@@ -138,7 +146,7 @@ export async function generateFlashcardsWithAI(
       success: true,
       flashcards: validatedFlashcards,
       metadata: {
-        requestedCount: request.targetCount,
+        requestedCount: targetCount,
         generatedCount: validatedFlashcards.length,
         timestamp: new Date().toISOString(),
       },
@@ -154,7 +162,7 @@ export async function generateFlashcardsWithAI(
       flashcards: [],
       error: error?.message || 'Unknown error occurred',
       metadata: {
-        requestedCount: request.targetCount,
+        requestedCount: Math.min(request.targetCount, MAX_FLASHCARDS),
         generatedCount: 0,
         timestamp: new Date().toISOString(),
       },

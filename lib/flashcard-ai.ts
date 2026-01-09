@@ -9,6 +9,8 @@ export interface GenerateFlashcardsOptions {
   count?: number;
 }
 
+const MAX_FLASHCARDS = 20 as const;
+
 export interface GenerateFlashcardsFromTextOptions {
   text: string;
   courseId: string;
@@ -146,7 +148,8 @@ export async function generateFlashcardsFromContent(
   options: GenerateFlashcardsOptions
 ): Promise<void> {
   try {
-    const { courseId, moduleId, lessonId, count = 20 } = options;
+    const { courseId, moduleId, lessonId, count: requestedCount = 20 } = options;
+    const count = Math.min(requestedCount, MAX_FLASHCARDS);
 
     console.log('🎯 Starting flashcard generation with options:', options);
 
@@ -308,7 +311,8 @@ export async function generateFlashcardsFromText(
   options: GenerateFlashcardsFromTextOptions
 ): Promise<void> {
   try {
-    const { text, courseId, moduleId, lessonId, count = 15 } = options;
+    const { text, courseId, moduleId, lessonId, count: requestedCount = 15 } = options;
+    const count = Math.min(requestedCount, MAX_FLASHCARDS);
 
     console.log('🎯 Starting flashcard generation from user text');
     console.log('📖 Text length:', text.length, 'characters');

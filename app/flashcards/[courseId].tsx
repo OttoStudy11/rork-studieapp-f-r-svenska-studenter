@@ -108,7 +108,7 @@ export default function FlashcardsScreen() {
       
       await generateFlashcardsFromContent({
         courseId: courseId,
-        count: 30,
+        count: 20,
       });
     },
     onSuccess: () => {
@@ -152,7 +152,7 @@ export default function FlashcardsScreen() {
       await generateFlashcardsFromText({
         text: inputText,
         courseId: courseId,
-        count: 15,
+        count: 20,
       });
 
       await queryClient.invalidateQueries({ queryKey: ['flashcards', courseId] });

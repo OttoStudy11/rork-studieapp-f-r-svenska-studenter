@@ -162,8 +162,15 @@ export default function AuthScreen() {
         }
       } else {
         if (isSignUp) {
-          showSuccess('Konto skapat! Kolla din e-post för att bekräfta kontot innan du loggar in.');
-          setIsSignUp(false);
+          const result = await signUp(email, password);
+          if (result.needsEmailConfirmation) {
+            setPendingEmail(email);
+            setShowEmailConfirmation(true);
+            showSuccess('Konto skapat! Kolla din e-post för att bekräfta kontot.');
+          } else {
+            showSuccess('Konto skapat!');
+            setIsSignUp(false);
+          }
         } else {
           console.log('Login successful, waiting for navigation...');
         }

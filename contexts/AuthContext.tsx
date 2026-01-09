@@ -2,6 +2,8 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, createRememberMeSession, validateRememberMeSession, clearRememberMeSession, cleanupExpiredSessions, testDatabaseConnection } from '@/lib/supabase';
+import * as Linking from 'expo-linking';
+import { Platform } from 'react-native';
 
 export interface AuthUser {
   id: string;
@@ -14,7 +16,7 @@ export interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   hasCompletedOnboarding: boolean;
-  signUp: (email: string, password: string) => Promise<{ error?: any }>;
+  signUp: (email: string, password: string) => Promise<{ error?: any; needsEmailConfirmation?: boolean }>;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
   setOnboardingCompleted: () => Promise<void>;
@@ -245,21 +247,86 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
     );
     
-    // Fallback timeout to ensure loading doesn't get stuck
-    const fallbackTimeout = setTimeout(() => {
-      if (mounted) {
-        console.log('Auth initialization timeout - forcing loading to false');
-        setIsLoading(false);
-        setUser(null);
-        setHasCompletedOnboarding(false);
+    // Handle deep links for email verification
+    const handleDeepLink = async (event: { url: string }) => {
+      if (!mounted) return;
+      
+      console.log('Deep link received:', event.url);
+      const url = event.url;
+      
+      if (url.includes('#access_token=') || url.includes('?access_token=')) {
+        console.log('Email verification link detected');
+        
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error('Error getting session from deep link:', error);
+            return;
+          }
+          
+          if (session?.user) {
+            console.log('Email verified successfully!', session.user.email);
+            const authUser: AuthUser = {
+              id: session.user.id,
+              email: session.user.email!,
+              createdAt: session.user.created_at
+            };
+            setUser(authUser);
+            await checkOnboardingStatus(session.user.id);
+          }
+        } catch (err) {
+          console.error('Error processing email verification:', err);
+        }
       }
-    }, 8000); // 8 second timeout
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-      clearTimeout(fallbackTimeout);
     };
+    
+    // Check for initial URL (app opened from email link)
+    if (Platform.OS !== 'web') {
+      Linking.getInitialURL().then(url => {
+        if (url && mounted) {
+          handleDeepLink({ url });
+        }
+      }).catch(err => {
+        console.error('Error getting initial URL:', err);
+      });
+      
+      // Listen for deep links while app is running
+      const linkingSubscription = Linking.addEventListener('url', handleDeepLink);
+      
+      // Fallback timeout to ensure loading doesn't get stuck
+      const fallbackTimeout = setTimeout(() => {
+        if (mounted) {
+          console.log('Auth initialization timeout - forcing loading to false');
+          setIsLoading(false);
+          setUser(null);
+          setHasCompletedOnboarding(false);
+        }
+      }, 8000);
+
+      return () => {
+        mounted = false;
+        subscription.unsubscribe();
+        linkingSubscription.remove();
+        clearTimeout(fallbackTimeout);
+      };
+    } else {
+      // Web doesn't need deep linking, just fallback timeout
+      const fallbackTimeout = setTimeout(() => {
+        if (mounted) {
+          console.log('Auth initialization timeout - forcing loading to false');
+          setIsLoading(false);
+          setUser(null);
+          setHasCompletedOnboarding(false);
+        }
+      }, 8000);
+
+      return () => {
+        mounted = false;
+        subscription.unsubscribe();
+        clearTimeout(fallbackTimeout);
+      };
+    }
   }, [initializeAuth, checkOnboardingStatus]);
 
   const RATE_LIMIT_DELAY = 0; // No delay
@@ -306,6 +373,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       console.log('Sign up successful:', data.user?.email);
       
+      // Check if email confirmation is required
+      const needsEmailConfirmation = data.user && !data.session;
+      if (needsEmailConfirmation) {
+        console.log('Email confirmation required for:', email);
+        return { error: null, needsEmailConfirmation: true };
+      }
+      
       // Create profile automatically after successful signup
       if (data.user) {
         console.log('User signed up successfully, creating profile:', data.user.id);
@@ -325,26 +399,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                 username: defaultUsername,
                 display_name: emailPrefix,
                 email: email.trim(),
-                level: 'gymnasie', // Default level
-                program: '', // Will be set during onboarding
-                purpose: '', // Will be set during onboarding
+                level: 'gymnasie',
+                program: '',
+                purpose: '',
                 subscription_type: 'free'
               });
             
             if (profileError) {
               console.warn('Could not create profile automatically:', profileError.message);
-              // Don't fail signup if profile creation fails
             } else {
               console.log('Basic profile created successfully');
             }
           }
         } catch (profileCreationError) {
           console.warn('Profile creation failed, will be handled during onboarding:', profileCreationError);
-          // Don't fail signup if profile creation fails
         }
       }
       
-      return { error: null };
+      return { error: null, needsEmailConfirmation: false };
     } catch (error) {
       console.error('Sign up exception:', error);
       return { error };

@@ -9,9 +9,11 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
+    storage: AsyncStorage,
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false
+    detectSessionInUrl: Platform.OS === 'web',
+    flowType: 'pkce'
   },
   global: {
     headers: {
@@ -65,7 +67,7 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
             : (() => {
                 try {
                   return JSON.stringify(error);
-                } catch (_) {
+                } catch {
                   return 'Unknown error';
                 }
               })(),

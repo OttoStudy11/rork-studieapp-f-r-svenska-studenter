@@ -16,6 +16,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useGamification } from '@/contexts/GamificationContext';
 import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy, User, Target, TrendingUp, Flame, UsersRound, Globe } from 'lucide-react-native';
 import Avatar from '@/components/Avatar';
 import FriendSearch from '@/components/FriendSearch';
@@ -68,6 +69,7 @@ export default function FriendsScreen() {
   const { user: studyUser } = useStudy();
   const { showError, showSuccess } = useToast();
   const { theme, isDark } = useTheme();
+  const { checkAchievements } = useGamification();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -404,6 +406,15 @@ export default function FriendsScreen() {
       
       showSuccess('Vänförfrågan accepterad! 🎉');
       await loadFriends();
+      
+      // Check for friend-related achievements
+      try {
+        console.log('🏆 Checking for friend achievements...');
+        await checkAchievements();
+        console.log('✅ Friend achievements checked');
+      } catch (achError) {
+        console.log('⚠️ Could not check friend achievements:', achError);
+      }
     } catch (error) {
       console.error('Error accepting friend request:', error);
       showError('Kunde inte acceptera vänförfrågan');

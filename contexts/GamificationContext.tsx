@@ -620,21 +620,42 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
     if (!authUser || !isAuthenticated) return;
     
     try {
-      const { data: newlyUnlocked } = await (supabase as any).rpc('check_user_achievements', {
+      console.log('🏆 Calling check_user_achievements RPC for user:', authUser.id);
+      
+      const { data: newlyUnlocked, error: rpcError } = await (supabase as any).rpc('check_user_achievements', {
         p_user_id: authUser.id,
       });
 
+      if (rpcError) {
+        console.error('❌ Error from check_user_achievements RPC:', rpcError);
+        throw rpcError;
+      }
+
+      console.log('📊 RPC response:', newlyUnlocked);
+
       if (newlyUnlocked && Array.isArray(newlyUnlocked) && newlyUnlocked.length > 0) {
+        console.log(`🎉 ${newlyUnlocked.length} new achievement(s) unlocked!`);
+        
         for (const achievement of newlyUnlocked as any[]) {
+          const achData = achievement.achievements || achievement;
+          const xpReward = achData.xp_reward || achData.reward_points || 25;
+          
+          console.log(`🏆 Achievement unlocked: ${achData.title} (+${xpReward} XP)`);
+          
           showAchievement(
-            `🏆 ${achievement.title}`,
-            `${achievement.description} - Klicka för att hämta!`
+            `🏆 ${achData.title}`,
+            `${achData.description} (+${xpReward} XP)`
           );
         }
+        
+        // Refresh all data to show updated achievements and XP
         await refreshAll();
+        console.log('✅ Achievement data refreshed');
+      } else {
+        console.log('ℹ️ No new achievements unlocked');
       }
     } catch (error) {
-      console.log('Error checking achievements:', error);
+      console.error('❌ Exception checking achievements:', error);
     }
   }, [authUser, isAuthenticated, showAchievement, refreshAll]);
 

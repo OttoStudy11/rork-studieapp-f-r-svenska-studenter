@@ -9,7 +9,9 @@ import {
   ScrollView,
   StatusBar,
   Platform,
-  TextInput
+  TextInput,
+  AppState,
+  AppStateStatus
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -301,10 +303,17 @@ export default function TimerScreen() {
   const progressAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const appState = useRef<AppStateStatus>(AppState.currentState);
+  const timerStartTimeRef = useRef<number | null>(null);
+  const lastKnownTimeLeftRef = useRef<number>(timeLeft);
 
 
   const totalTime = sessionType === 'focus' ? focusTime * 60 : breakTime * 60;
   const progress = timeLeft / totalTime;
+
+  useEffect(() => {
+    lastKnownTimeLeftRef.current = timeLeft;
+  }, [timeLeft]);
 
   const motivationalQuotes = useMemo(() => [
     'Du är fantastisk! Fortsätt så! 💪',
@@ -412,12 +421,15 @@ export default function TimerScreen() {
       
       const savedState = await TimerPersistence.loadTimerState();
       if (savedState && savedState.status === 'running' && settings.backgroundTimerEnabled) {
-        console.log('Restoring timer from background');
+        console.log('🔄 Restoring timer from background');
+        console.log('⏱️ Remaining time:', savedState.remainingTime, 'seconds');
+        
         setTimerState(savedState.status);
         setSessionType(savedState.sessionType);
         setTimeLeft(savedState.remainingTime);
         setSessionStartTime(new Date(savedState.startTimestamp));
         setSelectedCourse(savedState.courseId || '');
+        timerStartTimeRef.current = savedState.startTimestamp;
         
         if (savedState.remainingTime > 0) {
           await TimerPersistence.scheduleCompletionNotification(
@@ -630,6 +642,69 @@ export default function TimerScreen() {
     setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
   }, [sessionType, isDndActive, disableDoNotDisturb, addPomodoroSession, selectedCourse, courses, focusTime, sessionStartTime, sessionCount, dailyGoal, showAchievement, breakTime, motivationalQuotes, checkAchievements, refreshAchievements, settings.notificationsEnabled, awardStudySession]);
 
+  // AppState listener for background/foreground - must be after handleTimerComplete is defined
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      console.log('📱 App state changed:', appState.current, '->', nextAppState);
+
+      // App going to background
+      if (appState.current.match(/active/) && nextAppState.match(/inactive|background/)) {
+        console.log('📱 App going to background');
+        
+        if (timerState === 'running' && settings.backgroundTimerEnabled) {
+          const courseName = selectedCourse 
+            ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
+            : 'Allmän session';
+          
+          // Save current state
+          await TimerPersistence.saveTimerState({
+            status: 'running',
+            sessionType,
+            totalDuration: sessionType === 'focus' ? focusTime * 60 : breakTime * 60,
+            remainingTime: lastKnownTimeLeftRef.current,
+            startTimestamp: timerStartTimeRef.current || Date.now(),
+            courseId: selectedCourse || undefined,
+            courseName,
+          });
+          
+          console.log('💾 Saved timer state to storage, remaining:', lastKnownTimeLeftRef.current, 'seconds');
+        }
+      }
+
+      // App coming to foreground
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        console.log('📱 App coming to foreground');
+        
+        if (settings.backgroundTimerEnabled) {
+          const savedState = await TimerPersistence.loadTimerState();
+          
+          if (savedState && savedState.status === 'running') {
+            console.log('🔄 Recalculating time after background');
+            console.log('⏱️ New remaining time:', savedState.remainingTime, 'seconds');
+            
+            // Update state with recalculated time
+            setTimeLeft(savedState.remainingTime);
+            setTimerState('running');
+            timerStartTimeRef.current = savedState.startTimestamp;
+            
+            // If timer completed while in background
+            if (savedState.remainingTime <= 0) {
+              console.log('✅ Timer completed in background');
+              await handleTimerComplete();
+            }
+          }
+        }
+      }
+
+      appState.current = nextAppState;
+    };
+
+    const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      appStateSubscription.remove();
+    };
+  }, [timerState, sessionType, selectedCourse, courses, focusTime, breakTime, settings.backgroundTimerEnabled, handleTimerComplete]);
+
   useEffect(() => {
     if (timerState === 'running') {
       intervalRef.current = setInterval(() => {
@@ -687,8 +762,10 @@ export default function TimerScreen() {
   }, [progress, progressAnim]);
 
   const startTimer = async () => {
+    const now = Date.now();
     if (timerState === 'idle') {
-      setSessionStartTime(new Date());
+      setSessionStartTime(new Date(now));
+      timerStartTimeRef.current = now;
       
       if (sessionType === 'focus' && dndPermissionGranted) {
         await enableDoNotDisturb();
@@ -696,6 +773,9 @@ export default function TimerScreen() {
       
       await soundManager.playSound('start');
       await hapticsManager.triggerHaptic('light');
+    } else {
+      // Resuming from pause - reset start time
+      timerStartTimeRef.current = now;
     }
     
     setTimerState('running');

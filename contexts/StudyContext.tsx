@@ -6,218 +6,9 @@ import { Database } from '@/lib/database.types';
 import type { Gymnasium } from '@/constants/gymnasiums';
 import type { AvatarConfig } from '@/constants/avatar-config';
 import { getSelectedCoursesData } from '@/constants/gymnasium-courses';
+import { assignCoursesAfterOnboarding } from '@/lib/course-assignment';
 
-interface UniversityCourseTemplate {
-  id: string;
-  title: string;
-  description: string;
-  subject: string;
-  resources: string[];
-  tips: string[];
-}
-
-// Fetch university courses from the university_courses table via university_program_courses
-const fetchUniversityCoursesFromDatabase = async (programName: string, semester: number): Promise<UniversityCourseTemplate[] | null> => {
-  try {
-    console.log('Fetching university courses from database for program:', programName, 'semester:', semester);
-    
-    // First, find the program by name
-    const { data: programData, error: programError } = await supabase
-      .from('university_programs')
-      .select('id, name')
-      .ilike('name', `%${programName}%`)
-      .limit(1)
-      .maybeSingle();
-    
-    if (programError) {
-      console.error('Error finding university program:', programError.message);
-      return null;
-    }
-    
-    if (!programData) {
-      console.log('No program found matching:', programName);
-      return null;
-    }
-    
-    console.log('Found program:', programData.name, 'with ID:', programData.id);
-    
-    // Calculate which semesters to fetch (for the given year)
-    // Semester 1-2 = Year 1, Semester 3-4 = Year 2, etc.
-    const semesterStart = semester;
-    const semesterEnd = semester + 1;
-    
-    // Fetch courses linked to this program for the specific semester range
-    const { data: programCourses, error: coursesError } = await supabase
-      .from('university_program_courses')
-      .select(`
-        semester,
-        is_mandatory,
-        university_courses (
-          id,
-          course_code,
-          title,
-          description,
-          credits,
-          level,
-          subject_area
-        )
-      `)
-      .eq('program_id', programData.id)
-      .gte('semester', semesterStart)
-      .lte('semester', semesterEnd)
-      .order('semester', { ascending: true });
-    
-    if (coursesError) {
-      console.error('Error fetching university program courses:', coursesError.message);
-      return null;
-    }
-    
-    if (!programCourses || programCourses.length === 0) {
-      console.log('No courses found for program:', programData.name, 'semesters:', semesterStart, '-', semesterEnd);
-      return null;
-    }
-    
-    console.log('Found', programCourses.length, 'courses for program:', programData.name);
-    
-    return programCourses.map((pc: any) => {
-      const course = pc.university_courses;
-      return {
-        id: course.id,
-        title: course.title,
-        description: course.description || '',
-        subject: course.subject_area,
-        resources: ['Kurslitteratur', 'Föreläsningar', 'Övningar'],
-        tips: ['Studera regelbundet', 'Delta i övningar', 'Fråga vid behov'],
-      };
-    });
-  } catch (error) {
-    console.error('Exception fetching university courses:', error);
-    return null;
-  }
-};
-
-// Sync university courses to user_university_courses table
-const syncUniversityCoursesToUser = async (
-  userId: string, 
-  programName: string, 
-  courses: { id: string; title: string; isActive: boolean }[]
-): Promise<boolean> => {
-  try {
-    console.log('Syncing university courses to user:', userId);
-    
-    // Find program ID
-    const { data: programData } = await supabase
-      .from('university_programs')
-      .select('id')
-      .ilike('name', `%${programName}%`)
-      .limit(1)
-      .maybeSingle();
-    
-    const programId = programData?.id || null;
-    
-    for (const course of courses) {
-      // Look up the actual course UUID from the database by title
-      const { data: dbCourse } = await supabase
-        .from('university_courses')
-        .select('id')
-        .eq('title', course.title)
-        .maybeSingle();
-      
-      if (!dbCourse) {
-        console.warn(`Course "${course.title}" not found in database, skipping sync`);
-        continue;
-      }
-      
-      const { error } = await supabase
-        .from('user_university_courses')
-        .upsert({
-          id: `${userId}-${dbCourse.id}`,
-          user_id: userId,
-          program_id: programId,
-          course_id: dbCourse.id,
-          progress: 0,
-          is_active: course.isActive,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id'
-        });
-      
-      if (error) {
-        console.error(`Error syncing user university course "${course.title}":`, error.message);
-      } else {
-        console.log(`✅ Synced course: ${course.title} (UUID: ${dbCourse.id})`);
-      }
-    }
-    
-    console.log('Successfully synced university courses for user');
-    return true;
-  } catch (error) {
-    console.error('Exception syncing university courses:', error);
-    return false;
-  }
-};
-
-const getUniversityProgramCourses = (programName: string, year: string | null | undefined): UniversityCourseTemplate[] => {
-  const yearNum = year ? parseInt(year, 10) : 1;
-  
-  const programCourseTemplates: Record<string, UniversityCourseTemplate[][]> = {
-    'Civilingenjör - Datateknik': [
-      [
-        { id: 'LINALG-1', title: 'Linjär Algebra', description: 'Grundläggande linjär algebra med vektorer, matriser och linjära avbildningar', subject: 'Matematik', resources: ['Kurslitteratur', 'Övningsuppgifter'], tips: ['Öva matrisberäkningar dagligen', 'Visualisera geometriskt'] },
-        { id: 'PROG-1', title: 'Programmering I', description: 'Introduktion till programmering med Python eller Java', subject: 'Datavetenskap', resources: ['Python dokumentation', 'Kodexempel'], tips: ['Programmera varje dag', 'Bygg egna projekt'] },
-        { id: 'ANALYS-1', title: 'Analys I', description: 'Envariabelanalys: derivata, integraler och differentialekvationer', subject: 'Matematik', resources: ['Formelsamling', 'Övningsbok'], tips: ['Förstå teorin bakom formlerna', 'Öva på gamla tentor'] },
-        { id: 'DISKMAT-1', title: 'Diskret Matematik', description: 'Logik, mängdlära, kombinatorik och grafteori', subject: 'Matematik', resources: ['Kurslitteratur', 'Problemsamling'], tips: ['Träna på bevis', 'Koppla till programmering'] }
-      ],
-      [
-        { id: 'ANALYS-2', title: 'Analys II', description: 'Flervariabelanalys: partiella derivator och multipla integraler', subject: 'Matematik', resources: ['Kurslitteratur', 'Videoföreläsningar'], tips: ['Visualisera i 3D', 'Repetera från Analys I'] },
-        { id: 'PROG-2', title: 'Programmering II', description: 'Objektorienterad programmering och datastrukturer', subject: 'Datavetenskap', resources: ['Java/C++ guide', 'Design patterns'], tips: ['Bygg större projekt', 'Lär dig debugging'] },
-        { id: 'DATORSYS-1', title: 'Datorsystem', description: 'Datorarkitektur, operativsystem och nätverk', subject: 'Datavetenskap', resources: ['Referensmaterial', 'Labhandledningar'], tips: ['Experimentera med Linux', 'Förstå lågnivådetaljer'] },
-        { id: 'ALGO-1', title: 'Algoritmer', description: 'Algoritmer och komplexitetsanalys', subject: 'Datavetenskap', resources: ['Algoritmbok', 'Leetcode'], tips: ['Implementera själv', 'Analysera tidskomplexitet'] }
-      ]
-    ],
-    'Civilingenjör - Industriell ekonomi': [
-      [
-        { id: 'LINALG-IE', title: 'Linjär Algebra', description: 'Grundläggande linjär algebra för ingenjörer', subject: 'Matematik', resources: ['Kurslitteratur', 'Övningar'], tips: ['Förstå matriser', 'Koppla till ekonomiska modeller'] },
-        { id: 'ANALYS-IE', title: 'Analys', description: 'Matematisk analys med tillämpningar', subject: 'Matematik', resources: ['Kurslitteratur', 'Formelsamling'], tips: ['Öva dagligen', 'Förstå koncepten'] },
-        { id: 'EKON-1', title: 'Företagsekonomi', description: 'Grundläggande företagsekonomi och redovisning', subject: 'Ekonomi', resources: ['Lärobok', 'Case-studier'], tips: ['Läs affärstidningar', 'Följ företag'] },
-        { id: 'PROG-IE', title: 'Programmering', description: 'Programmering för ingenjörer', subject: 'Datavetenskap', resources: ['Python guide', 'Övningar'], tips: ['Automatisera beräkningar', 'Bygg ekonomiska modeller'] }
-      ],
-      [
-        { id: 'STAT-IE', title: 'Statistik', description: 'Statistik och sannolikhetslära', subject: 'Matematik', resources: ['Kurslitteratur', 'R/Excel'], tips: ['Förstå distributioner', 'Tillämpa på verkliga data'] },
-        { id: 'MEKNAT-1', title: 'Mekanik', description: 'Teknisk mekanik och hållfasthetslära', subject: 'Teknik', resources: ['Lärobok', 'Labbhandledningar'], tips: ['Visualisera krafter', 'Öva på fri-kroppdiagram'] },
-        { id: 'MKTG-1', title: 'Marknadsföring', description: 'Grundläggande marknadsföring', subject: 'Ekonomi', resources: ['Kotler bok', 'Case-studier'], tips: ['Analysera verkliga kampanjer', 'Följ trender'] },
-        { id: 'ORG-1', title: 'Organisation', description: 'Organisationsteori och ledarskap', subject: 'Ekonomi', resources: ['Kurslitteratur', 'Case-studier'], tips: ['Reflektera över erfarenheter', 'Diskutera i grupp'] }
-      ]
-    ]
-  };
-  
-  const defaultCourses: UniversityCourseTemplate[][] = [
-    [
-      { id: 'MATH-G1', title: 'Matematik Grundkurs', description: 'Grundläggande högskolematematik', subject: 'Matematik', resources: ['Kurslitteratur', 'Övningsbok'], tips: ['Öva regelbundet', 'Fråga om hjälp'] },
-      { id: 'COMM-G1', title: 'Akademiskt skrivande', description: 'Vetenskapligt skrivande och kommunikation', subject: 'Kommunikation', resources: ['Skrivguide', 'Exempel'], tips: ['Skriv ofta', 'Få feedback'] },
-      { id: 'INTRO-G1', title: 'Introduktionskurs', description: 'Introduktion till ämnesområdet', subject: 'Allmänt', resources: ['Kurslitteratur', 'Föreläsningar'], tips: ['Delta aktivt', 'Nätverka'] },
-      { id: 'METH-G1', title: 'Vetenskaplig metod', description: 'Forskningsmetodik och källkritik', subject: 'Metod', resources: ['Metodbok', 'Databaser'], tips: ['Läs vetenskapliga artiklar', 'Träna källkritik'] }
-    ],
-    [
-      { id: 'SPEC-G2', title: 'Fördjupningskurs I', description: 'Första fördjupningen inom valt område', subject: 'Specialisering', resources: ['Speciallitteratur', 'Seminarier'], tips: ['Välj intresseområde', 'Fördjupa dig'] },
-      { id: 'PROJ-G2', title: 'Projektarbete', description: 'Grupprojekt inom ämnet', subject: 'Projekt', resources: ['Projektguide', 'Verktyg'], tips: ['Planera tidigt', 'Kommunicera med gruppen'] },
-      { id: 'STAT-G2', title: 'Statistik', description: 'Grundläggande statistik och dataanalys', subject: 'Matematik', resources: ['Statistikbok', 'SPSS/R'], tips: ['Förstå teori', 'Tillämpa på data'] },
-      { id: 'ELEC-G2', title: 'Valfri kurs', description: 'Valfri kurs inom programmet', subject: 'Valfritt', resources: ['Varierar'], tips: ['Välj efter intresse', 'Komplettera din profil'] }
-    ]
-  ];
-  
-  const programCourses = programCourseTemplates[programName];
-  
-  if (programCourses && programCourses[yearNum - 1]) {
-    return programCourses[yearNum - 1];
-  }
-  
-  if (defaultCourses[yearNum - 1]) {
-    return defaultCourses[yearNum - 1];
-  }
-  
-  return defaultCourses[0];
-};
+// Old functions removed - now using assignCoursesAfterOnboarding from lib/course-assignment.ts
 
 type DbUser = Database['public']['Tables']['profiles']['Row'];
 
@@ -281,7 +72,7 @@ export interface StudyContextType {
   isAuthenticated: boolean;
   
   // User actions
-  completeOnboarding: (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number; gymnasiumGrade?: string | null; universityYear?: string | null }) => Promise<void>;
+  completeOnboarding: (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number; gymnasiumGrade?: string | null; universityYear?: string | null; universityProgramId?: string }) => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   
   // Course actions
@@ -593,7 +384,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     };
   }, [authUser, isAuthenticated, authLoading, loadUserData]);
 
-  const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number; gymnasiumGrade?: string | null; universityYear?: string | null }) => {
+  const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number; gymnasiumGrade?: string | null; universityYear?: string | null; universityProgramId?: string }) => {
     try {
       if (!authUser) throw new Error('No authenticated user');
 
@@ -732,54 +523,43 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           }
         }
       } else if (userData.studyLevel === 'högskola') {
-        // Generate university courses based on selected program
-        console.log('Creating university courses for program:', userData.program);
+        // Use the new course assignment system for university
+        console.log('Assigning university courses using new system');
+        console.log('University program ID:', userData.universityProgramId);
+        console.log('University year:', userData.universityYear);
         
-        // Calculate semester from year (term 1 = semester 1, term 2 = semester 2, etc.)
-        const semester = userData.universityYear ? parseInt(userData.universityYear, 10) : 1;
-        
-        let universityCourses: UniversityCourseTemplate[] | null = null;
-        
-        // First try to get courses from university_courses table
-        if (dbConnected) {
-          universityCourses = await fetchUniversityCoursesFromDatabase(userData.program, semester);
-        }
-        
-        // Fall back to hardcoded courses if database didn't return any
-        if (!universityCourses || universityCourses.length === 0) {
-          console.log('No database courses found, using hardcoded courses for:', userData.program);
-          universityCourses = getUniversityProgramCourses(userData.program, userData.universityYear);
-        }
-        
-        courses = universityCourses.map((courseData, index) => ({
-          id: courseData.id,
-          title: courseData.title,
-          description: courseData.description,
-          subject: courseData.subject,
-          level: 'högskola',
-          progress: 0,
-          isActive: index < 4, // First 4 courses are active
-          resources: courseData.resources,
-          tips: courseData.tips,
-          relatedCourses: []
-        }));
-        
-        // Sync university courses to user_university_courses table
-        if (dbConnected && courses.length > 0) {
-          console.log('Syncing university courses to user_university_courses...');
-          
-          // Use the new sync function for university courses
-          const syncSuccess = await syncUniversityCoursesToUser(
-            authUser.id,
-            userData.program,
-            courses.map(c => ({ id: c.id, title: c.title, isActive: c.isActive }))
-          );
-          
-          if (syncSuccess) {
-            console.log('Successfully synced university courses to user_university_courses');
-          } else {
-            console.warn('Failed to sync some university courses, using local data');
+        if (userData.universityProgramId && userData.universityYear) {
+          try {
+            const assignedCourses = await assignCoursesAfterOnboarding({
+              userId: authUser.id,
+              educationLevel: 'hogskola',
+              educationYear: parseInt(userData.universityYear, 10),
+              universityProgramId: userData.universityProgramId,
+            });
+            
+            console.log(`✅ Successfully assigned ${assignedCourses.length} university courses`);
+            
+            // Convert assigned courses to Course format for local state
+            courses = assignedCourses.map((course, index) => ({
+              id: course.courseId,
+              title: course.title,
+              description: course.description,
+              subject: course.subject,
+              level: 'högskola',
+              progress: 0,
+              isActive: index < 4, // First 4 courses are active
+              resources: ['Kursmaterial', 'Övningsuppgifter'],
+              tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+              relatedCourses: []
+            }));
+          } catch (error) {
+            console.error('Error assigning university courses:', error);
+            // Fall back to empty courses
+            courses = [];
           }
+        } else {
+          console.warn('Missing universityProgramId or universityYear, cannot assign courses');
+          courses = [];
         }
       } else {
         // Use default sample courses

@@ -483,6 +483,7 @@ export default function OnboardingScreen() {
           gymnasium: gymnasium,
           gymnasiumGrade: data.studyLevel === 'gymnasie' && data.year ? String(data.year) : null,
           universityYear: data.studyLevel === 'högskola' && data.universityYear ? String(data.universityYear) : null,
+          universityProgramId: data.studyLevel === 'högskola' && data.universityProgram ? data.universityProgram.id : undefined,
           avatar: data.avatarConfig,
           selectedCourses: Array.from(data.selectedCourses),
           dailyGoalHours: data.dailyGoalHours

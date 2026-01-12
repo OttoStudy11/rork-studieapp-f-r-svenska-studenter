@@ -345,9 +345,19 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setLastSignUpAttempt(now);
       console.log('Signing up user:', email);
       
+      // Get the redirect URL for email verification
+      const redirectUrl = Platform.OS === 'web' 
+        ? window.location.origin 
+        : Linking.createURL('auth/callback');
+      
+      console.log('Email verification redirect URL:', redirectUrl);
+      
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
-        password
+        password,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
       });
       
       if (error) {

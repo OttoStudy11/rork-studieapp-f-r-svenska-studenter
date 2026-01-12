@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { Image } from 'expo-image';
-import { Mail, Lock, Eye, EyeOff, Check, ArrowRight, Sparkles, BookOpen, Target, Trophy } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, Check, ArrowRight, Sparkles, BookOpen, Target, Trophy, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
@@ -29,6 +29,8 @@ export default function AuthScreen() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [verificationSent, setVerificationSent] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   
@@ -140,36 +142,46 @@ export default function AuthScreen() {
     setIsLoading(true);
 
     try {
-      const { error } = isSignUp 
-        ? await signUp(email, password)
-        : await signIn(email, password, rememberMe);
-      
-      if (error) {
-        const errorMessage = (error as any)?.message || '';
-        const errorCode = (error as any)?.code || '';
-        console.error('ERROR Auth error:', errorMessage);
+      if (isSignUp) {
+        const result = await signUp(email, password);
         
-        if (errorCode === 'EMAIL_NOT_CONFIRMED') {
-          setPendingEmail(email);
-          setShowEmailConfirmation(true);
+        if (result.error) {
+          const errorMessage = (result.error as any)?.message || '';
+          console.error('ERROR Sign up error:', errorMessage);
+          
+          if (errorMessage) {
+            showError(errorMessage);
+          } else {
+            showError('Ett fel uppstod vid registrering');
+          }
           return;
         }
         
-        if (errorMessage) {
-          showError(errorMessage);
+        if (result.needsEmailConfirmation) {
+          setPendingEmail(email);
+          setShowEmailConfirmation(true);
+          showSuccess('Konto skapat! Kolla din e-post för att bekräfta kontot.');
         } else {
-          showError('Ett fel uppstod vid inloggning');
+          showSuccess('Konto skapat!');
         }
       } else {
-        if (isSignUp) {
-          const result = await signUp(email, password);
-          if (result.needsEmailConfirmation) {
+        const result = await signIn(email, password, rememberMe);
+        
+        if (result.error) {
+          const errorMessage = (result.error as any)?.message || '';
+          const errorCode = (result.error as any)?.code || '';
+          console.error('ERROR Sign in error:', errorMessage);
+          
+          if (errorCode === 'EMAIL_NOT_CONFIRMED') {
             setPendingEmail(email);
             setShowEmailConfirmation(true);
-            showSuccess('Konto skapat! Kolla din e-post för att bekräfta kontot.');
+            return;
+          }
+          
+          if (errorMessage) {
+            showError(errorMessage);
           } else {
-            showSuccess('Konto skapat!');
-            setIsSignUp(false);
+            showError('Ett fel uppstod vid inloggning');
           }
         } else {
           console.log('Login successful, waiting for navigation...');
@@ -214,6 +226,11 @@ export default function AuthScreen() {
       return;
     }
 
+    if (resendCooldown > 0) {
+      showError(`Vänta ${resendCooldown} sekunder innan du försöker igen`);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { error } = await resendConfirmation(pendingEmail);
@@ -222,9 +239,9 @@ export default function AuthScreen() {
         const errorMessage = (error as any)?.message || '';
         showError(errorMessage || 'Kunde inte skicka bekräftelselänk');
       } else {
-        showSuccess('Bekräftelselänk skickad till din e-post! Kolla din inkorg och spam-mapp.');
-        setShowEmailConfirmation(false);
-        setPendingEmail('');
+        showSuccess('Bekräftelselänk skickad!');
+        setVerificationSent(true);
+        setResendCooldown(60);
       }
     } catch (error) {
       console.error('Resend confirmation error:', error);
@@ -233,6 +250,15 @@ export default function AuthScreen() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const orb1TranslateY = orb1Anim.interpolate({
     inputRange: [0, 1],
@@ -353,15 +379,46 @@ export default function AuthScreen() {
                   {showEmailConfirmation ? (
                     <View style={styles.confirmationContainer}>
                       <View style={styles.confirmationIconContainer}>
-                        <Mail size={32} color="#059669" />
+                        {verificationSent ? (
+                          <CheckCircle size={36} color="#059669" />
+                        ) : (
+                          <Mail size={36} color="#059669" />
+                        )}
                       </View>
+                      
+                      <Text style={styles.confirmationTitle}>
+                        {verificationSent ? 'E-post skickad!' : 'Bekräfta din e-post'}
+                      </Text>
+                      
                       <Text style={styles.confirmationText}>
-                        Vi har skickat en bekräftelselänk till:
+                        {verificationSent 
+                          ? 'Vi har skickat en ny bekräftelselänk till:'
+                          : 'Vi har skickat en bekräftelselänk till:'
+                        }
                       </Text>
                       <Text style={styles.confirmationEmail}>{pendingEmail}</Text>
-                      <Text style={styles.confirmationInstructions}>
-                        Kolla din inkorg och spam-mapp. Klicka på länken för att bekräfta ditt konto.
-                      </Text>
+                      
+                      <View style={styles.instructionsBox}>
+                        <AlertCircle size={16} color="#F59E0B" style={styles.instructionsIcon} />
+                        <Text style={styles.confirmationInstructions}>
+                          Kolla din inkorg och spam-mapp. Klicka på länken i mailet för att aktivera ditt konto.
+                        </Text>
+                      </View>
+
+                      <View style={styles.stepsContainer}>
+                        <View style={styles.stepItem}>
+                          <View style={styles.stepNumber}><Text style={styles.stepNumberText}>1</Text></View>
+                          <Text style={styles.stepText}>Öppna din e-post</Text>
+                        </View>
+                        <View style={styles.stepItem}>
+                          <View style={styles.stepNumber}><Text style={styles.stepNumberText}>2</Text></View>
+                          <Text style={styles.stepText}>Hitta mailet från StudieStugan</Text>
+                        </View>
+                        <View style={styles.stepItem}>
+                          <View style={styles.stepNumber}><Text style={styles.stepNumberText}>3</Text></View>
+                          <Text style={styles.stepText}>Klicka på bekräftelselänken</Text>
+                        </View>
+                      </View>
                     </View>
                   ) : (
                     <>
@@ -426,7 +483,10 @@ export default function AuthScreen() {
 
                   <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
                     <TouchableOpacity
-                      style={[styles.authButton, isLoading && styles.disabledButton]}
+                      style={[
+                        styles.authButton, 
+                        (isLoading || (showEmailConfirmation && resendCooldown > 0)) && styles.disabledButton
+                      ]}
                       onPress={
                         showEmailConfirmation 
                           ? handleResendConfirmation 
@@ -436,15 +496,22 @@ export default function AuthScreen() {
                       }
                       onPressIn={handleButtonPressIn}
                       onPressOut={handleButtonPressOut}
-                      disabled={isLoading}
+                      disabled={isLoading || (showEmailConfirmation && resendCooldown > 0)}
                       activeOpacity={0.9}
                     >
                       <LinearGradient
-                        colors={isLoading ? ['#94A3B8', '#CBD5E1'] : ['#059669', '#10B981']}
+                        colors={
+                          (isLoading || (showEmailConfirmation && resendCooldown > 0)) 
+                            ? ['#94A3B8', '#CBD5E1'] 
+                            : ['#059669', '#10B981']
+                        }
                         style={styles.authButtonGradient}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                       >
+                        {showEmailConfirmation && !isLoading && (
+                          <RefreshCw size={18} color="#FFFFFF" style={styles.buttonIconLeft} />
+                        )}
                         <Text style={styles.authButtonText}>
                           {isLoading 
                             ? (showEmailConfirmation 
@@ -456,7 +523,10 @@ export default function AuthScreen() {
                                     : 'Loggar in...'
                               )
                             : (showEmailConfirmation 
-                                ? 'Skicka bekräftelselänk igen' 
+                                ? (resendCooldown > 0 
+                                    ? `Skicka igen om ${resendCooldown}s`
+                                    : 'Skicka bekräftelselänk igen'
+                                  )
                                 : showForgotPassword 
                                   ? 'Skicka återställningslänk' 
                                   : isSignUp 
@@ -465,7 +535,7 @@ export default function AuthScreen() {
                               )
                           }
                         </Text>
-                        {!isLoading && (
+                        {!isLoading && !showEmailConfirmation && (
                           <ArrowRight size={20} color="#FFFFFF" style={styles.buttonIcon} />
                         )}
                       </LinearGradient>
@@ -827,32 +897,84 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   confirmationIconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
   },
+  confirmationTitle: {
+    color: '#1E293B',
+    fontSize: 22,
+    fontWeight: '700' as const,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
   confirmationText: {
     color: '#475569',
     fontSize: 15,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   confirmationEmail: {
-    color: '#1E293B',
-    fontSize: 17,
+    color: '#059669',
+    fontSize: 16,
     fontWeight: '700' as const,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  instructionsBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.2)',
+  },
+  instructionsIcon: {
+    marginRight: 10,
+    marginTop: 2,
   },
   confirmationInstructions: {
-    color: '#64748B',
+    color: '#92400E',
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 20,
+  },
+  stepsContainer: {
+    width: '100%',
+    gap: 12,
+    marginBottom: 8,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#E0F2F1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stepNumberText: {
+    color: '#059669',
     fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 22,
+    fontWeight: '700' as const,
+  },
+  stepText: {
+    color: '#475569',
+    fontSize: 14,
+    flex: 1,
+  },
+  buttonIconLeft: {
+    marginRight: 8,
   },
   footerText: {
     color: 'rgba(255, 255, 255, 0.7)',

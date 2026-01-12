@@ -13,13 +13,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
 import { useAchievements } from '@/contexts/AchievementContext';
 import { usePoints } from '@/contexts/PointsContext';
-import { useChallenges } from '@/contexts/ChallengesContext';
-import { useGamification, TIER_COLORS, DIFFICULTY_CONFIG } from '@/contexts/GamificationContext';
+import { useGamification, TIER_COLORS } from '@/contexts/GamificationContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Award, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, GraduationCap, AlertCircle, ChevronRight, Zap, Trophy, Lock, CheckCircle } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, GraduationCap, AlertCircle, ChevronRight, Zap, FileText } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
@@ -28,10 +27,9 @@ const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { user, courses, pomodoroSessions, isLoading } = useStudy();
-  const { getRecentAchievements, currentStreak } = useAchievements();
+  const { currentStreak } = useAchievements();
   const { totalPoints } = usePoints();
-  const { claimChallenge } = useChallenges();
-  const { currentLevel, xpProgress, totalXp, dailyChallenges, unclaimedChallenges } = useGamification();
+  const { currentLevel, xpProgress, totalXp } = useGamification();
   const { isPremium, isDemoMode, canAddCourse, showPremiumModal } = usePremium();
   const { theme, isDark } = useTheme();
   const { upcomingExams } = useExams();
@@ -72,8 +70,6 @@ export default function HomeScreen() {
     ? Math.round(courses.reduce((sum, course) => sum + course.progress, 0) / courses.length)
     : 0;
 
-  
-  const recentAchievements = getRecentAchievements(3);
   const totalStudyTime = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
 
   // Study tips and techniques data
@@ -435,301 +431,82 @@ export default function HomeScreen() {
           </View>
         </SlideInView>
 
-        {/* XP Level & Progression Hub */}
+        {/* Högskoleprov Card */}
         <SlideInView direction="up" delay={400}>
-          <View style={styles.section}>
-            {/* Main XP Card */}
+          <TouchableOpacity 
+            style={[styles.hpCard, { backgroundColor: theme.colors.card }]}
+            onPress={() => router.push('/hogskoleprovet' as any)}
+            activeOpacity={0.8}
+          >
             <LinearGradient
-              colors={[TIER_COLORS[currentLevel.tier], TIER_COLORS[currentLevel.tier] + 'CC']}
+              colors={isDark ? ['#4F46E5', '#7C3AED'] : ['#6366F1', '#8B5CF6']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.mainXpCard}
+              style={styles.hpCardGradient}
             >
-              <View style={styles.mainXpHeader}>
-                <View style={styles.mainXpLeft}>
-                  <View style={styles.mainXpBadge}>
-                    <Text style={styles.mainXpEmoji}>{currentLevel.iconEmoji}</Text>
+              <View style={styles.hpCardContent}>
+                <View style={styles.hpCardLeft}>
+                  <View style={styles.hpIconContainer}>
+                    <FileText size={24} color="white" />
                   </View>
-                  <View style={styles.mainXpInfo}>
-                    <Text style={styles.mainXpLevel}>Nivå {currentLevel.level}</Text>
-                    <Text style={styles.mainXpTitle}>{currentLevel.titleSv}</Text>
+                  <View style={styles.hpCardInfo}>
+                    <Text style={styles.hpCardTitle}>Högskoleprov</Text>
+                    <Text style={styles.hpCardSubtitle}>Träna inför HP med realistiska övningar</Text>
                   </View>
                 </View>
-                <View style={styles.mainXpRight}>
-                  <View style={styles.mainXpTotal}>
-                    <Zap size={16} color="white" />
-                    <Text style={styles.mainXpTotalNumber}>{totalXp}</Text>
-                  </View>
-                  <Text style={styles.mainXpTotalLabel}>Total XP</Text>
+                <ChevronRight size={24} color="rgba(255,255,255,0.8)" />
+              </View>
+              <View style={styles.hpCardMeta}>
+                <View style={styles.hpMetaItem}>
+                  <Text style={styles.hpMetaText}>6 delprov</Text>
+                </View>
+                <View style={styles.hpMetaDot} />
+                <View style={styles.hpMetaItem}>
+                  <Text style={styles.hpMetaText}>ORD • LÄS • MEK • XYZ • KVA • DTK</Text>
                 </View>
               </View>
-
-              <View style={styles.mainXpProgressSection}>
-                <View style={styles.mainXpProgressBar}>
-                  <View style={[styles.mainXpProgressFill, { width: `${Math.min(100, xpProgress.percent)}%` }]} />
-                </View>
-                <View style={styles.mainXpProgressLabels}>
-                  <Text style={styles.mainXpProgressText}>{xpProgress.current} / {xpProgress.required} XP</Text>
-                  {xpProgress.nextLevel && (
-                    <Text style={styles.mainXpNextText}>
-                      {xpProgress.nextLevel.iconEmoji} {xpProgress.nextLevel.titleSv}
-                    </Text>
-                  )}
-                </View>
-              </View>
-
-              <View style={styles.mainXpTierBadge}>
-                <Crown size={12} color="white" />
-                <Text style={styles.mainXpTierText}>
-                  {currentLevel.tier === 'beginner' ? 'Nybörjare' :
-                   currentLevel.tier === 'intermediate' ? 'Student' :
-                   currentLevel.tier === 'advanced' ? 'Avancerad' :
-                   currentLevel.tier === 'expert' ? 'Expert' :
-                   currentLevel.tier === 'master' ? 'Mästare' : 'Legend'}
-                </Text>
-              </View>
-            </LinearGradient>
-
-            {/* Tier Roadmap */}
-            <View style={[styles.tierRoadmap, { backgroundColor: theme.colors.card }]}>
-              <View style={styles.tierRoadmapHeader}>
-                <Trophy size={18} color={theme.colors.primary} />
-                <Text style={[styles.tierRoadmapTitle, { color: theme.colors.text }]}>Nivåvägen</Text>
-                <TouchableOpacity onPress={() => router.push('/achievements')}>
-                  <Text style={[styles.tierRoadmapLink, { color: theme.colors.primary }]}>Se alla →</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.tierList}>
-                {[
-                  { tier: 'beginner', name: 'Nybörjare', levels: '1-9', emoji: '🌱', minXp: 0 },
-                  { tier: 'intermediate', name: 'Student', levels: '10-19', emoji: '🚀', minXp: 2700 },
-                  { tier: 'advanced', name: 'Avancerad', levels: '20-29', emoji: '⭐', minXp: 13200 },
-                  { tier: 'expert', name: 'Expert', levels: '30-39', emoji: '👑', minXp: 33700 },
-                  { tier: 'master', name: 'Mästare', levels: '40-49', emoji: '🌟', minXp: 64200 },
-                  { tier: 'legend', name: 'Legend', levels: '50', emoji: '👑', minXp: 104700 },
-                ].map((t, index) => {
-                  const isCurrentTier = currentLevel.tier === t.tier;
-                  const isUnlocked = totalXp >= t.minXp;
-                  const tierColor = TIER_COLORS[t.tier as keyof typeof TIER_COLORS];
-                  
-                  return (
-                    <View key={t.tier} style={styles.tierItem}>
-                      <View style={[
-                        styles.tierItemBadge,
-                        { 
-                          backgroundColor: isUnlocked ? tierColor + '20' : theme.colors.border,
-                          borderColor: isCurrentTier ? tierColor : 'transparent',
-                          borderWidth: isCurrentTier ? 2 : 0,
-                        }
-                      ]}>
-                        {isUnlocked ? (
-                          <Text style={styles.tierItemEmoji}>{t.emoji}</Text>
-                        ) : (
-                          <Lock size={14} color={theme.colors.textMuted} />
-                        )}
-                      </View>
-                      <Text style={[
-                        styles.tierItemName,
-                        { color: isUnlocked ? theme.colors.text : theme.colors.textMuted }
-                      ]} numberOfLines={1}>{t.name}</Text>
-                      {isCurrentTier && (
-                        <View style={[styles.tierCurrentDot, { backgroundColor: tierColor }]} />
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Quick Stats Row */}
-            <View style={styles.quickStatsRow}>
-              <View style={[styles.quickStatItem, { backgroundColor: theme.colors.card }]}>
-                <View style={[styles.quickStatIcon, { backgroundColor: theme.colors.success + '15' }]}>
-                  <CheckCircle size={18} color={theme.colors.success} />
-                </View>
-                <Text style={[styles.quickStatNumber, { color: theme.colors.text }]}>
-                  {recentAchievements.length}
-                </Text>
-                <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Prestationer</Text>
-              </View>
-              <View style={[styles.quickStatItem, { backgroundColor: theme.colors.card }]}>
-                <View style={[styles.quickStatIcon, { backgroundColor: theme.colors.warning + '15' }]}>
-                  <Flame size={18} color={theme.colors.warning} />
-                </View>
-                <Text style={[styles.quickStatNumber, { color: theme.colors.text }]}>
-                  {currentStreak}
-                </Text>
-                <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Dagars streak</Text>
-              </View>
-              <View style={[styles.quickStatItem, { backgroundColor: theme.colors.card }]}>
-                <View style={[styles.quickStatIcon, { backgroundColor: theme.colors.primary + '15' }]}>
-                  <Target size={18} color={theme.colors.primary} />
-                </View>
-                <Text style={[styles.quickStatNumber, { color: theme.colors.text }]}>
-                  {dailyChallenges.filter(c => c.isCompleted).length}/{dailyChallenges.length}
-                </Text>
-                <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Utmaningar</Text>
-              </View>
-            </View>
-
-            {/* Achievements Showcase */}
-            {recentAchievements.length > 0 && (
-              <View style={[styles.achievementsShowcase, { backgroundColor: theme.colors.card }]}>
-                <View style={styles.achievementsShowcaseHeader}>
-                  <Award size={18} color={theme.colors.warning} />
-                  <Text style={[styles.achievementsShowcaseTitle, { color: theme.colors.text }]}>Senaste prestationer</Text>
-                </View>
-                <View style={styles.achievementsList}>
-                  {recentAchievements.slice(0, 3).map((achievement, index) => (
-                    <View key={achievement.id} style={[styles.achievementShowcaseItem, { borderBottomColor: index < 2 ? theme.colors.border : 'transparent' }]}>
-                      <View style={[styles.achievementShowcaseIcon, { backgroundColor: theme.colors.warning + '15' }]}>
-                        <Text style={styles.achievementShowcaseEmoji}>{achievement.icon}</Text>
-                      </View>
-                      <View style={styles.achievementShowcaseInfo}>
-                        <Text style={[styles.achievementShowcaseName, { color: theme.colors.text }]}>{achievement.title}</Text>
-                        <Text style={[styles.achievementShowcaseDesc, { color: theme.colors.textSecondary }]} numberOfLines={1}>{achievement.description}</Text>
-                      </View>
-                      <View style={[styles.achievementShowcaseXp, { backgroundColor: theme.colors.success + '15' }]}>
-                        <Zap size={12} color={theme.colors.success} />
-                        <Text style={[styles.achievementShowcaseXpText, { color: theme.colors.success }]}>+{achievement.reward?.points || 25}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-                <TouchableOpacity 
-                  style={[styles.achievementsShowcaseButton, { backgroundColor: theme.colors.primary + '10' }]}
-                  onPress={() => router.push('/achievements')}
-                >
-                  <Text style={[styles.achievementsShowcaseButtonText, { color: theme.colors.primary }]}>Se alla prestationer</Text>
-                  <ArrowRight size={16} color={theme.colors.primary} />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Daily Challenges */}
-            <View style={[styles.challengesSectionHeader, { marginTop: 20 }]}>
-              <View style={styles.challengesHeaderLeft}>
-                <Target size={20} color={theme.colors.primary} />
-                <Text style={[styles.challengesSectionTitle, { color: theme.colors.text }]}>Dagliga utmaningar</Text>
-                {unclaimedChallenges > 0 && (
-                  <View style={[styles.unclaimedBadge, { backgroundColor: theme.colors.success }]}>
-                    <Text style={styles.unclaimedBadgeText}>{unclaimedChallenges}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={[styles.challengesRefreshText, { color: theme.colors.textSecondary }]}>Uppdateras dagligen</Text>
-            </View>
-
-            <View style={styles.challengesList}>
-              {dailyChallenges.map((c) => {
-                const isClaimable = c.isCompleted && !c.isClaimed;
-                const isClaimed = c.isClaimed;
-                const progressPercent = c.targetValue > 0 ? Math.min(100, (c.currentProgress / c.targetValue) * 100) : 0;
-                const difficultyConfig = DIFFICULTY_CONFIG[c.difficulty] || DIFFICULTY_CONFIG.easy;
-
-                return (
-                  <View key={c.id} style={[
-                    styles.challengeCardNew,
-                    { backgroundColor: theme.colors.card },
-                    isClaimed && { opacity: 0.7 }
-                  ]}>
-                    <View style={styles.challengeCardHeader}>
-                      <View style={[styles.challengeIconNew, { backgroundColor: difficultyConfig.color + '15' }]}>
-                        <Text style={styles.challengeEmojiNew}>{c.emoji}</Text>
-                      </View>
-                      <View style={styles.challengeContentNew}>
-                        <View style={styles.challengeTitleRowNew}>
-                          <Text style={[styles.challengeTitleNew, { color: theme.colors.text }]}>{c.title}</Text>
-                          <View style={[styles.difficultyBadgeNew, { backgroundColor: difficultyConfig.color + '20' }]}>
-                            <Text style={[styles.difficultyTextNew, { color: difficultyConfig.color }]}>{difficultyConfig.label}</Text>
-                          </View>
-                        </View>
-                        <Text style={[styles.challengeDescNew, { color: theme.colors.textSecondary }]} numberOfLines={1}>{c.description}</Text>
-                      </View>
-                      <View style={styles.challengeRewardNew}>
-                        <View style={[styles.xpBadgeNew, { backgroundColor: theme.colors.primary + '15' }]}>
-                          <Zap size={12} color={theme.colors.primary} />
-                          <Text style={[styles.xpTextNew, { color: theme.colors.primary }]}>+{c.xpReward}</Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    <View style={styles.challengeProgressSection}>
-                      <View style={[styles.progressTrackNew, { backgroundColor: theme.colors.border }]}>
-                        <View style={[
-                          styles.progressFillNew,
-                          { 
-                            width: `${progressPercent}%`, 
-                            backgroundColor: isClaimed ? theme.colors.success : (isClaimable ? theme.colors.primary : difficultyConfig.color) 
-                          }
-                        ]} />
-                      </View>
-                      <View style={styles.challengeFooter}>
-                        <Text style={[styles.progressTextNew, { color: theme.colors.textSecondary }]}>
-                          {c.currentProgress}/{c.targetValue} {c.type === 'study_minutes' ? 'min' : 'pass'}
-                        </Text>
-                        <TouchableOpacity
-                          testID={`challenge-claim-${c.id}`}
-                          style={[
-                            styles.claimButtonNew,
-                            { 
-                              backgroundColor: isClaimable ? theme.colors.primary : 
-                                              isClaimed ? theme.colors.success : theme.colors.border 
-                            }
-                          ]}
-                          onPress={() => {
-                            if (isClaimable) {
-                              void claimChallenge(c.id);
-                            }
-                          }}
-                          disabled={!isClaimable}
-                        >
-                          {isClaimed ? (
-                            <CheckCircle size={14} color="white" />
-                          ) : (
-                            <Text style={[
-                              styles.claimButtonText,
-                              { color: isClaimable ? 'white' : theme.colors.textSecondary }
-                            ]}>
-                              {isClaimable ? 'Hämta' : 'Pågår'}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
-              
-              {dailyChallenges.length === 0 && (
-                <View style={[styles.emptyChallenges, { backgroundColor: theme.colors.card }]}>
-                  <Target size={32} color={theme.colors.textMuted} />
-                  <Text style={[styles.emptyChallengesText, { color: theme.colors.textSecondary }]}>Inga utmaningar just nu</Text>
-                  <Text style={[styles.emptyChallengesSubtext, { color: theme.colors.textMuted }]}>Nya utmaningar kommer snart!</Text>
+              {!isPremium && (
+                <View style={styles.hpPremiumBadge}>
+                  <Crown size={12} color="#FFD700" />
+                  <Text style={styles.hpPremiumText}>Premium</Text>
                 </View>
               )}
-            </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </SlideInView>
 
-            {/* XP Sources Info */}
-            <View style={[styles.xpSourcesCard, { backgroundColor: theme.colors.card }]}>
-              <Text style={[styles.xpSourcesTitle, { color: theme.colors.text }]}>Hur du tjänar XP</Text>
-              <View style={styles.xpSourcesList}>
-                {[
-                  { icon: '📚', name: 'Slutför lektion', xp: '+10 XP' },
-                  { icon: '✅', name: 'Quiz (90%+)', xp: '+50 XP' },
-                  { icon: '⏱️', name: 'Studera 5 min', xp: '+5 XP' },
-                  { icon: '🎯', name: 'Svår utmaning', xp: '+150 XP' },
-                  { icon: '🏆', name: 'Kurs klar', xp: '+500 XP' },
-                ].map((source, index) => (
-                  <View key={index} style={styles.xpSourceItem}>
-                    <Text style={styles.xpSourceIcon}>{source.icon}</Text>
-                    <Text style={[styles.xpSourceName, { color: theme.colors.textSecondary }]}>{source.name}</Text>
-                    <Text style={[styles.xpSourceAmount, { color: theme.colors.success }]}>{source.xp}</Text>
-                  </View>
-                ))}
-              </View>
+        {/* Compact XP Card */}
+        <SlideInView direction="up" delay={450}>
+          <TouchableOpacity 
+            style={[styles.compactXpCard, { backgroundColor: theme.colors.card }]}
+            onPress={() => router.push('/achievements' as any)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.compactXpBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] + '20' }]}>
+              <Text style={styles.compactXpEmoji}>{currentLevel.iconEmoji}</Text>
             </View>
-          </View>
+            <View style={styles.compactXpInfo}>
+              <View style={styles.compactXpRow}>
+                <Text style={[styles.compactXpLevel, { color: theme.colors.text }]}>Nivå {currentLevel.level}</Text>
+                <View style={[styles.compactXpTierBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] }]}>
+                  <Text style={styles.compactXpTierText}>{currentLevel.titleSv}</Text>
+                </View>
+              </View>
+              <View style={[styles.compactXpProgressBar, { backgroundColor: theme.colors.border }]}>
+                <View style={[styles.compactXpProgressFill, { width: `${Math.min(100, xpProgress.percent)}%`, backgroundColor: TIER_COLORS[currentLevel.tier] }]} />
+              </View>
+              <Text style={[styles.compactXpProgressText, { color: theme.colors.textSecondary }]}>
+                {xpProgress.current} / {xpProgress.required} XP till nästa nivå
+              </Text>
+            </View>
+            <View style={styles.compactXpRight}>
+              <View style={styles.compactXpTotal}>
+                <Zap size={14} color={TIER_COLORS[currentLevel.tier]} />
+                <Text style={[styles.compactXpTotalNumber, { color: theme.colors.text }]}>{totalXp}</Text>
+              </View>
+              <ChevronRight size={18} color={theme.colors.textMuted} />
+            </View>
+          </TouchableOpacity>
         </SlideInView>
 
         {/* Study Tips Section */}
@@ -1102,90 +879,168 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  challengesList: {
-    gap: 12,
+  hpCard: {
+    marginHorizontal: 24,
+    marginBottom: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  challengeCard: {
-    borderRadius: 18,
+  hpCardGradient: {
+    padding: 20,
+    position: 'relative' as const,
+  },
+  hpCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  hpCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
+  },
+  hpIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  hpCardInfo: {
+    flex: 1,
+  },
+  hpCardTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: 'white',
+    marginBottom: 4,
+  },
+  hpCardSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 18,
+  },
+  hpCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+  },
+  hpMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  hpMetaDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    marginHorizontal: 10,
+  },
+  hpMetaText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  hpPremiumBadge: {
+    position: 'absolute' as const,
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  hpPremiumText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#FFD700',
+  },
+  compactXpCard: {
+    marginHorizontal: 24,
+    marginBottom: 24,
+    borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  challengeTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
+  compactXpBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
   },
-  challengeLeft: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    flex: 1,
-    gap: 12,
+  compactXpEmoji: {
+    fontSize: 24,
   },
-  challengeEmoji: {
-    fontSize: 22,
-    marginTop: 1,
-  },
-  challengeTextCol: {
+  compactXpInfo: {
     flex: 1,
   },
-  challengeTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  challengeDesc: {
-    fontSize: 13,
-    marginTop: 4,
-    lineHeight: 18,
-  },
-  challengeRight: {
-    alignItems: 'flex-end',
+  compactXpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
+    marginBottom: 8,
   },
-  challengePointsPill: {
+  compactXpLevel: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  compactXpTierBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  compactXpTierText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: 'white',
+  },
+  compactXpProgressBar: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden' as const,
+    marginBottom: 6,
+  },
+  compactXpProgressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  compactXpProgressText: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+  },
+  compactXpRight: {
+    alignItems: 'center' as const,
+    gap: 4,
+  },
+  compactXpTotal: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
+    gap: 4,
   },
-  challengePointsText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  challengeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    minWidth: 84,
-    alignItems: 'center',
-  },
-  challengeButtonText: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  challengeProgressTrack: {
-    height: 8,
-    borderRadius: 999,
-    overflow: 'hidden',
-    marginTop: 14,
-  },
-  challengeProgressFill: {
-    height: '100%',
-    borderRadius: 999,
-  },
-  challengeProgressText: {
-    marginTop: 8,
-    fontSize: 12,
-    fontWeight: '600',
+  compactXpTotalNumber: {
+    fontSize: 16,
+    fontWeight: '700' as const,
   },
   levelCard: {
     borderRadius: 20,
@@ -1792,427 +1647,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400' as const,
   },
-  mainXpCard: {
-    borderRadius: 24,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  mainXpHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  mainXpLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  mainXpBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  mainXpEmoji: {
-    fontSize: 28,
-  },
-  mainXpInfo: {
-    gap: 2,
-  },
-  mainXpLevel: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  mainXpTitle: {
-    fontSize: 20,
-    fontWeight: '800' as const,
-    color: 'white',
-  },
-  mainXpRight: {
-    alignItems: 'flex-end' as const,
-  },
-  mainXpTotal: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  mainXpTotalNumber: {
-    fontSize: 28,
-    fontWeight: '800' as const,
-    color: 'white',
-  },
-  mainXpTotalLabel: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    color: 'rgba(255, 255, 255, 0.7)',
-    marginTop: 2,
-  },
-  mainXpProgressSection: {
-    marginBottom: 16,
-  },
-  mainXpProgressBar: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    overflow: 'hidden' as const,
-  },
-  mainXpProgressFill: {
-    height: '100%',
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
-  mainXpProgressLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  mainXpProgressText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  mainXpNextText: {
-    fontSize: 13,
-    fontWeight: '500' as const,
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  mainXpTierBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignSelf: 'flex-start' as const,
-  },
-  mainXpTierText: {
-    fontSize: 12,
-    fontWeight: '700' as const,
-    color: 'white',
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-  },
-  tierRoadmap: {
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  tierRoadmapHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
-  },
-  tierRoadmapTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    flex: 1,
-  },
-  tierRoadmapLink: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  tierList: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  tierItem: {
-    alignItems: 'center' as const,
-    gap: 6,
-    flex: 1,
-  },
-  tierItemBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tierItemEmoji: {
-    fontSize: 18,
-  },
-  tierItemName: {
-    fontSize: 10,
-    fontWeight: '600' as const,
-    textAlign: 'center' as const,
-  },
-  tierCurrentDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: -2,
-  },
-  quickStatsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-  },
-  quickStatItem: {
-    flex: 1,
-    borderRadius: 14,
-    padding: 14,
-    alignItems: 'center' as const,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  quickStatIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  quickStatNumber: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    marginBottom: 2,
-  },
-  quickStatLabel: {
-    fontSize: 11,
-    fontWeight: '500' as const,
-    textAlign: 'center' as const,
-  },
-  achievementsShowcase: {
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  achievementsShowcaseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 14,
-  },
-  achievementsShowcaseTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  achievementsList: {
-    gap: 0,
-  },
-  achievementShowcaseItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  achievementShowcaseIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  achievementShowcaseEmoji: {
-    fontSize: 20,
-  },
-  achievementShowcaseInfo: {
-    flex: 1,
-  },
-  achievementShowcaseName: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    marginBottom: 2,
-  },
-  achievementShowcaseDesc: {
-    fontSize: 12,
-    fontWeight: '400' as const,
-  },
-  achievementShowcaseXp: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  achievementShowcaseXpText: {
-    fontSize: 12,
-    fontWeight: '700' as const,
-  },
-  achievementsShowcaseButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    marginTop: 12,
-    borderRadius: 12,
-  },
-  achievementsShowcaseButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  challengesSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  challengesSectionTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    marginLeft: 8,
-  },
-  challengeCardNew: {
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  challengeCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  challengeIconNew: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  challengeEmojiNew: {
-    fontSize: 22,
-  },
-  challengeContentNew: {
-    flex: 1,
-  },
-  challengeTitleRowNew: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  challengeTitleNew: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-  },
-  difficultyBadgeNew: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  difficultyTextNew: {
-    fontSize: 9,
-    fontWeight: '600' as const,
-    textTransform: 'uppercase' as const,
-  },
-  challengeDescNew: {
-    fontSize: 13,
-    fontWeight: '400' as const,
-  },
-  challengeRewardNew: {
-    marginLeft: 8,
-  },
-  xpBadgeNew: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  xpTextNew: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-  },
-  challengeProgressSection: {
-    marginTop: 4,
-  },
-  progressTrackNew: {
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden' as const,
-  },
-  progressFillNew: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  challengeFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  progressTextNew: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-  },
-  claimButtonNew: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    minWidth: 70,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  claimButtonText: {
-    fontSize: 12,
-    fontWeight: '700' as const,
-  },
-  xpSourcesCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  xpSourcesTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    marginBottom: 14,
-  },
-  xpSourcesList: {
-    gap: 10,
-  },
-  xpSourceItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  xpSourceIcon: {
-    fontSize: 16,
-    marginRight: 10,
-  },
-  xpSourceName: {
-    fontSize: 13,
-    fontWeight: '500' as const,
-    flex: 1,
-  },
-  xpSourceAmount: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-  },
+
 });

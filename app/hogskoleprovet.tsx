@@ -29,7 +29,7 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
-import { HP_SECTIONS, HP_MILESTONES, getScoreLabel } from '@/constants/hogskoleprovet';
+import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HP_FULL_TEST_VERSIONS } from '@/constants/hogskoleprovet';
 import { COLORS } from '@/constants/design-system';
 import TestVersionSelector from '@/components/TestVersionSelector';
 
@@ -474,6 +474,7 @@ export default function HogskoleprovetScreen() {
         visible={fullTestModalVisible}
         onClose={() => setFullTestModalVisible(false)}
         testVersions={[]}
+        fullTestVersions={HP_FULL_TEST_VERSIONS}
         selectedVersionId=''
         onSelectVersion={handleStartFullTestWithVersion}
         sectionName="Komplett Högskoleprov"

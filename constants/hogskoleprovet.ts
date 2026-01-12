@@ -169,7 +169,28 @@ export interface HPTestVersion {
   sectionCode: string;
   name: string;
   questionCount: number;
+  season?: 'spring' | 'fall';
+  year?: number;
 }
+
+export interface HPFullTestVersion {
+  id: string;
+  name: string;
+  displayName: string;
+  season: 'spring' | 'fall';
+  year: number;
+  questionCount: number;
+  timeMinutes: number;
+}
+
+// Full test versions (complete HP tests)
+export const HP_FULL_TEST_VERSIONS: HPFullTestVersion[] = [
+  { id: 'hp-2024-spring', name: 'Vår 2024', displayName: 'Högskoleprov Vår 2024', season: 'spring', year: 2024, questionCount: 120, timeMinutes: 235 },
+  { id: 'hp-2023-fall', name: 'Höst 2023', displayName: 'Högskoleprov Höst 2023', season: 'fall', year: 2023, questionCount: 120, timeMinutes: 235 },
+  { id: 'hp-2023-spring', name: 'Vår 2023', displayName: 'Högskoleprov Vår 2023', season: 'spring', year: 2023, questionCount: 120, timeMinutes: 235 },
+  { id: 'hp-2022-fall', name: 'Höst 2022', displayName: 'Högskoleprov Höst 2022', season: 'fall', year: 2022, questionCount: 120, timeMinutes: 235 },
+  { id: 'hp-2022-spring', name: 'Vår 2022', displayName: 'Högskoleprov Vår 2022', season: 'spring', year: 2022, questionCount: 120, timeMinutes: 235 },
+];
 
 // Test versions available for each section
 export const HP_TEST_VERSIONS: HPTestVersion[] = [

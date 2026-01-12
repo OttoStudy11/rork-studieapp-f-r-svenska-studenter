@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Crown, Sparkles, Zap, BarChart3, Users } from 'lucide-react-native';
+import { Crown, Sparkles, Zap, BarChart3, Users, GraduationCap } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
@@ -40,6 +40,12 @@ const FEATURE_CONFIGS = {
     description: 'Få detaljerade insikter och trendanalys av din studietid och framsteg',
     icon: BarChart3,
     gradient: ['#06B6D4', '#0891B2'] as const,
+  },
+  'hogskoleprovet': {
+    title: 'Högskoleprov är Premium',
+    description: 'Träna inför högskoleprovet med realistiska övningar, tidsbegränsning och AI-feedback',
+    icon: GraduationCap,
+    gradient: ['#6366F1', '#8B5CF6'] as const,
   },
 } as const;
 
@@ -237,6 +243,7 @@ export function usePremiumFeature(feature: FeatureType) {
     'flashcards': limits.canUseFlashcards,
     'battle': limits.canUseBattle,
     'statistics': limits.canUseAdvancedStatistics,
+    'hogskoleprovet': isPremium,
   };
   
   return {

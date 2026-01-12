@@ -1,0 +1,784 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Animated,
+  Dimensions,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, Stack } from 'expo-router';
+import {
+  GraduationCap,
+  Clock,
+  Target,
+  Trophy,
+  ChevronRight,
+  Play,
+  BarChart3,
+  Lock,
+  Crown,
+  Brain,
+  TrendingUp,
+} from 'lucide-react-native';
+import { useTheme } from '@/contexts/ThemeContext';
+import { usePremium } from '@/contexts/PremiumContext';
+import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
+import { HP_SECTIONS, HP_MILESTONES, getScoreLabel } from '@/constants/hogskoleprovet';
+import { COLORS } from '@/constants/design-system';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+export default function HogskoleprovetScreen() {
+  const { theme, isDark } = useTheme();
+  const { isPremium } = usePremium();
+  const { 
+    getUserStats, 
+    getSectionProgress, 
+    getEstimatedHPScore,
+    getUnlockedMilestones,
+    isLoading,
+  } = useHogskoleprovet();
+  
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const stats = getUserStats();
+  const estimatedScore = getEstimatedHPScore();
+  const unlockedMilestones = getUnlockedMilestones();
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
+
+  const handleStartFullTest = () => {
+    if (!isPremium) {
+      router.push('/premium');
+      return;
+    }
+    router.push('/hp-test' as any);
+  };
+
+  const handleStartSection = (sectionCode: string) => {
+    if (!isPremium) {
+      router.push('/premium');
+      return;
+    }
+    router.push(`/hp-practice/${sectionCode}` as any);
+  };
+
+  const handleViewStats = () => {
+    router.push('/hp-stats' as any);
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+          Laddar...
+        </Text>
+      </View>
+    );
+  }
+
+  const scoreInfo = getScoreLabel(estimatedScore);
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Stack.Screen 
+        options={{ 
+          headerShown: false,
+        }} 
+      />
+      
+      <LinearGradient
+        colors={isDark 
+          ? ['#1a1a2e', '#16213e', '#0f3460'] 
+          : ['#667eea', '#764ba2', '#f093fb']
+        }
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <SafeAreaView edges={['top']}>
+          <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <ChevronRight size={24} color="#FFF" style={{ transform: [{ rotate: '180deg' }] }} />
+            </TouchableOpacity>
+            
+            <View style={styles.headerContent}>
+              <View style={styles.headerTitleRow}>
+                <GraduationCap size={32} color="#FFF" />
+                <Text style={styles.headerTitle}>Högskoleprov</Text>
+                {isPremium && (
+                  <View style={styles.premiumBadge}>
+                    <Crown size={14} color="#FFD700" />
+                  </View>
+                )}
+              </View>
+              <Text style={styles.headerSubtitle}>
+                Träna inför högskoleprovet med realistiska övningar
+              </Text>
+            </View>
+
+            {!isPremium && (
+              <TouchableOpacity 
+                style={styles.premiumCTA}
+                onPress={() => router.push('/premium')}
+              >
+                <LinearGradient
+                  colors={['#FFD700', '#FFA500']}
+                  style={styles.premiumCTAGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Lock size={16} color="#000" />
+                  <Text style={styles.premiumCTAText}>Lås upp med Premium</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+          </Animated.View>
+        </SafeAreaView>
+      </LinearGradient>
+
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {isPremium && stats.totalAttempts > 0 && (
+          <Animated.View style={[styles.scoreCard, { opacity: fadeAnim }]}>
+            <LinearGradient
+              colors={isDark 
+                ? ['rgba(99, 102, 241, 0.2)', 'rgba(139, 92, 246, 0.1)']
+                : ['rgba(99, 102, 241, 0.1)', 'rgba(139, 92, 246, 0.05)']
+              }
+              style={styles.scoreCardGradient}
+            >
+              <View style={styles.scoreHeader}>
+                <View style={styles.scoreIconContainer}>
+                  <Trophy size={24} color={scoreInfo.color} />
+                </View>
+                <View style={styles.scoreInfo}>
+                  <Text style={[styles.scoreLabel, { color: theme.colors.textSecondary }]}>
+                    Uppskattat HP-resultat
+                  </Text>
+                  <View style={styles.scoreRow}>
+                    <Text style={[styles.scoreValue, { color: scoreInfo.color }]}>
+                      {estimatedScore.toFixed(2)}
+                    </Text>
+                    <Text style={[styles.scoreMax, { color: theme.colors.textSecondary }]}>
+                      / 2.0
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity 
+                  style={[styles.statsButton, { backgroundColor: theme.colors.surface }]}
+                  onPress={handleViewStats}
+                >
+                  <BarChart3 size={18} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.scoreProgressContainer}>
+                <View style={[styles.scoreProgressBg, { backgroundColor: theme.colors.border }]}>
+                  <View 
+                    style={[
+                      styles.scoreProgressFill, 
+                      { 
+                        width: `${(estimatedScore / 2) * 100}%`,
+                        backgroundColor: scoreInfo.color,
+                      }
+                    ]} 
+                  />
+                </View>
+                <Text style={[styles.scoreDescription, { color: theme.colors.textSecondary }]}>
+                  {scoreInfo.label} - {scoreInfo.description}
+                </Text>
+              </View>
+            </LinearGradient>
+          </Animated.View>
+        )}
+
+        <TouchableOpacity 
+          style={[
+            styles.fullTestCard,
+            !isPremium && styles.lockedCard,
+          ]}
+          onPress={handleStartFullTest}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={isPremium 
+              ? ['#6366F1', '#8B5CF6', '#A78BFA']
+              : ['#4B5563', '#374151']
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fullTestGradient}
+          >
+            {!isPremium && (
+              <View style={styles.lockOverlay}>
+                <Lock size={32} color="rgba(255,255,255,0.5)" />
+              </View>
+            )}
+            
+            <View style={styles.fullTestContent}>
+              <View style={styles.fullTestIcon}>
+                <Play size={32} color="#FFF" fill="#FFF" />
+              </View>
+              <View style={styles.fullTestInfo}>
+                <Text style={styles.fullTestTitle}>Komplett Högskoleprov</Text>
+                <Text style={styles.fullTestSubtitle}>
+                  Alla 6 delprov • 3h 55min • Realistisk provupplevelse
+                </Text>
+              </View>
+              <ChevronRight size={24} color="rgba(255,255,255,0.7)" />
+            </View>
+            
+            <View style={styles.fullTestStats}>
+              <View style={styles.fullTestStat}>
+                <Clock size={14} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.fullTestStatText}>235 min</Text>
+              </View>
+              <View style={styles.fullTestStat}>
+                <Target size={14} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.fullTestStatText}>120 frågor</Text>
+              </View>
+              <View style={styles.fullTestStat}>
+                <Trophy size={14} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.fullTestStatText}>Max 2.0</Text>
+              </View>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+            Träna per delprov
+          </Text>
+          <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>
+            Fokusera på dina svaga områden
+          </Text>
+        </View>
+
+        <View style={styles.sectionsGrid}>
+          {HP_SECTIONS.map((section, index) => {
+            const progress = getSectionProgress(section.code);
+            const isLocked = !isPremium;
+            
+            return (
+              <TouchableOpacity
+                key={section.code}
+                style={[
+                  styles.sectionCard,
+                  { backgroundColor: theme.colors.surface },
+                  isLocked && styles.lockedSectionCard,
+                ]}
+                onPress={() => handleStartSection(section.code)}
+                activeOpacity={0.7}
+              >
+                <LinearGradient
+                  colors={isLocked 
+                    ? ['rgba(75,85,99,0.3)', 'rgba(55,65,81,0.2)']
+                    : [...section.gradientColors, `${section.gradientColors[1]}80`] as any
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.sectionIconBg}
+                >
+                  {isLocked ? (
+                    <Lock size={20} color="rgba(255,255,255,0.5)" />
+                  ) : (
+                    <Text style={styles.sectionIcon}>{section.icon}</Text>
+                  )}
+                </LinearGradient>
+                
+                <View style={styles.sectionInfo}>
+                  <Text style={[styles.sectionName, { color: theme.colors.text }]}>
+                    {section.name}
+                  </Text>
+                  <Text 
+                    style={[styles.sectionFullName, { color: theme.colors.textSecondary }]}
+                    numberOfLines={1}
+                  >
+                    {section.fullName}
+                  </Text>
+                </View>
+                
+                {!isLocked && progress.attempts > 0 && (
+                  <View style={styles.sectionProgress}>
+                    <Text style={[styles.sectionProgressText, { color: section.color }]}>
+                      {Math.round(progress.averageScore)}%
+                    </Text>
+                  </View>
+                )}
+                
+                <View style={styles.sectionMeta}>
+                  <Clock size={12} color={theme.colors.textSecondary} />
+                  <Text style={[styles.sectionMetaText, { color: theme.colors.textSecondary }]}>
+                    {section.timeMinutes} min
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {isPremium && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                Milstolpar
+              </Text>
+              <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>
+                Samla prestationer och XP
+              </Text>
+            </View>
+
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.milestonesContainer}
+            >
+              {HP_MILESTONES.slice(0, 5).map((milestone) => {
+                const isUnlocked = unlockedMilestones.includes(milestone.id);
+                
+                return (
+                  <View
+                    key={milestone.id}
+                    style={[
+                      styles.milestoneCard,
+                      { backgroundColor: theme.colors.surface },
+                      isUnlocked && styles.unlockedMilestone,
+                    ]}
+                  >
+                    <View style={[
+                      styles.milestoneIconBg,
+                      isUnlocked 
+                        ? { backgroundColor: `${COLORS.primary}20` }
+                        : { backgroundColor: theme.colors.border }
+                    ]}>
+                      <Text style={[
+                        styles.milestoneIcon,
+                        !isUnlocked && styles.lockedMilestoneIcon,
+                      ]}>
+                        {milestone.icon}
+                      </Text>
+                    </View>
+                    <Text style={[
+                      styles.milestoneName,
+                      { color: isUnlocked ? theme.colors.text : theme.colors.textSecondary },
+                    ]}>
+                      {milestone.name}
+                    </Text>
+                    <Text style={[styles.milestoneXP, { color: COLORS.primary }]}>
+                      +{milestone.xp} XP
+                    </Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </>
+        )}
+
+        <View style={styles.tipsSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Studietips
+            </Text>
+          </View>
+          
+          <View style={[styles.tipCard, { backgroundColor: theme.colors.surface }]}>
+            <View style={[styles.tipIconBg, { backgroundColor: `${COLORS.info}20` }]}>
+              <Brain size={20} color={COLORS.info} />
+            </View>
+            <View style={styles.tipContent}>
+              <Text style={[styles.tipTitle, { color: theme.colors.text }]}>
+                Regelbunden övning
+              </Text>
+              <Text style={[styles.tipDescription, { color: theme.colors.textSecondary }]}>
+                Öva minst 30 minuter om dagen för bäst resultat
+              </Text>
+            </View>
+          </View>
+          
+          <View style={[styles.tipCard, { backgroundColor: theme.colors.surface }]}>
+            <View style={[styles.tipIconBg, { backgroundColor: `${COLORS.success}20` }]}>
+              <TrendingUp size={20} color={COLORS.success} />
+            </View>
+            <View style={styles.tipContent}>
+              <Text style={[styles.tipTitle, { color: theme.colors.text }]}>
+                Fokusera på svaga områden
+              </Text>
+              <Text style={[styles.tipDescription, { color: theme.colors.textSecondary }]}>
+                Lägg extra tid på de delprov du har lägst poäng på
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+  },
+  headerGradient: {
+    paddingBottom: 24,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerContent: {
+    marginBottom: 16,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '800' as const,
+    color: '#FFF',
+    flex: 1,
+  },
+  premiumBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,215,0,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 22,
+  },
+  premiumCTA: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  premiumCTAGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  premiumCTAText: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: '#000',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  scoreCard: {
+    marginBottom: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  scoreCardGradient: {
+    padding: 20,
+  },
+  scoreHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  scoreIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  scoreInfo: {
+    flex: 1,
+  },
+  scoreLabel: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    marginBottom: 2,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  scoreValue: {
+    fontSize: 32,
+    fontWeight: '800' as const,
+  },
+  scoreMax: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    marginLeft: 4,
+  },
+  statsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scoreProgressContainer: {
+    marginTop: 4,
+  },
+  scoreProgressBg: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  scoreProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  scoreDescription: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  fullTestCard: {
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  lockedCard: {
+    opacity: 0.9,
+  },
+  fullTestGradient: {
+    padding: 20,
+  },
+  lockOverlay: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1,
+  },
+  fullTestContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  fullTestIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  fullTestInfo: {
+    flex: 1,
+  },
+  fullTestTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#FFF',
+    marginBottom: 4,
+  },
+  fullTestSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 18,
+  },
+  fullTestStats: {
+    flexDirection: 'row',
+    gap: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+  },
+  fullTestStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  fullTestStatText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  sectionHeader: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+  },
+  sectionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 28,
+  },
+  sectionCard: {
+    width: (SCREEN_WIDTH - 52) / 2,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  lockedSectionCard: {
+    opacity: 0.6,
+  },
+  sectionIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionIcon: {
+    fontSize: 22,
+  },
+  sectionInfo: {
+    marginBottom: 8,
+  },
+  sectionName: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  sectionFullName: {
+    fontSize: 12,
+  },
+  sectionProgress: {
+    marginBottom: 8,
+  },
+  sectionProgressText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  sectionMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  sectionMetaText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  milestonesContainer: {
+    paddingRight: 20,
+    gap: 12,
+    marginBottom: 28,
+  },
+  milestoneCard: {
+    width: 120,
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  unlockedMilestone: {
+    borderWidth: 1,
+    borderColor: `${COLORS.primary}40`,
+  },
+  milestoneIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  milestoneIcon: {
+    fontSize: 24,
+  },
+  lockedMilestoneIcon: {
+    opacity: 0.4,
+  },
+  milestoneName: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  milestoneXP: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
+  tipsSection: {
+    marginBottom: 20,
+  },
+  tipCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 10,
+  },
+  tipIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  tipContent: {
+    flex: 1,
+  },
+  tipTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  tipDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  bottomPadding: {
+    height: 100,
+  },
+});

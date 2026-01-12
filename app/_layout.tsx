@@ -19,6 +19,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { ChallengesProvider } from "@/contexts/ChallengesContext";
 import { GamificationProvider } from "@/contexts/GamificationContext";
+import { HogskoleprovetProvider } from "@/contexts/HogskoleprovetContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -42,6 +43,10 @@ function RootLayoutNav() {
         <Stack.Screen name="premium" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="profile" options={{ headerShown: false }} />
+        <Stack.Screen name="hogskoleprovet" options={{ headerShown: false }} />
+        <Stack.Screen name="hp-practice/[sectionCode]" options={{ headerShown: false }} />
+        <Stack.Screen name="hp-results" options={{ headerShown: false }} />
+        <Stack.Screen name="hp-stats" options={{ headerShown: false }} />
       </Stack>
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>
@@ -86,7 +91,9 @@ export default function RootLayout() {
                             <AchievementProvider>
                               <PointsProvider>
                                 <ChallengesProvider>
-                                  <RootLayoutNav />
+                                  <HogskoleprovetProvider>
+                                    <RootLayoutNav />
+                                  </HogskoleprovetProvider>
                                 </ChallengesProvider>
                               </PointsProvider>
                             </AchievementProvider>

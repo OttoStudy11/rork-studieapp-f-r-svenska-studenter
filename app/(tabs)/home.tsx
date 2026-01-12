@@ -18,7 +18,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, GraduationCap, AlertCircle, ChevronRight, Zap, FileText, Sparkles } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
@@ -297,18 +297,11 @@ export default function HomeScreen() {
         <SlideInView direction="up" delay={200}>
           <View style={styles.quickActions}>
             <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
+              style={[styles.actionButton, styles.actionButtonFull, { backgroundColor: theme.colors.primary }]}
               onPress={() => router.push('/timer')}
             >
               <Clock size={24} color="white" />
               <Text style={styles.actionButtonText}>Starta fokus</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: theme.colors.secondary }]}
-              onPress={() => router.push('/course-library')}
-            >
-              <GraduationCap size={24} color="white" />
-              <Text style={styles.actionButtonText}>Studiekurser</Text>
             </TouchableOpacity>
           </View>
         </SlideInView>
@@ -831,6 +824,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+  },
+  actionButtonFull: {
+    flex: undefined,
+    width: '100%',
   },
   actionButtonText: {
     color: 'white',

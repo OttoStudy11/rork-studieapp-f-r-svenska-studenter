@@ -152,6 +152,7 @@ export const HP_MILESTONES = [
 export interface HPQuestion {
   id: string;
   sectionCode: string;
+  testVersion?: string;
   questionNumber: number;
   questionText: string;
   questionType: 'multiple_choice' | 'comparison' | 'reading_comprehension';
@@ -163,12 +164,42 @@ export interface HPQuestion {
   imageUrl?: string;
 }
 
-// Sample questions for each section
+export interface HPTestVersion {
+  id: string;
+  sectionCode: string;
+  name: string;
+  questionCount: number;
+}
+
+// Test versions available for each section
+export const HP_TEST_VERSIONS: HPTestVersion[] = [
+  { id: 'ord-a', sectionCode: 'ORD', name: 'Test A', questionCount: 20 },
+  { id: 'ord-b', sectionCode: 'ORD', name: 'Test B', questionCount: 20 },
+  { id: 'ord-c', sectionCode: 'ORD', name: 'Test C', questionCount: 20 },
+  { id: 'las-a', sectionCode: 'LÄS', name: 'Test A', questionCount: 20 },
+  { id: 'las-b', sectionCode: 'LÄS', name: 'Test B', questionCount: 20 },
+  { id: 'las-c', sectionCode: 'LÄS', name: 'Test C', questionCount: 20 },
+  { id: 'mek-a', sectionCode: 'MEK', name: 'Test A', questionCount: 20 },
+  { id: 'mek-b', sectionCode: 'MEK', name: 'Test B', questionCount: 20 },
+  { id: 'mek-c', sectionCode: 'MEK', name: 'Test C', questionCount: 20 },
+  { id: 'xyz-a', sectionCode: 'XYZ', name: 'Test A', questionCount: 20 },
+  { id: 'xyz-b', sectionCode: 'XYZ', name: 'Test B', questionCount: 20 },
+  { id: 'xyz-c', sectionCode: 'XYZ', name: 'Test C', questionCount: 20 },
+  { id: 'kva-a', sectionCode: 'KVA', name: 'Test A', questionCount: 20 },
+  { id: 'kva-b', sectionCode: 'KVA', name: 'Test B', questionCount: 20 },
+  { id: 'kva-c', sectionCode: 'KVA', name: 'Test C', questionCount: 20 },
+  { id: 'dtk-a', sectionCode: 'DTK', name: 'Test A', questionCount: 20 },
+  { id: 'dtk-b', sectionCode: 'DTK', name: 'Test B', questionCount: 20 },
+  { id: 'dtk-c', sectionCode: 'DTK', name: 'Test C', questionCount: 20 },
+];
+
+// All HP questions organized by test version
 export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
-  // ORD - Ordförståelse (20 questions)
+  // ORD - Ordförståelse Test A (20 questions)
   {
-    id: 'ord-1',
+    id: 'ord-a-1',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 1,
     questionText: 'Vad betyder ordet "pertinent"?',
     questionType: 'multiple_choice',
@@ -178,8 +209,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-2',
+    id: 'ord-a-2',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 2,
     questionText: 'Vilket ord är en synonym till "efemär"?',
     questionType: 'multiple_choice',
@@ -189,8 +221,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-3',
+    id: 'ord-a-3',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 3,
     questionText: 'Vad betyder "pragmatisk"?',
     questionType: 'multiple_choice',
@@ -200,8 +233,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-4',
+    id: 'ord-a-4',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 4,
     questionText: 'Vilket ord betyder "överdrivet detaljerad"?',
     questionType: 'multiple_choice',
@@ -211,8 +245,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-5',
+    id: 'ord-a-5',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 5,
     questionText: 'Vad är en antonym till "konkret"?',
     questionType: 'multiple_choice',
@@ -222,8 +257,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-6',
+    id: 'ord-a-6',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 6,
     questionText: 'Vad betyder "redundant"?',
     questionType: 'multiple_choice',
@@ -233,8 +269,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-7',
+    id: 'ord-a-7',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 7,
     questionText: 'Vilket ord betyder "motvillig"?',
     questionType: 'multiple_choice',
@@ -244,8 +281,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-8',
+    id: 'ord-a-8',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 8,
     questionText: 'Vad betyder "eloquent"?',
     questionType: 'multiple_choice',
@@ -255,8 +293,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-9',
+    id: 'ord-a-9',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 9,
     questionText: 'Vilket ord är motsatsen till "benägen"?',
     questionType: 'multiple_choice',
@@ -266,8 +305,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-10',
+    id: 'ord-a-10',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 10,
     questionText: 'Vad betyder "paradox"?',
     questionType: 'multiple_choice',
@@ -277,8 +317,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-11',
+    id: 'ord-a-11',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 11,
     questionText: 'Vilket ord betyder "ihållande och ihärdig"?',
     questionType: 'multiple_choice',
@@ -288,8 +329,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-12',
+    id: 'ord-a-12',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 12,
     questionText: 'Vad betyder "ambivalent"?',
     questionType: 'multiple_choice',
@@ -299,8 +341,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-13',
+    id: 'ord-a-13',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 13,
     questionText: 'Vilket ord betyder "oförmögen att läsa och skriva"?',
     questionType: 'multiple_choice',
@@ -310,8 +353,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-14',
+    id: 'ord-a-14',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 14,
     questionText: 'Vad betyder "altruistisk"?',
     questionType: 'multiple_choice',
@@ -321,8 +365,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-15',
+    id: 'ord-a-15',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 15,
     questionText: 'Vilket ord betyder "tillfällig lösning"?',
     questionType: 'multiple_choice',
@@ -332,8 +377,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-16',
+    id: 'ord-a-16',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 16,
     questionText: 'Vad betyder "konventionell"?',
     questionType: 'multiple_choice',
@@ -343,8 +389,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-17',
+    id: 'ord-a-17',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 17,
     questionText: 'Vilket ord betyder "känslomässigt oberörd"?',
     questionType: 'multiple_choice',
@@ -354,8 +401,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-18',
+    id: 'ord-a-18',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 18,
     questionText: 'Vad betyder "subtil"?',
     questionType: 'multiple_choice',
@@ -365,8 +413,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-19',
+    id: 'ord-a-19',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 19,
     questionText: 'Vilket ord betyder "mycket noga med detaljer"?',
     questionType: 'multiple_choice',
@@ -376,8 +425,9 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-20',
+    id: 'ord-a-20',
     sectionCode: 'ORD',
+    testVersion: 'ord-a',
     questionNumber: 20,
     questionText: 'Vad betyder "empatisk"?',
     questionType: 'multiple_choice',

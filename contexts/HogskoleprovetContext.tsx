@@ -10,7 +10,10 @@ import {
   calculateHPScore,
   HPSectionConfig,
   HPQuestion as LocalHPQuestion,
+  HP_TEST_VERSIONS,
+  HPTestVersion,
 } from '@/constants/hogskoleprovet';
+import { EXTENDED_HP_QUESTIONS } from '@/constants/hogskoleprovet-questions-extended';
 
 export interface HPSection {
   id: string;
@@ -45,6 +48,8 @@ export interface HPTest {
   test_season: 'spring' | 'fall';
   test_year: number;
   is_published: boolean;
+  display_name?: string;
+  norming_table?: Record<string, Record<string, number>>;
 }
 
 export interface UserHPAnswer {
@@ -97,6 +102,7 @@ export interface HPUserStats {
 export interface HPSessionState {
   attemptId: string | null;
   sectionCode: string | null;
+  testVersionId?: string;
   questions: LocalHPQuestion[];
   currentQuestionIndex: number;
   answers: Record<string, { answer: string; timeSpent: number }>;
@@ -117,10 +123,14 @@ interface HogskoleprovetContextValue {
   sections: HPSectionConfig[];
   isLoadingSections: boolean;
   
+  availableTestVersions: HPTestVersion[];
+  getTestVersionsBySection: (sectionCode: string) => HPTestVersion[];
+  
   getQuestionsBySection: (sectionCode: string, count?: number) => LocalHPQuestion[];
+  getQuestionsByTestVersion: (testVersionId: string) => LocalHPQuestion[];
   getAllQuestionsForFullTest: () => LocalHPQuestion[];
   
-  startPracticeSession: (sectionCode: string) => Promise<string | null>;
+  startPracticeSession: (sectionCode: string, testVersionId?: string) => Promise<string | null>;
   startFullTest: () => Promise<string | null>;
   
   submitAnswer: (questionId: string, selectedAnswer: string, timeSpentSeconds: number) => void;
@@ -400,12 +410,22 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
   };
 
   const getQuestionsBySection = useCallback((sectionCode: string, count?: number): LocalHPQuestion[] => {
-    const questions = SAMPLE_HP_QUESTIONS.filter(q => q.sectionCode === sectionCode);
+    const allQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS];
+    const questions = allQuestions.filter(q => q.sectionCode === sectionCode);
     if (count && count < questions.length) {
       const shuffled = [...questions].sort(() => Math.random() - 0.5);
       return shuffled.slice(0, count);
     }
     return questions;
+  }, []);
+
+  const getQuestionsByTestVersion = useCallback((testVersionId: string): LocalHPQuestion[] => {
+    const allQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS];
+    return allQuestions.filter(q => q.testVersion === testVersionId);
+  }, []);
+
+  const getTestVersionsBySection = useCallback((sectionCode: string): HPTestVersion[] => {
+    return HP_TEST_VERSIONS.filter(v => v.sectionCode === sectionCode);
   }, []);
 
   const getAllQuestionsForFullTest = useCallback((): LocalHPQuestion[] => {
@@ -417,7 +437,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     return allQuestions;
   }, []);
 
-  const startPracticeSession = useCallback(async (sectionCode: string): Promise<string | null> => {
+  const startPracticeSession = useCallback(async (sectionCode: string, testVersionId?: string): Promise<string | null> => {
     if (!user?.id) {
       Alert.alert('Fel', 'Du måste vara inloggad för att starta en övning');
       return null;
@@ -432,7 +452,14 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
         return null;
       }
 
-      const questions = getQuestionsBySection(sectionCode);
+      let questions: LocalHPQuestion[];
+      if (testVersionId) {
+        questions = getQuestionsByTestVersion(testVersionId);
+        console.log('[HP] Using test version:', testVersionId, 'questions:', questions.length);
+      } else {
+        questions = getQuestionsBySection(sectionCode);
+      }
+      
       if (questions.length === 0) {
         Alert.alert('Fel', 'Inga frågor tillgängliga för detta delprov');
         return null;
@@ -443,6 +470,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
       const newSession: HPSessionState = {
         attemptId,
         sectionCode,
+        testVersionId,
         questions,
         currentQuestionIndex: 0,
         answers: {},
@@ -462,7 +490,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
       Alert.alert('Fel', 'Kunde inte starta övningen');
       return null;
     }
-  }, [user?.id, getQuestionsBySection]);
+  }, [user?.id, getQuestionsBySection, getQuestionsByTestVersion]);
 
   const startFullTest = useCallback(async (): Promise<string | null> => {
     if (!user?.id) {
@@ -727,7 +755,12 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
   const value = useMemo(() => ({
     sections: HP_SECTIONS,
     isLoadingSections: false,
+    
+    availableTestVersions: HP_TEST_VERSIONS,
+    getTestVersionsBySection,
+    
     getQuestionsBySection,
+    getQuestionsByTestVersion,
     getAllQuestionsForFullTest,
     startPracticeSession,
     startFullTest,
@@ -745,6 +778,8 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     isLoading,
   }), [
     getQuestionsBySection,
+    getQuestionsByTestVersion,
+    getTestVersionsBySection,
     getAllQuestionsForFullTest,
     startPracticeSession,
     startFullTest,

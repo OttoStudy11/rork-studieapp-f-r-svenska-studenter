@@ -24,12 +24,14 @@ import {
   Crown,
   Brain,
   TrendingUp,
+  Calendar,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
 import { HP_SECTIONS, HP_MILESTONES, getScoreLabel } from '@/constants/hogskoleprovet';
 import { COLORS } from '@/constants/design-system';
+import TestVersionSelector from '@/components/TestVersionSelector';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -38,13 +40,16 @@ export default function HogskoleprovetScreen() {
   const { isPremium } = usePremium();
   const { 
     getUserStats, 
-    getSectionProgress, 
     getEstimatedHPScore,
     getUnlockedMilestones,
+    getTestVersionsBySection,
     isLoading,
   } = useHogskoleprovet();
   
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [versionSelectorVisible, setVersionSelectorVisible] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  
   const stats = getUserStats();
   const estimatedScore = getEstimatedHPScore();
   const unlockedMilestones = getUnlockedMilestones();
@@ -70,7 +75,17 @@ export default function HogskoleprovetScreen() {
       router.push('/premium');
       return;
     }
-    router.push(`/hp-practice/${sectionCode}` as any);
+    setSelectedSection(sectionCode);
+    setVersionSelectorVisible(true);
+  };
+
+  const handleSelectTestVersion = (testVersionId: string) => {
+    if (selectedSection) {
+      router.push({
+        pathname: `/hp-practice/${selectedSection}` as any,
+        params: { testVersionId },
+      });
+    }
   };
 
   const handleViewStats = () => {
@@ -274,7 +289,6 @@ export default function HogskoleprovetScreen() {
 
         <View style={styles.sectionsGrid}>
           {HP_SECTIONS.map((section, index) => {
-            const progress = getSectionProgress(section.code);
             const isLocked = !isPremium;
             
             return (
@@ -316,20 +330,14 @@ export default function HogskoleprovetScreen() {
                   </Text>
                 </View>
                 
-                {!isLocked && progress.attempts > 0 && (
-                  <View style={styles.sectionProgress}>
-                    <Text style={[styles.sectionProgressText, { color: section.color }]}>
-                      {Math.round(progress.averageScore)}%
+                {!isLocked && (
+                  <View style={styles.sectionMeta}>
+                    <Calendar size={12} color={theme.colors.textSecondary} />
+                    <Text style={[styles.sectionMetaText, { color: theme.colors.textSecondary }]}>
+                      {getTestVersionsBySection(section.code).length} versioner
                     </Text>
                   </View>
                 )}
-                
-                <View style={styles.sectionMeta}>
-                  <Clock size={12} color={theme.colors.textSecondary} />
-                  <Text style={[styles.sectionMetaText, { color: theme.colors.textSecondary }]}>
-                    {section.timeMinutes} min
-                  </Text>
-                </View>
               </TouchableOpacity>
             );
           })}
@@ -430,6 +438,21 @@ export default function HogskoleprovetScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {selectedSection && (
+        <TestVersionSelector
+          visible={versionSelectorVisible}
+          onClose={() => {
+            setVersionSelectorVisible(false);
+            setSelectedSection(null);
+          }}
+          testVersions={getTestVersionsBySection(selectedSection)}
+          selectedVersionId=''
+          onSelectVersion={handleSelectTestVersion}
+          sectionName={HP_SECTIONS.find(s => s.code === selectedSection)?.fullName || ''}
+          sectionColor={HP_SECTIONS.find(s => s.code === selectedSection)?.color || COLORS.primary}
+        />
+      )}
     </View>
   );
 }

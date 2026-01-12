@@ -47,8 +47,10 @@ export default function HogskoleprovetScreen() {
   } = useHogskoleprovet();
   
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(0));
   const [versionSelectorVisible, setVersionSelectorVisible] = useState(false);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [fullTestModalVisible, setFullTestModalVisible] = useState(false);
   
   const stats = getUserStats();
   const estimatedScore = getEstimatedHPScore();
@@ -67,7 +69,15 @@ export default function HogskoleprovetScreen() {
       router.push('/premium');
       return;
     }
-    router.push('/hp-test' as any);
+    setFullTestModalVisible(true);
+  };
+
+  const handleStartFullTestWithVersion = (testVersionId?: string) => {
+    setFullTestModalVisible(false);
+    router.push({
+      pathname: '/hp-test' as any,
+      params: { testVersionId: testVersionId || '' },
+    });
   };
 
   const handleStartSection = (sectionCode: string) => {
@@ -115,8 +125,8 @@ export default function HogskoleprovetScreen() {
       
       <LinearGradient
         colors={isDark 
-          ? ['#1a1a2e', '#16213e', '#0f3460'] 
-          : ['#667eea', '#764ba2', '#f093fb']
+          ? ['#0F172A', '#1E293B', '#334155'] 
+          : ['#4F46E5', '#7C3AED', '#EC4899']
         }
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -175,9 +185,11 @@ export default function HogskoleprovetScreen() {
           <Animated.View style={[styles.scoreCard, { opacity: fadeAnim }]}>
             <LinearGradient
               colors={isDark 
-                ? ['rgba(99, 102, 241, 0.2)', 'rgba(139, 92, 246, 0.1)']
-                : ['rgba(99, 102, 241, 0.1)', 'rgba(139, 92, 246, 0.05)']
+                ? ['rgba(79, 70, 229, 0.3)', 'rgba(124, 58, 237, 0.2)']
+                : ['rgba(79, 70, 229, 0.15)', 'rgba(124, 58, 237, 0.1)']
               }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
               style={styles.scoreCardGradient}
             >
               <View style={styles.scoreHeader}>
@@ -225,23 +237,26 @@ export default function HogskoleprovetScreen() {
           </Animated.View>
         )}
 
-        <TouchableOpacity 
-          style={[
-            styles.fullTestCard,
-            !isPremium && styles.lockedCard,
-          ]}
-          onPress={handleStartFullTest}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={isPremium 
-              ? ['#6366F1', '#8B5CF6', '#A78BFA']
-              : ['#4B5563', '#374151']
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.fullTestGradient}
+        <Animated.View style={[{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+          <TouchableOpacity 
+            style={[
+              styles.fullTestCard,
+              !isPremium && styles.lockedCard,
+            ]}
+            onPress={handleStartFullTest}
+            activeOpacity={0.85}
           >
+            <LinearGradient
+              colors={isPremium 
+                ? isDark
+                  ? ['#4F46E5', '#7C3AED', '#EC4899']
+                  : ['#6366F1', '#8B5CF6', '#EC4899']
+                : ['#374151', '#1F2937']
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.fullTestGradient}
+            >
             {!isPremium && (
               <View style={styles.lockOverlay}>
                 <Lock size={32} color="rgba(255,255,255,0.5)" />
@@ -276,7 +291,8 @@ export default function HogskoleprovetScreen() {
               </View>
             </View>
           </LinearGradient>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </Animated.View>
 
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -453,6 +469,17 @@ export default function HogskoleprovetScreen() {
           sectionColor={HP_SECTIONS.find(s => s.code === selectedSection)?.color || COLORS.primary}
         />
       )}
+
+      <TestVersionSelector
+        visible={fullTestModalVisible}
+        onClose={() => setFullTestModalVisible(false)}
+        testVersions={[]}
+        selectedVersionId=''
+        onSelectVersion={handleStartFullTestWithVersion}
+        sectionName="Komplett Högskoleprov"
+        sectionColor={COLORS.primary}
+        isFullTest
+      />
     </View>
   );
 }
@@ -539,12 +566,17 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   scoreCard: {
-    marginBottom: 20,
-    borderRadius: 16,
+    marginBottom: 24,
+    borderRadius: 24,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   scoreCardGradient: {
-    padding: 20,
+    padding: 24,
   },
   scoreHeader: {
     flexDirection: 'row',
@@ -607,14 +639,19 @@ const styles = StyleSheet.create({
   },
   fullTestCard: {
     marginBottom: 24,
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
   },
   lockedCard: {
     opacity: 0.9,
   },
   fullTestGradient: {
-    padding: 20,
+    padding: 24,
   },
   lockOverlay: {
     position: 'absolute',
@@ -686,10 +723,15 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     width: (SCREEN_WIDTH - 52) / 2,
-    padding: 16,
-    borderRadius: 16,
+    padding: 18,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   lockedSectionCard: {
     opacity: 0.6,

@@ -51,6 +51,7 @@ export default function HPFullTestScreen() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(0));
+  const [scaleAnim] = useState(new Animated.Value(1));
 
   useEffect(() => {
     const initSession = async () => {
@@ -61,11 +62,19 @@ export default function HPFullTestScreen() {
     };
     initSession();
 
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
     return () => {
       if (timerRef.current) {
@@ -148,7 +157,20 @@ export default function HPFullTestScreen() {
   const handleSelectAnswer = (answer: string) => {
     if (showExplanation) return;
     setSelectedAnswer(answer);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.98,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const handleSubmitAnswer = async () => {
@@ -274,7 +296,15 @@ export default function HPFullTestScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View style={styles.header}>
+        <LinearGradient
+          colors={[
+            theme.colors.background,
+            theme.colors.background,
+            'rgba(0,0,0,0)',
+          ]}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
           <TouchableOpacity style={styles.quitButton} onPress={handleQuit}>
             <X size={22} color={theme.colors.text} />
           </TouchableOpacity>
@@ -303,9 +333,10 @@ export default function HPFullTestScreen() {
               )}
             </TouchableOpacity>
           </View>
-        </View>
+          </View>
+        </LinearGradient>
 
-        <View style={styles.progressBar}>
+        <View style={[styles.progressBar, { backgroundColor: theme.colors.background }]}>
           <View style={[styles.progressBg, { backgroundColor: theme.colors.border }]}>
             <LinearGradient
               colors={section.gradientColors as any}
@@ -374,17 +405,31 @@ export default function HPFullTestScreen() {
                 { 
                   backgroundColor: theme.colors.surface,
                   opacity: fadeAnim,
-                  transform: [{ translateX: slideAnim }],
+                  transform: [
+                    { translateX: slideAnim },
+                    { scale: scaleAnim },
+                  ],
                 }
               ]}>
                 <View style={styles.questionHeader}>
-                  <View style={styles.difficultyRow}>
-                    <Text style={[styles.difficultyBadge, { 
-                      backgroundColor: currentQuestion.difficulty === 'easy' 
+                  <LinearGradient
+                    colors={[
+                      currentQuestion.difficulty === 'easy' 
                         ? `${COLORS.success}20` 
                         : currentQuestion.difficulty === 'hard'
                           ? `${COLORS.error}20`
                           : `${COLORS.warning}20`,
+                      currentQuestion.difficulty === 'easy' 
+                        ? `${COLORS.success}10` 
+                        : currentQuestion.difficulty === 'hard'
+                          ? `${COLORS.error}10`
+                          : `${COLORS.warning}10`,
+                    ]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.difficultyBadge}
+                  >
+                    <Text style={[styles.difficultyBadgeText, { 
                       color: currentQuestion.difficulty === 'easy'
                         ? COLORS.success
                         : currentQuestion.difficulty === 'hard'
@@ -393,7 +438,7 @@ export default function HPFullTestScreen() {
                     }]}>
                       {currentQuestion.difficulty === 'easy' ? 'Lätt' : currentQuestion.difficulty === 'hard' ? 'Svår' : 'Medel'}
                     </Text>
-                  </View>
+                  </LinearGradient>
                 </View>
 
                 {currentQuestion.readingPassage && (
@@ -586,6 +631,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerGradient: {
+    paddingTop: 12,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -601,16 +649,17 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     gap: 12,
   },
   quitButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   headerCenter: {
     flex: 1,
@@ -618,14 +667,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   sectionBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   sectionBadgeText: {
-    fontSize: 12,
-    fontWeight: '700' as const,
+    fontSize: 13,
+    fontWeight: '800' as const,
     color: '#FFF',
+    letterSpacing: 0.5,
   },
   progressText: {
     fontSize: 11,
@@ -636,25 +691,35 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pauseButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   progressBar: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    gap: 10,
+    paddingTop: 8,
   },
   progressBg: {
-    height: 6,
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   timerRow: {
     flexDirection: 'row',
@@ -664,18 +729,19 @@ const styles = StyleSheet.create({
   timerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: 'rgba(0,0,0,0.05)',
   },
   timerLow: {
     backgroundColor: `${COLORS.error}15`,
   },
   timerText: {
-    fontSize: 13,
-    fontWeight: '700' as const,
+    fontSize: 14,
+    fontWeight: '800' as const,
+    letterSpacing: 0.3,
   },
   totalProgress: {
     fontSize: 12,
@@ -735,23 +801,28 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   questionCard: {
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 24,
+    padding: 24,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   questionHeader: {
-    marginBottom: 16,
-  },
-  difficultyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: 20,
   },
   difficultyBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    fontSize: 11,
-    fontWeight: '600' as const,
-    overflow: 'hidden',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  difficultyBadgeText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    letterSpacing: 0.5,
   },
   passageContainer: {
     padding: 16,
@@ -775,10 +846,11 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   questionText: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    lineHeight: 26,
-    marginBottom: 24,
+    fontSize: 19,
+    fontWeight: '700' as const,
+    lineHeight: 28,
+    marginBottom: 28,
+    letterSpacing: 0.2,
   },
   optionsContainer: {
     gap: 12,
@@ -786,10 +858,15 @@ const styles = StyleSheet.create({
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 2,
-    gap: 14,
+    padding: 18,
+    borderRadius: 16,
+    borderWidth: 2.5,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   optionSelected: {},
   optionCorrect: {
@@ -799,17 +876,18 @@ const styles = StyleSheet.create({
     backgroundColor: `${COLORS.error}10`,
   },
   optionIndicator: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2.5,
     justifyContent: 'center',
     alignItems: 'center',
   },
   optionText: {
     flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '500' as const,
   },
   optionTextCorrect: {
     fontWeight: '600' as const,
@@ -819,9 +897,11 @@ const styles = StyleSheet.create({
     color: COLORS.error,
   },
   explanationContainer: {
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 14,
+    marginTop: 24,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   explanationHeader: {
     flexDirection: 'row',
@@ -840,35 +920,48 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    gap: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
   },
   navButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   navButtonDisabled: {
     opacity: 0.5,
   },
   submitButton: {
     flex: 1,
-    borderRadius: 26,
+    borderRadius: 28,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
   submitButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 52,
-    gap: 8,
+    height: 56,
+    gap: 10,
   },
   submitButtonText: {
-    fontSize: 17,
-    fontWeight: '700' as const,
+    fontSize: 18,
+    fontWeight: '800' as const,
     color: '#FFF',
+    letterSpacing: 0.5,
   },
 });

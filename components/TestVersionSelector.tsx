@@ -19,6 +19,7 @@ interface TestVersionSelectorProps {
   onSelectVersion: (versionId: string) => void;
   sectionName: string;
   sectionColor: string;
+  isFullTest?: boolean;
 }
 
 export default function TestVersionSelector({
@@ -29,6 +30,7 @@ export default function TestVersionSelector({
   onSelectVersion,
   sectionName,
   sectionColor,
+  isFullTest = false,
 }: TestVersionSelectorProps) {
   const { theme } = useTheme();
 
@@ -71,15 +73,16 @@ export default function TestVersionSelector({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <TouchableOpacity
-              style={[
-                styles.versionCard,
-                { 
-                  backgroundColor: theme.colors.surface,
-                  borderColor: !selectedVersionId ? sectionColor : theme.colors.border,
-                },
-                !selectedVersionId && styles.selectedCard,
-              ]}
+            {!isFullTest && (
+              <TouchableOpacity
+                style={[
+                  styles.versionCard,
+                  { 
+                    backgroundColor: theme.colors.surface,
+                    borderColor: !selectedVersionId ? sectionColor : theme.colors.border,
+                  },
+                  !selectedVersionId && styles.selectedCard,
+                ]}
               onPress={() => {
                 onSelectVersion('');
                 onClose();
@@ -101,17 +104,50 @@ export default function TestVersionSelector({
                   </View>
                 )}
               </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            )}
 
-            <View style={styles.divider}>
-              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-              <Text style={[styles.dividerText, { color: theme.colors.textSecondary }]}>
-                Eller välj specifikt test
-              </Text>
-              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-            </View>
+            {!isFullTest && testVersions.length > 0 && (
+              <View style={styles.divider}>
+                <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+                <Text style={[styles.dividerText, { color: theme.colors.textSecondary }]}>
+                  Eller välj specifikt test
+                </Text>
+                <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+              </View>
+            )}
 
-            {testVersions.map((version) => {
+            {isFullTest ? (
+              <TouchableOpacity
+                style={[
+                  styles.versionCard,
+                  { 
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  onSelectVersion('');
+                  onClose();
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.versionCardContent}>
+                  <View style={[styles.versionIcon, { backgroundColor: `${sectionColor}15` }]}>
+                    <Calendar size={20} color={sectionColor} />
+                  </View>
+                  <View style={styles.versionInfo}>
+                    <Text style={[styles.versionName, { color: theme.colors.text }]}>
+                      Blandade frågor från alla delprov
+                    </Text>
+                    <Text style={[styles.versionDescription, { color: theme.colors.textSecondary }]}>
+                      120 frågor • 235 minuter
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              testVersions.map((version) => {
               const isSelected = selectedVersionId === version.id;
               
               return (
@@ -148,12 +184,15 @@ export default function TestVersionSelector({
                   </View>
                 </TouchableOpacity>
               );
-            })}
+              })
+            )}
           </ScrollView>
 
           <View style={[styles.footer, { backgroundColor: theme.colors.background }]}>
             <Text style={[styles.footerText, { color: theme.colors.textSecondary }]}>
-              Välj en testversion för att öva på specifika prov från tidigare tillfällen
+              {isFullTest 
+                ? 'Komplett högskoleprov med alla 6 delprov. Du får 3 timmar och 55 minuter på dig.' 
+                : 'Välj en testversion för att öva på specifika prov från tidigare tillfällen'}
             </Text>
           </View>
         </View>

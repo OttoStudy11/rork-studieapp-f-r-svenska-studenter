@@ -18,7 +18,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, GraduationCap, AlertCircle, ChevronRight, Zap, FileText } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, GraduationCap, AlertCircle, ChevronRight, Zap, FileText, Sparkles } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
@@ -338,7 +338,7 @@ export default function HomeScreen() {
 
         {/* Upcoming Exams Section */}
         <SlideInView direction="up" delay={450}>
-            <View style={styles.section}>
+            <View style={[styles.section, { marginBottom: 16 }]}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleContainer}>
                   <Calendar size={20} color={theme.colors.warning} />
@@ -432,7 +432,7 @@ export default function HomeScreen() {
         </SlideInView>
 
         {/* Högskoleprov Card */}
-        <SlideInView direction="up" delay={400}>
+        <SlideInView direction="up" delay={500}>
           <TouchableOpacity 
             style={[styles.hpCard, { backgroundColor: theme.colors.card }]}
             onPress={() => router.push('/hogskoleprovet' as any)}
@@ -476,7 +476,7 @@ export default function HomeScreen() {
         </SlideInView>
 
         {/* Compact XP Card */}
-        <SlideInView direction="up" delay={450}>
+        <SlideInView direction="up" delay={550}>
           <TouchableOpacity 
             style={[styles.compactXpCard, { backgroundColor: theme.colors.card }]}
             onPress={() => router.push('/achievements' as any)}
@@ -509,18 +509,22 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </SlideInView>
 
-        {/* Study Tips Section */}
-        <SlideInView direction="up" delay={500}>
+        {/* Study Tips & Techniques Section */}
+        <SlideInView direction="up" delay={600}>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
+              <View style={styles.sectionTitleContainer}>
+                <Sparkles size={20} color={theme.colors.primary} />
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips & Tekniker</Text>
+              </View>
               <TouchableOpacity onPress={() => router.push('/study-tips')}>
-                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
               </TouchableOpacity>
             </View>
             
+            {/* Study Tips Grid */}
             <View style={styles.tipsGrid}>
-              {studyTips.slice(0, 6).map((tip, index) => (
+              {studyTips.slice(0, 2).map((tip, index) => (
                 <FadeInView key={tip.id} delay={600 + index * 50}>
                   <TouchableOpacity 
                     style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
@@ -543,21 +547,10 @@ export default function HomeScreen() {
                 </FadeInView>
               ))}
             </View>
-          </View>
-        </SlideInView>
 
-        {/* Study Techniques Section */}
-        <SlideInView direction="up" delay={600}>
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
-              <TouchableOpacity onPress={() => router.push('/study-techniques')}>
-                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.techniquesGrid}>
-              {studyTechniques.map((technique, index) => (
+            {/* Study Techniques Row */}
+            <View style={[styles.techniquesGrid, { paddingHorizontal: 0, marginTop: 12 }]}>
+              {studyTechniques.slice(0, 1).map((technique, index) => (
                 <FadeInView key={technique.id} delay={700 + index * 50}>
                   <TouchableOpacity 
                     style={[styles.compactTechniqueCard, { backgroundColor: theme.colors.card }]}
@@ -574,12 +567,21 @@ export default function HomeScreen() {
                 </FadeInView>
               ))}
             </View>
+            
+            {/* See All Techniques Button */}
+            <TouchableOpacity 
+              style={[styles.seeAllButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+              onPress={() => router.push('/study-techniques')}
+            >
+              <Text style={[styles.seeAllButtonText, { color: theme.colors.primary }]}>Visa alla studietekniker</Text>
+              <ArrowRight size={18} color={theme.colors.primary} />
+            </TouchableOpacity>
           </View>
         </SlideInView>
 
         {/* Premium Upgrade Banner */}
         {!isPremium && (
-          <SlideInView direction="up" delay={700}>
+          <SlideInView direction="up" delay={750}>
             <View style={styles.section}>
               <TouchableOpacity 
                 style={[styles.premiumBanner, { backgroundColor: theme.colors.warning + '15', borderColor: theme.colors.warning + '30' }]}
@@ -617,7 +619,10 @@ export default function HomeScreen() {
                 <FadeInView key={course.id} delay={900 + index * 100}>
                   <TouchableOpacity 
                     style={[styles.courseCard, { backgroundColor: theme.colors.card }]}
-                    onPress={() => router.push(`/content-course/${course.id}`)}
+                    onPress={() => {
+                      console.log('Navigating to course:', course.id, course.title);
+                      router.push(`/course/${course.id}` as any);
+                    }}
                   >
                     <View style={styles.courseHeader}>
                       <View style={styles.courseInfo}>
@@ -881,7 +886,7 @@ const styles = StyleSheet.create({
   },
   hpCard: {
     marginHorizontal: 24,
-    marginBottom: 16,
+    marginBottom: 24,
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -1258,7 +1263,20 @@ const styles = StyleSheet.create({
   compactArrow: {
     opacity: 0.6,
   },
-
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  seeAllButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
   premiumBanner: {
     borderRadius: 16,
     padding: 20,

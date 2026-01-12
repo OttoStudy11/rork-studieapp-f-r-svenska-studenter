@@ -409,14 +409,11 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     }
   };
 
-  const getQuestionsBySection = useCallback((sectionCode: string, count?: number): LocalHPQuestion[] => {
+  const getQuestionsBySection = useCallback((sectionCode: string, count: number = 20): LocalHPQuestion[] => {
     const allQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS];
     const questions = allQuestions.filter(q => q.sectionCode === sectionCode);
-    if (count && count < questions.length) {
-      const shuffled = [...questions].sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, count);
-    }
-    return questions;
+    const shuffled = [...questions].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(count, questions.length));
   }, []);
 
   const getQuestionsByTestVersion = useCallback((testVersionId: string): LocalHPQuestion[] => {
@@ -430,9 +427,12 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
 
   const getAllQuestionsForFullTest = useCallback((): LocalHPQuestion[] => {
     const allQuestions: LocalHPQuestion[] = [];
+    const allAvailableQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS];
     HP_SECTIONS.forEach(section => {
-      const sectionQuestions = SAMPLE_HP_QUESTIONS.filter(q => q.sectionCode === section.code);
-      allQuestions.push(...sectionQuestions);
+      const sectionQuestions = allAvailableQuestions.filter(q => q.sectionCode === section.code);
+      const shuffled = [...sectionQuestions].sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, Math.min(20, sectionQuestions.length));
+      allQuestions.push(...selected);
     });
     return allQuestions;
   }, []);
@@ -455,9 +455,14 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
       let questions: LocalHPQuestion[];
       if (testVersionId) {
         questions = getQuestionsByTestVersion(testVersionId);
+        const targetCount = section.questionCount || 20;
+        if (questions.length > targetCount) {
+          const shuffled = [...questions].sort(() => Math.random() - 0.5);
+          questions = shuffled.slice(0, targetCount);
+        }
         console.log('[HP] Using test version:', testVersionId, 'questions:', questions.length);
       } else {
-        questions = getQuestionsBySection(sectionCode);
+        questions = getQuestionsBySection(sectionCode, section.questionCount || 20);
       }
       
       if (questions.length === 0) {

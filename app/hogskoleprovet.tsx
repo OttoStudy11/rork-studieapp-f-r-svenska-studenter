@@ -22,14 +22,13 @@ import {
   BarChart3,
   Lock,
   Crown,
-  Brain,
-  TrendingUp,
   Calendar,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
 import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HP_FULL_TEST_VERSIONS } from '@/constants/hogskoleprovet';
+import { getRandomTips } from '@/constants/hogskoleprovet-study-tips';
 import { COLORS } from '@/constants/design-system';
 import TestVersionSelector from '@/components/TestVersionSelector';
 
@@ -51,6 +50,7 @@ export default function HogskoleprovetScreen() {
   const [versionSelectorVisible, setVersionSelectorVisible] = useState(false);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [fullTestModalVisible, setFullTestModalVisible] = useState(false);
+  const [studyTips] = useState(() => getRandomTips(5));
   
   const stats = getUserStats();
   const estimatedScore = getEstimatedHPScore();
@@ -419,37 +419,40 @@ export default function HogskoleprovetScreen() {
         <View style={styles.tipsSection}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              Studietips
+              Studietips & Insikter
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>
+              Expertråd för att maximera ditt resultat
             </Text>
           </View>
           
-          <View style={[styles.tipCard, { backgroundColor: theme.colors.surface }]}>
-            <View style={[styles.tipIconBg, { backgroundColor: `${COLORS.info}20` }]}>
-              <Brain size={20} color={COLORS.info} />
+          {studyTips.map((tip) => (
+            <View key={tip.id} style={[styles.tipCard, { backgroundColor: theme.colors.surface }]}>
+              <View style={styles.tipHeader}>
+                <View style={[styles.tipIconBg, { backgroundColor: `${tip.color}20` }]}>
+                  <Text style={styles.tipEmoji}>{tip.icon}</Text>
+                </View>
+                <View style={styles.tipContent}>
+                  <Text style={[styles.tipTitle, { color: theme.colors.text }]}>
+                    {tip.title}
+                  </Text>
+                  <Text style={[styles.tipDescription, { color: theme.colors.textSecondary }]}>
+                    {tip.description}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <View style={styles.tipContent}>
-              <Text style={[styles.tipTitle, { color: theme.colors.text }]}>
-                Regelbunden övning
-              </Text>
-              <Text style={[styles.tipDescription, { color: theme.colors.textSecondary }]}>
-                Öva minst 30 minuter om dagen för bäst resultat
-              </Text>
-            </View>
-          </View>
+          ))}
           
-          <View style={[styles.tipCard, { backgroundColor: theme.colors.surface }]}>
-            <View style={[styles.tipIconBg, { backgroundColor: `${COLORS.success}20` }]}>
-              <TrendingUp size={20} color={COLORS.success} />
-            </View>
-            <View style={styles.tipContent}>
-              <Text style={[styles.tipTitle, { color: theme.colors.text }]}>
-                Fokusera på svaga områden
-              </Text>
-              <Text style={[styles.tipDescription, { color: theme.colors.textSecondary }]}>
-                Lägg extra tid på de delprov du har lägst poäng på
-              </Text>
-            </View>
-          </View>
+          <TouchableOpacity 
+            style={[styles.viewMoreTips, { backgroundColor: theme.colors.surface }]}
+            onPress={() => router.push('/study-tips' as any)}
+          >
+            <Text style={[styles.viewMoreText, { color: COLORS.primary }]}>
+              Visa alla studietips
+            </Text>
+            <ChevronRight size={18} color={COLORS.primary} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.bottomPadding} />
@@ -818,31 +821,54 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   tipCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     padding: 16,
-    borderRadius: 14,
-    marginBottom: 10,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tipHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
   },
   tipIconBg: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+  },
+  tipEmoji: {
+    fontSize: 22,
   },
   tipContent: {
     flex: 1,
   },
   tipTitle: {
     fontSize: 15,
-    fontWeight: '600' as const,
-    marginBottom: 2,
+    fontWeight: '700' as const,
+    marginBottom: 4,
   },
   tipDescription: {
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 20,
+  },
+  viewMoreTips: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    borderRadius: 12,
+    gap: 6,
+    marginTop: 4,
+  },
+  viewMoreText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
   bottomPadding: {
     height: 100,

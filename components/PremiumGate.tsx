@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Crown, Sparkles, Zap, BarChart3, Users, GraduationCap } from 'lucide-react-native';
+import { Crown, Sparkles, Zap, BarChart3, Users, GraduationCap, ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
@@ -91,6 +91,10 @@ export function PremiumGate({
     router.push('/premium');
   };
 
+  const handleGoBack = () => {
+    router.back();
+  };
+
   return (
     <View style={fullScreen ? styles.fullScreenContainer : styles.container}>
       <View style={fullScreen ? styles.fullScreenChildrenWrapper : styles.childrenWrapper}>
@@ -111,6 +115,15 @@ export function PremiumGate({
             end={{ x: 0, y: 1 }}
             style={styles.gradientBackground}
           >
+            {fullScreen && (
+              <TouchableOpacity
+                style={[styles.backButton, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }]}
+                onPress={handleGoBack}
+                activeOpacity={0.7}
+              >
+                <ArrowLeft size={24} color={isDark ? '#F1F5F9' : '#1E293B'} />
+              </TouchableOpacity>
+            )}
             <View style={styles.contentContainer}>
               {/* Premium crown badge with glow */}
               <View style={styles.crownContainer}>
@@ -259,6 +272,22 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: 20,
     minHeight: 200,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   fullScreenContainer: {
     flex: 1,

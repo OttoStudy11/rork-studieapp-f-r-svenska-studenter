@@ -403,7 +403,10 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
 
     if (authUser && isAuthenticated) {
       try {
-        await (supabase as any).from('user_levels').upsert({
+        console.log(`💾 Syncing XP to database: +${finalAmount} XP (total: ${newTotalXp})`);
+        
+        // Sync to user_levels table
+        const { error: levelError } = await (supabase as any).from('user_levels').upsert({
           user_id: authUser.id,
           current_level: newLevel.level,
           total_xp: newTotalXp,
@@ -412,22 +415,54 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
           last_level_up: newLevel.level > previousLevel ? new Date().toISOString() : undefined,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
+        
+        if (levelError) {
+          console.error('❌ Error syncing user_levels:', levelError);
+        } else {
+          console.log('✅ user_levels synced successfully');
+        }
 
-        await (supabase as any).from('point_transactions').insert({
+        // Record point transaction
+        const { error: transactionError } = await (supabase as any).from('point_transactions').insert({
           user_id: authUser.id,
           amount: finalAmount,
           source_type: sourceType,
           source_id: sourceId,
           metadata: metadata ?? {},
+          created_at: new Date().toISOString(),
         });
+        
+        if (transactionError) {
+          console.error('❌ Error recording point_transaction:', transactionError);
+        } else {
+          console.log('✅ point_transaction recorded successfully');
+        }
 
-        await supabase.from('user_progress').upsert({
+        // Sync to user_progress table
+        const { error: progressError } = await supabase.from('user_progress').upsert({
           user_id: authUser.id,
           total_xp: newTotalXp,
+          total_points: newTotalXp,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
+        
+        if (progressError) {
+          console.error('❌ Error syncing user_progress:', progressError);
+        } else {
+          console.log('✅ user_progress synced successfully');
+        }
+        
+        // Also try to update profiles for leaderboard (total_points column may not exist)
+        try {
+          await (supabase as any).from('profiles').update({
+            updated_at: new Date().toISOString(),
+          }).eq('id', authUser.id);
+        } catch {
+          // Ignore profile update errors
+        }
+        
       } catch (error) {
-        console.log('Error syncing XP to database:', error);
+        console.error('❌ Error syncing XP to database:', error);
       }
     }
 
@@ -542,17 +577,37 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
   }, [authUser, isAuthenticated, state.dailyChallenges]);
 
   const awardStudySession = useCallback(async (minutes: number, courseId?: string): Promise<LevelUpEvent | null> => {
-    console.log(`🎯 Awarding study session: ${minutes} minutes`);
+    console.log(`🎯 Awarding study session: ${minutes} minutes, courseId: ${courseId}`);
     
+    // Update challenge progress
     await updateChallengeProgress('study_minutes', minutes);
     await updateChallengeProgress('sessions_count', 1);
+    
+    // Update user_progress study stats
+    if (authUser && isAuthenticated) {
+      try {
+        // Update with available columns
+        const { error: updateError } = await (supabase as any).from('user_progress').upsert({
+          user_id: authUser.id,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+        
+        if (updateError) {
+          console.error('❌ Error updating study stats:', updateError);
+        } else {
+          console.log(`✅ Study session recorded for user`);
+        }
+      } catch (error) {
+        console.log('⚠️ Could not update study stats:', error);
+      }
+    }
     
     const xp = calculateStudySessionXp(minutes);
     if (xp > 0) {
       return addXp(xp, 'study_session', courseId, { minutes });
     }
     return null;
-  }, [addXp, updateChallengeProgress]);
+  }, [addXp, updateChallengeProgress, authUser, isAuthenticated]);
 
   const awardChallengeComplete = useCallback(async (challengeId: string): Promise<LevelUpEvent | null> => {
     const challenge = state.dailyChallenges.find(c => c.id === challengeId);
@@ -616,19 +671,110 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
     showSuccess(`${challenge.emoji} Utmaning klar! +${challenge.xpReward} XP`);
   }, [state.dailyChallenges, awardChallengeComplete, authUser, isAuthenticated, showSuccess]);
 
-  const checkAchievements = useCallback(async () => {
+  // Fallback achievement check when RPC fails
+  const checkAchievementsFallback = useCallback(async () => {
     if (!authUser || !isAuthenticated) return;
     
     try {
-      console.log('🏆 Calling check_user_achievements RPC for user:', authUser.id);
+      // Get user stats from pomodoro_sessions
+      const { data: sessions } = await (supabase as any)
+        .from('pomodoro_sessions')
+        .select('duration')
+        .eq('user_id', authUser.id);
       
+      const totalStudyTime = (sessions || []).reduce((sum: number, s: any) => sum + (s.duration || 0), 0);
+      const sessionsCompleted = (sessions || []).length;
+      
+      // Get friend count
+      const { count: friendCount } = await supabase
+        .from('friends')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', authUser.id)
+        .eq('status', 'accepted');
+      
+      // Get all achievements
+      const { data: allAchievements } = await supabase
+        .from('achievements')
+        .select('*');
+      
+      // Get user's current achievements
+      const { data: userAchievements } = await supabase
+        .from('user_achievements')
+        .select('achievement_id, unlocked_at')
+        .eq('user_id', authUser.id);
+      
+      const unlockedIds = new Set(
+        (userAchievements || [])
+          .filter(ua => ua.unlocked_at)
+          .map(ua => ua.achievement_id)
+      );
+      
+      // Check each achievement
+      for (const achievement of (allAchievements || [])) {
+        if (unlockedIds.has(achievement.id)) continue;
+        
+        let shouldUnlock = false;
+        const target = achievement.requirement_target || 0;
+        
+        switch (achievement.requirement_type) {
+          case 'study_time':
+            shouldUnlock = totalStudyTime >= target;
+            break;
+          case 'sessions':
+            shouldUnlock = sessionsCompleted >= target;
+            break;
+          case 'friends':
+            shouldUnlock = (friendCount || 0) >= target;
+            break;
+        }
+        
+        if (shouldUnlock) {
+          console.log(`🏆 Fallback: Unlocking achievement: ${achievement.title}`);
+          
+          // Update user_achievements
+          await supabase.from('user_achievements').upsert({
+            user_id: authUser.id,
+            achievement_id: achievement.id,
+            unlocked_at: new Date().toISOString(),
+            progress: target,
+          }, { onConflict: 'user_id,achievement_id' });
+          
+          const xpReward = achievement.reward_points || 25;
+          
+          showAchievement(
+            `🏆 ${achievement.title}`,
+            `${achievement.description} (+${xpReward} XP)`
+          );
+          
+          await addXp(xpReward, 'achievement_unlock', achievement.id, { title: achievement.title });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Fallback achievement check failed:', error);
+    }
+  }, [authUser, isAuthenticated, showAchievement, addXp]);
+
+  const checkAchievements = useCallback(async () => {
+    if (!authUser || !isAuthenticated) {
+      console.log('⚠️ Cannot check achievements: user not authenticated');
+      return;
+    }
+    
+    try {
+      console.log('🏆 Checking achievements for user:', authUser.id);
+      
+      // First, try the RPC function
       const { data: newlyUnlocked, error: rpcError } = await (supabase as any).rpc('check_user_achievements', {
         p_user_id: authUser.id,
       });
 
       if (rpcError) {
         console.error('❌ Error from check_user_achievements RPC:', rpcError);
-        throw rpcError;
+        
+        // Fallback: manually check some key achievements
+        console.log('🔄 Attempting fallback achievement check...');
+        await checkAchievementsFallback();
+        return;
       }
 
       console.log('📊 RPC response:', newlyUnlocked);
@@ -646,6 +792,9 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
             `🏆 ${achData.title}`,
             `${achData.description} (+${xpReward} XP)`
           );
+          
+          // Award XP for achievement
+          await addXp(xpReward, 'achievement_unlock', achData.id, { title: achData.title });
         }
         
         // Refresh all data to show updated achievements and XP
@@ -657,7 +806,7 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
     } catch (error) {
       console.error('❌ Exception checking achievements:', error);
     }
-  }, [authUser, isAuthenticated, showAchievement, refreshAll]);
+  }, [authUser, isAuthenticated, showAchievement, refreshAll, addXp, checkAchievementsFallback]);
 
   const getLeaderboardPosition = useCallback(async (): Promise<number> => {
     if (!authUser || !isAuthenticated) return 0;

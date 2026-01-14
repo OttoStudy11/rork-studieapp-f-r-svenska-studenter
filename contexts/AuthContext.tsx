@@ -382,16 +382,22 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
       
       console.log('Sign up successful:', data.user?.email);
+      console.log('User confirmed_at:', data.user?.confirmed_at);
+      console.log('User email_confirmed_at:', (data.user as any)?.email_confirmed_at);
       
-      // Check if email confirmation is required
-      const needsEmailConfirmation = data.user && !data.session;
-      if (needsEmailConfirmation) {
+      // Email confirmation is ALWAYS required for new accounts
+      // Even if session exists, check if email is confirmed
+      const emailNotConfirmed = data.user && (!data.user.email_confirmed_at && !data.user.confirmed_at);
+      const noSession = data.user && !data.session;
+      
+      if (noSession || emailNotConfirmed) {
         console.log('Email confirmation required for:', email);
+        console.log('Email not confirmed:', emailNotConfirmed, 'No session:', noSession);
         return { error: null, needsEmailConfirmation: true };
       }
       
-      // Create profile automatically after successful signup
-      if (data.user) {
+      // Create profile automatically after successful signup (only if email is confirmed)
+      if (data.user && data.session) {
         console.log('User signed up successfully, creating profile:', data.user.id);
         
         // Try to create a basic profile entry

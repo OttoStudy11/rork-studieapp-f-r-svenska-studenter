@@ -14,6 +14,8 @@ import {
   HPTestVersion,
 } from '@/constants/hogskoleprovet';
 import { EXTENDED_HP_QUESTIONS } from '@/constants/hogskoleprovet-questions-extended';
+import { ALL_HP_QUESTIONS } from '@/constants/hogskoleprovet-questions';
+import { shuffleAnswerOptions } from '@/lib/question-utils';
 
 export interface HPSection {
   id: string;
@@ -409,16 +411,18 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     }
   };
 
-  const getQuestionsBySection = useCallback((sectionCode: string, count: number = 20): LocalHPQuestion[] => {
-    const allQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS];
+  const getQuestionsBySection = useCallback((sectionCode: string, count: number = 40): LocalHPQuestion[] => {
+    const allQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS];
     const questions = allQuestions.filter(q => q.sectionCode === sectionCode);
     const shuffled = [...questions].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, Math.min(count, questions.length));
+    const selectedQuestions = shuffled.slice(0, Math.min(count, questions.length));
+    return selectedQuestions.map(q => shuffleAnswerOptions(q));
   }, []);
 
   const getQuestionsByTestVersion = useCallback((testVersionId: string): LocalHPQuestion[] => {
-    const allQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS];
-    return allQuestions.filter(q => q.testVersion === testVersionId);
+    const allQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS];
+    const versionQuestions = allQuestions.filter(q => q.testVersion === testVersionId);
+    return versionQuestions.map(q => shuffleAnswerOptions(q));
   }, []);
 
   const getTestVersionsBySection = useCallback((sectionCode: string): HPTestVersion[] => {
@@ -427,12 +431,12 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
 
   const getAllQuestionsForFullTest = useCallback((): LocalHPQuestion[] => {
     const allQuestions: LocalHPQuestion[] = [];
-    const allAvailableQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS];
+    const allAvailableQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS];
     HP_SECTIONS.forEach(section => {
       const sectionQuestions = allAvailableQuestions.filter(q => q.sectionCode === section.code);
       const shuffled = [...sectionQuestions].sort(() => Math.random() - 0.5);
       const selected = shuffled.slice(0, Math.min(20, sectionQuestions.length));
-      allQuestions.push(...selected);
+      allQuestions.push(...selected.map(q => shuffleAnswerOptions(q)));
     });
     return allQuestions;
   }, []);

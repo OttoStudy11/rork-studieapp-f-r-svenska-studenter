@@ -175,18 +175,31 @@ export async function assignUniversityCoursesToUser(
     const year = Math.ceil(term / 2) as 1 | 2 | 3 | 4 | 5;
     console.log(`📅 Term ${term} maps to year ${year}`);
     
-    // First, try to get courses from the database
-    const { data: dbCourses, error: dbError } = await supabase
-      .from('university_courses')
-      .select('*')
-      .eq('program_id', programId)
-      .eq('year', year)
-      .eq('mandatory', true);
-    
     let coursesToAssign: AssignedCourse[] = [];
+    let dbError: any = null;
+    let dbCourses: any[] | null = null;
+    
+    // First, try to get courses from the database
+    try {
+      const result = await supabase
+        .from('university_courses')
+        .select('id, code, name, credits, year, mandatory, field, program_id, description')
+        .eq('program_id', programId)
+        .eq('year', year)
+        .eq('mandatory', true);
+      
+      dbError = result.error;
+      dbCourses = result.data;
+    } catch (queryError: any) {
+      console.warn('⚠️ Database query failed, using constants:', queryError?.message);
+      dbError = queryError;
+    }
     
     if (dbError || !dbCourses || dbCourses.length === 0) {
-      console.log('📚 No courses in DB, falling back to constants');
+      console.log('📚 No courses in DB or query failed, falling back to constants');
+      if (dbError) {
+        console.log('📚 DB Error:', dbError.message || dbError);
+      }
       // Fall back to constants
       const constantCourses = getCoursesForUniversityProgram(programId, year);
       const mandatoryCourses = constantCourses.filter(c => c.mandatory);
@@ -200,11 +213,11 @@ export async function assignUniversityCoursesToUser(
       }));
     } else {
       console.log(`✅ Found ${dbCourses.length} courses in database`);
-      coursesToAssign = dbCourses.map(course => ({
-        courseId: course.id,
-        title: course.title,
-        subject: course.subject_area || 'Allmänt',
-        description: course.description || `${course.title} - ${course.credits} hp`,
+      coursesToAssign = dbCourses.map((course: any) => ({
+        courseId: course.id || course.code,
+        title: course.name || course.title,
+        subject: course.field || course.subject_area || 'Allmänt',
+        description: course.description || `${course.name || course.title} - ${course.credits} hp`,
         credits: course.credits,
       }));
     }

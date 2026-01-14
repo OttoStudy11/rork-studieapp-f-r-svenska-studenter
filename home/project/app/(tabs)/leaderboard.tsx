@@ -26,7 +26,7 @@ export default function Leaderboard() {
 
   const { data: globalLeaderboardData = [] } = useQuery({
     queryKey: ['globalLeaderboard', user?.id, selectedPeriod],
-    queryFn: () => user?.id ? getGlobalLeaderboardV2(user.id, selectedPeriod) : [],
+    queryFn: () => user?.id ? getGlobalLeaderboardV2(user.id, selectedPeriod, 15) : [],
     enabled: !!user?.id && selectedMode === 'global',
   });
 
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
   itemLeftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 8,
   },
   currentUserItem: {
     backgroundColor: '#f8f9fa',
@@ -705,10 +705,10 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   rankContainer: {
-    width: 32,
+    width: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 8,
   },
   rankText: {
     fontSize: 18,

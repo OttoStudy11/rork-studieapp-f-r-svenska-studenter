@@ -407,14 +407,16 @@ export default function FriendsScreen() {
       showSuccess('Vänförfrågan accepterad! 🎉');
       await loadFriends();
       
-      // Check for friend-related achievements
-      try {
-        console.log('🏆 Checking for friend achievements...');
-        await checkAchievements();
-        console.log('✅ Friend achievements checked');
-      } catch (achError) {
-        console.log('⚠️ Could not check friend achievements:', achError);
-      }
+      // Check for friend-related achievements with delay to allow trigger to complete
+      setTimeout(async () => {
+        try {
+          console.log('🏆 Checking for friend achievements...');
+          await checkAchievements();
+          console.log('✅ Friend achievements checked');
+        } catch (achError) {
+          console.log('⚠️ Could not check friend achievements:', achError);
+        }
+      }, 1000);
     } catch (error) {
       console.error('Error accepting friend request:', error);
       showError('Kunde inte acceptera vänförfrågan');

@@ -796,22 +796,16 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
             // Wait a moment for the trigger to complete
             await new Promise(resolve => setTimeout(resolve, 500));
             
-            // Check for achievements using achievement context directly
+            // Check for achievements using RPC directly
             try {
-              // Import achievements context dynamically to avoid circular dependency
-              const { checkAchievements } = await import('@/contexts/AchievementContext').then(mod => ({
-                checkAchievements: async () => {
-                  const { checkAndUpdateAchievements } = await import('@/lib/database');
-                  console.log('🏆 Checking for new achievements...');
-                  const newAchievements = await checkAndUpdateAchievements(authUser.id);
-                  return newAchievements;
-                }
-              }));
-              
-              const newAchievements = await checkAchievements();
+              console.log('🏆 Checking for new achievements...');
+              const { checkAndUpdateAchievements } = await import('@/lib/database');
+              const newAchievements = await checkAndUpdateAchievements(authUser.id);
               
               if (newAchievements && newAchievements.length > 0) {
                 console.log(`✅ Unlocked ${newAchievements.length} new achievement(s)!`);
+              } else {
+                console.log('ℹ️ No new achievements unlocked');
               }
             } catch (achievementError) {
               console.warn('⚠️ Could not check achievements:', achievementError);

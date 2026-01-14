@@ -6,7 +6,7 @@ import { Database } from '@/lib/database.types';
 import type { Gymnasium } from '@/constants/gymnasiums';
 import type { AvatarConfig } from '@/constants/avatar-config';
 import { getSelectedCoursesData } from '@/constants/gymnasium-courses';
-import { assignCoursesAfterOnboarding } from '@/lib/course-assignment';
+import { assignCoursesAfterOnboarding, assignUniversityCoursesToUser } from '@/lib/course-assignment';
 
 // Old functions removed - now using assignCoursesAfterOnboarding from lib/course-assignment.ts
 
@@ -526,16 +526,29 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         // Use the new course assignment system for university
         console.log('Assigning university courses using new system');
         console.log('University program ID:', userData.universityProgramId);
-        console.log('University year:', userData.universityYear);
+        console.log('University term:', userData.universityYear);
         
         if (userData.universityProgramId && userData.universityYear) {
           try {
-            const assignedCourses = await assignCoursesAfterOnboarding({
-              userId: authUser.id,
-              educationLevel: 'hogskola',
-              educationYear: parseInt(userData.universityYear, 10),
-              universityProgramId: userData.universityProgramId,
-            });
+            const term = parseInt(userData.universityYear, 10);
+            
+            // Try the dedicated university course assignment first
+            let assignedCourses = await assignUniversityCoursesToUser(
+              authUser.id,
+              userData.universityProgramId,
+              term
+            );
+            
+            // Fallback to generic assignment if no courses were assigned
+            if (assignedCourses.length === 0) {
+              console.log('Falling back to generic course assignment');
+              assignedCourses = await assignCoursesAfterOnboarding({
+                userId: authUser.id,
+                educationLevel: 'hogskola',
+                educationYear: term,
+                universityProgramId: userData.universityProgramId,
+              });
+            }
             
             console.log(`✅ Successfully assigned ${assignedCourses.length} university courses`);
             

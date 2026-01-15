@@ -654,6 +654,41 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         return updatedUser;
       });
       console.log('User updated locally:', updatedUser.name);
+      
+      // Sync to database
+      const dbConnected = await testDatabaseConnection();
+      if (dbConnected) {
+        console.log('Syncing user updates to database...');
+        
+        const dbUpdates: Record<string, any> = {};
+        
+        if (updates.name !== undefined) dbUpdates.name = updates.name;
+        if (updates.displayName !== undefined) dbUpdates.display_name = updates.displayName;
+        if (updates.username !== undefined) dbUpdates.username = updates.username;
+        if (updates.program !== undefined) dbUpdates.program = updates.program;
+        if (updates.purpose !== undefined) dbUpdates.purpose = updates.purpose;
+        if (updates.studyLevel !== undefined) dbUpdates.level = updates.studyLevel;
+        if (updates.avatar !== undefined) dbUpdates.avatar_url = updates.avatar ? JSON.stringify(updates.avatar) : null;
+        if (updates.gymnasium !== undefined) {
+          dbUpdates.gymnasium_id = updates.gymnasium?.id || null;
+          dbUpdates.gymnasium_name = updates.gymnasium?.name || null;
+        }
+        if (updates.gymnasiumGrade !== undefined) dbUpdates.gymnasium_grade = updates.gymnasiumGrade;
+        if (updates.dailyGoalHours !== undefined) dbUpdates.daily_goal_hours = updates.dailyGoalHours;
+        
+        if (Object.keys(dbUpdates).length > 0) {
+          const { error } = await supabase
+            .from('profiles')
+            .update(dbUpdates)
+            .eq('id', authUser.id);
+          
+          if (error) {
+            console.error('Error syncing user to database:', error);
+          } else {
+            console.log('✅ User synced to database successfully');
+          }
+        }
+      }
     } catch (error) {
       console.error('Error updating user:', error);
       throw error;

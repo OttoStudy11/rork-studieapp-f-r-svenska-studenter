@@ -191,7 +191,7 @@ export default function ProfileScreen() {
               xpProgress={xpProgress}
               totalXp={totalXp}
               streak={streak}
-              onPress={() => router.push('/achievements')}
+              onPress={() => router.push('/achievements' as any)}
             />
           </View>
         )}
@@ -235,7 +235,7 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dagens utmaningar</Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/home')}>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/home' as any)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -287,7 +287,7 @@ export default function ProfileScreen() {
                   <Text style={{ color: theme.colors.primary }}> ({unclaimedAchievements} nya)</Text>
                 )}
               </Text>
-              <TouchableOpacity onPress={() => router.push('/achievements')}>
+              <TouchableOpacity onPress={() => router.push('/achievements' as any)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -384,7 +384,7 @@ export default function ProfileScreen() {
 
             <AnimatedPressable 
               style={styles.actionItem}
-              onPress={() => router.push('/settings')}
+              onPress={() => router.push('/settings' as any)}
             >
               <View style={[styles.actionIconCircle, { backgroundColor: theme.colors.secondary + '15' }]}>
                 <Settings size={20} color={theme.colors.secondary} />
@@ -397,7 +397,7 @@ export default function ProfileScreen() {
 
             <AnimatedPressable 
               style={styles.actionItem}
-              onPress={() => router.push('/achievements')}
+              onPress={() => router.push('/achievements' as any)}
             >
               <View style={[styles.actionIconCircle, { backgroundColor: theme.colors.warning + '15' }]}>
                 <Award size={20} color={theme.colors.warning} />

@@ -44,9 +44,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       console.log('AuthGuard timeout reached - forcing navigation');
       setTimeoutReached(true);
       if (ftueCompleted === false) {
-        router.replace('/ftue');
+        router.replace('/ftue' as any);
       } else {
-        router.replace('/auth');
+        router.replace('/auth' as any);
       }
     }, 10000); // 10 second timeout
     
@@ -79,16 +79,16 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           // Check FTUE first - this takes priority for first-time users
           if (!ftueCompleted) {
             console.log('AuthGuard - Redirecting to FTUE (first time user)');
-            router.replace('/ftue');
+            router.replace('/ftue' as any);
           } else if (!isAuthenticated) {
             console.log('AuthGuard - Redirecting to auth (not authenticated)');
-            router.replace('/auth');
+            router.replace('/auth' as any);
           } else if (!hasCompletedOnboarding && (!studyUser || !studyUser.onboardingCompleted)) {
             console.log('AuthGuard - Redirecting to onboarding (onboarding not completed)');
-            router.replace('/onboarding');
+            router.replace('/onboarding' as any);
           } else {
             console.log('AuthGuard - Redirecting to home (authenticated and onboarded)');
-            router.replace('/(tabs)/home');
+            router.replace('/(tabs)/home' as any);
           }
         }
       }, 500); // Slightly longer delay to ensure data is loaded

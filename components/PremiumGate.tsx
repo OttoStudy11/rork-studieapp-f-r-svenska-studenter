@@ -88,7 +88,7 @@ export function PremiumGate({
   const featureConfig = FEATURE_CONFIGS[feature];
 
   const handleUpgrade = () => {
-    router.push('/premium');
+    router.push('/premium' as any);
   };
 
   const handleGoBack = () => {

@@ -135,7 +135,7 @@ export default function StudyTipsScreen() {
             <FadeInView key={tip.id} delay={150 + index * 50}>
               <TouchableOpacity 
                 style={[styles.tipCard, { backgroundColor: theme.colors.card }]}
-                onPress={() => router.push(`/study-tip/${tip.id}`)}
+                onPress={() => router.push(`/study-tip/${tip.id}` as never)}
               >
                 <Text style={styles.tipIcon}>{tip.icon}</Text>
                 <Text style={[styles.tipTitle, { color: theme.colors.text }]}>{tip.title}</Text>

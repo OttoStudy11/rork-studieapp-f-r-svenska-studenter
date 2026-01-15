@@ -111,7 +111,7 @@ export default function SettingsScreen() {
           icon: isPremium ? <Crown size={20} color={theme.colors.warning} /> : <Star size={20} color={theme.colors.primary} />,
           title: isPremium ? 'Premium aktiv' : 'Uppgradera till Premium',
           subtitle: isPremium ? 'Du har tillgång till alla funktioner' : 'Lås upp obegränsade funktioner',
-          onPress: () => router.push('/premium'),
+          onPress: () => router.push('/premium' as any),
         },
       ],
     },

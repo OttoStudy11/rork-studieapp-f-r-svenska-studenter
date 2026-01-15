@@ -105,7 +105,7 @@ export default function StudyTechniquesScreen() {
             <FadeInView key={technique.id} delay={150 + index * 50}>
               <TouchableOpacity 
                 style={[styles.techniqueCard, { backgroundColor: theme.colors.card }]}
-                onPress={() => router.push(`/study-technique/${technique.id}`)}
+                onPress={() => router.push(`/study-technique/${technique.id}` as never)}
               >
                 <View style={styles.techniqueHeader}>
                   <Text style={styles.techniqueIcon}>{technique.icon}</Text>

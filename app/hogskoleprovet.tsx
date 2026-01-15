@@ -66,7 +66,7 @@ export default function HogskoleprovetScreen() {
 
   const handleStartFullTest = () => {
     if (!isPremium) {
-      router.push('/premium');
+      router.push('/premium' as any);
       return;
     }
     setFullTestModalVisible(true);
@@ -82,7 +82,7 @@ export default function HogskoleprovetScreen() {
 
   const handleStartSection = (sectionCode: string) => {
     if (!isPremium) {
-      router.push('/premium');
+      router.push('/premium' as any);
       return;
     }
     setSelectedSection(sectionCode);
@@ -159,7 +159,7 @@ export default function HogskoleprovetScreen() {
             {!isPremium && (
               <TouchableOpacity 
                 style={styles.premiumCTA}
-                onPress={() => router.push('/premium')}
+                onPress={() => router.push('/premium' as any)}
               >
                 <LinearGradient
                   colors={['#FFD700', '#FFA500']}

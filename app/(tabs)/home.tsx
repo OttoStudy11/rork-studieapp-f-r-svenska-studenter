@@ -233,7 +233,7 @@ export default function HomeScreen() {
               )}
               <TouchableOpacity 
                 style={styles.profileButton}
-                onPress={() => router.push('/profile')}
+                onPress={() => router.push('/profile' as any)}
               >
                 {user.avatar ? (
                   <CharacterAvatar config={user.avatar} size={44} />
@@ -298,7 +298,7 @@ export default function HomeScreen() {
           <View style={styles.quickActions}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.actionButtonFull, { backgroundColor: theme.colors.primary }]}
-              onPress={() => router.push('/timer')}
+              onPress={() => router.push('/timer' as any)}
             >
               <Clock size={24} color="white" />
               <Text style={styles.actionButtonText}>Starta fokus</Text>
@@ -510,7 +510,7 @@ export default function HomeScreen() {
                 <Sparkles size={20} color={theme.colors.primary} />
                 <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips & Tekniker</Text>
               </View>
-              <TouchableOpacity onPress={() => router.push('/study-tips')}>
+              <TouchableOpacity onPress={() => router.push('/study-tips' as any)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
               </TouchableOpacity>
             </View>
@@ -521,7 +521,7 @@ export default function HomeScreen() {
                 <FadeInView key={tip.id} delay={600 + index * 50}>
                   <TouchableOpacity 
                     style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
-                    onPress={() => router.push(`/study-tip/${tip.id}`)}
+                    onPress={() => router.push(`/study-tip/${tip.id}` as any)}
                   >
                     <Text style={styles.compactTipIcon}>{tip.icon}</Text>
                     <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
@@ -547,7 +547,7 @@ export default function HomeScreen() {
                 <FadeInView key={technique.id} delay={700 + index * 50}>
                   <TouchableOpacity 
                     style={[styles.compactTechniqueCard, { backgroundColor: theme.colors.card }]}
-                    onPress={() => router.push(`/study-technique/${technique.id}`)}
+                    onPress={() => router.push(`/study-technique/${technique.id}` as any)}
                   >
                     <Text style={styles.compactTechniqueIcon}>{technique.icon}</Text>
                     <Text style={[styles.compactTechniqueTitle, { color: theme.colors.text }]}>{technique.title}</Text>
@@ -564,7 +564,7 @@ export default function HomeScreen() {
             {/* See All Techniques Button */}
             <TouchableOpacity 
               style={[styles.seeAllButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-              onPress={() => router.push('/study-techniques')}
+              onPress={() => router.push('/study-techniques' as any)}
             >
               <Text style={[styles.seeAllButtonText, { color: theme.colors.primary }]}>Visa alla studietekniker</Text>
               <ArrowRight size={18} color={theme.colors.primary} />
@@ -578,7 +578,7 @@ export default function HomeScreen() {
             <View style={styles.section}>
               <TouchableOpacity 
                 style={[styles.premiumBanner, { backgroundColor: theme.colors.warning + '15', borderColor: theme.colors.warning + '30' }]}
-                onPress={() => router.push('/premium')}
+                onPress={() => router.push('/premium' as any)}
               >
                 <View style={styles.premiumBannerContent}>
                   <View style={styles.premiumBannerLeft}>
@@ -602,7 +602,7 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Aktiva kurser</Text>
-              <TouchableOpacity onPress={() => router.push('/courses')}>
+              <TouchableOpacity onPress={() => router.push('/courses' as any)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>

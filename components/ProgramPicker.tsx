@@ -215,7 +215,7 @@ export default function ProgramPicker() {
       await setOnboardingCompleted();
       
       showSuccess('Program och kurser sparade!');
-      router.replace('/(tabs)/home');
+      router.replace('/(tabs)/home' as any);
     } catch (error: any) {
       console.error('Error saving selection:', error?.message || error?.toString() || 'Unknown error');
       if (error?.code) {

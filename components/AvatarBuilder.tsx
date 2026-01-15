@@ -11,24 +11,27 @@ import CharacterAvatar from './CharacterAvatar';
 import { 
   Palette,
   User,
-  Eye,
-  Smile,
   Shirt,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
+  Crown,
+  Backpack,
+  Footprints,
+  Smile,
 } from 'lucide-react-native';
 import type { AvatarConfig } from '@/constants/avatar-config';
 import {
-  SKIN_TONES,
-  HAIR_STYLES,
-  HAIR_COLORS,
-  EYE_SHAPES,
-  EYE_COLORS,
-  MOUTH_SHAPES,
-  CLOTHING_STYLES,
-  CLOTHING_COLORS,
-  ACCESSORIES,
+  BODY_COLORS,
+  FACE_EXPRESSIONS,
+  HATS,
+  HAT_COLORS,
+  OUTFITS,
+  OUTFIT_COLORS,
+  OUTFIT_PATTERNS,
+  BACKPACKS,
+  BACKPACK_COLORS,
+  SOCKS,
+  SOCK_COLORS,
   BACKGROUND_COLORS,
   DEFAULT_AVATAR_CONFIG,
 } from '@/constants/avatar-config';
@@ -42,12 +45,12 @@ interface AvatarBuilderProps {
 }
 
 type CustomizationCategory = 
-  | 'skin' 
-  | 'hair' 
-  | 'eyes' 
-  | 'mouth' 
-  | 'clothing' 
-  | 'accessory' 
+  | 'body' 
+  | 'face' 
+  | 'hat' 
+  | 'outfit' 
+  | 'backpack' 
+  | 'socks'
   | 'background';
 
 export default function AvatarBuilder({ 
@@ -60,15 +63,15 @@ export default function AvatarBuilder({
   const [internalConfig, setInternalConfig] = useState<AvatarConfig>(initialConfig || externalConfig || DEFAULT_AVATAR_CONFIG);
   
   const config = externalConfig || internalConfig;
-  const [activeCategory, setActiveCategory] = useState<CustomizationCategory>('skin');
+  const [activeCategory, setActiveCategory] = useState<CustomizationCategory>('body');
 
   const categories = [
-    { id: 'skin' as const, name: 'Hudton', icon: User },
-    { id: 'hair' as const, name: 'Hår', icon: Sparkles },
-    { id: 'eyes' as const, name: 'Ögon', icon: Eye },
-    { id: 'mouth' as const, name: 'Mun', icon: Smile },
-    { id: 'clothing' as const, name: 'Kläder', icon: Shirt },
-    { id: 'accessory' as const, name: 'Tillbehör', icon: Palette },
+    { id: 'body' as const, name: 'Kropp', icon: User },
+    { id: 'face' as const, name: 'Ansikte', icon: Smile },
+    { id: 'hat' as const, name: 'Hatt', icon: Crown },
+    { id: 'outfit' as const, name: 'Kläder', icon: Shirt },
+    { id: 'backpack' as const, name: 'Ryggsäck', icon: Backpack },
+    { id: 'socks' as const, name: 'Strumpor', icon: Footprints },
     { id: 'background' as const, name: 'Bakgrund', icon: Palette },
   ];
 
@@ -83,22 +86,22 @@ export default function AvatarBuilder({
 
   const renderCategoryContent = () => {
     switch (activeCategory) {
-      case 'skin':
+      case 'body':
         return (
           <View style={styles.optionsContainer}>
-            <Text style={styles.sectionLabel}>Välj hudton</Text>
+            <Text style={styles.sectionLabel}>Välj kroppsfärg</Text>
             <View style={styles.colorGrid}>
-              {SKIN_TONES.map((tone) => (
+              {BODY_COLORS.map((color) => (
                 <TouchableOpacity
-                  key={tone.id}
+                  key={color.id}
                   style={[
                     styles.colorOption,
-                    { backgroundColor: tone.color },
-                    config.skinTone === tone.id && styles.selectedOption
+                    { backgroundColor: color.color },
+                    config.bodyColor === color.id && styles.selectedOption
                   ]}
-                  onPress={() => updateConfig('skinTone', tone.id)}
+                  onPress={() => updateConfig('bodyColor', color.id)}
                 >
-                  {config.skinTone === tone.id && (
+                  {config.bodyColor === color.id && (
                     <View style={styles.checkmark}>
                       <Text style={styles.checkmarkText}>✓</Text>
                     </View>
@@ -109,119 +112,26 @@ export default function AvatarBuilder({
           </View>
         );
 
-      case 'hair':
-        return (
-          <ScrollView style={styles.optionsContainer} showsVerticalScrollIndicator={false}>
-            <Text style={styles.sectionLabel}>Frisyr</Text>
-            <View style={styles.optionsList}>
-              {HAIR_STYLES.map((style) => (
-                <TouchableOpacity
-                  key={style.id}
-                  style={[
-                    styles.listOption,
-                    config.hairStyle === style.id && styles.selectedListOption
-                  ]}
-                  onPress={() => updateConfig('hairStyle', style.id)}
-                >
-                  <Text style={[
-                    styles.listOptionText,
-                    config.hairStyle === style.id && styles.selectedListOptionText
-                  ]}>
-                    {style.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Hårfärg</Text>
-            <View style={styles.colorGrid}>
-              {HAIR_COLORS.map((color) => (
-                <TouchableOpacity
-                  key={color.id}
-                  style={[
-                    styles.colorOption,
-                    { backgroundColor: color.color },
-                    config.hairColor === color.id && styles.selectedOption
-                  ]}
-                  onPress={() => updateConfig('hairColor', color.id)}
-                >
-                  {config.hairColor === color.id && (
-                    <View style={styles.checkmark}>
-                      <Text style={styles.checkmarkText}>✓</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        );
-
-      case 'eyes':
-        return (
-          <ScrollView style={styles.optionsContainer} showsVerticalScrollIndicator={false}>
-            <Text style={styles.sectionLabel}>Ögonform</Text>
-            <View style={styles.optionsList}>
-              {EYE_SHAPES.map((shape) => (
-                <TouchableOpacity
-                  key={shape.id}
-                  style={[
-                    styles.listOption,
-                    config.eyeShape === shape.id && styles.selectedListOption
-                  ]}
-                  onPress={() => updateConfig('eyeShape', shape.id)}
-                >
-                  <Text style={[
-                    styles.listOptionText,
-                    config.eyeShape === shape.id && styles.selectedListOptionText
-                  ]}>
-                    {shape.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Ögonfärg</Text>
-            <View style={styles.colorGrid}>
-              {EYE_COLORS.map((color) => (
-                <TouchableOpacity
-                  key={color.id}
-                  style={[
-                    styles.colorOption,
-                    { backgroundColor: color.color },
-                    config.eyeColor === color.id && styles.selectedOption
-                  ]}
-                  onPress={() => updateConfig('eyeColor', color.id)}
-                >
-                  {config.eyeColor === color.id && (
-                    <View style={styles.checkmark}>
-                      <Text style={styles.checkmarkText}>✓</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        );
-
-      case 'mouth':
+      case 'face':
         return (
           <View style={styles.optionsContainer}>
-            <Text style={styles.sectionLabel}>Munform</Text>
-            <View style={styles.optionsList}>
-              {MOUTH_SHAPES.map((shape) => (
+            <Text style={styles.sectionLabel}>Ansiktsuttryck</Text>
+            <View style={styles.emojiGrid}>
+              {FACE_EXPRESSIONS.map((expression) => (
                 <TouchableOpacity
-                  key={shape.id}
+                  key={expression.id}
                   style={[
-                    styles.listOption,
-                    config.mouthShape === shape.id && styles.selectedListOption
+                    styles.emojiOption,
+                    config.faceExpression === expression.id && styles.selectedEmojiOption
                   ]}
-                  onPress={() => updateConfig('mouthShape', shape.id)}
+                  onPress={() => updateConfig('faceExpression', expression.id)}
                 >
+                  <Text style={styles.emojiText}>{expression.emoji}</Text>
                   <Text style={[
-                    styles.listOptionText,
-                    config.mouthShape === shape.id && styles.selectedListOptionText
+                    styles.emojiLabel,
+                    config.faceExpression === expression.id && styles.selectedEmojiLabel
                   ]}>
-                    {shape.name}
+                    {expression.name}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -229,25 +139,76 @@ export default function AvatarBuilder({
           </View>
         );
 
-      case 'clothing':
+      case 'hat':
+        return (
+          <ScrollView style={styles.optionsContainer} showsVerticalScrollIndicator={false}>
+            <Text style={styles.sectionLabel}>Typ av hatt</Text>
+            <View style={styles.optionsList}>
+              {HATS.map((hat) => (
+                <TouchableOpacity
+                  key={hat.id}
+                  style={[
+                    styles.listOption,
+                    config.hat === hat.id && styles.selectedListOption
+                  ]}
+                  onPress={() => updateConfig('hat', hat.id)}
+                >
+                  <Text style={[
+                    styles.listOptionText,
+                    config.hat === hat.id && styles.selectedListOptionText
+                  ]}>
+                    {hat.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {config.hat !== 'none' && (
+              <>
+                <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Hattfärg</Text>
+                <View style={styles.colorGrid}>
+                  {HAT_COLORS.map((color) => (
+                    <TouchableOpacity
+                      key={color.id}
+                      style={[
+                        styles.colorOption,
+                        { backgroundColor: color.color },
+                        config.hatColor === color.id && styles.selectedOption
+                      ]}
+                      onPress={() => updateConfig('hatColor', color.id)}
+                    >
+                      {config.hatColor === color.id && (
+                        <View style={styles.checkmark}>
+                          <Text style={styles.checkmarkText}>✓</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+          </ScrollView>
+        );
+
+      case 'outfit':
         return (
           <ScrollView style={styles.optionsContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionLabel}>Klädstil</Text>
             <View style={styles.optionsList}>
-              {CLOTHING_STYLES.map((style) => (
+              {OUTFITS.map((outfit) => (
                 <TouchableOpacity
-                  key={style.id}
+                  key={outfit.id}
                   style={[
                     styles.listOption,
-                    config.clothingStyle === style.id && styles.selectedListOption
+                    config.outfit === outfit.id && styles.selectedListOption
                   ]}
-                  onPress={() => updateConfig('clothingStyle', style.id)}
+                  onPress={() => updateConfig('outfit', outfit.id)}
                 >
                   <Text style={[
                     styles.listOptionText,
-                    config.clothingStyle === style.id && styles.selectedListOptionText
+                    config.outfit === outfit.id && styles.selectedListOptionText
                   ]}>
-                    {style.name}
+                    {outfit.name}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -255,17 +216,141 @@ export default function AvatarBuilder({
 
             <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Klädfärg</Text>
             <View style={styles.colorGrid}>
-              {CLOTHING_COLORS.map((color) => (
+              {OUTFIT_COLORS.map((color) => (
                 <TouchableOpacity
                   key={color.id}
                   style={[
                     styles.colorOption,
                     { backgroundColor: color.color },
-                    config.clothingColor === color.id && styles.selectedOption
+                    config.outfitColor === color.id && styles.selectedOption
                   ]}
-                  onPress={() => updateConfig('clothingColor', color.id)}
+                  onPress={() => updateConfig('outfitColor', color.id)}
                 >
-                  {config.clothingColor === color.id && (
+                  {config.outfitColor === color.id && (
+                    <View style={styles.checkmark}>
+                      <Text style={styles.checkmarkText}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Mönster</Text>
+            <View style={styles.optionsList}>
+              {OUTFIT_PATTERNS.map((pattern) => (
+                <TouchableOpacity
+                  key={pattern.id}
+                  style={[
+                    styles.listOption,
+                    config.outfitPattern === pattern.id && styles.selectedListOption
+                  ]}
+                  onPress={() => updateConfig('outfitPattern', pattern.id)}
+                >
+                  <Text style={[
+                    styles.listOptionText,
+                    config.outfitPattern === pattern.id && styles.selectedListOptionText
+                  ]}>
+                    {pattern.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        );
+
+      case 'backpack':
+        return (
+          <ScrollView style={styles.optionsContainer} showsVerticalScrollIndicator={false}>
+            <Text style={styles.sectionLabel}>Ryggsäck</Text>
+            <View style={styles.optionsList}>
+              {BACKPACKS.map((backpack) => (
+                <TouchableOpacity
+                  key={backpack.id}
+                  style={[
+                    styles.listOption,
+                    config.backpack === backpack.id && styles.selectedListOption
+                  ]}
+                  onPress={() => updateConfig('backpack', backpack.id)}
+                >
+                  <Text style={[
+                    styles.listOptionText,
+                    config.backpack === backpack.id && styles.selectedListOptionText
+                  ]}>
+                    {backpack.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {config.backpack !== 'none' && (
+              <>
+                <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Ryggsäcksfärg</Text>
+                <View style={styles.colorGrid}>
+                  {BACKPACK_COLORS.map((color) => (
+                    <TouchableOpacity
+                      key={color.id}
+                      style={[
+                        styles.colorOption,
+                        { backgroundColor: color.color },
+                        config.backpackColor === color.id && styles.selectedOption
+                      ]}
+                      onPress={() => updateConfig('backpackColor', color.id)}
+                    >
+                      {config.backpackColor === color.id && (
+                        <View style={styles.checkmark}>
+                          <Text style={styles.checkmarkText}>✓</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+          </ScrollView>
+        );
+
+      case 'socks':
+        return (
+          <ScrollView style={styles.optionsContainer} showsVerticalScrollIndicator={false}>
+            <Text style={styles.sectionLabel}>Strumpor</Text>
+            <View style={styles.optionsList}>
+              {SOCKS.map((sock) => (
+                <TouchableOpacity
+                  key={sock.id}
+                  style={[
+                    styles.listOption,
+                    config.socks === sock.id && styles.selectedListOption
+                  ]}
+                  onPress={() => updateConfig('socks', sock.id)}
+                >
+                  <Text style={[
+                    styles.listOptionText,
+                    config.socks === sock.id && styles.selectedListOptionText
+                  ]}>
+                    {sock.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Strumpfärg</Text>
+            <View style={styles.colorGrid}>
+              {SOCK_COLORS.map((color) => (
+                <TouchableOpacity
+                  key={color.id}
+                  style={[
+                    styles.colorOption,
+                    color.color === 'rainbow' 
+                      ? styles.rainbowOption 
+                      : { backgroundColor: color.color },
+                    config.socksColor === color.id && styles.selectedOption
+                  ]}
+                  onPress={() => updateConfig('socksColor', color.id)}
+                >
+                  {color.color === 'rainbow' && (
+                    <Text style={styles.rainbowText}>🌈</Text>
+                  )}
+                  {config.socksColor === color.id && (
                     <View style={styles.checkmark}>
                       <Text style={styles.checkmarkText}>✓</Text>
                     </View>
@@ -274,32 +359,6 @@ export default function AvatarBuilder({
               ))}
             </View>
           </ScrollView>
-        );
-
-      case 'accessory':
-        return (
-          <View style={styles.optionsContainer}>
-            <Text style={styles.sectionLabel}>Tillbehör</Text>
-            <View style={styles.optionsList}>
-              {ACCESSORIES.map((accessory) => (
-                <TouchableOpacity
-                  key={accessory.id}
-                  style={[
-                    styles.listOption,
-                    config.accessory === accessory.id && styles.selectedListOption
-                  ]}
-                  onPress={() => updateConfig('accessory', accessory.id)}
-                >
-                  <Text style={[
-                    styles.listOptionText,
-                    config.accessory === accessory.id && styles.selectedListOptionText
-                  ]}>
-                    {accessory.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
         );
 
       case 'background':
@@ -312,16 +371,11 @@ export default function AvatarBuilder({
                   key={color.id}
                   style={[
                     styles.colorOption,
-                    color.color.includes('gradient') 
-                      ? { backgroundColor: '#E3F2FD' }
-                      : { backgroundColor: color.color },
+                    { backgroundColor: color.color },
                     config.backgroundColor === color.id && styles.selectedOption
                   ]}
                   onPress={() => updateConfig('backgroundColor', color.id)}
                 >
-                  {color.color.includes('gradient') && (
-                    <Text style={styles.gradientLabel}>G</Text>
-                  )}
                   {config.backgroundColor === color.id && (
                     <View style={styles.checkmark}>
                       <Text style={styles.checkmarkText}>✓</Text>
@@ -471,7 +525,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
     color: '#1F2937',
     marginBottom: 4,
   },
@@ -508,12 +562,12 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '500' as const,
     color: '#6B7280',
   },
   activeCategoryText: {
     color: '#4F46E5',
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   contentContainer: {
     flex: 1,
@@ -525,7 +579,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: '#1F2937',
     marginBottom: 12,
   },
@@ -558,12 +612,44 @@ const styles = StyleSheet.create({
   checkmarkText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
   },
-  gradientLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  emojiGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  emojiOption: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedEmojiOption: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#4F46E5',
+  },
+  emojiText: {
+    fontSize: 32,
+  },
+  emojiLabel: {
+    fontSize: 11,
     color: '#6B7280',
+    marginTop: 4,
+  },
+  selectedEmojiLabel: {
+    color: '#4F46E5',
+    fontWeight: '600' as const,
+  },
+  rainbowOption: {
+    backgroundColor: '#F3F4F6',
+  },
+  rainbowText: {
+    fontSize: 24,
   },
   optionsList: {
     gap: 8,
@@ -582,12 +668,12 @@ const styles = StyleSheet.create({
   },
   listOptionText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '500' as const,
     color: '#6B7280',
   },
   selectedListOptionText: {
     color: '#4F46E5',
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   navigationButtons: {
     flexDirection: 'row',
@@ -610,7 +696,7 @@ const styles = StyleSheet.create({
   },
   navButtonText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '500' as const,
     color: '#6B7280',
   },
   navButtonTextDisabled: {
@@ -633,7 +719,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: '#6B7280',
   },
   saveButton: {
@@ -645,7 +731,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: 'white',
   },
 });

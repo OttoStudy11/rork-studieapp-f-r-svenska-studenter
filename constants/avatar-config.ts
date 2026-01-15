@@ -1,121 +1,152 @@
 export interface AvatarConfig {
-  skinTone: string;
-  hairStyle: string;
-  hairColor: string;
-  eyeShape: string;
-  eyeColor: string;
-  mouthShape: string;
-  clothingStyle: string;
-  clothingColor: string;
-  accessory: string;
+  bodyColor: string;
+  faceExpression: string;
+  hat: string;
+  hatColor: string;
+  outfit: string;
+  outfitColor: string;
+  outfitPattern: string;
+  backpack: string;
+  backpackColor: string;
+  socks: string;
+  socksColor: string;
   backgroundColor: string;
 }
 
-export const SKIN_TONES = [
-  { id: 'light', name: 'Ljus', color: '#FFE0BD' },
-  { id: 'medium-light', name: 'Mellan-ljus', color: '#FFD0A6' },
-  { id: 'medium', name: 'Medium', color: '#D4A574' },
-  { id: 'medium-dark', name: 'Mellan-mörk', color: '#B68A62' },
-  { id: 'dark', name: 'Mörk', color: '#8D5524' },
-  { id: 'very-dark', name: 'Väldigt mörk', color: '#5C3317' },
+export const BODY_COLORS = [
+  { id: 'white', name: 'Vit', color: '#F5F5F5' },
+  { id: 'cream', name: 'Kräm', color: '#FFF8E7' },
+  { id: 'pink', name: 'Rosa', color: '#FFE4E8' },
+  { id: 'mint', name: 'Mint', color: '#E0F5F0' },
+  { id: 'lavender', name: 'Lavendel', color: '#E8E0F0' },
+  { id: 'peach', name: 'Persika', color: '#FFE5D0' },
+  { id: 'sky', name: 'Himmel', color: '#E0F0FF' },
+  { id: 'yellow', name: 'Gul', color: '#FFF5D0' },
 ];
 
-export const HAIR_STYLES = [
-  { id: 'short', name: 'Kort' },
-  { id: 'medium', name: 'Mellan' },
-  { id: 'long', name: 'Långt' },
-  { id: 'curly', name: 'Lockigt' },
-  { id: 'bald', name: 'Skallig' },
-  { id: 'ponytail', name: 'Hästsvans' },
-  { id: 'bun', name: 'Knut' },
-  { id: 'mohawk', name: 'Mohawk' },
+export const FACE_EXPRESSIONS = [
+  { id: 'happy', name: 'Glad', emoji: '😊' },
+  { id: 'cool', name: 'Cool', emoji: '😎' },
+  { id: 'surprised', name: 'Förvånad', emoji: '😮' },
+  { id: 'wink', name: 'Blink', emoji: '😉' },
+  { id: 'love', name: 'Kärlek', emoji: '😍' },
+  { id: 'sleepy', name: 'Sömnig', emoji: '😴' },
+  { id: 'silly', name: 'Fånig', emoji: '😜' },
+  { id: 'focused', name: 'Fokuserad', emoji: '🧐' },
 ];
 
-export const HAIR_COLORS = [
-  { id: 'black', name: 'Svart', color: '#2C1B18' },
-  { id: 'brown', name: 'Brun', color: '#7C5643' },
-  { id: 'blonde', name: 'Blond', color: '#E6C288' },
-  { id: 'red', name: 'Röd', color: '#B55239' },
-  { id: 'gray', name: 'Grå', color: '#8C8C8C' },
+export const HATS = [
+  { id: 'none', name: 'Ingen' },
+  { id: 'cap', name: 'Keps' },
+  { id: 'beanie', name: 'Mössa' },
+  { id: 'crown', name: 'Krona' },
+  { id: 'headband', name: 'Pannband' },
+  { id: 'bow', name: 'Rosett' },
+  { id: 'horns', name: 'Horn' },
+  { id: 'halo', name: 'Gloria' },
+];
+
+export const HAT_COLORS = [
   { id: 'blue', name: 'Blå', color: '#4A90E2' },
-  { id: 'green', name: 'Grön', color: '#50C878' },
+  { id: 'orange', name: 'Orange', color: '#F5A623' },
+  { id: 'red', name: 'Röd', color: '#E74C3C' },
+  { id: 'green', name: 'Grön', color: '#2ECC71' },
   { id: 'purple', name: 'Lila', color: '#9B59B6' },
+  { id: 'pink', name: 'Rosa', color: '#FF6B9D' },
+  { id: 'yellow', name: 'Gul', color: '#F1C40F' },
+  { id: 'black', name: 'Svart', color: '#2C3E50' },
 ];
 
-export const EYE_SHAPES = [
-  { id: 'round', name: 'Runda' },
-  { id: 'almond', name: 'Mandelformade' },
-  { id: 'wide', name: 'Stora' },
-  { id: 'narrow', name: 'Smala' },
-  { id: 'happy', name: 'Glada' },
-];
-
-export const EYE_COLORS = [
-  { id: 'brown', name: 'Bruna', color: '#6F4E37' },
-  { id: 'blue', name: 'Blå', color: '#4A90E2' },
-  { id: 'green', name: 'Gröna', color: '#50C878' },
-  { id: 'hazel', name: 'Hasselnöt', color: '#8E7618' },
-  { id: 'gray', name: 'Grå', color: '#808080' },
-];
-
-export const MOUTH_SHAPES = [
-  { id: 'smile', name: 'Leende' },
-  { id: 'big-smile', name: 'Stort leende' },
-  { id: 'neutral', name: 'Neutral' },
-  { id: 'open', name: 'Öppen' },
-  { id: 'surprised', name: 'Förvånad' },
-];
-
-export const CLOTHING_STYLES = [
-  { id: 'tshirt', name: 'T-shirt' },
+export const OUTFITS = [
   { id: 'hoodie', name: 'Hoodie' },
+  { id: 'tshirt', name: 'T-shirt' },
   { id: 'sweater', name: 'Tröja' },
-  { id: 'shirt', name: 'Skjorta' },
-  { id: 'vneck', name: 'V-ringad' },
+  { id: 'jacket', name: 'Jacka' },
+  { id: 'dress', name: 'Klänning' },
+  { id: 'overalls', name: 'Hängselbyxor' },
 ];
 
-export const CLOTHING_COLORS = [
+export const OUTFIT_COLORS = [
+  { id: 'black', name: 'Svart', color: '#1A1A1A' },
+  { id: 'white', name: 'Vit', color: '#FFFFFF' },
   { id: 'red', name: 'Röd', color: '#E74C3C' },
   { id: 'blue', name: 'Blå', color: '#3498DB' },
   { id: 'green', name: 'Grön', color: '#2ECC71' },
-  { id: 'yellow', name: 'Gul', color: '#F1C40F' },
   { id: 'purple', name: 'Lila', color: '#9B59B6' },
   { id: 'orange', name: 'Orange', color: '#E67E22' },
-  { id: 'black', name: 'Svart', color: '#2C3E50' },
-  { id: 'white', name: 'Vit', color: '#ECF0F1' },
-  { id: 'gray', name: 'Grå', color: '#95A5A6' },
+  { id: 'pink', name: 'Rosa', color: '#FF6B9D' },
+  { id: 'navy', name: 'Marinblå', color: '#2C3E50' },
 ];
 
-export const ACCESSORIES = [
+export const OUTFIT_PATTERNS = [
   { id: 'none', name: 'Ingen' },
-  { id: 'glasses', name: 'Glasögon' },
-  { id: 'sunglasses', name: 'Solglasögon' },
-  { id: 'cap', name: 'Keps' },
-  { id: 'beanie', name: 'Mössa' },
-  { id: 'headphones', name: 'Hörlurar' },
-  { id: 'earrings', name: 'Örhängen' },
+  { id: 'flames', name: 'Lågor' },
+  { id: 'stars', name: 'Stjärnor' },
+  { id: 'stripes', name: 'Ränder' },
+  { id: 'hearts', name: 'Hjärtan' },
+  { id: 'lightning', name: 'Blixt' },
+  { id: 'skull', name: 'Dödskalle' },
+  { id: 'rainbow', name: 'Regnbåge' },
+];
+
+export const BACKPACKS = [
+  { id: 'none', name: 'Ingen' },
+  { id: 'school', name: 'Skolväska' },
+  { id: 'rocket', name: 'Raket' },
+  { id: 'wings', name: 'Vingar' },
+  { id: 'cape', name: 'Cape' },
+  { id: 'teddy', name: 'Nalle' },
+];
+
+export const BACKPACK_COLORS = [
+  { id: 'green', name: 'Grön', color: '#2ECC71' },
+  { id: 'blue', name: 'Blå', color: '#3498DB' },
+  { id: 'red', name: 'Röd', color: '#E74C3C' },
+  { id: 'purple', name: 'Lila', color: '#9B59B6' },
+  { id: 'orange', name: 'Orange', color: '#E67E22' },
+  { id: 'pink', name: 'Rosa', color: '#FF6B9D' },
+  { id: 'yellow', name: 'Gul', color: '#F1C40F' },
+];
+
+export const SOCKS = [
+  { id: 'short', name: 'Korta' },
+  { id: 'long', name: 'Långa' },
+  { id: 'striped', name: 'Randiga' },
+  { id: 'mismatched', name: 'Olika' },
+];
+
+export const SOCK_COLORS = [
+  { id: 'white', name: 'Vit', color: '#FFFFFF' },
+  { id: 'blue', name: 'Blå', color: '#4A90E2' },
+  { id: 'red', name: 'Röd', color: '#E74C3C' },
+  { id: 'green', name: 'Grön', color: '#2ECC71' },
+  { id: 'purple', name: 'Lila', color: '#9B59B6' },
+  { id: 'pink', name: 'Rosa', color: '#FF6B9D' },
+  { id: 'rainbow', name: 'Regnbåge', color: 'rainbow' },
 ];
 
 export const BACKGROUND_COLORS = [
+  { id: 'dark', name: 'Mörk', color: '#2D2D2D' },
   { id: 'blue', name: 'Blå', color: '#E3F2FD' },
   { id: 'green', name: 'Grön', color: '#E8F5E9' },
   { id: 'yellow', name: 'Gul', color: '#FFF9E6' },
   { id: 'pink', name: 'Rosa', color: '#FCE4EC' },
   { id: 'purple', name: 'Lila', color: '#F3E5F5' },
+  { id: 'orange', name: 'Orange', color: '#FFF3E0' },
   { id: 'gray', name: 'Grå', color: '#F5F5F5' },
-  { id: 'gradient-blue', name: 'Gradient Blå', color: 'linear-gradient' },
-  { id: 'gradient-purple', name: 'Gradient Lila', color: 'linear-gradient' },
 ];
 
 export const DEFAULT_AVATAR_CONFIG: AvatarConfig = {
-  skinTone: 'medium-light',
-  hairStyle: 'medium',
-  hairColor: 'brown',
-  eyeShape: 'almond',
-  eyeColor: 'brown',
-  mouthShape: 'smile',
-  clothingStyle: 'tshirt',
-  clothingColor: 'blue',
-  accessory: 'none',
-  backgroundColor: 'blue',
+  bodyColor: 'white',
+  faceExpression: 'happy',
+  hat: 'cap',
+  hatColor: 'blue',
+  outfit: 'hoodie',
+  outfitColor: 'black',
+  outfitPattern: 'flames',
+  backpack: 'school',
+  backpackColor: 'green',
+  socks: 'long',
+  socksColor: 'blue',
+  backgroundColor: 'dark',
 };

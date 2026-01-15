@@ -256,36 +256,66 @@ export async function assignUniversityCoursesToUser(
   try {
     console.log('🎓 Assigning university courses:', { userId, programId, term });
     
-    // Convert term to year
+    // Convert term to semester (term 1 = semester 1, term 2 = semester 2, etc.)
+    const semester = term;
     const year = Math.ceil(term / 2) as 1 | 2 | 3 | 4 | 5;
-    console.log(`📅 Term ${term} maps to year ${year}`);
+    console.log(`📅 Term ${term} = semester ${semester}, year ${year}`);
     
     let coursesToAssign: AssignedCourse[] = [];
-    let dbError: any = null;
     let dbCourses: any[] | null = null;
     
-    // First, try to get courses from the database
+    // First, try to get courses from the database using proper table joins
     try {
-      const result = await supabase
-        .from('university_courses')
-        .select('id, course_code, name, credits, year, is_mandatory, field, program_id, description')
+      // Query university_program_courses joined with university_courses
+      const { data, error } = await supabase
+        .from('university_program_courses')
+        .select(`
+          id,
+          semester,
+          is_mandatory,
+          course:university_courses (
+            id,
+            course_code,
+            title,
+            description,
+            credits,
+            level,
+            subject_area
+          )
+        `)
         .eq('program_id', programId)
-        .eq('year', year)
+        .lte('semester', semester + 1) // Get courses for current and previous semesters
+        .gte('semester', semester)
         .eq('is_mandatory', true)
         .limit(MAX_COURSES);
       
-      dbError = result.error;
-      dbCourses = result.data;
+      if (error) {
+        console.log('📚 DB query error:', error.message);
+      } else if (data && data.length > 0) {
+        dbCourses = data;
+        console.log(`✅ Found ${dbCourses.length} courses in database`);
+      }
     } catch (queryError: any) {
-      console.warn('⚠️ Database query failed, using constants:', queryError?.message);
-      dbError = queryError;
+      console.warn('⚠️ Database query failed:', queryError?.message);
     }
     
-    if (dbError || !dbCourses || dbCourses.length === 0) {
-      console.log('📚 No courses in DB or query failed, falling back to constants');
-      if (dbError) {
-        console.log('📚 DB Error:', dbError.message || dbError);
-      }
+    if (dbCourses && dbCourses.length > 0) {
+      // Map database courses to AssignedCourse format
+      coursesToAssign = dbCourses
+        .filter((pc: any) => pc.course) // Filter out null courses
+        .slice(0, MAX_COURSES)
+        .map((pc: any) => ({
+          courseId: pc.course.id,
+          title: pc.course.title,
+          subject: pc.course.subject_area || 'Allmänt',
+          description: pc.course.description || `${pc.course.title} - ${pc.course.credits} hp`,
+          credits: pc.course.credits,
+        }));
+    }
+    
+    // Fall back to constants if no courses from database
+    if (coursesToAssign.length === 0) {
+      console.log('📚 No courses in DB, falling back to constants');
       
       // Fall back to constants - get mandatory courses directly
       let mandatoryCourses = getMandatoryCoursesForYear(programId, year);
@@ -296,7 +326,7 @@ export async function assignUniversityCoursesToUser(
         mandatoryCourses = getDefaultCoursesForProgram(programId, year);
       }
       
-      console.log(`📚 Found ${mandatoryCourses.length} courses for ${programId} year ${year}`);
+      console.log(`📚 Found ${mandatoryCourses.length} courses from constants for ${programId} year ${year}`);
       
       coursesToAssign = mandatoryCourses.slice(0, MAX_COURSES).map(course => ({
         courseId: course.id,
@@ -305,20 +335,10 @@ export async function assignUniversityCoursesToUser(
         description: `${course.name} - ${course.credits} hp`,
         credits: course.credits,
       }));
-    } else {
-      console.log(`✅ Found ${dbCourses.length} courses in database`);
-      coursesToAssign = dbCourses.slice(0, MAX_COURSES).map((course: any) => ({
-        courseId: course.id || course.course_code,
-        title: course.name,
-        subject: course.field || 'Allmänt',
-        description: course.description || `${course.name} - ${course.credits} hp`,
-        credits: course.credits,
-      }));
     }
     
     if (coursesToAssign.length === 0) {
-      console.warn('⚠️ No courses found for program:', programId, 'year:', year);
-      // Return empty but don't fail completely
+      console.warn('⚠️ No courses found for program:', programId, 'semester:', semester);
       return [];
     }
     
@@ -327,50 +347,77 @@ export async function assignUniversityCoursesToUser(
     const assignedCourses: AssignedCourse[] = [];
     
     for (const course of coursesToAssign) {
-      // First ensure course exists in courses table
-      const { data: existingCourse } = await supabase
-        .from('courses')
+      // First ensure course exists in university_courses table
+      const { data: existingUniCourse } = await supabase
+        .from('university_courses')
         .select('id')
         .eq('id', course.courseId)
         .maybeSingle();
       
-      if (!existingCourse) {
-        console.log(`📚 Creating course in database: ${course.courseId}`);
-        const { error: insertError } = await supabase.from('courses').insert({
+      if (!existingUniCourse) {
+        console.log(`📚 Creating university course in database: ${course.courseId}`);
+        const { error: insertError } = await supabase.from('university_courses').insert({
           id: course.courseId,
+          course_code: course.courseId,
           title: course.title,
           description: course.description,
-          subject: course.subject,
-          level: 'hogskola',
-          resources: ['Kursmaterial', 'Övningsuppgifter'],
-          tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
-          related_courses: [],
-          progress: 0,
-          education_level: 'hogskola',
+          credits: course.credits || 7.5,
+          level: 'grundnivå',
+          subject_area: course.subject,
         });
         
         if (insertError) {
-          console.warn(`⚠️ Could not create course ${course.title}:`, insertError.message || JSON.stringify(insertError));
+          console.warn(`⚠️ Could not create university course ${course.title}:`, insertError.message);
         } else {
-          console.log(`✅ Created course in database: ${course.title}`);
+          console.log(`✅ Created university course: ${course.title}`);
         }
       }
       
-      // Enroll in user_courses
-      const { error: enrollError } = await supabase.from('user_courses').upsert({
+      // Enroll in user_university_courses (the correct table for university students)
+      const { error: enrollError } = await supabase.from('user_university_courses').upsert({
         id: `${userId}-${course.courseId}`,
         user_id: userId,
         course_id: course.courseId,
+        program_id: programId,
         progress: 0,
         is_active: true,
       }, { onConflict: 'id' });
       
       if (enrollError) {
-        console.warn(`⚠️ Could not enroll in course ${course.title}:`, enrollError.message);
-      } else {
-        console.log(`✅ Enrolled in: ${course.title}`);
-        assignedCourses.push(course);
+        console.warn(`⚠️ Could not enroll in university course ${course.title}:`, enrollError.message);
+        
+        // Fallback: Also try to add to regular courses table for compatibility
+        const { data: existingCourse } = await supabase
+          .from('courses')
+          .select('id')
+          .eq('id', course.courseId)
+          .maybeSingle();
+        
+        if (!existingCourse) {
+          await supabase.from('courses').insert({
+            id: course.courseId,
+            title: course.title,
+            description: course.description,
+            subject: course.subject,
+            level: 'hogskola',
+            resources: ['Kursmaterial', 'Övningsuppgifter'],
+            tips: ['Studera regelbundet'],
+            related_courses: [],
+            progress: 0,
+          });
+        }
+        
+        await supabase.from('user_courses').upsert({
+          id: `${userId}-${course.courseId}`,
+          user_id: userId,
+          course_id: course.courseId,
+          progress: 0,
+          is_active: true,
+        }, { onConflict: 'id' });
       }
+      
+      console.log(`✅ Enrolled in: ${course.title}`);
+      assignedCourses.push(course);
     }
     
     console.log(`🎉 Successfully assigned ${assignedCourses.length} university courses`);

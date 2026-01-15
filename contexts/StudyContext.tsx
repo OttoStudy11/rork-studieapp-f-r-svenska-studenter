@@ -274,7 +274,11 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         return user;
       });
       
-      // Load user courses
+      // Load user courses from both tables
+      const isUniversityUser = profile.level === 'högskola' || profile.level === 'universitet';
+      let allCourses: Course[] = [];
+      
+      // Load gymnasium courses from user_courses
       const { data: userCourses, error: coursesError } = await supabase
         .from('user_courses')
         .select(`
@@ -284,12 +288,64 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         .eq('user_id', userId);
       
       if (!coursesError && userCourses) {
-        const courses = userCourses.map(dbCourseToUserCourse);
-        setCourses(courses);
+        const gymnasiumCourses = userCourses
+          .filter(uc => uc.courses)
+          .map(dbCourseToUserCourse);
+        allCourses = [...allCourses, ...gymnasiumCourses];
       } else {
         console.warn('Could not load courses:', coursesError?.message);
-        setCourses([]);
       }
+      
+      // Also load university courses if user is a university student
+      if (isUniversityUser) {
+        const { data: uniUserCourses, error: uniCoursesError } = await supabase
+          .from('user_university_courses')
+          .select(`
+            *,
+            course:university_courses (
+              id,
+              course_code,
+              title,
+              description,
+              credits,
+              level,
+              subject_area
+            )
+          `)
+          .eq('user_id', userId);
+        
+        if (!uniCoursesError && uniUserCourses) {
+          const universityCourses: Course[] = uniUserCourses
+            .filter(uc => uc.course)
+            .map((uc: any) => ({
+              id: uc.course.id,
+              title: uc.course.title,
+              description: uc.course.description || `${uc.course.title} - ${uc.course.credits} hp`,
+              subject: uc.course.subject_area || 'Högskola',
+              level: 'högskola',
+              progress: uc.progress || 0,
+              isActive: uc.is_active,
+              resources: ['Kursmaterial', 'Övningsuppgifter'],
+              tips: ['Studera regelbundet'],
+              relatedCourses: []
+            }));
+          allCourses = [...allCourses, ...universityCourses];
+          console.log('Loaded', universityCourses.length, 'university courses');
+        } else {
+          console.warn('Could not load university courses:', uniCoursesError?.message);
+        }
+      }
+      
+      // Remove duplicates based on course id
+      const uniqueCourses = allCourses.reduce((acc, course) => {
+        if (!acc.find(c => c.id === course.id)) {
+          acc.push(course);
+        }
+        return acc;
+      }, [] as Course[]);
+      
+      setCourses(uniqueCourses);
+      console.log('Total courses loaded:', uniqueCourses.length);
       
       // Load user notes
       const { data: userNotes, error: notesError } = await supabase

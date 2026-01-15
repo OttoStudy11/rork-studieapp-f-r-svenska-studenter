@@ -74,7 +74,19 @@ export default function CoursesScreen() {
       setIsLoading(true);
       console.log('Loading all data for user:', user?.id);
 
-      // Load user's active courses
+      // First, check user's education level
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('level')
+        .eq('id', user!.id)
+        .single();
+
+      const isUniversityUser = profileData?.level === 'högskola' || profileData?.level === 'universitet';
+      console.log('User education level:', profileData?.level, 'Is university:', isUniversityUser);
+
+      let allCourses: any[] = [];
+
+      // Load gymnasium courses from user_courses
       const { data: userCoursesData, error: userCoursesError } = await supabase
         .from('user_courses')
         .select(`
@@ -88,24 +100,82 @@ export default function CoursesScreen() {
 
       if (userCoursesError) {
         console.error('Error loading user courses:', userCoursesError);
-      } else {
-        const coursesWithProgress = userCoursesData?.map(userCourse => ({
-          id: userCourse.courses.id,
-          userCourseId: userCourse.id,
-          title: userCourse.courses.title,
-          description: userCourse.courses.description,
-          subject: userCourse.courses.subject,
-          level: userCourse.courses.level,
-          progress: userCourse.progress,
-          targetGrade: userCourse.target_grade,
-          isActive: userCourse.is_active,
-          resources: userCourse.courses.resources || [],
-          tips: userCourse.courses.tips || [],
-          relatedCourses: userCourse.courses.related_courses || []
-        })) || [];
-
-        setCourses(coursesWithProgress);
+      } else if (userCoursesData) {
+        const gymnasiumCourses = userCoursesData
+          .filter(uc => uc.courses) // Filter out null courses
+          .map(userCourse => ({
+            id: userCourse.courses.id,
+            userCourseId: userCourse.id,
+            title: userCourse.courses.title,
+            description: userCourse.courses.description,
+            subject: userCourse.courses.subject,
+            level: userCourse.courses.level,
+            progress: userCourse.progress,
+            targetGrade: userCourse.target_grade,
+            isActive: userCourse.is_active,
+            resources: userCourse.courses.resources || [],
+            tips: userCourse.courses.tips || [],
+            relatedCourses: userCourse.courses.related_courses || [],
+            isUniversity: false
+          }));
+        allCourses = [...allCourses, ...gymnasiumCourses];
       }
+
+      // Also load university courses from user_university_courses
+      if (isUniversityUser) {
+        const { data: uniCoursesData, error: uniCoursesError } = await supabase
+          .from('user_university_courses')
+          .select(`
+            *,
+            course:university_courses (
+              id,
+              course_code,
+              title,
+              description,
+              credits,
+              level,
+              subject_area
+            )
+          `)
+          .eq('user_id', user!.id)
+          .eq('is_active', true);
+
+        if (uniCoursesError) {
+          console.error('Error loading university courses:', uniCoursesError);
+        } else if (uniCoursesData) {
+          const universityCourses = uniCoursesData
+            .filter(uc => uc.course) // Filter out null courses
+            .map(userCourse => ({
+              id: userCourse.course.id,
+              userCourseId: userCourse.id,
+              title: userCourse.course.title,
+              description: userCourse.course.description || `${userCourse.course.title} - ${userCourse.course.credits} hp`,
+              subject: userCourse.course.subject_area || 'Högskola',
+              level: 'högskola',
+              progress: userCourse.progress,
+              targetGrade: null,
+              isActive: userCourse.is_active,
+              resources: ['Kursmaterial', 'Övningsuppgifter'],
+              tips: ['Studera regelbundet'],
+              relatedCourses: [],
+              isUniversity: true,
+              credits: userCourse.course.credits
+            }));
+          allCourses = [...allCourses, ...universityCourses];
+          console.log('Loaded', universityCourses.length, 'university courses');
+        }
+      }
+
+      // Remove duplicates based on course id
+      const uniqueCourses = allCourses.reduce((acc, course) => {
+        if (!acc.find((c: any) => c.id === course.id)) {
+          acc.push(course);
+        }
+        return acc;
+      }, [] as any[]);
+
+      setCourses(uniqueCourses);
+      console.log('Total courses loaded:', uniqueCourses.length);
 
       // Load study tips from database (hardcoded for now)
       const tipsData: StudyTip[] = [
@@ -216,12 +286,12 @@ export default function CoursesScreen() {
       const courseCode = course.code;
       const courseName = course.name;
       const coursePoints = isUniversityCourse ? (course as UnifiedCourse).credits : (course as ProgramCourse).points;
-      const courseLevel = isUniversityCourse ? 'högskola' : 'gymnasie';
+      const courseField = isUniversityCourse && 'field' in course ? (course as UnifiedCourse).field || 'Allmänt' : extractSubjectFromCourseName(courseName);
 
       // Verify that the profile exists
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, level')
         .eq('id', user.id)
         .single();
 
@@ -233,7 +303,110 @@ export default function CoursesScreen() {
 
       console.log('Profile verified:', profileData);
 
-      // Check if course exists, if not create it
+      // Handle university courses differently
+      if (isUniversityCourse) {
+        console.log('Adding university course:', courseCode);
+        
+        // Check if university course exists in university_courses table
+        const { data: existingUniCourse } = await supabase
+          .from('university_courses')
+          .select('id')
+          .eq('id', courseCode)
+          .maybeSingle();
+
+        if (!existingUniCourse) {
+          console.log('University course does not exist, creating:', courseCode);
+          const { error: insertError } = await supabase
+            .from('university_courses')
+            .insert({
+              id: courseCode,
+              course_code: courseCode,
+              title: courseName,
+              description: `${courseName} - ${coursePoints} hp`,
+              credits: coursePoints || 7.5,
+              level: 'grundnivå',
+              subject_area: courseField,
+            });
+
+          if (insertError) {
+            console.error('Error inserting university course:', insertError);
+            // Continue anyway - might already exist
+          }
+        }
+
+        // Check if user already has this university course
+        const { data: userUniCourseExists } = await supabase
+          .from('user_university_courses')
+          .select('id')
+          .eq('user_id', user!.id)
+          .eq('course_id', courseCode)
+          .maybeSingle();
+
+        if (userUniCourseExists) {
+          Alert.alert('Info', 'Du har redan lagt till denna kurs');
+          return;
+        }
+
+        console.log('Creating user university course record...');
+        const userCourseId = `${user!.id}-${courseCode}`;
+
+        const { error: userUniCourseError } = await supabase
+          .from('user_university_courses')
+          .insert({
+            id: userCourseId,
+            user_id: user!.id,
+            course_id: courseCode,
+            is_active: true,
+            progress: 0
+          });
+
+        if (userUniCourseError) {
+          console.error('Error adding user university course:', userUniCourseError);
+          
+          // Fallback: Try adding to regular courses table for compatibility
+          console.log('Falling back to regular courses table...');
+          const { data: existingCourse } = await supabase
+            .from('courses')
+            .select('id')
+            .eq('id', courseCode)
+            .maybeSingle();
+
+          if (!existingCourse) {
+            await supabase.from('courses').insert({
+              id: courseCode,
+              title: courseName,
+              description: `${courseName} - ${coursePoints} hp`,
+              subject: courseField,
+              level: 'hogskola',
+              resources: ['Kursmaterial', 'Övningsuppgifter'],
+              tips: ['Studera regelbundet'],
+              related_courses: []
+            });
+          }
+
+          const { error: fallbackError } = await supabase
+            .from('user_courses')
+            .upsert({
+              id: userCourseId,
+              user_id: user!.id,
+              course_id: courseCode,
+              is_active: true,
+              progress: 0
+            }, { onConflict: 'id' });
+
+          if (fallbackError) {
+            Alert.alert('Fel', `Kunde inte lägga till kurs: ${fallbackError.message}`);
+            return;
+          }
+        }
+
+        console.log('University course added successfully');
+        Alert.alert('Framgång! \u2705', `${courseName} har lagts till i dina kurser`);
+        await loadAllData();
+        return;
+      }
+
+      // Handle gymnasium courses (existing logic)
       const { data: existingCourse, error: courseCheckError } = await supabase
         .from('courses')
         .select('id')
@@ -251,9 +424,9 @@ export default function CoursesScreen() {
           .insert({
             id: courseCode,
             title: courseName,
-            description: `${courseName} - ${coursePoints} ${isUniversityCourse ? 'hp' : 'poäng'}`,
-            subject: isUniversityCourse && 'field' in course ? (course as UnifiedCourse).field || 'Högskola' : extractSubjectFromCourseName(courseName),
-            level: courseLevel,
+            description: `${courseName} - ${coursePoints} poäng`,
+            subject: courseField,
+            level: 'gymnasie',
             resources: ['Kursmaterial', 'Övningsuppgifter'],
             tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
             related_courses: []

@@ -15,35 +15,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { 
-  BookOpen, 
   Plus, 
   Search, 
-  Star, 
-  TrendingUp, 
-  X, 
   Clock,
   Target,
-  Lightbulb,
-  Brain,
   ArrowRight,
   User,
   Crown,
-  Flame,
-  Award,
-  Edit3
+  Award
 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { FadeInView, SlideInView } from '@/components/Animations';
-import CoursePickerModal from '@/components/CoursePickerModal';
-import type { Database } from '@/lib/database.types';
+import CoursePickerModal, { UnifiedCourse } from '@/components/CoursePickerModal';
 import type { Course as ProgramCourse } from '@/home/project/constants/program-courses';
 
 const { width } = Dimensions.get('window');
-
-type Course = Database['public']['Tables']['courses']['Row'];
-type StudyGuide = Database['public']['Tables']['study_guides']['Row'];
 
 interface StudyTip {
   id: number;
@@ -73,13 +60,13 @@ export default function CoursesScreen() {
   const [studyTechniques, setStudyTechniques] = useState<StudyTechnique[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showCoursePickerModal, setShowCoursePickerModal] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
       loadAllData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const loadAllData = async () => {
@@ -214,7 +201,7 @@ export default function CoursesScreen() {
     course.subject.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddCourseFromPicker = async (course: ProgramCourse) => {
+  const handleAddCourseFromPicker = async (course: ProgramCourse | UnifiedCourse) => {
     try {
       console.log('Adding course from picker:', course);
       console.log('Current user ID:', user?.id);
@@ -223,6 +210,13 @@ export default function CoursesScreen() {
         Alert.alert('Fel', 'Du måste vara inloggad för att lägga till kurser');
         return;
       }
+
+      // Determine if this is a university course
+      const isUniversityCourse = 'isUniversity' in course && course.isUniversity;
+      const courseCode = course.code;
+      const courseName = course.name;
+      const coursePoints = isUniversityCourse ? (course as UnifiedCourse).credits : (course as ProgramCourse).points;
+      const courseLevel = isUniversityCourse ? 'högskola' : 'gymnasie';
 
       // Verify that the profile exists
       const { data: profileData, error: profileError } = await supabase
@@ -243,7 +237,7 @@ export default function CoursesScreen() {
       const { data: existingCourse, error: courseCheckError } = await supabase
         .from('courses')
         .select('id')
-        .eq('id', course.code)
+        .eq('id', courseCode)
         .maybeSingle();
 
       if (courseCheckError) {
@@ -251,15 +245,15 @@ export default function CoursesScreen() {
       }
 
       if (!existingCourse) {
-        console.log('Course does not exist, creating:', course.code);
+        console.log('Course does not exist, creating:', courseCode);
         const { error: insertError } = await supabase
           .from('courses')
           .insert({
-            id: course.code,
-            title: course.name,
-            description: `${course.name} - ${course.points} poäng`,
-            subject: extractSubjectFromCourseName(course.name),
-            level: 'gymnasie',
+            id: courseCode,
+            title: courseName,
+            description: `${courseName} - ${coursePoints} ${isUniversityCourse ? 'hp' : 'poäng'}`,
+            subject: isUniversityCourse && 'field' in course ? (course as UnifiedCourse).field || 'Högskola' : extractSubjectFromCourseName(courseName),
+            level: courseLevel,
             resources: ['Kursmaterial', 'Övningsuppgifter'],
             tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
             related_courses: []
@@ -277,7 +271,7 @@ export default function CoursesScreen() {
         .from('user_courses')
         .select('id')
         .eq('user_id', user!.id)
-        .eq('course_id', course.code)
+        .eq('course_id', courseCode)
         .maybeSingle();
 
       if (userCourseCheckError) {
@@ -290,7 +284,7 @@ export default function CoursesScreen() {
       }
 
       console.log('Creating user course record...');
-      const userCourseId = `${user!.id}-${course.code}`;
+      const userCourseId = `${user!.id}-${courseCode}`;
       console.log('User course ID:', userCourseId);
 
       const { data: insertedUserCourse, error: userCourseError } = await supabase
@@ -298,7 +292,7 @@ export default function CoursesScreen() {
         .insert({
           id: userCourseId,
           user_id: user!.id,
-          course_id: course.code,
+          course_id: courseCode,
           is_active: true,
           progress: 0
         })
@@ -327,7 +321,7 @@ export default function CoursesScreen() {
       }
 
       console.log('Course added successfully:', insertedUserCourse);
-      Alert.alert('Framgång! \u2705', `${course.name} har lagts till i dina kurser`);
+      Alert.alert('Framgång! \u2705', `${courseName} har lagts till i dina kurser`);
       await loadAllData();
     } catch (error: any) {
       console.error('Error in handleAddCourseFromPicker:', error);
@@ -360,48 +354,6 @@ export default function CoursesScreen() {
     }
 
     return 'Övrigt';
-  };
-
-  const toggleCourseActive = async (courseId: string, isActive: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('user_courses')
-        .update({ is_active: !isActive })
-        .eq('user_id', user!.id)
-        .eq('course_id', courseId);
-
-      if (error) {
-        console.error('Error updating course active status:', error);
-        Alert.alert('Fel', 'Kunde inte uppdatera kurs');
-        return;
-      }
-
-      loadAllData(); // Reload all data
-    } catch (error) {
-      console.error('Error in toggleCourseActive:', error);
-      Alert.alert('Fel', 'Kunde inte uppdatera kurs');
-    }
-  };
-
-  const updateProgress = async (courseId: string, progress: number) => {
-    try {
-      const { error } = await supabase
-        .from('user_courses')
-        .update({ progress })
-        .eq('user_id', user!.id)
-        .eq('course_id', courseId);
-
-      if (error) {
-        console.error('Error updating course progress:', error);
-        Alert.alert('Fel', 'Kunde inte uppdatera framsteg');
-        return;
-      }
-
-      loadAllData(); // Reload all data
-    } catch (error) {
-      console.error('Error in updateProgress:', error);
-      Alert.alert('Fel', 'Kunde inte uppdatera framsteg');
-    }
   };
 
   const navigateToCourse = (courseId: string) => {

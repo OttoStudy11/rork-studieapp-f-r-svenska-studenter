@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,46 +7,135 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { X, Search, BookOpen, Check, Filter } from 'lucide-react-native';
+import { X, Search, BookOpen, Check, Filter, GraduationCap } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { programCourses } from '@/home/project/constants/program-courses';
 import type { Course } from '@/home/project/constants/program-courses';
+import { UNIVERSITY_PROGRAM_COURSES } from '@/constants/university-program-courses';
 import { FadeInView } from './Animations';
+
+export interface UnifiedCourse {
+  code: string;
+  name: string;
+  points?: number;
+  credits?: number;
+  year: number;
+  mandatory: boolean;
+  category: string;
+  program: string;
+  field?: string;
+  isUniversity: boolean;
+}
 
 interface CoursePickerModalProps {
   visible: boolean;
   onClose: () => void;
-  onSelectCourse: (course: Course) => void;
+  onSelectCourse: (course: Course | UnifiedCourse) => void;
 }
 
 export default function CoursePickerModal({ visible, onClose, onSelectCourse }: CoursePickerModalProps) {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProgram, setSelectedProgram] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [userLevel, setUserLevel] = useState<string>('gymnasie');
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-  const allCourses = useMemo(() => {
+  const loadUserProfile = useCallback(async () => {
+    try {
+      setIsLoadingProfile(true);
+      console.log('Loading user profile for course picker...');
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('level, program')
+        .eq('id', user!.id)
+        .single();
+
+      if (error) {
+        console.error('Error loading profile:', error);
+        setUserLevel('gymnasie');
+      } else if (profile) {
+        console.log('User profile loaded:', profile);
+        setUserLevel(profile.level || 'gymnasie');
+      }
+    } catch (error) {
+      console.error('Error in loadUserProfile:', error);
+      setUserLevel('gymnasie');
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (visible && user?.id) {
+      loadUserProfile();
+    }
+  }, [visible, user?.id, loadUserProfile]);
+
+  const isUniversityUser = userLevel === 'högskola' || userLevel === 'universitet';
+
+  const allGymnasiumCourses = useMemo(() => {
     return programCourses.flatMap(pc => 
       pc.courses.map(course => ({
         ...course,
-        program: pc.program
-      }))
+        program: pc.program,
+        isUniversity: false
+      } as UnifiedCourse))
     );
   }, []);
 
-  const uniquePrograms = useMemo(() => {
-    return Array.from(new Set(programCourses.map(pc => pc.program)));
+  const allUniversityCourses = useMemo(() => {
+    return UNIVERSITY_PROGRAM_COURSES.flatMap(pc => 
+      pc.courses.map(course => ({
+        code: course.code,
+        name: course.name,
+        credits: course.credits,
+        year: course.year,
+        mandatory: course.mandatory,
+        category: course.category,
+        program: pc.programName,
+        field: course.field,
+        isUniversity: true
+      } as UnifiedCourse))
+    );
   }, []);
 
-  const categories = [
-    { id: 'gymnasiegemensam', label: 'Gymnasiegemensam' },
-    { id: 'programgemensam', label: 'Programgemensam' },
-    { id: 'inriktning', label: 'Inriktning' },
-    { id: 'programfördjupning', label: 'Programfördjupning' },
-    { id: 'individuellt val', label: 'Individuellt val' },
-  ];
+  const allCourses = useMemo(() => {
+    return isUniversityUser ? allUniversityCourses : allGymnasiumCourses;
+  }, [isUniversityUser, allUniversityCourses, allGymnasiumCourses]);
+
+  const uniquePrograms = useMemo(() => {
+    if (isUniversityUser) {
+      return Array.from(new Set(UNIVERSITY_PROGRAM_COURSES.map(pc => pc.programName)));
+    }
+    return Array.from(new Set(programCourses.map(pc => pc.program)));
+  }, [isUniversityUser]);
+
+  const categories = useMemo(() => {
+    if (isUniversityUser) {
+      return [
+        { id: 'grundkurs', label: 'Grundkurs' },
+        { id: 'fördjupningskurs', label: 'Fördjupningskurs' },
+        { id: 'avancerad', label: 'Avancerad' },
+        { id: 'mastersnivå', label: 'Mastersnivå' },
+        { id: 'professionskurs', label: 'Professionskurs' },
+        { id: 'valbara', label: 'Valbara' },
+      ];
+    }
+    return [
+      { id: 'gymnasiegemensam', label: 'Gymnasiegemensam' },
+      { id: 'programgemensam', label: 'Programgemensam' },
+      { id: 'inriktning', label: 'Inriktning' },
+      { id: 'programfördjupning', label: 'Programfördjupning' },
+      { id: 'individuellt val', label: 'Individuellt val' },
+    ];
+  }, [isUniversityUser]);
 
   const filteredCourses = useMemo(() => {
     let filtered = allCourses;
@@ -64,7 +153,8 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
       filtered = filtered.filter(c => 
         c.name.toLowerCase().includes(query) ||
         c.code.toLowerCase().includes(query) ||
-        c.program.toLowerCase().includes(query)
+        c.program.toLowerCase().includes(query) ||
+        (c.field && c.field.toLowerCase().includes(query))
       );
     }
 
@@ -74,12 +164,12 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
         acc.set(key, course);
       }
       return acc;
-    }, new Map());
+    }, new Map<string, UnifiedCourse>());
 
     return Array.from(uniqueCourses.values());
   }, [allCourses, selectedProgram, selectedCategory, searchQuery]);
 
-  const handleSelectCourse = (course: Course) => {
+  const handleSelectCourse = (course: UnifiedCourse) => {
     onSelectCourse(course);
     setSearchQuery('');
     setSelectedProgram(null);
@@ -104,9 +194,17 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
           <View style={styles.headerContent}>
-            <Text style={[styles.title, { color: theme.colors.text }]}>Välj kurs</Text>
+            <View style={styles.titleRow}>
+              <Text style={[styles.title, { color: theme.colors.text }]}>Välj kurs</Text>
+              {isUniversityUser && (
+                <View style={[styles.levelBadge, { backgroundColor: theme.colors.primary + '15' }]}>
+                  <GraduationCap size={14} color={theme.colors.primary} />
+                  <Text style={[styles.levelBadgeText, { color: theme.colors.primary }]}>Högskola</Text>
+                </View>
+              )}
+            </View>
             <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-              {filteredCourses.length} kurser tillgängliga
+              {isLoadingProfile ? 'Laddar...' : `${filteredCourses.length} ${isUniversityUser ? 'högskole' : 'gymnasie'}kurser tillgängliga`}
             </Text>
           </View>
           <TouchableOpacity
@@ -116,6 +214,14 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
             <X size={24} color={theme.colors.text} />
           </TouchableOpacity>
         </View>
+
+        {isLoadingProfile ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Laddar kurser...</Text>
+          </View>
+        ) : (
+          <>
 
         {/* Search */}
         <View style={styles.searchSection}>
@@ -254,8 +360,12 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
                   onPress={() => handleSelectCourse(course)}
                 >
                   <View style={styles.courseIcon}>
-                    <View style={[styles.courseIconInner, { backgroundColor: theme.colors.primary + '15' }]}>
-                      <BookOpen size={20} color={theme.colors.primary} />
+                    <View style={[styles.courseIconInner, { backgroundColor: course.isUniversity ? theme.colors.success + '15' : theme.colors.primary + '15' }]}>
+                      {course.isUniversity ? (
+                        <GraduationCap size={20} color={theme.colors.success} />
+                      ) : (
+                        <BookOpen size={20} color={theme.colors.primary} />
+                      )}
                     </View>
                   </View>
                   
@@ -266,10 +376,15 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
                     <Text style={[styles.courseProgram, { color: theme.colors.textSecondary }]} numberOfLines={1}>
                       {course.program}
                     </Text>
+                    {course.field && (
+                      <Text style={[styles.courseField, { color: theme.colors.textMuted }]} numberOfLines={1}>
+                        {course.field}
+                      </Text>
+                    )}
                     <View style={styles.courseMeta}>
                       <View style={[styles.courseTag, { backgroundColor: theme.colors.primary + '10' }]}>
                         <Text style={[styles.courseTagText, { color: theme.colors.primary }]}>
-                          {course.points}p
+                          {course.isUniversity ? `${course.credits} hp` : `${course.points}p`}
                         </Text>
                       </View>
                       <View style={[styles.courseTag, { backgroundColor: theme.colors.warning + '10' }]}>
@@ -287,7 +402,7 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
                     </View>
                   </View>
 
-                  <View style={[styles.addButton, { backgroundColor: theme.colors.primary }]}>
+                  <View style={[styles.addButton, { backgroundColor: course.isUniversity ? theme.colors.success : theme.colors.primary }]}>
                     <Check size={16} color="#FFF" />
                   </View>
                 </TouchableOpacity>
@@ -295,6 +410,8 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
             ))
           )}
         </ScrollView>
+        </>
+        )}
       </View>
     </Modal>
   );
@@ -304,6 +421,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 60,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  levelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  levelBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
@@ -428,7 +571,12 @@ const styles = StyleSheet.create({
   },
   courseProgram: {
     fontSize: 13,
+    marginBottom: 4,
+  },
+  courseField: {
+    fontSize: 12,
     marginBottom: 8,
+    fontStyle: 'italic',
   },
   courseMeta: {
     flexDirection: 'row',

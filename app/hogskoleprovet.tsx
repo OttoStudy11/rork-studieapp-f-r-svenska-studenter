@@ -23,6 +23,8 @@ import {
   Lock,
   Crown,
   Calendar,
+  Sparkles,
+  Zap,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
@@ -293,6 +295,42 @@ export default function HogskoleprovetScreen() {
           </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
+
+        {isPremium && (
+          <TouchableOpacity 
+            style={styles.aiGeneratorCard}
+            onPress={() => router.push('/hp-ai-generator' as any)}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={isDark 
+                ? ['#7C3AED', '#6366F1', '#EC4899'] 
+                : ['#8B5CF6', '#6366F1', '#EC4899']
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.aiGeneratorGradient}
+            >
+              <View style={styles.aiGeneratorContent}>
+                <View style={styles.aiGeneratorIcon}>
+                  <Sparkles size={28} color="#FFF" />
+                </View>
+                <View style={styles.aiGeneratorInfo}>
+                  <View style={styles.aiGeneratorTitleRow}>
+                    <Text style={styles.aiGeneratorTitle}>AI-generator</Text>
+                    <View style={styles.aiBadge}>
+                      <Zap size={12} color="#FFD700" />
+                    </View>
+                  </View>
+                  <Text style={styles.aiGeneratorSubtitle}>
+                    Skapa anpassade prov med AI baserat på Skolverkets HP
+                  </Text>
+                </View>
+                <ChevronRight size={22} color="rgba(255,255,255,0.7)" />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -872,5 +910,58 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
+  },
+  aiGeneratorCard: {
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  aiGeneratorGradient: {
+    padding: 20,
+  },
+  aiGeneratorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  aiGeneratorIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  aiGeneratorInfo: {
+    flex: 1,
+  },
+  aiGeneratorTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  aiGeneratorTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#FFF',
+  },
+  aiBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,215,0,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  aiGeneratorSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 18,
   },
 });

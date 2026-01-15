@@ -3768,8 +3768,8 @@ const styles = StyleSheet.create({
   productivityLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    width: 110,
+    gap: 10,
+    width: 100,
   },
   productivityIcon: {
     width: 32,
@@ -3790,7 +3790,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+    maxWidth: 160,
   },
   productivityBarBg: {
     flex: 1,
@@ -3803,9 +3804,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   productivityValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    width: 35,
+    width: 32,
     textAlign: 'right',
   },
   courseDistributionCard: {

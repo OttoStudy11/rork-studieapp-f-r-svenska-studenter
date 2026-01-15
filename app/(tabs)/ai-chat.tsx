@@ -209,7 +209,7 @@ export default function AIChatScreen() {
           )}
         </ScrollView>
 
-        <View style={[styles.inputContainer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={[styles.inputContainer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border, paddingBottom: Math.max(insets.bottom, 8) }]}>
           <TextInput
             style={[styles.input, { backgroundColor: isDark ? theme.colors.background : '#f5f5f5', color: theme.colors.text }]}
             value={input}
@@ -244,8 +244,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 24,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   headerTop: {
     flexDirection: 'row',
@@ -406,7 +406,9 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
     borderTopWidth: 1,
     alignItems: 'flex-end',
   },

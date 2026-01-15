@@ -120,11 +120,10 @@ export async function assignCoursesAfterOnboarding(
             tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
             related_courses: [],
             progress: 0,
-            course_status: 'active',
           });
 
         if (courseInsertError) {
-          console.error(`❌ Error creating course ${course.title}:`, courseInsertError);
+          console.error(`❌ Error creating course ${course.title}:`, courseInsertError.message || JSON.stringify(courseInsertError));
           continue;
         }
       }
@@ -347,11 +346,13 @@ export async function assignUniversityCoursesToUser(
           tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
           related_courses: [],
           progress: 0,
-          course_status: 'active',
+          education_level: 'hogskola',
         });
         
         if (insertError) {
-          console.warn(`⚠️ Could not create course ${course.title}:`, insertError.message);
+          console.warn(`⚠️ Could not create course ${course.title}:`, insertError.message || JSON.stringify(insertError));
+        } else {
+          console.log(`✅ Created course in database: ${course.title}`);
         }
       }
       
@@ -436,8 +437,7 @@ export async function getAssignableCoursesPreview(
     // For gymnasium or fallback to database
     let query = (supabase as any)
       .from('courses')
-      .select('id, title, subject, emoji')
-      .eq('course_status', 'active');
+      .select('id, title, subject');
 
     if (schoolId && programId && educationLevel && educationYear) {
       query = query.or(

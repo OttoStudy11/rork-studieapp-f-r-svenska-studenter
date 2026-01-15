@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import * as Notifications from 'expo-notifications';
 import { NotificationManager } from '@/lib/notification-manager';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -28,8 +28,48 @@ const queryClient = new QueryClient();
 function RootLayoutNav() {
   const { toasts, dismissToast } = useToast();
   const { isLoading: authLoading } = useAuth();
-  
-  if (authLoading) {
+  const [minimumLoadingDone, setMinimumLoadingDone] = useState(false);
+  const [splashHidden, setSplashHidden] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+
+  useEffect(() => {
+    // Minimum loading time to show the loading screen (2.5 seconds)
+    const timer = setTimeout(() => {
+      setMinimumLoadingDone(true);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // Hide splash screen once we're ready to show our custom loading screen
+    if (!splashHidden) {
+      const hideSplash = async () => {
+        try {
+          await SplashScreen.hideAsync();
+          setSplashHidden(true);
+        } catch (e) {
+          console.log('Error hiding splash:', e);
+          setSplashHidden(true);
+        }
+      };
+      // Small delay to ensure our LoadingScreen is mounted
+      setTimeout(hideSplash, 100);
+    }
+  }, [splashHidden]);
+
+  // Add small delay after loading conditions are met to ensure smooth transition
+  useEffect(() => {
+    if (!authLoading && minimumLoadingDone && !showContent) {
+      // Small delay to ensure everything is ready
+      const timer = setTimeout(() => {
+        setShowContent(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [authLoading, minimumLoadingDone, showContent]);
+
+  // Show loading screen until auth is done AND minimum time has passed AND content is ready
+  if (authLoading || !minimumLoadingDone || !showContent) {
     return <LoadingScreen message="Startar din studieplats..." />;
   }
   
@@ -55,8 +95,6 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useEffect(() => {
-    SplashScreen.hideAsync();
-    
     // Initialize notification manager
     NotificationManager.initialize();
     

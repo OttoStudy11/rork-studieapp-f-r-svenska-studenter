@@ -36,6 +36,7 @@ import { SWEDISH_UNIVERSITIES, UNIVERSITY_PROGRAMS } from '@/constants/universit
 import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
 import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 import { getGymnasiumCourses, type GymnasiumCourse } from '@/constants/gymnasium-courses';
+import { MAX_COURSES } from '@/lib/course-assignment';
 
 import { type University, type UniversityProgram, type UniversityProgramYear } from '@/constants/universities';
 
@@ -548,7 +549,7 @@ export default function OnboardingScreen() {
         return data.university !== null;
       case 5: 
         if (data.studyLevel === 'gymnasie') {
-          return data.selectedCourses.size > 0;
+          return data.selectedCourses.size > 0 && data.selectedCourses.size <= MAX_COURSES;
         }
         return data.goals.length > 0;
       case 6: 
@@ -1141,7 +1142,13 @@ export default function OnboardingScreen() {
             <View style={styles.stepContainer}>
               <BookOpen size={60} color="white" style={styles.icon} />
               <Text style={styles.title}>Välj kurser</Text>
-              <Text style={styles.subtitle}>Välj de kurser du läser just nu</Text>
+              <Text style={styles.subtitle}>Välj de kurser du läser just nu (max {MAX_COURSES})</Text>
+              
+              <View style={styles.courseCountBadge}>
+                <Text style={styles.courseCountText}>
+                  {data.selectedCourses.size}/{MAX_COURSES} kurser valda
+                </Text>
+              </View>
               
               <ScrollView style={styles.coursesList} showsVerticalScrollIndicator={false}>
                 {availableCourses.map((course) => (
@@ -1156,7 +1163,9 @@ export default function OnboardingScreen() {
                       if (newSelected.has(course.id)) {
                         if (!course.mandatory) newSelected.delete(course.id);
                       } else {
-                        newSelected.add(course.id);
+                        if (newSelected.size < MAX_COURSES) {
+                          newSelected.add(course.id);
+                        }
                       }
                       setData({ ...data, selectedCourses: newSelected });
                     }}
@@ -2639,5 +2648,18 @@ const styles = StyleSheet.create({
   selectedTermButtonText: {
     color: 'white',
     fontWeight: '700' as const,
+  },
+  courseCountBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 16,
+    alignSelf: 'center',
+  },
+  courseCountText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#1E293B',
   },
 });

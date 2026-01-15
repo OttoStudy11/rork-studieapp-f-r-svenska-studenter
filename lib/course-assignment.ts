@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
-import { getCoursesForUniversityProgram, getMandatoryCoursesForYear } from '@/constants/university-program-courses';
+import { getCoursesForUniversityProgram, getMandatoryCoursesForYear, type UniversityCourse } from '@/constants/university-program-courses';
 import { getCoursesForProgramAndYear, type Course as GymnasiumCourse } from '@/constants/gymnasium-courses';
+import { UNIVERSITY_PROGRAMS } from '@/constants/universities';
 
 // Maximum number of courses a user can have
 export const MAX_COURSES = 15;
@@ -169,6 +170,84 @@ export async function assignCoursesAfterOnboarding(
   }
 }
 
+// Generate default courses for programs without defined courses
+function getDefaultCoursesForProgram(programId: string, year: 1 | 2 | 3 | 4 | 5): UniversityCourse[] {
+  const program = UNIVERSITY_PROGRAMS.find(p => p.id === programId);
+  if (!program) {
+    console.warn(`Program not found: ${programId}`);
+    return [];
+  }
+
+  const field = program.field || 'Allmänt';
+  const degreeType = program.degreeType;
+  
+  // Generate generic courses based on program type and year
+  const defaultCourses: UniversityCourse[] = [];
+  
+  if (degreeType === 'civilingenjör' || degreeType === 'högskoleingenjör') {
+    // Technical programs
+    if (year === 1) {
+      defaultCourses.push(
+        { id: `${programId}-MAT1`, code: `${programId.toUpperCase()}-MAT1`, name: 'Matematik I', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Matematik' },
+        { id: `${programId}-MAT2`, code: `${programId.toUpperCase()}-MAT2`, name: 'Matematik II', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Matematik' },
+        { id: `${programId}-PROG1`, code: `${programId.toUpperCase()}-PROG1`, name: 'Programmering I', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Datateknik' },
+        { id: `${programId}-INTRO`, code: `${programId.toUpperCase()}-INTRO`, name: `Introduktion till ${field}`, credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field }
+      );
+    } else if (year === 2) {
+      defaultCourses.push(
+        { id: `${programId}-MAT3`, code: `${programId.toUpperCase()}-MAT3`, name: 'Matematik III', credits: 7.5, year: 2, mandatory: true, category: 'fördjupningskurs', field: 'Matematik' },
+        { id: `${programId}-STAT`, code: `${programId.toUpperCase()}-STAT`, name: 'Sannolikhetsteori och statistik', credits: 7.5, year: 2, mandatory: true, category: 'grundkurs', field: 'Matematik' },
+        { id: `${programId}-SPEC1`, code: `${programId.toUpperCase()}-SPEC1`, name: `${field} - Grundkurs`, credits: 7.5, year: 2, mandatory: true, category: 'fördjupningskurs', field }
+      );
+    } else if (year === 3) {
+      defaultCourses.push(
+        { id: `${programId}-ADV1`, code: `${programId.toUpperCase()}-ADV1`, name: `Avancerad ${field}`, credits: 7.5, year: 3, mandatory: true, category: 'fördjupningskurs', field },
+        { id: `${programId}-PROJ`, code: `${programId.toUpperCase()}-PROJ`, name: 'Projektarbete', credits: 15, year: 3, mandatory: true, category: 'fördjupningskurs', field }
+      );
+    }
+  } else if (degreeType === 'professionsprogram') {
+    // Professional programs (medicine, law, etc.)
+    if (year === 1) {
+      defaultCourses.push(
+        { id: `${programId}-GRUND1`, code: `${programId.toUpperCase()}-GRUND1`, name: `${field} - Grunder`, credits: 15, year: 1, mandatory: true, category: 'professionskurs', field },
+        { id: `${programId}-GRUND2`, code: `${programId.toUpperCase()}-GRUND2`, name: `${field} - Introduktion`, credits: 15, year: 1, mandatory: true, category: 'professionskurs', field },
+        { id: `${programId}-VFU1`, code: `${programId.toUpperCase()}-VFU1`, name: 'Verksamhetsförlagd utbildning I', credits: 15, year: 1, mandatory: true, category: 'professionskurs', field }
+      );
+    } else if (year === 2) {
+      defaultCourses.push(
+        { id: `${programId}-FORD1`, code: `${programId.toUpperCase()}-FORD1`, name: `${field} - Fördjupning`, credits: 15, year: 2, mandatory: true, category: 'fördjupningskurs', field },
+        { id: `${programId}-VFU2`, code: `${programId.toUpperCase()}-VFU2`, name: 'Verksamhetsförlagd utbildning II', credits: 15, year: 2, mandatory: true, category: 'professionskurs', field }
+      );
+    } else if (year === 3) {
+      defaultCourses.push(
+        { id: `${programId}-EX`, code: `${programId.toUpperCase()}-EX`, name: 'Examensarbete', credits: 15, year: 3, mandatory: true, category: 'fördjupningskurs', field },
+        { id: `${programId}-VFU3`, code: `${programId.toUpperCase()}-VFU3`, name: 'Verksamhetsförlagd utbildning III', credits: 15, year: 3, mandatory: true, category: 'professionskurs', field }
+      );
+    }
+  } else {
+    // Bachelor/Master programs
+    if (year === 1) {
+      defaultCourses.push(
+        { id: `${programId}-INTRO`, code: `${programId.toUpperCase()}-INTRO`, name: `Introduktion till ${field}`, credits: 15, year: 1, mandatory: true, category: 'grundkurs', field },
+        { id: `${programId}-GRUND1`, code: `${programId.toUpperCase()}-GRUND1`, name: `${field} - Grundkurs I`, credits: 15, year: 1, mandatory: true, category: 'grundkurs', field },
+        { id: `${programId}-MET`, code: `${programId.toUpperCase()}-MET`, name: 'Vetenskaplig metod', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Metod' }
+      );
+    } else if (year === 2) {
+      defaultCourses.push(
+        { id: `${programId}-FORD1`, code: `${programId.toUpperCase()}-FORD1`, name: `${field} - Fördjupning I`, credits: 15, year: 2, mandatory: true, category: 'fördjupningskurs', field },
+        { id: `${programId}-FORD2`, code: `${programId.toUpperCase()}-FORD2`, name: `${field} - Fördjupning II`, credits: 15, year: 2, mandatory: true, category: 'fördjupningskurs', field }
+      );
+    } else if (year === 3) {
+      defaultCourses.push(
+        { id: `${programId}-KAND`, code: `${programId.toUpperCase()}-KAND`, name: 'Kandidatuppsats', credits: 15, year: 3, mandatory: true, category: 'fördjupningskurs', field },
+        { id: `${programId}-VAL`, code: `${programId.toUpperCase()}-VAL`, name: `Valbara kurser i ${field}`, credits: 15, year: 3, mandatory: false, category: 'valbara', field }
+      );
+    }
+  }
+  
+  return defaultCourses;
+}
+
 // Assign university courses using the dedicated university_courses table
 export async function assignUniversityCoursesToUser(
   userId: string,
@@ -208,10 +287,17 @@ export async function assignUniversityCoursesToUser(
       if (dbError) {
         console.log('📚 DB Error:', dbError.message || dbError);
       }
-      // Fall back to constants - get mandatory courses directly
-      const mandatoryCourses = getMandatoryCoursesForYear(programId, year);
       
-      console.log(`📚 Found ${mandatoryCourses.length} mandatory courses from constants for ${programId} year ${year}`);
+      // Fall back to constants - get mandatory courses directly
+      let mandatoryCourses = getMandatoryCoursesForYear(programId, year);
+      
+      // If no courses in constants, generate default courses
+      if (mandatoryCourses.length === 0) {
+        console.log(`📚 No courses in constants for ${programId}, generating defaults`);
+        mandatoryCourses = getDefaultCoursesForProgram(programId, year);
+      }
+      
+      console.log(`📚 Found ${mandatoryCourses.length} courses for ${programId} year ${year}`);
       
       coursesToAssign = mandatoryCourses.slice(0, MAX_COURSES).map(course => ({
         courseId: course.id,
@@ -233,7 +319,7 @@ export async function assignUniversityCoursesToUser(
     
     if (coursesToAssign.length === 0) {
       console.warn('⚠️ No courses found for program:', programId, 'year:', year);
-      console.warn('⚠️ Available program IDs:', ['civ_datateknik', 'civ_elektroteknik', 'civ_industriell_ekonomi', 'lakarprogrammet', 'sjukskoterskeprogrammet', 'psykologprogrammet', 'juristprogrammet', 'ekonomprogrammet', 'kand_biologi', 'kand_datavetenskap', 'forskollararprogrammet', 'webbutvecklare', 'ux_designer']);
+      // Return empty but don't fail completely
       return [];
     }
     
@@ -282,9 +368,8 @@ export async function assignUniversityCoursesToUser(
         console.warn(`⚠️ Could not enroll in course ${course.title}:`, enrollError.message);
       } else {
         console.log(`✅ Enrolled in: ${course.title}`);
+        assignedCourses.push(course);
       }
-      
-      assignedCourses.push(course);
     }
     
     console.log(`🎉 Successfully assigned ${assignedCourses.length} university courses`);

@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { programCourses } from '@/home/project/constants/program-courses';
 import type { Course } from '@/home/project/constants/program-courses';
 import { UNIVERSITY_PROGRAM_COURSES } from '@/constants/university-program-courses';
+import { UNIVERSITY_PROGRAMS } from '@/constants/universities';
 import { FadeInView } from './Animations';
 
 export interface UnifiedCourse {
@@ -91,7 +92,7 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
   }, []);
 
   const allUniversityCourses = useMemo(() => {
-    return UNIVERSITY_PROGRAM_COURSES.flatMap(pc => 
+    const coursesFromConstants = UNIVERSITY_PROGRAM_COURSES.flatMap(pc => 
       pc.courses.map(course => ({
         code: course.code,
         name: course.name,
@@ -104,6 +105,74 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
         isUniversity: true
       } as UnifiedCourse))
     );
+
+    // Generate default courses for programs without defined courses
+    const programsWithCourses = new Set(UNIVERSITY_PROGRAM_COURSES.map(pc => pc.programId));
+    const programsWithoutCourses = UNIVERSITY_PROGRAMS.filter(p => !programsWithCourses.has(p.id));
+    
+    const defaultCourses: UnifiedCourse[] = [];
+    for (const program of programsWithoutCourses) {
+      const field = program.field || 'Allm\u00e4nt';
+      const degreeType = program.degreeType;
+      
+      // Generate courses for years 1-3
+      for (const year of [1, 2, 3] as const) {
+        if (degreeType === 'civilingenj\u00f6r' || degreeType === 'h\u00f6gskoleingenj\u00f6r') {
+          if (year === 1) {
+            defaultCourses.push(
+              { code: `${program.id}-MAT1`, name: 'Matematik I', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', program: program.name, field: 'Matematik', isUniversity: true },
+              { code: `${program.id}-MAT2`, name: 'Matematik II', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', program: program.name, field: 'Matematik', isUniversity: true },
+              { code: `${program.id}-PROG1`, name: 'Programmering I', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', program: program.name, field: 'Datateknik', isUniversity: true },
+              { code: `${program.id}-INTRO`, name: `Introduktion till ${field}`, credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', program: program.name, field, isUniversity: true }
+            );
+          } else if (year === 2) {
+            defaultCourses.push(
+              { code: `${program.id}-MAT3`, name: 'Matematik III', credits: 7.5, year: 2, mandatory: true, category: 'f\u00f6rdjupningskurs', program: program.name, field: 'Matematik', isUniversity: true },
+              { code: `${program.id}-STAT`, name: 'Sannolikhetsteori och statistik', credits: 7.5, year: 2, mandatory: true, category: 'grundkurs', program: program.name, field: 'Matematik', isUniversity: true },
+              { code: `${program.id}-SPEC1`, name: `${field} - Grundkurs`, credits: 7.5, year: 2, mandatory: true, category: 'f\u00f6rdjupningskurs', program: program.name, field, isUniversity: true }
+            );
+          } else if (year === 3) {
+            defaultCourses.push(
+              { code: `${program.id}-ADV1`, name: `Avancerad ${field}`, credits: 7.5, year: 3, mandatory: true, category: 'f\u00f6rdjupningskurs', program: program.name, field, isUniversity: true },
+              { code: `${program.id}-PROJ`, name: 'Projektarbete', credits: 15, year: 3, mandatory: true, category: 'f\u00f6rdjupningskurs', program: program.name, field, isUniversity: true }
+            );
+          }
+        } else if (degreeType === 'professionsprogram') {
+          if (year === 1) {
+            defaultCourses.push(
+              { code: `${program.id}-GRUND1`, name: `${field} - Grunder`, credits: 15, year: 1, mandatory: true, category: 'professionskurs', program: program.name, field, isUniversity: true },
+              { code: `${program.id}-GRUND2`, name: `${field} - Introduktion`, credits: 15, year: 1, mandatory: true, category: 'professionskurs', program: program.name, field, isUniversity: true }
+            );
+          } else if (year === 2) {
+            defaultCourses.push(
+              { code: `${program.id}-FORD1`, name: `${field} - F\u00f6rdjupning`, credits: 15, year: 2, mandatory: true, category: 'f\u00f6rdjupningskurs', program: program.name, field, isUniversity: true }
+            );
+          } else if (year === 3) {
+            defaultCourses.push(
+              { code: `${program.id}-EX`, name: 'Examensarbete', credits: 15, year: 3, mandatory: true, category: 'f\u00f6rdjupningskurs', program: program.name, field, isUniversity: true }
+            );
+          }
+        } else {
+          // Bachelor/Master programs
+          if (year === 1) {
+            defaultCourses.push(
+              { code: `${program.id}-INTRO`, name: `Introduktion till ${field}`, credits: 15, year: 1, mandatory: true, category: 'grundkurs', program: program.name, field, isUniversity: true },
+              { code: `${program.id}-GRUND1`, name: `${field} - Grundkurs I`, credits: 15, year: 1, mandatory: true, category: 'grundkurs', program: program.name, field, isUniversity: true }
+            );
+          } else if (year === 2) {
+            defaultCourses.push(
+              { code: `${program.id}-FORD1`, name: `${field} - F\u00f6rdjupning I`, credits: 15, year: 2, mandatory: true, category: 'f\u00f6rdjupningskurs', program: program.name, field, isUniversity: true }
+            );
+          } else if (year === 3) {
+            defaultCourses.push(
+              { code: `${program.id}-KAND`, name: 'Kandidatuppsats', credits: 15, year: 3, mandatory: true, category: 'f\u00f6rdjupningskurs', program: program.name, field, isUniversity: true }
+            );
+          }
+        }
+      }
+    }
+    
+    return [...coursesFromConstants, ...defaultCourses];
   }, []);
 
   const allCourses = useMemo(() => {
@@ -112,7 +181,12 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
 
   const uniquePrograms = useMemo(() => {
     if (isUniversityUser) {
-      return Array.from(new Set(UNIVERSITY_PROGRAM_COURSES.map(pc => pc.programName)));
+      // Include all university programs, not just those with defined courses
+      const programNames = new Set([
+        ...UNIVERSITY_PROGRAM_COURSES.map(pc => pc.programName),
+        ...UNIVERSITY_PROGRAMS.map(p => p.name)
+      ]);
+      return Array.from(programNames);
     }
     return Array.from(new Set(programCourses.map(pc => pc.program)));
   }, [isUniversityUser]);

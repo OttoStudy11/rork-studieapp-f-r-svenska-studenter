@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
   ScrollView,
   TextInput,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -251,10 +251,12 @@ export default function FlashcardsScreenV2() {
   if (isLoadingFlashcards) {
     return (
       <PremiumGate feature="flashcards" fullScreen>
+        <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6366F1" />
           <Text style={styles.loadingText}>Laddar flashcards...</Text>
         </View>
+        </SafeAreaView>
       </PremiumGate>
     );
   }
@@ -262,7 +264,7 @@ export default function FlashcardsScreenV2() {
   if (flashcards.length === 0) {
     return (
       <PremiumGate feature="flashcards" fullScreen>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -412,7 +414,7 @@ export default function FlashcardsScreenV2() {
   if (currentIndex >= dueCards.length) {
     return (
       <PremiumGate feature="flashcards" fullScreen>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -474,7 +476,7 @@ export default function FlashcardsScreenV2() {
 
   return (
     <PremiumGate feature="flashcards" fullScreen>
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>

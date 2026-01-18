@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
   TextInput,
@@ -12,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -303,7 +303,7 @@ export default function FlashcardsScreen() {
 
   if (flashcards.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen
           options={{
             headerShown: false,
@@ -421,7 +421,7 @@ export default function FlashcardsScreen() {
 
   if (currentIndex >= dueCards.length) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen
           options={{
             headerShown: false,
@@ -473,7 +473,7 @@ export default function FlashcardsScreen() {
 
   return (
     <PremiumGate feature="flashcards" fullScreen={true}>
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen
         options={{
           headerShown: false,

@@ -24,7 +24,7 @@ export const EXPECTED_PRODUCT_IDS = {
 };
 
 // Entitlement identifier - MUST match exactly what's configured in RevenueCat dashboard
-export const PREMIUM_ENTITLEMENT_ID = 'premium';
+export const PREMIUM_ENTITLEMENT_ID = 'StudieStugan Pro';
 
 // Debug mode - set to false in production
 // When enabled: shows debug info, allows simulated purchases

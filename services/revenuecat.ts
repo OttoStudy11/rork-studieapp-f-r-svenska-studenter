@@ -11,10 +11,10 @@ import { Platform } from 'react-native';
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
-// API Keys - iOS key is already configured, Android needs to be added later
-// IMPORTANT: These should ideally come from environment variables in production
-const REVENUECAT_API_KEY_IOS = 'appl_ttKXYkEBKHJdIqTkYvbLSbUSDcX';
-const REVENUECAT_API_KEY_ANDROID = 'goog_YOUR_ANDROID_KEY_HERE'; // TODO: Add your Google Play key
+// API Keys from environment variables
+const REVENUECAT_API_KEY_IOS = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY || '';
+const REVENUECAT_API_KEY_ANDROID = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY || '';
+const REVENUECAT_API_KEY_TEST = process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY || '';
 
 // Expected product/package identifiers - update these to match your RevenueCat configuration
 // These are used for validation and debugging
@@ -208,13 +208,14 @@ export async function initializeRevenueCat(userId?: string): Promise<boolean> {
 
       // Get the appropriate API key for the platform
       const apiKey = Platform.select({
-        ios: REVENUECAT_API_KEY_IOS,
-        android: REVENUECAT_API_KEY_ANDROID,
+        ios: DEBUG_MODE && REVENUECAT_API_KEY_TEST ? REVENUECAT_API_KEY_TEST : REVENUECAT_API_KEY_IOS,
+        android: DEBUG_MODE && REVENUECAT_API_KEY_TEST ? REVENUECAT_API_KEY_TEST : REVENUECAT_API_KEY_ANDROID,
         default: REVENUECAT_API_KEY_IOS,
       });
 
-      if (!apiKey || apiKey.includes('YOUR_')) {
+      if (!apiKey) {
         log('warn', 'RevenueCat API key not configured for this platform. Purchases will not work.');
+        log('warn', 'Please set EXPO_PUBLIC_REVENUECAT_IOS_API_KEY or EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY');
         return false;
       }
 

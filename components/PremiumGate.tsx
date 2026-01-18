@@ -108,8 +108,8 @@ export function PremiumGate({
         >
           <LinearGradient
             colors={isDark 
-              ? ['rgba(0,0,0,0.7)', 'rgba(20,20,30,0.85)', 'rgba(0,0,0,0.7)']
-              : ['rgba(255,255,255,0.85)', 'rgba(250,250,255,0.92)', 'rgba(255,255,255,0.85)']
+              ? ['rgba(0,0,0,0.80)', 'rgba(20,20,30,0.90)', 'rgba(0,0,0,0.80)']
+              : ['rgba(255,255,255,0.90)', 'rgba(250,250,255,0.95)', 'rgba(255,255,255,0.90)']
             }
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
@@ -145,7 +145,7 @@ export function PremiumGate({
                 end={{ x: 1, y: 0 }}
               >
                 <Sparkles size={12} color="#FFF" strokeWidth={2.5} />
-                <Text style={styles.badgeText}>PREMIUM FEATURE</Text>
+                <Text style={styles.badgeText}>PREMIUM FUNKTION</Text>
                 <Sparkles size={12} color="#FFF" strokeWidth={2.5} />
               </LinearGradient>
 
@@ -208,15 +208,17 @@ export function PremiumGate({
               </TouchableOpacity>
 
               {/* Learn more link */}
-              <TouchableOpacity
-                style={styles.learnMoreButton}
-                onPress={handleUpgrade}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.learnMoreText, { color: '#FFD700' }]}>
-                  Se alla Premium-fördelar →
-                </Text>
-              </TouchableOpacity>
+              {!isOffline && (
+                <TouchableOpacity
+                  style={styles.learnMoreButton}
+                  onPress={handleUpgrade}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.learnMoreText, { color: '#FFD700' }]}>
+                    Se alla Premium-fördelar →
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </LinearGradient>
         </BlurView>
@@ -294,11 +296,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   childrenWrapper: {
-    opacity: 0.12,
+    opacity: 0.25,
     pointerEvents: 'none',
   },
   fullScreenChildrenWrapper: {
-    opacity: 0.08,
+    opacity: 0.15,
     pointerEvents: 'none',
   },
   overlayWrapper: {

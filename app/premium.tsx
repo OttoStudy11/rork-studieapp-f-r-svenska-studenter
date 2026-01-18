@@ -44,54 +44,60 @@ import {
 } from '@/services/revenuecat';
 
 // ============================================================================
-// CONFIGURATION - PLACEHOLDER URLS
+// CONFIGURATION - LEGAL URLS
 // ============================================================================
-// IMPORTANT: Ersätt dessa med riktiga länkar innan publicering!
-// Du kan använda GitHub Pages för att snabbt skapa en enkel sida med policies.
-const TERMS_URL = 'https://placeholder.example/terms';
-const PRIVACY_URL = 'https://placeholder.example/privacy';
+const TERMS_URL = 'https://studiestugan.se/terms';
+const PRIVACY_URL = 'https://studiestugan.se/privacy';
 
-// Privacy policy placeholder text för in-app modal
-const PRIVACY_POLICY_PLACEHOLDER = `
+// Privacy policy text för in-app modal
+const PRIVACY_POLICY_TEXT = `
 INTEGRITETSPOLICY - STUDIESTUGAN
 
-Senast uppdaterad: [DATUM]
+Senast uppdaterad: Januari 2025
 
 1. INLEDNING
-Denna integritetspolicy beskriver hur Studiestugan ("vi", "oss", "vår") samlar in, använder och skyddar dina personuppgifter.
+Denna integritetspolicy beskriver hur Studiestugan samlar in, använder och skyddar dina personuppgifter när du använder vår mobilapplikation.
 
 2. INFORMATION VI SAMLAR IN
-- Kontouppgifter (e-post, användarnamn)
-- Studiestatistik och framsteg
-- Betalningsinformation (hanteras av Apple/Google)
-- Användningsdata för att förbättra appen
+• Kontouppgifter: E-postadress, användarnamn, profilbild
+• Studiedata: Kurser, studietid, poäng, framsteg och statistik
+• Enhetsdata: Enhetsinformation och teknisk diagnostik
+• Betalningsinformation: Hanteras säkert av Apple/Google (vi sparar inte kortuppgifter)
 
-3. HUR VI ANVÄNDER INFORMATIONEN
-- Tillhandahålla våra tjänster
-- Förbättra användarupplevelsen
-- Hantera prenumerationer
-- Kommunicera med dig
+3. HUR VI ANVÄNDER DIN INFORMATION
+• Tillhandahålla och förbättra våra tjänster
+• Personalisera din studieupplevelse
+• Hantera ditt konto och prenumeration
+• Skicka viktiga meddelanden om tjänsten
+• Analysera användning för att förbättra funktioner
 
-4. DELNING AV INFORMATION
-Vi delar inte dina personuppgifter med tredje part förutom:
-- När det krävs enligt lag
-- För betalningshantering via Apple/Google
+4. DATALAGRING OCH SÄKERHET
+Vi lagrar dina uppgifter säkert via Supabase med industristandardkryptering. Data lagras så länge ditt konto är aktivt. Du kan begära radering när som helst.
 
-5. DATASÄKERHET
-Vi använder branschstandard säkerhetsåtgärder för att skydda dina uppgifter.
+5. DELNING AV INFORMATION
+Vi säljer aldrig dina personuppgifter. Vi delar endast data med:
+• Tjänsteleverantörer (Supabase, RevenueCat) för drift
+• Myndigheter vid lagkrav
 
-6. DINA RÄTTIGHETER
+6. DINA RÄTTIGHETER (GDPR)
 Du har rätt att:
-- Begära tillgång till dina uppgifter
-- Begära rättelse eller radering
-- Invända mot behandling
+• Få tillgång till dina uppgifter
+• Rätta felaktiga uppgifter
+• Radera ditt konto och data
+• Invända mot databehandling
+• Överföra dina uppgifter
 
-7. KONTAKT
-[Kontaktinformation]
+7. COOKIES OCH SPÅRNING
+Vi använder endast tekniskt nödvändiga cookies. Ingen tredjepartsspårning för reklam.
 
----
-OBS: Detta är en placeholder-policy. 
-Ersätt med en riktig juridiskt granskad policy innan publicering.
+8. ÄNDRINGAR
+Vi kan uppdatera denna policy. Väsentliga ändringar meddelas via appen.
+
+9. KONTAKT
+Frågor om integritet? Kontakta oss:
+E-post: privacy@studiestugan.se
+
+För fullständig policy, besök: studiestugan.se/privacy
 `;
 
 // ============================================================================
@@ -801,7 +807,7 @@ export default function PremiumScreen() {
           </View>
           <ScrollView style={styles.modalContent}>
             <Text style={[styles.modalText, { color: theme.colors.text }]}>
-              {PRIVACY_POLICY_PLACEHOLDER}
+              {PRIVACY_POLICY_TEXT}
             </Text>
             <TouchableOpacity 
               style={[styles.externalLinkButton, { borderColor: theme.colors.border }]}
@@ -836,22 +842,44 @@ export default function PremiumScreen() {
           <ScrollView style={styles.modalContent}>
             <Text style={[styles.modalText, { color: theme.colors.text }]}>
               ANVÄNDARVILLKOR - STUDIESTUGAN{'\n\n'}
-              Senast uppdaterad: [DATUM]{'\n\n'}
+              Senast uppdaterad: Januari 2025{'\n\n'}
               1. GODKÄNNANDE AV VILLKOR{'\n'}
-              Genom att använda Studiestugan godkänner du dessa villkor.{'\n\n'}
+              Genom att skapa ett konto och använda Studiestugan godkänner du dessa användarvillkor. Om du inte godkänner villkoren ska du inte använda tjänsten.{'\n\n'}
               2. TJÄNSTEBESKRIVNING{'\n'}
-              Studiestugan är en studieapp som hjälper dig att planera och följa upp dina studier.{'\n\n'}
-              3. PRENUMERATIONER{'\n'}
+              Studiestugan är en mobilapplikation för studieplanering, tidsuppföljning och kunskapsutveckling. Tjänsten erbjuds i både gratis och premium-versioner.{'\n\n'}
+              3. KONTO OCH REGISTRERING{'\n'}
+              • Du måste vara minst 13 år gammal{'\n'}
+              • Du ansvarar för ditt kontos säkerhet{'\n'}
+              • Ett konto per person{'\n'}
+              • Vi förbehåller rätten att stänga konton vid missbruk{'\n\n'}
+              4. PRENUMERATIONER OCH BETALNING{'\n'}
               • Premium-prenumeration ger tillgång till extra funktioner{'\n'}
               • Priser visas i appen innan köp{'\n'}
               • Prenumerationer förnyas automatiskt{'\n'}
-              • Avsluta via App Store / Google Play{'\n\n'}
-              4. ANVÄNDARENS ANSVAR{'\n'}
-              Du ansvarar för att hålla din kontoinformation säker.{'\n\n'}
-              5. ÄNDRINGAR{'\n'}
-              Vi kan uppdatera dessa villkor. Fortsatt användning innebär godkännande.{'\n\n'}
-              ---{'\n'}
-              OBS: Detta är placeholder-villkor. Ersätt med juridiskt granskade villkor innan publicering.
+              • Avsluta via App Store/Google Play{'\n'}
+              • Ingen återbetalning för oanvända perioder{'\n'}
+              • Vi kan ändra priser med 30 dagars varsel{'\n\n'}
+              5. ANVÄNDNING AV TJÄNSTEN{'\n'}
+              Du får INTE:{'\n'}
+              • Dela ditt konto med andra{'\n'}
+              • Använda tjänsten för olagliga ändamål{'\n'}
+              • Försöka kringgå säkerhetsåtgärder{'\n'}
+              • Missbruka eller överbelasta systemet{'\n\n'}
+              6. IMMATERIELLA RÄTTIGHETER{'\n'}
+              Allt innehåll (text, grafik, logotyper) ägs av Studiestugan. Du får en begränsad licens att använda tjänsten för personligt bruk.{'\n\n'}
+              7. INNEHÅLLSANSVAR{'\n'}
+              Vi strävar efter korrekt innehåll men garanterar inte riktighet. Använd på egen risk.{'\n\n'}
+              8. ANSVARSBEGRÄNSNING{'\n'}
+              Tjänsten tillhandahålls som den är. Vi ansvarar inte för indirekta skador.{'\n\n'}
+              9. ÄNDRINGAR{'\n'}
+              Vi kan uppdatera dessa villkor. Väsentliga ändringar meddelas via appen. Fortsatt användning innebär godkännande.{'\n\n'}
+              10. UPPSÄGNING{'\n'}
+              Du kan avsluta ditt konto när som helst via inställningar. Vi kan stänga konton vid brott mot villkoren.{'\n\n'}
+              11. TILLÄMPLIG LAG{'\n'}
+              Svensk lag gäller. Tvister avgörs i svensk domstol.{'\n\n'}
+              12. KONTAKT{'\n'}
+              Frågor om villkoren? Kontakta: support@studiestugan.se{'\n\n'}
+              För fullständiga villkor, besök: studiestugan.se/terms
             </Text>
             <TouchableOpacity 
               style={[styles.externalLinkButton, { borderColor: theme.colors.border }]}

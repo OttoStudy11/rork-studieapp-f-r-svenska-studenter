@@ -35,6 +35,7 @@ import {
   ProgressSummary,
   InfoBox
 } from '@/components/CourseComponents';
+import { AIStudyInsights, AIQuickHelp } from '@/components/AIStudyInsights';
 import AddExamModal from '@/components/AddExamModal';
 import { useExams } from '@/contexts/ExamContext';
 import * as Haptics from 'expo-haptics';
@@ -367,6 +368,33 @@ export default function ContentCourseDetailScreen() {
             author={motivationQuote.author}
             courseStyle={courseStyle}
           />
+
+          <View style={styles.aiSection}>
+            <SectionHeader
+              title="AI-Assistans"
+              subtitle="Personliga studietips och hjälp"
+              icon={<Sparkles size={20} color={courseStyle.primaryColor} />}
+              courseStyle={courseStyle}
+            />
+            
+            <AIStudyInsights
+              courseTitle={course.title}
+              courseDescription={course.description}
+              progress={progress?.percentComplete || 0}
+              totalLessons={totalLessons}
+              completedLessons={progress?.lessonsCompleted || 0}
+              courseStyle={courseStyle}
+            />
+
+            <AIQuickHelp
+              courseTitle={course.title}
+              courseStyle={courseStyle}
+              onAskQuestion={(question) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/ai-chat?question=${encodeURIComponent(question)}&course=${encodeURIComponent(course.title)}` as never);
+              }}
+            />
+          </View>
 
           <QuickActionButton
             icon={<Zap size={20} color={courseStyle.primaryColor} />}
@@ -727,6 +755,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500' as const,
     textAlign: 'center',
+  },
+  aiSection: {
+    marginBottom: 24,
   },
   statsGrid: {
     flexDirection: 'row',

@@ -44,6 +44,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import type { Database } from '@/lib/database.types';
+import { AIStudyInsights, AIQuickHelp } from '@/components/AIStudyInsights';
 
 type Course = Database['public']['Tables']['courses']['Row'];
 type CourseLesson = Database['public']['Tables']['course_lessons']['Row'];
@@ -641,6 +642,28 @@ export default function CourseDetailScreen() {
         </Animated.View>
 
 
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>🤖 AI-Assistans</Text>
+          
+          <AIStudyInsights
+            courseTitle={course.title}
+            courseDescription={course.description}
+            progress={userCourseData?.progress || 0}
+            totalLessons={userProgress.total}
+            completedLessons={userProgress.completed}
+            courseStyle={courseStyle}
+          />
+
+          <AIQuickHelp
+            courseTitle={course.title}
+            courseStyle={courseStyle}
+            onAskQuestion={(question) => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(`/ai-chat?question=${encodeURIComponent(question)}&course=${encodeURIComponent(course.title)}` as any);
+            }}
+          />
+        </View>
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>🎯 Snabbåtkomst</Text>

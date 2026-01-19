@@ -164,7 +164,9 @@ export async function generateFlashcardsFromContent(
     } else {
       console.log('🔍 Attempting to fetch course by ID:', courseId);
       let courseData = null;
+      let isUniversityCourse = false;
       
+      // First try gymnasium courses table by ID
       const { data: courseById, error: courseByIdError } = await supabase
         .from('courses')
         .select('id, title, description')
@@ -176,9 +178,10 @@ export async function generateFlashcardsFromContent(
       } else if (courseById) {
         courseData = courseById;
         actualCourseId = courseById.id;
-        console.log('✅ Found course by ID:', courseData.title);
+        console.log('✅ Found gymnasium course by ID:', courseData.title);
       }
 
+      // Try gymnasium courses by course_code
       if (!courseData) {
         console.log('🔍 Course not found by ID, trying by course_code...');
         const { data: courseByCod, error: codeError } = await supabase
@@ -192,18 +195,70 @@ export async function generateFlashcardsFromContent(
         } else if (courseByCod) {
           courseData = courseByCod;
           actualCourseId = courseByCod.id;
-          console.log('✅ Found course by code:', courseData.title);
+          console.log('✅ Found gymnasium course by code:', courseData.title);
+        }
+      }
+
+      // Try university courses table by ID
+      if (!courseData) {
+        console.log('🔍 Trying university_courses table by ID...');
+        const { data: uniCourseById, error: uniIdError } = await supabase
+          .from('university_courses')
+          .select('id, title, description, course_code')
+          .eq('id', courseId)
+          .maybeSingle();
+
+        if (uniIdError) {
+          console.error('❌ Error fetching university course by ID:', uniIdError);
+        } else if (uniCourseById) {
+          courseData = {
+            id: uniCourseById.id,
+            title: uniCourseById.title,
+            description: uniCourseById.description
+          };
+          actualCourseId = uniCourseById.id;
+          isUniversityCourse = true;
+          console.log('✅ Found university course by ID:', courseData.title);
+        }
+      }
+
+      // Try university courses by course_code
+      if (!courseData) {
+        console.log('🔍 Trying university_courses table by course_code...');
+        const { data: uniCourseByCode, error: uniCodeError } = await supabase
+          .from('university_courses')
+          .select('id, title, description, course_code')
+          .eq('course_code', courseId)
+          .maybeSingle();
+
+        if (uniCodeError) {
+          console.error('❌ Error fetching university course by code:', uniCodeError);
+        } else if (uniCourseByCode) {
+          courseData = {
+            id: uniCourseByCode.id,
+            title: uniCourseByCode.title,
+            description: uniCourseByCode.description
+          };
+          actualCourseId = uniCourseByCode.id;
+          isUniversityCourse = true;
+          console.log('✅ Found university course by code:', courseData.title);
         }
       }
       
       if (!courseData) {
+        console.error('❌ Course not found in any table for ID:', courseId);
         throw new Error(`Kursen hittades inte. Vänligen se till att kursen finns i databasen.`);
       }
       
       courseName = courseData.title;
       courseDescription = courseData.description || '';
       
-      console.log('✅ Using course data:', { id: actualCourseId, courseName, courseDescription: courseDescription.substring(0, 50) + '...' });
+      console.log('✅ Using course data:', { 
+        id: actualCourseId, 
+        courseName, 
+        isUniversity: isUniversityCourse,
+        courseDescription: courseDescription.substring(0, 50) + '...' 
+      });
     }
 
     console.log('🤖 Generating flashcards with AI based on course name and subject...');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { 
   Plus, 
   Search, 
@@ -62,14 +62,7 @@ export default function CoursesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCoursePickerModal, setShowCoursePickerModal] = useState(false);
 
-  useEffect(() => {
-    if (user?.id) {
-      loadAllData();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log('Loading all data for user:', user?.id);
@@ -264,7 +257,24 @@ export default function CoursesScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadAllData();
+    }
+  }, [user?.id, loadAllData]);
+
+  // Reload data whenever the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        console.log('Courses screen focused, reloading data...');
+        loadAllData();
+      }
+      return () => {};
+    }, [user?.id, loadAllData])
+  );
 
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

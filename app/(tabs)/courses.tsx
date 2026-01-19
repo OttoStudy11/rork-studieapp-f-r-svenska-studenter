@@ -132,7 +132,6 @@ export default function CoursesScreen() {
                 title,
                 description,
                 credits,
-                level,
                 subject_area
               )
             `)

@@ -155,6 +155,7 @@ export async function generateFlashcardsFromContent(
 
     let courseName = '';
     let courseDescription = '';
+    let actualCourseId = courseId;
 
     if (hardcodedCourseContent[courseId]) {
       console.log('📖 Using hardcoded course content for:', courseId);
@@ -166,7 +167,7 @@ export async function generateFlashcardsFromContent(
       
       const { data: courseById, error: courseByIdError } = await supabase
         .from('courses')
-        .select('title, description')
+        .select('id, title, description')
         .eq('id', courseId)
         .maybeSingle();
 
@@ -174,6 +175,7 @@ export async function generateFlashcardsFromContent(
         console.error('❌ Error fetching course by ID:', courseByIdError);
       } else if (courseById) {
         courseData = courseById;
+        actualCourseId = courseById.id;
         console.log('✅ Found course by ID:', courseData.title);
       }
 
@@ -181,7 +183,7 @@ export async function generateFlashcardsFromContent(
         console.log('🔍 Course not found by ID, trying by course_code...');
         const { data: courseByCod, error: codeError } = await supabase
           .from('courses')
-          .select('title, description')
+          .select('id, title, description')
           .eq('course_code', courseId)
           .maybeSingle();
 
@@ -189,20 +191,19 @@ export async function generateFlashcardsFromContent(
           console.error('❌ Error fetching course by code:', codeError);
         } else if (courseByCod) {
           courseData = courseByCod;
+          actualCourseId = courseByCod.id;
           console.log('✅ Found course by code:', courseData.title);
         }
       }
       
       if (!courseData) {
-        console.warn('⚠️ Course not found, using courseId as title');
-        courseName = courseId;
-        courseDescription = 'Kurs';
-      } else {
-        courseName = courseData.title;
-        courseDescription = courseData.description || '';
+        throw new Error(`Kursen hittades inte. Vänligen se till att kursen finns i databasen.`);
       }
       
-      console.log('✅ Using course data:', { courseName, courseDescription: courseDescription.substring(0, 50) + '...' });
+      courseName = courseData.title;
+      courseDescription = courseData.description || '';
+      
+      console.log('✅ Using course data:', { id: actualCourseId, courseName, courseDescription: courseDescription.substring(0, 50) + '...' });
     }
 
     console.log('🤖 Generating flashcards with AI based on course name and subject...');
@@ -296,7 +297,7 @@ Fokusera på att täcka hela kursens centrala innehåll jämnt, med betoning på
     console.log(`✅ AI generated ${result.flashcards.length} flashcards`);
 
     const flashcardsToInsert = result.flashcards.map((fc: any) => ({
-      course_id: courseId,
+      course_id: actualCourseId,
       module_id: moduleId || null,
       lesson_id: lessonId || null,
       question: fc.question,
@@ -343,6 +344,29 @@ export async function generateFlashcardsFromText(
 
     if (text.trim().length < 50) {
       throw new Error('Texten är för kort. Vänligen ange minst 50 tecken.');
+    }
+
+    let actualCourseId = courseId;
+    const { data: courseById, error: courseByIdError } = await supabase
+      .from('courses')
+      .select('id')
+      .eq('id', courseId)
+      .maybeSingle();
+
+    if (!courseById && !courseByIdError) {
+      const { data: courseByCode } = await supabase
+        .from('courses')
+        .select('id')
+        .eq('course_code', courseId)
+        .maybeSingle();
+
+      if (courseByCode) {
+        actualCourseId = courseByCode.id;
+      } else {
+        throw new Error('Kursen hittades inte. Vänligen se till att kursen finns i databasen.');
+      }
+    } else if (courseById) {
+      actualCourseId = courseById.id;
     }
 
     console.log('🤖 Generating flashcards with AI from user-provided text...');
@@ -427,7 +451,7 @@ ${text}
     console.log(`✅ AI generated ${result.flashcards.length} flashcards from user text`);
 
     const flashcardsToInsert = result.flashcards.map((fc: any) => ({
-      course_id: courseId,
+      course_id: actualCourseId,
       module_id: moduleId || null,
       lesson_id: lessonId || null,
       question: fc.question,

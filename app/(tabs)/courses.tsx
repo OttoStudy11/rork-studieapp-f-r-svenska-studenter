@@ -117,47 +117,60 @@ export default function CoursesScreen() {
       // Also load university courses from user_university_courses
       if (isUniversityUser) {
         console.log('Loading university courses for user:', user!.id);
-        const { data: uniCoursesData, error: uniCoursesError } = await supabase
-          .from('user_university_courses')
-          .select(`
-            *,
-            course:university_courses (
+        try {
+          const { data: uniCoursesData, error: uniCoursesError } = await supabase
+            .from('user_university_courses')
+            .select(`
               id,
-              course_code,
-              title,
-              description,
-              credits,
-              level,
-              subject_area
-            )
-          `)
-          .eq('user_id', user!.id)
-          .eq('is_active', true);
+              user_id,
+              course_id,
+              progress,
+              is_active,
+              university_courses (
+                id,
+                course_code,
+                title,
+                description,
+                credits,
+                level,
+                subject_area
+              )
+            `)
+            .eq('user_id', user!.id)
+            .eq('is_active', true);
 
-        if (uniCoursesError) {
-          console.error('Error loading university courses:', uniCoursesError);
-          console.error('Error details:', JSON.stringify(uniCoursesError, null, 2));
-        } else if (uniCoursesData) {
-          const universityCourses = uniCoursesData
-            .filter(uc => uc.course) // Filter out null courses
-            .map(userCourse => ({
-              id: userCourse.course.id,
-              userCourseId: userCourse.id,
-              title: userCourse.course.title,
-              description: userCourse.course.description || `${userCourse.course.title} - ${userCourse.course.credits} hp`,
-              subject: userCourse.course.subject_area || 'Högskola',
-              level: 'högskola',
-              progress: userCourse.progress,
-              targetGrade: null,
-              isActive: userCourse.is_active,
-              resources: ['Kursmaterial', 'Övningsuppgifter'],
-              tips: ['Studera regelbundet'],
-              relatedCourses: [],
-              isUniversity: true,
-              credits: userCourse.course.credits
-            }));
-          allCourses = [...allCourses, ...universityCourses];
-          console.log('Loaded', universityCourses.length, 'university courses');
+          if (uniCoursesError) {
+            console.error('❌ Error loading university courses:', uniCoursesError.message);
+            console.error('Error code:', uniCoursesError.code);
+            console.error('Error hint:', uniCoursesError.hint);
+            console.error('Error details:', uniCoursesError.details);
+            console.error('Full error object:', JSON.stringify(uniCoursesError, null, 2));
+          } else if (uniCoursesData) {
+            console.log('Raw university courses data:', JSON.stringify(uniCoursesData, null, 2));
+            const universityCourses = uniCoursesData
+              .filter((uc: any) => uc.university_courses) // Filter out null courses
+              .map((userCourse: any) => ({
+                id: userCourse.university_courses.id,
+                userCourseId: userCourse.id,
+                title: userCourse.university_courses.title,
+                description: userCourse.university_courses.description || `${userCourse.university_courses.title} - ${userCourse.university_courses.credits} hp`,
+                subject: userCourse.university_courses.subject_area || 'Högskola',
+                level: 'högskola',
+                progress: userCourse.progress || 0,
+                targetGrade: null,
+                isActive: userCourse.is_active,
+                resources: ['Kursmaterial', 'Övningsuppgifter'],
+                tips: ['Studera regelbundet'],
+                relatedCourses: [],
+                isUniversity: true,
+                credits: userCourse.university_courses.credits
+              }));
+            allCourses = [...allCourses, ...universityCourses];
+            console.log('✅ Loaded', universityCourses.length, 'university courses');
+          }
+        } catch (uniError: any) {
+          console.error('❌ Exception loading university courses:', uniError?.message || uniError);
+          console.error('Exception stack:', uniError?.stack);
         }
       }
 

@@ -161,24 +161,48 @@ export async function generateFlashcardsFromContent(
       courseName = courseId === 'RELREL01' ? 'Religionskunskap 1' : 'Hardcoded Course';
       courseDescription = 'Utforska världsreligioner, etik och existentiella frågor';
     } else {
-      const { data: courseData, error: courseError } = await supabase
+      console.log('🔍 Attempting to fetch course by ID:', courseId);
+      let courseData = null;
+      
+      const { data: courseById, error: courseByIdError } = await supabase
         .from('courses')
         .select('title, description')
         .eq('id', courseId)
-        .single();
+        .maybeSingle();
 
-      if (courseError) {
-        console.error('❌ Error fetching course:', courseError);
-        throw new Error(`Kunde inte hämta kursdata: ${courseError.message}`);
+      if (courseByIdError) {
+        console.error('❌ Error fetching course by ID:', courseByIdError);
+      } else if (courseById) {
+        courseData = courseById;
+        console.log('✅ Found course by ID:', courseData.title);
+      }
+
+      if (!courseData) {
+        console.log('🔍 Course not found by ID, trying by course_code...');
+        const { data: courseByCod, error: codeError } = await supabase
+          .from('courses')
+          .select('title, description')
+          .eq('course_code', courseId)
+          .maybeSingle();
+
+        if (codeError) {
+          console.error('❌ Error fetching course by code:', codeError);
+        } else if (courseByCod) {
+          courseData = courseByCod;
+          console.log('✅ Found course by code:', courseData.title);
+        }
       }
       
       if (!courseData) {
-        throw new Error('Kursen hittades inte');
+        console.warn('⚠️ Course not found, using courseId as title');
+        courseName = courseId;
+        courseDescription = 'Kurs';
+      } else {
+        courseName = courseData.title;
+        courseDescription = courseData.description || '';
       }
       
-      courseName = courseData.title;
-      courseDescription = courseData.description || '';
-      console.log('✅ Course data fetched:', courseName);
+      console.log('✅ Using course data:', { courseName, courseDescription: courseDescription.substring(0, 50) + '...' });
     }
 
     console.log('🤖 Generating flashcards with AI based on course name and subject...');

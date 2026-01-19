@@ -157,10 +157,11 @@ export default function CourseDetailScreen() {
       console.log('Loading course data for ID:', id);
 
       // Try to find course by ID directly first, then by course_code
-      let courseData = null;
+      let courseData: any = null;
       let courseError = null;
+      let isUniversity = false;
 
-      // First try direct ID lookup
+      // First try gymnasium courses table
       const { data: directData, error: directError } = await supabase
         .from('courses')
         .select('*')
@@ -169,9 +170,9 @@ export default function CourseDetailScreen() {
 
       if (directData) {
         courseData = directData;
-        console.log('✅ Found course by ID:', id);
+        console.log('✅ Found gymnasium course by ID:', id);
       } else {
-        // Try finding by course_code
+        // Try finding gymnasium course by course_code
         const { data: codeData, error: codeError } = await supabase
           .from('courses')
           .select('*')
@@ -180,10 +181,55 @@ export default function CourseDetailScreen() {
 
         if (codeData) {
           courseData = codeData;
-          console.log('✅ Found course by course_code:', id);
+          console.log('✅ Found gymnasium course by course_code:', id);
         } else {
-          courseError = directError || codeError;
-          console.error('❌ Course not found by ID or course_code:', id);
+          // Try university courses table
+          console.log('🔍 Trying university_courses table...');
+          const { data: uniData, error: uniError } = await supabase
+            .from('university_courses')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle();
+
+          if (uniData) {
+            courseData = {
+              id: uniData.id,
+              title: uniData.title,
+              description: uniData.description,
+              subject: uniData.subject_area || 'Högskola',
+              level: 'högskola',
+              resources: [],
+              tips: [],
+              related_courses: []
+            };
+            isUniversity = true;
+            console.log('✅ Found university course:', id);
+          } else {
+            // Try by course_code
+            const { data: uniCodeData, error: uniCodeError } = await supabase
+              .from('university_courses')
+              .select('*')
+              .eq('course_code', id)
+              .maybeSingle();
+
+            if (uniCodeData) {
+              courseData = {
+                id: uniCodeData.id,
+                title: uniCodeData.title,
+                description: uniCodeData.description,
+                subject: uniCodeData.subject_area || 'Högskola',
+                level: 'högskola',
+                resources: [],
+                tips: [],
+                related_courses: []
+              };
+              isUniversity = true;
+              console.log('✅ Found university course by course_code:', id);
+            } else {
+              courseError = directError || codeError || uniError || uniCodeError;
+              console.error('❌ Course not found by ID or course_code:', id);
+            }
+          }
         }
       }
 
@@ -193,6 +239,8 @@ export default function CourseDetailScreen() {
         return;
       }
 
+
+
       setCourse(courseData);
       const actualCourseId = courseData.id;
       console.log('📌 Using actual course ID:', actualCourseId);
@@ -201,37 +249,79 @@ export default function CourseDetailScreen() {
         setCourseStyle(getCourseStyle(courseData.subject));
       }
 
-      const { data: userCourse, error: userCourseError } = await supabase
-        .from('user_courses')
-        .select('*')
-        .eq('user_id', user!.id)
-        .eq('course_id', actualCourseId)
-        .maybeSingle();
+      // Load user course data from appropriate table
+      if (isUniversity) {
+        const { data: userCourse, error: userCourseError } = await supabase
+          .from('user_university_courses')
+          .select('*')
+          .eq('user_id', user!.id)
+          .eq('course_id', actualCourseId)
+          .maybeSingle();
 
-      if (userCourseError && userCourseError.code !== 'PGRST116') {
-        console.error('Error loading user course:', userCourseError);
-      } else if (userCourse) {
-        setUserCourseData(userCourse);
-        setEditProgress(userCourse?.progress?.toString() || '0');
-        setEditTargetGrade(userCourse?.target_grade || '');
+        if (userCourseError && userCourseError.code !== 'PGRST116') {
+          console.error('Error loading user university course:', userCourseError);
+        } else if (userCourse) {
+          setUserCourseData(userCourse);
+          setEditProgress(userCourse?.progress?.toString() || '0');
+        }
+      } else {
+        const { data: userCourse, error: userCourseError } = await supabase
+          .from('user_courses')
+          .select('*')
+          .eq('user_id', user!.id)
+          .eq('course_id', actualCourseId)
+          .maybeSingle();
+
+        if (userCourseError && userCourseError.code !== 'PGRST116') {
+          console.error('Error loading user course:', userCourseError);
+        } else if (userCourse) {
+          setUserCourseData(userCourse);
+          setEditProgress(userCourse?.progress?.toString() || '0');
+          setEditTargetGrade(userCourse?.target_grade || '');
+        }
       }
 
       console.log('🔍 Fetching modules for course:', actualCourseId);
       
-      const { data: modulesData, error: modulesError } = await supabase
-        .from('course_modules')
-        .select(`
-          *,
-          course_lessons (
+      // Load modules from appropriate table
+      let modulesData = null;
+      let modulesError = null;
+      
+      if (isUniversity) {
+        const { data, error } = await supabase
+          .from('university_course_modules')
+          .select(`
             *,
-            user_lesson_progress (
-              *
+            university_course_lessons (
+              *,
+              user_university_lesson_progress (
+                *
+              )
             )
-          )
-        `)
-        .eq('course_id', actualCourseId)
-        .eq('is_published', true)
-        .order('order_index');
+          `)
+          .eq('course_id', actualCourseId)
+          .eq('is_published', true)
+          .order('order_index');
+        modulesData = data;
+        modulesError = error;
+      } else {
+        const { data, error } = await supabase
+          .from('course_modules')
+          .select(`
+            *,
+            course_lessons (
+              *,
+              user_lesson_progress (
+                *
+              )
+            )
+          `)
+          .eq('course_id', actualCourseId)
+          .eq('is_published', true)
+          .order('order_index');
+        modulesData = data;
+        modulesError = error;
+      }
 
       console.log('📦 Modules data:', modulesData?.length || 0, 'modules found');
       if (modulesError) console.log('❌ Modules error:', modulesError);
@@ -240,19 +330,26 @@ export default function CourseDetailScreen() {
         console.error('Error loading modules:', modulesError);
       }
 
-      const processedModules: ModuleWithLessons[] = (modulesData?.map(module => ({
-        ...module,
-        description: module.description || '',
-        lessons: (module.course_lessons || [])
-          .filter((lesson: any) => lesson.is_published)
-          .sort((a: any, b: any) => a.order_index - b.order_index)
-          .map((lesson: any) => ({
-            ...lesson,
-            progress: lesson.user_lesson_progress?.find(
-              (p: any) => p.user_id === user?.id
-            )
-          }))
-      })) || []) as ModuleWithLessons[];
+      const processedModules: ModuleWithLessons[] = (modulesData?.map(module => {
+        const moduleLessons = isUniversity 
+          ? (module as any).university_course_lessons 
+          : (module as any).course_lessons;
+        const progressKey = isUniversity ? 'user_university_lesson_progress' : 'user_lesson_progress';
+        
+        return {
+          ...module,
+          description: module.description || '',
+          lessons: (moduleLessons || [])
+            .filter((lesson: any) => lesson.is_published)
+            .sort((a: any, b: any) => a.order_index - b.order_index)
+            .map((lesson: any) => ({
+              ...lesson,
+              progress: lesson[progressKey]?.find(
+                (p: any) => p.user_id === user?.id
+              )
+            }))
+        };
+      }) || []) as ModuleWithLessons[];
       
       console.log('✅ Processed modules:', processedModules.length);
       const totalLessonCount = processedModules.reduce((sum, m) => sum + m.lessons.length, 0);

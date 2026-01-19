@@ -695,6 +695,7 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
+    marginRight: 16,
   },
   headerRight: {
     flexDirection: 'row',
@@ -702,7 +703,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   greeting: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     marginBottom: 4,
     letterSpacing: -0.5,

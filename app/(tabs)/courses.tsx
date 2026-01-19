@@ -116,6 +116,7 @@ export default function CoursesScreen() {
 
       // Also load university courses from user_university_courses
       if (isUniversityUser) {
+        console.log('Loading university courses for user:', user!.id);
         const { data: uniCoursesData, error: uniCoursesError } = await supabase
           .from('user_university_courses')
           .select(`
@@ -135,6 +136,7 @@ export default function CoursesScreen() {
 
         if (uniCoursesError) {
           console.error('Error loading university courses:', uniCoursesError);
+          console.error('Error details:', JSON.stringify(uniCoursesError, null, 2));
         } else if (uniCoursesData) {
           const universityCourses = uniCoursesData
             .filter(uc => uc.course) // Filter out null courses

@@ -319,7 +319,9 @@ export default function FriendsScreen() {
     setGlobalLeaderboardError(null);
 
     try {
+      console.log('Loading global leaderboard...');
       const entries = await fetchGlobalLeaderboardTop15();
+      console.log('Global leaderboard entries:', entries.length);
 
       const mapped: LeaderboardEntry[] = entries.map((e) => {
         const level = e.level === 'högskola' ? 'högskola' : 'gymnasie';
@@ -336,8 +338,10 @@ export default function FriendsScreen() {
         };
       });
 
+      console.log('Mapped global leaderboard:', mapped.length, 'entries');
       setGlobalLeaderboard(mapped);
     } catch (error: any) {
+      console.error('Error loading global leaderboard:', error);
       const message = error?.message || 'Kunde inte ladda global topplista';
       setGlobalLeaderboardError(message);
       setGlobalLeaderboard([]);

@@ -122,7 +122,6 @@ interface GamificationContextValue extends GamificationState {
 const STORAGE_KEY = 'gamification_state_v2';
 const XP_AWARD_COOLDOWN_MS = 2000;
 const GAMIFICATION_CACHE_KEY = 'gamification_data';
-const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
 const defaultState: GamificationState = {
   totalXp: 0,
@@ -307,7 +306,7 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
 
     try {
       // Try cache first for instant UI
-      const cached = await performanceCache.get<GamificationState>(GAMIFICATION_CACHE_KEY);
+      const cached = performanceCache.get(GAMIFICATION_CACHE_KEY) as GamificationState | null;
       if (cached && !isReady) {
         setState(cached);
         setIsReady(true);
@@ -359,7 +358,7 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
       };
 
       setState(newState);
-      await performanceCache.set(GAMIFICATION_CACHE_KEY, newState, CACHE_TTL);
+      performanceCache.set(GAMIFICATION_CACHE_KEY, newState);
       await saveToStorage({ totalXp, streak });
     } catch (error) {
       console.warn('Error refreshing gamification:', error);

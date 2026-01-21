@@ -180,7 +180,6 @@ const dbSessionToSession = (dbSession: { id: string; course_id: string | null; d
 });
 
 const STUDY_CACHE_KEY = 'study_user_data';
-const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
 export const [StudyProvider, useStudy] = createContextHook(() => {
   const authContext = useAuth();
@@ -219,7 +218,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     try {
       
       // Try cache first for instant UI
-      const cached = await performanceCache.get<{ user: User; courses: Course[] }>(`${STUDY_CACHE_KEY}_${userId}`);
+      const cached = performanceCache.get(`${STUDY_CACHE_KEY}_${userId}`) as { user: User; courses: Course[] } | null;
       if (cached) {
         setUser(cached.user);
         setCourses(cached.courses);
@@ -335,7 +334,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       console.log('Total courses loaded:', uniqueCourses.length);
       
       // Cache user and courses
-      await performanceCache.set(`${STUDY_CACHE_KEY}_${userId}`, { user, courses: uniqueCourses }, CACHE_TTL);
+      performanceCache.set(`${STUDY_CACHE_KEY}_${userId}`, { user, courses: uniqueCourses });
       
       // Load notes and sessions in background - don't block UI
       Promise.all([

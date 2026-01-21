@@ -105,6 +105,9 @@ ALTER TABLE public.friends ENABLE ROW LEVEL SECURITY;
 -- Drop existing policies
 DROP POLICY IF EXISTS "Users can view own friendships" ON public.friends;
 DROP POLICY IF EXISTS "Users can manage own friendships" ON public.friends;
+DROP POLICY IF EXISTS "Users can create friend requests" ON public.friends;
+DROP POLICY IF EXISTS "Users can update friend requests" ON public.friends;
+DROP POLICY IF EXISTS "Users can delete own friendships" ON public.friends;
 
 -- Users can view friendships where they are involved
 CREATE POLICY "Users can view own friendships"

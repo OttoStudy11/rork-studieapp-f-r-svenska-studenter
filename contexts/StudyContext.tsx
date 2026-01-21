@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase, testDatabaseConnection } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { performanceCache } from '@/lib/performance';
 import { Database } from '@/lib/database.types';
 import type { Gymnasium } from '@/constants/gymnasiums';
@@ -423,18 +423,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
 
       console.log('Starting onboarding for user:', authUser.id);
       
-      // Test database connection
-      let dbConnected = false;
+      // Try to save profile to database (non-blocking)
       try {
-        dbConnected = await testDatabaseConnection();
-      } catch (e) {
-        console.warn('Database connection test failed:', e);
-      }
-      
-      if (dbConnected) {
         console.log('Saving onboarding data to database');
-        
-        // Update user profile in database
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
@@ -456,10 +447,11 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         
         if (profileError) {
           console.warn('Could not save profile to database:', profileError.message);
-          // Continue with local storage
         } else {
           console.log('Profile saved to database successfully');
         }
+      } catch (dbError) {
+        console.warn('Database save failed, continuing locally:', dbError);
       }
       
       // Set up user data locally
@@ -500,10 +492,10 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           relatedCourses: []
         }));
         
-        // Sync courses to Supabase
-        if (dbConnected) {
-          console.log('Syncing courses to Supabase...');
+        // Sync courses to Supabase (non-blocking)
+        (async () => {
           try {
+            console.log('Syncing courses to Supabase...');
             // First, ensure all courses exist in the courses table
             for (const courseData of selectedCoursesData) {
               const { data: existingCourse } = await supabase
@@ -559,7 +551,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           } catch (error) {
             console.error('Error syncing courses to Supabase:', error);
           }
-        }
+        })();
       } else if (userData.studyLevel === 'högskola') {
         // Use the new course assignment system for university
         console.log('Assigning university courses using new system');
@@ -693,39 +685,39 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       });
       console.log('User updated locally:', updatedUser.name);
       
-      // Sync to database
-      const dbConnected = await testDatabaseConnection();
-      if (dbConnected) {
-        console.log('Syncing user updates to database...');
-        
-        const dbUpdates: Record<string, any> = {};
-        
-        if (updates.name !== undefined) dbUpdates.name = updates.name;
-        if (updates.displayName !== undefined) dbUpdates.display_name = updates.displayName;
-        if (updates.username !== undefined) dbUpdates.username = updates.username;
-        if (updates.program !== undefined) dbUpdates.program = updates.program;
-        if (updates.purpose !== undefined) dbUpdates.purpose = updates.purpose;
-        if (updates.studyLevel !== undefined) dbUpdates.level = updates.studyLevel;
-        if (updates.avatar !== undefined) dbUpdates.avatar_url = updates.avatar ? JSON.stringify(updates.avatar) : null;
-        if (updates.gymnasium !== undefined) {
-          dbUpdates.gymnasium_id = updates.gymnasium?.id || null;
-          dbUpdates.gymnasium_name = updates.gymnasium?.name || null;
-        }
-        if (updates.gymnasiumGrade !== undefined) dbUpdates.gymnasium_grade = updates.gymnasiumGrade;
-        if (updates.dailyGoalHours !== undefined) dbUpdates.daily_goal_hours = updates.dailyGoalHours;
-        
-        if (Object.keys(dbUpdates).length > 0) {
-          const { error } = await supabase
-            .from('profiles')
-            .update(dbUpdates)
-            .eq('id', authUser.id);
-          
-          if (error) {
-            console.error('Error syncing user to database:', error);
-          } else {
-            console.log('✅ User synced to database successfully');
+      // Sync to database in background (non-blocking)
+      const dbUpdates: Record<string, any> = {};
+      
+      if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.displayName !== undefined) dbUpdates.display_name = updates.displayName;
+      if (updates.username !== undefined) dbUpdates.username = updates.username;
+      if (updates.program !== undefined) dbUpdates.program = updates.program;
+      if (updates.purpose !== undefined) dbUpdates.purpose = updates.purpose;
+      if (updates.studyLevel !== undefined) dbUpdates.level = updates.studyLevel;
+      if (updates.avatar !== undefined) dbUpdates.avatar_url = updates.avatar ? JSON.stringify(updates.avatar) : null;
+      if (updates.gymnasium !== undefined) {
+        dbUpdates.gymnasium_id = updates.gymnasium?.id || null;
+        dbUpdates.gymnasium_name = updates.gymnasium?.name || null;
+      }
+      if (updates.gymnasiumGrade !== undefined) dbUpdates.gymnasium_grade = updates.gymnasiumGrade;
+      if (updates.dailyGoalHours !== undefined) dbUpdates.daily_goal_hours = updates.dailyGoalHours;
+      
+      if (Object.keys(dbUpdates).length > 0) {
+        (async () => {
+          try {
+            const { error } = await supabase
+              .from('profiles')
+              .update(dbUpdates)
+              .eq('id', authUser.id);
+            if (error) {
+              console.warn('Error syncing user to database:', error.message);
+            } else {
+              console.log('✅ User synced to database');
+            }
+          } catch {
+            console.warn('Database sync failed');
           }
-        }
+        })();
       }
     } catch (error) {
       console.error('Error updating user:', error);
@@ -829,19 +821,8 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       console.log('Adding pomodoro session for user:', authUser.id);
       console.log('Session details:', { duration: session.duration, courseId: session.courseId });
       
-      // Test database connection
-      let dbConnected = false;
-      try {
-        dbConnected = await testDatabaseConnection();
-      } catch (e) {
-        console.warn('Database connection test failed:', e);
-      }
-      
-      if (dbConnected) {
-        console.log('Database connected, saving pomodoro session');
-        
-        // Save to database
-        const { data, error } = await supabase
+      // Try to save to database directly
+      const { data, error } = await supabase
           .from('pomodoro_sessions')
           .insert({
             user_id: authUser.id,
@@ -853,89 +834,45 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           .select()
           .single();
         
-        if (error) {
-          console.error('❌ Error saving pomodoro session to database:', error);
-          console.error('Error details:', JSON.stringify(error, null, 2));
-          throw error;
-        }
-        
-        if (data) {
-          console.log('✅ Pomodoro session saved to database with ID:', data.id);
-          
-          // Add to local state with database ID
-          const dbSession: PomodoroSession = {
-            id: data.id,
-            courseId: data.course_id || undefined,
-            duration: data.duration,
-            startTime: data.start_time,
-            endTime: data.end_time
-          };
-          
-          setPomodoroSessions(prev => [dbSession, ...prev]);
-          console.log('✅ Pomodoro session added to local state');
-          
-          // Note: user_progress is automatically updated by the database trigger
-          // 'sync_points_on_session_insert' after pomodoro_sessions insert
-          // So we don't need to manually update it here to avoid duplication
-          try {
-            console.log('✅ Pomodoro session saved - user_progress will be updated by database trigger');
-            
-            // Just log the points earned for user feedback
-            const pointsEarned = session.duration;
-            console.log(`🎯 Points earned: +${pointsEarned} pts (${session.duration} min of study)`);
-            
-            // Wait a moment for the trigger to complete
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Check for achievements using RPC directly
-            try {
-              console.log('🏆 Checking for new achievements...');
-              const { checkAndUpdateAchievements } = await import('@/lib/database');
-              const newAchievements = await checkAndUpdateAchievements(authUser.id);
-              
-              if (newAchievements && newAchievements.length > 0) {
-                console.log(`✅ Unlocked ${newAchievements.length} new achievement(s)!`);
-              } else {
-                console.log('ℹ️ No new achievements unlocked');
-              }
-            } catch (achievementError) {
-              console.warn('⚠️ Could not check achievements:', achievementError);
-            }
-            
-            // Update course progress if a course was selected
-            if (session.courseId) {
-              console.log('Updating course progress for course:', session.courseId);
-              const { data: userCourseData, error: userCourseError } = await supabase
-                .from('user_courses')
-                .select('progress')
-                .eq('user_id', authUser.id)
-                .eq('course_id', session.courseId)
-                .maybeSingle();
-              
-              if (!userCourseError && userCourseData) {
-                console.log('Current course progress:', userCourseData.progress);
-              }
-            }
-          } catch (progressUpdateError) {
-            console.error('❌ Exception updating progress:', progressUpdateError);
-          }
-          
-          return;
-        }
+      if (error) {
+        console.warn('Could not save pomodoro session to database:', error.message);
+        // Create local session as fallback
+        const localSession: PomodoroSession = {
+          id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          courseId: session.courseId,
+          duration: session.duration,
+          startTime: session.startTime,
+          endTime: session.endTime
+        };
+        setPomodoroSessions(prev => [localSession, ...prev]);
+        console.log('✅ Pomodoro session created locally');
+        return;
       }
       
-      // Fallback: Create local pomodoro session if database is not available
-      console.warn('⚠️ Database not available, creating local session');
-      const localSession: PomodoroSession = {
-        id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        courseId: session.courseId,
-        duration: session.duration,
-        startTime: session.startTime,
-        endTime: session.endTime
-      };
-      
-      setPomodoroSessions(prev => [localSession, ...prev]);
-      console.log('✅ Pomodoro session created locally');
+      if (data) {
+        console.log('✅ Pomodoro session saved to database with ID:', data.id);
+        
+        // Add to local state with database ID
+        const dbSession: PomodoroSession = {
+          id: data.id,
+          courseId: data.course_id || undefined,
+          duration: data.duration,
+          startTime: data.start_time,
+          endTime: data.end_time
+        };
+        
+        setPomodoroSessions(prev => [dbSession, ...prev]);
+        
+        // Check achievements in background (non-blocking)
+        (async () => {
+          try {
+            const { checkAndUpdateAchievements } = await import('@/lib/database');
+            await checkAndUpdateAchievements(authUser.id);
+          } catch {
+            // Silently fail
+          }
+        })();
+      }
       
     } catch (error) {
       console.error('❌ Error adding pomodoro session:', error);

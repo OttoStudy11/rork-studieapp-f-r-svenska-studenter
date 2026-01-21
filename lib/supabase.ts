@@ -42,13 +42,20 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Test database connection
-export const testDatabaseConnection = async (): Promise<boolean> => {
-  try {
-    console.log('Testing database connection...');
+// Database connection state cache
+let dbConnectionCache: { connected: boolean; timestamp: number } | null = null;
+const DB_CACHE_TTL = 30000; // 30 seconds cache
 
+// Test database connection with caching
+export const testDatabaseConnection = async (): Promise<boolean> => {
+  // Return cached result if valid
+  if (dbConnectionCache && Date.now() - dbConnectionCache.timestamp < DB_CACHE_TTL) {
+    return dbConnectionCache.connected;
+  }
+  
+  try {
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Database connection timeout')), 10000);
+      setTimeout(() => reject(new Error('Database connection timeout')), 5000);
     });
 
     const queryPromise = supabase
@@ -59,40 +66,24 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
     const result = (await Promise.race([queryPromise, timeoutPromise])) as { error?: any };
     const { error } = result ?? {};
 
-    if (error) {
-      const safeError = {
-        message:
-          typeof error?.message === 'string'
-            ? error.message
-            : (() => {
-                try {
-                  return JSON.stringify(error);
-                } catch {
-                  return 'Unknown error';
-                }
-              })(),
-        details: error?.details ?? undefined,
-        hint: error?.hint ?? undefined,
-        code: error?.code ?? undefined,
-      };
-      console.error('Database connection test failed:', safeError.message);
-      console.error('Error details:', safeError);
-      return false;
+    const connected = !error;
+    dbConnectionCache = { connected, timestamp: Date.now() };
+    
+    if (!connected) {
+      console.warn('Database connection unavailable');
     }
-
-    console.log('Database connection test successful');
-    return true;
+    
+    return connected;
   } catch (err: any) {
-    const fallback = {
-      message: err?.message ?? String(err),
-      details: err?.stack ?? undefined,
-      hint: '',
-      code: err?.code ?? '',
-    };
-    console.error('Database connection test failed:', fallback.message);
-    console.error('Error details:', fallback);
+    dbConnectionCache = { connected: false, timestamp: Date.now() };
+    console.warn('Database connection test failed:', err?.message || 'timeout');
     return false;
   }
+};
+
+// Non-blocking database connection check (fire and forget)
+export const checkDatabaseConnectionAsync = (): void => {
+  testDatabaseConnection().catch(() => {});
 };
 
 // Auth helpers

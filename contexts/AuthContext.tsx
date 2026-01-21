@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase, createRememberMeSession, validateRememberMeSession, clearRememberMeSession, cleanupExpiredSessions, testDatabaseConnection } from '@/lib/supabase';
+import { supabase, createRememberMeSession, validateRememberMeSession, clearRememberMeSession, cleanupExpiredSessions, testDatabaseConnection, checkDatabaseConnectionAsync } from '@/lib/supabase';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 
@@ -35,60 +35,40 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const checkOnboardingStatus = useCallback(async (userId: string) => {
     try {
-      console.log('Checking onboarding status for user:', userId);
-      
-      // First check AsyncStorage for faster loading
+      // First check AsyncStorage for instant response
       const storedStatus = await AsyncStorage.getItem(`${ONBOARDING_KEY}_${userId}`);
       if (storedStatus === 'true') {
-        console.log('Onboarding status found in AsyncStorage: completed');
         setHasCompletedOnboarding(true);
         return;
       }
       
-      // Test database connection first
-      const dbConnected = await testDatabaseConnection();
-      if (!dbConnected) {
-        console.warn('Database not available, using AsyncStorage fallback');
-        setHasCompletedOnboarding(storedStatus === 'true');
-        return;
-      }
-      
-      // Check if user has a profile in the database (indicating onboarding was completed)
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('id, name, username, display_name, program, level')
-        .eq('id', userId)
-        .single();
-      
-      if (!error && profile && profile.name && profile.username && profile.display_name && profile.program && profile.level) {
-        // User has a complete profile, mark onboarding as completed
-        console.log('User has complete profile, onboarding completed:', profile.name);
-        setHasCompletedOnboarding(true);
-        // Store in AsyncStorage for faster future checks
-        await AsyncStorage.setItem(`${ONBOARDING_KEY}_${userId}`, 'true');
-        return;
-      }
-      
-      // If no complete profile, onboarding is not completed
-      console.log('User profile incomplete or not found, onboarding not completed');
-      setHasCompletedOnboarding(false);
-      // Remove from AsyncStorage if it exists
-      await AsyncStorage.removeItem(`${ONBOARDING_KEY}_${userId}`);
-    } catch (error) {
-      console.error('Error checking onboarding status:', error);
-      // If database check fails, check AsyncStorage as fallback
+      // Try database check with short timeout
       try {
-        const storedStatus = await AsyncStorage.getItem(`${ONBOARDING_KEY}_${userId}`);
-        if (storedStatus === 'true') {
-          console.log('Using AsyncStorage fallback: onboarding completed');
-          setHasCompletedOnboarding(true);
-        } else {
-          setHasCompletedOnboarding(false);
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+        const profilePromise = supabase
+          .from('profiles')
+          .select('id, name, username, display_name, program, level')
+          .eq('id', userId)
+          .single();
+        
+        const result = await Promise.race([profilePromise, timeoutPromise]);
+        
+        if (result && 'data' in result) {
+          const { data: profile, error } = result;
+          if (!error && profile && profile.name && profile.username && profile.display_name && profile.program && profile.level) {
+            setHasCompletedOnboarding(true);
+            await AsyncStorage.setItem(`${ONBOARDING_KEY}_${userId}`, 'true');
+            return;
+          }
         }
-      } catch (storageError) {
-        console.error('Error checking AsyncStorage:', storageError);
-        setHasCompletedOnboarding(false);
+      } catch {
+        // Database check failed, use AsyncStorage
       }
+      
+      setHasCompletedOnboarding(storedStatus === 'true');
+    } catch (error) {
+      console.warn('Error checking onboarding status:', error);
+      setHasCompletedOnboarding(false);
     }
   }, []);
 
@@ -141,11 +121,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log('Initializing Supabase auth...');
       setIsLoading(true);
       
-      // Test database connection first
-      const dbConnected = await testDatabaseConnection();
-      if (!dbConnected) {
-        console.warn('Database connection failed, but continuing with auth initialization');
-      }
+      // Start database connection check in background (non-blocking)
+      checkDatabaseConnectionAsync();
       
       // First check if we have a session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();

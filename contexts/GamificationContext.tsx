@@ -245,6 +245,8 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
 
   const loadAchievements = useCallback(async (userId: string): Promise<Achievement[]> => {
     try {
+      console.log('📚 Loading achievements for user:', userId);
+      
       const { data: userAchievements, error } = await supabase
         .from('user_achievements')
         .select(`
@@ -258,25 +260,37 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
         return [];
       }
 
-      return (userAchievements ?? [])
+      const achievements = (userAchievements ?? [])
         .filter((ua: any) => ua.achievements)
-        .map((ua: any) => ({
-          id: ua.achievements.id,
-          key: ua.achievements.achievement_key,
-          title: ua.achievements.title,
-          description: ua.achievements.description,
-          icon: ua.achievements.icon,
-          category: ua.achievements.category,
-          rarity: (ua.achievements.rarity || 'common') as RarityType,
-          xpReward: ua.achievements.xp_reward || ua.achievements.reward_points || 25,
-          requirementType: ua.achievements.requirement_type,
-          requirementTarget: ua.achievements.requirement_target,
-          isHidden: ua.achievements.is_hidden || false,
-          progress: ua.progress ?? 0,
-          isUnlocked: !!ua.unlocked_at,
-          unlockedAt: ua.unlocked_at ?? undefined,
-          isClaimed: !!ua.unlocked_at,
-        }));
+        .map((ua: any) => {
+          const isUnlocked = !!ua.unlocked_at;
+          const target = ua.achievements.requirement_target || 1;
+          const progress = ua.progress ?? 0;
+          
+          return {
+            id: ua.achievements.id,
+            key: ua.achievements.achievement_key,
+            title: ua.achievements.title,
+            description: ua.achievements.description,
+            icon: ua.achievements.icon,
+            category: ua.achievements.category,
+            rarity: (ua.achievements.rarity || 'common') as RarityType,
+            xpReward: ua.achievements.xp_reward || ua.achievements.reward_points || 25,
+            requirementType: ua.achievements.requirement_type,
+            requirementTarget: target,
+            isHidden: ua.achievements.is_hidden || false,
+            progress: progress,
+            isUnlocked: isUnlocked,
+            unlockedAt: ua.unlocked_at ?? undefined,
+            // Achievement is claimed when it's been unlocked (XP already awarded by RPC)
+            isClaimed: isUnlocked,
+          };
+        });
+      
+      const unlockedCount = achievements.filter(a => a.isUnlocked).length;
+      console.log(`📚 Loaded ${achievements.length} achievements, ${unlockedCount} unlocked`);
+      
+      return achievements;
     } catch (error) {
       console.log('Exception loading achievements:', error);
       return [];
@@ -712,31 +726,60 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
     if (!authUser || !isAuthenticated) return;
     
     try {
+      console.log('🔄 Running fallback achievement check...');
+      
       // Get user stats from pomodoro_sessions
       const { data: sessions } = await (supabase as any)
         .from('pomodoro_sessions')
-        .select('duration')
+        .select('duration, course_id')
         .eq('user_id', authUser.id);
       
       const totalStudyTime = (sessions || []).reduce((sum: number, s: any) => sum + (s.duration || 0), 0);
       const sessionsCompleted = (sessions || []).length;
+      const uniqueCourses = new Set((sessions || []).filter((s: any) => s.course_id).map((s: any) => s.course_id)).size;
       
-      // Get friend count
-      const { count: friendCount } = await supabase
+      console.log(`📊 User stats: ${sessionsCompleted} sessions, ${totalStudyTime} minutes, ${uniqueCourses} courses`);
+      
+      // Get friend count (both directions)
+      const { count: friendCountSent } = await supabase
         .from('friends')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', authUser.id)
         .eq('status', 'accepted');
+      
+      const { count: friendCountReceived } = await supabase
+        .from('friends')
+        .select('*', { count: 'exact', head: true })
+        .eq('friend_id', authUser.id)
+        .eq('status', 'accepted');
+      
+      const friendCount = (friendCountSent || 0) + (friendCountReceived || 0);
+      console.log(`👥 Friend count: ${friendCount}`);
+      
+      // Get user streak
+      const { data: progressData } = await supabase
+        .from('user_progress')
+        .select('current_streak')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+      
+      const currentStreak = progressData?.current_streak || 0;
+      console.log(`🔥 Current streak: ${currentStreak}`);
       
       // Get all achievements
       const { data: allAchievements } = await supabase
         .from('achievements')
         .select('*');
       
+      if (!allAchievements || allAchievements.length === 0) {
+        console.log('⚠️ No achievements found in database');
+        return;
+      }
+      
       // Get user's current achievements
       const { data: userAchievements } = await supabase
         .from('user_achievements')
-        .select('achievement_id, unlocked_at')
+        .select('achievement_id, unlocked_at, progress')
         .eq('user_id', authUser.id);
       
       const unlockedIds = new Set(
@@ -745,45 +788,71 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
           .map(ua => ua.achievement_id)
       );
       
+      let newlyUnlockedCount = 0;
+      
       // Check each achievement
       for (const achievement of (allAchievements || [])) {
         if (unlockedIds.has(achievement.id)) continue;
         
-        let shouldUnlock = false;
+        let currentProgress = 0;
         const target = achievement.requirement_target || 0;
         
         switch (achievement.requirement_type) {
           case 'study_time':
-            shouldUnlock = totalStudyTime >= target;
+            currentProgress = totalStudyTime;
             break;
           case 'sessions':
-            shouldUnlock = sessionsCompleted >= target;
+            currentProgress = sessionsCompleted;
             break;
           case 'friends':
-            shouldUnlock = (friendCount || 0) >= target;
+            currentProgress = friendCount;
             break;
+          case 'streak':
+            currentProgress = currentStreak;
+            break;
+          case 'courses':
+            currentProgress = uniqueCourses;
+            break;
+          default:
+            continue;
         }
         
-        if (shouldUnlock) {
-          console.log(`🏆 Fallback: Unlocking achievement: ${achievement.title}`);
+        // Update progress
+        await supabase.from('user_achievements').upsert({
+          user_id: authUser.id,
+          achievement_id: achievement.id,
+          progress: currentProgress,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,achievement_id' });
+        
+        if (currentProgress >= target) {
+          console.log(`🏆 Fallback: Unlocking achievement: ${achievement.title} (${currentProgress}/${target})`);
           
-          // Update user_achievements
+          // Update user_achievements with unlock
           await supabase.from('user_achievements').upsert({
             user_id: authUser.id,
             achievement_id: achievement.id,
             unlocked_at: new Date().toISOString(),
-            progress: target,
+            progress: currentProgress,
           }, { onConflict: 'user_id,achievement_id' });
           
-          const xpReward = achievement.reward_points || 25;
+          const xpReward = (achievement as any).xp_reward || achievement.reward_points || 25;
           
           showAchievement(
             `🏆 ${achievement.title}`,
             `${achievement.description} (+${xpReward} XP)`
           );
           
+          // Award XP
           await addXp(xpReward, 'achievement_unlock', achievement.id, { title: achievement.title });
+          newlyUnlockedCount++;
         }
+      }
+      
+      if (newlyUnlockedCount > 0) {
+        console.log(`✅ Fallback unlocked ${newlyUnlockedCount} achievement(s)`);
+      } else {
+        console.log('ℹ️ Fallback: No new achievements to unlock');
       }
     } catch (error) {
       console.error('❌ Fallback achievement check failed:', error);
@@ -806,31 +875,53 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
 
       if (rpcError) {
         console.error('❌ Error from check_user_achievements RPC:', rpcError);
+        console.log('RPC error code:', rpcError.code);
+        console.log('RPC error message:', rpcError.message);
         
-        // Fallback: manually check some key achievements
+        // Fallback: manually check achievements
         console.log('🔄 Attempting fallback achievement check...');
         await checkAchievementsFallback();
         return;
       }
 
-      console.log('📊 RPC response:', newlyUnlocked);
+      console.log('📊 RPC response type:', typeof newlyUnlocked);
+      console.log('📊 RPC response:', JSON.stringify(newlyUnlocked, null, 2));
 
       if (newlyUnlocked && Array.isArray(newlyUnlocked) && newlyUnlocked.length > 0) {
         console.log(`🎉 ${newlyUnlocked.length} new achievement(s) unlocked!`);
         
-        for (const achievement of newlyUnlocked as any[]) {
-          const achData = achievement.achievements || achievement;
-          const xpReward = achData.xp_reward || achData.reward_points || 25;
+        for (const row of newlyUnlocked as any[]) {
+          // The RPC returns a JSONB 'achievements' column with achievement details
+          // Parse it if it's a string, otherwise use directly
+          let achData = row.achievements;
+          if (typeof achData === 'string') {
+            try {
+              achData = JSON.parse(achData);
+            } catch {
+              console.warn('Could not parse achievement data:', achData);
+              continue;
+            }
+          }
           
-          console.log(`🏆 Achievement unlocked: ${achData.title} (+${xpReward} XP)`);
+          if (!achData) {
+            console.warn('No achievement data in row:', row);
+            continue;
+          }
+          
+          const xpReward = achData.xp_reward || achData.reward_points || 25;
+          const title = achData.title || 'Achievement';
+          const description = achData.description || '';
+          
+          console.log(`🏆 Achievement unlocked: ${title} (+${xpReward} XP)`);
           
           showAchievement(
-            `🏆 ${achData.title}`,
-            `${achData.description} (+${xpReward} XP)`
+            `🏆 ${title}`,
+            `${description} (+${xpReward} XP)`
           );
           
-          // Award XP for achievement
-          await addXp(xpReward, 'achievement_unlock', achData.id, { title: achData.title });
+          // Note: The RPC function already awards XP in the database
+          // We only update local state here, don't double-award
+          // The XP was already added to user_progress by the RPC
         }
         
         // Refresh all data to show updated achievements and XP
@@ -838,11 +929,23 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
         console.log('✅ Achievement data refreshed');
       } else {
         console.log('ℹ️ No new achievements unlocked');
+        
+        // Even if no new achievements, run fallback to ensure progress is updated
+        // This helps catch edge cases where RPC returns empty but should have data
+        await checkAchievementsFallback();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Exception checking achievements:', error);
+      console.error('Error details:', error?.message || 'Unknown error');
+      
+      // Always try fallback on exception
+      try {
+        await checkAchievementsFallback();
+      } catch (fallbackError) {
+        console.error('❌ Fallback also failed:', fallbackError);
+      }
     }
-  }, [authUser, isAuthenticated, showAchievement, refreshAll, addXp, checkAchievementsFallback]);
+  }, [authUser, isAuthenticated, showAchievement, refreshAll, checkAchievementsFallback]);
 
   const getLeaderboardPosition = useCallback(async (): Promise<number> => {
     if (!authUser || !isAuthenticated) return 0;

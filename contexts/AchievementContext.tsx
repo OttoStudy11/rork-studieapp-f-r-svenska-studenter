@@ -155,28 +155,45 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
 
   // Check for new achievements (called after user actions like completing a session)
   const checkAchievements = useCallback(async () => {
-    if (!authUser || !isAuthenticated) return;
+    if (!authUser || !isAuthenticated) {
+      console.log('🏆 [AchievementContext] Cannot check achievements: user not authenticated');
+      return;
+    }
 
     try {
-      console.log('Checking for new achievements...');
+      console.log('🏆 [AchievementContext] Checking for new achievements...');
       
       const newlyUnlocked = await db.checkAndUpdateAchievements(authUser.id);
       
+      console.log(`🏆 [AchievementContext] RPC returned ${newlyUnlocked?.length || 0} newly unlocked achievements`);
+      
       // Show notifications for newly unlocked achievements
       for (const userAchievement of newlyUnlocked) {
-        const achievement = userAchievement.achievements;
+        // Parse achievements data - it can be JSONB or an object
+        let achievement = userAchievement.achievements;
+        if (typeof achievement === 'string') {
+          try {
+            achievement = JSON.parse(achievement);
+          } catch {
+            console.warn('Could not parse achievement data');
+            continue;
+          }
+        }
+        
         if (achievement) {
+          const xpReward = achievement.xp_reward || achievement.reward_points || 25;
+          console.log(`🏆 [AchievementContext] Achievement unlocked: ${achievement.title} (+${xpReward} XP)`);
+          
           showAchievement(
             `🎉 ${achievement.title}`,
-            `${achievement.description} (+${achievement.reward_points} poäng)`
+            `${achievement.description} (+${xpReward} poäng)`
           );
         }
       }
       
-      // Reload achievements to get updated progress
-      if (newlyUnlocked.length > 0) {
-        await loadUserAchievements();
-      }
+      // Always reload achievements to get updated progress
+      await loadUserAchievements();
+      console.log('🏆 [AchievementContext] Achievements reloaded');
     } catch (error: any) {
       // Silently handle network errors to avoid disrupting user experience
       if (error?.message?.includes('Failed to fetch') || 
@@ -184,9 +201,9 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
           error?.message?.includes('Network connection failed') ||
           error?.name === 'TypeError' ||
           error?.name === 'AbortError') {
-        console.warn('Network connectivity issue - skipping achievement check');
+        console.warn('🏆 [AchievementContext] Network connectivity issue - skipping achievement check');
       } else {
-        console.error('Error checking achievements:', error);
+        console.error('🏆 [AchievementContext] Error checking achievements:', error);
       }
     }
   }, [authUser, isAuthenticated, showAchievement, loadUserAchievements]);

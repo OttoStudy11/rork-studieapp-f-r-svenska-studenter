@@ -20,11 +20,13 @@ import {
   BarChart3,
   Star,
   ArrowLeft,
+  Edit3,
 } from 'lucide-react-native';
 import { router, Stack } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams, Exam } from '@/contexts/ExamContext';
 import { FadeInView, SlideInView } from '@/components/Animations';
+import CompleteExamModal from '@/components/CompleteExamModal';
 import * as Haptics from 'expo-haptics';
 
 const EXAM_TYPE_ICONS: Record<string, string> = {
@@ -53,6 +55,8 @@ export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [expandedExam, setExpandedExam] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -192,6 +196,20 @@ export default function HistoryScreen() {
                   </Text>
                 </View>
               )}
+
+              <TouchableOpacity
+                style={[styles.editButton, { backgroundColor: theme.colors.primary }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSelectedExam(exam);
+                  setShowEditModal(true);
+                }}
+              >
+                <Edit3 size={16} color="white" />
+                <Text style={styles.editButtonText}>
+                  {exam.grade ? 'Redigera resultat' : 'Lägg till resultat'}
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
         </TouchableOpacity>
@@ -355,6 +373,17 @@ export default function HistoryScreen() {
           <View style={styles.bottomSpacing} />
         </ScrollView>
       </SafeAreaView>
+
+      {selectedExam && (
+        <CompleteExamModal
+          visible={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedExam(null);
+          }}
+          exam={selectedExam}
+        />
+      )}
     </View>
   );
 }
@@ -578,5 +607,20 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 40,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    gap: 8,
+  },
+  editButtonText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
 });

@@ -29,6 +29,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useExams, Exam } from '@/contexts/ExamContext';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import AddExamModal from '@/components/AddExamModal';
+import CompleteExamModal from '@/components/CompleteExamModal';
 import * as Haptics from 'expo-haptics';
 
 
@@ -49,11 +50,12 @@ const EXAM_TYPE_ICONS: Record<string, string> = {
 
 export default function PlanningScreen() {
   const { theme, isDark } = useTheme();
-  const { upcomingExams, refreshExams, deleteExam, updateExam } = useExams();
+  const { upcomingExams, refreshExams, deleteExam } = useExams();
   const [showAddModal, setShowAddModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [, setSelectedExam] = useState<Exam | null>(null);
+  const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [showOptions, setShowOptions] = useState<string | null>(null);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -67,11 +69,12 @@ export default function PlanningScreen() {
     setShowOptions(null);
   }, [deleteExam]);
 
-  const handleCompleteExam = useCallback(async (examId: string) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await updateExam(examId, { status: 'completed' });
+  const handleCompleteExam = useCallback((exam: Exam) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedExam(exam);
     setShowOptions(null);
-  }, [updateExam]);
+    setShowCompleteModal(true);
+  }, []);
 
   const groupedExams = useMemo(() => {
     const thisWeek: Exam[] = [];
@@ -215,7 +218,7 @@ export default function PlanningScreen() {
             <View style={[styles.optionsMenu, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
               <TouchableOpacity
                 style={styles.optionItem}
-                onPress={() => handleCompleteExam(exam.id)}
+                onPress={() => handleCompleteExam(exam)}
               >
                 <CheckCircle size={18} color={theme.colors.success} />
                 <Text style={[styles.optionText, { color: theme.colors.text }]}>Markera som klar</Text>
@@ -396,6 +399,17 @@ export default function PlanningScreen() {
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
       />
+
+      {selectedExam && (
+        <CompleteExamModal
+          visible={showCompleteModal}
+          onClose={() => {
+            setShowCompleteModal(false);
+            setSelectedExam(null);
+          }}
+          exam={selectedExam}
+        />
+      )}
     </View>
   );
 }

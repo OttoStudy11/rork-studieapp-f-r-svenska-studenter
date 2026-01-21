@@ -1572,7 +1572,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 8,
   },
   userDetails: {
     flex: 1,

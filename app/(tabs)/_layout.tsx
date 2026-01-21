@@ -44,6 +44,11 @@ export default function TabLayout() {
           targetIndex = currentIndex + 1;
         }
         
+        // Block swipe between courses (index 1) and timer (index 2)
+        if ((currentIndex === 1 && targetIndex === 2) || (currentIndex === 2 && targetIndex === 1)) {
+          return;
+        }
+        
         if (targetIndex !== currentIndex) {
           router.push(`/(tabs)/${TAB_ROUTES[targetIndex]}` as any);
         }

@@ -11,10 +11,10 @@ import { assignCoursesAfterOnboarding, assignUniversityCoursesToUser } from '@/l
 
 // Old functions removed - now using assignCoursesAfterOnboarding from lib/course-assignment.ts
 
-type DbUser = Database['public']['Tables']['profiles']['Row'];
-
-type DbNote = Database['public']['Tables']['notes']['Row'];
-type DbPomodoroSession = Database['public']['Tables']['pomodoro_sessions']['Row'];
+// Database types (kept for reference)
+// type DbUser = Database['public']['Tables']['profiles']['Row'];
+// type DbNote = Database['public']['Tables']['notes']['Row'];
+// type DbPomodoroSession = Database['public']['Tables']['pomodoro_sessions']['Row'];
 
 export interface User {
   id: string;
@@ -90,7 +90,25 @@ export interface StudyContextType {
 }
 
 // Helper functions to convert between database and app types
-const dbUserToUser = (dbUser: DbUser, email: string): User => ({
+type PartialDbUser = {
+  id: string;
+  name: string;
+  username: string;
+  display_name: string;
+  email: string | null;
+  level: string;
+  program: string;
+  purpose: string;
+  avatar_url: string | null;
+  subscription_type: string;
+  subscription_expires_at: string | null;
+  gymnasium_id: string | null;
+  gymnasium_name: string | null;
+  gymnasium_grade: string | null;
+  daily_goal_hours?: number | null;
+};
+
+const dbUserToUser = (dbUser: PartialDbUser, email: string): User => ({
   id: dbUser.id,
   name: dbUser.name,
   username: dbUser.username,
@@ -145,7 +163,7 @@ const dbCourseToUserCourse = (dbCourse: any): Course => ({
   relatedCourses: Array.isArray(dbCourse.courses.related_courses) ? dbCourse.courses.related_courses : []
 });
 
-const dbNoteToNote = (dbNote: { id: string; course_id: string | null; content: string; created_at: string; updated_at: string }): Note => ({
+const dbNoteToNote = (dbNote: { id: string; course_id: string | null; content: string; created_at: string; updated_at: string; user_id?: string }): Note => ({
   id: dbNote.id,
   courseId: dbNote.course_id || undefined,
   content: dbNote.content,
@@ -153,7 +171,7 @@ const dbNoteToNote = (dbNote: { id: string; course_id: string | null; content: s
   updatedAt: dbNote.updated_at
 });
 
-const dbSessionToSession = (dbSession: { id: string; course_id: string | null; duration: number; start_time: string; end_time: string }): PomodoroSession => ({
+const dbSessionToSession = (dbSession: { id: string; course_id: string | null; duration: number; start_time: string; end_time: string; user_id?: string }): PomodoroSession => ({
   id: dbSession.id,
   courseId: dbSession.course_id || undefined,
   duration: dbSession.duration,
@@ -192,7 +210,6 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [pomodoroSessions, setPomodoroSessions] = useState<PomodoroSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const loadStartedRef = useRef(false);
 
   const loadUserData = useCallback(async (userId: string, userEmail: string) => {
     try {
@@ -235,7 +252,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       }
       
       // Convert database profile to user
-      const user = dbUserToUser(profile as DbUser, userEmail);
+      const user = dbUserToUser(profile as PartialDbUser, userEmail);
       setUser(prev => {
         if (JSON.stringify(prev) === JSON.stringify(user)) return prev;
         return user;
@@ -407,7 +424,12 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       console.log('Starting onboarding for user:', authUser.id);
       
       // Test database connection
-      const dbConnected = await testDatabaseConnection();
+      let dbConnected = false;
+      try {
+        dbConnected = await testDatabaseConnection();
+      } catch (e) {
+        console.warn('Database connection test failed:', e);
+      }
       
       if (dbConnected) {
         console.log('Saving onboarding data to database');
@@ -808,7 +830,12 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       console.log('Session details:', { duration: session.duration, courseId: session.courseId });
       
       // Test database connection
-      const dbConnected = await testDatabaseConnection();
+      let dbConnected = false;
+      try {
+        dbConnected = await testDatabaseConnection();
+      } catch (e) {
+        console.warn('Database connection test failed:', e);
+      }
       
       if (dbConnected) {
         console.log('Database connected, saving pomodoro session');

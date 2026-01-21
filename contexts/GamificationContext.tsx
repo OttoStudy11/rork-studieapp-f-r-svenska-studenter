@@ -338,8 +338,10 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
           if (data?.current_streak !== undefined) {
             setState(prev => ({ ...prev, streak: data.current_streak }));
           }
-        } catch {}
-      })();
+        } catch (e) {
+          console.warn('Failed to load streak:', e);
+        }
+      })().catch(() => {});
 
       const unclaimedAchievements = achievements.filter(a => a.isUnlocked && !a.isClaimed).length;
       const unclaimedChallenges = dailyChallenges.filter(c => c.isCompleted && !c.isClaimed).length;

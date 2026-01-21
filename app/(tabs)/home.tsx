@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
-  ActivityIndicator,
-  StatusBar
+  StatusBar,
+  Animated
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
@@ -24,6 +24,117 @@ import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
 
 const { width } = Dimensions.get('window');
+
+const SkeletonBox = ({ width: w, height: h, style, borderRadius = 12 }: { width: number | string; height: number; style?: any; borderRadius?: number }) => {
+  const pulseAnim = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 0.6,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [pulseAnim]);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width: w as any,
+          height: h,
+          borderRadius,
+          backgroundColor: '#E5E7EB',
+          opacity: pulseAnim,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+const HomeScreenSkeleton = ({ theme, isDark }: { theme: any; isDark: boolean }) => (
+  <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <StatusBar 
+      barStyle={isDark ? 'light-content' : 'dark-content'} 
+      backgroundColor={theme.colors.background}
+    />
+    <ScrollView 
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+    >
+      {/* Header Skeleton */}
+      <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.headerLogo}>
+          <SkeletonBox width={100} height={100} borderRadius={50} />
+        </View>
+        <View style={styles.headerTop}>
+          <View style={styles.headerLeft}>
+            <SkeletonBox width={180} height={28} style={{ marginBottom: 8 }} />
+            <SkeletonBox width={140} height={18} />
+          </View>
+          <SkeletonBox width={44} height={44} borderRadius={22} />
+        </View>
+      </View>
+
+      {/* Hero Card Skeleton */}
+      <View style={[styles.heroCard, { backgroundColor: theme.colors.card, marginHorizontal: 24, marginBottom: 24 }]}>
+        <View style={styles.heroStats}>
+          <View style={styles.heroStatItem}>
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} />
+            <SkeletonBox width={30} height={24} style={{ marginBottom: 4 }} />
+            <SkeletonBox width={60} height={14} />
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStatItem}>
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} />
+            <SkeletonBox width={30} height={24} style={{ marginBottom: 4 }} />
+            <SkeletonBox width={40} height={14} />
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStatItem}>
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} />
+            <SkeletonBox width={40} height={24} style={{ marginBottom: 4 }} />
+            <SkeletonBox width={50} height={14} />
+          </View>
+        </View>
+      </View>
+
+      {/* Quick Action Skeleton */}
+      <View style={styles.quickActions}>
+        <SkeletonBox width="100%" height={56} borderRadius={16} />
+      </View>
+
+      {/* Mini Stats Skeleton */}
+      <View style={styles.miniStatsGrid}>
+        <SkeletonBox width={(width - 72) / 3} height={90} />
+        <SkeletonBox width={(width - 72) / 3} height={90} />
+        <SkeletonBox width={(width - 72) / 3} height={90} />
+      </View>
+
+      {/* Section Skeleton */}
+      <View style={[styles.section, { marginBottom: 16 }]}>
+        <SkeletonBox width={160} height={24} style={{ marginBottom: 16 }} />
+        <SkeletonBox width="100%" height={80} style={{ marginBottom: 12 }} />
+      </View>
+
+      {/* Card Skeleton */}
+      <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
+        <SkeletonBox width="100%" height={100} borderRadius={20} />
+      </View>
+    </ScrollView>
+  </View>
+);
 
 export default function HomeScreen() {
   const { user, courses, pomodoroSessions, isLoading } = useStudy();
@@ -42,13 +153,9 @@ export default function HomeScreen() {
     router.push('/courses' as any);
   };
 
-  // Handle loading
+  // Handle loading with skeleton
   if (isLoading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <HomeScreenSkeleton theme={theme} isDark={isDark} />;
   }
 
   if (!user) {
@@ -253,7 +360,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Hero Stats Card */}
-        <SlideInView direction="up" delay={100}>
+        <SlideInView direction="up" delay={0} duration={300}>
           <LinearGradient
             colors={theme.colors.gradient as any}
             start={{ x: 0, y: 0 }}
@@ -294,7 +401,7 @@ export default function HomeScreen() {
 
 
         {/* Quick Actions */}
-        <SlideInView direction="up" delay={200}>
+        <SlideInView direction="up" delay={50} duration={300}>
           <View style={styles.quickActions}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.actionButtonFull, { backgroundColor: theme.colors.primary }]}
@@ -307,7 +414,7 @@ export default function HomeScreen() {
         </SlideInView>
 
         {/* Mini Stats Grid */}
-        <SlideInView direction="up" delay={300}>
+        <SlideInView direction="up" delay={100} duration={300}>
           <View style={styles.miniStatsGrid}>
             <View style={[styles.miniStatCard, { backgroundColor: theme.colors.card }]}>
               <BookOpen size={20} color={theme.colors.primary} />
@@ -330,7 +437,7 @@ export default function HomeScreen() {
 
 
         {/* Upcoming Exams Section */}
-        <SlideInView direction="up" delay={450}>
+        <SlideInView direction="up" delay={150} duration={300}>
             <View style={[styles.section, { marginBottom: 16 }]}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleContainer}>
@@ -347,7 +454,7 @@ export default function HomeScreen() {
                 const isUrgent = daysUntil <= 3;
                 
                 return (
-                  <FadeInView key={exam.id} delay={500 + index * 100}>
+                  <FadeInView key={exam.id} delay={200 + index * 50} duration={300}>
                     <View style={[
                       styles.examCard,
                       { backgroundColor: theme.colors.card },
@@ -425,7 +532,7 @@ export default function HomeScreen() {
         </SlideInView>
 
         {/* Högskoleprov Card */}
-        <SlideInView direction="up" delay={500}>
+        <SlideInView direction="up" delay={200} duration={300}>
           <TouchableOpacity 
             style={[styles.hpCard, { backgroundColor: theme.colors.card }]}
             onPress={() => router.push('/hogskoleprovet' as any)}
@@ -469,7 +576,7 @@ export default function HomeScreen() {
         </SlideInView>
 
         {/* Compact XP Card */}
-        <SlideInView direction="up" delay={550}>
+        <SlideInView direction="up" delay={250} duration={300}>
           <TouchableOpacity 
             style={[styles.compactXpCard, { backgroundColor: theme.colors.card }]}
             onPress={() => router.push('/achievements' as any)}
@@ -503,7 +610,7 @@ export default function HomeScreen() {
         </SlideInView>
 
         {/* Study Tips & Techniques Section */}
-        <SlideInView direction="up" delay={600}>
+        <SlideInView direction="up" delay={300} duration={300}>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
@@ -518,7 +625,7 @@ export default function HomeScreen() {
             {/* Study Tips Grid */}
             <View style={styles.tipsGrid}>
               {studyTips.slice(0, 2).map((tip, index) => (
-                <FadeInView key={tip.id} delay={600 + index * 50}>
+                <FadeInView key={tip.id} delay={350 + index * 30} duration={250}>
                   <TouchableOpacity 
                     style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
                     onPress={() => router.push(`/study-tip/${tip.id}` as any)}
@@ -544,7 +651,7 @@ export default function HomeScreen() {
             {/* Study Techniques Row */}
             <View style={[styles.techniquesGrid, { paddingHorizontal: 0, marginTop: 12 }]}>
               {studyTechniques.slice(0, 1).map((technique, index) => (
-                <FadeInView key={technique.id} delay={700 + index * 50}>
+                <FadeInView key={technique.id} delay={400} duration={250}>
                   <TouchableOpacity 
                     style={[styles.compactTechniqueCard, { backgroundColor: theme.colors.card }]}
                     onPress={() => router.push(`/study-technique/${technique.id}` as any)}
@@ -574,7 +681,7 @@ export default function HomeScreen() {
 
         {/* Premium Upgrade Banner */}
         {!isPremium && (
-          <SlideInView direction="up" delay={750}>
+          <SlideInView direction="up" delay={350} duration={300}>
             <View style={styles.section}>
               <TouchableOpacity 
                 style={[styles.premiumBanner, { backgroundColor: theme.colors.warning + '15', borderColor: theme.colors.warning + '30' }]}
@@ -598,7 +705,7 @@ export default function HomeScreen() {
         )}
 
         {/* Active Courses */}
-        <SlideInView direction="up" delay={800}>
+        <SlideInView direction="up" delay={400} duration={300}>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Aktiva kurser</Text>
@@ -609,7 +716,7 @@ export default function HomeScreen() {
             
             {activeCourses.length > 0 ? (
               activeCourses.slice(0, 3).map((course, index) => (
-                <FadeInView key={course.id} delay={900 + index * 100}>
+                <FadeInView key={course.id} delay={450 + index * 50} duration={250}>
                   <TouchableOpacity 
                     style={[styles.courseCard, { backgroundColor: theme.colors.card }]}
                     onPress={() => {

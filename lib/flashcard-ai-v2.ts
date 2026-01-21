@@ -47,7 +47,8 @@ const flashcardsResponseSchema = z.object({
 });
 
 export async function generateFlashcardsWithAI(
-  request: FlashcardGenerationRequest
+  request: FlashcardGenerationRequest,
+  onProgress?: (progress: number) => void
 ): Promise<FlashcardGenerationResult> {
   const startTime = Date.now();
   
@@ -62,82 +63,73 @@ export async function generateFlashcardsWithAI(
 
     const language = request.language || 'sv';
     
-    const difficultyDistribution = getDifficultyDistribution(
-      targetCount,
-      request.difficulty
-    );
-
-    const systemPrompt = buildSystemPrompt(language);
-    const userPrompt = buildUserPrompt(
-      { ...request, targetCount },
-      difficultyDistribution,
-      language
-    );
-
-    console.log('📝 [AI Flashcards] Calling AI with prompts...');
-
-    let result: { flashcards: {
-      question: string;
-      answer: string;
-      difficulty: number;
-      explanation?: string;
-      context?: string;
-      tags?: string[];
-    }[] };
+    const BATCH_SIZE = 5;
+    const numBatches = Math.ceil(targetCount / BATCH_SIZE);
     
-    try {
-      console.log('📡 [AI Flashcards] Sending request to AI service...');
+    console.log(`🚀 [AI Flashcards] Generating ${targetCount} cards in ${numBatches} parallel batches`);
+    onProgress?.(0);
+    
+    const batchPromises = Array.from({ length: numBatches }, async (_, i) => {
+      const cardsInBatch = Math.min(
+        BATCH_SIZE,
+        targetCount - (i * BATCH_SIZE)
+      );
       
-      const response = await generateObject({
-        schema: flashcardsResponseSchema,
-        messages: [
-          {
-            role: 'user',
-            content: `${systemPrompt}\n\n${userPrompt}`,
-          },
-        ],
-      });
-      
-      result = response as typeof result;
-      
-      console.log('📥 [AI Flashcards] Received response from AI:', {
-        hasFlashcards: !!result?.flashcards,
-        count: result?.flashcards?.length || 0,
-      });
-    } catch (aiError: any) {
-      console.error('❌ [AI Flashcards] AI generation failed:', {
-        message: aiError?.message,
-        name: aiError?.name,
-        code: aiError?.code,
-        status: aiError?.status,
-        stack: aiError?.stack?.substring(0, 300),
-      });
-      
-      const errorMessage = aiError?.message || 'Okänt fel från AI-tjänsten';
-      
-      if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
-        throw new Error('AI-tjänsten svarade inte i tid. Försök igen.');
-      }
-      if (errorMessage.includes('rate') || errorMessage.includes('limit')) {
-        throw new Error('För många förfrågningar. Vänta en stund och försök igen.');
-      }
-      if (errorMessage.includes('network') || errorMessage.includes('Network')) {
-        throw new Error('Nätverksfel. Kontrollera din internetanslutning.');
-      }
-      
-      throw new Error(`AI-generering misslyckades: ${errorMessage}`);
-    }
+      const difficultyDistribution = getDifficultyDistribution(
+        cardsInBatch,
+        request.difficulty
+      );
 
-    if (!result || !result.flashcards || !Array.isArray(result.flashcards)) {
-      console.error('❌ [AI Flashcards] Invalid response structure:', result);
-      throw new Error('AI returned invalid response structure');
-    }
+      const systemPrompt = buildSystemPrompt(language);
+      const userPrompt = buildUserPrompt(
+        { ...request, targetCount: cardsInBatch },
+        difficultyDistribution,
+        language
+      );
+      
+      try {
+        console.log(`📡 [AI Flashcards] Batch ${i + 1}/${numBatches} - requesting ${cardsInBatch} cards...`);
+        
+        const response = await generateObject({
+          schema: flashcardsResponseSchema,
+          messages: [
+            {
+              role: 'user',
+              content: `${systemPrompt}\n\n${userPrompt}`,
+            },
+          ],
+        });
+        
+        const result = response as { flashcards: any[] };
+        
+        console.log(`✅ [AI Flashcards] Batch ${i + 1}/${numBatches} complete:`, {
+          received: result?.flashcards?.length || 0,
+        });
+        
+        onProgress?.(Math.round(((i + 1) / numBatches) * 90));
+        
+        return result?.flashcards || [];
+      } catch (batchError: any) {
+        console.error(`❌ [AI Flashcards] Batch ${i + 1} failed:`, batchError?.message);
+        return [];
+      }
+    });
+    
+    const batchResults = await Promise.all(batchPromises);
+    const allFlashcards = batchResults.flat();
+    
+    console.log('📥 [AI Flashcards] All batches complete:', {
+      totalReceived: allFlashcards.length,
+      target: targetCount,
+    });
 
-    if (result.flashcards.length === 0) {
+    if (allFlashcards.length === 0) {
       throw new Error('AI generated 0 flashcards');
     }
 
-    const validatedFlashcards = validateAndNormalizeFlashcards(result.flashcards);
+    const validatedFlashcards = validateAndNormalizeFlashcards(allFlashcards);
+    
+    onProgress?.(100);
     
     const duration = Date.now() - startTime;
     console.log(`✅ [AI Flashcards] Generated ${validatedFlashcards.length} flashcards in ${duration}ms`);

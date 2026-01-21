@@ -35,16 +35,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const checkOnboardingStatus = useCallback(async (userId: string) => {
     try {
-      // First check AsyncStorage for instant response
       const storedStatus = await AsyncStorage.getItem(`${ONBOARDING_KEY}_${userId}`);
       if (storedStatus === 'true') {
         setHasCompletedOnboarding(true);
         return;
       }
       
-      // Try database check with short timeout
       try {
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000));
         const profilePromise = supabase
           .from('profiles')
           .select('id, name, username, display_name, program, level')
@@ -62,7 +60,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           }
         }
       } catch {
-        // Database check failed, use AsyncStorage
       }
       
       setHasCompletedOnboarding(storedStatus === 'true');
@@ -121,65 +118,47 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log('Initializing Supabase auth...');
       setIsLoading(true);
       
-      // Start database connection check in background (non-blocking)
       checkDatabaseConnectionAsync();
       
-      // First check if we have a session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const sessionPromise = supabase.auth.getSession();
+      const sessionTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
       
-      if (sessionError) {
-        console.log('Session error (expected if no session):', sessionError.message);
-        // Try remember me session if no active session
+      const sessionResult = await Promise.race([sessionPromise, sessionTimeout]);
+      
+      if (!sessionResult || sessionResult === null) {
+        console.log('Session check timed out, trying remember me');
         await tryRememberMeLogin();
         return;
       }
       
-      if (!session) {
-        console.log('No active session found');
-        // Try remember me session if no active session
+      const { data: { session }, error: sessionError } = sessionResult;
+      
+      if (sessionError || !session) {
+        console.log('No active session, trying remember me');
         await tryRememberMeLogin();
         return;
       }
       
-      // If we have a session, get the user
       const { data: { user: supabaseUser }, error } = await supabase.auth.getUser();
       
-      if (error) {
-        console.log('Error getting user:', error.message);
-        // If we get an auth session missing error, try remember me
-        if (error.message.includes('Auth session missing')) {
-          console.log('Auth session missing - trying remember me');
-          await tryRememberMeLogin();
-          return;
-        }
-        throw error;
+      if (error || !supabaseUser) {
+        console.log('Error getting user, trying remember me');
+        await tryRememberMeLogin();
+        return;
       }
       
-      if (supabaseUser) {
-        console.log('Found authenticated user:', supabaseUser.email);
-        const authUser: AuthUser = {
-          id: supabaseUser.id,
-          email: supabaseUser.email!,
-          createdAt: supabaseUser.created_at
-        };
-        setUser(authUser);
-        await checkOnboardingStatus(supabaseUser.id);
-        // Clean up expired sessions for this user
-        await cleanupExpiredSessions(supabaseUser.id);
-      } else {
-        console.log('No authenticated user found');
-        await tryRememberMeLogin();
-      }
+      console.log('Found authenticated user:', supabaseUser.email);
+      const authUser: AuthUser = {
+        id: supabaseUser.id,
+        email: supabaseUser.email!,
+        createdAt: supabaseUser.created_at
+      };
+      setUser(authUser);
+      await checkOnboardingStatus(supabaseUser.id);
+      cleanupExpiredSessions(supabaseUser.id).catch(() => {});
     } catch (error: any) {
       console.log('Error initializing auth:', error?.message || error);
-      // Handle auth session missing gracefully
-      if (error?.message?.includes('Auth session missing')) {
-        console.log('Auth session missing - trying remember me');
-        await tryRememberMeLogin();
-      } else {
-        setUser(null);
-        setHasCompletedOnboarding(false);
-      }
+      await tryRememberMeLogin();
     } finally {
       console.log('Auth initialization complete');
       setIsLoading(false);

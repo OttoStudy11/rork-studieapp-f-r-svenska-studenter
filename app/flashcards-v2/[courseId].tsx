@@ -116,6 +116,7 @@ export default function FlashcardsScreenV2() {
   }, [flashcards, progressMap]);
 
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationProgress, setGenerationProgress] = useState(0);
 
   useEffect(() => {
     if (generationError) {
@@ -128,6 +129,7 @@ export default function FlashcardsScreenV2() {
     mutationFn: async (params: { count: number; customText?: string }) => {
       console.log('🚀 [Flashcards] Starting generation for:', courseId);
       setGenerationError(null);
+      setGenerationProgress(0);
       
       if (!courseId) {
         throw new Error('Ingen kurs vald');
@@ -146,6 +148,8 @@ export default function FlashcardsScreenV2() {
         targetCount: params.count,
         difficulty: 'all',
         language: 'sv',
+      }, (progress) => {
+        setGenerationProgress(progress);
       });
 
       if (!result.success || result.flashcards.length === 0) {
@@ -171,12 +175,14 @@ export default function FlashcardsScreenV2() {
       setShowCustomInput(false);
       setCustomText('');
       setGenerationError(null);
+      setGenerationProgress(0);
       Alert.alert('✅ Klart!', `${data.savedCount} flashcards har genererats och sparats!`);
     },
     onError: (error: any) => {
       console.error('❌ [Flashcards] Generation failed:', error);
       const errorMessage = error?.message || 'Ett oväntat fel uppstod.';
       setGenerationError(errorMessage);
+      setGenerationProgress(0);
       Alert.alert(
         'Kunde inte generera flashcards',
         errorMessage,
@@ -339,9 +345,14 @@ export default function FlashcardsScreenV2() {
           </TouchableOpacity>
 
           {generateMutation.isPending && (
-            <Text style={styles.generatingHint}>
-              AI:n skapar {generationCount} flashcards baserat på kursinnehåll...
-            </Text>
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBarContainer}>
+                <View style={[styles.progressBarFill, { width: `${generationProgress}%` }]} />
+              </View>
+              <Text style={styles.progressText}>
+                {generationProgress}% • AI:n skapar {generationCount} flashcards...
+              </Text>
+            </View>
           )}
 
           <TouchableOpacity
@@ -842,5 +853,29 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
     marginTop: 12,
     fontStyle: 'italic' as const,
+  },
+  progressContainer: {
+    marginTop: 20,
+    width: '100%',
+    alignItems: 'center' as const,
+    gap: 12,
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#1E293B',
+    borderRadius: 4,
+    overflow: 'hidden' as const,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#6366F1',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '600' as const,
+    textAlign: 'center' as const,
   },
 });

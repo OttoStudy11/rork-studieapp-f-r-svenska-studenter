@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { supabase } from '@/lib/supabase';
+import { performanceCache } from '@/lib/performance';
 import {
   LEVELS,
   LevelDefinition,
@@ -120,6 +121,8 @@ interface GamificationContextValue extends GamificationState {
 
 const STORAGE_KEY = 'gamification_state_v2';
 const XP_AWARD_COOLDOWN_MS = 2000;
+const GAMIFICATION_CACHE_KEY = 'gamification_data';
+const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
 const defaultState: GamificationState = {
   totalXp: 0,
@@ -143,6 +146,8 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
   
   const recentAwardsRef = useRef<Map<string, number>>(new Map());
   const pendingLevelUpBonusRef = useRef<boolean>(false);
+  const initStartedRef = useRef(false);
+  const lastRefreshRef = useRef<number>(0);
 
   const loadFromStorage = useCallback(async (): Promise<Partial<GamificationState>> => {
     try {
@@ -280,6 +285,13 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
   }, []);
 
   const refreshAll = useCallback(async () => {
+    // Rate limit refreshes to avoid excessive API calls
+    const now = Date.now();
+    if (now - lastRefreshRef.current < 5000) {
+      return;
+    }
+    lastRefreshRef.current = now;
+
     if (!authUser || !isAuthenticated) {
       const stored = await loadFromStorage();
       setState(prev => ({
@@ -294,9 +306,15 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
     }
 
     try {
-      setIsLoading(true);
-      console.log('Refreshing gamification data for user:', authUser.id);
+      // Try cache first for instant UI
+      const cached = await performanceCache.get<GamificationState>(GAMIFICATION_CACHE_KEY);
+      if (cached && !isReady) {
+        setState(cached);
+        setIsReady(true);
+        setIsLoading(false);
+      }
 
+      // Fetch fresh data in parallel
       const [userLevel, achievements, dailyChallenges, stored] = await Promise.all([
         loadUserLevel(authUser.id),
         loadAchievements(authUser.id),
@@ -308,18 +326,25 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
       const currentLevel = getLevelForXp(totalXp);
       const xpProgress = getXpProgress(totalXp);
 
-      const { data: progressData } = await supabase
-        .from('user_progress')
-        .select('current_streak')
-        .eq('user_id', authUser.id)
-        .maybeSingle();
-
-      const streak = progressData?.current_streak ?? stored.streak ?? 0;
+      // Get streak in background - don't block UI
+      let streak = stored.streak ?? 0;
+      (async () => {
+        try {
+          const { data } = await supabase
+            .from('user_progress')
+            .select('current_streak')
+            .eq('user_id', authUser.id)
+            .maybeSingle();
+          if (data?.current_streak !== undefined) {
+            setState(prev => ({ ...prev, streak: data.current_streak }));
+          }
+        } catch {}
+      })();
 
       const unclaimedAchievements = achievements.filter(a => a.isUnlocked && !a.isClaimed).length;
       const unclaimedChallenges = dailyChallenges.filter(c => c.isCompleted && !c.isClaimed).length;
 
-      setState({
+      const newState: GamificationState = {
         totalXp,
         currentLevel,
         xpProgress,
@@ -329,19 +354,29 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
         recentTransactions: stored.recentTransactions ?? [],
         unclaimedAchievements,
         unclaimedChallenges,
-      });
+      };
 
+      setState(newState);
+      await performanceCache.set(GAMIFICATION_CACHE_KEY, newState, CACHE_TTL);
       await saveToStorage({ totalXp, streak });
     } catch (error) {
-      console.log('Error refreshing gamification:', error);
+      console.warn('Error refreshing gamification:', error);
     } finally {
       setIsLoading(false);
       setIsReady(true);
     }
-  }, [authUser, isAuthenticated, loadUserLevel, loadAchievements, loadDailyChallenges, loadFromStorage, saveToStorage]);
+  }, [authUser, isAuthenticated, loadUserLevel, loadAchievements, loadDailyChallenges, loadFromStorage, saveToStorage, isReady]);
 
   useEffect(() => {
-    refreshAll();
+    if (initStartedRef.current && !authUser?.id) return;
+    if (authUser?.id) initStartedRef.current = true;
+    
+    // Defer gamification loading slightly to prioritize UI
+    const timer = setTimeout(() => {
+      refreshAll();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser?.id, isAuthenticated]);
 

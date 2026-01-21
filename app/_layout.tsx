@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import * as Notifications from 'expo-notifications';
 import { NotificationManager } from '@/lib/notification-manager';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -23,26 +23,31 @@ import { HogskoleprovetProvider } from "@/contexts/HogskoleprovetContext";
 
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2, // 2 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
+      retry: 1,
+      retryDelay: 1000,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
 function RootLayoutNav() {
   const { toasts, dismissToast } = useToast();
   const { isLoading: authLoading } = useAuth();
-  const [minimumLoadingDone, setMinimumLoadingDone] = useState(false);
   const [splashHidden, setSplashHidden] = useState(false);
-  const [showContent, setShowContent] = useState(false);
+  const splashHideAttempted = useRef(false);
 
   useEffect(() => {
-    // Minimum loading time to show the loading screen (2.5 seconds)
-    const timer = setTimeout(() => {
-      setMinimumLoadingDone(true);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    // Hide splash screen once we're ready to show our custom loading screen
-    if (!splashHidden) {
+    if (!splashHideAttempted.current) {
+      splashHideAttempted.current = true;
       const hideSplash = async () => {
         try {
           await SplashScreen.hideAsync();
@@ -52,25 +57,12 @@ function RootLayoutNav() {
           setSplashHidden(true);
         }
       };
-      // Small delay to ensure our LoadingScreen is mounted
-      setTimeout(hideSplash, 100);
+      hideSplash();
     }
-  }, [splashHidden]);
+  }, []);
 
-  // Add small delay after loading conditions are met to ensure smooth transition
-  useEffect(() => {
-    if (!authLoading && minimumLoadingDone && !showContent) {
-      // Small delay to ensure everything is ready
-      const timer = setTimeout(() => {
-        setShowContent(true);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [authLoading, minimumLoadingDone, showContent]);
-
-  // Show loading screen until auth is done AND minimum time has passed AND content is ready
-  if (authLoading || !minimumLoadingDone || !showContent) {
-    return <LoadingScreen message="Startar din studieplats..." />;
+  if (authLoading) {
+    return <LoadingScreen message="Laddar..." />;
   }
   
   return (

@@ -294,15 +294,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       // Listen for deep links while app is running
       const linkingSubscription = Linking.addEventListener('url', handleDeepLink);
       
-      // Fallback timeout to ensure loading doesn't get stuck
+      // Reduced timeout for faster feedback
       const fallbackTimeout = setTimeout(() => {
-        if (mounted) {
-          console.log('Auth initialization timeout - forcing loading to false');
+        if (mounted && isLoading) {
           setIsLoading(false);
-          setUser(null);
-          setHasCompletedOnboarding(false);
         }
-      }, 8000);
+      }, 5000);
 
       return () => {
         mounted = false;
@@ -311,15 +308,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         clearTimeout(fallbackTimeout);
       };
     } else {
-      // Web doesn't need deep linking, just fallback timeout
       const fallbackTimeout = setTimeout(() => {
-        if (mounted) {
-          console.log('Auth initialization timeout - forcing loading to false');
+        if (mounted && isLoading) {
           setIsLoading(false);
-          setUser(null);
-          setHasCompletedOnboarding(false);
         }
-      }, 8000);
+      }, 5000);
 
       return () => {
         mounted = false;
@@ -327,7 +320,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         clearTimeout(fallbackTimeout);
       };
     }
-  }, [initializeAuth, checkOnboardingStatus]);
+  }, [initializeAuth, checkOnboardingStatus, isLoading]);
 
   const RATE_LIMIT_DELAY = 0; // No delay
 

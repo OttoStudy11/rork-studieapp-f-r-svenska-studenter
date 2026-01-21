@@ -1,7 +1,8 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, testDatabaseConnection } from '@/lib/supabase';
+import { performanceCache } from '@/lib/performance';
 import { Database } from '@/lib/database.types';
 import type { Gymnasium } from '@/constants/gymnasiums';
 import type { AvatarConfig } from '@/constants/avatar-config';
@@ -144,7 +145,7 @@ const dbCourseToUserCourse = (dbCourse: any): Course => ({
   relatedCourses: Array.isArray(dbCourse.courses.related_courses) ? dbCourse.courses.related_courses : []
 });
 
-const dbNoteToNote = (dbNote: DbNote): Note => ({
+const dbNoteToNote = (dbNote: { id: string; course_id: string | null; content: string; created_at: string; updated_at: string }): Note => ({
   id: dbNote.id,
   courseId: dbNote.course_id || undefined,
   content: dbNote.content,
@@ -152,7 +153,7 @@ const dbNoteToNote = (dbNote: DbNote): Note => ({
   updatedAt: dbNote.updated_at
 });
 
-const dbSessionToSession = (dbSession: DbPomodoroSession): PomodoroSession => ({
+const dbSessionToSession = (dbSession: { id: string; course_id: string | null; duration: number; start_time: string; end_time: string }): PomodoroSession => ({
   id: dbSession.id,
   courseId: dbSession.course_id || undefined,
   duration: dbSession.duration,
@@ -160,15 +161,13 @@ const dbSessionToSession = (dbSession: DbPomodoroSession): PomodoroSession => ({
   endTime: dbSession.end_time
 });
 
+const STUDY_CACHE_KEY = 'study_user_data';
+const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+
 export const [StudyProvider, useStudy] = createContextHook(() => {
   const authContext = useAuth();
   
-
-  
-  // Add safety check for auth context
   if (!authContext) {
-    console.error('StudyContext: AuthContext is not available');
-    // Return a minimal context to prevent crashes
     return {
       user: null,
       courses: [],
@@ -193,56 +192,27 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [pomodoroSessions, setPomodoroSessions] = useState<PomodoroSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const loadStartedRef = useRef(false);
 
   const loadUserData = useCallback(async (userId: string, userEmail: string) => {
     try {
       setIsLoading(true);
-      console.log('Loading user data for:', userId);
       
-      // Test database connection first
-      const dbConnected = await testDatabaseConnection();
-      if (!dbConnected) {
-        console.warn('Database not available, working in offline mode');
-        
-        // Create a local user profile for offline mode
-        const emailPrefix = userEmail.split('@')[0] || 'Student';
-        const localUser: User = {
-          id: userId,
-          name: emailPrefix,
-          username: emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
-          displayName: emailPrefix,
-          email: userEmail,
-          studyLevel: 'gymnasie',
-          program: 'Naturvetenskapsprogrammet',
-          purpose: 'Förbättra mina studieresultat',
-          onboardingCompleted: false,
-          subscriptionType: 'free'
-        };
-        
-        setUser(prev => {
-        if (JSON.stringify(prev) === JSON.stringify(localUser)) return prev;
-        return localUser;
-      });
-        setCourses([]);
-        setNotes([]);
-        setPomodoroSessions([]);
-        return;
+      // Try cache first for instant UI
+      const cached = await performanceCache.get<{ user: User; courses: Course[] }>(`${STUDY_CACHE_KEY}_${userId}`);
+      if (cached) {
+        setUser(cached.user);
+        setCourses(cached.courses);
       }
       
-      // Try to load user data from database
-      console.log('Loading user data from database');
-      
-      // Load user profile
+      // Load user profile with minimal columns
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, name, username, display_name, email, level, program, purpose, avatar_url, subscription_type, subscription_expires_at, gymnasium_id, gymnasium_name, gymnasium_grade, daily_goal_hours')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
       if (profileError || !profile) {
-        console.warn('Could not load user profile from database, using local data');
-        
-        // Create a basic user profile
         const emailPrefix = userEmail.split('@')[0] || 'Student';
         const localUser: User = {
           id: userId,
@@ -257,10 +227,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           subscriptionType: 'free'
         };
         
-        setUser(prev => {
-        if (JSON.stringify(prev) === JSON.stringify(localUser)) return prev;
-        return localUser;
-      });
+        setUser(localUser);
         setCourses([]);
         setNotes([]);
         setPomodoroSessions([]);
@@ -268,7 +235,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       }
       
       // Convert database profile to user
-      const user = dbUserToUser(profile, userEmail);
+      const user = dbUserToUser(profile as DbUser, userEmail);
       setUser(prev => {
         if (JSON.stringify(prev) === JSON.stringify(user)) return prev;
         return user;
@@ -347,38 +314,31 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       setCourses(uniqueCourses);
       console.log('Total courses loaded:', uniqueCourses.length);
       
-      // Load user notes
-      const { data: userNotes, error: notesError } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      // Cache user and courses
+      await performanceCache.set(`${STUDY_CACHE_KEY}_${userId}`, { user, courses: uniqueCourses }, CACHE_TTL);
       
-      if (!notesError && userNotes) {
-        const notes = userNotes.map(dbNoteToNote);
-        setNotes(notes);
-      } else {
-        console.warn('Could not load notes:', notesError?.message);
-        setNotes([]);
-      }
-      
-      // Load pomodoro sessions
-      const { data: sessions, error: sessionsError } = await supabase
-        .from('pomodoro_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('start_time', { ascending: false })
-        .limit(50);
-      
-      if (!sessionsError && sessions) {
-        const pomodoroSessions = sessions.map(dbSessionToSession);
-        setPomodoroSessions(pomodoroSessions);
-      } else {
-        console.warn('Could not load pomodoro sessions:', sessionsError?.message);
-        setPomodoroSessions([]);
-      }
-      
-      console.log('User data loaded successfully from database');
+      // Load notes and sessions in background - don't block UI
+      Promise.all([
+        supabase
+          .from('notes')
+          .select('id, course_id, content, created_at, updated_at')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(50),
+        supabase
+          .from('pomodoro_sessions')
+          .select('id, course_id, duration, start_time, end_time')
+          .eq('user_id', userId)
+          .order('start_time', { ascending: false })
+          .limit(30)
+      ]).then(([notesResult, sessionsResult]) => {
+        if (notesResult.data) {
+          setNotes(notesResult.data.map(dbNoteToNote));
+        }
+        if (sessionsResult.data) {
+          setPomodoroSessions(sessionsResult.data.map(dbSessionToSession));
+        }
+      }).catch(() => {});
       
     } catch (error) {
       console.error('Error loading user data:', error instanceof Error ? error.message : String(error));

@@ -20,16 +20,14 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       'X-Client-Info': 'studiestugan-app'
     },
     fetch: (url, options = {}) => {
-      // Create a timeout controller
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // Reduced timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       
       return fetch(url, {
         ...options,
         signal: controller.signal
       }).catch(error => {
         clearTimeout(timeoutId);
-        // Only log network errors once to avoid spam
         if (!error.logged) {
           console.warn('Network request failed:', error.name || 'NetworkError');
           error.logged = true;
@@ -39,7 +37,15 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
         clearTimeout(timeoutId);
       });
     }
-  }
+  },
+  db: {
+    schema: 'public',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 2,
+    },
+  },
 });
 
 // Database connection state cache

@@ -23,7 +23,9 @@ import { supabase } from '@/lib/supabase';
 import { 
   BookOpen, 
   Clock, 
-  ChevronRight, 
+  ChevronRight,
+  ChevronUp,
+  ChevronDown, 
   Play,
   CheckCircle,
   Circle,
@@ -129,6 +131,7 @@ export default function CourseDetailScreen() {
   const [editProgress, setEditProgress] = useState<string>('0');
   const [editTargetGrade, setEditTargetGrade] = useState<string>('');
   const [userCourseData, setUserCourseData] = useState<any>(null);
+  const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
     if (id && user?.id) {
@@ -643,8 +646,47 @@ export default function CourseDetailScreen() {
 
 
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>🤖 AI-Assistans</Text>
+        <View style={styles.heroSection}>
+          <TouchableOpacity
+            style={[styles.flashcardsHeroCard, { backgroundColor: theme.colors.card }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push(`/flashcards/${id}` as any);
+            }}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={[courseStyle.primaryColor, courseStyle.gradient[1]] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.flashcardsGradient}
+            >
+              <View style={styles.flashcardsIconBg}>
+                <Brain size={48} color="white" strokeWidth={2.5} />
+              </View>
+              <View style={styles.flashcardsContent}>
+                <View style={styles.flashcardsBadge}>
+                  <Sparkles size={14} color="white" />
+                  <Text style={styles.flashcardsBadgeText}>AI-POWERED</Text>
+                </View>
+                <Text style={styles.flashcardsTitle}>Flashcards</Text>
+                <Text style={styles.flashcardsDescription}>
+                  Träna och memorera med AI-genererade flashcards anpassade för din kurs
+                </Text>
+                <View style={styles.flashcardsAction}>
+                  <Text style={styles.flashcardsActionText}>Börja träna</Text>
+                  <ChevronRight size={20} color="white" strokeWidth={3} />
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.aiSection}>
+          <View style={styles.aiSectionHeader}>
+            <Sparkles size={24} color={courseStyle.primaryColor} />
+            <Text style={[styles.aiSectionTitle, { color: theme.colors.text }]}>AI-Assisterad Inlärning</Text>
+          </View>
           
           <AIStudyInsights
             courseTitle={course.title}
@@ -663,24 +705,6 @@ export default function CourseDetailScreen() {
               router.push(`/ai-chat?question=${encodeURIComponent(question)}&course=${encodeURIComponent(course.title)}` as any);
             }}
           />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>🎯 Snabbåtkomst</Text>
-          
-          <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: theme.colors.card }]}
-            onPress={() => router.push(`/flashcards/${id}` as any)}
-          >
-            <View style={[styles.actionIconContainer, { backgroundColor: courseStyle.primaryColor + '20' }]}>
-              <Brain size={24} color={courseStyle.primaryColor} />
-            </View>
-            <View style={styles.actionInfo}>
-              <Text style={[styles.actionTitle, { color: theme.colors.text }]}>Flashcards</Text>
-              <Text style={[styles.actionDescription, { color: theme.colors.textSecondary }]}>Öva med AI-genererade flashcards</Text>
-            </View>
-            <ChevronRight size={20} color={theme.colors.textMuted} />
-          </TouchableOpacity>
         </View>
 
         {studyGuides.length > 0 && (
@@ -714,9 +738,34 @@ export default function CourseDetailScreen() {
           </View>
         )}
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>📖 Kursinnehåll</Text>
-          {modules.map((module, moduleIndex) => (
+        <View style={styles.contentSection}>
+          <TouchableOpacity
+            style={[styles.contentToggle, { backgroundColor: theme.colors.card }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowContent(!showContent);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.contentToggleLeft}>
+              <BookOpen size={20} color={theme.colors.textMuted} />
+              <Text style={[styles.contentToggleTitle, { color: theme.colors.text }]}>Kursinnehåll & Lektioner</Text>
+            </View>
+            <View style={styles.contentToggleRight}>
+              <Text style={[styles.contentToggleCount, { color: theme.colors.textSecondary }]}>
+                {modules.length} moduler · {userProgress.total} lektioner
+              </Text>
+              {showContent ? (
+                <ChevronUp size={20} color={theme.colors.textMuted} />
+              ) : (
+                <ChevronDown size={20} color={theme.colors.textMuted} />
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {showContent && (
+            <Animated.View style={styles.contentCollapse}>
+              {modules.map((module, moduleIndex) => (
             <View key={module.id} style={[styles.moduleCard, { backgroundColor: theme.colors.card }]}>
               <View style={[styles.moduleHeader, { borderBottomColor: theme.colors.border }]}>
                 <Text style={[styles.moduleTitle, { color: theme.colors.text }]}>
@@ -799,7 +848,9 @@ export default function CourseDetailScreen() {
                 })}
               </View>
             </View>
-          ))}
+              ))}
+            </Animated.View>
+          )}
         </View>
 
         {modules.length === 0 && (
@@ -1485,5 +1536,127 @@ const styles = StyleSheet.create({
   },
   actionDescription: {
     fontSize: 14,
+  },
+  heroSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  flashcardsHeroCard: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  flashcardsGradient: {
+    padding: 28,
+    minHeight: 200,
+    position: 'relative',
+  },
+  flashcardsIconBg: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    opacity: 0.2,
+  },
+  flashcardsContent: {
+    position: 'relative',
+    zIndex: 1,
+  },
+  flashcardsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+    marginBottom: 16,
+  },
+  flashcardsBadgeText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '800' as const,
+    letterSpacing: 1,
+  },
+  flashcardsTitle: {
+    fontSize: 36,
+    fontWeight: '900' as const,
+    color: 'white',
+    marginBottom: 12,
+    letterSpacing: -1,
+  },
+  flashcardsDescription: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.95)',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  flashcardsAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  flashcardsActionText: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: 'white',
+  },
+  aiSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  aiSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  aiSectionTitle: {
+    fontSize: 24,
+    fontWeight: '800' as const,
+    letterSpacing: -0.5,
+  },
+  contentSection: {
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
+  contentToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  contentToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  contentToggleTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+  },
+  contentToggleRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  contentToggleCount: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  contentCollapse: {
+    gap: 0,
   },
 });

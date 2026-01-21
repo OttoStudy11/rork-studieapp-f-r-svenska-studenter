@@ -315,13 +315,25 @@ export default function FriendsScreen() {
   }, [safeParseAvatar, showError, studyUser, user]);
 
   const loadGlobalLeaderboard = useCallback(async () => {
+    if (!user) {
+      console.log('No user found, skipping global leaderboard load');
+      return;
+    }
+
     setGlobalLeaderboardLoading(true);
     setGlobalLeaderboardError(null);
 
     try {
-      console.log('Loading global leaderboard...');
+      console.log('Loading global leaderboard for user:', user.id);
       const entries = await fetchGlobalLeaderboardTop15();
       console.log('Global leaderboard entries:', entries.length);
+
+      if (entries.length === 0) {
+        console.log('No entries found in global leaderboard');
+        setGlobalLeaderboardError('Inga användare hittades i topplistan än');
+        setGlobalLeaderboard([]);
+        return;
+      }
 
       const mapped: LeaderboardEntry[] = entries.map((e) => {
         const level = e.level === 'högskola' ? 'högskola' : 'gymnasie';
@@ -348,7 +360,7 @@ export default function FriendsScreen() {
     } finally {
       setGlobalLeaderboardLoading(false);
     }
-  }, [safeParseAvatar]);
+  }, [safeParseAvatar, user]);
 
   useEffect(() => {
     loadFriends();

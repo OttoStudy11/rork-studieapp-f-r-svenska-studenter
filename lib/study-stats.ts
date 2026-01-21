@@ -60,57 +60,67 @@ export interface GlobalLeaderboardEntry {
 export async function fetchGlobalLeaderboardTop15(): Promise<GlobalLeaderboardEntry[]> {
   console.log('Fetching global leaderboard from user_progress...');
   
-  const { data, error } = await supabase
-    .from('user_progress')
-    .select(
-      'user_id, total_study_time, total_sessions, profiles(id, username, display_name, program, level, avatar_url)',
-    )
-    .not('total_study_time', 'is', null)
-    .gt('total_study_time', 0)
-    .order('total_study_time', { ascending: false })
-    .limit(15);
+  try {
+    const { data, error } = await supabase
+      .from('user_progress')
+      .select(
+        'user_id, total_study_time, total_sessions, profiles!inner(id, username, display_name, program, level, avatar_url)',
+      )
+      .not('total_study_time', 'is', null)
+      .gt('total_study_time', 0)
+      .order('total_study_time', { ascending: false })
+      .limit(15);
 
-  if (error) {
-    console.error('Error fetching global leaderboard:', error);
+    if (error) {
+      console.error('Error fetching global leaderboard:', error);
+      throw new Error(`Failed to fetch global leaderboard: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      console.log('No data found for global leaderboard');
+      return [];
+    }
+
+    console.log('Raw data from user_progress:', data.length, 'rows');
+
+    const rows = (data ?? []) as unknown as {
+      user_id: string;
+      total_study_time: number | null;
+      total_sessions: number | null;
+      profiles: {
+        id: string;
+        username: string;
+        display_name: string;
+        program: string;
+        level: string;
+        avatar_url: string | null;
+      } | null;
+    }[];
+
+    const mapped = rows
+      .filter(r => r.profiles !== null)
+      .map((r, idx) => {
+        const total = Number(r.total_study_time ?? 0);
+        const safeTotal = Number.isFinite(total) ? total : 0;
+        const p = r.profiles;
+
+        return {
+          userId: r.user_id,
+          rank: idx + 1,
+          username: p?.username ?? 'unknown',
+          displayName: p?.display_name ?? 'Okänd användare',
+          program: p?.program ?? '',
+          level: p?.level ?? '',
+          avatarUrl: p?.avatar_url ?? null,
+          totalMinutes: safeTotal,
+          totalSessions: Number(r.total_sessions ?? 0),
+        };
+      });
+
+    console.log('Mapped global leaderboard:', mapped.length, 'entries');
+    return mapped;
+  } catch (error) {
+    console.error('Exception in fetchGlobalLeaderboardTop15:', error);
     throw error;
   }
-
-  console.log('Raw data from user_progress:', data?.length, 'rows');
-
-  const rows = (data ?? []) as unknown as {
-    user_id: string;
-    total_study_time: number | null;
-    total_sessions: number | null;
-    profiles: {
-      id: string;
-      username: string;
-      display_name: string;
-      program: string;
-      level: string;
-      avatar_url: string | null;
-    } | null;
-  }[];
-
-  const mapped = rows
-    .filter(r => r.profiles !== null)
-    .map((r, idx) => {
-      const total = Number(r.total_study_time ?? 0);
-      const safeTotal = Number.isFinite(total) ? total : 0;
-      const p = r.profiles;
-
-      return {
-        userId: r.user_id,
-        rank: idx + 1,
-        username: p?.username ?? 'unknown',
-        displayName: p?.display_name ?? 'Okänd användare',
-        program: p?.program ?? '',
-        level: p?.level ?? '',
-        avatarUrl: p?.avatar_url ?? null,
-        totalMinutes: safeTotal,
-        totalSessions: Number(r.total_sessions ?? 0),
-      };
-    });
-
-  console.log('Mapped global leaderboard:', mapped.length, 'entries');
-  return mapped;
 }

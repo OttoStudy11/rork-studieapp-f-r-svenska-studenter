@@ -188,16 +188,17 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   useEffect(() => {
     let mounted = true;
+    let hasInitialized = false;
     
     const initialize = async () => {
-      if (mounted) {
+      if (mounted && !hasInitialized) {
+        hasInitialized = true;
         await initializeAuth();
       }
     };
     
     initialize();
     
-    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
@@ -211,7 +212,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
             createdAt: session.user.created_at
           };
           setUser(prev => {
-            if (JSON.stringify(prev) === JSON.stringify(authUser)) return prev;
+            if (prev?.id === authUser.id && prev?.email === authUser.email) return prev;
             return authUser;
           });
           await checkOnboardingStatus(session.user.id);
@@ -219,12 +220,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           setUser(null);
           setHasCompletedOnboarding(false);
         }
-        
-        setIsLoading(false);
       }
     );
     
-    // Handle deep links for email verification
     const handleDeepLink = async (event: { url: string }) => {
       if (!mounted) return;
       
@@ -258,7 +256,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
     };
     
-    // Check for initial URL (app opened from email link)
     if (Platform.OS !== 'web') {
       Linking.getInitialURL().then(url => {
         if (url && mounted) {
@@ -268,15 +265,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         console.error('Error getting initial URL:', err);
       });
       
-      // Listen for deep links while app is running
       const linkingSubscription = Linking.addEventListener('url', handleDeepLink);
       
-      // Reduced timeout for faster feedback
       const fallbackTimeout = setTimeout(() => {
-        if (mounted && isLoading) {
+        if (mounted) {
           setIsLoading(false);
         }
-      }, 5000);
+      }, 4000);
 
       return () => {
         mounted = false;
@@ -286,10 +281,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       };
     } else {
       const fallbackTimeout = setTimeout(() => {
-        if (mounted && isLoading) {
+        if (mounted) {
           setIsLoading(false);
         }
-      }, 5000);
+      }, 4000);
 
       return () => {
         mounted = false;
@@ -297,7 +292,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         clearTimeout(fallbackTimeout);
       };
     }
-  }, [initializeAuth, checkOnboardingStatus, isLoading]);
+  }, [initializeAuth, checkOnboardingStatus]);
 
   const RATE_LIMIT_DELAY = 0; // No delay
 

@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
-import { useStudy } from '@/contexts/StudyContext';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
 const FTUE_COMPLETED_KEY = 'ftue_completed_v1';
@@ -13,126 +12,78 @@ interface AuthGuardProps {
 
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading: authLoading, hasCompletedOnboarding } = useAuth();
-  const { user: studyUser, isLoading: studyLoading } = useStudy();
-  const [ftueCompleted, setFtueCompleted] = useState<boolean | null>(null);
-  const [isReady, setIsReady] = useState(false);
   
-  // Use refs to prevent multiple navigations and track state
   const hasNavigatedRef = useRef(false);
-  const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastNavigationTimeRef = useRef(0);
+  const navigationInProgressRef = useRef(false);
+  const initCompletedRef = useRef(false);
 
-  const isLoading = authLoading || studyLoading || ftueCompleted === null;
-
-  // Check FTUE completion status on mount - only once
-  useEffect(() => {
-    let mounted = true;
-    
-    const checkFTUEStatus = async () => {
-      try {
-        const completed = await AsyncStorage.getItem(FTUE_COMPLETED_KEY);
-        if (mounted) {
-          console.log('FTUE completion status:', completed);
-          setFtueCompleted(completed === 'true');
-        }
-      } catch (error) {
-        console.error('Error checking FTUE status:', error);
-        if (mounted) {
-          setFtueCompleted(false);
-        }
-      }
-    };
-    
-    checkFTUEStatus();
-    
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // Safe navigation function with rate limiting
-  const safeNavigate = useCallback((path: string) => {
-    const now = Date.now();
-    const timeSinceLastNav = now - lastNavigationTimeRef.current;
-    
-    // Prevent navigation if already navigated or if too soon (rate limit: 1 nav per 500ms)
-    if (hasNavigatedRef.current || timeSinceLastNav < 500) {
-      console.log('AuthGuard - Navigation blocked (already navigated or rate limited)');
+  const performNavigation = useCallback(async () => {
+    if (hasNavigatedRef.current || navigationInProgressRef.current) {
       return;
     }
     
-    hasNavigatedRef.current = true;
-    lastNavigationTimeRef.current = now;
-    console.log('AuthGuard - Navigating to:', path);
+    navigationInProgressRef.current = true;
     
-    router.replace(path as any);
-  }, []);
-
-  // Main navigation effect - runs when loading completes
-  useEffect(() => {
-    // Clear any existing timeout
-    if (navigationTimeoutRef.current) {
-      clearTimeout(navigationTimeoutRef.current);
-      navigationTimeoutRef.current = null;
-    }
-
-    // Don't navigate if still loading or already navigated
-    if (isLoading || hasNavigatedRef.current) {
-      return;
-    }
-
-    console.log('AuthGuard - Auth check complete:', { 
-      isAuthenticated, 
-      hasCompletedOnboarding, 
-      ftueCompleted,
-      studyUserOnboarded: studyUser?.onboardingCompleted 
-    });
-
-    // Small delay to ensure state is stable before navigation
-    navigationTimeoutRef.current = setTimeout(() => {
-      if (hasNavigatedRef.current) return;
+    try {
+      const ftueCompleted = await AsyncStorage.getItem(FTUE_COMPLETED_KEY);
+      const isFtueComplete = ftueCompleted === 'true';
       
-      setIsReady(true);
+      console.log('AuthGuard - Navigation check:', { 
+        isAuthenticated, 
+        hasCompletedOnboarding, 
+        isFtueComplete
+      });
+
+      hasNavigatedRef.current = true;
       
-      // Determine where to navigate
-      if (!ftueCompleted) {
-        safeNavigate('/ftue');
+      if (!isFtueComplete) {
+        console.log('AuthGuard - Navigating to FTUE');
+        router.replace('/ftue');
       } else if (!isAuthenticated) {
-        safeNavigate('/auth');
-      } else if (!hasCompletedOnboarding && (!studyUser || !studyUser.onboardingCompleted)) {
-        safeNavigate('/onboarding');
+        console.log('AuthGuard - Navigating to Auth');
+        router.replace('/auth');
+      } else if (!hasCompletedOnboarding) {
+        console.log('AuthGuard - Navigating to Onboarding');
+        router.replace('/onboarding');
       } else {
-        safeNavigate('/(tabs)/home');
+        console.log('AuthGuard - Navigating to Home');
+        router.replace('/(tabs)/home');
       }
-    }, 300);
+    } catch (error) {
+      console.error('AuthGuard - Navigation error:', error);
+      hasNavigatedRef.current = true;
+      router.replace('/auth');
+    }
+  }, [isAuthenticated, hasCompletedOnboarding]);
 
-    return () => {
-      if (navigationTimeoutRef.current) {
-        clearTimeout(navigationTimeoutRef.current);
-        navigationTimeoutRef.current = null;
-      }
-    };
-  }, [isLoading, isAuthenticated, hasCompletedOnboarding, ftueCompleted, studyUser, safeNavigate]);
-
-  // Fallback timeout to prevent infinite loading
   useEffect(() => {
-    const fallbackTimeout = setTimeout(() => {
-      if (!hasNavigatedRef.current && !isReady) {
-        console.log('AuthGuard - Fallback timeout reached');
-        if (ftueCompleted === false) {
-          safeNavigate('/ftue');
-        } else {
-          safeNavigate('/auth');
-        }
+    if (authLoading || initCompletedRef.current) {
+      return;
+    }
+    
+    initCompletedRef.current = true;
+    
+    const timer = setTimeout(() => {
+      performNavigation();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [authLoading, performNavigation]);
+
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      if (!hasNavigatedRef.current) {
+        console.log('AuthGuard - Fallback timeout triggered');
+        performNavigation();
       }
-    }, 8000);
+    }, 5000);
 
-    return () => clearTimeout(fallbackTimeout);
-  }, [ftueCompleted, safeNavigate, isReady]);
+    return () => clearTimeout(fallbackTimer);
+  }, [performNavigation]);
 
-  if (isLoading && !isReady) {
+  if (!hasNavigatedRef.current) {
     return <LoadingScreen message="Startar din studieplats..." />;
   }
 
-  return <>{children}</>
+  return <>{children}</>;
 }

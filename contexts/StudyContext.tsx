@@ -1,5 +1,5 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
-import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { performanceCache } from '@/lib/performance';
@@ -209,11 +209,14 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [pomodoroSessions, setPomodoroSessions] = useState<PomodoroSession[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const loadingRef = React.useRef(false);
 
   const loadUserData = useCallback(async (userId: string, userEmail: string) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    
     try {
-      setIsLoading(true);
       
       // Try cache first for instant UI
       const cached = await performanceCache.get<{ user: User; courses: Course[] }>(`${STUDY_CACHE_KEY}_${userId}`);
@@ -383,6 +386,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       setNotes([]);
       setPomodoroSessions([]);
     } finally {
+      loadingRef.current = false;
       setIsLoading(false);
     }
   }, []);

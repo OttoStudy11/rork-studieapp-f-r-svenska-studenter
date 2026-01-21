@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import * as Notifications from 'expo-notifications';
 import { NotificationManager } from '@/lib/notification-manager';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { StudyProvider } from "@/contexts/StudyContext";
 import { ToastProvider, useToast, ToastContainer } from "@/contexts/ToastContext";
 import { AchievementProvider } from "@/contexts/AchievementContext";
@@ -15,7 +15,7 @@ import { TimerSettingsProvider } from "@/contexts/TimerSettingsContext";
 import { CourseProgressProvider } from "@/contexts/CourseProgressContext";
 import { ExamProvider } from "@/contexts/ExamContext";
 import { CourseContentProvider } from "@/contexts/CourseContentContext";
-import { LoadingScreen } from "@/components/LoadingScreen";
+
 import { PointsProvider } from "@/contexts/PointsContext";
 import { ChallengesProvider } from "@/contexts/ChallengesContext";
 import { GamificationProvider } from "@/contexts/GamificationContext";
@@ -41,8 +41,6 @@ const queryClient = new QueryClient({
 
 function RootLayoutNav() {
   const { toasts, dismissToast } = useToast();
-  const { isLoading: authLoading } = useAuth();
-  const [splashHidden, setSplashHidden] = useState(false);
   const splashHideAttempted = useRef(false);
 
   useEffect(() => {
@@ -51,19 +49,13 @@ function RootLayoutNav() {
       const hideSplash = async () => {
         try {
           await SplashScreen.hideAsync();
-          setSplashHidden(true);
         } catch (e) {
           console.log('Error hiding splash:', e);
-          setSplashHidden(true);
         }
       };
       hideSplash();
     }
   }, []);
-
-  if (authLoading) {
-    return <LoadingScreen message="Laddar..." />;
-  }
   
   return (
     <>

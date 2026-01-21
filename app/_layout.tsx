@@ -15,6 +15,7 @@ import { TimerSettingsProvider } from "@/contexts/TimerSettingsContext";
 import { CourseProgressProvider } from "@/contexts/CourseProgressContext";
 import { ExamProvider } from "@/contexts/ExamContext";
 import { CourseContentProvider } from "@/contexts/CourseContentContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { PointsProvider } from "@/contexts/PointsContext";
 import { ChallengesProvider } from "@/contexts/ChallengesContext";
@@ -98,38 +99,40 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <ThemeProvider>
-          <AuthProvider>
-            <PremiumProvider>
-              <StudyProvider>
-                <TimerSettingsProvider>
-                  <CourseProgressProvider>
-                    <ExamProvider>
-                      <CourseContentProvider>
-                        <GestureHandlerRootView style={{ flex: 1 }}>
-                          <GamificationProvider>
-                            <AchievementProvider>
-                              <PointsProvider>
-                                <ChallengesProvider>
-                                  <HogskoleprovetProvider>
-                                    <RootLayoutNav />
-                                  </HogskoleprovetProvider>
-                                </ChallengesProvider>
-                              </PointsProvider>
-                            </AchievementProvider>
-                          </GamificationProvider>
-                        </GestureHandlerRootView>
-                      </CourseContentProvider>
-                    </ExamProvider>
-                  </CourseProgressProvider>
-                </TimerSettingsProvider>
-              </StudyProvider>
-            </PremiumProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </ToastProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <PremiumProvider>
+                <StudyProvider>
+                  <TimerSettingsProvider>
+                    <CourseProgressProvider>
+                      <ExamProvider>
+                        <CourseContentProvider>
+                          <GestureHandlerRootView style={{ flex: 1 }}>
+                            <GamificationProvider>
+                              <AchievementProvider>
+                                <PointsProvider>
+                                  <ChallengesProvider>
+                                    <HogskoleprovetProvider>
+                                      <RootLayoutNav />
+                                    </HogskoleprovetProvider>
+                                  </ChallengesProvider>
+                                </PointsProvider>
+                              </AchievementProvider>
+                            </GamificationProvider>
+                          </GestureHandlerRootView>
+                        </CourseContentProvider>
+                      </ExamProvider>
+                    </CourseProgressProvider>
+                  </TimerSettingsProvider>
+                </StudyProvider>
+              </PremiumProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </ToastProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

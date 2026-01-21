@@ -22,7 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_user_lesson_progress_user_lesson
 ON user_lesson_progress(user_id, lesson_id);
 
 CREATE INDEX IF NOT EXISTS idx_user_lesson_progress_lesson 
-ON user_lesson_progress(lesson_id, is_completed);
+ON user_lesson_progress(lesson_id, status);
 
 -- Flashcards - Filtered by course
 CREATE INDEX IF NOT EXISTS idx_flashcards_course_id 

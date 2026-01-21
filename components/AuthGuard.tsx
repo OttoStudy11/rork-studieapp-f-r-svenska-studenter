@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,105 +14,125 @@ interface AuthGuardProps {
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading: authLoading, hasCompletedOnboarding } = useAuth();
   const { user: studyUser, isLoading: studyLoading } = useStudy();
-  const [hasRedirected, setHasRedirected] = useState(false);
-  const [initialCheckDone, setInitialCheckDone] = useState(false);
-  const [timeoutReached, setTimeoutReached] = useState(false);
   const [ftueCompleted, setFtueCompleted] = useState<boolean | null>(null);
-  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  
+  // Use refs to prevent multiple navigations and track state
+  const hasNavigatedRef = useRef(false);
+  const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastNavigationTimeRef = useRef(0);
 
   const isLoading = authLoading || studyLoading || ftueCompleted === null;
 
-  // Check FTUE completion status on mount
+  // Check FTUE completion status on mount - only once
   useEffect(() => {
+    let mounted = true;
+    
     const checkFTUEStatus = async () => {
       try {
         const completed = await AsyncStorage.getItem(FTUE_COMPLETED_KEY);
-        console.log('FTUE completion status:', completed);
-        setFtueCompleted(completed === 'true');
+        if (mounted) {
+          console.log('FTUE completion status:', completed);
+          setFtueCompleted(completed === 'true');
+        }
       } catch (error) {
         console.error('Error checking FTUE status:', error);
-        setFtueCompleted(false);
+        if (mounted) {
+          setFtueCompleted(false);
+        }
       }
     };
+    
     checkFTUEStatus();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // Add timeout to prevent infinite loading
+  // Safe navigation function with rate limiting
+  const safeNavigate = useCallback((path: string) => {
+    const now = Date.now();
+    const timeSinceLastNav = now - lastNavigationTimeRef.current;
+    
+    // Prevent navigation if already navigated or if too soon (rate limit: 1 nav per 500ms)
+    if (hasNavigatedRef.current || timeSinceLastNav < 500) {
+      console.log('AuthGuard - Navigation blocked (already navigated or rate limited)');
+      return;
+    }
+    
+    hasNavigatedRef.current = true;
+    lastNavigationTimeRef.current = now;
+    console.log('AuthGuard - Navigating to:', path);
+    
+    router.replace(path as any);
+  }, []);
+
+  // Main navigation effect - runs when loading completes
   useEffect(() => {
-    timeoutRef.current = setTimeout(() => {
-      console.log('AuthGuard timeout reached - forcing navigation');
-      setTimeoutReached(true);
-      if (ftueCompleted === false) {
-        router.replace('/ftue' as any);
+    // Clear any existing timeout
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+      navigationTimeoutRef.current = null;
+    }
+
+    // Don't navigate if still loading or already navigated
+    if (isLoading || hasNavigatedRef.current) {
+      return;
+    }
+
+    console.log('AuthGuard - Auth check complete:', { 
+      isAuthenticated, 
+      hasCompletedOnboarding, 
+      ftueCompleted,
+      studyUserOnboarded: studyUser?.onboardingCompleted 
+    });
+
+    // Small delay to ensure state is stable before navigation
+    navigationTimeoutRef.current = setTimeout(() => {
+      if (hasNavigatedRef.current) return;
+      
+      setIsReady(true);
+      
+      // Determine where to navigate
+      if (!ftueCompleted) {
+        safeNavigate('/ftue');
+      } else if (!isAuthenticated) {
+        safeNavigate('/auth');
+      } else if (!hasCompletedOnboarding && (!studyUser || !studyUser.onboardingCompleted)) {
+        safeNavigate('/onboarding');
       } else {
-        router.replace('/auth' as any);
+        safeNavigate('/(tabs)/home');
       }
-    }, 10000); // 10 second timeout
-    
+    }, 300);
+
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+        navigationTimeoutRef.current = null;
       }
     };
-  }, [ftueCompleted]);
+  }, [isLoading, isAuthenticated, hasCompletedOnboarding, ftueCompleted, studyUser, safeNavigate]);
 
+  // Fallback timeout to prevent infinite loading
   useEffect(() => {
-    // Clear any existing timer
-    if (redirectTimerRef.current) {
-      clearTimeout(redirectTimerRef.current);
-      redirectTimerRef.current = null;
-    }
-
-    // Only redirect once the initial auth check is complete and we haven't redirected yet
-    if (!isLoading && !hasRedirected && !initialCheckDone && !timeoutReached && ftueCompleted !== null) {
-      console.log('AuthGuard - Initial auth check:', { isAuthenticated, hasCompletedOnboarding, authLoading, studyLoading, ftueCompleted });
-      
-      // Mark initial check as done
-      setInitialCheckDone(true);
-      
-      // Add a small delay to ensure auth state is stable
-      redirectTimerRef.current = setTimeout(() => {
-        if (!timeoutReached) {
-          setHasRedirected(true);
-          
-          // Check FTUE first - this takes priority for first-time users
-          if (!ftueCompleted) {
-            console.log('AuthGuard - Redirecting to FTUE (first time user)');
-            router.replace('/ftue' as any);
-          } else if (!isAuthenticated) {
-            console.log('AuthGuard - Redirecting to auth (not authenticated)');
-            router.replace('/auth' as any);
-          } else if (!hasCompletedOnboarding && (!studyUser || !studyUser.onboardingCompleted)) {
-            console.log('AuthGuard - Redirecting to onboarding (onboarding not completed)');
-            router.replace('/onboarding' as any);
-          } else {
-            console.log('AuthGuard - Redirecting to home (authenticated and onboarded)');
-            router.replace('/(tabs)/home' as any);
-          }
+    const fallbackTimeout = setTimeout(() => {
+      if (!hasNavigatedRef.current && !isReady) {
+        console.log('AuthGuard - Fallback timeout reached');
+        if (ftueCompleted === false) {
+          safeNavigate('/ftue');
+        } else {
+          safeNavigate('/auth');
         }
-      }, 500); // Slightly longer delay to ensure data is loaded
-    }
-    
-    // Reset flags when auth state changes significantly
-    if (isLoading && initialCheckDone && !timeoutReached) {
-      console.log('AuthGuard - Auth state changed, resetting flags');
-      setHasRedirected(false);
-      setInitialCheckDone(false);
-    }
-    
-    // Cleanup function
-    return () => {
-      if (redirectTimerRef.current) {
-        clearTimeout(redirectTimerRef.current);
-        redirectTimerRef.current = null;
       }
-    };
-  }, [isAuthenticated, isLoading, hasCompletedOnboarding, hasRedirected, initialCheckDone, timeoutReached, authLoading, studyLoading, studyUser, ftueCompleted]);
+    }, 8000);
 
-  if ((isLoading || !initialCheckDone) && !timeoutReached) {
+    return () => clearTimeout(fallbackTimeout);
+  }, [ftueCompleted, safeNavigate, isReady]);
+
+  if (isLoading && !isReady) {
     return <LoadingScreen message="Startar din studieplats..." />;
   }
 
-  return <>{children}</>;
+  return <>{children}</>
 }

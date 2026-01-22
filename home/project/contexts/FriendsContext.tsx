@@ -343,16 +343,18 @@ export const [FriendsProvider, useFriends] = createContextHook(() => {
         .eq('user2_id', user.id); // Only the recipient can accept
 
       if (error) {
-        console.error('Error accepting friend request:', error);
-        return { error: { message: 'Kunde inte acceptera vänförfrågan' } };
+        const errorMsg = error.message || error.details || JSON.stringify(error);
+        console.error('Supabase error accepting friend request:', errorMsg, 'Code:', error.code);
+        return { error: { message: `Kunde inte acceptera vänförfrågan: ${errorMsg}` } };
       }
 
       console.log('Friend request accepted successfully');
       await Promise.all([loadFriends(), loadFriendRequests()]);
       return { error: null };
-    } catch (error) {
-      console.error('Error in acceptFriendRequest:', error);
-      return { error: { message: 'Ett oväntat fel inträffade' } };
+    } catch (error: any) {
+      const errorMsg = error?.message || error?.details || JSON.stringify(error);
+      console.error('Error in acceptFriendRequest:', errorMsg);
+      return { error: { message: `Ett oväntat fel inträffade: ${errorMsg}` } };
     }
   }, [user, loadFriends, loadFriendRequests]);
 

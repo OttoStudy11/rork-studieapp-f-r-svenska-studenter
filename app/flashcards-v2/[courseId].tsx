@@ -26,7 +26,7 @@ import {
 } from '@/services/flashcards';
 import { calculateSM2, getQualityFromSwipe } from '@/lib/sm2-algorithm';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Sparkles, BarChart3, BookOpen, RefreshCw, AlertCircle } from 'lucide-react-native';
+import { ArrowLeft, Sparkles, BarChart3, BookOpen, RefreshCw, AlertCircle, Plus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PremiumGate } from '@/components/PremiumGate';
@@ -42,6 +42,7 @@ export default function FlashcardsScreenV2() {
   const [customText, setCustomText] = useState('');
   const [motivationalIndex, setMotivationalIndex] = useState(0);
   const { theme } = useTheme();
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
 
   const motivationalMessages = [
     '🧠 AI:n analyserar kursmaterialet...',
@@ -278,12 +279,19 @@ export default function FlashcardsScreenV2() {
   if (isLoadingFlashcards) {
     return (
       <PremiumGate feature="flashcards" fullScreen>
-        <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366F1" />
-          <Text style={styles.loadingText}>Laddar flashcards...</Text>
+        <View style={styles.container}>
+          <LinearGradient
+            colors={['#1E1B4B', '#0F172A', '#0F172A']}
+            locations={[0, 0.3, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#6366F1" />
+              <Text style={styles.loadingText}>Laddar flashcards...</Text>
+            </View>
+          </SafeAreaView>
         </View>
-        </SafeAreaView>
       </PremiumGate>
     );
   }
@@ -291,7 +299,13 @@ export default function FlashcardsScreenV2() {
   if (flashcards.length === 0) {
     return (
       <PremiumGate feature="flashcards" fullScreen>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#1E1B4B', '#0F172A', '#0F172A']}
+          locations={[0, 0.3, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -461,7 +475,8 @@ export default function FlashcardsScreenV2() {
             </ScrollView>
           </SafeAreaView>
         </Modal>
-      </SafeAreaView>
+        </SafeAreaView>
+      </View>
       </PremiumGate>
     );
   }
@@ -469,7 +484,13 @@ export default function FlashcardsScreenV2() {
   if (currentIndex >= dueCards.length) {
     return (
       <PremiumGate feature="flashcards" fullScreen>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#1E1B4B', '#0F172A', '#0F172A']}
+          locations={[0, 0.3, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -524,14 +545,21 @@ export default function FlashcardsScreenV2() {
             </TouchableOpacity>
           </LinearGradient>
         </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </View>
       </PremiumGate>
     );
   }
 
   return (
     <PremiumGate feature="flashcards" fullScreen>
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#1E1B4B', '#0F172A', '#0F172A']}
+        locations={[0, 0.3, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -543,8 +571,11 @@ export default function FlashcardsScreenV2() {
             {currentIndex + 1} / {dueCards.length}
           </Text>
         </View>
-        <TouchableOpacity style={styles.statsButton}>
-          <BarChart3 size={24} color="#F1F5F9" />
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => setShowGenerateModal(true)}
+        >
+          <Plus size={24} color="#F1F5F9" />
         </TouchableOpacity>
       </View>
 
@@ -578,7 +609,102 @@ export default function FlashcardsScreenV2() {
           <Text style={styles.instructionText}>Swipe höger = Jag kunde det</Text>
         </View>
       </View>
-    </SafeAreaView>
+
+      <Modal
+        visible={showGenerateModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowGenerateModal(false)}
+      >
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+            <TouchableOpacity onPress={() => setShowGenerateModal(false)}>
+              <Text style={[styles.modalCancel, { color: theme.colors.textSecondary }]}>Avbryt</Text>
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Generera Flashcards</Text>
+            <View style={{ width: 60 }} />
+          </View>
+          
+          <ScrollView contentContainerStyle={styles.modalScrollContent}>
+            <View style={styles.countSelector}>
+              <Text style={[styles.countLabel, { color: theme.colors.text }]}>Hur många flashcards vill du ha?</Text>
+              <Text style={[styles.countHint, { color: theme.colors.textSecondary }]}>Fler flashcards = djupare förståelse</Text>
+              <View style={styles.countButtons}>
+                {[10, 15, 20, 25, 30].map((count) => (
+                  <TouchableOpacity
+                    key={count}
+                    style={[
+                      styles.countButton,
+                      { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                      generationCount === count && styles.countButtonActive,
+                    ]}
+                    onPress={() => setGenerationCount(count)}
+                    disabled={generateMutation.isPending}
+                  >
+                    <Text
+                      style={[
+                        styles.countButtonText,
+                        { color: theme.colors.textSecondary },
+                        generationCount === count && styles.countButtonTextActive,
+                      ]}
+                    >
+                      {count}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {generationError && (
+              <View style={styles.errorBanner}>
+                <AlertCircle size={18} color="#F87171" />
+                <Text style={styles.errorBannerText}>{generationError}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.generateButton}
+              onPress={() => {
+                generateMutation.mutate({ count: generationCount });
+                setShowGenerateModal(false);
+              }}
+              disabled={generateMutation.isPending}
+            >
+              <LinearGradient
+                colors={['#6366F1', '#8B5CF6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.generateGradient}
+              >
+                {generateMutation.isPending ? (
+                  <>
+                    <ActivityIndicator size="small" color="#fff" />
+                    <Text style={styles.generateButtonText}>Genererar...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={20} color="#fff" />
+                    <Text style={styles.generateButtonText}>Generera {generationCount} Flashcards</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.customTextButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+              onPress={() => {
+                setShowGenerateModal(false);
+                setShowCustomInput(true);
+              }}
+              disabled={generateMutation.isPending}
+            >
+              <Text style={[styles.customTextButtonText, { color: theme.colors.primary }]}>📝 Generera från egen text</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+      </SafeAreaView>
+    </View>
     </PremiumGate>
   );
 }
@@ -586,13 +712,14 @@ export default function FlashcardsScreenV2() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+  },
+  safeArea: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
     gap: 16,
   },
   loadingText: {
@@ -628,13 +755,18 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 2,
   },
-  statsButton: {
+  addButton: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#6366F1',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   progressBar: {
     height: 4,
@@ -983,5 +1115,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontStyle: 'italic' as const,
   },
-
+  modalScrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
 });

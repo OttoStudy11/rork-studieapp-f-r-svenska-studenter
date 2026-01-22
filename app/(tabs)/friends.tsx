@@ -422,7 +422,7 @@ export default function FriendsScreen() {
       
       const { data, error } = await supabase
         .from('friends')
-        .update({ status: 'accepted', updated_at: new Date().toISOString() })
+        .update({ status: 'accepted' })
         .eq('id', requestId)
         .eq('friend_id', user.id)
         .select();

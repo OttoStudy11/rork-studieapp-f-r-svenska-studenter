@@ -994,7 +994,7 @@ export default function FriendsScreen() {
                           {formatLeaderboardTime(entry.studyTime)}
                         </Text>
                         <Text style={[styles.sessionCount, { color: theme.colors.textSecondary }]}>
-                          {entry.sessionCount} sessioner
+                          {entry.sessionCount}{' '}sessioner
                         </Text>
                       </View>
                     </View>
@@ -1056,7 +1056,7 @@ export default function FriendsScreen() {
                           {formatLeaderboardTime(entry.studyTime)}
                         </Text>
                         <Text style={[styles.sessionCount, { color: theme.colors.textSecondary }]}>
-                          {entry.sessionCount} sessioner
+                          {entry.sessionCount}{' '}sessioner
                         </Text>
                       </View>
                     </View>

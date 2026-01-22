@@ -684,7 +684,7 @@ export default function FriendsScreen() {
                                   {formatStudyTime(friend.studyTime || 0)}
                                 </Text>
                               </View>
-                              {friend.streak && friend.streak > 0 && (
+                              {(friend.streak ?? 0) > 0 && (
                                 <View style={styles.streakBadge}>
                                   <Flame size={12} color="#FF6B6B" />
                                   <Text style={[styles.streakText, { color: '#FF6B6B' }]}>{friend.streak}</Text>

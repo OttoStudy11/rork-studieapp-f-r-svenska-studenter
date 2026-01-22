@@ -828,7 +828,9 @@ export const checkAndUpdateAchievements = async (userId: string) => {
       });
     
     if (error) {
-      console.error('Error checking achievements:', error);
+      console.error('Error checking achievements:', JSON.stringify(error, null, 2));
+      console.log('Error code:', error?.code);
+      console.log('Error message:', error?.message);
       // Don't throw, just log - achievements are not critical
       return [];
     }

@@ -874,9 +874,11 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
       });
 
       if (rpcError) {
-        console.error('❌ Error from check_user_achievements RPC:', rpcError);
-        console.log('RPC error code:', rpcError.code);
-        console.log('RPC error message:', rpcError.message);
+        console.error('❌ Error from check_user_achievements RPC:', JSON.stringify(rpcError, null, 2));
+        console.log('RPC error code:', rpcError?.code);
+        console.log('RPC error message:', rpcError?.message);
+        console.log('RPC error details:', rpcError?.details);
+        console.log('RPC error hint:', rpcError?.hint);
         
         // Fallback: manually check achievements
         console.log('🔄 Attempting fallback achievement check...');

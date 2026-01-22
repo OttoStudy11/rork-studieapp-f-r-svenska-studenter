@@ -1,7 +1,7 @@
 import { generateObject } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
 
-const MAX_FLASHCARDS = 20 as const;
+const MAX_FLASHCARDS = 30 as const;
 
 export interface FlashcardGenerationRequest {
   courseName: string;
@@ -63,71 +63,48 @@ export async function generateFlashcardsWithAI(
 
     const language = request.language || 'sv';
     
-    const BATCH_SIZE = 5;
-    const numBatches = Math.ceil(targetCount / BATCH_SIZE);
+    console.log(`🚀 [AI Flashcards] Generating ${targetCount} cards in a single optimized request`);
+    onProgress?.(10);
     
-    console.log(`🚀 [AI Flashcards] Generating ${targetCount} cards in ${numBatches} parallel batches`);
-    onProgress?.(0);
-    
-    const batchPromises = Array.from({ length: numBatches }, async (_, i) => {
-      const cardsInBatch = Math.min(
-        BATCH_SIZE,
-        targetCount - (i * BATCH_SIZE)
-      );
-      
-      const difficultyDistribution = getDifficultyDistribution(
-        cardsInBatch,
-        request.difficulty
-      );
+    const difficultyDistribution = getDifficultyDistribution(
+      targetCount,
+      request.difficulty
+    );
 
-      const systemPrompt = buildSystemPrompt(language);
-      const userPrompt = buildUserPrompt(
-        { ...request, targetCount: cardsInBatch },
-        difficultyDistribution,
-        language
-      );
-      
-      try {
-        console.log(`📡 [AI Flashcards] Batch ${i + 1}/${numBatches} - requesting ${cardsInBatch} cards...`);
-        
-        const response = await generateObject({
-          schema: flashcardsResponseSchema,
-          messages: [
-            {
-              role: 'user',
-              content: `${systemPrompt}\n\n${userPrompt}`,
-            },
-          ],
-        });
-        
-        const result = response as { flashcards: any[] };
-        
-        console.log(`✅ [AI Flashcards] Batch ${i + 1}/${numBatches} complete:`, {
-          received: result?.flashcards?.length || 0,
-        });
-        
-        onProgress?.(Math.round(((i + 1) / numBatches) * 90));
-        
-        return result?.flashcards || [];
-      } catch (batchError: any) {
-        console.error(`❌ [AI Flashcards] Batch ${i + 1} failed:`, batchError?.message);
-        return [];
-      }
+    const systemPrompt = buildSystemPrompt(language);
+    const userPrompt = buildUserPrompt(
+      request,
+      difficultyDistribution,
+      language
+    );
+    
+    console.log(`📡 [AI Flashcards] Requesting ${targetCount} cards from AI...`);
+    onProgress?.(20);
+    
+    const response = await generateObject({
+      schema: flashcardsResponseSchema,
+      messages: [
+        {
+          role: 'user',
+          content: `${systemPrompt}\n\n${userPrompt}`,
+        },
+      ],
     });
     
-    const batchResults = await Promise.all(batchPromises);
-    const allFlashcards = batchResults.flat();
+    const result = response as { flashcards: any[] };
     
-    console.log('📥 [AI Flashcards] All batches complete:', {
-      totalReceived: allFlashcards.length,
+    console.log(`✅ [AI Flashcards] Generation complete:`, {
+      received: result?.flashcards?.length || 0,
       target: targetCount,
     });
+    
+    onProgress?.(80);
 
-    if (allFlashcards.length === 0) {
+    if (!result?.flashcards || result.flashcards.length === 0) {
       throw new Error('AI generated 0 flashcards');
     }
 
-    const validatedFlashcards = validateAndNormalizeFlashcards(allFlashcards);
+    const validatedFlashcards = validateAndNormalizeFlashcards(result.flashcards);
     
     onProgress?.(100);
     

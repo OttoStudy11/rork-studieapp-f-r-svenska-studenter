@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -66,6 +65,14 @@ export default function HogskoleprovetScreen() {
     }).start();
   }, [fadeAnim]);
 
+  useEffect(() => {
+    console.log('[HP Screen] Render state:', { 
+      isLoading, 
+      sectionsCount: HP_SECTIONS.length,
+      fullTestVersionsCount: HP_FULL_TEST_VERSIONS.length,
+    });
+  }, [isLoading]);
+
   const handleStartFullTest = () => {
     if (!isPremium) {
       router.push('/premium' as any);
@@ -87,8 +94,13 @@ export default function HogskoleprovetScreen() {
       router.push('/premium' as any);
       return;
     }
+    console.log('[HP Screen] Opening section selector for:', sectionCode);
+    // Set section first, then show modal after a tick to ensure state propagates
     setSelectedSection(sectionCode);
-    setVersionSelectorVisible(true);
+    // Use requestAnimationFrame to ensure the state update is committed before showing modal
+    requestAnimationFrame(() => {
+      setVersionSelectorVisible(true);
+    });
   };
 
   const handleSelectTestVersion = (testVersionId: string) => {
@@ -103,17 +115,6 @@ export default function HogskoleprovetScreen() {
   const handleViewStats = () => {
     router.push('/hp-stats' as any);
   };
-
-  if (isLoading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
-          Laddar...
-        </Text>
-      </View>
-    );
-  }
 
   const scoreInfo = getScoreLabel(estimatedScore);
 
@@ -497,12 +498,13 @@ export default function HogskoleprovetScreen() {
         <View style={styles.bottomPadding} />
       </ScrollView>
 
-      {selectedSection && (
+      {selectedSection && versionSelectorVisible && (
         <TestVersionSelector
+          key={`section-${selectedSection}`}
           visible={versionSelectorVisible}
           onClose={() => {
             setVersionSelectorVisible(false);
-            setSelectedSection(null);
+            setTimeout(() => setSelectedSection(null), 100);
           }}
           testVersions={getTestVersionsBySection(selectedSection)}
           selectedVersionId=''
@@ -512,17 +514,20 @@ export default function HogskoleprovetScreen() {
         />
       )}
 
-      <TestVersionSelector
-        visible={fullTestModalVisible}
-        onClose={() => setFullTestModalVisible(false)}
-        testVersions={[]}
-        fullTestVersions={HP_FULL_TEST_VERSIONS}
-        selectedVersionId=''
-        onSelectVersion={handleStartFullTestWithVersion}
-        sectionName="Komplett Högskoleprov"
-        sectionColor={COLORS.primary}
-        isFullTest
-      />
+      {fullTestModalVisible && (
+        <TestVersionSelector
+          key="full-test-selector"
+          visible={fullTestModalVisible}
+          onClose={() => setFullTestModalVisible(false)}
+          testVersions={[]}
+          fullTestVersions={HP_FULL_TEST_VERSIONS}
+          selectedVersionId=''
+          onSelectVersion={handleStartFullTestWithVersion}
+          sectionName="Komplett Högskoleprov"
+          sectionColor={COLORS.primary}
+          isFullTest
+        />
+      )}
     </View>
   );
 }

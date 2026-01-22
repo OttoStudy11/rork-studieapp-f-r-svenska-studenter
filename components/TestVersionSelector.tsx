@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, Check, Calendar, FileText, Clock, Target, Shuffle } from 'lucide-react-native';
@@ -37,6 +38,32 @@ export default function TestVersionSelector({
   isFullTest = false,
 }: TestVersionSelectorProps) {
   const { theme, isDark } = useTheme();
+  const [isReady, setIsReady] = useState(false);
+
+  // Ensure data is available before rendering content
+  const safeTestVersions = testVersions ?? [];
+  const safeFullTestVersions = fullTestVersions ?? [];
+
+  useEffect(() => {
+    if (visible) {
+      console.log('[TestVersionSelector] Modal visible, checking data:', {
+        isFullTest,
+        sectionName,
+        testVersionsCount: safeTestVersions.length,
+        fullTestVersionsCount: safeFullTestVersions.length,
+      });
+      
+      // Small delay to ensure props are fully propagated in native environment
+      const timer = setTimeout(() => {
+        setIsReady(true);
+        console.log('[TestVersionSelector] Ready to render content');
+      }, 50);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setIsReady(false);
+    }
+  }, [visible, isFullTest, sectionName, safeTestVersions.length, safeFullTestVersions.length]);
 
   const handleSelectVersion = (versionId: string) => {
     onSelectVersion(versionId);
@@ -86,8 +113,16 @@ export default function TestVersionSelector({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {isFullTest ? (
+            {!isReady ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+                  Laddar testversioner...
+                </Text>
+              </View>
+            ) : isFullTest ? (
               <>
+                {/* Always show mixed option first */}
                 <TouchableOpacity
                   style={[
                     styles.mixedCard,
@@ -122,7 +157,7 @@ export default function TestVersionSelector({
                   </View>
                 </TouchableOpacity>
 
-                {fullTestVersions.length > 0 && (
+                {safeFullTestVersions.length > 0 && (
                   <View style={styles.divider}>
                     <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
                     <Text style={[styles.dividerText, { color: theme.colors.textSecondary }]}>
@@ -132,7 +167,7 @@ export default function TestVersionSelector({
                   </View>
                 )}
 
-                {fullTestVersions.map((version) => {
+                {safeFullTestVersions.map((version) => {
                   const isSelected = selectedVersionId === version.id;
 
                   return (
@@ -208,7 +243,7 @@ export default function TestVersionSelector({
                   </View>
                 </TouchableOpacity>
 
-                {testVersions.length > 0 && (
+                {safeTestVersions.length > 0 && (
                   <View style={styles.divider}>
                     <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
                     <Text style={[styles.dividerText, { color: theme.colors.textSecondary }]}>
@@ -218,7 +253,7 @@ export default function TestVersionSelector({
                   </View>
                 )}
 
-                {testVersions.map((version) => {
+                {safeTestVersions.map((version) => {
                   const isSelected = selectedVersionId === version.id;
 
                   return (
@@ -457,5 +492,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
 });

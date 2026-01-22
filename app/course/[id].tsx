@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -133,21 +133,31 @@ export default function CourseDetailScreen() {
   const [userCourseData, setUserCourseData] = useState<any>(null);
   const [showContent, setShowContent] = useState(false);
 
+  const isFirstMount = useRef(true);
+  const previousId = useRef<string | undefined>(undefined);
+
   useEffect(() => {
     if (id && user?.id) {
+      console.log('🔄 Course ID changed or initial mount:', id);
       loadCourseData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
   
-  // Reload data when screen becomes focused (e.g., returning from a lesson)
   useFocusEffect(
     useCallback(() => {
-      if (id && user?.id) {
-        console.log('Screen focused, reloading course data');
+      const shouldReload = !isFirstMount.current || previousId.current !== id;
+      
+      if (id && user?.id && shouldReload) {
+        console.log('📍 Course screen focused, reloading data for:', id);
         loadCourseData();
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      
+      isFirstMount.current = false;
+      previousId.current = id;
+      
+      return () => {
+        console.log('📍 Course screen unfocused');
+      };
     }, [id, user?.id])
   );
 

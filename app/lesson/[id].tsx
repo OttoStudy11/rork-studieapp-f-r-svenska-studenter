@@ -214,18 +214,31 @@ export default function LessonDetailScreen() {
     }
   }, [id, user?.id, markLessonStarted]);
 
+  const previousId = useRef<string | undefined>(undefined);
+  const isFirstMount = useRef(true);
+
   useEffect(() => {
     if (id && user?.id) {
+      console.log('📚 Lesson ID changed or initial mount:', id);
       loadLessonData();
     }
   }, [id, user?.id, loadLessonData]);
 
   useFocusEffect(
     useCallback(() => {
-      if (id && user?.id) {
-        console.log('Lesson screen focused, reloading data');
+      const shouldReload = !isFirstMount.current || previousId.current !== id;
+      
+      if (id && user?.id && shouldReload) {
+        console.log('📍 Lesson screen focused, reloading data for:', id);
         loadLessonData();
       }
+      
+      isFirstMount.current = false;
+      previousId.current = id;
+      
+      return () => {
+        console.log('📍 Lesson screen unfocused');
+      };
     }, [id, user?.id, loadLessonData])
   );
 

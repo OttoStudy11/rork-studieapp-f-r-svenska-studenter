@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { Stack, useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { FlashcardSwipe } from '@/components/FlashcardSwipe';
@@ -26,7 +26,7 @@ import {
 } from '@/services/flashcards';
 import { calculateSM2, getQualityFromSwipe } from '@/lib/sm2-algorithm';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Sparkles, BarChart3, BookOpen, RefreshCw, AlertCircle, Plus } from 'lucide-react-native';
+import { ArrowLeft, Sparkles, BookOpen, RefreshCw, AlertCircle, Plus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PremiumGate } from '@/components/PremiumGate';
@@ -43,6 +43,29 @@ export default function FlashcardsScreenV2() {
   const [motivationalIndex, setMotivationalIndex] = useState(0);
   const { theme } = useTheme();
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const previousCourseId = useRef<string | undefined>(undefined);
+
+  // Reset state when courseId changes
+  useEffect(() => {
+    if (courseId && courseId !== previousCourseId.current) {
+      console.log('🎴 Flashcard courseId changed:', courseId);
+      setCurrentIndex(0);
+      setAiExplanation(undefined);
+      previousCourseId.current = courseId;
+    }
+  }, [courseId]);
+
+  // Invalidate queries on focus for fresh data
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🎴 Flashcards screen focused for course:', courseId);
+      if (courseId) {
+        queryClient.invalidateQueries({ queryKey: ['flashcards-v2', courseId] });
+        queryClient.invalidateQueries({ queryKey: ['flashcard-progress-v2', user?.id, courseId] });
+        queryClient.invalidateQueries({ queryKey: ['flashcard-stats', user?.id, courseId] });
+      }
+    }, [courseId, user?.id, queryClient])
+  );
 
   const motivationalMessages = [
     '🧠 AI:n analyserar kursmaterialet...',

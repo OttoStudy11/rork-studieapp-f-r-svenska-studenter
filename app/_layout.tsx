@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef } from "react";
+import { AppState, AppStateStatus } from "react-native";
 import * as Notifications from 'expo-notifications';
 import { NotificationManager } from '@/lib/notification-manager';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -27,12 +28,13 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 30, // 30 seconds - data becomes stale faster
-      gcTime: 1000 * 60 * 5, // 5 minutes - shorter cache time
-      retry: 1,
+      staleTime: 0, // Data is always considered stale - ensures fresh data on navigation
+      gcTime: 1000 * 60 * 5, // 5 minutes cache time
+      retry: 2,
       retryDelay: 1000,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       refetchOnMount: 'always', // Always refetch on mount for fresh data
+      refetchOnReconnect: true,
     },
     mutations: {
       retry: 1,
@@ -43,6 +45,7 @@ const queryClient = new QueryClient({
 function RootLayoutNav() {
   const { toasts, dismissToast } = useToast();
   const splashHideAttempted = useRef(false);
+  const appState = useRef<AppStateStatus>(AppState.currentState);
 
   useEffect(() => {
     if (!splashHideAttempted.current) {
@@ -56,6 +59,27 @@ function RootLayoutNav() {
       };
       hideSplash();
     }
+  }, []);
+
+  // Refetch all queries when app comes to foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      'change',
+      (nextAppState: AppStateStatus) => {
+        if (
+          appState.current.match(/inactive|background/) &&
+          nextAppState === 'active'
+        ) {
+          console.log('📱 App became active, invalidating queries for fresh data');
+          queryClient.invalidateQueries();
+        }
+        appState.current = nextAppState;
+      }
+    );
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
   
   return (

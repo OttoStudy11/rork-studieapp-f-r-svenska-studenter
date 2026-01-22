@@ -30,8 +30,8 @@ const FEATURE_CONFIGS = {
     gradient: ['#F59E0B', '#D97706'] as const,
   },
   'battle': {
-    title: 'Tävlingsfunktionen är Premium',
-    description: 'Tävla mot dina vänner och se vem som pluggar mest. Håll dig motiverad!',
+    title: 'Battle Mode är Premium',
+    description: 'Tävla mot dina vänner, jämför statistik och se vem som pluggar mest. Få tillgång till avancerade jämförelser och motiverande insikter.',
     icon: Users,
     gradient: ['#EF4444', '#DC2626'] as const,
   },
@@ -163,19 +163,19 @@ export function PremiumGate({
                   <View style={[styles.checkmark, { backgroundColor: '#FFD700' + '20' }]}>
                     <Text style={styles.checkmarkText}>✓</Text>
                   </View>
-                  <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Obegränsad tillgång</Text>
+                  <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Jämför alla statistik med vänner</Text>
                 </View>
                 <View style={styles.featureRow}>
                   <View style={[styles.checkmark, { backgroundColor: '#FFD700' + '20' }]}>
                     <Text style={styles.checkmarkText}>✓</Text>
                   </View>
-                  <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Premium funktioner</Text>
+                  <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Se detaljerade leaderboards</Text>
                 </View>
                 <View style={styles.featureRow}>
                   <View style={[styles.checkmark, { backgroundColor: '#FFD700' + '20' }]}>
                     <Text style={styles.checkmarkText}>✓</Text>
                   </View>
-                  <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Avancerad analys</Text>
+                  <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Avancerad tävlingsanalys</Text>
                 </View>
               </View>
 
@@ -279,17 +279,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     left: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
   },
   fullScreenContainer: {
     flex: 1,
@@ -337,34 +337,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   contentContainer: {
-    width: '88%',
-    maxWidth: 420,
-    borderRadius: 28,
-    padding: 32,
+    width: '90%',
+    maxWidth: 450,
+    borderRadius: 32,
+    padding: 36,
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.02)',
     borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.2)',
+    borderColor: 'rgba(255,215,0,0.25)',
     shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 12,
   },
   crownContainer: {
-    marginBottom: 20,
-    borderRadius: 50,
+    marginBottom: 24,
+    borderRadius: 60,
     overflow: 'hidden',
     shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 12,
   },
   crownGradient: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -389,18 +389,18 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800' as const,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
     letterSpacing: -0.5,
   },
   description: {
     fontSize: 15,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
-    paddingHorizontal: 4,
+    lineHeight: 23,
+    marginBottom: 28,
+    paddingHorizontal: 8,
     fontWeight: '500' as const,
   },
   featuresContainer: {

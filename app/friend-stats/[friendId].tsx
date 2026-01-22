@@ -432,7 +432,7 @@ export default function FriendStatsScreen() {
   }
 
   return (
-    <PremiumGate feature="battle">
+    <PremiumGate feature="battle" fullScreen={true}>
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Stack.Screen
         options={{

@@ -71,7 +71,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
       
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Course data loading timeout')), 5000);
+        setTimeout(() => reject(new Error('Course data loading timeout')), 3000);
       });
       
       const loadPromise = (async () => {
@@ -98,14 +98,21 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
               updatedAt: new Date(c.updatedAt),
             })));
             console.log('Loaded', savedCourses.length, 'courses for user:', user.id);
+          } else {
+            console.log('No courses data found for user:', user.id);
+            setCourses([]);
           }
+        } else {
+          console.log('No profile data found for user:', user.id, '- this is normal for new accounts');
+          setUserProfile(null);
+          setCourses([]);
         }
       })();
       
       await Promise.race([loadPromise, timeoutPromise]);
     } catch (error) {
       console.error('Error loading data:', error);
-      // Set default values on error
+      // Set default values on error - this is normal for new accounts
       setOnboardingCompleted(false);
       setUserProfile(null);
       setCourses([]);
@@ -130,7 +137,7 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     const fallbackTimeout = setTimeout(() => {
       console.log('Course context loading timeout - forcing loading to false');
       setIsLoading(false);
-    }, 6000); // 6 second timeout
+    }, 4000); // 4 second timeout
     
     return () => clearTimeout(fallbackTimeout);
   }, [user?.id, loadData]);

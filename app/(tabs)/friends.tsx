@@ -413,21 +413,36 @@ export default function FriendsScreen() {
 
   const handleAcceptRequest = async (requestId: string) => {
     try {
-      console.log('Accepting friend request:', requestId);
-      const { error } = await supabase
+      console.log('Accepting friend request:', requestId, 'for user:', user?.id);
+      
+      if (!user?.id) {
+        showError('Du måste vara inloggad för att acceptera vänförfrågningar');
+        return;
+      }
+      
+      const { data, error } = await supabase
         .from('friends')
-        .update({ status: 'accepted' })
-        .eq('id', requestId);
+        .update({ status: 'accepted', updated_at: new Date().toISOString() })
+        .eq('id', requestId)
+        .eq('friend_id', user.id)
+        .select();
       
       if (error) {
-        console.error('Supabase error accepting friend request:', {
+        console.error('Supabase error accepting friend request:', JSON.stringify({
           message: error.message,
           details: error.details,
           hint: error.hint,
           code: error.code,
-        });
+        }, null, 2));
         throw new Error(error.message || 'Kunde inte acceptera vänförfrågan');
       }
+      
+      if (!data || data.length === 0) {
+        console.error('No rows updated - request may not exist or user is not the recipient');
+        throw new Error('Kunde inte hitta vänförfrågan');
+      }
+      
+      console.log('Friend request accepted, updated data:', JSON.stringify(data, null, 2));
       
       showSuccess('Vänförfrågan accepterad! 🎉');
       await loadFriends();
@@ -443,10 +458,11 @@ export default function FriendsScreen() {
         }
       }, 1000);
     } catch (error: any) {
-      console.error('Error accepting friend request:', {
+      console.error('Error accepting friend request:', JSON.stringify({
         message: error?.message,
+        name: error?.name,
         stack: error?.stack,
-      });
+      }, null, 2));
       const errorMessage = error?.message || 'Kunde inte acceptera vänförfrågan';
       showError(errorMessage);
     }
@@ -454,18 +470,30 @@ export default function FriendsScreen() {
 
   const handleRejectRequest = async (requestId: string) => {
     try {
+      if (!user?.id) {
+        showError('Du måste vara inloggad för att avvisa vänförfrågningar');
+        return;
+      }
+      
       const { error } = await supabase
         .from('friends')
         .delete()
-        .eq('id', requestId);
+        .eq('id', requestId)
+        .eq('friend_id', user.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error rejecting friend request:', JSON.stringify(error, null, 2));
+        throw error;
+      }
       
       showSuccess('Vänförfrågan avvisad');
       await loadFriends();
-    } catch (error) {
-      console.error('Error rejecting friend request:', error);
-      showError('Kunde inte avvisa vänförfrågan');
+    } catch (error: any) {
+      console.error('Error rejecting friend request:', JSON.stringify({
+        message: error?.message,
+        code: error?.code,
+      }, null, 2));
+      showError(error?.message || 'Kunde inte avvisa vänförfrågan');
     }
   };
 

@@ -145,7 +145,7 @@ export default function HogskoleprovetScreen() {
             
             <View style={styles.headerContent}>
               <View style={styles.headerTitleRow}>
-                <GraduationCap size={28} color="#FFF" strokeWidth={2.5} />
+                <GraduationCap size={24} color="#FFF" strokeWidth={2.5} />
                 <Text style={styles.headerTitle}>Högskoleprov</Text>
                 {isPremium && (
                   <View style={styles.premiumBadge}>
@@ -541,11 +541,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   headerGradient: {
-    paddingBottom: 32,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 4,
+    paddingHorizontal: 20,
+    paddingTop: 0,
   },
   backButton: {
     width: 36,
@@ -554,20 +557,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
-    backdropFilter: 'blur(10px)',
+    marginBottom: 12,
   },
   headerContent: {
-    marginBottom: 20,
+    marginBottom: 14,
   },
   headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
+    gap: 8,
+    marginBottom: 6,
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '800' as const,
     color: '#FFF',
     flex: 1,
@@ -583,9 +585,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   headerSubtitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: 'rgba(255,255,255,0.85)',
-    lineHeight: 21,
+    lineHeight: 19,
     letterSpacing: -0.2,
   },
   premiumCTA: {

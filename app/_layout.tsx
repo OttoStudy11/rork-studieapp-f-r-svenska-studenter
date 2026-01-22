@@ -1,16 +1,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
 import * as Notifications from 'expo-notifications';
 import { NotificationManager } from '@/lib/notification-manager';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { StudyProvider } from "@/contexts/StudyContext";
 import { ToastProvider, useToast, ToastContainer } from "@/contexts/ToastContext";
 import { AchievementProvider } from "@/contexts/AchievementContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { TimerSettingsProvider } from "@/contexts/TimerSettingsContext";
 import { CourseProgressProvider } from "@/contexts/CourseProgressContext";
 import { ExamProvider } from "@/contexts/ExamContext";
@@ -27,12 +28,12 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 0, // Data is always considered stale - ensures fresh data on navigation
-      gcTime: 1000 * 60 * 5, // 5 minutes cache time
+      staleTime: 0,
+      gcTime: 1000 * 60 * 5,
       retry: 2,
       retryDelay: 1000,
       refetchOnWindowFocus: true,
-      refetchOnMount: 'always', // Always refetch on mount for fresh data
+      refetchOnMount: 'always',
       refetchOnReconnect: true,
     },
     mutations: {
@@ -41,23 +42,54 @@ const queryClient = new QueryClient({
   },
 });
 
-function RootLayoutNav() {
+function AppContent() {
   const { toasts, dismissToast } = useToast();
-  const splashHideAttempted = useRef(false);
+  const { authInitialized } = useAuth();
+  const { theme } = useTheme();
+  const splashHiddenRef = useRef(false);
+  const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => {
-    if (!splashHideAttempted.current) {
-      splashHideAttempted.current = true;
-      const hideSplash = async () => {
-        try {
-          await SplashScreen.hideAsync();
-        } catch (e) {
-          console.log('Error hiding splash:', e);
-        }
-      };
-      hideSplash();
+  const hideSplash = useCallback(async () => {
+    if (splashHiddenRef.current) return;
+    splashHiddenRef.current = true;
+    
+    try {
+      console.log('📱 Hiding splash screen...');
+      await SplashScreen.hideAsync();
+      console.log('✅ Splash screen hidden');
+    } catch (e) {
+      console.log('Error hiding splash:', e);
     }
   }, []);
+
+  useEffect(() => {
+    console.log('🔄 Auth initialized:', authInitialized);
+    
+    if (authInitialized) {
+      setIsReady(true);
+      hideSplash();
+    }
+  }, [authInitialized, hideSplash]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!isReady) {
+        console.log('⏰ Force showing app after timeout');
+        setIsReady(true);
+        hideSplash();
+      }
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [isReady, hideSplash]);
+
+  if (!isReady) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
   
   return (
     <>
@@ -79,12 +111,14 @@ function RootLayoutNav() {
   );
 }
 
+function RootLayoutNav() {
+  return <AppContent />;
+}
+
 export default function RootLayout() {
   useEffect(() => {
-    // Initialize notification manager
     NotificationManager.initialize();
     
-    // Setup notification listeners
     const notificationListener = Notifications.addNotificationReceivedListener(notification => {
       console.log('📬 Notification received:', notification);
     });
@@ -137,3 +171,11 @@ export default function RootLayout() {
     </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

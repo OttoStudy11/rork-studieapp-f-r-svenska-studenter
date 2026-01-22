@@ -711,7 +711,6 @@ export default function TimerScreen() {
     if (timerState === 'running') {
       console.log('🏃 Timer is running, creating interval');
       
-      // Clear any existing interval first
       if (intervalRef.current) {
         console.log('🧹 Clearing existing interval');
         clearInterval(intervalRef.current);
@@ -732,30 +731,11 @@ export default function TimerScreen() {
       
       console.log('✅ Interval created:', intervalRef.current);
       
-      // Update background notification every 10 seconds when timer is running
-      const courseName = selectedCourse 
-        ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
-        : 'Allmän session';
-      
-      backgroundUpdateRef.current = setInterval(async () => {
-        if (settings.notificationsEnabled && settings.backgroundTimerEnabled) {
-          await TimerPersistence.updateBackgroundNotification(
-            timeLeft,
-            sessionType,
-            courseName
-          );
-        }
-      }, 10000); // Update every 10 seconds
-      
     } else {
       console.log('⏹️ Timer not running, clearing intervals');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
-      }
-      if (backgroundUpdateRef.current) {
-        clearInterval(backgroundUpdateRef.current);
-        backgroundUpdateRef.current = null;
       }
     }
 
@@ -763,12 +743,41 @@ export default function TimerScreen() {
       console.log('🧹 Cleaning up timer intervals');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
-      }
-      if (backgroundUpdateRef.current) {
-        clearInterval(backgroundUpdateRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [timerState, handleTimerComplete, timeLeft, sessionType, selectedCourse, courses, settings.notificationsEnabled, settings.backgroundTimerEnabled]);
+  }, [timerState, handleTimerComplete]);
+
+  useEffect(() => {
+    if (timerState !== 'running') {
+      if (backgroundUpdateRef.current) {
+        clearInterval(backgroundUpdateRef.current);
+        backgroundUpdateRef.current = null;
+      }
+      return;
+    }
+
+    const courseName = selectedCourse 
+      ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
+      : 'Allmän session';
+    
+    backgroundUpdateRef.current = setInterval(async () => {
+      if (settings.notificationsEnabled && settings.backgroundTimerEnabled) {
+        await TimerPersistence.updateBackgroundNotification(
+          lastKnownTimeLeftRef.current,
+          sessionType,
+          courseName
+        );
+      }
+    }, 10000);
+
+    return () => {
+      if (backgroundUpdateRef.current) {
+        clearInterval(backgroundUpdateRef.current);
+        backgroundUpdateRef.current = null;
+      }
+    };
+  }, [timerState, sessionType, selectedCourse, courses, settings.notificationsEnabled, settings.backgroundTimerEnabled]);
 
   useEffect(() => {
     Animated.timing(progressAnim, {

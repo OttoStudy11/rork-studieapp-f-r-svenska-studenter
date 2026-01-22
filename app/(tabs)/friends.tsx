@@ -413,12 +413,16 @@ export default function FriendsScreen() {
 
   const handleAcceptRequest = async (requestId: string) => {
     try {
+      console.log('Accepting friend request:', requestId);
       const { error } = await supabase
         .from('friends')
         .update({ status: 'accepted' })
         .eq('id', requestId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error accepting friend request:', error);
+        throw error;
+      }
       
       showSuccess('Vänförfrågan accepterad! 🎉');
       await loadFriends();
@@ -433,9 +437,10 @@ export default function FriendsScreen() {
           console.log('⚠️ Could not check friend achievements:', achError);
         }
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error accepting friend request:', error);
-      showError('Kunde inte acceptera vänförfrågan');
+      const errorMessage = error?.message || 'Kunde inte acceptera vänförfrågan';
+      showError(errorMessage);
     }
   };
 

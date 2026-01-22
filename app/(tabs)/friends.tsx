@@ -990,14 +990,16 @@ export default function FriendsScreen() {
                           </View>
                         )}
                         <View style={styles.userDetails}>
-                          <Text style={[
+                          <Text 
+                            numberOfLines={1}
+                            style={[
                             styles.leaderboardUserName,
                             { color: theme.colors.text },
                             entry.id === user?.id && { color: theme.colors.primary, fontWeight: '700' }
                           ]}>
                             {entry.display_name}
                           </Text>
-                          <Text style={[styles.leaderboardUserProgram, { color: theme.colors.textSecondary }]}>
+                          <Text numberOfLines={1} style={[styles.leaderboardUserProgram, { color: theme.colors.textSecondary }]}>
                             {entry.program}
                           </Text>
                         </View>
@@ -1051,6 +1053,7 @@ export default function FriendsScreen() {
                         )}
                         <View style={styles.userDetails}>
                           <Text
+                            numberOfLines={1}
                             style={[
                               styles.leaderboardUserName,
                               { color: theme.colors.text },
@@ -1059,7 +1062,7 @@ export default function FriendsScreen() {
                           >
                             {entry.display_name}
                           </Text>
-                          <Text style={[styles.leaderboardUserProgram, { color: theme.colors.textSecondary }]}>
+                          <Text numberOfLines={1} style={[styles.leaderboardUserProgram, { color: theme.colors.textSecondary }]}>
                             {entry.program}
                           </Text>
                         </View>
@@ -1568,7 +1571,7 @@ const styles = StyleSheet.create({
   leaderboardPosition: {
     width: 36,
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 16,
   },
   positionText: {
     fontSize: 18,
@@ -1579,7 +1582,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   leaderboardAvatar: {
     width: 52,
@@ -1587,7 +1590,7 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 16,
   },
   userDetails: {
     flex: 1,

@@ -420,8 +420,13 @@ export default function FriendsScreen() {
         .eq('id', requestId);
       
       if (error) {
-        console.error('Supabase error accepting friend request:', error);
-        throw error;
+        console.error('Supabase error accepting friend request:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        throw new Error(error.message || 'Kunde inte acceptera vänförfrågan');
       }
       
       showSuccess('Vänförfrågan accepterad! 🎉');
@@ -438,7 +443,10 @@ export default function FriendsScreen() {
         }
       }, 1000);
     } catch (error: any) {
-      console.error('Error accepting friend request:', error);
+      console.error('Error accepting friend request:', {
+        message: error?.message,
+        stack: error?.stack,
+      });
       const errorMessage = error?.message || 'Kunde inte acceptera vänförfrågan';
       showError(errorMessage);
     }

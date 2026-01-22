@@ -145,16 +145,17 @@ export default function HogskoleprovetScreen() {
             
             <View style={styles.headerContent}>
               <View style={styles.headerTitleRow}>
-                <GraduationCap size={32} color="#FFF" />
+                <GraduationCap size={28} color="#FFF" strokeWidth={2.5} />
                 <Text style={styles.headerTitle}>Högskoleprov</Text>
                 {isPremium && (
                   <View style={styles.premiumBadge}>
-                    <Crown size={14} color="#FFD700" />
+                    <Crown size={12} color="#FFD700" />
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFD700' }}>PRO</Text>
                   </View>
                 )}
               </View>
               <Text style={styles.headerSubtitle}>
-                Träna inför högskoleprovet med realistiska övningar
+                Träna inför högskoleprovet med autentiska uppgifter
               </Text>
             </View>
 
@@ -540,65 +541,75 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   headerGradient: {
-    paddingBottom: 24,
+    paddingBottom: 32,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingHorizontal: 24,
+    paddingTop: 4,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    backdropFilter: 'blur(10px)',
   },
   headerContent: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 10,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '800' as const,
     color: '#FFF',
     flex: 1,
+    letterSpacing: -0.5,
   },
   premiumBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,215,0,0.2)',
-    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,215,0,0.25)',
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
   },
   headerSubtitle: {
     fontSize: 15,
-    color: 'rgba(255,255,255,0.8)',
-    lineHeight: 22,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 21,
+    letterSpacing: -0.2,
   },
   premiumCTA: {
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   premiumCTAGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     gap: 8,
   },
   premiumCTAText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700' as const,
     color: '#000',
+    letterSpacing: -0.2,
   },
   scrollView: {
     flex: 1,

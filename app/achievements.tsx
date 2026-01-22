@@ -6,9 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
-  Platform,
   Modal,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router } from 'expo-router';
 import { 
@@ -318,6 +318,7 @@ const LevelCard: React.FC<LevelCardProps> = ({ level, isCurrentLevel, isUnlocked
 
 export default function AchievementsScreen() {
   const { theme, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const {
     totalXp,
     currentLevel,
@@ -682,7 +683,7 @@ export default function AchievementsScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.background, paddingTop: insets.top + 12 }]}>
         <TouchableOpacity 
           onPress={() => router.back()}
           style={[styles.backButton, { backgroundColor: isDark ? '#1F2937' : '#F3F4F6' }]}
@@ -830,7 +831,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
-    paddingTop: Platform.OS === 'ios' ? 60 : SPACING.xl,
     paddingBottom: SPACING.md,
   },
   backButton: {

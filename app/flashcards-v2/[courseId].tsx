@@ -40,7 +40,28 @@ export default function FlashcardsScreenV2() {
   const [generationCount, setGenerationCount] = useState(20);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customText, setCustomText] = useState('');
+  const [motivationalIndex, setMotivationalIndex] = useState(0);
   const { theme } = useTheme();
+
+  const motivationalMessages = [
+    '🧠 AI:n analyserar kursmaterialet...',
+    '✨ Skapar smarta frågor baserat på viktiga koncept...',
+    '📚 Optimerar svårighetsgraden för bästa inlärning...',
+    '🎯 Nästan klart! Färdigställer dina flashcards...',
+    '💡 Bra jobbat att du använder flashcards för att lära dig!',
+    '🚀 Flashcards är ett bevisat effektivt sätt att memorera!',
+  ];
+
+  React.useEffect(() => {
+    if (generateMutation.isPending) {
+      const interval = setInterval(() => {
+        setMotivationalIndex((prev) => (prev + 1) % motivationalMessages.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    } else {
+      setMotivationalIndex(0);
+    }
+  }, [generateMutation.isPending]);
 
   const { data: course } = useQuery({
     queryKey: ['course', courseId],
@@ -288,9 +309,10 @@ export default function FlashcardsScreenV2() {
           </Text>
 
           <View style={styles.countSelector}>
-            <Text style={styles.countLabel}>Antal flashcards</Text>
+            <Text style={styles.countLabel}>Hur många flashcards vill du ha?</Text>
+            <Text style={styles.countHint}>Fler flashcards = djupare förståelse</Text>
             <View style={styles.countButtons}>
-              {[10, 15, 20].map((count) => (
+              {[10, 15, 20, 25, 30].map((count) => (
                 <TouchableOpacity
                   key={count}
                   style={[
@@ -298,6 +320,7 @@ export default function FlashcardsScreenV2() {
                     generationCount === count && styles.countButtonActive,
                   ]}
                   onPress={() => setGenerationCount(count)}
+                  disabled={generateMutation.isPending}
                 >
                   <Text
                     style={[
@@ -333,12 +356,12 @@ export default function FlashcardsScreenV2() {
               {generateMutation.isPending ? (
                 <>
                   <ActivityIndicator size="small" color="#fff" />
-                  <Text style={styles.generateButtonText}>Genererar flashcards...</Text>
+                  <Text style={styles.generateButtonText}>Genererar {generationCount} flashcards...</Text>
                 </>
               ) : (
                 <>
                   <Sparkles size={20} color="#fff" />
-                  <Text style={styles.generateButtonText}>Generera Flashcards</Text>
+                  <Text style={styles.generateButtonText}>Generera {generationCount} Flashcards</Text>
                 </>
               )}
             </LinearGradient>
@@ -346,11 +369,32 @@ export default function FlashcardsScreenV2() {
 
           {generateMutation.isPending && (
             <View style={styles.progressContainer}>
+              <View style={styles.progressIndicator}>
+                <ActivityIndicator size="large" color="#6366F1" />
+              </View>
+              
               <View style={styles.progressBarContainer}>
                 <View style={[styles.progressBarFill, { width: `${generationProgress}%` }]} />
               </View>
-              <Text style={styles.progressText}>
-                {generationProgress}% • AI:n skapar {generationCount} flashcards...
+              
+              <Text style={styles.progressPercentage}>{generationProgress}%</Text>
+              
+              <View style={styles.motivationalContainer}>
+                <Text style={styles.motivationalText}>
+                  {motivationalMessages[motivationalIndex]}
+                </Text>
+              </View>
+              
+              <View style={styles.tipContainer}>
+                <Text style={styles.tipTitle}>💡 Visste du att:</Text>
+                <Text style={styles.tipText}>
+                  Studier visar att du minns 80% bättre när du använder flashcards
+                  jämfört med traditionell läsning.
+                </Text>
+              </View>
+              
+              <Text style={styles.dontLeaveText}>
+                ⏳ Stanna kvar - tar bara {Math.ceil((30 - generationProgress) / 10)}–{Math.ceil((50 - generationProgress) / 10)} sekunder...
               </Text>
             </View>
           )}
@@ -652,24 +696,33 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   countLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#94A3B8',
-    marginBottom: 12,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#F1F5F9',
+    marginBottom: 6,
     textAlign: 'center',
+  },
+  countHint: {
+    fontSize: 13,
+    color: '#94A3B8',
+    marginBottom: 16,
+    textAlign: 'center' as const,
   },
   countButtons: {
     flexDirection: 'row',
-    gap: 12,
+    flexWrap: 'wrap' as const,
+    gap: 10,
     justifyContent: 'center',
   },
   countButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 12,
     backgroundColor: '#1E293B',
     borderWidth: 2,
     borderColor: '#334155',
+    minWidth: 60,
+    alignItems: 'center' as const,
   },
   countButtonActive: {
     backgroundColor: '#312E81',
@@ -855,27 +908,80 @@ const styles = StyleSheet.create({
     fontStyle: 'italic' as const,
   },
   progressContainer: {
-    marginTop: 20,
+    marginTop: 24,
     width: '100%',
     alignItems: 'center' as const,
-    gap: 12,
+    gap: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  progressIndicator: {
+    marginBottom: 8,
   },
   progressBarContainer: {
     width: '100%',
-    height: 8,
-    backgroundColor: '#1E293B',
-    borderRadius: 4,
+    height: 10,
+    backgroundColor: '#0F172A',
+    borderRadius: 5,
     overflow: 'hidden' as const,
   },
   progressBarFill: {
     height: '100%',
     backgroundColor: '#6366F1',
-    borderRadius: 4,
+    borderRadius: 5,
   },
-  progressText: {
-    fontSize: 14,
-    color: '#94A3B8',
+  progressPercentage: {
+    fontSize: 24,
+    fontWeight: '900' as const,
+    color: '#6366F1',
+    marginTop: 4,
+  },
+  motivationalContainer: {
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#312E81',
+    borderRadius: 12,
+    width: '100%',
+  },
+  motivationalText: {
+    fontSize: 15,
     fontWeight: '600' as const,
+    color: '#C7D2FE',
     textAlign: 'center' as const,
+    lineHeight: 22,
   },
+  tipContainer: {
+    marginTop: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.2)',
+    width: '100%',
+  },
+  tipTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#C7D2FE',
+    marginBottom: 6,
+  },
+  tipText: {
+    fontSize: 13,
+    color: '#94A3B8',
+    lineHeight: 20,
+  },
+  dontLeaveText: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center' as const,
+    marginTop: 12,
+    fontStyle: 'italic' as const,
+  },
+
 });

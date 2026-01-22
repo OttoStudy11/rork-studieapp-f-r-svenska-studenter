@@ -84,7 +84,7 @@ export default function FriendsScreen() {
   const [globalLeaderboardError, setGlobalLeaderboardError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('week');
-  const [leaderboardView, setLeaderboardView] = useState<'region' | 'national' | 'global'>('national');
+  const [leaderboardView, setLeaderboardView] = useState<'friends' | 'global'>('friends');
 
   const colors = [
     { bg: '#FF6B6B15', accent: '#FF6B6B' },
@@ -861,29 +861,15 @@ export default function FriendsScreen() {
             <TouchableOpacity
               style={[
                 styles.leaderboardTab,
-                leaderboardView === 'region' && styles.leaderboardTabActive
+                leaderboardView === 'friends' && styles.leaderboardTabActive
               ]}
-              onPress={() => setLeaderboardView('region')}
+              onPress={() => setLeaderboardView('friends')}
             >
               <Text style={[
                 styles.leaderboardTabText,
-                leaderboardView === 'region' && styles.leaderboardTabTextActive
+                leaderboardView === 'friends' && styles.leaderboardTabTextActive
               ]}>
                 Vänner
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.leaderboardTab,
-                leaderboardView === 'national' && styles.leaderboardTabActive
-              ]}
-              onPress={() => setLeaderboardView('national')}
-            >
-              <Text style={[
-                styles.leaderboardTabText,
-                leaderboardView === 'national' && styles.leaderboardTabTextActive
-              ]}>
-                Nationellt
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -944,7 +930,7 @@ export default function FriendsScreen() {
                     <Trophy size={48} color="#4A5568" />
                     <Text style={styles.leaderboardEmptyTitle}>Ingen data än</Text>
                     <Text style={styles.leaderboardEmptyText}>
-                      {leaderboardView === 'region' 
+                      {leaderboardView === 'friends' 
                         ? 'Lägg till vänner för att se topplistan' 
                         : 'Inga studieminuter hittades'}
                     </Text>
@@ -975,7 +961,7 @@ export default function FriendsScreen() {
                               )}
                             </View>
                             <Text style={styles.podiumName} numberOfLines={1}>{second.display_name}</Text>
-                            <Text style={[styles.podiumPoints, styles.podiumPointsSecond]}>{second.studyTime}</Text>
+                            <Text style={[styles.podiumPoints, styles.podiumPointsSecond]}>{formatLeaderboardTime(second.studyTime)}</Text>
                             <Text style={styles.podiumUsername}>@{second.username}</Text>
                           </View>
                         </FadeInView>
@@ -1000,7 +986,7 @@ export default function FriendsScreen() {
                               )}
                             </View>
                             <Text style={[styles.podiumName, styles.podiumNameFirst]} numberOfLines={1}>{first.display_name}</Text>
-                            <Text style={[styles.podiumPoints, styles.podiumPointsFirst]}>{first.studyTime}</Text>
+                            <Text style={[styles.podiumPoints, styles.podiumPointsFirst]}>{formatLeaderboardTime(first.studyTime)}</Text>
                             <Text style={styles.podiumUsername}>@{first.username}</Text>
                           </View>
                         </FadeInView>
@@ -1022,7 +1008,7 @@ export default function FriendsScreen() {
                               )}
                             </View>
                             <Text style={styles.podiumName} numberOfLines={1}>{third.display_name}</Text>
-                            <Text style={[styles.podiumPoints, styles.podiumPointsThird]}>{third.studyTime}</Text>
+                            <Text style={[styles.podiumPoints, styles.podiumPointsThird]}>{formatLeaderboardTime(third.studyTime)}</Text>
                             <Text style={styles.podiumUsername}>@{third.username}</Text>
                           </View>
                         </FadeInView>
@@ -1061,7 +1047,7 @@ export default function FriendsScreen() {
                             </View>
                           </View>
                           <View style={styles.leaderboardListRight}>
-                            <Text style={styles.leaderboardListPoints}>{entry.studyTime}</Text>
+                            <Text style={styles.leaderboardListPoints}>{formatLeaderboardTime(entry.studyTime)}</Text>
                             <ChevronUp size={14} color="#22C55E" />
                           </View>
                         </View>

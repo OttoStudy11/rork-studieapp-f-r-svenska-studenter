@@ -651,7 +651,7 @@ export default function CourseDetailScreen() {
             style={[styles.flashcardsHeroCard, { backgroundColor: theme.colors.card }]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push(`/flashcards/${id}` as any);
+              router.push(`/flashcards-v2/${id}` as any);
             }}
             activeOpacity={0.9}
           >

@@ -13,9 +13,9 @@ export interface AuthUser {
 
 export interface AuthContextType {
   user: AuthUser | null;
-  isLoading: boolean;
   isAuthenticated: boolean;
   hasCompletedOnboarding: boolean;
+  authInitialized: boolean;
   signUp: (email: string, password: string) => Promise<{ error?: any; needsEmailConfirmation?: boolean }>;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
@@ -28,10 +28,10 @@ const ONBOARDING_KEY = 'hasCompletedOnboarding';
 
 export const [AuthProvider, useAuth] = createContextHook(() => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [lastSignUpAttempt, setLastSignUpAttempt] = useState<number>(0);
   const [lastSignInAttempt, setLastSignInAttempt] = useState<number>(0);
+  const [authInitialized, setAuthInitialized] = useState(false);
 
   const checkOnboardingStatus = useCallback(async (userId: string) => {
     try {
@@ -116,18 +116,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const initializeAuth = useCallback(async () => {
     try {
       console.log('Initializing Supabase auth...');
-      setIsLoading(true);
       
       checkDatabaseConnectionAsync();
       
       const sessionPromise = supabase.auth.getSession();
-      const sessionTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+      const sessionTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000));
       
       const sessionResult = await Promise.race([sessionPromise, sessionTimeout]);
       
       if (!sessionResult || sessionResult === null) {
         console.log('Session check timed out, trying remember me');
         await tryRememberMeLogin();
+        setAuthInitialized(true);
         return;
       }
       
@@ -136,6 +136,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (sessionError || !session) {
         console.log('No active session, trying remember me');
         await tryRememberMeLogin();
+        setAuthInitialized(true);
         return;
       }
       
@@ -144,6 +145,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (error || !supabaseUser) {
         console.log('Error getting user, trying remember me');
         await tryRememberMeLogin();
+        setAuthInitialized(true);
         return;
       }
       
@@ -156,12 +158,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setUser(authUser);
       await checkOnboardingStatus(supabaseUser.id);
       cleanupExpiredSessions(supabaseUser.id).catch(() => {});
+      setAuthInitialized(true);
     } catch (error: any) {
       console.log('Error initializing auth:', error?.message || error);
       await tryRememberMeLogin();
-    } finally {
-      console.log('Auth initialization complete');
-      setIsLoading(false);
+      setAuthInitialized(true);
     }
   }, [checkOnboardingStatus, tryRememberMeLogin]);
 
@@ -245,30 +246,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       });
       
       const linkingSubscription = Linking.addEventListener('url', handleDeepLink);
-      
-      const fallbackTimeout = setTimeout(() => {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }, 4000);
 
       return () => {
         mounted = false;
         subscription.unsubscribe();
         linkingSubscription.remove();
-        clearTimeout(fallbackTimeout);
       };
     } else {
-      const fallbackTimeout = setTimeout(() => {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }, 4000);
-
       return () => {
         mounted = false;
         subscription.unsubscribe();
-        clearTimeout(fallbackTimeout);
       };
     }
   }, [initializeAuth, checkOnboardingStatus]);
@@ -602,9 +589,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const contextValue = useMemo(() => ({
     user,
-    isLoading,
     isAuthenticated: !!user,
     hasCompletedOnboarding,
+    authInitialized,
     signUp: handleSignUp,
     signIn: handleSignIn,
     signOut: handleSignOut,
@@ -613,8 +600,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     resendConfirmation: handleResendConfirmation
   }), [
     user,
-    isLoading,
     hasCompletedOnboarding,
+    authInitialized,
     handleSignUp,
     handleSignIn,
     handleSignOut,

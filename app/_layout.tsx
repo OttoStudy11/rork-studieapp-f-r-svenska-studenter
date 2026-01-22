@@ -2,7 +2,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef } from "react";
-import { AppState, AppStateStatus } from "react-native";
 import * as Notifications from 'expo-notifications';
 import { NotificationManager } from '@/lib/notification-manager';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -45,7 +44,6 @@ const queryClient = new QueryClient({
 function RootLayoutNav() {
   const { toasts, dismissToast } = useToast();
   const splashHideAttempted = useRef(false);
-  const appState = useRef<AppStateStatus>(AppState.currentState);
 
   useEffect(() => {
     if (!splashHideAttempted.current) {
@@ -59,27 +57,6 @@ function RootLayoutNav() {
       };
       hideSplash();
     }
-  }, []);
-
-  // Refetch all queries when app comes to foreground
-  useEffect(() => {
-    const subscription = AppState.addEventListener(
-      'change',
-      (nextAppState: AppStateStatus) => {
-        if (
-          appState.current.match(/inactive|background/) &&
-          nextAppState === 'active'
-        ) {
-          console.log('📱 App became active, invalidating queries for fresh data');
-          queryClient.invalidateQueries();
-        }
-        appState.current = nextAppState;
-      }
-    );
-
-    return () => {
-      subscription.remove();
-    };
   }, []);
   
   return (

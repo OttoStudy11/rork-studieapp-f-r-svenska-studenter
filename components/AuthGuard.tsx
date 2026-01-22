@@ -11,7 +11,7 @@ interface AuthGuardProps {
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, isLoading: authLoading, hasCompletedOnboarding } = useAuth();
+  const { isAuthenticated, authInitialized, hasCompletedOnboarding } = useAuth();
   
   const hasNavigatedRef = useRef(false);
   const navigationInProgressRef = useRef(false);
@@ -57,7 +57,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   }, [isAuthenticated, hasCompletedOnboarding]);
 
   useEffect(() => {
-    if (authLoading || initCompletedRef.current) {
+    if (!authInitialized || initCompletedRef.current) {
       return;
     }
     
@@ -68,18 +68,18 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [authLoading, performNavigation]);
+  }, [authInitialized, performNavigation]);
 
   useEffect(() => {
     const fallbackTimer = setTimeout(() => {
-      if (!hasNavigatedRef.current) {
+      if (!hasNavigatedRef.current && authInitialized) {
         console.log('AuthGuard - Fallback timeout triggered');
         performNavigation();
       }
-    }, 5000);
+    }, 3000);
 
     return () => clearTimeout(fallbackTimer);
-  }, [performNavigation]);
+  }, [performNavigation, authInitialized]);
 
   if (!hasNavigatedRef.current) {
     return <LoadingScreen message="Startar din studieplats..." />;

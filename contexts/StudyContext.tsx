@@ -203,7 +203,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     };
   }
   
-  const { user: authUser, isAuthenticated, isLoading: authLoading, setOnboardingCompleted } = authContext;
+  const { user: authUser, isAuthenticated, authInitialized, setOnboardingCompleted } = authContext;
   const [user, setUser] = useState<User | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -399,7 +399,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     let mounted = true;
     
-    if (!authLoading) {
+    if (authInitialized) {
       if (isAuthenticated && authUser) {
         console.log('StudyContext: Loading data for authenticated user');
         // Load user data regardless of onboarding status
@@ -412,7 +412,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
             setIsLoading(false);
             loadingRef.current = false;
           }
-        }, 8000); // 8 second fallback timeout
+        }, 5000); // 5 second fallback timeout
       } else {
         console.log('StudyContext: User not authenticated, clearing data');
         setUser(null);
@@ -430,7 +430,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         clearTimeout(timeoutId);
       }
     };
-  }, [authUser, isAuthenticated, authLoading, loadUserData]);
+  }, [authUser, isAuthenticated, authInitialized, loadUserData]);
 
   const completeOnboarding = useCallback(async (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number; gymnasiumGrade?: string | null; universityYear?: string | null; universityProgramId?: string }) => {
     try {
@@ -900,7 +900,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     courses,
     notes,
     pomodoroSessions,
-    isLoading: isLoading || authLoading,
+    isLoading,
     isAuthenticated,
     completeOnboarding,
     updateUser,
@@ -916,7 +916,6 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     notes,
     pomodoroSessions,
     isLoading,
-    authLoading,
     isAuthenticated,
     completeOnboarding,
     updateUser,

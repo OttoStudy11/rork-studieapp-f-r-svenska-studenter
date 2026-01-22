@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useGamification } from '@/contexts/GamificationContext';
-import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy, User, Target, TrendingUp, Flame, UsersRound, Globe } from 'lucide-react-native';
+import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy, User, Target, TrendingUp, Flame, UsersRound, Globe, ChevronLeft, MoreHorizontal, ChevronUp } from 'lucide-react-native';
 import Avatar from '@/components/Avatar';
 import FriendSearch from '@/components/FriendSearch';
 import type { AvatarConfig } from '@/constants/avatar-config';
@@ -84,7 +84,7 @@ export default function FriendsScreen() {
   const [globalLeaderboardError, setGlobalLeaderboardError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('week');
-  const [leaderboardView, setLeaderboardView] = useState<'friends' | 'global'>('friends');
+  const [leaderboardView, setLeaderboardView] = useState<'region' | 'national' | 'global'>('national');
 
   const colors = [
     { bg: '#FF6B6B15', accent: '#FF6B6B' },
@@ -839,254 +839,239 @@ export default function FriendsScreen() {
       <Modal
         visible={showLeaderboard}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
       >
-        <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Topplista</Text>
-            <TouchableOpacity onPress={() => setShowLeaderboard(false)}>
-              <X size={24} color={theme.colors.textSecondary} />
+        <View style={styles.leaderboardModalContainer}>
+          {/* Header */}
+          <View style={styles.leaderboardHeader}>
+            <TouchableOpacity 
+              style={styles.leaderboardBackButton}
+              onPress={() => setShowLeaderboard(false)}
+            >
+              <ChevronLeft size={24} color="#4A9EFF" />
+            </TouchableOpacity>
+            <Text style={styles.leaderboardTitle}>Topplista</Text>
+            <TouchableOpacity style={styles.leaderboardMenuButton}>
+              <MoreHorizontal size={24} color="#4A9EFF" />
             </TouchableOpacity>
           </View>
-          
-          <View style={styles.modalContent}>
-            {/* View Selector (Friends/Global) */}
-            <View style={[styles.viewSelectorContainer, { backgroundColor: theme.colors.card }]}>
-              <TouchableOpacity
-                style={[
-                  styles.viewButton,
-                  leaderboardView === 'friends' && { backgroundColor: theme.colors.primary }
-                ]}
-                onPress={() => setLeaderboardView('friends')}
-              >
-                <UsersRound size={16} color={leaderboardView === 'friends' ? 'white' : theme.colors.textSecondary} />
-                <Text style={[
-                  styles.viewButtonText,
-                  { color: theme.colors.textSecondary },
-                  leaderboardView === 'friends' && { color: 'white', fontWeight: '600' }
-                ]}>
-                  Vänner
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.viewButton,
-                  leaderboardView === 'global' && { backgroundColor: theme.colors.primary }
-                ]}
-                onPress={() => setLeaderboardView('global')}
-              >
-                <Globe size={16} color={leaderboardView === 'global' ? 'white' : theme.colors.textSecondary} />
-                <Text style={[
-                  styles.viewButtonText,
-                  { color: theme.colors.textSecondary },
-                  leaderboardView === 'global' && { color: 'white', fontWeight: '600' }
-                ]}>
-                  Globalt
-                </Text>
-              </TouchableOpacity>
-            </View>
 
-            {/* Timeframe Selector */}
-            <View style={[styles.timeframeContainer, { backgroundColor: theme.colors.card }]}>
-              <TouchableOpacity
-                style={[
-                  styles.timeframeButton,
-                  timeframe === 'week' && { backgroundColor: theme.colors.primary }
-                ]}
-                onPress={() => setTimeframe('week')}
-              >
-                <Text style={[
-                  styles.timeframeButtonText,
-                  { color: theme.colors.textSecondary },
-                  timeframe === 'week' && { color: 'white', fontWeight: '600' }
-                ]}>
-                  Vecka
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.timeframeButton,
-                  timeframe === 'month' && { backgroundColor: theme.colors.primary }
-                ]}
-                onPress={() => setTimeframe('month')}
-              >
-                <Text style={[
-                  styles.timeframeButtonText,
-                  { color: theme.colors.textSecondary },
-                  timeframe === 'month' && { color: 'white', fontWeight: '600' }
-                ]}>
-                  Månad
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.timeframeButton,
-                  timeframe === 'all' && { backgroundColor: theme.colors.primary }
-                ]}
-                onPress={() => setTimeframe('all')}
-              >
-                <Text style={[
-                  styles.timeframeButtonText,
-                  { color: theme.colors.textSecondary },
-                  timeframe === 'all' && { color: 'white', fontWeight: '600' }
-                ]}>
-                  Totalt
-                </Text>
-              </TouchableOpacity>
-            </View>
+          {/* Tab Selector */}
+          <View style={styles.leaderboardTabContainer}>
+            <TouchableOpacity
+              style={[
+                styles.leaderboardTab,
+                leaderboardView === 'region' && styles.leaderboardTabActive
+              ]}
+              onPress={() => setLeaderboardView('region')}
+            >
+              <Text style={[
+                styles.leaderboardTabText,
+                leaderboardView === 'region' && styles.leaderboardTabTextActive
+              ]}>
+                Vänner
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.leaderboardTab,
+                leaderboardView === 'national' && styles.leaderboardTabActive
+              ]}
+              onPress={() => setLeaderboardView('national')}
+            >
+              <Text style={[
+                styles.leaderboardTabText,
+                leaderboardView === 'national' && styles.leaderboardTabTextActive
+              ]}>
+                Nationellt
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.leaderboardTab,
+                leaderboardView === 'global' && styles.leaderboardTabActive
+              ]}
+              onPress={() => setLeaderboardView('global')}
+            >
+              <Text style={[
+                styles.leaderboardTabText,
+                leaderboardView === 'global' && styles.leaderboardTabTextActive
+              ]}>
+                Globalt
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-            {/* Leaderboard List */}
-            <ScrollView style={styles.leaderboardContainer} showsVerticalScrollIndicator={false}>
-              {leaderboardView === 'global' ? (
-                globalLeaderboardLoading ? (
-                  <View style={styles.leaderboardLoading}>
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
-                    <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Laddar global topplista...</Text>
+          <ScrollView 
+            style={styles.leaderboardScrollView} 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.leaderboardScrollContent}
+          >
+            {/* Top 3 Podium */}
+            {(() => {
+              const currentData = leaderboardView === 'global' ? globalLeaderboard : leaderboard;
+              const top3 = currentData.slice(0, 3);
+              const rest = currentData.slice(3);
+              
+              if (leaderboardView === 'global' && globalLeaderboardLoading) {
+                return (
+                  <View style={styles.leaderboardLoadingContainer}>
+                    <ActivityIndicator size="large" color="#4A9EFF" />
+                    <Text style={styles.leaderboardLoadingText}>Laddar topplista...</Text>
                   </View>
-                ) : globalLeaderboardError ? (
-                  <View style={styles.emptyLeaderboard}>
-                    <Trophy size={48} color={theme.colors.textMuted} />
-                    <Text style={[styles.emptyLeaderboardTitle, { color: theme.colors.text }]}>
-                      Kunde inte ladda
-                    </Text>
-                    <Text style={[styles.emptyLeaderboardText, { color: theme.colors.textSecondary }]}>
-                      {globalLeaderboardError}
-                    </Text>
+                );
+              }
+              
+              if (leaderboardView === 'global' && globalLeaderboardError) {
+                return (
+                  <View style={styles.leaderboardEmptyContainer}>
+                    <Trophy size={48} color="#4A5568" />
+                    <Text style={styles.leaderboardEmptyTitle}>Kunde inte ladda</Text>
+                    <Text style={styles.leaderboardEmptyText}>{globalLeaderboardError}</Text>
                     <TouchableOpacity
-                      testID="retry-global-leaderboard"
-                      style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
+                      style={styles.leaderboardRetryButton}
                       onPress={() => void loadGlobalLeaderboard()}
                     >
-                      <Text style={styles.retryButtonText}>Försök igen</Text>
+                      <Text style={styles.leaderboardRetryText}>Försök igen</Text>
                     </TouchableOpacity>
                   </View>
-                ) : globalLeaderboard.length > 0 ? (
-                  globalLeaderboard.map((entry, index) => (
-                    <FadeInView key={entry.id} delay={100 + index * 50}>
-                    <View style={[
-                      styles.leaderboardItem,
-                      { backgroundColor: theme.colors.card },
-                      entry.id === user?.id && { 
-                        borderWidth: 2, 
-                        borderColor: theme.colors.primary,
-                        backgroundColor: theme.colors.primary + '10'
-                      }
-                    ]}>
-                      <View style={styles.leaderboardPosition}>
-                        {entry.position <= 3 ? (
-                          getPositionIcon(entry.position)
-                        ) : (
-                          <Text style={[styles.positionText, { color: theme.colors.textSecondary }]}>
-                            {entry.position}
-                          </Text>
-                        )}
-                      </View>
-                      <View style={styles.leaderboardUserInfo}>
-                        {entry.avatar ? (
-                          <Avatar config={entry.avatar} size={48} />
-                        ) : (
-                          <View style={[styles.leaderboardAvatar, { backgroundColor: theme.colors.primary + '15' }]}>
-                            <User size={20} color={theme.colors.primary} />
-                          </View>
-                        )}
-                        <View style={styles.userDetails}>
-                          <Text 
-                            numberOfLines={1}
-                            style={[
-                            styles.leaderboardUserName,
-                            { color: theme.colors.text },
-                            entry.id === user?.id && { color: theme.colors.primary, fontWeight: '700' }
-                          ]}>
-                            {entry.display_name}
-                          </Text>
-                          <Text numberOfLines={1} style={[styles.leaderboardUserProgram, { color: theme.colors.textSecondary }]}>
-                            {entry.program}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.leaderboardStats}>
-                        <Text style={[styles.studyTime, { color: theme.colors.text }]}>
-                          {formatLeaderboardTime(entry.studyTime)}
-                        </Text>
-                        <Text style={[styles.sessionCount, { color: theme.colors.textSecondary }]}>
-                          {entry.sessionCount}{' '}sessioner
-                        </Text>
-                      </View>
-                    </View>
-                  </FadeInView>
-                  ))
-                ) : (
-                  <View style={styles.emptyLeaderboard}>
-                    <Trophy size={48} color={theme.colors.textMuted} />
-                    <Text style={[styles.emptyLeaderboardTitle, { color: theme.colors.text }]}>Ingen data än</Text>
-                    <Text style={[styles.emptyLeaderboardText, { color: theme.colors.textSecondary }]}>Inga studieminuter hittades</Text>
+                );
+              }
+              
+              if (currentData.length === 0) {
+                return (
+                  <View style={styles.leaderboardEmptyContainer}>
+                    <Trophy size={48} color="#4A5568" />
+                    <Text style={styles.leaderboardEmptyTitle}>Ingen data än</Text>
+                    <Text style={styles.leaderboardEmptyText}>
+                      {leaderboardView === 'region' 
+                        ? 'Lägg till vänner för att se topplistan' 
+                        : 'Inga studieminuter hittades'}
+                    </Text>
                   </View>
-                )
-              ) : leaderboard.length > 0 ? (
-                leaderboard.map((entry, index) => (
-                  <FadeInView key={entry.id} delay={100 + index * 50}>
-                    <View style={[
-                      styles.leaderboardItem,
-                      { backgroundColor: theme.colors.card },
-                      entry.id === user?.id && {
-                        borderWidth: 2,
-                        borderColor: theme.colors.primary,
-                        backgroundColor: theme.colors.primary + '10',
-                      },
-                    ]}>
-                      <View style={styles.leaderboardPosition}>
-                        {entry.position <= 3 ? (
-                          getPositionIcon(entry.position)
-                        ) : (
-                          <Text style={[styles.positionText, { color: theme.colors.textSecondary }]}>
-                            {entry.position}
-                          </Text>
-                        )}
-                      </View>
-                      <View style={styles.leaderboardUserInfo}>
-                        {entry.avatar ? (
-                          <Avatar config={entry.avatar} size={48} />
-                        ) : (
-                          <View style={[styles.leaderboardAvatar, { backgroundColor: theme.colors.primary + '15' }]}>
-                            <User size={20} color={theme.colors.primary} />
+                );
+              }
+              
+              const second = top3.find(e => e.position === 2);
+              const first = top3.find(e => e.position === 1);
+              const third = top3.find(e => e.position === 3);
+              
+              return (
+                <>
+                  {/* Podium Section */}
+                  <View style={styles.podiumContainer}>
+                    {/* 2nd Place - Left */}
+                    <View style={styles.podiumSide}>
+                      {second && (
+                        <FadeInView delay={100}>
+                          <View style={styles.podiumEntry}>
+                            <View style={[styles.podiumAvatarContainer, styles.podiumAvatarSecond]}>
+                              {second.avatar ? (
+                                <Avatar config={second.avatar} size={70} />
+                              ) : (
+                                <View style={styles.podiumAvatarFallback}>
+                                  <User size={28} color="#4A9EFF" />
+                                </View>
+                              )}
+                            </View>
+                            <Text style={styles.podiumName} numberOfLines={1}>{second.display_name}</Text>
+                            <Text style={[styles.podiumPoints, styles.podiumPointsSecond]}>{second.studyTime}</Text>
+                            <Text style={styles.podiumUsername}>@{second.username}</Text>
                           </View>
-                        )}
-                        <View style={styles.userDetails}>
-                          <Text
-                            numberOfLines={1}
-                            style={[
-                              styles.leaderboardUserName,
-                              { color: theme.colors.text },
-                              entry.id === user?.id && { color: theme.colors.primary, fontWeight: '700' },
-                            ]}
-                          >
-                            {entry.display_name}
-                          </Text>
-                          <Text numberOfLines={1} style={[styles.leaderboardUserProgram, { color: theme.colors.textSecondary }]}>
-                            {entry.program}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.leaderboardStats}>
-                        <Text style={[styles.studyTime, { color: theme.colors.text }]}>
-                          {formatLeaderboardTime(entry.studyTime)}
-                        </Text>
-                        <Text style={[styles.sessionCount, { color: theme.colors.textSecondary }]}>
-                          {entry.sessionCount}{' '}sessioner
-                        </Text>
-                      </View>
+                        </FadeInView>
+                      )}
                     </View>
-                  </FadeInView>
-                ))
-              ) : (
-                <View style={styles.emptyLeaderboard}>
-                  <Trophy size={48} color={theme.colors.textMuted} />
-                  <Text style={[styles.emptyLeaderboardTitle, { color: theme.colors.text }]}>Ingen data än</Text>
-                  <Text style={[styles.emptyLeaderboardText, { color: theme.colors.textSecondary }]}>Lägg till vänner för att se topplistan</Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
+                    
+                    {/* 1st Place - Center */}
+                    <View style={styles.podiumCenter}>
+                      {first && (
+                        <FadeInView delay={50}>
+                          <View style={styles.podiumEntryFirst}>
+                            <View style={styles.crownContainer}>
+                              <Crown size={28} color="#FFD700" fill="#FFD700" />
+                            </View>
+                            <View style={[styles.podiumAvatarContainer, styles.podiumAvatarFirst]}>
+                              {first.avatar ? (
+                                <Avatar config={first.avatar} size={85} />
+                              ) : (
+                                <View style={[styles.podiumAvatarFallback, styles.podiumAvatarFallbackFirst]}>
+                                  <User size={34} color="#22C55E" />
+                                </View>
+                              )}
+                            </View>
+                            <Text style={[styles.podiumName, styles.podiumNameFirst]} numberOfLines={1}>{first.display_name}</Text>
+                            <Text style={[styles.podiumPoints, styles.podiumPointsFirst]}>{first.studyTime}</Text>
+                            <Text style={styles.podiumUsername}>@{first.username}</Text>
+                          </View>
+                        </FadeInView>
+                      )}
+                    </View>
+                    
+                    {/* 3rd Place - Right */}
+                    <View style={styles.podiumSide}>
+                      {third && (
+                        <FadeInView delay={150}>
+                          <View style={styles.podiumEntry}>
+                            <View style={[styles.podiumAvatarContainer, styles.podiumAvatarThird]}>
+                              {third.avatar ? (
+                                <Avatar config={third.avatar} size={70} />
+                              ) : (
+                                <View style={styles.podiumAvatarFallback}>
+                                  <User size={28} color="#F97316" />
+                                </View>
+                              )}
+                            </View>
+                            <Text style={styles.podiumName} numberOfLines={1}>{third.display_name}</Text>
+                            <Text style={[styles.podiumPoints, styles.podiumPointsThird]}>{third.studyTime}</Text>
+                            <Text style={styles.podiumUsername}>@{third.username}</Text>
+                          </View>
+                        </FadeInView>
+                      )}
+                    </View>
+                  </View>
+                  
+                  {/* Rest of the list */}
+                  <View style={styles.leaderboardListContainer}>
+                    {rest.map((entry, index) => (
+                      <FadeInView key={entry.id} delay={200 + index * 30}>
+                        <View style={[
+                          styles.leaderboardListItem,
+                          entry.id === user?.id && styles.leaderboardListItemHighlight
+                        ]}>
+                          <View style={styles.leaderboardListLeft}>
+                            <View style={styles.leaderboardListAvatarContainer}>
+                              {entry.avatar ? (
+                                <Avatar config={entry.avatar} size={48} />
+                              ) : (
+                                <View style={styles.leaderboardListAvatarFallback}>
+                                  <User size={20} color="#64748B" />
+                                </View>
+                              )}
+                            </View>
+                            <View style={styles.leaderboardListInfo}>
+                              <Text style={[
+                                styles.leaderboardListName,
+                                entry.id === user?.id && styles.leaderboardListNameHighlight
+                              ]} numberOfLines={1}>
+                                {entry.display_name}
+                              </Text>
+                              <Text style={styles.leaderboardListUsername} numberOfLines={1}>
+                                @{entry.username}
+                              </Text>
+                            </View>
+                          </View>
+                          <View style={styles.leaderboardListRight}>
+                            <Text style={styles.leaderboardListPoints}>{entry.studyTime}</Text>
+                            <ChevronUp size={14} color="#22C55E" />
+                          </View>
+                        </View>
+                      </FadeInView>
+                    ))}
+                  </View>
+                </>
+              );
+            })()}
+          </ScrollView>
         </View>
       </Modal>
 
@@ -1821,5 +1806,284 @@ const styles = StyleSheet.create({
   joinGroupText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  // New Leaderboard Modal Styles
+  leaderboardModalContainer: {
+    flex: 1,
+    backgroundColor: '#141A2E',
+  },
+  leaderboardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 60,
+    paddingBottom: 16,
+  },
+  leaderboardBackButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  leaderboardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  leaderboardMenuButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  leaderboardTabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 24,
+    marginTop: 8,
+    marginBottom: 24,
+    backgroundColor: '#1E2642',
+    borderRadius: 24,
+    padding: 4,
+  },
+  leaderboardTab: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+  leaderboardTabActive: {
+    backgroundColor: '#2A3655',
+  },
+  leaderboardTabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#64748B',
+  },
+  leaderboardTabTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  leaderboardScrollView: {
+    flex: 1,
+  },
+  leaderboardScrollContent: {
+    paddingBottom: 40,
+  },
+  podiumContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 32,
+    minHeight: 260,
+  },
+  podiumSide: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 30,
+  },
+  podiumCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  podiumEntry: {
+    alignItems: 'center',
+    width: 100,
+  },
+  podiumEntryFirst: {
+    alignItems: 'center',
+    width: 110,
+  },
+  crownContainer: {
+    marginBottom: 8,
+  },
+  podiumAvatarContainer: {
+    borderRadius: 50,
+    padding: 3,
+    marginBottom: 10,
+  },
+  podiumAvatarFirst: {
+    borderWidth: 3,
+    borderColor: '#22C55E',
+    borderRadius: 50,
+    width: 91,
+    height: 91,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  podiumAvatarSecond: {
+    borderWidth: 3,
+    borderColor: '#4A9EFF',
+    borderRadius: 50,
+    width: 76,
+    height: 76,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  podiumAvatarThird: {
+    borderWidth: 3,
+    borderColor: '#F97316',
+    borderRadius: 50,
+    width: 76,
+    height: 76,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  podiumAvatarFallback: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 50,
+    backgroundColor: '#1E2642',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  podiumAvatarFallbackFirst: {
+    backgroundColor: '#1E2642',
+  },
+  podiumName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  podiumNameFirst: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  podiumPoints: {
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  podiumPointsFirst: {
+    color: '#22C55E',
+    fontSize: 22,
+  },
+  podiumPointsSecond: {
+    color: '#4A9EFF',
+  },
+  podiumPointsThird: {
+    color: '#F97316',
+  },
+  podiumUsername: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  leaderboardListContainer: {
+    backgroundColor: '#1A2138',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 20,
+    paddingHorizontal: 16,
+    minHeight: 400,
+  },
+  leaderboardListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#232D4A',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+  },
+  leaderboardListItemHighlight: {
+    backgroundColor: '#2A3A5A',
+    borderWidth: 1,
+    borderColor: '#4A9EFF',
+  },
+  leaderboardListLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  leaderboardListAvatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  leaderboardListAvatarFallback: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#2A3655',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  leaderboardListInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  leaderboardListName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  leaderboardListNameHighlight: {
+    color: '#4A9EFF',
+  },
+  leaderboardListUsername: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  leaderboardListRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  leaderboardListPoints: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  leaderboardLoadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 100,
+  },
+  leaderboardLoadingText: {
+    fontSize: 14,
+    color: '#64748B',
+    marginTop: 16,
+  },
+  leaderboardEmptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+  },
+  leaderboardEmptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  leaderboardEmptyText: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  leaderboardRetryButton: {
+    backgroundColor: '#4A9EFF',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  leaderboardRetryText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

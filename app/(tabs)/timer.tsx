@@ -706,16 +706,31 @@ export default function TimerScreen() {
   }, [timerState, sessionType, selectedCourse, courses, focusTime, breakTime, settings.backgroundTimerEnabled, handleTimerComplete]);
 
   useEffect(() => {
+    console.log('⚙️ Timer effect triggered, state:', timerState);
+    
     if (timerState === 'running') {
+      console.log('🏃 Timer is running, creating interval');
+      
+      // Clear any existing interval first
+      if (intervalRef.current) {
+        console.log('🧹 Clearing existing interval');
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      
       intervalRef.current = setInterval(() => {
         setTimeLeft((prev) => {
+          const newTime = prev - 1;
           if (prev <= 1) {
+            console.log('⏱️ Timer completed!');
             handleTimerComplete();
             return 0;
           }
-          return prev - 1;
+          return newTime;
         });
       }, 1000);
+      
+      console.log('✅ Interval created:', intervalRef.current);
       
       // Update background notification every 10 seconds when timer is running
       const courseName = selectedCourse 
@@ -733,6 +748,7 @@ export default function TimerScreen() {
       }, 10000); // Update every 10 seconds
       
     } else {
+      console.log('⏹️ Timer not running, clearing intervals');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -744,6 +760,7 @@ export default function TimerScreen() {
     }
 
     return () => {
+      console.log('🧹 Cleaning up timer intervals');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -762,9 +779,13 @@ export default function TimerScreen() {
   }, [progress, progressAnim]);
 
   const startTimer = async () => {
+    console.log('🎬 Starting timer, current state:', timerState);
     const now = Date.now();
+    
     if (timerState === 'idle') {
-      setSessionStartTime(new Date(now));
+      const startDate = new Date(now);
+      console.log('⏰ Setting session start time:', startDate.toISOString());
+      setSessionStartTime(startDate);
       timerStartTimeRef.current = now;
       
       if (sessionType === 'focus' && dndPermissionGranted) {
@@ -774,10 +795,12 @@ export default function TimerScreen() {
       await soundManager.playSound('start');
       await hapticsManager.triggerHaptic('light');
     } else {
+      console.log('⏸️ Resuming timer from pause');
       // Resuming from pause - reset start time
       timerStartTimeRef.current = now;
     }
     
+    console.log('▶️ Setting timer state to running');
     setTimerState('running');
     
     const courseName = selectedCourse 

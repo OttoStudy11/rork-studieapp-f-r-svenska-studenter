@@ -212,8 +212,12 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
   const loadingRef = React.useRef(false);
 
   const loadUserData = useCallback(async (userId: string, userEmail: string) => {
-    if (loadingRef.current) return;
+    if (loadingRef.current) {
+      console.log('Load already in progress, skipping...');
+      return;
+    }
     loadingRef.current = true;
+    setIsLoading(true);
     
     try {
       
@@ -385,6 +389,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       setNotes([]);
       setPomodoroSessions([]);
     } finally {
+      console.log('Finished loading user data');
       loadingRef.current = false;
       setIsLoading(false);
     }
@@ -392,28 +397,35 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let mounted = true;
     
     if (!authLoading) {
       if (isAuthenticated && authUser) {
+        console.log('StudyContext: Loading data for authenticated user');
         // Load user data regardless of onboarding status
-        // This ensures we have user data available
         loadUserData(authUser.id, authUser.email);
         
         // Fallback timeout to ensure loading doesn't get stuck
         timeoutId = setTimeout(() => {
-          console.warn('StudyContext loading timeout - forcing loading to false');
-          setIsLoading(false);
-        }, 12000); // 12 second fallback timeout
+          if (mounted) {
+            console.warn('StudyContext loading timeout - forcing loading to false');
+            setIsLoading(false);
+            loadingRef.current = false;
+          }
+        }, 8000); // 8 second fallback timeout
       } else {
+        console.log('StudyContext: User not authenticated, clearing data');
         setUser(null);
         setCourses([]);
         setNotes([]);
         setPomodoroSessions([]);
         setIsLoading(false);
+        loadingRef.current = false;
       }
     }
     
     return () => {
+      mounted = false;
       if (timeoutId) {
         clearTimeout(timeoutId);
       }

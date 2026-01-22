@@ -52,17 +52,6 @@ export default function FlashcardsScreenV2() {
     '🚀 Flashcards är ett bevisat effektivt sätt att memorera!',
   ];
 
-  React.useEffect(() => {
-    if (generateMutation.isPending) {
-      const interval = setInterval(() => {
-        setMotivationalIndex((prev) => (prev + 1) % motivationalMessages.length);
-      }, 3000);
-      return () => clearInterval(interval);
-    } else {
-      setMotivationalIndex(0);
-    }
-  }, [generateMutation.isPending]);
-
   const { data: course } = useQuery({
     queryKey: ['course', courseId],
     queryFn: async () => {
@@ -218,6 +207,17 @@ export default function FlashcardsScreenV2() {
       );
     },
   });
+
+  React.useEffect(() => {
+    if (generateMutation.isPending) {
+      const interval = setInterval(() => {
+        setMotivationalIndex((prev) => (prev + 1) % motivationalMessages.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    } else {
+      setMotivationalIndex(0);
+    }
+  }, [generateMutation.isPending, motivationalMessages.length]);
 
   const reviewMutation = useMutation({
     mutationFn: async ({ flashcardId, correct }: { flashcardId: string; correct: boolean }) => {

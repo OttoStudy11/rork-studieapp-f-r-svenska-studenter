@@ -392,6 +392,15 @@ export async function generateFullHPTestWithAI(
   };
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 function validateAndNormalizeQuestions(
   questions: any[],
   sectionCode: string
@@ -416,19 +425,25 @@ function validateAndNormalizeQuestions(
       }
       return true;
     })
-    .map((q, index) => ({
-      id: `ai-${sectionCode}-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 6)}`,
-      sectionCode,
-      questionNumber: index + 1,
-      questionText: q.questionText.trim(),
-      questionType: q.questionType || 'multiple_choice',
-      options: q.options.map((opt: string) => opt.trim()),
-      correctAnswer: q.correctAnswer.trim(),
-      explanation: q.explanation?.trim() || 'Ingen förklaring tillgänglig.',
-      difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
-      readingPassage: q.readingPassage?.trim(),
-      tags: Array.isArray(q.tags) ? q.tags : undefined,
-    }));
+    .map((q, index) => {
+      const correctAnswerTrimmed = q.correctAnswer.trim();
+      const optionsTrimmed = q.options.map((opt: string) => opt.trim());
+      const shuffledOptions = shuffleArray(optionsTrimmed);
+
+      return {
+        id: `ai-${sectionCode}-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 6)}`,
+        sectionCode,
+        questionNumber: index + 1,
+        questionText: q.questionText.trim(),
+        questionType: q.questionType || 'multiple_choice',
+        options: shuffledOptions,
+        correctAnswer: correctAnswerTrimmed,
+        explanation: q.explanation?.trim() || 'Ingen förklaring tillgänglig.',
+        difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
+        readingPassage: q.readingPassage?.trim(),
+        tags: Array.isArray(q.tags) ? q.tags : undefined,
+      };
+    });
 }
 
 export function convertToHPQuestion(generated: GeneratedHPQuestion): HPQuestion {

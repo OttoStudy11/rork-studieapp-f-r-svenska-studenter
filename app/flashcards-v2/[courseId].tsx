@@ -557,10 +557,7 @@ export default function FlashcardsScreenV2() {
 
             <TouchableOpacity
               style={styles.generateMoreButton}
-              onPress={() => {
-                setCurrentIndex(0);
-                generateMutation.mutate({ count: 20 });
-              }}
+              onPress={() => setShowGenerateModal(true)}
               disabled={generateMutation.isPending}
             >
               <RefreshCw size={16} color="#E0E7FF" />

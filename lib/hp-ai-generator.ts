@@ -427,8 +427,8 @@ function validateAndNormalizeQuestions(
     })
     .map((q, index) => {
       const correctAnswerTrimmed = q.correctAnswer.trim();
-      const optionsTrimmed = q.options.map((opt: string) => opt.trim());
-      const shuffledOptions = shuffleArray(optionsTrimmed);
+      const optionsTrimmed: string[] = q.options.map((opt: any) => String(opt).trim());
+      const shuffledOptions: string[] = shuffleArray(optionsTrimmed);
 
       return {
         id: `ai-${sectionCode}-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 6)}`,

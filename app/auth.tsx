@@ -124,8 +124,16 @@ export default function AuthScreen() {
   };
 
   const handleAuth = async () => {
-    if (!email.trim()) {
+    const trimmedEmail = email.trim().toLowerCase();
+    
+    if (!trimmedEmail) {
       showError('Ange din e-postadress');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      showError('Ange en giltig e-postadress');
       return;
     }
 
@@ -143,7 +151,7 @@ export default function AuthScreen() {
 
     try {
       if (isSignUp) {
-        const result = await signUp(email, password);
+        const result = await signUp(trimmedEmail, password);
         
         if (result.error) {
           const errorMessage = (result.error as any)?.message || '';
@@ -158,14 +166,14 @@ export default function AuthScreen() {
         }
         
         if (result.needsEmailConfirmation) {
-          setPendingEmail(email);
+          setPendingEmail(trimmedEmail);
           setShowEmailConfirmation(true);
           showSuccess('Konto skapat! Kolla din e-post för att bekräfta kontot.');
         } else {
           showSuccess('Konto skapat!');
         }
       } else {
-        const result = await signIn(email, password, rememberMe);
+        const result = await signIn(trimmedEmail, password, rememberMe);
         
         if (result.error) {
           const errorMessage = (result.error as any)?.message || '';
@@ -173,7 +181,7 @@ export default function AuthScreen() {
           console.error('ERROR Sign in error:', errorMessage);
           
           if (errorCode === 'EMAIL_NOT_CONFIRMED') {
-            setPendingEmail(email);
+            setPendingEmail(trimmedEmail);
             setShowEmailConfirmation(true);
             return;
           }

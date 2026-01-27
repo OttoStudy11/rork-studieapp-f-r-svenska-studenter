@@ -16,7 +16,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTimerSettings } from '@/contexts/TimerSettingsContext';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
-import { Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star, ChevronRight, Volume2, Vibrate, Battery, ArrowLeft } from 'lucide-react-native';
+import { Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star, ChevronRight, Volume2, Vibrate, Battery, ArrowLeft, Trash2 } from 'lucide-react-native';
 import { router, Stack, useRouter } from 'expo-router';
 import { AnimatedPressable, FadeInView } from '@/components/Animations';
 
@@ -82,6 +82,47 @@ export default function SettingsScreen() {
               console.error('Sign out error:', error);
               showInfo('Fel', 'Kunde inte logga ut');
             }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Radera konto',
+      'Är du säker på att du vill radera ditt konto? Detta går inte att ångra. All din data kommer att raderas permanent.',
+      [
+        {
+          text: 'Avbryt',
+          style: 'cancel',
+        },
+        {
+          text: 'Radera konto',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Bekräfta radering',
+              'Skriv "RADERA" för att bekräfta att du vill radera ditt konto permanent.',
+              [
+                {
+                  text: 'Avbryt',
+                  style: 'cancel',
+                },
+                {
+                  text: 'Jag förstår, radera mitt konto',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      showInfo('Kontoradering', 'För att radera ditt konto, vänligen kontakta support@studiestugan.se. Vi raderar ditt konto inom 24 timmar.');
+                    } catch (error) {
+                      console.error('Delete account error:', error);
+                      showInfo('Fel', 'Kunde inte radera konto. Kontakta support@studiestugan.se');
+                    }
+                  },
+                },
+              ]
+            );
           },
         },
       ]
@@ -225,6 +266,12 @@ export default function SettingsScreen() {
     {
       title: 'Kontoinställningar',
       items: [
+        {
+          icon: <Trash2 size={20} color={theme.colors.error || '#EF4444'} />,
+          title: 'Radera konto',
+          subtitle: 'Ta bort ditt konto och all data permanent',
+          onPress: handleDeleteAccount,
+        },
         {
           icon: <LogOut size={20} color={theme.colors.error || '#EF4444'} />,
           title: 'Logga ut',

@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -329,14 +330,28 @@ export default function PremiumScreen() {
   ];
 
   const handlePurchase = async () => {
-    if (!offerings || isPurchasing) return;
+    if (isPurchasing) return;
+    
+    console.log('[Premium Screen] Purchase button pressed');
+    console.log('[Premium Screen] Offerings:', offerings);
+    console.log('[Premium Screen] Pricing plans:', pricingPlans);
+    console.log('[Premium Screen] Selected plan:', selectedPlan);
+    console.log('[Premium Screen] Platform:', Platform.OS);
+    
+    if (!offerings) {
+      console.error('[Premium Screen] No offerings available');
+      Alert.alert('Fel', 'Produkter är inte tillgängliga just nu. Försök igen om en stund.');
+      return;
+    }
     
     const selectedPlanData = pricingPlans.find(p => p.id === selectedPlan);
     if (!selectedPlanData?.pkg) {
       console.error('[Premium Screen] Selected package not found');
+      Alert.alert('Fel', 'Vald prenumeration kunde inte hittas. Försök igen.');
       return;
     }
     
+    console.log('[Premium Screen] Starting purchase for package:', selectedPlanData.pkg.identifier);
     setIsPurchasing(true);
     try {
       const success = await purchasePackage(selectedPlanData.pkg);
@@ -346,6 +361,7 @@ export default function PremiumScreen() {
       }
     } catch (error) {
       console.error('[Premium Screen] Purchase error:', error);
+      Alert.alert('Köpfel', 'Något gick fel vid köpet. Försök igen eller kontakta support.');
     } finally {
       setIsPurchasing(false);
     }
@@ -703,11 +719,12 @@ export default function PremiumScreen() {
                 styles.ctaButton, 
                 { 
                   backgroundColor: theme.colors.primary, 
-                  opacity: (isPurchasing || isLoadingOfferings || pricingPlans.length === 0) ? 0.6 : 1 
+                  opacity: (isPurchasing || isLoadingOfferings) ? 0.6 : 1 
                 }
               ]}
               onPress={handlePurchase}
-              disabled={isPurchasing || isLoadingOfferings || pricingPlans.length === 0}
+              disabled={isPurchasing || isLoadingOfferings}
+              activeOpacity={0.8}
             >
               <LinearGradient
                 colors={[theme.colors.primary, '#7C3AED']}
@@ -738,11 +755,16 @@ export default function PremiumScreen() {
                   Prenumerationsinformation
                 </Text>
               </View>
-              <Text style={[styles.termsText, { color: theme.colors.textMuted }]}>
+              <Text style={[styles.termsText, { color: theme.colors.text }]}>
+                <Text style={{ fontWeight: '600' }}>Tjänst:</Text> Studiestugan Premium{'\n'}
+                <Text style={{ fontWeight: '600' }}>Längd:</Text> Månadsvis eller årsvis prenumeration{'\n'}
+                <Text style={{ fontWeight: '600' }}>Pris:</Text> Visas ovan för varje plan{'\n\n'}
                 • Abonnemanget förnyas automatiskt tills det avslutas.{'\n'}
-                • Debitering sker via ditt Apple-konto.{'\n'}
+                • Debitering sker via ditt Apple ID-konto vid köpbekräftelse.{'\n'}
+                • Abonnemanget förnyas automatiskt om det inte avbryts minst 24 timmar före utgången av innevarande period.{'\n'}
+                • Ditt konto debiteras för förnyelse inom 24 timmar före utgången av innevarande period.{'\n'}
                 • Avsluta när som helst via App Store → Konto → Prenumerationer.{'\n'}
-                • Återbetalningar hanteras av Apple.
+                • Återbetalningar hanteras av Apple enligt deras villkor.
               </Text>
             </View>
           </FadeInView>
@@ -764,14 +786,14 @@ export default function PremiumScreen() {
             </TouchableOpacity>
           </FadeInView>
 
-          {/* Footer Links */}
+          {/* Footer Links - Required by App Store */}
           <View style={styles.footerLinks}>
             <TouchableOpacity onPress={() => setShowPrivacyModal(true)}>
-              <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Integritetspolicy</Text>
+              <Text style={[styles.footerLink, { color: theme.colors.primary, fontWeight: '600' }]}>Integritetspolicy</Text>
             </TouchableOpacity>
             <Text style={[styles.footerDivider, { color: theme.colors.textMuted }]}>•</Text>
             <TouchableOpacity onPress={() => setShowTermsModal(true)}>
-              <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>Användarvillkor</Text>
+              <Text style={[styles.footerLink, { color: theme.colors.primary, fontWeight: '600' }]}>Användarvillkor (EULA)</Text>
             </TouchableOpacity>
           </View>
 

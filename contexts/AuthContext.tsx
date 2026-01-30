@@ -19,6 +19,7 @@ export interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ error?: any; needsEmailConfirmation?: boolean }>;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<{ error?: any }>;
   setOnboardingCompleted: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: any }>;
   resendConfirmation: (email: string) => Promise<{ error?: any }>;
@@ -574,6 +575,69 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   }, []);
 
+  const handleDeleteAccount = useCallback(async () => {
+    try {
+      if (!user) {
+        return { error: { message: 'Ingen användare inloggad' } };
+      }
+      
+      console.log('Deleting account for user:', user.id);
+      
+      // Clear remember me session first
+      await clearRememberMeSession();
+      
+      // Delete user data from profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', user.id);
+      
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+        // Continue even if profile deletion fails - the auth deletion is more important
+      }
+      
+      // Delete related user data (study sessions, etc.)
+      try {
+        await Promise.all([
+          supabase.from('study_sessions').delete().eq('user_id', user.id),
+          supabase.from('user_courses').delete().eq('user_id', user.id),
+          supabase.from('user_achievements').delete().eq('user_id', user.id),
+          supabase.from('flashcards').delete().eq('user_id', user.id),
+          supabase.from('remember_me_sessions').delete().eq('user_id', user.id),
+        ]);
+        console.log('User related data deleted');
+      } catch (dataError) {
+        console.warn('Some user data deletion failed:', dataError);
+        // Continue with account deletion
+      }
+      
+      // Sign out the user (this will also trigger onAuthStateChange)
+      const { error: signOutError } = await supabase.auth.signOut();
+      
+      if (signOutError) {
+        console.error('Error signing out after delete:', signOutError);
+      }
+      
+      // Clear onboarding status
+      try {
+        await AsyncStorage.removeItem(`${ONBOARDING_KEY}_${user.id}`);
+      } catch (storageError) {
+        console.warn('Error clearing onboarding status:', storageError);
+      }
+      
+      // Clear local state
+      setUser(null);
+      setHasCompletedOnboarding(false);
+      
+      console.log('Account deletion completed successfully');
+      return { error: null };
+    } catch (error: any) {
+      console.error('Delete account exception:', error);
+      return { error: { message: error?.message || 'Kunde inte radera kontot. Försök igen.' } };
+    }
+  }, [user]);
+
   const setOnboardingCompleted = useCallback(async () => {
     if (user) {
       try {
@@ -595,6 +659,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     signUp: handleSignUp,
     signIn: handleSignIn,
     signOut: handleSignOut,
+    deleteAccount: handleDeleteAccount,
     setOnboardingCompleted,
     resetPassword: handleResetPassword,
     resendConfirmation: handleResendConfirmation
@@ -605,6 +670,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     handleSignUp,
     handleSignIn,
     handleSignOut,
+    handleDeleteAccount,
     setOnboardingCompleted,
     handleResetPassword,
     handleResendConfirmation

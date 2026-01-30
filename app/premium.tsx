@@ -742,11 +742,11 @@ export default function PremiumScreen() {
                 styles.ctaButton, 
                 { 
                   backgroundColor: theme.colors.primary, 
-                  opacity: (isPurchasing || isLoadingOfferings) ? 0.6 : 1 
+                  opacity: (isPurchasing || isLoadingOfferings || !offerings || pricingPlans.length === 0) ? 0.6 : 1 
                 }
               ]}
               onPress={handlePurchase}
-              disabled={isPurchasing}
+              disabled={isPurchasing || isLoadingOfferings || !offerings || pricingPlans.length === 0}
               activeOpacity={0.8}
             >
               <LinearGradient
@@ -761,7 +761,7 @@ export default function PremiumScreen() {
                   <>
                     <Crown size={20} color="#FFF" />
                     <Text style={styles.ctaButtonText}>
-                      {isLoadingOfferings ? 'LADDAR...' : 'STARTA PREMIUM'}
+                      {isLoadingOfferings ? 'LADDAR...' : !offerings || pricingPlans.length === 0 ? 'EJ TILLGÄNGLIG' : 'STARTA PREMIUM'}
                     </Text>
                   </>
                 )}

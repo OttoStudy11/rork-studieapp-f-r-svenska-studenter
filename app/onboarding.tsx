@@ -1215,7 +1215,7 @@ export default function OnboardingScreen() {
                     <Text style={styles.goalEmoji}>{goal.icon}</Text>
                     <Text style={[
                       styles.goalLabel,
-                      data.goals.includes(goal.id) && { color: goal.color, fontWeight: '700' as const }
+                      data.goals.includes(goal.id) && { fontWeight: '700' as const }
                     ]}>
                       {goal.label}
                     </Text>
@@ -1251,7 +1251,7 @@ export default function OnboardingScreen() {
                     <Text style={styles.goalEmoji}>{goal.icon}</Text>
                     <Text style={[
                       styles.goalLabel,
-                      data.goals.includes(goal.id) && { color: goal.color, fontWeight: '700' as const }
+                      data.goals.includes(goal.id) && { fontWeight: '700' as const }
                     ]}>
                       {goal.label}
                     </Text>
@@ -1287,14 +1287,12 @@ export default function OnboardingScreen() {
                   >
                     <Text style={styles.paceEmoji}>{pace.icon}</Text>
                     <Text style={[
-                      styles.paceTitle,
-                      data.learningPace === pace.id && { color: pace.color }
+                      styles.paceTitle
                     ]}>
                       {pace.title}
                     </Text>
                     <Text style={[
-                      styles.paceSubtitle,
-                      data.learningPace === pace.id && { color: pace.color }
+                      styles.paceSubtitle
                     ]}>{pace.subtitle}</Text>
                     <Text style={[
                       styles.paceDescription,
@@ -1332,14 +1330,12 @@ export default function OnboardingScreen() {
                   >
                     <Text style={styles.paceEmoji}>{pace.icon}</Text>
                     <Text style={[
-                      styles.paceTitle,
-                      data.learningPace === pace.id && { color: pace.color }
+                      styles.paceTitle
                     ]}>
                       {pace.title}
                     </Text>
                     <Text style={[
-                      styles.paceSubtitle,
-                      data.learningPace === pace.id && { color: pace.color }
+                      styles.paceSubtitle
                     ]}>{pace.subtitle}</Text>
                     <Text style={[
                       styles.paceDescription,

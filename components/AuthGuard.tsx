@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
-import { router } from 'expo-router';
+import { router, Href } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingScreen } from '@/components/LoadingScreen';
@@ -38,21 +38,21 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       
       if (!isFtueComplete) {
         console.log('AuthGuard - Navigating to FTUE');
-        router.replace('/ftue');
+        router.replace('/ftue' as Href);
       } else if (!isAuthenticated) {
         console.log('AuthGuard - Navigating to Auth');
-        router.replace('/auth');
+        router.replace('/auth' as Href);
       } else if (!hasCompletedOnboarding) {
         console.log('AuthGuard - Navigating to Onboarding');
-        router.replace('/onboarding');
+        router.replace('/onboarding' as Href);
       } else {
         console.log('AuthGuard - Navigating to Home');
-        router.replace('/(tabs)/home');
+        router.replace('/(tabs)/home' as Href);
       }
     } catch (error) {
       console.error('AuthGuard - Navigation error:', error);
       hasNavigatedRef.current = true;
-      router.replace('/auth');
+      router.replace('/auth' as Href);
     }
   }, [isAuthenticated, hasCompletedOnboarding]);
 

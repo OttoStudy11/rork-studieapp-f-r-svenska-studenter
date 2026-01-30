@@ -160,8 +160,11 @@ export default function PremiumScreen() {
       return;
     }
     
-    setIsLoadingOfferings(true);
-    setLoadError(null);
+    // Only set loading on first attempt
+    if (attempt === 0) {
+      setIsLoadingOfferings(true);
+      setLoadError(null);
+    }
     
     try {
       console.log('[Premium Screen] Loading offerings, attempt:', attempt + 1);
@@ -170,6 +173,7 @@ export default function PremiumScreen() {
       if (result) {
         setOfferings(result);
         setLoadError(null);
+        setIsLoadingOfferings(false);
         console.log('[Premium Screen] Offerings loaded successfully');
       } else {
         // No offerings available
@@ -181,6 +185,7 @@ export default function PremiumScreen() {
           return;
         }
         setLoadError('Produkter ej tillgängliga. Försök igen om en stund.');
+        setIsLoadingOfferings(false);
       }
     } catch (error) {
       console.error('[Premium Screen] Failed to load offerings:', error);
@@ -190,7 +195,6 @@ export default function PremiumScreen() {
         return;
       }
       setLoadError('Kunde inte ladda produkter. Kontrollera din internetanslutning.');
-    } finally {
       setIsLoadingOfferings(false);
     }
   }, [getOfferings]);
@@ -330,17 +334,35 @@ export default function PremiumScreen() {
   ];
 
   const handlePurchase = async () => {
-    if (isPurchasing) return;
-    
     console.log('[Premium Screen] Purchase button pressed');
+    console.log('[Premium Screen] isPurchasing:', isPurchasing);
+    console.log('[Premium Screen] isLoadingOfferings:', isLoadingOfferings);
     console.log('[Premium Screen] Offerings:', offerings);
     console.log('[Premium Screen] Pricing plans:', pricingPlans);
     console.log('[Premium Screen] Selected plan:', selectedPlan);
     console.log('[Premium Screen] Platform:', Platform.OS);
     
+    if (isPurchasing) {
+      console.log('[Premium Screen] Already purchasing, ignoring');
+      return;
+    }
+    
+    if (isLoadingOfferings) {
+      console.log('[Premium Screen] Still loading offerings');
+      Alert.alert('Vänligen vänta', 'Produkter laddas fortfarande. Försök igen om ett ögonblick.');
+      return;
+    }
+    
     if (!offerings) {
       console.error('[Premium Screen] No offerings available');
-      Alert.alert('Fel', 'Produkter är inte tillgängliga just nu. Försök igen om en stund.');
+      Alert.alert(
+        'Produkter ej tillgängliga',
+        'Vi kunde inte ladda produkter just nu. Kontrollera din internetanslutning och försök igen.',
+        [
+          { text: 'Avbryt', style: 'cancel' },
+          { text: 'Försök igen', onPress: () => loadOfferings(0) }
+        ]
+      );
       return;
     }
     
@@ -358,6 +380,7 @@ export default function PremiumScreen() {
       if (success) {
         console.log('[Premium Screen] Purchase successful');
         // User is now premium, UI will update automatically
+        router.back();
       }
     } catch (error) {
       console.error('[Premium Screen] Purchase error:', error);
@@ -723,7 +746,7 @@ export default function PremiumScreen() {
                 }
               ]}
               onPress={handlePurchase}
-              disabled={isPurchasing || isLoadingOfferings}
+              disabled={isPurchasing}
               activeOpacity={0.8}
             >
               <LinearGradient

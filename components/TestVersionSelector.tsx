@@ -51,13 +51,17 @@ export default function TestVersionSelector({
         sectionName,
         testVersionsCount: safeTestVersions.length,
         fullTestVersionsCount: safeFullTestVersions.length,
+        testVersions: safeTestVersions,
+        fullTestVersions: safeFullTestVersions,
       });
       
-      // Small delay to ensure props are fully propagated in native environment
       const timer = setTimeout(() => {
         setIsReady(true);
-        console.log('[TestVersionSelector] Ready to render content');
-      }, 50);
+        console.log('[TestVersionSelector] Ready to render content with', {
+          testVersionsCount: safeTestVersions.length,
+          fullTestVersionsCount: safeFullTestVersions.length,
+        });
+      }, 100);
       
       return () => clearTimeout(timer);
     } else {
@@ -113,9 +117,9 @@ export default function TestVersionSelector({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {!isReady ? (
+            {!isReady && visible ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
+                <ActivityIndicator size="large" color={COLORS.primary} />
                 <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
                   Laddar testversioner...
                 </Text>

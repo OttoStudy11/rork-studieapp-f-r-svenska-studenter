@@ -95,12 +95,11 @@ export default function HogskoleprovetScreen() {
       return;
     }
     console.log('[HP Screen] Opening section selector for:', sectionCode);
-    // Set section first, then show modal after a tick to ensure state propagates
+    console.log('[HP Screen] Test versions for section:', getTestVersionsBySection(sectionCode));
     setSelectedSection(sectionCode);
-    // Use requestAnimationFrame to ensure the state update is committed before showing modal
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       setVersionSelectorVisible(true);
-    });
+    }, 100);
   };
 
   const handleSelectTestVersion = (testVersionId: string) => {
@@ -498,7 +497,7 @@ export default function HogskoleprovetScreen() {
         <View style={styles.bottomPadding} />
       </ScrollView>
 
-      {selectedSection && versionSelectorVisible && (
+      {versionSelectorVisible && selectedSection && (
         <TestVersionSelector
           key={`section-${selectedSection}`}
           visible={versionSelectorVisible}

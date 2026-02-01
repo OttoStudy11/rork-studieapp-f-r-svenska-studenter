@@ -3,7 +3,6 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 import { useStudy } from './StudyContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type CommunityType = 'school' | 'program' | 'study-group' | 'other';
 export type CommunityVisibility = 'open' | 'closed';
@@ -110,8 +109,6 @@ export interface CreateCommunityData {
   programName?: string;
   imageUrl?: string;
 }
-
-const COMMUNITIES_CACHE_KEY = 'communities_cache';
 
 export const [CommunityProvider, useCommunity] = createContextHook((): CommunityContextType => {
   const { user } = useAuth();
@@ -335,8 +332,8 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
       const profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
       
       const mapped: CommunityInvite[] = inviteData.map((i: any) => {
-        const community = communitiesMap.get(i.community_id);
-        const inviter = profilesMap.get(i.inviter_id);
+        const community = communitiesMap.get(i.community_id) as any;
+        const inviter = profilesMap.get(i.inviter_id) as any;
         
         return {
           id: i.id,

@@ -56,6 +56,7 @@ export async function generateFlashcardsWithAI(
     const targetCount = Math.min(request.targetCount, MAX_FLASHCARDS);
     console.log('🎯 [AI Flashcards] Starting generation:', {
       course: request.courseName,
+      description: request.courseDescription?.substring(0, 100),
       count: targetCount,
       requestedCount: request.targetCount,
       difficulty: request.difficulty,
@@ -79,32 +80,49 @@ export async function generateFlashcardsWithAI(
     );
     
     console.log(`📡 [AI Flashcards] Requesting ${targetCount} cards from AI...`);
+    console.log(`📡 [AI Flashcards] Prompt preview:`, userPrompt.substring(0, 200));
     onProgress?.(20);
     
-    const response = await generateObject({
-      schema: flashcardsResponseSchema,
-      messages: [
-        {
-          role: 'user',
-          content: `${systemPrompt}\n\n${userPrompt}`,
-        },
-      ],
-    });
+    let response: any;
+    try {
+      response = await generateObject({
+        schema: flashcardsResponseSchema,
+        messages: [
+          {
+            role: 'user',
+            content: `${systemPrompt}\n\n${userPrompt}`,
+          },
+        ],
+      });
+    } catch (aiError: any) {
+      console.error('❌ [AI Flashcards] AI API call failed:', {
+        message: aiError?.message,
+        name: aiError?.name,
+      });
+      throw new Error(`AI-tjänsten är tillfälligt otillgänglig. Försök igen om en stund. (${aiError?.message || 'Unknown error'})`);
+    }
     
     const result = response as { flashcards: any[] };
     
     console.log(`✅ [AI Flashcards] Generation complete:`, {
       received: result?.flashcards?.length || 0,
       target: targetCount,
+      sampleQuestion: result?.flashcards?.[0]?.question?.substring(0, 50),
     });
     
     onProgress?.(80);
 
     if (!result?.flashcards || result.flashcards.length === 0) {
-      throw new Error('AI generated 0 flashcards');
+      console.error('❌ [AI Flashcards] AI returned empty or invalid response:', JSON.stringify(result).substring(0, 500));
+      throw new Error('AI kunde inte generera flashcards för denna kurs. Försök med en annan kurs eller lägg till egen text.');
     }
 
     const validatedFlashcards = validateAndNormalizeFlashcards(result.flashcards);
+    
+    if (validatedFlashcards.length === 0) {
+      console.error('❌ [AI Flashcards] All flashcards failed validation');
+      throw new Error('Genererade flashcards var inte giltiga. Försök igen.');
+    }
     
     onProgress?.(100);
     
@@ -126,10 +144,16 @@ export async function generateFlashcardsWithAI(
       stack: error?.stack?.substring(0, 300),
     });
 
+    // Return user-friendly error message
+    let errorMessage = error?.message || 'Ett oväntat fel uppstod';
+    if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('timeout')) {
+      errorMessage = 'Nätverksfel. Kontrollera din internetanslutning och försök igen.';
+    }
+
     return {
       success: false,
       flashcards: [],
-      error: error?.message || 'Unknown error occurred',
+      error: errorMessage,
       metadata: {
         requestedCount: Math.min(request.targetCount, MAX_FLASHCARDS),
         generatedCount: 0,

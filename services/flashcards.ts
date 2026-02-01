@@ -69,7 +69,8 @@ export async function getCourseFlashcards(courseId: string): Promise<{
   try {
     console.log(`📖 [Flashcards Service] Fetching flashcards for course: ${courseId}`);
 
-    const { data, error } = await supabase
+    // First try to fetch by course_id directly
+    let { data, error } = await supabase
       .from('flashcards')
       .select('*')
       .eq('course_id', courseId)
@@ -82,6 +83,30 @@ export async function getCourseFlashcards(courseId: string): Promise<{
         details: error.details,
       });
       return { flashcards: [], error: error.message };
+    }
+
+    // If no flashcards found, try to find the actual course id by course_code
+    if (!data || data.length === 0) {
+      console.log(`🔍 [Flashcards Service] No flashcards found by id, checking by course_code...`);
+      
+      const { data: courseData } = await supabase
+        .from('courses')
+        .select('id')
+        .ilike('course_code', courseId)
+        .maybeSingle();
+
+      if (courseData && courseData.id !== courseId) {
+        console.log(`🔍 [Flashcards Service] Found course id: ${courseData.id}, fetching flashcards...`);
+        const result = await supabase
+          .from('flashcards')
+          .select('*')
+          .eq('course_id', courseData.id)
+          .order('created_at', { ascending: false });
+        
+        if (!result.error) {
+          data = result.data;
+        }
+      }
     }
 
     console.log(`✅ [Flashcards Service] Fetched ${data?.length || 0} flashcards`);
@@ -160,55 +185,99 @@ export async function saveFlashcardBatch(
       return { success: false, savedCount: 0, error: 'Kurs-ID saknas' };
     }
 
-    // First, check if course exists in database
+    let effectiveCourseId = courseId;
+
+    // First, check if course exists in database by id
     console.log(`🔍 [Flashcards Service] Checking if course ${courseId} exists...`);
-    const { data: courseData } = await supabase
+    const { data: courseById, error: courseByIdError } = await supabase
       .from('courses')
-      .select('id')
+      .select('id, title')
       .eq('id', courseId)
       .maybeSingle();
 
-    let effectiveCourseId = courseId;
+    if (courseByIdError) {
+      console.warn(`⚠️ [Flashcards Service] Error checking course by id:`, courseByIdError.message);
+    }
 
-    // If course doesn't exist, try to create a placeholder or use a different approach
-    if (!courseData) {
-      console.warn(`⚠️ [Flashcards Service] Course ${courseId} not found in database`);
-      
-      // Try to find a course by code instead (courseId might be a course code)
-      const { data: courseByCode } = await supabase
+    if (courseById) {
+      console.log(`✅ [Flashcards Service] Course found by id: ${courseById.id} (${courseById.title})`);
+      effectiveCourseId = courseById.id;
+    } else {
+      // Try to find a course by course_code
+      console.log(`🔍 [Flashcards Service] Course not found by id, trying course_code: ${courseId}`);
+      const { data: courseByCode, error: courseByCodeError } = await supabase
         .from('courses')
-        .select('id')
-        .eq('course_code', courseId)
+        .select('id, title')
+        .eq('course_code', courseId.toUpperCase())
         .maybeSingle();
-      
+
+      if (courseByCodeError) {
+        console.warn(`⚠️ [Flashcards Service] Error checking course by code:`, courseByCodeError.message);
+      }
+
       if (courseByCode) {
         effectiveCourseId = courseByCode.id;
-        console.log(`✅ [Flashcards Service] Found course by code: ${effectiveCourseId}`);
+        console.log(`✅ [Flashcards Service] Found course by code: ${effectiveCourseId} (${courseByCode.title})`);
       } else {
-        // Create a minimal course entry for flashcards
-        console.log(`📝 [Flashcards Service] Creating placeholder course for flashcards...`);
-        const { data: newCourse, error: createError } = await supabase
+        // Try case-insensitive search with ilike
+        console.log(`🔍 [Flashcards Service] Trying case-insensitive search for: ${courseId}`);
+        const { data: courseByIlike } = await supabase
           .from('courses')
-          .insert({
-            title: courseId,
-            course_code: courseId,
-            subject: 'Övrigt',
-            description: 'Automatiskt skapad kurs för flashcards',
-            level: 'gymnasium',
-          })
-          .select('id')
-          .single();
+          .select('id, title, course_code')
+          .ilike('course_code', courseId)
+          .maybeSingle();
 
-        if (createError) {
-          console.error('❌ [Flashcards Service] Failed to create placeholder course:', createError);
-          // Continue anyway - the insert might still work if RLS allows it
-        } else if (newCourse) {
-          effectiveCourseId = newCourse.id;
-          console.log(`✅ [Flashcards Service] Created placeholder course: ${effectiveCourseId}`);
+        if (courseByIlike) {
+          effectiveCourseId = courseByIlike.id;
+          console.log(`✅ [Flashcards Service] Found course by ilike: ${effectiveCourseId} (${courseByIlike.title})`);
+        } else {
+          // Create a placeholder course for flashcards
+          console.log(`📝 [Flashcards Service] Creating placeholder course for: ${courseId}`);
+          
+          // Generate a proper course name from the course code
+          const courseName = formatCourseName(courseId);
+          
+          const { data: newCourse, error: createError } = await supabase
+            .from('courses')
+            .insert({
+              id: courseId.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+              title: courseName,
+              course_code: courseId.toUpperCase(),
+              subject: guessSubjectFromCode(courseId),
+              description: `Kurs för ${courseName}. Flashcards genererade av AI.`,
+              level: 'gymnasium',
+            })
+            .select('id')
+            .single();
+
+          if (createError) {
+            console.error('❌ [Flashcards Service] Failed to create placeholder course:', {
+              message: createError.message,
+              code: createError.code,
+              details: createError.details,
+            });
+            
+            // If it's a unique constraint violation, the course might already exist with different casing
+            if (createError.code === '23505') {
+              // Try to find any course that might match
+              const { data: anyMatch } = await supabase
+                .from('courses')
+                .select('id')
+                .or(`id.ilike.%${courseId}%,course_code.ilike.%${courseId}%`)
+                .limit(1)
+                .maybeSingle();
+              
+              if (anyMatch) {
+                effectiveCourseId = anyMatch.id;
+                console.log(`✅ [Flashcards Service] Found existing course after conflict: ${effectiveCourseId}`);
+              }
+            }
+          } else if (newCourse) {
+            effectiveCourseId = newCourse.id;
+            console.log(`✅ [Flashcards Service] Created placeholder course: ${effectiveCourseId}`);
+          }
         }
       }
-    } else {
-      console.log(`✅ [Flashcards Service] Course ${courseId} exists in database`);
     }
 
     const flashcardsToInsert = flashcards.map((fc) => ({
@@ -481,4 +550,103 @@ export async function getFlashcardStats(
       error: err?.message || 'Unknown error',
     };
   }
+}
+
+// Helper function to format course name from code
+function formatCourseName(courseCode: string): string {
+  const code = courseCode.toUpperCase();
+  
+  // Common Swedish course mappings
+  const courseNames: Record<string, string> = {
+    'MA01A': 'Matematik 1a',
+    'MA01B': 'Matematik 1b',
+    'MA01C': 'Matematik 1c',
+    'MA02A': 'Matematik 2a',
+    'MA02B': 'Matematik 2b',
+    'MA02C': 'Matematik 2c',
+    'MA03B': 'Matematik 3b',
+    'MA03C': 'Matematik 3c',
+    'MA04': 'Matematik 4',
+    'MA05': 'Matematik 5',
+    'SV01': 'Svenska 1',
+    'SV02': 'Svenska 2',
+    'SV03': 'Svenska 3',
+    'EN05': 'Engelska 5',
+    'EN06': 'Engelska 6',
+    'EN07': 'Engelska 7',
+    'FY01': 'Fysik 1',
+    'FY02': 'Fysik 2',
+    'KE01': 'Kemi 1',
+    'KE02': 'Kemi 2',
+    'BI01': 'Biologi 1',
+    'BI02': 'Biologi 2',
+    'HI01A': 'Historia 1a',
+    'HI01B': 'Historia 1b',
+    'HI02A': 'Historia 2a',
+    'HI02B': 'Historia 2b',
+    'SH01A': 'Samhällskunskap 1a1',
+    'SH01B': 'Samhällskunskap 1b',
+    'SH02': 'Samhällskunskap 2',
+    'RE01': 'Religionskunskap 1',
+    'RE02': 'Religionskunskap 2',
+    'GE01': 'Geografi 1',
+    'PS01': 'Psykologi 1',
+    'PS02': 'Psykologi 2',
+    'FI01': 'Filosofi 1',
+  };
+  
+  if (courseNames[code]) {
+    return courseNames[code];
+  }
+  
+  // Try to parse the code pattern (e.g., MA01A -> Matematik 1a)
+  const match = code.match(/^([A-Z]{2})(\d{1,2})([A-Z])?$/i);
+  if (match) {
+    const [, subjectCode, level, variant] = match;
+    const subjectNames: Record<string, string> = {
+      'MA': 'Matematik',
+      'SV': 'Svenska',
+      'EN': 'Engelska',
+      'FY': 'Fysik',
+      'KE': 'Kemi',
+      'BI': 'Biologi',
+      'HI': 'Historia',
+      'SH': 'Samhällskunskap',
+      'RE': 'Religionskunskap',
+      'GE': 'Geografi',
+      'PS': 'Psykologi',
+      'FI': 'Filosofi',
+      'NA': 'Naturkunskap',
+      'TK': 'Teknik',
+      'PR': 'Programmering',
+    };
+    
+    const subject = subjectNames[subjectCode.toUpperCase()] || subjectCode;
+    return `${subject} ${level}${variant ? variant.toLowerCase() : ''}`;
+  }
+  
+  return courseCode;
+}
+
+// Helper function to guess subject from course code
+function guessSubjectFromCode(courseCode: string): string {
+  const code = courseCode.toUpperCase();
+  
+  if (code.startsWith('MA')) return 'Matematik';
+  if (code.startsWith('SV')) return 'Svenska';
+  if (code.startsWith('EN')) return 'Engelska';
+  if (code.startsWith('FY')) return 'Fysik';
+  if (code.startsWith('KE')) return 'Kemi';
+  if (code.startsWith('BI')) return 'Biologi';
+  if (code.startsWith('HI')) return 'Historia';
+  if (code.startsWith('SH')) return 'Samhällskunskap';
+  if (code.startsWith('RE')) return 'Religionskunskap';
+  if (code.startsWith('GE')) return 'Geografi';
+  if (code.startsWith('PS')) return 'Psykologi';
+  if (code.startsWith('FI')) return 'Filosofi';
+  if (code.startsWith('NA')) return 'Naturkunskap';
+  if (code.startsWith('TK')) return 'Teknik';
+  if (code.startsWith('PR')) return 'Programmering';
+  
+  return 'Övrigt';
 }

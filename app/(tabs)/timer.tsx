@@ -2509,6 +2509,8 @@ export default function TimerScreen() {
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   minimumDate={new Date()}
+                  textColor={theme.colors.text}
+                  accentColor={theme.colors.primary}
                   onChange={(event, selectedDate) => {
                     if (Platform.OS === 'android') {
                       setShowDatePicker(false);
@@ -2525,6 +2527,8 @@ export default function TimerScreen() {
                   value={newSessionDate}
                   mode="time"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  textColor={theme.colors.text}
+                  accentColor={theme.colors.primary}
                   onChange={(event, selectedTime) => {
                     if (Platform.OS === 'android') {
                       setShowTimePicker(false);

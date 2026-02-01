@@ -294,6 +294,8 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={handleDateChange}
                 minimumDate={new Date()}
+                textColor={theme.colors.text}
+                accentColor={theme.colors.primary}
               />
             )}
 
@@ -304,6 +306,8 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={handleTimeChange}
                 is24Hour={true}
+                textColor={theme.colors.text}
+                accentColor={theme.colors.primary}
               />
             )}
 

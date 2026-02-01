@@ -25,38 +25,7 @@ import { COLORS } from '@/constants/design-system';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TEST_VERSIONS_BY_SECTION: Record<string, HPTestVersion[]> = {
-  'ORD': [
-    { id: 'ord-a', sectionCode: 'ORD', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
-    { id: 'ord-b', sectionCode: 'ORD', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
-    { id: 'ord-c', sectionCode: 'ORD', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
-  ],
-  'LÄS': [
-    { id: 'las-a', sectionCode: 'LÄS', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
-    { id: 'las-b', sectionCode: 'LÄS', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
-    { id: 'las-c', sectionCode: 'LÄS', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
-  ],
-  'MEK': [
-    { id: 'mek-a', sectionCode: 'MEK', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
-    { id: 'mek-b', sectionCode: 'MEK', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
-    { id: 'mek-c', sectionCode: 'MEK', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
-  ],
-  'XYZ': [
-    { id: 'xyz-a', sectionCode: 'XYZ', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
-    { id: 'xyz-b', sectionCode: 'XYZ', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
-    { id: 'xyz-c', sectionCode: 'XYZ', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
-  ],
-  'KVA': [
-    { id: 'kva-a', sectionCode: 'KVA', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
-    { id: 'kva-b', sectionCode: 'KVA', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
-    { id: 'kva-c', sectionCode: 'KVA', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
-  ],
-  'DTK': [
-    { id: 'dtk-a', sectionCode: 'DTK', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
-    { id: 'dtk-b', sectionCode: 'DTK', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
-    { id: 'dtk-c', sectionCode: 'DTK', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
-  ],
-};
+
 
 export default function HPSelectVersionScreen() {
   const { theme, isDark } = useTheme();
@@ -84,14 +53,8 @@ export default function HPSelectVersionScreen() {
       return [];
     }
     
-    const directVersions = TEST_VERSIONS_BY_SECTION[sectionCode] || [];
-    if (directVersions.length > 0) {
-      console.log('[HP Select Version] Using direct lookup, found:', directVersions.length);
-      return directVersions;
-    }
-    
     const filtered = HP_TEST_VERSIONS.filter(v => v.sectionCode === sectionCode);
-    console.log('[HP Select Version] Using filter, found:', filtered.length);
+    console.log('[HP Select Version] Found test versions:', filtered.length);
     return filtered;
   }, [sectionCode]);
 

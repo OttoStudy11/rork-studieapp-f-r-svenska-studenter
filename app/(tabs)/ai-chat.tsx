@@ -28,7 +28,38 @@ export default function AIChatScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
 
-  const { messages, error, sendMessage } = useRorkAgent({
+  useEffect(() => {
+    console.log('[AI Chat] Environment check:');
+    console.log('  TOOLKIT_URL:', process.env.EXPO_PUBLIC_TOOLKIT_URL);
+    console.log('  PROJECT_ID:', process.env.EXPO_PUBLIC_PROJECT_ID);
+    console.log('  TEAM_ID:', process.env.EXPO_PUBLIC_TEAM_ID);
+    console.log('  RORK_DB_ENDPOINT:', process.env.EXPO_PUBLIC_RORK_DB_ENDPOINT);
+    console.log('  RORK_DB_TOKEN:', process.env.EXPO_PUBLIC_RORK_DB_TOKEN ? 'SET' : 'NOT SET');
+    
+    const testConnection = async () => {
+      try {
+        const toolkitUrl = process.env.EXPO_PUBLIC_TOOLKIT_URL || 'https://toolkit.rork.com';
+        console.log('[AI Chat] Testing connection to:', toolkitUrl);
+        const response = await fetch(`${toolkitUrl}/health`, { 
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        console.log('[AI Chat] Health check status:', response.status);
+        if (response.ok) {
+          const data = await response.text();
+          console.log('[AI Chat] Health check response:', data);
+        } else {
+          console.error('[AI Chat] Health check failed:', response.status, response.statusText);
+        }
+      } catch (err) {
+        console.error('[AI Chat] Connection test failed:', err);
+      }
+    };
+    
+    testConnection();
+  }, []);
+
+  const { messages, error, sendMessage, isLoading } = useRorkAgent({
     tools: {},
   });
 
@@ -52,8 +83,10 @@ export default function AIChatScreen() {
     setIsSending(true);
     setLocalError(null);
 
-    console.log('Sending message:', userMessage, 'with images:', imagesToSend.length);
-    console.log('Toolkit URL:', process.env.EXPO_PUBLIC_TOOLKIT_URL);
+    console.log('[AI Chat] Sending message:', userMessage, 'with images:', imagesToSend.length);
+    console.log('[AI Chat] Toolkit URL:', process.env.EXPO_PUBLIC_TOOLKIT_URL);
+    console.log('[AI Chat] RORK_DB_ENDPOINT:', process.env.EXPO_PUBLIC_RORK_DB_ENDPOINT);
+    console.log('[AI Chat] PROJECT_ID:', process.env.EXPO_PUBLIC_PROJECT_ID);
 
     try {
       if (imagesToSend.length > 0) {
@@ -85,19 +118,40 @@ export default function AIChatScreen() {
       } else {
         await sendMessage(userMessage);
       }
-      console.log('Message sent successfully');
+      console.log('[AI Chat] Message sent successfully');
+      console.log('[AI Chat] Messages after send:', messages.length);
     } catch (err) {
-      console.error('Error sending message:', err);
-      console.error('Full error details:', JSON.stringify(err, null, 2));
-      setLocalError(err instanceof Error ? err.message : 'Ett fel uppstod');
+      console.error('[AI Chat] Error sending message:', err);
+      console.error('[AI Chat] Error type:', typeof err);
+      console.error('[AI Chat] Error constructor:', err?.constructor?.name);
+      
+      let errorMessage = 'Ett fel uppstod. Försök igen.';
+      
+      if (err instanceof Error) {
+        console.error('[AI Chat] Error message:', err.message);
+        console.error('[AI Chat] Error stack:', err.stack);
+        errorMessage = err.message || errorMessage;
+      } else if (typeof err === 'object' && err !== null) {
+        console.error('[AI Chat] Error object:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+        errorMessage = (err as any).message || JSON.stringify(err);
+      }
+      
+      console.error('[AI Chat] Final error message:', errorMessage);
+      setLocalError(errorMessage);
     } finally {
       setIsSending(false);
     }
   };
 
   useEffect(() => {
-    console.log('Messages updated:', messages.length);
-    console.log('Error:', error);
+    console.log('[AI Chat] Messages updated:', messages.length);
+    console.log('[AI Chat] Current messages:', JSON.stringify(messages, null, 2));
+    if (error) {
+      console.error('[AI Chat] useRorkAgent error:', error);
+      console.error('[AI Chat] Error type:', typeof error);
+      console.error('[AI Chat] Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      setLocalError(typeof error === 'string' ? error : (error as any)?.message || 'Ett fel uppstod');
+    }
   }, [messages, error]);
 
   useEffect(() => {
@@ -272,8 +326,16 @@ export default function AIChatScreen() {
           {(error || localError) && (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>
-                {localError || 'Ett fel uppstod. Försök igen.'}
+                {localError || (typeof error === 'string' ? error : error?.message) || 'Ett fel uppstod. Försök igen.'}
               </Text>
+              <TouchableOpacity 
+                style={styles.dismissErrorButton}
+                onPress={() => {
+                  setLocalError(null);
+                }}
+              >
+                <Text style={styles.dismissErrorText}>Stäng</Text>
+              </TouchableOpacity>
             </View>
           )}
         </ScrollView>
@@ -541,6 +603,20 @@ const styles = StyleSheet.create({
     color: '#c62828',
     fontSize: 14,
     textAlign: 'center',
+    marginBottom: 8,
+  },
+  dismissErrorButton: {
+    backgroundColor: '#c62828',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignSelf: 'center',
+    marginTop: 4,
+  },
+  dismissErrorText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   inputContainer: {
     flexDirection: 'row',

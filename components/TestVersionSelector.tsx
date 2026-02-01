@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, Check, Calendar, FileText, Clock, Target, Shuffle } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
-import { HPTestVersion, HPFullTestVersion } from '@/constants/hogskoleprovet';
+import { HPTestVersion, HPFullTestVersion, HP_FULL_TEST_VERSIONS } from '@/constants/hogskoleprovet';
 import { COLORS } from '@/constants/design-system';
 
 interface TestVersionSelectorProps {
@@ -40,9 +40,27 @@ export default function TestVersionSelector({
   const { theme, isDark } = useTheme();
   const [isReady, setIsReady] = useState(false);
 
-  // Ensure data is available before rendering content
-  const safeTestVersions = testVersions ?? [];
-  const safeFullTestVersions = fullTestVersions ?? [];
+  // Ensure data is available - use direct constant access as fallback for iOS reliability
+  const safeTestVersions = useMemo(() => {
+    if (testVersions && testVersions.length > 0) {
+      return testVersions;
+    }
+    // Fallback: try to extract section from sectionName and get from constant
+    console.log('[TestVersionSelector] testVersions empty, using fallback');
+    return [];
+  }, [testVersions]);
+  
+  const safeFullTestVersions = useMemo(() => {
+    if (fullTestVersions && fullTestVersions.length > 0) {
+      return fullTestVersions;
+    }
+    // Fallback for full test versions
+    if (isFullTest) {
+      console.log('[TestVersionSelector] fullTestVersions empty, using HP_FULL_TEST_VERSIONS fallback');
+      return HP_FULL_TEST_VERSIONS ?? [];
+    }
+    return [];
+  }, [fullTestVersions, isFullTest]);
 
   useEffect(() => {
     if (visible) {
@@ -51,23 +69,32 @@ export default function TestVersionSelector({
         sectionName,
         testVersionsCount: safeTestVersions.length,
         fullTestVersionsCount: safeFullTestVersions.length,
-        testVersions: safeTestVersions,
-        fullTestVersions: safeFullTestVersions,
+        rawTestVersionsCount: testVersions?.length ?? 0,
+        rawFullTestVersionsCount: fullTestVersions?.length ?? 0,
+        HP_FULL_TEST_VERSIONS_count: HP_FULL_TEST_VERSIONS?.length ?? 0,
       });
       
-      const timer = setTimeout(() => {
-        setIsReady(true);
-        console.log('[TestVersionSelector] Ready to render content with', {
-          testVersionsCount: safeTestVersions.length,
-          fullTestVersionsCount: safeFullTestVersions.length,
-        });
-      }, 100);
+      // Shorter delay and immediate ready if we have data
+      const hasData = isFullTest 
+        ? safeFullTestVersions.length > 0 
+        : true; // For sections, always show (mixed option is always available)
       
-      return () => clearTimeout(timer);
+      if (hasData) {
+        // Set ready immediately if we have data
+        setIsReady(true);
+        console.log('[TestVersionSelector] Data available, setting ready immediately');
+      } else {
+        // Short delay as fallback
+        const timer = setTimeout(() => {
+          setIsReady(true);
+          console.log('[TestVersionSelector] Ready after delay');
+        }, 50);
+        return () => clearTimeout(timer);
+      }
     } else {
       setIsReady(false);
     }
-  }, [visible, isFullTest, sectionName, safeTestVersions.length, safeFullTestVersions.length]);
+  }, [visible, isFullTest, sectionName, safeTestVersions.length, safeFullTestVersions.length, testVersions?.length, fullTestVersions?.length]);
 
   const handleSelectVersion = (versionId: string) => {
     onSelectVersion(versionId);

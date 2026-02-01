@@ -454,7 +454,17 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
   }, []);
 
   const getTestVersionsBySection = useCallback((sectionCode: string): HPTestVersion[] => {
-    return HP_TEST_VERSIONS.filter(v => v.sectionCode === sectionCode);
+    console.log('[HP Context] getTestVersionsBySection called with:', sectionCode);
+    console.log('[HP Context] HP_TEST_VERSIONS available:', HP_TEST_VERSIONS?.length ?? 0);
+    
+    if (!sectionCode || !HP_TEST_VERSIONS || HP_TEST_VERSIONS.length === 0) {
+      console.warn('[HP Context] No sectionCode or HP_TEST_VERSIONS not available');
+      return [];
+    }
+    
+    const filtered = HP_TEST_VERSIONS.filter(v => v.sectionCode === sectionCode);
+    console.log('[HP Context] Filtered test versions for', sectionCode, ':', filtered.length);
+    return filtered;
   }, []);
 
   const getAllQuestionsForFullTest = useCallback((): LocalHPQuestion[] => {

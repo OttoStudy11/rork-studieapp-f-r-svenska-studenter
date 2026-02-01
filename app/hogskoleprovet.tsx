@@ -28,7 +28,7 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
-import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HP_FULL_TEST_VERSIONS } from '@/constants/hogskoleprovet';
+import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HP_FULL_TEST_VERSIONS, HP_TEST_VERSIONS } from '@/constants/hogskoleprovet';
 import { getRandomTips } from '@/constants/hogskoleprovet-study-tips';
 import { COLORS } from '@/constants/design-system';
 import TestVersionSelector from '@/components/TestVersionSelector';
@@ -95,11 +95,19 @@ export default function HogskoleprovetScreen() {
       return;
     }
     console.log('[HP Screen] Opening section selector for:', sectionCode);
-    console.log('[HP Screen] Test versions for section:', getTestVersionsBySection(sectionCode));
+    
+    // Get versions directly from constant as fallback
+    const contextVersions = getTestVersionsBySection(sectionCode);
+    const directVersions = HP_TEST_VERSIONS.filter(v => v.sectionCode === sectionCode);
+    
+    console.log('[HP Screen] Context versions:', contextVersions.length);
+    console.log('[HP Screen] Direct versions:', directVersions.length);
+    console.log('[HP Screen] HP_TEST_VERSIONS total:', HP_TEST_VERSIONS?.length ?? 0);
+    
     setSelectedSection(sectionCode);
     setTimeout(() => {
       setVersionSelectorVisible(true);
-    }, 100);
+    }, 50);
   };
 
   const handleSelectTestVersion = (testVersionId: string) => {
@@ -499,13 +507,18 @@ export default function HogskoleprovetScreen() {
 
       {versionSelectorVisible && selectedSection && (
         <TestVersionSelector
-          key={`section-${selectedSection}`}
+          key={`section-${selectedSection}-${Date.now()}`}
           visible={versionSelectorVisible}
           onClose={() => {
             setVersionSelectorVisible(false);
             setTimeout(() => setSelectedSection(null), 100);
           }}
-          testVersions={getTestVersionsBySection(selectedSection)}
+          testVersions={(() => {
+            // Use direct constant access as primary source for reliability
+            const versions = HP_TEST_VERSIONS.filter(v => v.sectionCode === selectedSection);
+            console.log('[HP Screen] Rendering TestVersionSelector with versions:', versions.length);
+            return versions;
+          })()}
           selectedVersionId=''
           onSelectVersion={handleSelectTestVersion}
           sectionName={HP_SECTIONS.find(s => s.code === selectedSection)?.fullName || ''}

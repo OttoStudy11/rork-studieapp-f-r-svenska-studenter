@@ -519,9 +519,9 @@ export default function CommunityDetailScreen() {
                     <FadeInView key={member.id} delay={350 + index * 50}>
                       <View style={[styles.memberCard, { backgroundColor: theme.colors.card }]}>
                         <View style={styles.memberLeft}>
-                          {member.user?.avatarUrl ? (
+                          {member.user?.avatarUrl && safeParseAvatar(member.user.avatarUrl) ? (
                             <View style={styles.avatarContainer}>
-                              <Avatar config={safeParseAvatar(member.user.avatarUrl)} size={44} />
+                              <Avatar config={safeParseAvatar(member.user.avatarUrl)!} size={44} />
                             </View>
                           ) : (
                             <View style={[styles.avatarFallback, { backgroundColor: theme.colors.primary + '20' }]}>
@@ -560,9 +560,9 @@ export default function CommunityDetailScreen() {
                     <FadeInView key={member.id} delay={400 + index * 50}>
                       <View style={[styles.memberCard, { backgroundColor: theme.colors.card }]}>
                         <View style={styles.memberLeft}>
-                          {member.user?.avatarUrl ? (
+                          {member.user?.avatarUrl && safeParseAvatar(member.user.avatarUrl) ? (
                             <View style={styles.avatarContainer}>
-                              <Avatar config={safeParseAvatar(member.user.avatarUrl)} size={44} />
+                              <Avatar config={safeParseAvatar(member.user.avatarUrl)!} size={44} />
                             </View>
                           ) : (
                             <View style={[styles.avatarFallback, { backgroundColor: theme.colors.border }]}>
@@ -620,9 +620,9 @@ export default function CommunityDetailScreen() {
                   <FadeInView key={request.id} delay={350 + index * 50}>
                     <View style={[styles.requestCard, { backgroundColor: theme.colors.card }]}>
                       <View style={styles.requestHeader}>
-                        {request.user?.avatarUrl ? (
+                        {request.user?.avatarUrl && safeParseAvatar(request.user.avatarUrl) ? (
                           <View style={styles.avatarContainer}>
-                            <Avatar config={safeParseAvatar(request.user.avatarUrl)} size={44} />
+                            <Avatar config={safeParseAvatar(request.user.avatarUrl)!} size={44} />
                           </View>
                         ) : (
                           <View style={[styles.avatarFallback, { backgroundColor: theme.colors.border }]}>
@@ -771,9 +771,9 @@ export default function CommunityDetailScreen() {
                   style={[styles.inviteFriendCard, { backgroundColor: theme.colors.card }]}
                 >
                   <View style={styles.memberLeft}>
-                    {friend.avatarUrl ? (
+                    {friend.avatarUrl && safeParseAvatar(friend.avatarUrl) ? (
                       <View style={styles.avatarContainer}>
-                        <Avatar config={safeParseAvatar(friend.avatarUrl)} size={44} />
+                        <Avatar config={safeParseAvatar(friend.avatarUrl)!} size={44} />
                       </View>
                     ) : (
                       <View style={[styles.avatarFallback, { backgroundColor: theme.colors.border }]}>

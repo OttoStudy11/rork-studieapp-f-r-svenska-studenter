@@ -133,7 +133,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Loading all communities...');
       
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await (supabase as any)
         .from('communities')
         .select(`
           *,
@@ -147,19 +147,19 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return;
       }
       
-      const { data: myMemberships } = await supabase
+      const { data: myMemberships } = await (supabase as any)
         .from('community_members')
         .select('community_id, role')
         .eq('user_id', user.id);
       
-      const { data: myRequests } = await supabase
+      const { data: myRequests } = await (supabase as any)
         .from('community_requests')
         .select('community_id')
         .eq('user_id', user.id)
         .eq('status', 'pending');
       
-      const membershipMap = new Map(myMemberships?.map(m => [m.community_id, m.role]) || []);
-      const requestSet = new Set(myRequests?.map(r => r.community_id) || []);
+      const membershipMap = new Map(myMemberships?.map((m: any) => [m.community_id, m.role]) || []);
+      const requestSet = new Set(myRequests?.map((r: any) => r.community_id) || []);
       
       const mappedCommunities: Community[] = (data || []).map((c: any) => ({
         id: c.id,
@@ -196,7 +196,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Loading my communities...');
       
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await (supabase as any)
         .from('community_members')
         .select(`
           role,
@@ -243,14 +243,14 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Loading suggested communities...');
       
-      let query = supabase
+      let query = (supabase as any)
         .from('communities')
         .select('*')
         .order('member_count', { ascending: false })
         .limit(10);
       
-      if (studyUser.school) {
-        query = query.or(`school_name.ilike.%${studyUser.school}%,school_id.eq.${studyUser.schoolId || ''}`);
+      if (studyUser.gymnasium?.name) {
+        query = query.or(`school_name.ilike.%${studyUser.gymnasium.name}%`);
       }
       
       const { data, error: fetchError } = await query;
@@ -260,12 +260,12 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return;
       }
       
-      const { data: myMemberships } = await supabase
+      const { data: myMemberships } = await (supabase as any)
         .from('community_members')
         .select('community_id')
         .eq('user_id', user.id);
       
-      const memberSet = new Set(myMemberships?.map(m => m.community_id) || []);
+      const memberSet = new Set(myMemberships?.map((m: any) => m.community_id) || []);
       
       const suggested = (data || [])
         .filter((c: any) => !memberSet.has(c.id))
@@ -301,7 +301,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Loading pending invites...');
       
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await (supabase as any)
         .from('community_invites')
         .select(`
           *,
@@ -352,7 +352,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Creating community:', data.name);
       
-      const { data: newCommunity, error: createError } = await supabase
+      const { data: newCommunity, error: createError } = await (supabase as any)
         .from('communities')
         .insert({
           name: data.name,
@@ -375,7 +375,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Kunde inte skapa community' };
       }
       
-      const { error: memberError } = await supabase
+      const { error: memberError } = await (supabase as any)
         .from('community_members')
         .insert({
           community_id: newCommunity.id,
@@ -423,7 +423,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Joining community:', communityId);
       
-      const { data: community } = await supabase
+      const { data: community } = await (supabase as any)
         .from('communities')
         .select('visibility, member_count')
         .eq('id', communityId)
@@ -434,7 +434,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
       }
       
       if (community.visibility === 'closed') {
-        const { error: requestError } = await supabase
+        const { error: requestError } = await (supabase as any)
           .from('community_requests')
           .insert({
             community_id: communityId,
@@ -459,7 +459,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return {};
       }
       
-      const { error: memberError } = await supabase
+      const { error: memberError } = await (supabase as any)
         .from('community_members')
         .insert({
           community_id: communityId,
@@ -475,7 +475,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Kunde inte gå med i community' };
       }
       
-      await supabase
+      await (supabase as any)
         .from('communities')
         .update({ member_count: (community.member_count || 0) + 1 })
         .eq('id', communityId);
@@ -500,7 +500,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Leaving community:', communityId);
       
-      const { data: membership } = await supabase
+      const { data: membership } = await (supabase as any)
         .from('community_members')
         .select('role')
         .eq('community_id', communityId)
@@ -508,7 +508,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         .single();
       
       if (membership?.role === 'admin') {
-        const { data: otherAdmins } = await supabase
+        const { data: otherAdmins } = await (supabase as any)
           .from('community_members')
           .select('user_id')
           .eq('community_id', communityId)
@@ -520,7 +520,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         }
       }
       
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await (supabase as any)
         .from('community_members')
         .delete()
         .eq('community_id', communityId)
@@ -531,14 +531,14 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Kunde inte lämna community' };
       }
       
-      const { data: community } = await supabase
+      const { data: community } = await (supabase as any)
         .from('communities')
         .select('member_count')
         .eq('id', communityId)
         .single();
       
       if (community) {
-        await supabase
+        await (supabase as any)
           .from('communities')
           .update({ member_count: Math.max(0, (community.member_count || 1) - 1) })
           .eq('id', communityId);
@@ -563,7 +563,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Getting community details:', communityId);
       
-      const { data: communityData, error: communityError } = await supabase
+      const { data: communityData, error: communityError } = await (supabase as any)
         .from('communities')
         .select('*')
         .eq('id', communityId)
@@ -573,7 +573,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Community hittades inte' };
       }
       
-      const { data: memberData } = await supabase
+      const { data: memberData } = await (supabase as any)
         .from('community_members')
         .select(`
           *,
@@ -582,7 +582,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         .eq('community_id', communityId)
         .order('role', { ascending: true });
       
-      const { data: myMembership } = await supabase
+      const { data: myMembership } = await (supabase as any)
         .from('community_members')
         .select('role')
         .eq('community_id', communityId)
@@ -591,7 +591,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
       
       let requests: CommunityRequest[] = [];
       if (myMembership?.role === 'admin') {
-        const { data: requestData } = await supabase
+        const { data: requestData } = await (supabase as any)
           .from('community_requests')
           .select(`
             *,
@@ -665,7 +665,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Handling request:', requestId, accept ? 'accept' : 'reject');
       
-      const { data: request } = await supabase
+      const { data: request } = await (supabase as any)
         .from('community_requests')
         .select('community_id, user_id')
         .eq('id', requestId)
@@ -675,7 +675,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Ansökan hittades inte' };
       }
       
-      const { data: membership } = await supabase
+      const { data: membership } = await (supabase as any)
         .from('community_members')
         .select('role')
         .eq('community_id', request.community_id)
@@ -687,7 +687,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
       }
       
       if (accept) {
-        const { error: memberError } = await supabase
+        const { error: memberError } = await (supabase as any)
           .from('community_members')
           .insert({
             community_id: request.community_id,
@@ -700,21 +700,21 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
           return { error: 'Kunde inte lägga till medlem' };
         }
         
-        const { data: community } = await supabase
+        const { data: community } = await (supabase as any)
           .from('communities')
           .select('member_count')
           .eq('id', request.community_id)
           .single();
         
         if (community) {
-          await supabase
+          await (supabase as any)
             .from('communities')
             .update({ member_count: (community.member_count || 0) + 1 })
             .eq('id', request.community_id);
         }
       }
       
-      await supabase
+      await (supabase as any)
         .from('community_requests')
         .update({ status: accept ? 'accepted' : 'rejected' })
         .eq('id', requestId);
@@ -733,7 +733,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Inviting user:', userId, 'to community:', communityId);
       
-      const { data: existingMember } = await supabase
+      const { data: existingMember } = await (supabase as any)
         .from('community_members')
         .select('id')
         .eq('community_id', communityId)
@@ -744,7 +744,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Användaren är redan medlem' };
       }
       
-      const { error: inviteError } = await supabase
+      const { error: inviteError } = await (supabase as any)
         .from('community_invites')
         .insert({
           community_id: communityId,
@@ -775,7 +775,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Handling invite:', inviteId, accept ? 'accept' : 'reject');
       
-      const { data: invite } = await supabase
+      const { data: invite } = await (supabase as any)
         .from('community_invites')
         .select('community_id')
         .eq('id', inviteId)
@@ -787,7 +787,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
       }
       
       if (accept) {
-        const { error: memberError } = await supabase
+        const { error: memberError } = await (supabase as any)
           .from('community_members')
           .insert({
             community_id: invite.community_id,
@@ -800,14 +800,14 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
           return { error: 'Kunde inte gå med i community' };
         }
         
-        const { data: community } = await supabase
+        const { data: community } = await (supabase as any)
           .from('communities')
           .select('member_count')
           .eq('id', invite.community_id)
           .single();
         
         if (community) {
-          await supabase
+          await (supabase as any)
             .from('communities')
             .update({ member_count: (community.member_count || 0) + 1 })
             .eq('id', invite.community_id);
@@ -816,7 +816,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         await loadMyCommunities();
       }
       
-      await supabase
+      await (supabase as any)
         .from('community_invites')
         .update({ status: accept ? 'accepted' : 'rejected' })
         .eq('id', inviteId);
@@ -837,7 +837,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Removing member:', userId, 'from community:', communityId);
       
-      const { data: membership } = await supabase
+      const { data: membership } = await (supabase as any)
         .from('community_members')
         .select('role')
         .eq('community_id', communityId)
@@ -848,7 +848,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Endast admins kan ta bort medlemmar' };
       }
       
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await (supabase as any)
         .from('community_members')
         .delete()
         .eq('community_id', communityId)
@@ -859,14 +859,14 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Kunde inte ta bort medlem' };
       }
       
-      const { data: community } = await supabase
+      const { data: community } = await (supabase as any)
         .from('communities')
         .select('member_count')
         .eq('id', communityId)
         .single();
       
       if (community) {
-        await supabase
+        await (supabase as any)
           .from('communities')
           .update({ member_count: Math.max(0, (community.member_count || 1) - 1) })
           .eq('id', communityId);
@@ -886,7 +886,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Updating role for:', userId, 'to:', role);
       
-      const { data: membership } = await supabase
+      const { data: membership } = await (supabase as any)
         .from('community_members')
         .select('role')
         .eq('community_id', communityId)
@@ -897,7 +897,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Endast admins kan ändra roller' };
       }
       
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from('community_members')
         .update({ role })
         .eq('community_id', communityId)
@@ -922,7 +922,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Deleting community:', communityId);
       
-      const { data: community } = await supabase
+      const { data: community } = await (supabase as any)
         .from('communities')
         .select('created_by')
         .eq('id', communityId)
@@ -932,11 +932,11 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Endast skaparen kan ta bort communityn' };
       }
       
-      await supabase.from('community_members').delete().eq('community_id', communityId);
-      await supabase.from('community_requests').delete().eq('community_id', communityId);
-      await supabase.from('community_invites').delete().eq('community_id', communityId);
+      await (supabase as any).from('community_members').delete().eq('community_id', communityId);
+      await (supabase as any).from('community_requests').delete().eq('community_id', communityId);
+      await (supabase as any).from('community_invites').delete().eq('community_id', communityId);
       
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await (supabase as any)
         .from('communities')
         .delete()
         .eq('id', communityId);
@@ -963,7 +963,7 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Searching for:', query);
       
-      const { data, error: searchError } = await supabase
+      const { data, error: searchError } = await (supabase as any)
         .from('communities')
         .select('*')
         .or(`name.ilike.%${query}%,description.ilike.%${query}%,school_name.ilike.%${query}%,program_name.ilike.%${query}%`)

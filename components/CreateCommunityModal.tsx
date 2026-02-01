@@ -70,8 +70,7 @@ export default function CreateCommunityModal({ visible, onClose, onCreated }: Cr
       description: description.trim(),
       type,
       visibility,
-      schoolName: studyUser?.school,
-      schoolId: studyUser?.schoolId,
+      schoolName: studyUser?.gymnasium?.name,
       programName: studyUser?.program,
     };
 
@@ -265,11 +264,11 @@ export default function CreateCommunityModal({ visible, onClose, onCreated }: Cr
                 </View>
               </View>
 
-              {studyUser?.school && (
+              {studyUser?.gymnasium?.name && (
                 <View style={[styles.infoCard, { backgroundColor: theme.colors.card }]}>
                   <GraduationCap size={18} color={theme.colors.primary} />
                   <Text style={[styles.infoText, { color: theme.colors.textSecondary }]}>
-                    Denna community kopplas automatiskt till {studyUser.school}
+                    Denna community kopplas automatiskt till {studyUser.gymnasium.name}
                   </Text>
                 </View>
               )}

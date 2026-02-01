@@ -17,13 +17,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useGamification } from '@/contexts/GamificationContext';
-import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy, User, Target, TrendingUp, Flame, UsersRound, Globe, ChevronLeft, MoreHorizontal, ChevronUp } from 'lucide-react-native';
+import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy, User, Target, TrendingUp, Flame, UsersRound, Globe, ChevronLeft, MoreHorizontal, ChevronUp, Lock, School, BookOpen, MessageCircle } from 'lucide-react-native';
 import Avatar from '@/components/Avatar';
 import FriendSearch from '@/components/FriendSearch';
 import type { AvatarConfig } from '@/constants/avatar-config';
 import * as Clipboard from 'expo-clipboard';
 import { supabase } from '@/lib/supabase';
 import { fetchGlobalLeaderboardTop15 } from '@/lib/study-stats';
+import { useCommunity, CommunityType, CommunityVisibility } from '@/contexts/CommunityContext';
 import { useTheme } from '@/contexts/ThemeContext';
 
 import { useRouter } from 'expo-router';
@@ -75,7 +76,7 @@ export default function FriendsScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'friends' | 'requests'>('friends');
+  const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'communities'>('friends');
   const [friends, setFriends] = useState<Friend[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -85,6 +86,32 @@ export default function FriendsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('week');
   const [leaderboardView, setLeaderboardView] = useState<'friends' | 'global'>('friends');
+  const [showCreateCommunityModal, setShowCreateCommunityModal] = useState(false);
+  const [communityForm, setCommunityForm] = useState<{
+    name: string;
+    description: string;
+    type: CommunityType;
+    visibility: CommunityVisibility;
+  }>({
+    name: '',
+    description: '',
+    type: 'study-group',
+    visibility: 'open',
+  });
+  const [isCreatingCommunity, setIsCreatingCommunity] = useState(false);
+
+  const {
+    myCommunities,
+    suggestedCommunities,
+    pendingInvites,
+    isLoading: communitiesLoading,
+    loadMyCommunities,
+    loadSuggestedCommunities,
+    loadPendingInvites,
+    createCommunity,
+    joinCommunity,
+    handleInvite,
+  } = useCommunity();
 
   const colors = [
     { bg: '#FF6B6B15', accent: '#FF6B6B' },
@@ -367,6 +394,14 @@ export default function FriendsScreen() {
   }, [loadFriends]);
 
   useEffect(() => {
+    if (activeTab === 'communities') {
+      loadMyCommunities();
+      loadSuggestedCommunities();
+      loadPendingInvites();
+    }
+  }, [activeTab, loadMyCommunities, loadSuggestedCommunities, loadPendingInvites]);
+
+  useEffect(() => {
     if (showLeaderboard && leaderboardView === 'global') {
       void loadGlobalLeaderboard();
     }
@@ -374,6 +409,80 @@ export default function FriendsScreen() {
 
   const handleAddFriend = () => {
     setShowAddModal(true);
+  };
+
+  const handleCreateCommunity = async () => {
+    if (!communityForm.name.trim()) {
+      showError('Ange ett namn för communityn');
+      return;
+    }
+
+    setIsCreatingCommunity(true);
+    const { community, error } = await createCommunity({
+      name: communityForm.name.trim(),
+      description: communityForm.description.trim(),
+      type: communityForm.type,
+      visibility: communityForm.visibility,
+      schoolName: studyUser?.gymnasium?.name,
+      programName: studyUser?.program,
+    });
+    setIsCreatingCommunity(false);
+
+    if (error) {
+      showError(error);
+      return;
+    }
+
+    showSuccess('Community skapad! 🎉');
+    setShowCreateCommunityModal(false);
+    setCommunityForm({
+      name: '',
+      description: '',
+      type: 'study-group',
+      visibility: 'open',
+    });
+    
+    if (community) {
+      router.push(`/community/${community.id}` as any);
+    }
+  };
+
+  const handleJoinCommunity = async (communityId: string, visibility: CommunityVisibility) => {
+    const { error } = await joinCommunity(communityId);
+    if (error) {
+      showError(error);
+      return;
+    }
+    showSuccess(visibility === 'closed' ? 'Ansökan skickad! 📬' : 'Du gick med! 🎉');
+    loadMyCommunities();
+    loadSuggestedCommunities();
+  };
+
+  const handleInviteResponse = async (inviteId: string, accept: boolean) => {
+    const { error } = await handleInvite(inviteId, accept);
+    if (error) {
+      showError(error);
+      return;
+    }
+    showSuccess(accept ? 'Du gick med i communityn! 🎉' : 'Inbjudan avvisad');
+  };
+
+  const getCommunityTypeIcon = (type: CommunityType) => {
+    switch (type) {
+      case 'school': return <School size={16} color={theme.colors.primary} />;
+      case 'program': return <BookOpen size={16} color={theme.colors.success} />;
+      case 'study-group': return <Users size={16} color={theme.colors.warning} />;
+      default: return <MessageCircle size={16} color={theme.colors.textSecondary} />;
+    }
+  };
+
+  const getCommunityTypeLabel = (type: CommunityType) => {
+    switch (type) {
+      case 'school': return 'Skola';
+      case 'program': return 'Program';
+      case 'study-group': return 'Studiegrupp';
+      default: return 'Annat';
+    }
   };
 
   const handleShareUsername = () => {
@@ -621,7 +730,22 @@ export default function FriendsScreen() {
             Förfrågningar ({friendRequests.length})
           </Text>
         </TouchableOpacity>
-
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            { backgroundColor: theme.colors.card },
+            activeTab === 'communities' && { backgroundColor: theme.colors.primary }
+          ]}
+          onPress={() => setActiveTab('communities')}
+        >
+          <Text style={[
+            styles.tabText,
+            { color: theme.colors.textSecondary },
+            activeTab === 'communities' && { color: 'white', fontWeight: '600' }
+          ]}>
+            Communities
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -836,6 +960,166 @@ export default function FriendsScreen() {
                 )}
               </View>
             </SlideInView>
+          </>
+        ) : activeTab === 'communities' ? (
+          <>
+            {/* Pending Invites */}
+            {pendingInvites.length > 0 && (
+              <SlideInView direction="up" delay={150}>
+                <View style={styles.section}>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Inbjudningar</Text>
+                  {pendingInvites.map((invite, index) => (
+                    <FadeInView key={invite.id} delay={200 + index * 50}>
+                      <View style={[styles.inviteCard, { backgroundColor: theme.colors.card }]}>
+                        <View style={styles.inviteInfo}>
+                          <Text style={[styles.inviteCommunityName, { color: theme.colors.text }]}>
+                            {invite.community?.name || 'Okänd community'}
+                          </Text>
+                          <Text style={[styles.inviteFrom, { color: theme.colors.textSecondary }]}>
+                            Inbjudan från @{invite.inviter?.username || 'okänd'}
+                          </Text>
+                        </View>
+                        <View style={styles.inviteActions}>
+                          <TouchableOpacity
+                            style={[styles.inviteRejectBtn, { borderColor: theme.colors.border }]}
+                            onPress={() => handleInviteResponse(invite.id, false)}
+                          >
+                            <X size={16} color={theme.colors.textSecondary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.inviteAcceptBtn, { backgroundColor: theme.colors.primary }]}
+                            onPress={() => handleInviteResponse(invite.id, true)}
+                          >
+                            <Text style={styles.inviteAcceptText}>Gå med</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </FadeInView>
+                  ))}
+                </View>
+              </SlideInView>
+            )}
+
+            {/* My Communities */}
+            <SlideInView direction="up" delay={200}>
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mina communities</Text>
+                  <TouchableOpacity
+                    style={[styles.createCommunityBtn, { backgroundColor: theme.colors.primary }]}
+                    onPress={() => setShowCreateCommunityModal(true)}
+                  >
+                    <Plus size={16} color="white" />
+                    <Text style={styles.createCommunityText}>Skapa</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {communitiesLoading ? (
+                  <ActivityIndicator color={theme.colors.primary} style={{ marginTop: 20 }} />
+                ) : myCommunities.length > 0 ? (
+                  myCommunities.map((community, index) => (
+                    <FadeInView key={community.id} delay={250 + index * 50}>
+                      <TouchableOpacity
+                        style={[styles.communityCard, { backgroundColor: theme.colors.card }]}
+                        onPress={() => router.push(`/community/${community.id}` as any)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.communityIconContainer, { backgroundColor: theme.colors.primary + '15' }]}>
+                          {getCommunityTypeIcon(community.type)}
+                        </View>
+                        <View style={styles.communityInfo}>
+                          <View style={styles.communityHeader}>
+                            <Text style={[styles.communityName, { color: theme.colors.text }]} numberOfLines={1}>
+                              {community.name}
+                            </Text>
+                            {community.isAdmin && (
+                              <View style={[styles.adminTag, { backgroundColor: theme.colors.warning + '20' }]}>
+                                <Crown size={10} color={theme.colors.warning} />
+                              </View>
+                            )}
+                          </View>
+                          <View style={styles.communityMeta}>
+                            <View style={styles.communityMetaItem}>
+                              <Users size={12} color={theme.colors.textMuted} />
+                              <Text style={[styles.communityMetaText, { color: theme.colors.textMuted }]}>
+                                {community.memberCount}
+                              </Text>
+                            </View>
+                            <View style={[styles.communityTypeBadge, { backgroundColor: theme.colors.border + '50' }]}>
+                              <Text style={[styles.communityTypeText, { color: theme.colors.textSecondary }]}>
+                                {getCommunityTypeLabel(community.type)}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                        {community.visibility === 'closed' && (
+                          <Lock size={14} color={theme.colors.textMuted} />
+                        )}
+                      </TouchableOpacity>
+                    </FadeInView>
+                  ))
+                ) : (
+                  <View style={styles.emptyState}>
+                    <UsersRound size={48} color={theme.colors.textMuted} />
+                    <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Inga communities än</Text>
+                    <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+                      Gå med i en community eller skapa din egen
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </SlideInView>
+
+            {/* Suggested Communities */}
+            {suggestedCommunities.length > 0 && (
+              <SlideInView direction="up" delay={300}>
+                <View style={styles.section}>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Föreslagna</Text>
+                  {suggestedCommunities.map((community, index) => (
+                    <FadeInView key={community.id} delay={350 + index * 50}>
+                      <View style={[styles.communityCard, { backgroundColor: theme.colors.card }]}>
+                        <View style={[styles.communityIconContainer, { backgroundColor: theme.colors.success + '15' }]}>
+                          {getCommunityTypeIcon(community.type)}
+                        </View>
+                        <View style={styles.communityInfo}>
+                          <Text style={[styles.communityName, { color: theme.colors.text }]} numberOfLines={1}>
+                            {community.name}
+                          </Text>
+                          <View style={styles.communityMeta}>
+                            <View style={styles.communityMetaItem}>
+                              <Users size={12} color={theme.colors.textMuted} />
+                              <Text style={[styles.communityMetaText, { color: theme.colors.textMuted }]}>
+                                {community.memberCount}
+                              </Text>
+                            </View>
+                            {community.visibility === 'closed' && (
+                              <View style={styles.communityMetaItem}>
+                                <Lock size={12} color={theme.colors.textMuted} />
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.joinCommunityBtn, { 
+                            backgroundColor: community.hasPendingRequest 
+                              ? theme.colors.border 
+                              : theme.colors.primary 
+                          }]}
+                          onPress={() => handleJoinCommunity(community.id, community.visibility)}
+                          disabled={community.hasPendingRequest}
+                        >
+                          <Text style={[styles.joinCommunityText, {
+                            color: community.hasPendingRequest ? theme.colors.textSecondary : 'white'
+                          }]}>
+                            {community.hasPendingRequest ? 'Väntar' : 'Gå med'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </FadeInView>
+                  ))}
+                </View>
+              </SlideInView>
+            )}
           </>
         ) : null}
       </ScrollView>
@@ -1154,6 +1438,135 @@ export default function FriendsScreen() {
               </Text>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      {/* Create Community Modal */}
+      <Modal
+        visible={showCreateCommunityModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Skapa community</Text>
+            <TouchableOpacity onPress={() => setShowCreateCommunityModal(false)}>
+              <X size={24} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.formGroup}>
+              <Text style={[styles.formLabel, { color: theme.colors.text }]}>Namn *</Text>
+              <TextInput
+                style={[styles.formInput, { backgroundColor: theme.colors.card, color: theme.colors.text, borderColor: theme.colors.border }]}
+                placeholder="T.ex. KTH Datateknik 2024"
+                placeholderTextColor={theme.colors.textMuted}
+                value={communityForm.name}
+                onChangeText={(text) => setCommunityForm(prev => ({ ...prev, name: text }))}
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={[styles.formLabel, { color: theme.colors.text }]}>Beskrivning</Text>
+              <TextInput
+                style={[styles.formInput, styles.formTextArea, { backgroundColor: theme.colors.card, color: theme.colors.text, borderColor: theme.colors.border }]}
+                placeholder="Beskriv vad communityn handlar om..."
+                placeholderTextColor={theme.colors.textMuted}
+                value={communityForm.description}
+                onChangeText={(text) => setCommunityForm(prev => ({ ...prev, description: text }))}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={[styles.formLabel, { color: theme.colors.text }]}>Typ</Text>
+              <View style={styles.typeSelector}>
+                {(['school', 'program', 'study-group', 'other'] as CommunityType[]).map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.typeOption,
+                      { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                      communityForm.type === type && { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }
+                    ]}
+                    onPress={() => setCommunityForm(prev => ({ ...prev, type }))}
+                  >
+                    {getCommunityTypeIcon(type)}
+                    <Text style={[
+                      styles.typeOptionText,
+                      { color: theme.colors.textSecondary },
+                      communityForm.type === type && { color: theme.colors.primary, fontWeight: '600' as const }
+                    ]}>
+                      {getCommunityTypeLabel(type)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={[styles.formLabel, { color: theme.colors.text }]}>Synlighet</Text>
+              <View style={styles.visibilitySelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.visibilityOption,
+                    { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                    communityForm.visibility === 'open' && { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success }
+                  ]}
+                  onPress={() => setCommunityForm(prev => ({ ...prev, visibility: 'open' }))}
+                >
+                  <Globe size={20} color={communityForm.visibility === 'open' ? theme.colors.success : theme.colors.textSecondary} />
+                  <View style={styles.visibilityInfo}>
+                    <Text style={[
+                      styles.visibilityTitle,
+                      { color: theme.colors.text },
+                      communityForm.visibility === 'open' && { color: theme.colors.success }
+                    ]}>Öppen</Text>
+                    <Text style={[styles.visibilityDesc, { color: theme.colors.textMuted }]}>
+                      Alla kan gå med direkt
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.visibilityOption,
+                    { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                    communityForm.visibility === 'closed' && { backgroundColor: theme.colors.warning + '20', borderColor: theme.colors.warning }
+                  ]}
+                  onPress={() => setCommunityForm(prev => ({ ...prev, visibility: 'closed' }))}
+                >
+                  <Lock size={20} color={communityForm.visibility === 'closed' ? theme.colors.warning : theme.colors.textSecondary} />
+                  <View style={styles.visibilityInfo}>
+                    <Text style={[
+                      styles.visibilityTitle,
+                      { color: theme.colors.text },
+                      communityForm.visibility === 'closed' && { color: theme.colors.warning }
+                    ]}>Stängd</Text>
+                    <Text style={[styles.visibilityDesc, { color: theme.colors.textMuted }]}>
+                      Kräver godkännande
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.createBtn, { backgroundColor: theme.colors.primary }]}
+              onPress={handleCreateCommunity}
+              disabled={isCreatingCommunity}
+            >
+              {isCreatingCommunity ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text style={styles.createBtnText}>Skapa community</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={{ height: 40 }} />
+          </ScrollView>
         </View>
       </Modal>
     </SafeAreaView>
@@ -2099,5 +2512,195 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  inviteCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 10,
+  },
+  inviteInfo: {
+    flex: 1,
+  },
+  inviteCommunityName: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  inviteFrom: {
+    fontSize: 13,
+  },
+  inviteActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inviteRejectBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inviteAcceptBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  inviteAcceptText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  createCommunityBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 6,
+  },
+  createCommunityText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  communityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 10,
+    gap: 12,
+  },
+  communityIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  communityInfo: {
+    flex: 1,
+  },
+  communityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  communityName: {
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+  },
+  adminTag: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  communityMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  communityMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  communityMetaText: {
+    fontSize: 12,
+  },
+  communityTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  communityTypeText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  joinCommunityBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  joinCommunityText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  formGroup: {
+    marginBottom: 20,
+  },
+  formLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  formInput: {
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    borderWidth: 1,
+  },
+  formTextArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  typeSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  typeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  typeOptionText: {
+    fontSize: 13,
+  },
+  visibilitySelector: {
+    gap: 10,
+  },
+  visibilityOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+  },
+  visibilityInfo: {
+    flex: 1,
+  },
+  visibilityTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  visibilityDesc: {
+    fontSize: 13,
+  },
+  createBtn: {
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  createBtnText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

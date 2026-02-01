@@ -85,18 +85,19 @@ export async function getCourseFlashcards(courseId: string): Promise<{
       return { flashcards: [], error: error.message };
     }
 
-    // If no flashcards found, try to find the actual course id by course_code
+    // If no flashcards found, try to find the actual course id
     if (!data || data.length === 0) {
-      console.log(`🔍 [Flashcards Service] No flashcards found by id, checking by course_code...`);
+      console.log(`🔍 [Flashcards Service] No flashcards found by id, checking course tables...`);
       
+      // Try courses table (gymnasium)
       const { data: courseData } = await supabase
         .from('courses')
         .select('id')
-        .ilike('course_code', courseId)
+        .or(`id.eq.${courseId},course_code.ilike.${courseId}`)
         .maybeSingle();
 
       if (courseData && courseData.id !== courseId) {
-        console.log(`🔍 [Flashcards Service] Found course id: ${courseData.id}, fetching flashcards...`);
+        console.log(`🔍 [Flashcards Service] Found course in courses table: ${courseData.id}`);
         const result = await supabase
           .from('flashcards')
           .select('*')
@@ -105,6 +106,26 @@ export async function getCourseFlashcards(courseId: string): Promise<{
         
         if (!result.error) {
           data = result.data;
+        }
+      } else {
+        // Try university_courses table
+        const { data: uniCourseData } = await supabase
+          .from('university_courses')
+          .select('id')
+          .or(`id.eq.${courseId},course_code.ilike.${courseId}`)
+          .maybeSingle();
+
+        if (uniCourseData && uniCourseData.id !== courseId) {
+          console.log(`🔍 [Flashcards Service] Found course in university_courses table: ${uniCourseData.id}`);
+          const result = await supabase
+            .from('flashcards')
+            .select('*')
+            .eq('course_id', uniCourseData.id)
+            .order('created_at', { ascending: false });
+          
+          if (!result.error) {
+            data = result.data;
+          }
         }
       }
     }
@@ -186,9 +207,10 @@ export async function saveFlashcardBatch(
     }
 
     let effectiveCourseId = courseId;
+    let isUniversityCourse = false;
 
-    // First, check if course exists in database by id
-    console.log(`🔍 [Flashcards Service] Checking if course ${courseId} exists...`);
+    // First, check if course exists in courses table
+    console.log(`🔍 [Flashcards Service] Checking if course ${courseId} exists in courses table...`);
     const { data: courseById, error: courseByIdError } = await supabase
       .from('courses')
       .select('id, title')
@@ -200,105 +222,152 @@ export async function saveFlashcardBatch(
     }
 
     if (courseById) {
-      console.log(`✅ [Flashcards Service] Course found by id: ${courseById.id} (${courseById.title})`);
+      console.log(`✅ [Flashcards Service] Course found in courses table: ${courseById.id} (${courseById.title})`);
       effectiveCourseId = courseById.id;
     } else {
-      // Try to find a course by course_code
-      console.log(`🔍 [Flashcards Service] Course not found by id, trying course_code: ${courseId}`);
-      const { data: courseByCode, error: courseByCodeError } = await supabase
-        .from('courses')
+      // Try university_courses table
+      console.log(`🔍 [Flashcards Service] Checking university_courses table...`);
+      const { data: uniCourseById } = await supabase
+        .from('university_courses')
         .select('id, title')
-        .eq('course_code', courseId.toUpperCase())
+        .eq('id', courseId)
         .maybeSingle();
 
-      if (courseByCodeError) {
-        console.warn(`⚠️ [Flashcards Service] Error checking course by code:`, courseByCodeError.message);
-      }
-
-      if (courseByCode) {
-        effectiveCourseId = courseByCode.id;
-        console.log(`✅ [Flashcards Service] Found course by code: ${effectiveCourseId} (${courseByCode.title})`);
+      if (uniCourseById) {
+        console.log(`✅ [Flashcards Service] Course found in university_courses table: ${uniCourseById.id} (${uniCourseById.title})`);
+        effectiveCourseId = uniCourseById.id;
+        isUniversityCourse = true;
       } else {
-        // Try case-insensitive search with ilike
-        console.log(`🔍 [Flashcards Service] Trying case-insensitive search for: ${courseId}`);
-        const { data: courseByIlike } = await supabase
+        // Try to find by course_code in both tables
+        console.log(`🔍 [Flashcards Service] Course not found by id, trying course_code: ${courseId}`);
+        const { data: courseByCode } = await supabase
           .from('courses')
-          .select('id, title, course_code')
-          .ilike('course_code', courseId)
+          .select('id, title')
+          .eq('course_code', courseId.toUpperCase())
           .maybeSingle();
 
-        if (courseByIlike) {
-          effectiveCourseId = courseByIlike.id;
-          console.log(`✅ [Flashcards Service] Found course by ilike: ${effectiveCourseId} (${courseByIlike.title})`);
+        if (courseByCode) {
+          effectiveCourseId = courseByCode.id;
+          console.log(`✅ [Flashcards Service] Found course by code in courses: ${effectiveCourseId} (${courseByCode.title})`);
         } else {
-          // Create a placeholder course for flashcards
-          console.log(`📝 [Flashcards Service] Creating placeholder course for: ${courseId}`);
-          
-          // Generate a proper course name from the course code
-          const courseName = formatCourseName(courseId);
-          
-          const { data: newCourse, error: createError } = await supabase
-            .from('courses')
-            .insert({
-              id: courseId.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-              title: courseName,
-              course_code: courseId.toUpperCase(),
-              subject: guessSubjectFromCode(courseId),
-              description: `Kurs för ${courseName}. Flashcards genererade av AI.`,
-              level: 'gymnasium',
-            })
-            .select('id')
-            .single();
+          // Try university_courses by course_code
+          const { data: uniCourseByCode } = await supabase
+            .from('university_courses')
+            .select('id, title, course_code')
+            .eq('course_code', courseId.toUpperCase())
+            .maybeSingle();
 
-          if (createError) {
-            console.error('❌ [Flashcards Service] Failed to create placeholder course:', {
-              message: createError.message,
-              code: createError.code,
-              details: createError.details,
-              hint: createError.hint,
-            });
+          if (uniCourseByCode) {
+            effectiveCourseId = uniCourseByCode.id;
+            isUniversityCourse = true;
+            console.log(`✅ [Flashcards Service] Found course by code in university_courses: ${effectiveCourseId} (${uniCourseByCode.title})`);
+          } else {
+            // Determine if this is a university course based on ID pattern
+            // University courses typically have patterns like: "civilekonomprogram-GRUND1"
+            const isLikelyUniversityCourse = courseId.includes('program') || courseId.length > 10;
             
-            // If it's a unique constraint violation, the course might already exist with different casing
-            if (createError.code === '23505') {
-              // Try to find any course that might match
-              const { data: anyMatch } = await supabase
-                .from('courses')
+            console.log(`📝 [Flashcards Service] Creating placeholder course for: ${courseId} (${isLikelyUniversityCourse ? 'university' : 'gymnasium'})`);
+            
+            const courseName = formatCourseName(courseId);
+            const cleanId = courseId.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+            
+            if (isLikelyUniversityCourse) {
+              // Create in university_courses table
+              const { data: newUniCourse, error: createError } = await supabase
+                .from('university_courses')
+                .insert({
+                  id: cleanId,
+                  title: courseName,
+                  course_code: courseId.toUpperCase(),
+                  subject_area: guessSubjectFromCode(courseId),
+                  description: `Kurs för ${courseName}. Flashcards genererade av AI.`,
+                  credits: 7.5,
+                  level: 'grundnivå',
+                })
                 .select('id')
-                .or(`id.ilike.%${courseId}%,course_code.ilike.%${courseId}%`)
-                .limit(1)
-                .maybeSingle();
-              
-              if (anyMatch) {
-                effectiveCourseId = anyMatch.id;
-                console.log(`✅ [Flashcards Service] Found existing course after conflict: ${effectiveCourseId}`);
-              } else {
-                // Still couldn't find the course, return error
-                console.error('❌ [Flashcards Service] Could not find or create course after all attempts');
-                return {
-                  success: false,
-                  savedCount: 0,
-                  error: `Kursen "${courseId}" kunde inte hittas eller skapas. Försök med ett giltigt kurs-ID eller kurskod.`
-                };
+                .single();
+
+              if (createError) {
+                console.error('❌ [Flashcards Service] Failed to create university course:', {
+                  message: createError.message,
+                  code: createError.code,
+                  details: createError.details,
+                });
+                
+                if (createError.code === '23505') {
+                  const { data: anyMatch } = await supabase
+                    .from('university_courses')
+                    .select('id')
+                    .or(`id.ilike.%${courseId}%,course_code.ilike.%${courseId}%`)
+                    .limit(1)
+                    .maybeSingle();
+                  
+                  if (anyMatch) {
+                    effectiveCourseId = anyMatch.id;
+                    isUniversityCourse = true;
+                    console.log(`✅ [Flashcards Service] Found existing university course: ${effectiveCourseId}`);
+                  } else {
+                    return {
+                      success: false,
+                      savedCount: 0,
+                      error: `Universitets-kursen "${courseId}" kunde inte hittas eller skapas.`
+                    };
+                  }
+                } else {
+                  return { success: false, savedCount: 0, error: `Kunde inte skapa kursen: ${createError.message}` };
+                }
+              } else if (newUniCourse) {
+                effectiveCourseId = newUniCourse.id;
+                isUniversityCourse = true;
+                console.log(`✅ [Flashcards Service] Created university course: ${effectiveCourseId}`);
               }
             } else {
-              // Other database errors
-              return {
-                success: false,
-                savedCount: 0,
-                error: `Kunde inte skapa kursen: ${createError.message}`
-              };
+              // Create in courses table (gymnasium)
+              const { data: newCourse, error: createError } = await supabase
+                .from('courses')
+                .insert({
+                  id: cleanId,
+                  title: courseName,
+                  course_code: courseId.toUpperCase(),
+                  subject: guessSubjectFromCode(courseId),
+                  description: `Kurs för ${courseName}. Flashcards genererade av AI.`,
+                  level: 'gymnasie',
+                })
+                .select('id')
+                .single();
+
+              if (createError) {
+                console.error('❌ [Flashcards Service] Failed to create gymnasium course:', {
+                  message: createError.message,
+                  code: createError.code,
+                });
+                
+                if (createError.code === '23505') {
+                  const { data: anyMatch } = await supabase
+                    .from('courses')
+                    .select('id')
+                    .or(`id.ilike.%${courseId}%,course_code.ilike.%${courseId}%`)
+                    .limit(1)
+                    .maybeSingle();
+                  
+                  if (anyMatch) {
+                    effectiveCourseId = anyMatch.id;
+                    console.log(`✅ [Flashcards Service] Found existing gymnasium course: ${effectiveCourseId}`);
+                  } else {
+                    return {
+                      success: false,
+                      savedCount: 0,
+                      error: `Kursen "${courseId}" kunde inte hittas eller skapas.`
+                    };
+                  }
+                } else {
+                  return { success: false, savedCount: 0, error: `Kunde inte skapa kursen: ${createError.message}` };
+                }
+              } else if (newCourse) {
+                effectiveCourseId = newCourse.id;
+                console.log(`✅ [Flashcards Service] Created gymnasium course: ${effectiveCourseId}`);
+              }
             }
-          } else if (newCourse) {
-            effectiveCourseId = newCourse.id;
-            console.log(`✅ [Flashcards Service] Created placeholder course: ${effectiveCourseId}`);
-          } else {
-            // No course created and no error? Something is wrong
-            console.error('❌ [Flashcards Service] No course created and no error returned');
-            return {
-              success: false,
-              savedCount: 0,
-              error: 'Kunde inte skapa kursen på grund av ett oväntat fel.'
-            };
           }
         }
       }
@@ -343,7 +412,7 @@ export async function saveFlashcardBatch(
         return { 
           success: false, 
           savedCount: 0, 
-          error: `Kursen "${effectiveCourseId}" finns inte i databasen. Försök med ett giltigt kurs-ID eller kurskod (t.ex. MA1A, FY1, etc.).` 
+          error: `Kursen "${effectiveCourseId}" kunde inte hittas. Kurs-ID: ${courseId}. Kontakta supporten om problemet kvarstår.` 
         };
       }
       

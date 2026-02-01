@@ -22,6 +22,7 @@ import { PointsProvider } from "@/contexts/PointsContext";
 import { ChallengesProvider } from "@/contexts/ChallengesContext";
 import { GamificationProvider } from "@/contexts/GamificationContext";
 import { HogskoleprovetProvider } from "@/contexts/HogskoleprovetContext";
+import { CommunityProvider } from "@/contexts/CommunityContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -105,6 +106,7 @@ function AppContent() {
         <Stack.Screen name="hp-practice/[sectionCode]" options={{ headerShown: false }} />
         <Stack.Screen name="hp-results" options={{ headerShown: false }} />
         <Stack.Screen name="hp-stats" options={{ headerShown: false }} />
+        <Stack.Screen name="community/[id]" options={{ headerShown: false }} />
       </Stack>
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>
@@ -151,7 +153,9 @@ export default function RootLayout() {
                                 <PointsProvider>
                                   <ChallengesProvider>
                                     <HogskoleprovetProvider>
-                                      <RootLayoutNav />
+                                      <CommunityProvider>
+                                        <RootLayoutNav />
+                                      </CommunityProvider>
                                     </HogskoleprovetProvider>
                                   </ChallengesProvider>
                                 </PointsProvider>

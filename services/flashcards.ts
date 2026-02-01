@@ -212,139 +212,132 @@ export async function saveFlashcardBatch(
     const upperCourseId = courseId.toUpperCase();
     const lowerCourseId = courseId.toLowerCase();
 
-    // IMPORTANT: The flashcards table has a foreign key to 'courses' table ONLY
-    // So we MUST ensure the course exists in 'courses' table, even for university courses
+    // Strategy: Check multiple sources to find/create course for flashcards FK
+    // 1. Check courses table (gymnasium courses)
+    // 2. Check university_courses table 
+    // 3. Create in courses table if needed (flashcards FK requires this)
     
-    // First, check if course exists in courses table by ID
-    console.log(`🔍 [Flashcards Service] Checking if course ${courseId} exists in courses table...`);
-    const { data: courseById, error: courseByIdError } = await supabase
+    console.log(`🔍 [Flashcards Service] Looking for course: ${courseId}`);
+    
+    // 1. First check if course exists in courses table by ID or code
+    const { data: courseById } = await supabase
       .from('courses')
       .select('id, title')
-      .eq('id', courseId)
+      .or(`id.eq.${courseId},id.eq.${lowerCourseId},course_code.ilike.${upperCourseId}`)
       .maybeSingle();
 
-    if (courseByIdError) {
-      console.warn(`⚠️ [Flashcards Service] Error checking course by id:`, courseByIdError.message);
-    }
-
     if (courseById) {
-      console.log(`✅ [Flashcards Service] Course found in courses table: ${courseById.id} (${courseById.title})`);
+      console.log(`✅ [Flashcards Service] Found course in courses table: ${courseById.id}`);
       effectiveCourseId = courseById.id;
     } else {
-      // Try to find by course_code in courses table (case-insensitive)
-      console.log(`🔍 [Flashcards Service] Course not found by id, trying course_code: ${upperCourseId}`);
-      const { data: courseByCode } = await supabase
-        .from('courses')
-        .select('id, title')
-        .ilike('course_code', upperCourseId)
+      // 2. Check university_courses table for course info
+      console.log(`🔍 [Flashcards Service] Checking university_courses table...`);
+      
+      const { data: uniCourse } = await supabase
+        .from('university_courses')
+        .select('id, title, course_code, subject_area, credits, description')
+        .or(`id.eq.${courseId},course_code.ilike.${upperCourseId}`)
         .maybeSingle();
 
-      if (courseByCode) {
-        effectiveCourseId = courseByCode.id;
-        console.log(`✅ [Flashcards Service] Found course by code in courses: ${effectiveCourseId} (${courseByCode.title})`);
-      } else {
-        // Also try lowercase ID match
-        const { data: courseByLowerId } = await supabase
+      if (uniCourse) {
+        console.log(`📚 [Flashcards Service] Found university course: ${uniCourse.title} (${uniCourse.course_code})`);
+        courseTitle = uniCourse.title;
+        courseSubject = uniCourse.subject_area || courseSubject;
+        
+        // Use the university course's course_code as the ID for consistency
+        const normalizedId = uniCourse.course_code.toLowerCase();
+        
+        // Check if we already have this course in courses table by course_code
+        const { data: existingByCode } = await supabase
           .from('courses')
-          .select('id, title')
-          .eq('id', lowerCourseId)
+          .select('id')
+          .ilike('course_code', uniCourse.course_code)
           .maybeSingle();
-
-        if (courseByLowerId) {
-          effectiveCourseId = courseByLowerId.id;
-          console.log(`✅ [Flashcards Service] Found course by lowercase id: ${effectiveCourseId}`);
+        
+        if (existingByCode) {
+          effectiveCourseId = existingByCode.id;
+          console.log(`✅ [Flashcards Service] Found existing mirror course: ${effectiveCourseId}`);
         } else {
-          // Check if it exists in university_courses to get proper title/subject
-          console.log(`🔍 [Flashcards Service] Checking university_courses table for metadata...`);
-          
-          // First try by ID
-          let uniCourse = null;
-          const { data: uniById } = await supabase
-            .from('university_courses')
-            .select('id, title, course_code, subject_area, credits')
-            .eq('id', courseId)
-            .maybeSingle();
-          
-          if (uniById) {
-            uniCourse = uniById;
-          } else {
-            // Try by course_code
-            const { data: uniByCode } = await supabase
-              .from('university_courses')
-              .select('id, title, course_code, subject_area, credits')
-              .ilike('course_code', upperCourseId)
-              .maybeSingle();
-            uniCourse = uniByCode;
-          }
-
-          if (uniCourse) {
-            console.log(`📚 [Flashcards Service] Found university course: ${uniCourse.title}`);
-            courseTitle = uniCourse.title;
-            courseSubject = uniCourse.subject_area || courseSubject;
-          }
-          
-          // Create in courses table (flashcards FK requires this)
-          // Use lowercase ID for consistency
-          const cleanId = lowerCourseId.replace(/[^a-z0-9_-]/g, '-');
-          console.log(`📝 [Flashcards Service] Creating course in courses table with id: ${cleanId}`);
+          // Create mirror entry in courses table for FK
+          console.log(`📝 [Flashcards Service] Creating mirror course: ${normalizedId}`);
           
           const { data: newCourse, error: createError } = await supabase
             .from('courses')
             .insert({
-              id: cleanId,
-              title: courseTitle,
-              course_code: upperCourseId,
-              subject: courseSubject,
-              description: `${courseTitle}. Flashcards genererade av AI.`,
+              id: normalizedId,
+              title: uniCourse.title,
+              course_code: uniCourse.course_code,
+              subject: uniCourse.subject_area || 'Universitetskurs',
+              description: uniCourse.description || `${uniCourse.title} - ${uniCourse.credits || 7.5} hp`,
               level: 'hogskola',
             })
             .select('id')
             .single();
 
           if (createError) {
-            console.error('❌ [Flashcards Service] Failed to create course:', {
-              message: createError.message,
-              code: createError.code,
-              details: JSON.stringify(createError),
-            });
-            
-            // If duplicate, try to find existing
+            // Handle duplicate - course might have been created by another request
             if (createError.code === '23505') {
-              // Try multiple ways to find existing course
-              const { data: byCleanId } = await supabase
+              const { data: duplicateCourse } = await supabase
                 .from('courses')
                 .select('id')
-                .eq('id', cleanId)
+                .or(`id.eq.${normalizedId},course_code.ilike.${uniCourse.course_code}`)
                 .maybeSingle();
               
-              if (byCleanId) {
-                effectiveCourseId = byCleanId.id;
-                console.log(`✅ [Flashcards Service] Found existing course by cleanId: ${effectiveCourseId}`);
+              if (duplicateCourse) {
+                effectiveCourseId = duplicateCourse.id;
+                console.log(`✅ [Flashcards Service] Found duplicate course: ${effectiveCourseId}`);
               } else {
-                const { data: byCode } = await supabase
-                  .from('courses')
-                  .select('id')
-                  .ilike('course_code', upperCourseId)
-                  .maybeSingle();
-                
-                if (byCode) {
-                  effectiveCourseId = byCode.id;
-                  console.log(`✅ [Flashcards Service] Found existing course by code: ${effectiveCourseId}`);
-                } else {
-                  return {
-                    success: false,
-                    savedCount: 0,
-                    error: `Kursen "${courseId}" kunde inte hittas eller skapas. Försök igen.`
-                  };
-                }
+                console.error('❌ [Flashcards Service] Duplicate error but course not found');
+                return { success: false, savedCount: 0, error: `Kunde inte skapa kursen. Försök igen.` };
               }
             } else {
-              return { success: false, savedCount: 0, error: `Kunde inte skapa kursen: ${createError.message}` };
+              console.error('❌ [Flashcards Service] Failed to create mirror course:', createError.message);
+              return { success: false, savedCount: 0, error: `Databasfel: ${createError.message}` };
             }
           } else if (newCourse) {
             effectiveCourseId = newCourse.id;
-            console.log(`✅ [Flashcards Service] Created course: ${effectiveCourseId}`);
+            console.log(`✅ [Flashcards Service] Created mirror course: ${effectiveCourseId}`);
           }
+        }
+      } else {
+        // 3. Course not found anywhere - create a new placeholder
+        console.log(`📝 [Flashcards Service] Course not found, creating placeholder: ${lowerCourseId}`);
+        
+        const { data: newCourse, error: createError } = await supabase
+          .from('courses')
+          .insert({
+            id: lowerCourseId,
+            title: courseTitle,
+            course_code: upperCourseId,
+            subject: courseSubject,
+            description: `${courseTitle}. Flashcards genererade av AI.`,
+            level: 'hogskola',
+          })
+          .select('id')
+          .single();
+
+        if (createError) {
+          if (createError.code === '23505') {
+            // Duplicate - find existing
+            const { data: existing } = await supabase
+              .from('courses')
+              .select('id')
+              .or(`id.eq.${lowerCourseId},course_code.ilike.${upperCourseId}`)
+              .maybeSingle();
+            
+            if (existing) {
+              effectiveCourseId = existing.id;
+              console.log(`✅ [Flashcards Service] Found existing placeholder: ${effectiveCourseId}`);
+            } else {
+              return { success: false, savedCount: 0, error: `Kursen kunde inte hittas eller skapas.` };
+            }
+          } else {
+            console.error('❌ [Flashcards Service] Failed to create placeholder:', createError.message);
+            return { success: false, savedCount: 0, error: `Databasfel: ${createError.message}` };
+          }
+        } else if (newCourse) {
+          effectiveCourseId = newCourse.id;
+          console.log(`✅ [Flashcards Service] Created placeholder course: ${effectiveCourseId}`);
         }
       }
     }

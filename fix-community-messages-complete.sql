@@ -124,7 +124,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE community_messages;
 -- ============================================================================
 
 GRANT ALL ON community_messages TO authenticated;
-GRANT USAGE ON SEQUENCE community_messages_id_seq TO authenticated;
 
 -- ============================================================================
 -- CREATE HELPER FUNCTIONS

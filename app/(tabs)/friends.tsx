@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useGamification } from '@/contexts/GamificationContext';
-import { Users, Plus, Search, X, UserPlus, Trophy, Medal, Crown, Award, Share2, Copy, User, Target, TrendingUp, Flame, UsersRound, Globe, ChevronLeft, MoreHorizontal, ChevronUp, Lock, School, BookOpen, MessageCircle } from 'lucide-react-native';
+import { Users, Plus, Search, X, UserPlus, Trophy, Crown, Share2, Copy, User, Target, TrendingUp, Flame, UsersRound, Globe, ChevronLeft, MoreHorizontal, ChevronUp, Lock, School, BookOpen, MessageCircle } from 'lucide-react-native';
 import Avatar from '@/components/Avatar';
 import FriendSearch from '@/components/FriendSearch';
 import type { AvatarConfig } from '@/constants/avatar-config';
@@ -84,7 +84,6 @@ export default function FriendsScreen() {
   const [globalLeaderboardLoading, setGlobalLeaderboardLoading] = useState(false);
   const [globalLeaderboardError, setGlobalLeaderboardError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('week');
   const [leaderboardView, setLeaderboardView] = useState<'friends' | 'global'>('friends');
   const [showCreateCommunityModal, setShowCreateCommunityModal] = useState(false);
   const [communityForm, setCommunityForm] = useState<{
@@ -99,6 +98,9 @@ export default function FriendsScreen() {
     visibility: 'open',
   });
   const [isCreatingCommunity, setIsCreatingCommunity] = useState(false);
+  const [communitySearchQuery, setCommunitySearchQuery] = useState('');
+  const [communitySearchResults, setCommunitySearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const {
     myCommunities,
@@ -111,6 +113,7 @@ export default function FriendsScreen() {
     createCommunity,
     joinCommunity,
     handleInvite,
+    searchCommunities,
   } = useCommunity();
 
   const colors = [
@@ -467,6 +470,21 @@ export default function FriendsScreen() {
     showSuccess(accept ? 'Du gick med i communityn! 🎉' : 'Inbjudan avvisad');
   };
 
+  const handleCommunitySearch = async (query: string) => {
+    setCommunitySearchQuery(query);
+    
+    if (!query.trim()) {
+      setCommunitySearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+    
+    setIsSearching(true);
+    const results = await searchCommunities(query);
+    setCommunitySearchResults(results);
+    setIsSearching(false);
+  };
+
   const getCommunityTypeIcon = (type: CommunityType) => {
     switch (type) {
       case 'school': return <School size={16} color={theme.colors.primary} />;
@@ -603,19 +621,6 @@ export default function FriendsScreen() {
         code: error?.code,
       }, null, 2));
       showError(error?.message || 'Kunde inte avvisa vänförfrågan');
-    }
-  };
-
-  const getPositionIcon = (position: number) => {
-    switch (position) {
-      case 1:
-        return <Crown size={20} color="#FFD700" />;
-      case 2:
-        return <Medal size={20} color="#C0C0C0" />;
-      case 3:
-        return <Award size={20} color="#CD7F32" />;
-      default:
-        return null;
     }
   };
 
@@ -1070,11 +1075,89 @@ export default function FriendsScreen() {
               </View>
             </SlideInView>
 
+            {/* Search Communities */}
+            <SlideInView direction="up" delay={250}>
+              <View style={styles.section}>
+                <View style={[styles.communitySearchBar, { backgroundColor: theme.colors.card }]}>
+                  <Search size={18} color={theme.colors.textMuted} />
+                  <TextInput
+                    style={[styles.communitySearchInput, { color: theme.colors.text }]}
+                    placeholder="Sök communities..."
+                    placeholderTextColor={theme.colors.textMuted}
+                    value={communitySearchQuery}
+                    onChangeText={handleCommunitySearch}
+                  />
+                  {communitySearchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => handleCommunitySearch('')}>
+                      <X size={18} color={theme.colors.textMuted} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </SlideInView>
+
+            {/* Search Results */}
+            {communitySearchQuery.length > 0 && (
+              <SlideInView direction="up" delay={275}>
+                <View style={styles.section}>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Sökresultat</Text>
+                  {isSearching ? (
+                    <ActivityIndicator color={theme.colors.primary} style={{ marginTop: 20 }} />
+                  ) : communitySearchResults.length > 0 ? (
+                    communitySearchResults.map((community, index) => (
+                      <FadeInView key={community.id} delay={300 + index * 50}>
+                        <View style={[styles.communityCard, { backgroundColor: theme.colors.card }]}>
+                          <View style={[styles.communityIconContainer, { backgroundColor: theme.colors.success + '15' }]}>
+                            {getCommunityTypeIcon(community.type)}
+                          </View>
+                          <View style={styles.communityInfo}>
+                            <Text style={[styles.communityName, { color: theme.colors.text }]} numberOfLines={1}>
+                              {community.name}
+                            </Text>
+                            <View style={styles.communityMeta}>
+                              <View style={styles.communityMetaItem}>
+                                <Users size={12} color={theme.colors.textMuted} />
+                                <Text style={[styles.communityMetaText, { color: theme.colors.textMuted }]}>
+                                  {community.memberCount}
+                                </Text>
+                              </View>
+                              {community.schoolName && (
+                                <View style={styles.communityMetaItem}>
+                                  <School size={12} color={theme.colors.textMuted} />
+                                  <Text style={[styles.communityMetaText, { color: theme.colors.textMuted }]} numberOfLines={1}>
+                                    {community.schoolName}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={[styles.joinBtn, { backgroundColor: theme.colors.primary }]}
+                            onPress={() => handleJoinCommunity(community.id, community.visibility)}
+                          >
+                            <Text style={styles.joinBtnText}>
+                              {community.visibility === 'closed' ? 'Ansök' : 'Gå med'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </FadeInView>
+                    ))
+                  ) : (
+                    <View style={styles.emptyState}>
+                      <Globe size={48} color={theme.colors.textMuted} />
+                      <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Inga resultat</Text>
+                      <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>Prova ett annat sökord</Text>
+                    </View>
+                  )}
+                </View>
+              </SlideInView>
+            )}
+
             {/* Suggested Communities */}
-            {suggestedCommunities.length > 0 && (
+            {!communitySearchQuery && suggestedCommunities.length > 0 && (
               <SlideInView direction="up" delay={300}>
                 <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Föreslagna</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Föreslagna för dig</Text>
                   {suggestedCommunities.map((community, index) => (
                     <FadeInView key={community.id} delay={350 + index * 50}>
                       <View style={[styles.communityCard, { backgroundColor: theme.colors.card }]}>
@@ -2634,6 +2717,30 @@ const styles = StyleSheet.create({
   joinCommunityText: {
     fontSize: 13,
     fontWeight: '600',
+    color: 'white',
+  },
+  communitySearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 14,
+    gap: 10,
+  },
+  communitySearchInput: {
+    flex: 1,
+    fontSize: 15,
+    padding: 0,
+  },
+  joinBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  joinBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'white',
   },
   formGroup: {
     marginBottom: 20,

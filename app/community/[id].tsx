@@ -5,203 +5,216 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
-  RefreshControl,
-  Alert,
-  Modal,
   TextInput,
+  ActivityIndicator,
+  SafeAreaView,
+  Alert,
+  RefreshControl,
 } from 'react-native';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { 
-  ChevronLeft, 
-  Users, 
-  Settings, 
-  UserPlus, 
-  Crown, 
-  MoreVertical,
-  Lock,
-  Globe,
-  Trash2,
-  LogOut,
-  Shield,
-  X,
-  Search,
-  Check,
-  UserMinus,
-} from 'lucide-react-native';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCommunity, CommunityMember } from '@/contexts/CommunityContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCommunity, Community, CommunityMember, CommunityRequest } from '@/contexts/CommunityContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useToast } from '@/contexts/ToastContext';
-import Avatar from '@/components/Avatar';
-import { FadeInView, SlideInView } from '@/components/Animations';
 import { supabase } from '@/lib/supabase';
+import Avatar from '@/components/Avatar';
+import {
+  ChevronLeft,
+  Users,
+  Crown,
+  MessageCircle,
+  Trophy,
+  Send,
+  MoreVertical,
+  UserMinus,
+  LogOut,
+  Clock,
+} from 'lucide-react-native';
 import type { AvatarConfig } from '@/constants/avatar-config';
 
-interface FriendForInvite {
+interface CommunityMessage {
   id: string;
-  username: string;
-  displayName: string;
-  avatarUrl?: string;
+  userId: string;
+  message: string;
+  createdAt: string;
+  user?: {
+    username: string;
+    displayName: string;
+    avatarUrl?: string;
+  };
+}
+
+interface MemberWithStats extends CommunityMember {
+  totalStudyTime?: number;
+  sessionCount?: number;
 }
 
 export default function CommunityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { theme } = useTheme();
   const { user } = useAuth();
-  const { 
-    getCommunityDetails, 
-    joinCommunity, 
-    leaveCommunity, 
-    handleRequest,
-    inviteUser,
+  const { theme } = useTheme();
+  const { showError, showSuccess } = useToast();
+  const {
+    getCommunityDetails,
+    leaveCommunity,
     removeMember,
-    updateMemberRole,
     deleteCommunity,
+    handleRequest,
   } = useCommunity();
-  const { showSuccess, showError } = useToast();
 
-  const [community, setCommunity] = useState<Community | null>(null);
-  const [members, setMembers] = useState<CommunityMember[]>([]);
-  const [requests, setRequests] = useState<CommunityRequest[]>([]);
+  const [community, setCommunity] = useState<any>(null);
+  const [members, setMembers] = useState<MemberWithStats[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [messages, setMessages] = useState<CommunityMessage[]>([]);
+  const [messageInput, setMessageInput] = useState('');
+  const [activeTab, setActiveTab] = useState<'chat' | 'members' | 'leaderboard'>('chat');
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'members' | 'requests'>('members');
-  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [friends, setFriends] = useState<FriendForInvite[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isInviting, setIsInviting] = useState<string | null>(null);
-  const [isJoining, setIsJoining] = useState(false);
-  const [joinMessage, setJoinMessage] = useState('');
-  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadCommunityData = useCallback(async () => {
     if (!id) return;
 
     try {
-      console.log('[CommunityDetail] Loading community:', id);
-      const { community: communityData, members: memberData, requests: requestData, error } = 
-        await getCommunityDetails(id);
+      setIsLoading(true);
+      const { community: comm, members: mems, requests: reqs, error } = await getCommunityDetails(id);
 
       if (error) {
-        console.error('[CommunityDetail] Error:', error);
         showError(error);
+        router.back();
         return;
       }
 
-      setCommunity(communityData || null);
-      setMembers(memberData || []);
-      setRequests(requestData || []);
-    } catch (err) {
-      console.error('[CommunityDetail] Exception:', err);
+      setCommunity(comm);
+      setRequests(reqs || []);
+
+      if (mems) {
+        const memberIds = mems.map((m) => m.userId);
+        const { data: progressData } = await supabase
+          .from('user_progress')
+          .select('user_id, total_study_time')
+          .in('user_id', memberIds);
+
+        const { data: sessionData } = await supabase
+          .from('pomodoro_sessions')
+          .select('user_id')
+          .in('user_id', memberIds);
+
+        const sessionCountMap: Record<string, number> = {};
+        sessionData?.forEach((s: any) => {
+          sessionCountMap[s.user_id] = (sessionCountMap[s.user_id] || 0) + 1;
+        });
+
+        const progressMap = new Map(
+          progressData?.map((p: any) => [p.user_id, p.total_study_time]) || []
+        );
+
+        const membersWithStats: MemberWithStats[] = mems.map((m) => ({
+          ...m,
+          totalStudyTime: progressMap.get(m.userId) || 0,
+          sessionCount: sessionCountMap[m.userId] || 0,
+        }));
+
+        setMembers(membersWithStats);
+      }
+    } catch (err: any) {
+      console.error('[Community] Error loading:', err);
+      showError('Kunde inte ladda community');
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
-  }, [id, getCommunityDetails, showError]);
+  }, [id, getCommunityDetails, showError, router]);
 
-  const loadFriends = useCallback(async () => {
-    if (!user) return;
+  const loadMessages = useCallback(async () => {
+    if (!id) return;
 
     try {
-      const { data: friendsDataSent } = await supabase
-        .from('friends')
-        .select(`
-          friend:profiles!friend_id(id, username, display_name, avatar_url)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'accepted');
+      const { data, error } = await (supabase as any)
+        .from('community_messages')
+        .select('*')
+        .eq('community_id', id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      const { data: friendsDataReceived } = await supabase
-        .from('friends')
-        .select(`
-          friend:profiles!user_id(id, username, display_name, avatar_url)
-        `)
-        .eq('friend_id', user.id)
-        .eq('status', 'accepted');
+      if (error) {
+        console.error('[Community] Error loading messages:', error);
+        return;
+      }
 
-      const allFriends = [
-        ...(friendsDataSent || []),
-        ...(friendsDataReceived || []),
-      ];
-
-      const memberIds = new Set(members.map(m => m.userId));
-      const uniqueFriends = new Map<string, FriendForInvite>();
-
-      allFriends.forEach((f: any) => {
-        if (f.friend && !memberIds.has(f.friend.id)) {
-          uniqueFriends.set(f.friend.id, {
-            id: f.friend.id,
-            username: f.friend.username,
-            displayName: f.friend.display_name,
-            avatarUrl: f.friend.avatar_url,
-          });
+      const userIds: string[] = [];
+      if (data && data.length > 0) {
+        const ids = data.map((m: any) => m.user_id).filter((id: any): id is string => typeof id === 'string');
+        const uniqueIds = Array.from(new Set(ids)) as string[];
+        for (const id of uniqueIds) {
+          userIds.push(id);
         }
+      }
+      
+      if (userIds.length === 0) {
+        setMessages([]);
+        return;
+      }
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', userIds);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+      const mapped: CommunityMessage[] = (data || []).map((m: any) => {
+        const profile = profileMap.get(m.user_id);
+        return {
+          id: m.id,
+          userId: m.user_id,
+          message: m.message,
+          createdAt: m.created_at,
+          user: profile
+            ? {
+                username: profile.username,
+                displayName: profile.display_name,
+                avatarUrl: profile.avatar_url,
+              }
+            : undefined,
+        };
       });
 
-      setFriends(Array.from(uniqueFriends.values()));
-    } catch (err) {
-      console.error('[CommunityDetail] Error loading friends:', err);
+      setMessages(mapped.reverse());
+    } catch (error) {
+      console.error('[Community] Error loading messages:', error);
     }
-  }, [user, members]);
+  }, [id]);
 
-  useEffect(() => {
-    loadCommunityData();
-  }, [loadCommunityData]);
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !user || !id) return;
 
-  useEffect(() => {
-    if (showInviteModal) {
-      loadFriends();
+    setIsSending(true);
+    try {
+      const { error } = await (supabase as any).from('community_messages').insert({
+        community_id: id,
+        user_id: user.id,
+        message: messageInput.trim(),
+      });
+
+      if (error) {
+        showError('Kunde inte skicka meddelande');
+        return;
+      }
+
+      setMessageInput('');
+      await loadMessages();
+    } catch (error) {
+      console.error('[Community] Error sending message:', error);
+      showError('Kunde inte skicka meddelande');
+    } finally {
+      setIsSending(false);
     }
-  }, [showInviteModal, loadFriends]);
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    loadCommunityData();
   };
 
-  const handleJoin = async () => {
-    if (!community) return;
+  const handleLeaveCommunity = async () => {
+    if (!id) return;
 
-    if (community.visibility === 'closed') {
-      setShowJoinModal(true);
-      return;
-    }
-
-    setIsJoining(true);
-    const { error } = await joinCommunity(community.id);
-    setIsJoining(false);
-
-    if (error) {
-      showError(error);
-      return;
-    }
-
-    showSuccess('Du gick med i communityn! 🎉');
-    loadCommunityData();
-  };
-
-  const submitJoinRequest = async () => {
-    if (!community) return;
-
-    setIsJoining(true);
-    const { error } = await joinCommunity(community.id, joinMessage);
-    setIsJoining(false);
-    setShowJoinModal(false);
-    setJoinMessage('');
-
-    if (error) {
-      showError(error);
-      return;
-    }
-
-    showSuccess('Din ansökan har skickats! 📬');
-    loadCommunityData();
-  };
-
-  const handleLeave = () => {
     Alert.alert(
       'Lämna community',
       'Är du säker på att du vill lämna denna community?',
@@ -211,7 +224,7 @@ export default function CommunityDetailScreen() {
           text: 'Lämna',
           style: 'destructive',
           onPress: async () => {
-            const { error } = await leaveCommunity(community!.id);
+            const { error } = await leaveCommunity(id);
             if (error) {
               showError(error);
               return;
@@ -224,22 +237,45 @@ export default function CommunityDetailScreen() {
     );
   };
 
-  const handleDelete = () => {
+  const handleRemoveMember = async (memberId: string) => {
+    if (!id) return;
+
+    Alert.alert('Ta bort medlem', 'Är du säker?', [
+      { text: 'Avbryt', style: 'cancel' },
+      {
+        text: 'Ta bort',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await removeMember(id, memberId);
+          if (error) {
+            showError(error);
+            return;
+          }
+          showSuccess('Medlem borttagen');
+          await loadCommunityData();
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteCommunity = async () => {
+    if (!id) return;
+
     Alert.alert(
       'Ta bort community',
-      'Är du säker på att du vill ta bort denna community? Detta kan inte ångras.',
+      'Detta går inte att ångra. All data kommer raderas.',
       [
         { text: 'Avbryt', style: 'cancel' },
         {
           text: 'Ta bort',
           style: 'destructive',
           onPress: async () => {
-            const { error } = await deleteCommunity(community!.id);
+            const { error } = await deleteCommunity(id);
             if (error) {
               showError(error);
               return;
             }
-            showSuccess('Community har tagits bort');
+            showSuccess('Community raderad');
             router.back();
           },
         },
@@ -247,64 +283,60 @@ export default function CommunityDetailScreen() {
     );
   };
 
-  const handleRequestAction = async (requestId: string, accept: boolean) => {
-    const { error } = await handleRequest(requestId, accept);
+  const handleAcceptRequest = async (requestId: string) => {
+    const { error } = await handleRequest(requestId, true);
     if (error) {
       showError(error);
       return;
     }
-    showSuccess(accept ? 'Ansökan godkänd! ✅' : 'Ansökan avvisad');
+    showSuccess('Ansökan accepterad! 🎉');
+    await loadCommunityData();
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    const { error } = await handleRequest(requestId, false);
+    if (error) {
+      showError(error);
+      return;
+    }
+    showSuccess('Ansökan avvisad');
+    await loadCommunityData();
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([loadCommunityData(), loadMessages()]);
+    setRefreshing(false);
+  }, [loadCommunityData, loadMessages]);
+
+  useEffect(() => {
     loadCommunityData();
-  };
+    loadMessages();
+  }, [loadCommunityData, loadMessages]);
 
-  const handleInvite = async (friendId: string) => {
-    if (!community) return;
+  useEffect(() => {
+    if (!id) return;
 
-    setIsInviting(friendId);
-    const { error } = await inviteUser(community.id, friendId);
-    setIsInviting(null);
-
-    if (error) {
-      showError(error);
-      return;
-    }
-
-    showSuccess('Inbjudan skickad! 📨');
-    setFriends(prev => prev.filter(f => f.id !== friendId));
-  };
-
-  const handleRemoveMember = (memberId: string, memberName: string) => {
-    Alert.alert(
-      'Ta bort medlem',
-      `Vill du ta bort ${memberName} från communityn?`,
-      [
-        { text: 'Avbryt', style: 'cancel' },
+    const channel = supabase
+      .channel(`community:${id}`)
+      .on(
+        'postgres_changes',
         {
-          text: 'Ta bort',
-          style: 'destructive',
-          onPress: async () => {
-            const { error } = await removeMember(community!.id, memberId);
-            if (error) {
-              showError(error);
-              return;
-            }
-            showSuccess('Medlem borttagen');
-            loadCommunityData();
-          },
+          event: 'INSERT',
+          schema: 'public',
+          table: 'community_messages',
+          filter: `community_id=eq.${id}`,
         },
-      ]
-    );
-  };
+        () => {
+          loadMessages();
+        }
+      )
+      .subscribe();
 
-  const handleMakeAdmin = async (memberId: string) => {
-    const { error } = await updateMemberRole(community!.id, memberId, 'admin');
-    if (error) {
-      showError(error);
-      return;
-    }
-    showSuccess('Användaren är nu admin');
-    loadCommunityData();
-  };
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, loadMessages]);
 
   const safeParseAvatar = (raw: string | null | undefined): AvatarConfig | undefined => {
     if (!raw) return undefined;
@@ -315,19 +347,21 @@ export default function CommunityDetailScreen() {
     }
   };
 
-  const filteredFriends = friends.filter(f =>
-    f.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    f.username.toLowerCase().includes(searchQuery.toLowerCase())
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
+  };
+
+  const sortedLeaderboard = [...members].sort(
+    (a, b) => (b.totalStudyTime || 0) - (a.totalStudyTime || 0)
   );
 
   if (isLoading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
-        <Stack.Screen options={{ headerShown: false }} />
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
-          Laddar community...
-        </Text>
       </View>
     );
   }
@@ -335,540 +369,409 @@ export default function CommunityDetailScreen() {
   if (!community) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <Text style={[styles.errorText, { color: theme.colors.text }]}>
+        <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>
           Community hittades inte
         </Text>
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.colors.primary }]}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backButtonText}>Gå tillbaka</Text>
-        </TouchableOpacity>
       </View>
     );
   }
 
-  const admins = members.filter(m => m.role === 'admin');
-  const regularMembers = members.filter(m => m.role === 'member');
-
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Stack.Screen options={{ headerShown: false }} />
-
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
-        <TouchableOpacity 
-          style={styles.headerButton}
-          onPress={() => router.back()}
-        >
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: theme.colors.text }]} numberOfLines={1}>
             {community.name}
           </Text>
+          <View style={styles.headerMeta}>
+            <Users size={12} color={theme.colors.textMuted} />
+            <Text style={[styles.headerMetaText, { color: theme.colors.textMuted }]}>
+              {community.memberCount} medlemmar
+            </Text>
+          </View>
         </View>
-        {community.isMember && (
-          <TouchableOpacity 
-            style={styles.headerButton}
-            onPress={() => setShowOptionsMenu(true)}
-          >
-            <MoreVertical size={24} color={theme.colors.text} />
+        {community.isAdmin && (
+          <TouchableOpacity onPress={handleDeleteCommunity} style={styles.headerButton}>
+            <MoreVertical size={24} color={theme.colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
 
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            tintColor={theme.colors.primary}
-          />
-        }
-      >
-        {/* Community Info */}
-        <SlideInView direction="up" delay={100}>
-          <View style={[styles.infoCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.infoHeader}>
-              <View style={[styles.visibilityBadge, { 
-                backgroundColor: community.visibility === 'open' 
-                  ? theme.colors.success + '20' 
-                  : theme.colors.warning + '20' 
-              }]}>
-                {community.visibility === 'open' ? (
-                  <Globe size={14} color={theme.colors.success} />
-                ) : (
-                  <Lock size={14} color={theme.colors.warning} />
-                )}
-                <Text style={[styles.visibilityText, { 
-                  color: community.visibility === 'open' ? theme.colors.success : theme.colors.warning 
-                }]}>
-                  {community.visibility === 'open' ? 'Öppen' : 'Stängd'}
-                </Text>
-              </View>
-              <View style={styles.memberCount}>
-                <Users size={14} color={theme.colors.textMuted} />
-                <Text style={[styles.memberCountText, { color: theme.colors.textMuted }]}>
-                  {community.memberCount} medlemmar
-                </Text>
-              </View>
-            </View>
+      {community.isAdmin && requests.length > 0 && (
+        <View style={[styles.requestsBanner, { backgroundColor: theme.colors.warning + '20' }]}>
+          <Text style={[styles.requestsText, { color: theme.colors.warning }]}>
+            {requests.length} väntande ansökan(ar)
+          </Text>
+          <TouchableOpacity onPress={() => setActiveTab('members')}>
+            <Text style={[styles.viewRequestsText, { color: theme.colors.warning }]}>Visa</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-            {community.description ? (
-              <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-                {community.description}
-              </Text>
-            ) : null}
-
-            {community.schoolName && (
-              <View style={[styles.metaTag, { backgroundColor: theme.colors.border + '50' }]}>
-                <Text style={[styles.metaTagText, { color: theme.colors.textSecondary }]}>
-                  🏫 {community.schoolName}
-                </Text>
-              </View>
-            )}
-
-            {!community.isMember && (
-              <TouchableOpacity
-                style={[styles.joinButton, { backgroundColor: theme.colors.primary }]}
-                onPress={handleJoin}
-                disabled={isJoining || community.hasPendingRequest}
-              >
-                {isJoining ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : community.hasPendingRequest ? (
-                  <Text style={styles.joinButtonText}>Ansökan skickad</Text>
-                ) : (
-                  <Text style={styles.joinButtonText}>
-                    {community.visibility === 'closed' ? 'Ansök om medlemskap' : 'Gå med i community'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            )}
-
-            {community.isMember && community.isAdmin && (
-              <TouchableOpacity
-                style={[styles.inviteButton, { backgroundColor: theme.colors.primary + '15' }]}
-                onPress={() => setShowInviteModal(true)}
-              >
-                <UserPlus size={18} color={theme.colors.primary} />
-                <Text style={[styles.inviteButtonText, { color: theme.colors.primary }]}>
-                  Bjud in vänner
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </SlideInView>
-
-        {/* Tabs */}
-        {community.isMember && (
-          <SlideInView direction="up" delay={200}>
-            <View style={styles.tabsContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.tab,
-                  { backgroundColor: theme.colors.card },
-                  activeTab === 'members' && { backgroundColor: theme.colors.primary }
-                ]}
-                onPress={() => setActiveTab('members')}
-              >
-                <Text style={[
-                  styles.tabText,
-                  { color: theme.colors.textSecondary },
-                  activeTab === 'members' && { color: 'white', fontWeight: '600' as const }
-                ]}>
-                  Medlemmar ({members.length})
-                </Text>
-              </TouchableOpacity>
-
-              {community.isAdmin && requests.length > 0 && (
-                <TouchableOpacity
-                  style={[
-                    styles.tab,
-                    { backgroundColor: theme.colors.card },
-                    activeTab === 'requests' && { backgroundColor: theme.colors.primary }
-                  ]}
-                  onPress={() => setActiveTab('requests')}
-                >
-                  <Text style={[
-                    styles.tabText,
-                    { color: theme.colors.textSecondary },
-                    activeTab === 'requests' && { color: 'white', fontWeight: '600' as const }
-                  ]}>
-                    Ansökningar ({requests.length})
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </SlideInView>
-        )}
-
-        {/* Members List */}
-        {community.isMember && activeTab === 'members' && (
-          <SlideInView direction="up" delay={300}>
-            <View style={styles.section}>
-              {admins.length > 0 && (
-                <>
-                  <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
-                    Admins
-                  </Text>
-                  {admins.map((member, index) => (
-                    <FadeInView key={member.id} delay={350 + index * 50}>
-                      <View style={[styles.memberCard, { backgroundColor: theme.colors.card }]}>
-                        <View style={styles.memberLeft}>
-                          {member.user?.avatarUrl && safeParseAvatar(member.user.avatarUrl) ? (
-                            <View style={styles.avatarContainer}>
-                              <Avatar config={safeParseAvatar(member.user.avatarUrl)!} size={44} />
-                            </View>
-                          ) : (
-                            <View style={[styles.avatarFallback, { backgroundColor: theme.colors.primary + '20' }]}>
-                              <Text style={[styles.avatarFallbackText, { color: theme.colors.primary }]}>
-                                {(member.user?.displayName?.[0] || '?').toUpperCase()}
-                              </Text>
-                            </View>
-                          )}
-                          <View style={styles.memberInfo}>
-                            <Text style={[styles.memberName, { color: theme.colors.text }]}>
-                              {member.user?.displayName || 'Okänd'}
-                            </Text>
-                            <Text style={[styles.memberUsername, { color: theme.colors.primary }]}>
-                              @{member.user?.username || 'unknown'}
-                            </Text>
-                          </View>
-                        </View>
-                        <View style={[styles.adminBadge, { backgroundColor: theme.colors.warning + '20' }]}>
-                          <Crown size={12} color={theme.colors.warning} />
-                          <Text style={[styles.adminBadgeText, { color: theme.colors.warning }]}>
-                            Admin
-                          </Text>
-                        </View>
-                      </View>
-                    </FadeInView>
-                  ))}
-                </>
-              )}
-
-              {regularMembers.length > 0 && (
-                <>
-                  <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary, marginTop: 16 }]}>
-                    Medlemmar
-                  </Text>
-                  {regularMembers.map((member, index) => (
-                    <FadeInView key={member.id} delay={400 + index * 50}>
-                      <View style={[styles.memberCard, { backgroundColor: theme.colors.card }]}>
-                        <View style={styles.memberLeft}>
-                          {member.user?.avatarUrl && safeParseAvatar(member.user.avatarUrl) ? (
-                            <View style={styles.avatarContainer}>
-                              <Avatar config={safeParseAvatar(member.user.avatarUrl)!} size={44} />
-                            </View>
-                          ) : (
-                            <View style={[styles.avatarFallback, { backgroundColor: theme.colors.border }]}>
-                              <Text style={[styles.avatarFallbackText, { color: theme.colors.textSecondary }]}>
-                                {(member.user?.displayName?.[0] || '?').toUpperCase()}
-                              </Text>
-                            </View>
-                          )}
-                          <View style={styles.memberInfo}>
-                            <Text style={[styles.memberName, { color: theme.colors.text }]}>
-                              {member.user?.displayName || 'Okänd'}
-                            </Text>
-                            <Text style={[styles.memberUsername, { color: theme.colors.primary }]}>
-                              @{member.user?.username || 'unknown'}
-                            </Text>
-                          </View>
-                        </View>
-                        {community.isAdmin && member.userId !== user?.id && (
-                          <View style={styles.memberActions}>
-                            <TouchableOpacity
-                              style={[styles.memberActionButton, { backgroundColor: theme.colors.primary + '15' }]}
-                              onPress={() => handleMakeAdmin(member.userId)}
-                            >
-                              <Shield size={14} color={theme.colors.primary} />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.memberActionButton, { backgroundColor: theme.colors.error + '15' }]}
-                              onPress={() => handleRemoveMember(member.userId, member.user?.displayName || 'medlemmen')}
-                            >
-                              <UserMinus size={14} color={theme.colors.error} />
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </View>
-                    </FadeInView>
-                  ))}
-                </>
-              )}
-            </View>
-          </SlideInView>
-        )}
-
-        {/* Requests List */}
-        {community.isMember && community.isAdmin && activeTab === 'requests' && (
-          <SlideInView direction="up" delay={300}>
-            <View style={styles.section}>
-              {requests.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-                    Inga väntande ansökningar
-                  </Text>
-                </View>
-              ) : (
-                requests.map((request, index) => (
-                  <FadeInView key={request.id} delay={350 + index * 50}>
-                    <View style={[styles.requestCard, { backgroundColor: theme.colors.card }]}>
-                      <View style={styles.requestHeader}>
-                        {request.user?.avatarUrl && safeParseAvatar(request.user.avatarUrl) ? (
-                          <View style={styles.avatarContainer}>
-                            <Avatar config={safeParseAvatar(request.user.avatarUrl)!} size={44} />
-                          </View>
-                        ) : (
-                          <View style={[styles.avatarFallback, { backgroundColor: theme.colors.border }]}>
-                            <Text style={[styles.avatarFallbackText, { color: theme.colors.textSecondary }]}>
-                              {(request.user?.displayName?.[0] || '?').toUpperCase()}
-                            </Text>
-                          </View>
-                        )}
-                        <View style={styles.memberInfo}>
-                          <Text style={[styles.memberName, { color: theme.colors.text }]}>
-                            {request.user?.displayName || 'Okänd'}
-                          </Text>
-                          <Text style={[styles.memberUsername, { color: theme.colors.primary }]}>
-                            @{request.user?.username || 'unknown'}
-                          </Text>
-                        </View>
-                      </View>
-                      {request.message && (
-                        <Text style={[styles.requestMessage, { color: theme.colors.textSecondary }]}>
-                          "{request.message}"
-                        </Text>
-                      )}
-                      <View style={styles.requestActions}>
-                        <TouchableOpacity
-                          style={[styles.rejectButton, { borderColor: theme.colors.border }]}
-                          onPress={() => handleRequestAction(request.id, false)}
-                        >
-                          <Text style={[styles.rejectButtonText, { color: theme.colors.textSecondary }]}>
-                            Avvisa
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.acceptButton, { backgroundColor: theme.colors.primary }]}
-                          onPress={() => handleRequestAction(request.id, true)}
-                        >
-                          <Text style={styles.acceptButtonText}>Godkänn</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </FadeInView>
-                ))
-              )}
-            </View>
-          </SlideInView>
-        )}
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
-
-      {/* Options Menu Modal */}
-      <Modal
-        visible={showOptionsMenu}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowOptionsMenu(false)}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowOptionsMenu(false)}
+      <View style={styles.tabs}>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            { backgroundColor: theme.colors.card },
+            activeTab === 'chat' && { backgroundColor: theme.colors.primary },
+          ]}
+          onPress={() => setActiveTab('chat')}
         >
-          <View style={[styles.optionsMenu, { backgroundColor: theme.colors.card }]}>
-            <TouchableOpacity
-              style={styles.optionItem}
-              onPress={() => {
-                setShowOptionsMenu(false);
-                setShowInviteModal(true);
-              }}
-            >
-              <UserPlus size={20} color={theme.colors.text} />
-              <Text style={[styles.optionText, { color: theme.colors.text }]}>
-                Bjud in vänner
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.optionItem}
-              onPress={() => {
-                setShowOptionsMenu(false);
-                handleLeave();
-              }}
-            >
-              <LogOut size={20} color={theme.colors.error} />
-              <Text style={[styles.optionText, { color: theme.colors.error }]}>
-                Lämna community
-              </Text>
-            </TouchableOpacity>
-
-            {community.createdBy === user?.id && (
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={() => {
-                  setShowOptionsMenu(false);
-                  handleDelete();
-                }}
-              >
-                <Trash2 size={20} color={theme.colors.error} />
-                <Text style={[styles.optionText, { color: theme.colors.error }]}>
-                  Ta bort community
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <MessageCircle size={18} color={activeTab === 'chat' ? 'white' : theme.colors.textSecondary} />
+          <Text
+            style={[
+              styles.tabText,
+              { color: theme.colors.textSecondary },
+              activeTab === 'chat' && { color: 'white', fontWeight: '600' },
+            ]}
+          >
+            Chatt
+          </Text>
         </TouchableOpacity>
-      </Modal>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            { backgroundColor: theme.colors.card },
+            activeTab === 'members' && { backgroundColor: theme.colors.primary },
+          ]}
+          onPress={() => setActiveTab('members')}
+        >
+          <Users size={18} color={activeTab === 'members' ? 'white' : theme.colors.textSecondary} />
+          <Text
+            style={[
+              styles.tabText,
+              { color: theme.colors.textSecondary },
+              activeTab === 'members' && { color: 'white', fontWeight: '600' },
+            ]}
+          >
+            Medlemmar
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            { backgroundColor: theme.colors.card },
+            activeTab === 'leaderboard' && { backgroundColor: theme.colors.primary },
+          ]}
+          onPress={() => setActiveTab('leaderboard')}
+        >
+          <Trophy size={18} color={activeTab === 'leaderboard' ? 'white' : theme.colors.textSecondary} />
+          <Text
+            style={[
+              styles.tabText,
+              { color: theme.colors.textSecondary },
+              activeTab === 'leaderboard' && { color: 'white', fontWeight: '600' },
+            ]}
+          >
+            Topplista
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Invite Modal */}
-      <Modal
-        visible={showInviteModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowInviteModal(false)}
-      >
-        <View style={[styles.inviteModal, { backgroundColor: theme.colors.background }]}>
-          <View style={[styles.inviteHeader, { borderBottomColor: theme.colors.border }]}>
-            <Text style={[styles.inviteTitle, { color: theme.colors.text }]}>
-              Bjud in vänner
-            </Text>
-            <TouchableOpacity onPress={() => setShowInviteModal(false)}>
-              <X size={24} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={[styles.searchContainer, { backgroundColor: theme.colors.card }]}>
-            <Search size={20} color={theme.colors.textMuted} />
-            <TextInput
-              style={[styles.searchInput, { color: theme.colors.text }]}
-              placeholder="Sök bland vänner..."
-              placeholderTextColor={theme.colors.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-
-          <ScrollView style={styles.inviteList}>
-            {filteredFriends.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-                  {searchQuery ? 'Inga vänner hittades' : 'Inga vänner att bjuda in'}
+      {activeTab === 'chat' && (
+        <View style={styles.chatContainer}>
+          <ScrollView
+            style={styles.messagesContainer}
+            contentContainerStyle={styles.messagesContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+            }
+          >
+            {messages.length === 0 ? (
+              <View style={styles.emptyChat}>
+                <MessageCircle size={48} color={theme.colors.textMuted} />
+                <Text style={[styles.emptyChatText, { color: theme.colors.textSecondary }]}>
+                  Inga meddelanden än. Starta konversationen!
                 </Text>
               </View>
             ) : (
-              filteredFriends.map((friend) => (
-                <View 
-                  key={friend.id} 
-                  style={[styles.inviteFriendCard, { backgroundColor: theme.colors.card }]}
-                >
-                  <View style={styles.memberLeft}>
-                    {friend.avatarUrl && safeParseAvatar(friend.avatarUrl) ? (
-                      <View style={styles.avatarContainer}>
-                        <Avatar config={safeParseAvatar(friend.avatarUrl)!} size={44} />
-                      </View>
-                    ) : (
-                      <View style={[styles.avatarFallback, { backgroundColor: theme.colors.border }]}>
-                        <Text style={[styles.avatarFallbackText, { color: theme.colors.textSecondary }]}>
-                          {(friend.displayName?.[0] || '?').toUpperCase()}
-                        </Text>
+              messages.map((msg) => {
+                const isOwnMessage = msg.userId === user?.id;
+                return (
+                  <View
+                    key={msg.id}
+                    style={[
+                      styles.messageRow,
+                      isOwnMessage && styles.messageRowOwn,
+                    ]}
+                  >
+                    {!isOwnMessage && (
+                      <View style={styles.messageAvatar}>
+                        {msg.user?.avatarUrl && safeParseAvatar(msg.user.avatarUrl) ? (
+                          <Avatar config={safeParseAvatar(msg.user.avatarUrl)!} size={32} />
+                        ) : (
+                          <View style={[styles.messageAvatarFallback, { backgroundColor: theme.colors.primary + '20' }]}>
+                            <Text style={[styles.messageAvatarText, { color: theme.colors.primary }]}>
+                              {msg.user?.displayName?.[0]?.toUpperCase() || '?'}
+                            </Text>
+                          </View>
+                        )}
                       </View>
                     )}
-                    <View style={styles.memberInfo}>
-                      <Text style={[styles.memberName, { color: theme.colors.text }]}>
-                        {friend.displayName}
+                    <View
+                      style={[
+                        styles.messageBubble,
+                        { backgroundColor: theme.colors.card },
+                        isOwnMessage && { backgroundColor: theme.colors.primary },
+                      ]}
+                    >
+                      {!isOwnMessage && (
+                        <Text style={[styles.messageSender, { color: theme.colors.primary }]}>
+                          {msg.user?.displayName || 'Okänd'}
+                        </Text>
+                      )}
+                      <Text
+                        style={[
+                          styles.messageText,
+                          { color: theme.colors.text },
+                          isOwnMessage && { color: 'white' },
+                        ]}
+                      >
+                        {msg.message}
                       </Text>
-                      <Text style={[styles.memberUsername, { color: theme.colors.primary }]}>
-                        @{friend.username}
+                      <Text
+                        style={[
+                          styles.messageTime,
+                          { color: theme.colors.textMuted },
+                          isOwnMessage && { color: 'rgba(255,255,255,0.7)' },
+                        ]}
+                      >
+                        {new Date(msg.createdAt).toLocaleTimeString('sv-SE', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </Text>
                     </View>
                   </View>
-                  <TouchableOpacity
-                    style={[styles.inviteSendButton, { backgroundColor: theme.colors.primary }]}
-                    onPress={() => handleInvite(friend.id)}
-                    disabled={isInviting === friend.id}
-                  >
-                    {isInviting === friend.id ? (
-                      <ActivityIndicator color="white" size="small" />
-                    ) : (
-                      <>
-                        <UserPlus size={14} color="white" />
-                        <Text style={styles.inviteSendText}>Bjud in</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              ))
+                );
+              })
             )}
           </ScrollView>
-        </View>
-      </Modal>
 
-      {/* Join Request Modal */}
-      <Modal
-        visible={showJoinModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowJoinModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.joinModal, { backgroundColor: theme.colors.card }]}>
-            <Text style={[styles.joinModalTitle, { color: theme.colors.text }]}>
-              Ansök om medlemskap
-            </Text>
-            <Text style={[styles.joinModalSubtitle, { color: theme.colors.textSecondary }]}>
-              Denna community kräver godkännande för att gå med.
-            </Text>
+          <View style={[styles.messageInputContainer, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
             <TextInput
-              style={[styles.joinMessageInput, { 
-                backgroundColor: theme.colors.background,
-                color: theme.colors.text,
-                borderColor: theme.colors.border,
-              }]}
-              placeholder="Valfritt meddelande till admins..."
+              style={[styles.messageInput, { color: theme.colors.text }]}
+              placeholder="Skriv ett meddelande..."
               placeholderTextColor={theme.colors.textMuted}
-              value={joinMessage}
-              onChangeText={setJoinMessage}
+              value={messageInput}
+              onChangeText={setMessageInput}
               multiline
-              numberOfLines={3}
-              textAlignVertical="top"
+              maxLength={500}
             />
-            <View style={styles.joinModalActions}>
-              <TouchableOpacity
-                style={[styles.joinModalCancel, { borderColor: theme.colors.border }]}
-                onPress={() => {
-                  setShowJoinModal(false);
-                  setJoinMessage('');
-                }}
-              >
-                <Text style={[styles.joinModalCancelText, { color: theme.colors.textSecondary }]}>
-                  Avbryt
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.joinModalSubmit, { backgroundColor: theme.colors.primary }]}
-                onPress={submitJoinRequest}
-                disabled={isJoining}
-              >
-                {isJoining ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : (
-                  <Text style={styles.joinModalSubmitText}>Skicka ansökan</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                { backgroundColor: messageInput.trim() ? theme.colors.primary : theme.colors.border },
+              ]}
+              onPress={handleSendMessage}
+              disabled={!messageInput.trim() || isSending}
+            >
+              {isSending ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Send size={20} color="white" />
+              )}
+            </TouchableOpacity>
           </View>
         </View>
-      </Modal>
-    </View>
+      )}
+
+      {activeTab === 'members' && (
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentPadding}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+          }
+        >
+          {community.isAdmin && requests.length > 0 && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                Ansökningar ({requests.length})
+              </Text>
+              {requests.map((req) => (
+                <View key={req.id} style={[styles.requestCard, { backgroundColor: theme.colors.card }]}>
+                  <View style={styles.requestInfo}>
+                    {req.user?.avatarUrl && safeParseAvatar(req.user.avatarUrl) ? (
+                      <Avatar config={safeParseAvatar(req.user.avatarUrl)!} size={48} />
+                    ) : (
+                      <View style={[styles.memberAvatarFallback, { backgroundColor: theme.colors.primary + '20' }]}>
+                        <Text style={[styles.memberAvatarText, { color: theme.colors.primary }]}>
+                          {req.user?.displayName?.[0]?.toUpperCase() || '?'}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.requestDetails}>
+                      <Text style={[styles.memberName, { color: theme.colors.text }]}>
+                        {req.user?.displayName || 'Okänd'}
+                      </Text>
+                      <Text style={[styles.memberUsername, { color: theme.colors.textSecondary }]}>
+                        @{req.user?.username || 'okänd'}
+                      </Text>
+                      {req.message && (
+                        <Text style={[styles.requestMessage, { color: theme.colors.textSecondary }]}>
+                          &ldquo;{req.message}&rdquo;
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.requestActions}>
+                    <TouchableOpacity
+                      style={[styles.rejectBtn, { borderColor: theme.colors.border }]}
+                      onPress={() => handleRejectRequest(req.id)}
+                    >
+                      <Text style={[styles.rejectBtnText, { color: theme.colors.textSecondary }]}>
+                        Avvisa
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.acceptBtn, { backgroundColor: theme.colors.primary }]}
+                      onPress={() => handleAcceptRequest(req.id)}
+                    >
+                      <Text style={styles.acceptBtnText}>Godkänn</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Medlemmar ({members.length})
+            </Text>
+            {members.map((member) => (
+              <View key={member.id} style={[styles.memberCard, { backgroundColor: theme.colors.card }]}>
+                <View style={styles.memberLeft}>
+                  {member.user?.avatarUrl && safeParseAvatar(member.user.avatarUrl) ? (
+                    <Avatar config={safeParseAvatar(member.user.avatarUrl)!} size={48} />
+                  ) : (
+                    <View style={[styles.memberAvatarFallback, { backgroundColor: theme.colors.primary + '20' }]}>
+                      <Text style={[styles.memberAvatarText, { color: theme.colors.primary }]}>
+                        {member.user?.displayName?.[0]?.toUpperCase() || '?'}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.memberInfo}>
+                    <View style={styles.memberNameRow}>
+                      <Text style={[styles.memberName, { color: theme.colors.text }]}>
+                        {member.user?.displayName || 'Okänd'}
+                      </Text>
+                      {member.role === 'admin' && (
+                        <Crown size={14} color={theme.colors.warning} />
+                      )}
+                    </View>
+                    <Text style={[styles.memberUsername, { color: theme.colors.textSecondary }]}>
+                      @{member.user?.username || 'okänd'}
+                    </Text>
+                  </View>
+                </View>
+                {community.isAdmin && member.userId !== user?.id && (
+                  <TouchableOpacity
+                    style={styles.memberActionBtn}
+                    onPress={() => handleRemoveMember(member.userId)}
+                  >
+                    <UserMinus size={18} color={theme.colors.error} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+          </View>
+
+          {!community.isAdmin && (
+            <TouchableOpacity
+              style={[styles.leaveButton, { backgroundColor: theme.colors.error + '15' }]}
+              onPress={handleLeaveCommunity}
+            >
+              <LogOut size={20} color={theme.colors.error} />
+              <Text style={[styles.leaveButtonText, { color: theme.colors.error }]}>
+                Lämna community
+              </Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      )}
+
+      {activeTab === 'leaderboard' && (
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentPadding}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+          }
+        >
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Topplista - Studietid
+            </Text>
+            {sortedLeaderboard.length === 0 ? (
+              <View style={styles.emptyLeaderboard}>
+                <Trophy size={48} color={theme.colors.textMuted} />
+                <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+                  Ingen data än
+                </Text>
+              </View>
+            ) : (
+              sortedLeaderboard.map((member, index) => {
+                const isCurrentUser = member.userId === user?.id;
+                return (
+                  <View
+                    key={member.id}
+                    style={[
+                      styles.leaderboardCard,
+                      { backgroundColor: theme.colors.card },
+                      isCurrentUser && { borderColor: theme.colors.primary, borderWidth: 2 },
+                    ]}
+                  >
+                    <View style={styles.leaderboardLeft}>
+                      <Text style={[styles.leaderboardRank, { color: theme.colors.textSecondary }]}>
+                        #{index + 1}
+                      </Text>
+                      {member.user?.avatarUrl && safeParseAvatar(member.user.avatarUrl) ? (
+                        <Avatar config={safeParseAvatar(member.user.avatarUrl)!} size={40} />
+                      ) : (
+                        <View
+                          style={[
+                            styles.leaderboardAvatarFallback,
+                            { backgroundColor: theme.colors.primary + '20' },
+                          ]}
+                        >
+                          <Text style={[styles.leaderboardAvatarText, { color: theme.colors.primary }]}>
+                            {member.user?.displayName?.[0]?.toUpperCase() || '?'}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={styles.leaderboardInfo}>
+                        <View style={styles.leaderboardNameRow}>
+                          <Text style={[styles.leaderboardName, { color: theme.colors.text }]}>
+                            {member.user?.displayName || 'Okänd'}
+                          </Text>
+                          {member.role === 'admin' && (
+                            <Crown size={12} color={theme.colors.warning} />
+                          )}
+                        </View>
+                        <View style={styles.leaderboardStats}>
+                          <Clock size={12} color={theme.colors.textMuted} />
+                          <Text style={[styles.leaderboardStatsText, { color: theme.colors.textMuted }]}>
+                            {member.sessionCount || 0} sessioner
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                    <Text style={[styles.leaderboardTime, { color: theme.colors.primary }]}>
+                      {formatTime(member.totalStudyTime || 0)}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        </ScrollView>
+      )}
+    </SafeAreaView>
   );
 }
 
@@ -881,387 +784,336 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-  },
   errorText: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  backButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  backButtonText: {
-    color: 'white',
     fontSize: 16,
-    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  headerButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+  backButton: {
+    padding: 4,
   },
   headerCenter: {
     flex: 1,
-    alignItems: 'center',
+    marginLeft: 12,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
   },
-  content: {
-    flex: 1,
+  headerMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
   },
-  infoCard: {
-    marginHorizontal: 16,
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 16,
+  headerMetaText: {
+    fontSize: 12,
   },
-  infoHeader: {
+  headerButton: {
+    padding: 4,
+  },
+  requestsBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-  visibilityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 6,
-  },
-  visibilityText: {
-    fontSize: 12,
+  requestsText: {
+    fontSize: 14,
     fontWeight: '600',
   },
-  memberCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  memberCountText: {
-    fontSize: 13,
-  },
-  description: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 12,
-  },
-  metaTag: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  metaTagText: {
-    fontSize: 13,
-  },
-  joinButton: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  joinButtonText: {
-    color: 'white',
-    fontSize: 16,
+  viewRequestsText: {
+    fontSize: 14,
     fontWeight: '700',
   },
-  inviteButton: {
+  tabs: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 12,
     gap: 8,
-  },
-  inviteButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  tabsContainer: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    gap: 12,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    gap: 6,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
   },
-  section: {
-    paddingHorizontal: 16,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  memberCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 14,
-    borderRadius: 14,
-    marginBottom: 8,
-  },
-  memberLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  chatContainer: {
     flex: 1,
   },
-  avatarContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginRight: 12,
+  messagesContainer: {
+    flex: 1,
   },
-  avatarFallback: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  messagesContent: {
+    padding: 16,
+    gap: 12,
+  },
+  emptyChat: {
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    paddingVertical: 60,
+    gap: 12,
   },
-  avatarFallbackText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  memberInfo: {
-    flex: 1,
-  },
-  memberName: {
+  emptyChatText: {
     fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 2,
+    textAlign: 'center',
   },
-  memberUsername: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  adminBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    gap: 4,
-  },
-  adminBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  memberActions: {
+  messageRow: {
     flexDirection: 'row',
     gap: 8,
+    maxWidth: '80%',
   },
-  memberActionButton: {
+  messageRowOwn: {
+    alignSelf: 'flex-end',
+    flexDirection: 'row-reverse',
+  },
+  messageAvatar: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  messageAvatarFallback: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  messageAvatarText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  messageBubble: {
+    padding: 12,
+    borderRadius: 16,
+    gap: 4,
+  },
+  messageSender: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  messageText: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  messageTime: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  messageInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderTopWidth: 1,
+  },
+  messageInput: {
+    flex: 1,
+    fontSize: 15,
+    maxHeight: 100,
+    paddingVertical: 8,
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    flex: 1,
+  },
+  contentPadding: {
+    padding: 16,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
   },
   requestCard: {
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
+    gap: 12,
   },
-  requestHeader: {
+  requestInfo: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+    gap: 12,
+  },
+  requestDetails: {
+    flex: 1,
+    gap: 2,
   },
   requestMessage: {
-    fontSize: 14,
+    fontSize: 13,
     fontStyle: 'italic',
-    marginBottom: 16,
-    paddingLeft: 12,
-    borderLeftWidth: 2,
-    borderLeftColor: '#E5E7EB',
+    marginTop: 4,
   },
   requestActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
-  rejectButton: {
+  rejectBtn: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 10,
+    alignItems: 'center',
     borderWidth: 1,
-    alignItems: 'center',
   },
-  rejectButtonText: {
+  rejectBtnText: {
     fontSize: 14,
     fontWeight: '600',
   },
-  acceptButton: {
+  acceptBtn: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
   },
-  acceptButtonText: {
-    color: 'white',
+  acceptBtnText: {
     fontSize: 14,
     fontWeight: '600',
+    color: 'white',
   },
-  emptyState: {
-    padding: 40,
+  memberCard: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  memberLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  memberAvatarFallback: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  memberAvatarText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  memberInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  memberNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  memberName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  memberUsername: {
+    fontSize: 13,
+  },
+  memberActionBtn: {
+    padding: 8,
+  },
+  leaveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  leaveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyLeaderboard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 12,
   },
   emptyText: {
     fontSize: 15,
-    textAlign: 'center',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  optionsMenu: {
-    width: '100%',
-    maxWidth: 300,
-    borderRadius: 16,
-    padding: 8,
-  },
-  optionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 14,
-  },
-  optionText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  inviteModal: {
-    flex: 1,
-    paddingTop: 60,
-  },
-  inviteHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-  },
-  inviteTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-  },
-  inviteList: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  inviteFriendCard: {
+  leaderboardCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 14,
     borderRadius: 14,
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  inviteSendButton: {
+  leaderboardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
+    gap: 12,
+    flex: 1,
+  },
+  leaderboardRank: {
+    fontSize: 16,
+    fontWeight: '700',
+    width: 32,
+  },
+  leaderboardAvatarFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  leaderboardAvatarText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  leaderboardInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  leaderboardNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
   },
-  inviteSendText: {
-    color: 'white',
-    fontSize: 13,
+  leaderboardName: {
+    fontSize: 15,
     fontWeight: '600',
   },
-  joinModal: {
-    width: '100%',
-    padding: 24,
-    borderRadius: 20,
-  },
-  joinModalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  joinModalSubtitle: {
-    fontSize: 14,
-    marginBottom: 20,
-  },
-  joinMessageInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 15,
-    minHeight: 80,
-    marginBottom: 20,
-  },
-  joinModalActions: {
+  leaderboardStats: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  joinModalCancel: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
     alignItems: 'center',
+    gap: 4,
   },
-  joinModalCancelText: {
-    fontSize: 15,
-    fontWeight: '600',
+  leaderboardStatsText: {
+    fontSize: 12,
   },
-  joinModalSubmit: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  joinModalSubmitText: {
-    color: 'white',
-    fontSize: 15,
-    fontWeight: '600',
+  leaderboardTime: {
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

@@ -240,17 +240,11 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Loading suggested communities...');
       
-      let query = (supabase as any)
+      const { data, error: fetchError } = await (supabase as any)
         .from('communities')
         .select('*')
         .order('member_count', { ascending: false })
-        .limit(10);
-      
-      if (studyUser.gymnasium?.name) {
-        query = query.or(`school_name.ilike.%${studyUser.gymnasium.name}%`);
-      }
-      
-      const { data, error: fetchError } = await query;
+        .limit(50);
       
       if (fetchError) {
         console.error('[Communities] Error loading suggested:', fetchError);
@@ -264,29 +258,49 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
       
       const memberSet = new Set(myMemberships?.map((m: any) => m.community_id) || []);
       
-      const suggested = (data || [])
-        .filter((c: any) => !memberSet.has(c.id))
-        .map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          description: c.description || '',
-          type: c.type as CommunityType,
-          visibility: c.visibility as CommunityVisibility,
-          schoolId: c.school_id,
-          schoolName: c.school_name,
-          programId: c.program_id,
-          programName: c.program_name,
-          imageUrl: c.image_url,
-          createdBy: c.created_by,
-          memberCount: c.member_count || 0,
-          createdAt: c.created_at,
-          isMember: false,
-          isAdmin: false,
-          hasPendingRequest: false,
-        }));
+      const userSchoolName = studyUser.gymnasium?.name?.toLowerCase();
+      const userProgram = studyUser.program?.toLowerCase();
       
-      setSuggestedCommunities(suggested);
-      console.log('[Communities] Loaded', suggested.length, 'suggested communities');
+      const mapped = (data || [])
+        .filter((c: any) => !memberSet.has(c.id))
+        .map((c: any) => {
+          const schoolName = c.school_name?.toLowerCase();
+          const programName = c.program_name?.toLowerCase();
+          
+          let relevanceScore = 0;
+          if (userSchoolName && schoolName && schoolName.includes(userSchoolName)) {
+            relevanceScore += 100;
+          }
+          if (userProgram && programName && programName.includes(userProgram)) {
+            relevanceScore += 50;
+          }
+          if (c.type === 'school') relevanceScore += 10;
+          
+          return {
+            id: c.id,
+            name: c.name,
+            description: c.description || '',
+            type: c.type as CommunityType,
+            visibility: c.visibility as CommunityVisibility,
+            schoolId: c.school_id,
+            schoolName: c.school_name,
+            programId: c.program_id,
+            programName: c.program_name,
+            imageUrl: c.image_url,
+            createdBy: c.created_by,
+            memberCount: c.member_count || 0,
+            createdAt: c.created_at,
+            isMember: false,
+            isAdmin: false,
+            hasPendingRequest: false,
+            relevanceScore,
+          };
+        })
+        .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore || b.memberCount - a.memberCount)
+        .slice(0, 20);
+      
+      setSuggestedCommunities(mapped);
+      console.log('[Communities] Loaded', mapped.length, 'suggested communities');
     } catch (err: any) {
       console.error('[Communities] Exception loading suggested:', err);
     }

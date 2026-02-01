@@ -27,7 +27,7 @@ import { TimerPersistence } from '@/lib/timer-persistence';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
 import { PremiumGate } from '@/components/PremiumGate';
-import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen, FileText, CheckCircle, TrendingUp, TrendingDown, Award, BarChart3, PieChart, Sunrise, Sun, Moon, Lightbulb, Trophy, Activity } from 'lucide-react-native';
+import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen, FileText, CheckCircle, TrendingUp, TrendingDown, Award, BarChart3, PieChart, Sunrise, Sun, Moon, Lightbulb, Trophy, Activity, BellOff } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import AddExamModal from '@/components/AddExamModal';
 

@@ -9,12 +9,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
+  Alert,
+  Clipboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Send, Sparkles, BookOpen, Lightbulb, Brain, Flame, TrendingUp } from 'lucide-react-native';
+import { Send, Sparkles, BookOpen, Lightbulb, Brain, Flame, TrendingUp, ImageIcon, X, Copy } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PremiumGate } from '@/components/PremiumGate';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import { MarkdownText } from '@/components/MarkdownText';
 
 export default function AIChatScreen() {
   const [input, setInput] = useState('');
@@ -28,9 +34,10 @@ export default function AIChatScreen() {
 
   const [isSending, setIsSending] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
 
   const handleSend = async () => {
-    if (!input.trim() || isSending) return;
+    if ((!input.trim() && selectedImages.length === 0) || isSending) return;
 
     if (!process.env.EXPO_PUBLIC_TOOLKIT_URL) {
       setLocalError('AI-funktionen är inte konfigurerad. Kontakta support.');
@@ -39,15 +46,45 @@ export default function AIChatScreen() {
     }
 
     const userMessage = input.trim();
+    const imagesToSend = [...selectedImages];
     setInput('');
+    setSelectedImages([]);
     setIsSending(true);
     setLocalError(null);
 
-    console.log('Sending message:', userMessage);
+    console.log('Sending message:', userMessage, 'with images:', imagesToSend.length);
     console.log('Toolkit URL:', process.env.EXPO_PUBLIC_TOOLKIT_URL);
 
     try {
-      await sendMessage(userMessage);
+      if (imagesToSend.length > 0) {
+        const files = await Promise.all(
+          imagesToSend.map(async (uri) => {
+            let base64: string;
+            if (uri.startsWith('data:')) {
+              base64 = uri;
+            } else if (uri.startsWith('file://')) {
+              const fileBase64 = await FileSystem.readAsStringAsync(uri, {
+                encoding: 'base64' as any,
+              });
+              base64 = `data:image/jpeg;base64,${fileBase64}`;
+            } else {
+              base64 = uri;
+            }
+            return {
+              type: 'file' as const,
+              mediaType: 'image/jpeg' as const,
+              url: base64,
+            };
+          })
+        );
+
+        await sendMessage({
+          text: userMessage || 'Vad finns på denna bild?',
+          files,
+        });
+      } else {
+        await sendMessage(userMessage);
+      }
       console.log('Message sent successfully');
     } catch (err) {
       console.error('Error sending message:', err);
@@ -68,7 +105,12 @@ export default function AIChatScreen() {
   }, [messages]);
 
   const cleanText = (text: string) => {
-    return text.replace(/\*/g, '');
+    return text;
+  };
+
+  const handleCopyMessage = (text: string) => {
+    Clipboard.setString(text);
+    Alert.alert('Kopierat!', 'Texten har kopierats till urklipp.');
   };
 
   const renderMessage = (message: any) => {
@@ -87,30 +129,57 @@ export default function AIChatScreen() {
             <Sparkles size={16} color="#fff" />
           </View>
         )}
-        <View
-          style={[
-            styles.messageBubble,
-            isUser 
-              ? { ...styles.userBubble, backgroundColor: theme.colors.primary } 
-              : { ...styles.assistantBubble, backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-          ]}
-        >
-          {message.parts.map((part: any, index: number) => {
-            if (part.type === 'text') {
-              return (
-                <Text
-                  key={`${message.id}-${index}`}
-                  style={[
-                    styles.messageText,
-                    isUser ? styles.userMessageText : { color: theme.colors.text },
-                  ]}
-                >
-                  {cleanText(part.text)}
-                </Text>
-              );
-            }
-            return null;
-          })}
+        <View style={{ flex: 1, maxWidth: '75%' }}>
+          <View
+            style={[
+              styles.messageBubble,
+              isUser 
+                ? { ...styles.userBubble, backgroundColor: theme.colors.primary } 
+                : { ...styles.assistantBubble, backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+            ]}
+          >
+            {message.parts.map((part: any, index: number) => {
+              if (part.type === 'text') {
+                return (
+                  <View key={`${message.id}-${index}`}>
+                    {isUser ? (
+                      <Text
+                        style={[
+                          styles.messageText,
+                          styles.userMessageText,
+                        ]}
+                        selectable
+                      >
+                        {cleanText(part.text)}
+                      </Text>
+                    ) : (
+                      <MarkdownText style={[styles.messageText, { color: theme.colors.text }]}>
+                        {cleanText(part.text)}
+                      </MarkdownText>
+                    )}
+                  </View>
+                );
+              }
+              return null;
+            })}
+          </View>
+          {!isUser && (
+            <View style={styles.messageActions}>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: theme.colors.surface }]}
+                onPress={() => {
+                  const textParts = message.parts
+                    .filter((p: any) => p.type === 'text')
+                    .map((p: any) => p.text)
+                    .join('\n');
+                  handleCopyMessage(textParts);
+                }}
+              >
+                <Copy size={14} color={theme.colors.textSecondary} />
+                <Text style={[styles.actionButtonText, { color: theme.colors.textSecondary }]}>Kopiera</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
     );
@@ -210,27 +279,96 @@ export default function AIChatScreen() {
         </ScrollView>
 
         <View style={[styles.inputContainer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border, paddingBottom: Math.max(insets.bottom + 60, 70) }]}>
-          <TextInput
-            style={[styles.input, { backgroundColor: isDark ? theme.colors.background : '#f5f5f5', color: theme.colors.text }]}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Skriv ditt meddelande..."
-            placeholderTextColor={theme.colors.textMuted}
-            multiline
-            maxLength={1000}
-            editable={!isSending}
-          />
-          <TouchableOpacity
-            style={[
-              styles.sendButton, 
-              { backgroundColor: theme.colors.primary },
-              (!input.trim() || isSending) && styles.sendButtonDisabled
-            ]}
-            onPress={handleSend}
-            disabled={!input.trim() || isSending}
-          >
-            <Send size={20} color="#fff" />
-          </TouchableOpacity>
+          {selectedImages.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewContainer}>
+              {selectedImages.map((uri, index) => (
+                <View key={index} style={styles.imagePreviewWrapper}>
+                  <Image source={{ uri }} style={styles.selectedImage} />
+                  <TouchableOpacity
+                    style={styles.removeImageButton}
+                    onPress={() => setSelectedImages(prev => prev.filter((_, i) => i !== index))}
+                  >
+                    <X size={16} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+          <View style={styles.inputRow}>
+            <TouchableOpacity
+              style={[styles.imagePickerButton, { backgroundColor: isDark ? theme.colors.background : '#f5f5f5' }]}
+              onPress={async () => {
+                Alert.alert(
+                  'Lägg till bild',
+                  'Välj hur du vill lägga till en bild',
+                  [
+                    {
+                      text: 'Ta foto',
+                      onPress: async () => {
+                        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                        if (status !== 'granted') {
+                          Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till kameran.');
+                          return;
+                        }
+                        const result = await ImagePicker.launchCameraAsync({
+                          mediaTypes: 'images' as any,
+                          quality: 0.7,
+                          allowsEditing: true,
+                        });
+                        if (!result.canceled && result.assets[0]) {
+                          setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                        }
+                      },
+                    },
+                    {
+                      text: 'Välj från galleri',
+                      onPress: async () => {
+                        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                        if (status !== 'granted') {
+                          Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till ditt fotoalbum.');
+                          return;
+                        }
+                        const result = await ImagePicker.launchImageLibraryAsync({
+                          mediaTypes: 'images' as any,
+                          quality: 0.7,
+                          allowsEditing: true,
+                          allowsMultipleSelection: false,
+                        });
+                        if (!result.canceled && result.assets[0]) {
+                          setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                        }
+                      },
+                    },
+                    { text: 'Avbryt', style: 'cancel' },
+                  ]
+                );
+              }}
+              disabled={isSending}
+            >
+              <ImageIcon size={22} color={theme.colors.primary} />
+            </TouchableOpacity>
+            <TextInput
+              style={[styles.input, { backgroundColor: isDark ? theme.colors.background : '#f5f5f5', color: theme.colors.text }]}
+              value={input}
+              onChangeText={setInput}
+              placeholder="Skriv ditt meddelande..."
+              placeholderTextColor={theme.colors.textMuted}
+              multiline
+              maxLength={1000}
+              editable={!isSending}
+            />
+            <TouchableOpacity
+              style={[
+                styles.sendButton, 
+                { backgroundColor: theme.colors.primary },
+                (!input.trim() && selectedImages.length === 0 || isSending) && styles.sendButtonDisabled
+              ]}
+              onPress={handleSend}
+              disabled={(!input.trim() && selectedImages.length === 0) || isSending}
+            >
+              <Send size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -440,5 +578,60 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.4,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  imagePickerButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  imagePreviewContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    maxHeight: 120,
+  },
+  imagePreviewWrapper: {
+    position: 'relative',
+    marginRight: 8,
+  },
+  selectedImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  messageActions: {
+    flexDirection: 'row',
+    marginTop: 6,
+    gap: 8,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  actionButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

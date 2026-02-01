@@ -9,6 +9,7 @@ import {
   ScrollView,
   TextInput,
   Modal,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, router, useFocusEffect } from 'expo-router';
@@ -26,7 +27,9 @@ import {
 } from '@/services/flashcards';
 import { calculateSM2, getQualityFromSwipe } from '@/lib/sm2-algorithm';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Sparkles, BookOpen, RefreshCw, AlertCircle, Plus } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { extractTextFromImage } from '@/lib/vision-ai';
+import { ArrowLeft, Sparkles, BookOpen, RefreshCw, AlertCircle, Plus, Camera, ImageIcon, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PremiumGate } from '@/components/PremiumGate';
@@ -41,6 +44,8 @@ export default function FlashcardsScreenV2() {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customText, setCustomText] = useState('');
   const [motivationalIndex, setMotivationalIndex] = useState(0);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [extractingText, setExtractingText] = useState(false);
   const { theme } = useTheme();
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const previousCourseId = useRef<string | undefined>(undefined);
@@ -455,7 +460,10 @@ export default function FlashcardsScreenV2() {
         >
           <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
             <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-              <TouchableOpacity onPress={() => setShowCustomInput(false)}>
+              <TouchableOpacity onPress={() => {
+                setShowCustomInput(false);
+                setSelectedImages([]);
+              }}>
                 <Text style={[styles.modalCancel, { color: theme.colors.textSecondary }]}>Avbryt</Text>
               </TouchableOpacity>
               <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Egen text</Text>
@@ -466,12 +474,13 @@ export default function FlashcardsScreenV2() {
                     return;
                   }
                   generateMutation.mutate({ count: generationCount, customText });
+                  setSelectedImages([]);
                 }}
-                disabled={generateMutation.isPending || customText.trim().length < 20}
+                disabled={generateMutation.isPending || (customText.trim().length < 20 && selectedImages.length === 0)}
               >
                 <Text style={[
                   styles.modalDone, 
-                  { color: (generateMutation.isPending || customText.trim().length < 20) ? theme.colors.textMuted : theme.colors.primary }
+                  { color: (generateMutation.isPending || (customText.trim().length < 20 && selectedImages.length === 0)) ? theme.colors.textMuted : theme.colors.primary }
                 ]}>
                   Generera
                 </Text>
@@ -480,8 +489,117 @@ export default function FlashcardsScreenV2() {
             
             <ScrollView style={styles.modalContent}>
               <Text style={[styles.modalDescription, { color: theme.colors.textSecondary }]}>
-                Klistra in text från anteckningar, lärobok eller sammanfattning. AI:n kommer att skapa flashcards baserat på innehållet.
+                Klistra in text från anteckningar, lärobok eller sammanfattning. Eller ladda upp bilder så extraherar AI:n texten automatiskt!
               </Text>
+              
+              {selectedImages.length > 0 && (
+                <View style={styles.imagePreviewContainer}>
+                  <Text style={[styles.imagePreviewTitle, { color: theme.colors.text }]}>
+                    📸 Uppladdade bilder ({selectedImages.length})
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewScroll}>
+                    {selectedImages.map((imageUri, index) => (
+                      <View key={index} style={styles.imagePreviewItem}>
+                        <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+                        <TouchableOpacity
+                          style={styles.removeImageButton}
+                          onPress={() => {
+                            setSelectedImages(prev => prev.filter((_, i) => i !== index));
+                          }}
+                        >
+                          <X size={16} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+              
+              <View style={styles.imageButtonsRow}>
+                <TouchableOpacity
+                  style={[styles.imageButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                  onPress={async () => {
+                    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                    if (status !== 'granted') {
+                      Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till kameran för att ta foton.');
+                      return;
+                    }
+                    
+                    const result = await ImagePicker.launchCameraAsync({
+                      mediaTypes: 'images' as any,
+                      quality: 0.8,
+                      allowsEditing: true,
+                    });
+                    
+                    if (!result.canceled && result.assets[0]) {
+                      setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                      
+                      setExtractingText(true);
+                      try {
+                        const extractedText = await extractTextFromImage(result.assets[0].uri);
+                        if (extractedText) {
+                          setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
+                        }
+                      } catch {
+                        Alert.alert('Kunde inte läsa text', 'Försök med en tydligare bild.');
+                      } finally {
+                        setExtractingText(false);
+                      }
+                    }
+                  }}
+                  disabled={extractingText}
+                >
+                  <Camera size={20} color={theme.colors.primary} />
+                  <Text style={[styles.imageButtonText, { color: theme.colors.primary }]}>Ta foto</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.imageButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                  onPress={async () => {
+                    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                    if (status !== 'granted') {
+                      Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till ditt fotoalbum.');
+                      return;
+                    }
+                    
+                    const result = await ImagePicker.launchImageLibraryAsync({
+                      mediaTypes: 'images' as any,
+                      quality: 0.8,
+                      allowsEditing: true,
+                      allowsMultipleSelection: false,
+                    });
+                    
+                    if (!result.canceled && result.assets[0]) {
+                      setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                      
+                      setExtractingText(true);
+                      try {
+                        const extractedText = await extractTextFromImage(result.assets[0].uri);
+                        if (extractedText) {
+                          setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
+                        }
+                      } catch {
+                        Alert.alert('Kunde inte läsa text', 'Försök med en tydligare bild.');
+                      } finally {
+                        setExtractingText(false);
+                      }
+                    }
+                  }}
+                  disabled={extractingText}
+                >
+                  <ImageIcon size={20} color={theme.colors.primary} />
+                  <Text style={[styles.imageButtonText, { color: theme.colors.primary }]}>Välj från galleri</Text>
+                </TouchableOpacity>
+              </View>
+              
+              {extractingText && (
+                <View style={styles.extractingContainer}>
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                  <Text style={[styles.extractingText, { color: theme.colors.textSecondary }]}>
+                    Läser text från bild...
+                  </Text>
+                </View>
+              )}
               <TextInput
                 style={[styles.textInput, { backgroundColor: theme.colors.surface, color: theme.colors.text, borderColor: theme.colors.border }]}
                 value={customText}
@@ -1138,5 +1256,68 @@ const styles = StyleSheet.create({
   modalScrollContent: {
     padding: 20,
     paddingBottom: 40,
+  },
+  imageButtonsRow: {
+    flexDirection: 'row' as const,
+    gap: 12,
+    marginBottom: 20,
+  },
+  imageButton: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  imageButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  imagePreviewContainer: {
+    marginBottom: 16,
+  },
+  imagePreviewTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 12,
+  },
+  imagePreviewScroll: {
+    flexDirection: 'row' as const,
+  },
+  imagePreviewItem: {
+    position: 'relative' as const,
+    marginRight: 12,
+  },
+  imagePreview: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute' as const,
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  extractingContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  extractingText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
 });

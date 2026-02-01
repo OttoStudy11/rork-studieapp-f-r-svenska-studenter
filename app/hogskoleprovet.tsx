@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,19 +22,266 @@ import {
   BarChart3,
   Lock,
   Crown,
-  Calendar,
   Sparkles,
   Zap,
+  X,
+  Shuffle,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
-import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HP_FULL_TEST_VERSIONS, HP_TEST_VERSIONS } from '@/constants/hogskoleprovet';
+import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HP_FULL_TEST_VERSIONS } from '@/constants/hogskoleprovet';
 import { getRandomTips } from '@/constants/hogskoleprovet-study-tips';
 import { COLORS } from '@/constants/design-system';
-import TestVersionSelector from '@/components/TestVersionSelector';
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+interface FullTestVersionModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSelectVersion: (versionId?: string) => void;
+}
+
+function FullTestVersionModal({ visible, onClose, onSelectVersion }: FullTestVersionModalProps) {
+  const { theme, isDark } = useTheme();
+
+  const getSeasonIcon = (season: 'spring' | 'fall') => {
+    return season === 'spring' ? '🌸' : '🍂';
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={modalStyles.overlay}>
+        <View style={[modalStyles.content, { backgroundColor: theme.colors.background }]}>
+          <View style={modalStyles.header}>
+            <View style={modalStyles.headerLeft}>
+              <LinearGradient
+                colors={[COLORS.primary, '#8B5CF6']}
+                style={modalStyles.headerIcon}
+              >
+                <GraduationCap size={20} color="#FFF" />
+              </LinearGradient>
+              <View>
+                <Text style={[modalStyles.title, { color: theme.colors.text }]}>
+                  Välj provversion
+                </Text>
+                <Text style={[modalStyles.subtitle, { color: theme.colors.textSecondary }]}>
+                  Komplett högskoleprov
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[modalStyles.closeBtn, { backgroundColor: theme.colors.surface }]}
+              onPress={onClose}
+            >
+              <X size={20} color={theme.colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={modalStyles.scroll} showsVerticalScrollIndicator={false}>
+            {/* Mixed option */}
+            <TouchableOpacity
+              style={[modalStyles.mixedCard, { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)' }]}
+              onPress={() => onSelectVersion('')}
+              activeOpacity={0.7}
+            >
+              <LinearGradient
+                colors={[COLORS.primary, '#8B5CF6']}
+                style={modalStyles.mixedIcon}
+              >
+                <Shuffle size={24} color="#FFF" />
+              </LinearGradient>
+              <View style={modalStyles.mixedText}>
+                <Text style={[modalStyles.mixedTitle, { color: theme.colors.text }]}>
+                  Blandade frågor
+                </Text>
+                <Text style={[modalStyles.mixedDesc, { color: theme.colors.textSecondary }]}>
+                  Slumpmässigt urval • 120 frågor • 235 min
+                </Text>
+              </View>
+              <Play size={20} color={COLORS.primary} fill={COLORS.primary} />
+            </TouchableOpacity>
+
+            {HP_FULL_TEST_VERSIONS.length > 0 && (
+              <View style={modalStyles.divider}>
+                <View style={[modalStyles.dividerLine, { backgroundColor: theme.colors.border }]} />
+                <Text style={[modalStyles.dividerText, { color: theme.colors.textSecondary }]}>
+                  Provtillfällen
+                </Text>
+                <View style={[modalStyles.dividerLine, { backgroundColor: theme.colors.border }]} />
+              </View>
+            )}
+
+            {HP_FULL_TEST_VERSIONS.map((version) => (
+              <TouchableOpacity
+                key={version.id}
+                style={[modalStyles.versionCard, { backgroundColor: theme.colors.surface }]}
+                onPress={() => onSelectVersion(version.id)}
+                activeOpacity={0.7}
+              >
+                <View style={[modalStyles.versionIcon, { backgroundColor: `${COLORS.primary}15` }]}>
+                  <Text style={modalStyles.seasonEmoji}>{getSeasonIcon(version.season)}</Text>
+                </View>
+                <View style={modalStyles.versionInfo}>
+                  <Text style={[modalStyles.versionName, { color: theme.colors.text }]}>
+                    {version.displayName}
+                  </Text>
+                  <View style={modalStyles.versionMeta}>
+                    <Target size={12} color={theme.colors.textSecondary} />
+                    <Text style={[modalStyles.versionMetaText, { color: theme.colors.textSecondary }]}>
+                      {version.questionCount} frågor
+                    </Text>
+                    <Clock size={12} color={theme.colors.textSecondary} />
+                    <Text style={[modalStyles.versionMetaText, { color: theme.colors.textSecondary }]}>
+                      {version.timeMinutes} min
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            ))}
+
+            <View style={{ height: 20 }} />
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  content: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '80%',
+    paddingBottom: 34,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  subtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scroll: {
+    paddingHorizontal: 20,
+  },
+  mixedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 18,
+    borderRadius: 18,
+    gap: 14,
+    marginBottom: 16,
+  },
+  mixedIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mixedText: {
+    flex: 1,
+  },
+  mixedTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  mixedDesc: {
+    fontSize: 13,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+  },
+  versionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 10,
+    gap: 14,
+  },
+  versionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  seasonEmoji: {
+    fontSize: 24,
+  },
+  versionInfo: {
+    flex: 1,
+  },
+  versionName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  versionMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  versionMetaText: {
+    fontSize: 12,
+    marginRight: 8,
+  },
+});
 
 export default function HogskoleprovetScreen() {
   const { theme, isDark } = useTheme();
@@ -42,14 +290,11 @@ export default function HogskoleprovetScreen() {
     getUserStats, 
     getEstimatedHPScore,
     getUnlockedMilestones,
-    getTestVersionsBySection,
     isLoading,
   } = useHogskoleprovet();
   
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(0));
-  const [versionSelectorVisible, setVersionSelectorVisible] = useState(false);
-  const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [fullTestModalVisible, setFullTestModalVisible] = useState(false);
   const [studyTips] = useState(() => getRandomTips(5));
   
@@ -94,29 +339,11 @@ export default function HogskoleprovetScreen() {
       router.push('/premium' as any);
       return;
     }
-    console.log('[HP Screen] Opening section selector for:', sectionCode);
-    
-    // Get versions directly from constant as fallback
-    const contextVersions = getTestVersionsBySection(sectionCode);
-    const directVersions = HP_TEST_VERSIONS.filter(v => v.sectionCode === sectionCode);
-    
-    console.log('[HP Screen] Context versions:', contextVersions.length);
-    console.log('[HP Screen] Direct versions:', directVersions.length);
-    console.log('[HP Screen] HP_TEST_VERSIONS total:', HP_TEST_VERSIONS?.length ?? 0);
-    
-    setSelectedSection(sectionCode);
-    setTimeout(() => {
-      setVersionSelectorVisible(true);
-    }, 50);
-  };
-
-  const handleSelectTestVersion = (testVersionId: string) => {
-    if (selectedSection) {
-      router.push({
-        pathname: `/hp-practice/${selectedSection}` as any,
-        params: { testVersionId },
-      });
-    }
+    console.log('[HP Screen] Navigating to version selection for:', sectionCode);
+    router.push({
+      pathname: '/hp-select-version' as any,
+      params: { sectionCode },
+    });
   };
 
   const handleViewStats = () => {
@@ -395,9 +622,9 @@ export default function HogskoleprovetScreen() {
                 
                 {!isLocked && (
                   <View style={styles.sectionMeta}>
-                    <Calendar size={12} color={theme.colors.textSecondary} />
+                    <Clock size={12} color={theme.colors.textSecondary} />
                     <Text style={[styles.sectionMetaText, { color: theme.colors.textSecondary }]}>
-                      {getTestVersionsBySection(section.code).length} versioner
+                      {section.timeMinutes} min
                     </Text>
                   </View>
                 )}
@@ -505,39 +732,11 @@ export default function HogskoleprovetScreen() {
         <View style={styles.bottomPadding} />
       </ScrollView>
 
-      {versionSelectorVisible && selectedSection && (
-        <TestVersionSelector
-          key={`section-${selectedSection}-${Date.now()}`}
-          visible={versionSelectorVisible}
-          onClose={() => {
-            setVersionSelectorVisible(false);
-            setTimeout(() => setSelectedSection(null), 100);
-          }}
-          testVersions={(() => {
-            // Use direct constant access as primary source for reliability
-            const versions = HP_TEST_VERSIONS.filter(v => v.sectionCode === selectedSection);
-            console.log('[HP Screen] Rendering TestVersionSelector with versions:', versions.length);
-            return versions;
-          })()}
-          selectedVersionId=''
-          onSelectVersion={handleSelectTestVersion}
-          sectionName={HP_SECTIONS.find(s => s.code === selectedSection)?.fullName || ''}
-          sectionColor={HP_SECTIONS.find(s => s.code === selectedSection)?.color || COLORS.primary}
-        />
-      )}
-
       {fullTestModalVisible && (
-        <TestVersionSelector
-          key="full-test-selector"
+        <FullTestVersionModal
           visible={fullTestModalVisible}
           onClose={() => setFullTestModalVisible(false)}
-          testVersions={[]}
-          fullTestVersions={HP_FULL_TEST_VERSIONS}
-          selectedVersionId=''
           onSelectVersion={handleStartFullTestWithVersion}
-          sectionName="Komplett Högskoleprov"
-          sectionColor={COLORS.primary}
-          isFullTest
         />
       )}
     </View>

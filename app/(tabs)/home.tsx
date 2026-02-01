@@ -551,7 +551,7 @@ export default function HomeScreen() {
                   </View>
                   <View style={styles.hpCardInfo}>
                     <Text style={styles.hpCardTitle}>Högskoleprov</Text>
-                    <Text style={styles.hpCardSubtitle}>Träna inför HP med realistiska övningar</Text>
+                    <Text style={styles.hpCardSubtitle} numberOfLines={2}>Träna inför HP med realistiska övningar</Text>
                   </View>
                 </View>
                 <ChevronRight size={24} color="rgba(255,255,255,0.8)" />
@@ -692,7 +692,7 @@ export default function HomeScreen() {
                     <Crown size={24} color={theme.colors.warning} />
                     <View style={styles.premiumBannerText}>
                       <Text style={[styles.premiumBannerTitle, { color: theme.colors.text }]}>Uppgradera till Premium</Text>
-                      <Text style={[styles.premiumBannerSubtitle, { color: theme.colors.textSecondary }]}>Obegränsade kurser, avancerad statistik och mer</Text>
+                      <Text style={[styles.premiumBannerSubtitle, { color: theme.colors.textSecondary }]} numberOfLines={2}>Obegränsade kurser, avancerad statistik och mer</Text>
                     </View>
                   </View>
                   <View style={[styles.premiumBannerButton, { backgroundColor: theme.colors.warning }]}>
@@ -726,8 +726,8 @@ export default function HomeScreen() {
                   >
                     <View style={styles.courseHeader}>
                       <View style={styles.courseInfo}>
-                        <Text style={[styles.courseTitle, { color: theme.colors.text }]}>{course.title}</Text>
-                        <Text style={[styles.courseSubject, { color: theme.colors.textSecondary }]}>{course.subject}</Text>
+                        <Text style={[styles.courseTitle, { color: theme.colors.text }]} numberOfLines={1}>{course.title}</Text>
+                        <Text style={[styles.courseSubject, { color: theme.colors.textSecondary }]} numberOfLines={1}>{course.subject}</Text>
                       </View>
                       <View style={styles.courseProgressContainer}>
                         <Text style={[styles.courseProgress, { color: theme.colors.primary }]}>{course.progress}%</Text>

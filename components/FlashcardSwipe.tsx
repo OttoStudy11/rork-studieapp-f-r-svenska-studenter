@@ -245,14 +245,14 @@ export function FlashcardSwipe({
               {flashcard.explanation && (
                 <View style={styles.explanationContainer}>
                   <Text style={styles.explanationLabel}>Förklaring</Text>
-                  <Text style={styles.explanationText}>{flashcard.explanation}</Text>
+                  <Text style={styles.explanationText} numberOfLines={4}>{flashcard.explanation}</Text>
                 </View>
               )}
 
               {explanation && (
                 <View style={styles.aiExplanationContainer}>
                   <Text style={styles.aiExplanationLabel}>AI Förklaring</Text>
-                  <Text style={styles.aiExplanationText}>{explanation}</Text>
+                  <Text style={styles.aiExplanationText} numberOfLines={6}>{explanation}</Text>
                 </View>
               )}
 

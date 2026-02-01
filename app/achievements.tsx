@@ -97,7 +97,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
                 styles.achievementTitle,
                 { color: isDark ? '#FFFFFF' : '#111827' },
                 !isUnlocked && { opacity: 0.6 }
-              ]}>
+              ]} numberOfLines={1}>
                 {achievement.title}
               </Text>
               <View style={[styles.rarityBadge, { backgroundColor: rarityColor + '20' }]}>
@@ -109,7 +109,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, isDark, 
             <Text style={[
               styles.achievementDescription,
               { color: isDark ? '#9CA3AF' : '#6B7280' }
-            ]}>
+            ]} numberOfLines={2}>
               {achievement.description}
             </Text>
             
@@ -200,10 +200,10 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, isDark, onClai
         <View style={styles.challengeLeft}>
           <Text style={styles.challengeEmoji}>{challenge.emoji}</Text>
           <View style={styles.challengeInfo}>
-            <Text style={[styles.challengeTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+            <Text style={[styles.challengeTitle, { color: isDark ? '#FFFFFF' : '#111827' }]} numberOfLines={1}>
               {challenge.title}
             </Text>
-            <Text style={[styles.challengeDescription, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+            <Text style={[styles.challengeDescription, { color: isDark ? '#9CA3AF' : '#6B7280' }]} numberOfLines={2}>
               {challenge.description}
             </Text>
           </View>
@@ -300,7 +300,7 @@ const LevelCard: React.FC<LevelCardProps> = ({ level, isCurrentLevel, isUnlocked
       
       <Text style={styles.levelEmoji}>{level.iconEmoji}</Text>
       <Text style={[styles.levelNumber, { color: tierColor }]}>Nivå {level.level}</Text>
-      <Text style={[styles.levelTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
+      <Text style={[styles.levelTitle, { color: isDark ? '#FFFFFF' : '#111827' }]} numberOfLines={1}>
         {level.titleSv}
       </Text>
       <Text style={[styles.levelXp, { color: isDark ? '#6B7280' : '#9CA3AF' }]}>

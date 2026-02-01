@@ -129,8 +129,8 @@ export default function FriendSearch({ onFriendAdded }: FriendSearchProps) {
           <User size={20} color="#6B7280" />
         </View>
         <View style={styles.userDetails}>
-          <Text style={styles.displayName}>{item.display_name}</Text>
-          <Text style={styles.username}>@{item.username}</Text>
+          <Text style={styles.displayName} numberOfLines={1}>{item.display_name}</Text>
+          <Text style={styles.username} numberOfLines={1}>@{item.username}</Text>
         </View>
       </View>
       

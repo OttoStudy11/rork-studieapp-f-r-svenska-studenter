@@ -166,14 +166,14 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           
           <View style={styles.profileHeaderInfo}>
-            <Text style={styles.profileName}>{user.name}</Text>
+            <Text style={styles.profileName} numberOfLines={1}>{user.name}</Text>
             <View style={styles.profileMetaRow}>
               <Mail size={14} color="rgba(255, 255, 255, 0.9)" />
-              <Text style={styles.profileEmail}>{authUser?.email || 'Okänd e-post'}</Text>
+              <Text style={styles.profileEmail} numberOfLines={1}>{authUser?.email || 'Okänd e-post'}</Text>
             </View>
             {user.program && (
               <View style={styles.profileProgramTag}>
-                <Text style={styles.profileProgramText}>
+                <Text style={styles.profileProgramText} numberOfLines={1}>
                   {user.program}
                   {user.studyLevel === 'gymnasie' && user.gymnasiumGrade ? ` - År ${user.gymnasiumGrade}` : ''}
                   {user.studyLevel === 'högskola' && user.universityYear ? ` - Termin ${user.universityYear}` : ''}
@@ -338,7 +338,7 @@ export default function ProfileScreen() {
                       <Clock size={18} color={theme.colors.primary} />
                     </View>
                     <View style={styles.activityInfo}>
-                      <Text style={[styles.activityTitle, { color: theme.colors.text }]}>
+                      <Text style={[styles.activityTitle, { color: theme.colors.text }]} numberOfLines={1}>
                         {session.courseId 
                           ? courses.find(c => c.id === session.courseId)?.title || 'Okänd kurs'
                           : 'Allmän session'

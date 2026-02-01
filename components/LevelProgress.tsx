@@ -263,10 +263,10 @@ export function LevelCard({
             animated
           />
           <View style={styles.levelInfo}>
-            <Text style={[styles.levelTitle, { color: theme.colors.text }]}>
+            <Text style={[styles.levelTitle, { color: theme.colors.text }]} numberOfLines={1}>
               {currentLevel.titleSv}
             </Text>
-            <Text style={[styles.levelDescription, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.levelDescription, { color: theme.colors.textSecondary }]} numberOfLines={2}>
               {currentLevel.description}
             </Text>
             <View style={styles.xpRow}>

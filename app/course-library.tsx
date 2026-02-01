@@ -300,7 +300,7 @@ export default function CourseLibraryScreen() {
                   <CheckCircle size={20} color={theme.colors.success} />
                 </View>
                 <View style={styles.completedInfo}>
-                  <Text style={[styles.completedTitle, { color: theme.colors.text }]}>
+                  <Text style={[styles.completedTitle, { color: theme.colors.text }]} numberOfLines={1}>
                     {course.title}
                   </Text>
                   <Text style={[styles.completedMeta, { color: theme.colors.textSecondary }]}>

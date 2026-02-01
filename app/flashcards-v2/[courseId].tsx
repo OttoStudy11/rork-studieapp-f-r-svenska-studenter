@@ -616,6 +616,174 @@ export default function FlashcardsScreenV2() {
             </ScrollView>
           </SafeAreaView>
         </Modal>
+
+        <Modal
+          visible={showCustomInput}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => {
+            setShowCustomInput(false);
+            setSelectedImages([]);
+          }}
+        >
+          <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+              <TouchableOpacity onPress={() => {
+                setShowCustomInput(false);
+                setSelectedImages([]);
+              }}>
+                <Text style={[styles.modalCancel, { color: theme.colors.textSecondary }]}>Avbryt</Text>
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Egen text</Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  if (customText.trim().length < 20) {
+                    Alert.alert('För lite text', 'Skriv minst 20 tecken för att generera bra flashcards.');
+                    return;
+                  }
+                  generateMutation.mutate({ count: generationCount, customText });
+                  setSelectedImages([]);
+                }}
+                disabled={generateMutation.isPending || (customText.trim().length < 20 && selectedImages.length === 0)}
+              >
+                <Text style={[
+                  styles.modalDone, 
+                  { color: (generateMutation.isPending || (customText.trim().length < 20 && selectedImages.length === 0)) ? theme.colors.textMuted : theme.colors.primary }
+                ]}>
+                  Generera
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalContent}>
+              <Text style={[styles.modalDescription, { color: theme.colors.textSecondary }]}>
+                Klistra in text från anteckningar, lärobok eller sammanfattning. Eller ladda upp bilder så extraherar AI:n texten automatiskt!
+              </Text>
+              
+              {selectedImages.length > 0 && (
+                <View style={styles.imagePreviewContainer}>
+                  <Text style={[styles.imagePreviewTitle, { color: theme.colors.text }]}>
+                    📸 Uppladdade bilder ({selectedImages.length})
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewScroll}>
+                    {selectedImages.map((imageUri, index) => (
+                      <View key={index} style={styles.imagePreviewItem}>
+                        <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+                        <TouchableOpacity
+                          style={styles.removeImageButton}
+                          onPress={() => {
+                            setSelectedImages(prev => prev.filter((_, i) => i !== index));
+                          }}
+                        >
+                          <X size={16} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+              
+              <View style={styles.imageButtonsRow}>
+                <TouchableOpacity
+                  style={[styles.imageButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                  onPress={async () => {
+                    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                    if (status !== 'granted') {
+                      Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till kameran för att ta foton.');
+                      return;
+                    }
+                    
+                    const result = await ImagePicker.launchCameraAsync({
+                      mediaTypes: 'images' as any,
+                      quality: 0.8,
+                      allowsEditing: true,
+                    });
+                    
+                    if (!result.canceled && result.assets[0]) {
+                      setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                      
+                      setExtractingText(true);
+                      try {
+                        const extractedText = await extractTextFromImage(result.assets[0].uri);
+                        if (extractedText) {
+                          setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
+                        }
+                      } catch {
+                        Alert.alert('Kunde inte läsa text', 'Försök med en tydligare bild.');
+                      } finally {
+                        setExtractingText(false);
+                      }
+                    }
+                  }}
+                  disabled={extractingText}
+                >
+                  <Camera size={20} color={theme.colors.primary} />
+                  <Text style={[styles.imageButtonText, { color: theme.colors.primary }]}>Ta foto</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.imageButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                  onPress={async () => {
+                    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                    if (status !== 'granted') {
+                      Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till ditt fotoalbum.');
+                      return;
+                    }
+                    
+                    const result = await ImagePicker.launchImageLibraryAsync({
+                      mediaTypes: 'images' as any,
+                      quality: 0.8,
+                      allowsEditing: true,
+                      allowsMultipleSelection: false,
+                    });
+                    
+                    if (!result.canceled && result.assets[0]) {
+                      setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                      
+                      setExtractingText(true);
+                      try {
+                        const extractedText = await extractTextFromImage(result.assets[0].uri);
+                        if (extractedText) {
+                          setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
+                        }
+                      } catch {
+                        Alert.alert('Kunde inte läsa text', 'Försök med en tydligare bild.');
+                      } finally {
+                        setExtractingText(false);
+                      }
+                    }
+                  }}
+                  disabled={extractingText}
+                >
+                  <ImageIcon size={20} color={theme.colors.primary} />
+                  <Text style={[styles.imageButtonText, { color: theme.colors.primary }]}>Välj från galleri</Text>
+                </TouchableOpacity>
+              </View>
+              
+              {extractingText && (
+                <View style={styles.extractingContainer}>
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                  <Text style={[styles.extractingText, { color: theme.colors.textSecondary }]}>
+                    Läser text från bild...
+                  </Text>
+                </View>
+              )}
+              <TextInput
+                style={[styles.textInput, { backgroundColor: theme.colors.surface, color: theme.colors.text, borderColor: theme.colors.border }]}
+                value={customText}
+                onChangeText={setCustomText}
+                placeholder="Skriv eller klistra in text här...\n\nExempel:\nFotosyntesen är processen där växter använder solenergi för att omvandla koldioxid och vatten till glukos och syrgas."
+                placeholderTextColor={theme.colors.textMuted}
+                multiline
+                textAlignVertical="top"
+                autoFocus
+              />
+              <Text style={[styles.charCount, { color: theme.colors.textMuted }]}>
+                {customText.length} tecken (minst 20 behövs)
+              </Text>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
         </SafeAreaView>
       </View>
       </PremiumGate>
@@ -757,23 +925,58 @@ export default function FlashcardsScreenV2() {
         <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
             <TouchableOpacity onPress={() => setShowGenerateModal(false)}>
-              <Text style={[styles.modalCancel, { color: theme.colors.textSecondary }]}>Avbryt</Text>
+              <Text style={[styles.modalCancel, { color: theme.colors.textSecondary }]}>Stäng</Text>
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Generera Flashcards</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Skapa Flashcards</Text>
             <View style={{ width: 60 }} />
           </View>
           
           <ScrollView contentContainerStyle={styles.modalScrollContent}>
+            <Text style={[styles.modalSectionTitle, { color: theme.colors.text }]}>Välj hur du vill skapa flashcards</Text>
+            
+            <TouchableOpacity
+              style={[styles.generationOptionCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+              onPress={() => {
+                setShowGenerateModal(false);
+                setShowCustomInput(true);
+              }}
+              disabled={generateMutation.isPending}
+            >
+              <View style={[styles.optionIconContainer, { backgroundColor: '#6366F1' }]}>
+                <Text style={styles.optionIcon}>📝</Text>
+              </View>
+              <View style={styles.optionTextContainer}>
+                <Text style={[styles.optionTitle, { color: theme.colors.text }]}>Egen text eller bild</Text>
+                <Text style={[styles.optionDescription, { color: theme.colors.textSecondary }]}>Klistra in text eller ladda upp bilder från dina anteckningar</Text>
+              </View>
+              <ArrowLeft size={20} color={theme.colors.textMuted} style={{ transform: [{ rotate: '180deg' }] }} />
+            </TouchableOpacity>
+
+            <View style={styles.dividerContainer}>
+              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+              <Text style={[styles.dividerText, { color: theme.colors.textMuted }]}>eller</Text>
+              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+            </View>
+
+            <View style={[styles.generationOptionCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              <View style={[styles.optionIconContainer, { backgroundColor: '#8B5CF6' }]}>
+                <Sparkles size={20} color="#fff" />
+              </View>
+              <View style={styles.optionTextContainer}>
+                <Text style={[styles.optionTitle, { color: theme.colors.text }]}>AI-genererat från kursen</Text>
+                <Text style={[styles.optionDescription, { color: theme.colors.textSecondary }]}>Låt AI:n skapa flashcards baserat på kursmaterialet</Text>
+              </View>
+            </View>
+
             <View style={styles.countSelector}>
-              <Text style={[styles.countLabel, { color: theme.colors.text }]}>Hur många flashcards vill du ha?</Text>
-              <Text style={[styles.countHint, { color: theme.colors.textSecondary }]}>Fler flashcards = djupare förståelse</Text>
+              <Text style={[styles.countLabel, { color: theme.colors.text }]}>Hur många flashcards?</Text>
               <View style={styles.countButtons}>
                 {[10, 15, 20, 25, 30].map((count) => (
                   <TouchableOpacity
                     key={count}
                     style={[
                       styles.countButton,
-                      { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                      { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
                       generationCount === count && styles.countButtonActive,
                     ]}
                     onPress={() => setGenerationCount(count)}
@@ -826,17 +1029,6 @@ export default function FlashcardsScreenV2() {
                   </>
                 )}
               </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.customTextButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-              onPress={() => {
-                setShowGenerateModal(false);
-                setShowCustomInput(true);
-              }}
-              disabled={generateMutation.isPending}
-            >
-              <Text style={[styles.customTextButtonText, { color: theme.colors.primary }]}>📝 Generera från egen text</Text>
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
@@ -1256,6 +1448,56 @@ const styles = StyleSheet.create({
   modalScrollContent: {
     padding: 20,
     paddingBottom: 40,
+  },
+  modalSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 16,
+  },
+  generationOptionCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    gap: 12,
+    marginBottom: 12,
+  },
+  optionIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  optionIcon: {
+    fontSize: 22,
+  },
+  optionTextContainer: {
+    flex: 1,
+  },
+  optionTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  optionDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  dividerContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginVertical: 20,
+    gap: 12,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
   imageButtonsRow: {
     flexDirection: 'row' as const,

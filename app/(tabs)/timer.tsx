@@ -62,15 +62,15 @@ interface CompletionScreenProps {
 }
 
 function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions }: CompletionScreenProps) {
-  // Remove unused theme variable
-  // const { theme } = useTheme();
+  const { theme } = useTheme();
   const [starsVisible, setStarsVisible] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const starsAnim = useRef(new Animated.Value(0)).current;
+  const checkmarkAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Animate entrance
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -85,7 +85,6 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
       }),
     ]).start();
 
-    // Show stars after a delay
     setTimeout(() => {
       setStarsVisible(true);
       Animated.timing(starsAnim, {
@@ -96,18 +95,39 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
     }, 500);
   }, [fadeAnim, scaleAnim, starsAnim]);
 
+  const handleSave = useCallback(() => {
+    setIsSaved(true);
+    Animated.spring(checkmarkAnim, {
+      toValue: 1,
+      tension: 100,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+    
+    setTimeout(() => {
+      onSave();
+    }, 800);
+  }, [checkmarkAnim, onSave]);
+
   if (!data) return null;
 
-  const progressPercentage = Math.round((currentSessions / dailyGoal) * 100);
+  const progressPercentage = Math.min(Math.round((currentSessions / dailyGoal) * 100), 100);
+  const isFocusSession = data.sessionType === 'focus';
 
-  // Generate random star positions
-  const stars = Array.from({ length: 20 }, (_, i) => ({
+  const stars = Array.from({ length: 15 }, (_, i) => ({
     id: i,
     left: Math.random() * 100,
     top: Math.random() * 100,
-    size: Math.random() * 20 + 10,
-    delay: Math.random() * 1000,
+    size: Math.random() * 16 + 8,
   }));
+
+  const getMotivationalMessage = () => {
+    if (progressPercentage >= 100) return 'Fantastiskt! Dagsmål uppnått! 🎉';
+    if (progressPercentage >= 75) return 'Nästan där! Fortsätt så! 💪';
+    if (progressPercentage >= 50) return 'Halvvägs! Bra jobbat! 🌟';
+    if (progressPercentage >= 25) return 'Bra start! Kör på! 🚀';
+    return 'Första steget är taget! ⭐';
+  };
 
   return (
     <Animated.View 
@@ -120,7 +140,6 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
       ]}
     >
       <View style={[styles.completionContainer, { backgroundColor: '#1a1a2e' }]}>
-        {/* Close button */}
         <TouchableOpacity 
           style={styles.completionCloseButton} 
           onPress={onDiscard}
@@ -129,7 +148,6 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
           <X size={24} color="#8e8e93" />
         </TouchableOpacity>
 
-        {/* Animated stars background */}
         {starsVisible && (
           <Animated.View 
             style={[
@@ -152,93 +170,113 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
               >
                 <Star 
                   size={star.size} 
-                  color="white" 
-                  fill="white" 
-                  opacity={0.6}
+                  color="#FFD700" 
+                  fill="#FFD700" 
+                  opacity={0.4}
                 />
               </Animated.View>
             ))}
           </Animated.View>
         )}
 
-        {/* Main content */}
         <View style={styles.completionContent}>
-          <Text style={styles.completionTitle}>Come on...</Text>
+          <Text style={styles.completionTitle}>
+            {isFocusSession ? getMotivationalMessage() : 'Paus avslutad! ☕'}
+          </Text>
           
-          {/* Progress circle */}
           <View style={styles.progressContainer}>
-            <Svg width={200} height={200}>
+            <Svg width={180} height={180}>
               <Circle
-                cx={100}
-                cy={100}
-                r={80}
+                cx={90}
+                cy={90}
+                r={70}
                 stroke="#2c2c54"
-                strokeWidth={8}
+                strokeWidth={10}
                 fill="none"
               />
               <Circle
-                cx={100}
-                cy={100}
-                r={80}
-                stroke="#40407a"
-                strokeWidth={8}
+                cx={90}
+                cy={90}
+                r={70}
+                stroke={theme.colors.primary}
+                strokeWidth={10}
                 fill="none"
-                strokeDasharray={2 * Math.PI * 80}
-                strokeDashoffset={2 * Math.PI * 80 * (1 - progressPercentage / 100)}
+                strokeDasharray={2 * Math.PI * 70}
+                strokeDashoffset={2 * Math.PI * 70 * (1 - progressPercentage / 100)}
                 strokeLinecap="round"
-                transform="rotate(-90 100 100)"
+                transform="rotate(-90 90 90)"
               />
             </Svg>
             <View style={styles.progressContent}>
               <Text style={styles.progressPercentage}>{progressPercentage}%</Text>
-              <Text style={styles.progressLabel}>of daily goal</Text>
+              <Text style={styles.progressLabel}>av dagsmål</Text>
             </View>
           </View>
 
-          {/* Session info */}
-          <View style={styles.sessionInfo}>
-            <Text style={styles.sessionText}>
-              You studied for {data.duration} minutes
-            </Text>
-            <Text style={styles.sessionText}>
-              in {data.courseName} and
-            </Text>
-            <Text style={styles.sessionText}>
-              earned {data.coinsEarned} points.
-            </Text>
+          <View style={styles.completionStatsRow}>
+            <View style={styles.completionStatItem}>
+              <Clock size={20} color={theme.colors.primary} />
+              <Text style={styles.completionStatValue}>{data.duration} min</Text>
+              <Text style={styles.completionStatLabel}>Studietid</Text>
+            </View>
+            <View style={[styles.completionStatDivider, { backgroundColor: '#3d3d5c' }]} />
+            <View style={styles.completionStatItem}>
+              <BookOpen size={20} color={theme.colors.secondary} />
+              <Text style={styles.completionStatValue} numberOfLines={1}>{data.courseName}</Text>
+              <Text style={styles.completionStatLabel}>Kurs</Text>
+            </View>
+            <View style={[styles.completionStatDivider, { backgroundColor: '#3d3d5c' }]} />
+            <View style={styles.completionStatItem}>
+              <Zap size={20} color="#FFD700" />
+              <Text style={[styles.completionStatValue, { color: '#FFD700' }]}>+{data.coinsEarned}</Text>
+              <Text style={styles.completionStatLabel}>XP</Text>
+            </View>
           </View>
 
-          {/* Challenges section */}
-          <View style={styles.challengesSection}>
-            <Text style={styles.challengesTitle}>Challenges worked on</Text>
-            <Text style={styles.challengesSubtitle}>You don&apos;t have any active challenges</Text>
-          </View>
+          {isSaved && (
+            <Animated.View 
+              style={[
+                styles.savedConfirmation,
+                {
+                  opacity: checkmarkAnim,
+                  transform: [{ scale: checkmarkAnim }]
+                }
+              ]}
+            >
+              <CheckCircle size={28} color={theme.colors.success} />
+              <Text style={[styles.savedText, { color: theme.colors.success }]}>Sparad!</Text>
+            </Animated.View>
+          )}
         </View>
 
-        {/* Action buttons */}
         <View style={styles.actionButtons}>
           <LinearGradient
-            colors={['#40E0D0', '#48CAE4']}
+            colors={isSaved ? ['#4CAF50', '#45a049'] : [theme.colors.primary, theme.colors.secondary]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.saveButtonGradient}
           >
             <TouchableOpacity 
               style={styles.saveButton} 
-              onPress={onSave}
+              onPress={handleSave}
               activeOpacity={0.8}
+              disabled={isSaved}
             >
-              <Text style={styles.saveButtonText}>Save</Text>
+              <Text style={styles.saveButtonText}>
+                {isSaved ? '✓ Sparad' : 'Spara & Stäng'}
+              </Text>
             </TouchableOpacity>
           </LinearGradient>
           
-          <TouchableOpacity 
-            style={styles.discardButton} 
-            onPress={onDiscard}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.discardButtonText}>Discard</Text>
-          </TouchableOpacity>
+          {!isSaved && (
+            <TouchableOpacity 
+              style={styles.discardButton} 
+              onPress={onDiscard}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.discardButtonText}>Stäng utan att spara</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </Animated.View>
@@ -3270,10 +3308,10 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   completionTitle: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#8e8e93',
-    marginBottom: 40,
+    color: '#FFFFFF',
+    marginBottom: 24,
     textAlign: 'center',
     fontFamily: Platform.select({
       ios: 'SF Pro Display',
@@ -3285,7 +3323,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 40,
+    marginBottom: 24,
   },
   progressContent: {
     position: 'absolute',
@@ -3304,44 +3342,51 @@ const styles = StyleSheet.create({
     }),
   },
   progressLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: '#8e8e93',
     textAlign: 'center',
     marginTop: 4,
   },
-  sessionInfo: {
+  completionStatsRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
+    justifyContent: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 8,
   },
-  sessionText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: 'white',
-    textAlign: 'center',
-    lineHeight: 26,
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
-  },
-  challengesSection: {
+  completionStatItem: {
+    flex: 1,
     alignItems: 'center',
-    marginBottom: 40,
+    gap: 6,
   },
-  challengesTitle: {
+  completionStatValue: {
     fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    marginBottom: 8,
+    fontWeight: '700',
+    color: '#FFFFFF',
     textAlign: 'center',
   },
-  challengesSubtitle: {
-    fontSize: 14,
-    fontWeight: '400',
+  completionStatLabel: {
+    fontSize: 12,
+    fontWeight: '500',
     color: '#8e8e93',
     textAlign: 'center',
+  },
+  completionStatDivider: {
+    width: 1,
+    height: 40,
+    marginHorizontal: 12,
+  },
+  savedConfirmation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  savedText: {
+    fontSize: 18,
+    fontWeight: '700',
   },
   actionButtons: {
     width: '100%',
@@ -3379,9 +3424,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   discardButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#ff6b6b',
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#8e8e93',
     textAlign: 'center',
     fontFamily: Platform.select({
       ios: 'SF Pro Display',

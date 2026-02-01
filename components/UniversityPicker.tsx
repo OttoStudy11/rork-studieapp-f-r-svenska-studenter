@@ -198,8 +198,8 @@ export default function UniversityPicker({
                     <PressableCard
                       style={[
                         styles.premiumProgramCard,
-                        isSelected && [styles.selectedPremiumCard, { borderColor: color }]
-                      ]}
+                        isSelected ? [styles.selectedPremiumCard, { borderColor: color }] : undefined
+                      ] as any}
                       onPress={() => handleProgramSelect(program)}
                     >
                       <LinearGradient
@@ -294,8 +294,8 @@ export default function UniversityPicker({
                     key={university.id}
                     style={[
                       styles.universityCardPremium,
-                      isSelected && styles.selectedUniversityCard
-                    ]}
+                      isSelected ? styles.selectedUniversityCard : undefined
+                    ] as any}
                     onPress={() => handleUniversitySelect(university)}
                   >
                     <View style={styles.universityCardContent}>
@@ -379,8 +379,8 @@ export default function UniversityPicker({
                   <PressableCard
                     style={[
                       styles.yearCardPremium,
-                      isSelected && [styles.selectedYearCardPremium, { borderColor: color }]
-                    ]}
+                      isSelected ? [styles.selectedYearCardPremium, { borderColor: color }] : undefined
+                    ] as any}
                     onPress={() => handleYearSelect(year)}
                   >
                     <LinearGradient

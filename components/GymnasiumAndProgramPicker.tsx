@@ -197,8 +197,8 @@ export default function GymnasiumAndProgramPicker({
                     testID={`program-card-${program.id}`}
                     style={[
                       styles.premiumProgramCard,
-                      isSelected && [styles.selectedPremiumCard, { borderColor: color }]
-                    ]}
+                      isSelected ? [styles.selectedPremiumCard, { borderColor: color }] : undefined
+                    ] as any}
                     onPress={() => handleProgramSelect({ 
                       id: program.id, 
                       name: program.name + 'programmet', 
@@ -260,8 +260,8 @@ export default function GymnasiumAndProgramPicker({
                     testID={`program-card-${program.id}`}
                     style={[
                       styles.premiumProgramCard,
-                      isSelected && [styles.selectedPremiumCard, { borderColor: color }]
-                    ]}
+                      isSelected ? [styles.selectedPremiumCard, { borderColor: color }] : undefined
+                    ] as any}
                     onPress={() => handleProgramSelect({ 
                       id: program.id, 
                       name: program.name + 'programmet', 
@@ -357,8 +357,8 @@ export default function GymnasiumAndProgramPicker({
                     key={gymnasium.id}
                     style={[
                       styles.gymnasiumCardPremium,
-                      isSelected && styles.selectedGymnasiumCard
-                    ]}
+                      isSelected ? styles.selectedGymnasiumCard : undefined
+                    ] as any}
                     onPress={() => handleGymnasiumSelect(gymnasium)}
                   >
                     <View style={styles.gymnasiumCardContent}>
@@ -442,8 +442,8 @@ export default function GymnasiumAndProgramPicker({
                   <PressableCard
                     style={[
                       styles.gradeCardPremium,
-                      isSelected && [styles.selectedGradeCardPremium, { borderColor: color }]
-                    ]}
+                      isSelected ? [styles.selectedGradeCardPremium, { borderColor: color }] : undefined
+                    ] as any}
                     onPress={() => handleGradeSelect(grade)}
                   >
                     <LinearGradient

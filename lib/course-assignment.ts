@@ -385,7 +385,7 @@ export async function assignUniversityCoursesToUser(
         program_id: programId,
         progress: 0,
         is_active: true,
-      }, { onConflict: 'user_id,course_id' });
+      } as any, { onConflict: 'user_id,course_id' });
       
       if (enrollError) {
         console.error(`❌ Could not enroll in university course ${course.title}:`, enrollError);

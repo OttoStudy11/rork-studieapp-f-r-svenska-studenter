@@ -136,32 +136,7 @@ export default function CourseDetailScreen() {
   const isFirstMount = useRef(true);
   const previousId = useRef<string | undefined>(undefined);
 
-  useEffect(() => {
-    if (id && user?.id) {
-      console.log('🔄 Course ID changed or initial mount:', id);
-      loadCourseData();
-    }
-  }, [id, user?.id]);
-  
-  useFocusEffect(
-    useCallback(() => {
-      const shouldReload = !isFirstMount.current || previousId.current !== id;
-      
-      if (id && user?.id && shouldReload) {
-        console.log('📍 Course screen focused, reloading data for:', id);
-        loadCourseData();
-      }
-      
-      isFirstMount.current = false;
-      previousId.current = id;
-      
-      return () => {
-        console.log('📍 Course screen unfocused');
-      };
-    }, [id, user?.id])
-  );
-
-  const loadCourseData = async (showRefresh = false) => {
+  const loadCourseData = useCallback(async (showRefresh = false) => {
     try {
       if (showRefresh) {
         setIsRefreshing(true);
@@ -312,7 +287,7 @@ export default function CourseDetailScreen() {
               course_id: actualCourseId,
               progress: 0,
               is_active: true
-            })
+            } as any)
             .select()
             .single();
           
@@ -471,7 +446,32 @@ export default function CourseDetailScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [id, user, fadeAnim, slideAnim]);
+
+  useEffect(() => {
+    if (id && user?.id) {
+      console.log('🔄 Course ID changed or initial mount:', id);
+      loadCourseData();
+    }
+  }, [id, user?.id, loadCourseData]);
+  
+  useFocusEffect(
+    useCallback(() => {
+      const shouldReload = !isFirstMount.current || previousId.current !== id;
+      
+      if (id && user?.id && shouldReload) {
+        console.log('📍 Course screen focused, reloading data for:', id);
+        loadCourseData();
+      }
+      
+      isFirstMount.current = false;
+      previousId.current = id;
+      
+      return () => {
+        console.log('📍 Course screen unfocused');
+      };
+    }, [id, user?.id, loadCourseData])
+  );
 
   const onRefresh = useCallback(() => {
     loadCourseData(true);

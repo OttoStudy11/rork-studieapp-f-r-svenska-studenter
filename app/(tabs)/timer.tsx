@@ -306,7 +306,7 @@ export default function TimerScreen() {
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const timerStartTimeRef = useRef<number | null>(null);
   const lastKnownTimeLeftRef = useRef<number>(timeLeft);
-  const handleTimerCompleteRef = useRef<() => Promise<void>>();
+  const handleTimerCompleteRef = useRef<(() => Promise<void>) | null>(null);
 
 
   const totalTime = sessionType === 'focus' ? focusTime * 60 : breakTime * 60;

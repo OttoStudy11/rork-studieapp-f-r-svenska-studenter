@@ -691,13 +691,13 @@ export default function OnboardingScreen() {
                   <AnimatedPressable
                     style={[
                       styles.checkboxRow,
-                      data.acceptedTerms && styles.checkboxRowChecked
-                    ]}
+                      data.acceptedTerms ? styles.checkboxRowChecked : undefined
+                    ] as any}
                     onPress={() => setData({ ...data, acceptedTerms: !data.acceptedTerms })}
                   >
                     <View style={[
                       styles.checkbox,
-                      data.acceptedTerms && styles.checkboxChecked
+                      data.acceptedTerms ? styles.checkboxChecked : undefined
                     ]}>
                       {data.acceptedTerms && <Check size={16} color="white" />}
                     </View>
@@ -709,13 +709,13 @@ export default function OnboardingScreen() {
                   <AnimatedPressable
                     style={[
                       styles.checkboxRow,
-                      data.acceptedPrivacy && styles.checkboxRowChecked
-                    ]}
+                      data.acceptedPrivacy ? styles.checkboxRowChecked : undefined
+                    ] as any}
                     onPress={() => setData({ ...data, acceptedPrivacy: !data.acceptedPrivacy })}
                   >
                     <View style={[
                       styles.checkbox,
-                      data.acceptedPrivacy && styles.checkboxChecked
+                      data.acceptedPrivacy ? styles.checkboxChecked : undefined
                     ]}>
                       {data.acceptedPrivacy && <Check size={16} color="white" />}
                     </View>
@@ -727,13 +727,13 @@ export default function OnboardingScreen() {
                   <AnimatedPressable
                     style={[
                       styles.checkboxRow,
-                      data.acceptedGDPR && styles.checkboxRowChecked
-                    ]}
+                      data.acceptedGDPR ? styles.checkboxRowChecked : undefined
+                    ] as any}
                     onPress={() => setData({ ...data, acceptedGDPR: !data.acceptedGDPR })}
                   >
                     <View style={[
                       styles.checkbox,
-                      data.acceptedGDPR && styles.checkboxChecked
+                      data.acceptedGDPR ? styles.checkboxChecked : undefined
                     ]}>
                       {data.acceptedGDPR && <Check size={16} color="white" />}
                     </View>
@@ -745,13 +745,13 @@ export default function OnboardingScreen() {
                   <AnimatedPressable
                     style={[
                       styles.checkboxRow,
-                      data.acceptedAge && styles.checkboxRowChecked
-                    ]}
+                      data.acceptedAge ? styles.checkboxRowChecked : undefined
+                    ] as any}
                     onPress={() => setData({ ...data, acceptedAge: !data.acceptedAge })}
                   >
                     <View style={[
                       styles.checkbox,
-                      data.acceptedAge && styles.checkboxChecked
+                      data.acceptedAge ? styles.checkboxChecked : undefined
                     ]}>
                       {data.acceptedAge && <Check size={16} color="white" />}
                     </View>
@@ -838,19 +838,19 @@ export default function OnboardingScreen() {
               <AnimatedPressable
                 style={[
                   styles.optionCard,
-                  data.studyLevel === 'gymnasie' && styles.selectedOptionCard
-                ]}
+                  data.studyLevel === 'gymnasie' ? styles.selectedOptionCard : undefined
+                ] as any}
                 onPress={() => setData({ ...data, studyLevel: 'gymnasie' })}
               >
                 <View style={[
                   styles.optionIconContainer,
-                  data.studyLevel === 'gymnasie' && { backgroundColor: 'rgba(16, 185, 129, 0.15)' }
+                  data.studyLevel === 'gymnasie' ? { backgroundColor: 'rgba(16, 185, 129, 0.15)' } : undefined
                 ]}>
                   <GraduationCap size={48} color={data.studyLevel === 'gymnasie' ? '#10B981' : 'white'} />
                 </View>
                 <Text style={[
                   styles.optionTitle,
-                  data.studyLevel === 'gymnasie' && styles.selectedOptionTitle
+                  data.studyLevel === 'gymnasie' ? styles.selectedOptionTitle : undefined
                 ]}>
                   Gymnasiet
                 </Text>
@@ -865,25 +865,25 @@ export default function OnboardingScreen() {
               <AnimatedPressable
                 style={[
                   styles.optionCard,
-                  data.studyLevel === 'högskola' && styles.selectedOptionCard
-                ]}
+                  data.studyLevel === 'högskola' ? styles.selectedOptionCard : undefined
+                ] as any}
                 onPress={() => setData({ ...data, studyLevel: 'högskola' })}
               >
                 <View style={[
                   styles.optionIconContainer,
-                  data.studyLevel === 'högskola' && { backgroundColor: 'rgba(16, 185, 129, 0.15)' }
+                  data.studyLevel === 'högskola' ? { backgroundColor: 'rgba(16, 185, 129, 0.15)' } : undefined
                 ]}>
                   <BookOpen size={48} color={data.studyLevel === 'högskola' ? '#10B981' : 'white'} />
                 </View>
                 <Text style={[
                   styles.optionTitle,
-                  data.studyLevel === 'högskola' && styles.selectedOptionTitle
+                  data.studyLevel === 'högskola' ? styles.selectedOptionTitle : undefined
                 ]}>
                   Högskola/Universitet
                 </Text>
                 <Text style={[
                   styles.optionDescription,
-                  data.studyLevel === 'högskola' && { color: 'rgba(255, 255, 255, 0.95)' }
+                  data.studyLevel === 'högskola' ? { color: 'rgba(255, 255, 255, 0.95)' } : undefined
                 ]}>
                   Välj ditt program och termin
                 </Text>
@@ -908,12 +908,12 @@ export default function OnboardingScreen() {
                         key={program.id}
                         style={[
                           styles.programMiniCard,
-                          data.gymnasiumProgram?.id === program.id && {
+                          data.gymnasiumProgram?.id === program.id ? {
                             backgroundColor: program.color + '25',
                             borderColor: program.color,
                             borderWidth: 2.5
-                          }
-                        ]}
+                          } : undefined
+                        ] as any}
                         onPress={() => setData({ 
                           ...data, 
                           gymnasiumProgram: { 
@@ -927,7 +927,7 @@ export default function OnboardingScreen() {
                         <Text style={styles.programMiniEmoji}>{program.emoji}</Text>
                         <Text style={[
                           styles.programMiniName,
-                          data.gymnasiumProgram?.id === program.id && { color: program.color, fontWeight: '700' as const }
+                          data.gymnasiumProgram?.id === program.id ? { color: program.color, fontWeight: '700' as const } : undefined
                         ]}>
                           {program.name}
                         </Text>
@@ -945,13 +945,13 @@ export default function OnboardingScreen() {
                           key={year}
                           style={[
                             styles.yearButton,
-                            data.year === year && styles.selectedYearButton
-                          ]}
+                            data.year === year ? styles.selectedYearButton : undefined
+                          ] as any}
                           onPress={() => setData({ ...data, year: year as 1 | 2 | 3 })}
                         >
                           <Text style={[
                             styles.yearButtonText,
-                            data.year === year && styles.selectedYearButtonText
+                            data.year === year ? styles.selectedYearButtonText : undefined
                           ]}>
                             År {year}
                           </Text>
@@ -984,12 +984,12 @@ export default function OnboardingScreen() {
                             key={programType.type}
                             style={[
                               styles.programTypeCard,
-                              isSelected && {
+                              isSelected ? {
                                 backgroundColor: programType.color + '25',
                                 borderColor: programType.color,
                                 borderWidth: 2.5
-                              }
-                            ]}
+                              } : undefined
+                            ] as any}
                             onPress={() => setData({ 
                               ...data, 
                               universityProgramType: programType.type,
@@ -1047,8 +1047,8 @@ export default function OnboardingScreen() {
                                 key={program.id}
                                 style={[
                                   styles.subProgramChip,
-                                  isSelected && styles.selectedSubProgramChip
-                                ]}
+                                  isSelected ? styles.selectedSubProgramChip : undefined
+                                ] as any}
                                 onPress={() => setData({ 
                                   ...data, 
                                   universityProgram: program,
@@ -1079,13 +1079,13 @@ export default function OnboardingScreen() {
                           key={term}
                           style={[
                             styles.termButton,
-                            data.universityYear === term && styles.selectedTermButton
-                          ]}
+                            data.universityYear === term ? styles.selectedTermButton : undefined
+                          ] as any}
                           onPress={() => setData({ ...data, universityYear: term as 1 | 2 | 3 | 4 | 5 })}
                         >
                           <Text style={[
                             styles.termButtonText,
-                            data.universityYear === term && styles.selectedTermButtonText
+                            data.universityYear === term ? styles.selectedTermButtonText : undefined
                           ]}>
                             T{term}
                           </Text>
@@ -1126,14 +1126,14 @@ export default function OnboardingScreen() {
                       key={gymnasium.id}
                       style={[
                         styles.selectionCard,
-                        data.gymnasium?.id === gymnasium.id && styles.selectedCard
-                      ]}
+                        data.gymnasium?.id === gymnasium.id ? styles.selectedCard : undefined
+                      ] as any}
                       onPress={() => setData({ ...data, gymnasium })}
                     >
                       <View style={styles.selectionCardContent}>
                         <Text style={[
                           styles.selectionCardTitle,
-                          data.gymnasium?.id === gymnasium.id && styles.selectedCardTitle
+                          data.gymnasium?.id === gymnasium.id ? styles.selectedCardTitle : undefined
                         ]}>
                           {gymnasium.name}
                         </Text>
@@ -1181,14 +1181,14 @@ export default function OnboardingScreen() {
                       key={university.id}
                       style={[
                         styles.selectionCard,
-                        data.university?.id === university.id && styles.selectedCard
-                      ]}
+                        data.university?.id === university.id ? styles.selectedCard : undefined
+                      ] as any}
                       onPress={() => setData({ ...data, university })}
                     >
                       <View style={styles.selectionCardContent}>
                         <Text style={[
                           styles.selectionCardTitle,
-                          data.university?.id === university.id && styles.selectedCardTitle
+                          data.university?.id === university.id ? styles.selectedCardTitle : undefined
                         ]}>
                           {university.name}
                         </Text>
@@ -1229,8 +1229,8 @@ export default function OnboardingScreen() {
                     key={course.id}
                     style={[
                       styles.courseCard,
-                      data.selectedCourses.has(course.id) && styles.selectedCourseCard
-                    ]}
+                      data.selectedCourses.has(course.id) ? styles.selectedCourseCard : undefined
+                    ] as any}
                     onPress={() => {
                       const newSelected = new Set(data.selectedCourses);
                       if (newSelected.has(course.id)) {
@@ -1248,7 +1248,7 @@ export default function OnboardingScreen() {
                       <View style={styles.courseCardInfo}>
                         <Text style={[
                           styles.courseCardTitle,
-                          data.selectedCourses.has(course.id) && styles.selectedCourseCardTitle
+                          data.selectedCourses.has(course.id) ? styles.selectedCourseCardTitle : undefined
                         ]}>
                           {course.name}
                         </Text>
@@ -1281,8 +1281,8 @@ export default function OnboardingScreen() {
                     style={[
                       styles.goalCard,
                       { borderColor: goal.color },
-                      data.goals.includes(goal.id) && { backgroundColor: goal.color + '20', borderWidth: 2 }
-                    ]}
+                      data.goals.includes(goal.id) ? { backgroundColor: goal.color + '20', borderWidth: 2 } : undefined
+                    ] as any}
                     onPress={() => toggleGoal(goal.id)}
                   >
                     <Text style={styles.goalEmoji}>{goal.icon}</Text>
@@ -1317,8 +1317,8 @@ export default function OnboardingScreen() {
                     style={[
                       styles.goalCard,
                       { borderColor: goal.color },
-                      data.goals.includes(goal.id) && { backgroundColor: goal.color + '20', borderWidth: 2 }
-                    ]}
+                      data.goals.includes(goal.id) ? { backgroundColor: goal.color + '20', borderWidth: 2 } : undefined
+                    ] as any}
                     onPress={() => toggleGoal(goal.id)}
                   >
                     <Text style={styles.goalEmoji}>{goal.icon}</Text>
@@ -1350,12 +1350,12 @@ export default function OnboardingScreen() {
                     style={[
                       styles.paceCard,
                       { borderColor: pace.color },
-                      data.learningPace === pace.id && { 
+                      data.learningPace === pace.id ? { 
                         backgroundColor: pace.color + '20', 
                         borderWidth: 3,
                         borderColor: pace.color
-                      }
-                    ]}
+                      } : undefined
+                    ] as any}
                     onPress={() => setData({ ...data, learningPace: pace.id as any })}
                   >
                     <Text style={styles.paceEmoji}>{pace.icon}</Text>
@@ -1393,12 +1393,12 @@ export default function OnboardingScreen() {
                     style={[
                       styles.paceCard,
                       { borderColor: pace.color },
-                      data.learningPace === pace.id && { 
+                      data.learningPace === pace.id ? { 
                         backgroundColor: pace.color + '20', 
                         borderWidth: 3,
                         borderColor: pace.color
-                      }
-                    ]}
+                      } : undefined
+                    ] as any}
                     onPress={() => setData({ ...data, learningPace: pace.id as any })}
                   >
                     <Text style={styles.paceEmoji}>{pace.icon}</Text>
@@ -1666,8 +1666,8 @@ export default function OnboardingScreen() {
                     key={course.id}
                     style={[
                       styles.startingCourseCard,
-                      data.selectedStartingCourse === course.id && styles.selectedStartingCourseCard
-                    ]}
+                      data.selectedStartingCourse === course.id ? styles.selectedStartingCourseCard : undefined
+                    ] as any}
                     onPress={() => setData({ ...data, selectedStartingCourse: course.id })}
                   >
                     <View style={styles.startingCourseContent}>
@@ -1675,7 +1675,7 @@ export default function OnboardingScreen() {
                       <View style={styles.startingCourseInfo}>
                         <Text style={[
                           styles.startingCourseTitle,
-                          data.selectedStartingCourse === course.id && styles.selectedStartingCourseTitle
+                          data.selectedStartingCourse === course.id ? styles.selectedStartingCourseTitle : undefined
                         ]}>
                           {course.name}
                         </Text>
@@ -1839,8 +1839,8 @@ export default function OnboardingScreen() {
             <RippleButton
               style={[
                 styles.nextButton,
-                !canProceed() && styles.disabledButton
-              ]}
+                !canProceed() ? styles.disabledButton : undefined
+              ] as any}
               onPress={step === 9 && data.studyLevel === 'gymnasie' ? assignCoursesAutomatically : handleNext}
               disabled={!canProceed()}
               rippleColor="#1F2937"

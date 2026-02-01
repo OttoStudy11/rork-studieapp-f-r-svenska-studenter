@@ -112,7 +112,7 @@ CREATE TABLE community_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   community_id UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  content TEXT NOT NULL,
+  message TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

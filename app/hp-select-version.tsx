@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -20,25 +20,94 @@ import {
   Play,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
-import { HP_SECTIONS, HP_TEST_VERSIONS, HPTestVersion } from '@/constants/hogskoleprovet';
+import { HP_SECTIONS, HP_TEST_VERSIONS, HPTestVersion, HPSectionConfig } from '@/constants/hogskoleprovet';
 import { COLORS } from '@/constants/design-system';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+const TEST_VERSIONS_BY_SECTION: Record<string, HPTestVersion[]> = {
+  'ORD': [
+    { id: 'ord-a', sectionCode: 'ORD', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
+    { id: 'ord-b', sectionCode: 'ORD', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
+    { id: 'ord-c', sectionCode: 'ORD', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
+  ],
+  'LÄS': [
+    { id: 'las-a', sectionCode: 'LÄS', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
+    { id: 'las-b', sectionCode: 'LÄS', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
+    { id: 'las-c', sectionCode: 'LÄS', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
+  ],
+  'MEK': [
+    { id: 'mek-a', sectionCode: 'MEK', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
+    { id: 'mek-b', sectionCode: 'MEK', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
+    { id: 'mek-c', sectionCode: 'MEK', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
+  ],
+  'XYZ': [
+    { id: 'xyz-a', sectionCode: 'XYZ', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
+    { id: 'xyz-b', sectionCode: 'XYZ', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
+    { id: 'xyz-c', sectionCode: 'XYZ', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
+  ],
+  'KVA': [
+    { id: 'kva-a', sectionCode: 'KVA', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
+    { id: 'kva-b', sectionCode: 'KVA', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
+    { id: 'kva-c', sectionCode: 'KVA', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
+  ],
+  'DTK': [
+    { id: 'dtk-a', sectionCode: 'DTK', name: 'Test A', questionCount: 20, season: 'spring', year: 2024 },
+    { id: 'dtk-b', sectionCode: 'DTK', name: 'Test B', questionCount: 20, season: 'fall', year: 2023 },
+    { id: 'dtk-c', sectionCode: 'DTK', name: 'Test C', questionCount: 20, season: 'spring', year: 2023 },
+  ],
+};
+
 export default function HPSelectVersionScreen() {
   const { theme, isDark } = useTheme();
-  const { sectionCode } = useLocalSearchParams<{ sectionCode: string }>();
+  const params = useLocalSearchParams<{ sectionCode: string }>();
+  const [isReady, setIsReady] = useState(false);
+  
+  const sectionCode = useMemo(() => {
+    const code = params.sectionCode || '';
+    const decoded = decodeURIComponent(code);
+    console.log('[HP Select Version] Raw params:', params);
+    console.log('[HP Select Version] Decoded sectionCode:', decoded);
+    return decoded;
+  }, [params]);
 
-  const section = useMemo(() => {
-    return HP_SECTIONS.find(s => s.code === sectionCode);
+  const section = useMemo((): HPSectionConfig | undefined => {
+    if (!sectionCode) return undefined;
+    const found = HP_SECTIONS.find(s => s.code === sectionCode);
+    console.log('[HP Select Version] Found section:', found?.name);
+    return found;
   }, [sectionCode]);
 
-  const testVersions = useMemo(() => {
-    if (!sectionCode) return [];
-    const versions = HP_TEST_VERSIONS.filter(v => v.sectionCode === sectionCode);
-    console.log('[HP Select Version] Section:', sectionCode, 'Versions found:', versions.length);
-    return versions;
+  const testVersions = useMemo((): HPTestVersion[] => {
+    if (!sectionCode) {
+      console.log('[HP Select Version] No sectionCode, returning empty');
+      return [];
+    }
+    
+    const directVersions = TEST_VERSIONS_BY_SECTION[sectionCode] || [];
+    if (directVersions.length > 0) {
+      console.log('[HP Select Version] Using direct lookup, found:', directVersions.length);
+      return directVersions;
+    }
+    
+    const filtered = HP_TEST_VERSIONS.filter(v => v.sectionCode === sectionCode);
+    console.log('[HP Select Version] Using filter, found:', filtered.length);
+    return filtered;
   }, [sectionCode]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    console.log('[HP Select Version] State:', {
+      sectionCode,
+      sectionName: section?.name,
+      testVersionsCount: testVersions.length,
+      isReady,
+    });
+  }, [sectionCode, section, testVersions, isReady]);
 
   const handleSelectMixed = () => {
     console.log('[HP Select Version] Selected: Mixed questions for', sectionCode);
@@ -171,45 +240,52 @@ export default function HPSelectVersionScreen() {
 
         {/* Test Version Cards */}
         <View style={styles.versionsGrid}>
-          {testVersions.length > 0 ? (
-            testVersions.map((version, index) => (
-              <TouchableOpacity
-                key={version.id}
-                style={[
-                  styles.versionCard,
-                  { backgroundColor: theme.colors.surface },
-                ]}
-                onPress={() => handleSelectVersion(version)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.versionIconBg, { backgroundColor: `${section.color}15` }]}>
-                  <Calendar size={24} color={section.color} />
-                </View>
-                <Text style={[styles.versionName, { color: theme.colors.text }]}>
-                  {version.name}
-                </Text>
+          {testVersions.map((version) => (
+            <TouchableOpacity
+              key={version.id}
+              style={[
+                styles.versionCard,
+                { backgroundColor: theme.colors.surface },
+              ]}
+              onPress={() => handleSelectVersion(version)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.versionIconBg, { backgroundColor: `${section.color}15` }]}>
+                <Calendar size={24} color={section.color} />
+              </View>
+              <Text style={[styles.versionName, { color: theme.colors.text }]}>
+                {version.name}
+              </Text>
+              <View style={styles.versionDetails}>
                 <Text style={[styles.versionQuestionCount, { color: theme.colors.textSecondary }]}>
                   {version.questionCount} frågor
                 </Text>
-                <View style={[styles.versionStartButton, { backgroundColor: `${section.color}15` }]}>
-                  <Play size={14} color={section.color} fill={section.color} />
-                  <Text style={[styles.versionStartText, { color: section.color }]}>
-                    Starta
+                {version.year && (
+                  <Text style={[styles.versionYear, { color: theme.colors.textSecondary }]}>
+                    {version.season === 'spring' ? 'Vår' : 'Höst'} {version.year}
                   </Text>
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={[styles.emptyState, { backgroundColor: theme.colors.surface }]}>
-              <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
-                Inga specifika testversioner tillgängliga för detta delprov ännu.
-              </Text>
-              <Text style={[styles.emptyStateHint, { color: theme.colors.textSecondary }]}>
-                Använd Blandade frågor ovan för att börja träna!
-              </Text>
-            </View>
-          )}
+                )}
+              </View>
+              <View style={[styles.versionStartButton, { backgroundColor: `${section.color}15` }]}>
+                <Play size={14} color={section.color} fill={section.color} />
+                <Text style={[styles.versionStartText, { color: section.color }]}>
+                  Starta
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
+
+        {testVersions.length === 0 && (
+          <View style={[styles.emptyState, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
+              Inga specifika testversioner tillgängliga för detta delprov ännu.
+            </Text>
+            <Text style={[styles.emptyStateHint, { color: theme.colors.textSecondary }]}>
+              Använd Blandade frågor ovan för att börja träna!
+            </Text>
+          </View>
+        )}
 
         {/* Tips Section */}
         <View style={[styles.tipsCard, { backgroundColor: theme.colors.surface }]}>
@@ -403,9 +479,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     textAlign: 'center' as const,
   },
+  versionDetails: {
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 2,
+  },
   versionQuestionCount: {
     fontSize: 13,
-    marginBottom: 12,
+  },
+  versionYear: {
+    fontSize: 11,
   },
   versionStartButton: {
     flexDirection: 'row',

@@ -256,7 +256,7 @@ export default function CourseDetailScreen() {
               } else {
                 courseError = directError || codeError || uniError || uniCodeError;
                 console.error('❌ Course not found by ID or course_code:', id);
-                console.error('Errors:', { directError, codeError, uniError, uniCodeError });
+                console.error('Searched in: courses (id), courses (code), university_courses (id), university_courses (code), courses (partial)');
               }
             }
           }
@@ -264,8 +264,14 @@ export default function CourseDetailScreen() {
       }
 
       if (!courseData) {
-        console.error('Error loading course:', courseError);
-        Alert.alert('Fel', 'Kunde inte ladda kursen');
+        console.error('❌ Error loading course:', courseError);
+        console.error('📋 Course ID attempted:', id);
+        Alert.alert(
+          'Kurs ej hittad', 
+          `Kunde inte hitta kursen med ID: ${id}\n\nDenna kurs har eventuellt inte skapats i databasen ännu.`
+        );
+        setIsLoading(false);
+        setIsRefreshing(false);
         return;
       }
 
@@ -290,9 +296,33 @@ export default function CourseDetailScreen() {
 
         if (userCourseError && userCourseError.code !== 'PGRST116') {
           console.error('Error loading user university course:', userCourseError);
-        } else if (userCourse) {
+        }
+        
+        if (userCourse) {
+          console.log('✅ Found user university course enrollment');
           setUserCourseData(userCourse);
           setEditProgress(userCourse?.progress?.toString() || '0');
+        } else {
+          console.log('ℹ️ No enrollment found, creating...');
+          // Create enrollment if missing
+          const { data: newEnrollment, error: createError } = await supabase
+            .from('user_university_courses')
+            .insert({
+              user_id: user!.id,
+              course_id: actualCourseId,
+              progress: 0,
+              is_active: true
+            })
+            .select()
+            .single();
+          
+          if (!createError && newEnrollment) {
+            console.log('✅ Created user university course enrollment');
+            setUserCourseData(newEnrollment);
+            setEditProgress('0');
+          } else {
+            console.error('❌ Failed to create enrollment:', createError);
+          }
         }
       } else {
         const { data: userCourse, error: userCourseError } = await supabase
@@ -304,10 +334,15 @@ export default function CourseDetailScreen() {
 
         if (userCourseError && userCourseError.code !== 'PGRST116') {
           console.error('Error loading user course:', userCourseError);
-        } else if (userCourse) {
+        }
+        
+        if (userCourse) {
+          console.log('✅ Found user course enrollment');
           setUserCourseData(userCourse);
           setEditProgress(userCourse?.progress?.toString() || '0');
           setEditTargetGrade(userCourse?.target_grade || '');
+        } else {
+          console.log('ℹ️ No enrollment found for gymnasium course');
         }
       }
 

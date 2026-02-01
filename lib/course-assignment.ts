@@ -183,63 +183,66 @@ function getDefaultCoursesForProgram(programId: string, year: 1 | 2 | 3 | 4 | 5)
   // Generate generic courses based on program type and year
   const defaultCourses: UniversityCourse[] = [];
   
+  // Generate cleaner course IDs
+  const programPrefix = programId.replace(/programmet$/, '').substring(0, 20).replace(/[^a-z0-9_]/g, '_');
+  
   if (degreeType === 'civilingenjör' || degreeType === 'högskoleingenjör') {
     // Technical programs
     if (year === 1) {
       defaultCourses.push(
-        { id: `${programId}-MAT1`, code: `${programId.toUpperCase()}-MAT1`, name: 'Matematik I', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Matematik' },
-        { id: `${programId}-MAT2`, code: `${programId.toUpperCase()}-MAT2`, name: 'Matematik II', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Matematik' },
-        { id: `${programId}-PROG1`, code: `${programId.toUpperCase()}-PROG1`, name: 'Programmering I', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Datateknik' },
-        { id: `${programId}-INTRO`, code: `${programId.toUpperCase()}-INTRO`, name: `Introduktion till ${field}`, credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field }
+        { id: `${programPrefix}_mat1_y1`, code: `${programPrefix.toUpperCase()}-MAT1`, name: 'Matematik I', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Matematik' },
+        { id: `${programPrefix}_mat2_y1`, code: `${programPrefix.toUpperCase()}-MAT2`, name: 'Matematik II', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Matematik' },
+        { id: `${programPrefix}_prog1_y1`, code: `${programPrefix.toUpperCase()}-PROG1`, name: 'Programmering I', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Datateknik' },
+        { id: `${programPrefix}_intro_y1`, code: `${programPrefix.toUpperCase()}-INTRO`, name: `Introduktion till ${field}`, credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field }
       );
     } else if (year === 2) {
       defaultCourses.push(
-        { id: `${programId}-MAT3`, code: `${programId.toUpperCase()}-MAT3`, name: 'Matematik III', credits: 7.5, year: 2, mandatory: true, category: 'fördjupningskurs', field: 'Matematik' },
-        { id: `${programId}-STAT`, code: `${programId.toUpperCase()}-STAT`, name: 'Sannolikhetsteori och statistik', credits: 7.5, year: 2, mandatory: true, category: 'grundkurs', field: 'Matematik' },
-        { id: `${programId}-SPEC1`, code: `${programId.toUpperCase()}-SPEC1`, name: `${field} - Grundkurs`, credits: 7.5, year: 2, mandatory: true, category: 'fördjupningskurs', field }
+        { id: `${programPrefix}_mat3_y2`, code: `${programPrefix.toUpperCase()}-MAT3`, name: 'Matematik III', credits: 7.5, year: 2, mandatory: true, category: 'fördjupningskurs', field: 'Matematik' },
+        { id: `${programPrefix}_stat_y2`, code: `${programPrefix.toUpperCase()}-STAT`, name: 'Sannolikhetsteori och statistik', credits: 7.5, year: 2, mandatory: true, category: 'grundkurs', field: 'Matematik' },
+        { id: `${programPrefix}_spec1_y2`, code: `${programPrefix.toUpperCase()}-SPEC1`, name: `${field} - Grundkurs`, credits: 7.5, year: 2, mandatory: true, category: 'fördjupningskurs', field }
       );
     } else if (year === 3) {
       defaultCourses.push(
-        { id: `${programId}-ADV1`, code: `${programId.toUpperCase()}-ADV1`, name: `Avancerad ${field}`, credits: 7.5, year: 3, mandatory: true, category: 'fördjupningskurs', field },
-        { id: `${programId}-PROJ`, code: `${programId.toUpperCase()}-PROJ`, name: 'Projektarbete', credits: 15, year: 3, mandatory: true, category: 'fördjupningskurs', field }
+        { id: `${programPrefix}_adv1_y3`, code: `${programPrefix.toUpperCase()}-ADV1`, name: `Avancerad ${field}`, credits: 7.5, year: 3, mandatory: true, category: 'fördjupningskurs', field },
+        { id: `${programPrefix}_proj_y3`, code: `${programPrefix.toUpperCase()}-PROJ`, name: 'Projektarbete', credits: 15, year: 3, mandatory: true, category: 'fördjupningskurs', field }
       );
     }
   } else if (degreeType === 'professionsprogram') {
     // Professional programs (medicine, law, etc.)
     if (year === 1) {
       defaultCourses.push(
-        { id: `${programId}-GRUND1`, code: `${programId.toUpperCase()}-GRUND1`, name: `${field} - Grunder`, credits: 15, year: 1, mandatory: true, category: 'professionskurs', field },
-        { id: `${programId}-GRUND2`, code: `${programId.toUpperCase()}-GRUND2`, name: `${field} - Introduktion`, credits: 15, year: 1, mandatory: true, category: 'professionskurs', field },
-        { id: `${programId}-VFU1`, code: `${programId.toUpperCase()}-VFU1`, name: 'Verksamhetsförlagd utbildning I', credits: 15, year: 1, mandatory: true, category: 'professionskurs', field }
+        { id: `${programPrefix}_grund1_y1`, code: `${programPrefix.toUpperCase()}-GRUND1`, name: `${field} - Grunder`, credits: 15, year: 1, mandatory: true, category: 'professionskurs', field },
+        { id: `${programPrefix}_grund2_y1`, code: `${programPrefix.toUpperCase()}-GRUND2`, name: `${field} - Introduktion`, credits: 15, year: 1, mandatory: true, category: 'professionskurs', field },
+        { id: `${programPrefix}_vfu1_y1`, code: `${programPrefix.toUpperCase()}-VFU1`, name: 'Verksamhetsförlagd utbildning I', credits: 15, year: 1, mandatory: true, category: 'professionskurs', field }
       );
     } else if (year === 2) {
       defaultCourses.push(
-        { id: `${programId}-FORD1`, code: `${programId.toUpperCase()}-FORD1`, name: `${field} - Fördjupning`, credits: 15, year: 2, mandatory: true, category: 'fördjupningskurs', field },
-        { id: `${programId}-VFU2`, code: `${programId.toUpperCase()}-VFU2`, name: 'Verksamhetsförlagd utbildning II', credits: 15, year: 2, mandatory: true, category: 'professionskurs', field }
+        { id: `${programPrefix}_ford1_y2`, code: `${programPrefix.toUpperCase()}-FORD1`, name: `${field} - Fördjupning`, credits: 15, year: 2, mandatory: true, category: 'fördjupningskurs', field },
+        { id: `${programPrefix}_vfu2_y2`, code: `${programPrefix.toUpperCase()}-VFU2`, name: 'Verksamhetsförlagd utbildning II', credits: 15, year: 2, mandatory: true, category: 'professionskurs', field }
       );
     } else if (year === 3) {
       defaultCourses.push(
-        { id: `${programId}-EX`, code: `${programId.toUpperCase()}-EX`, name: 'Examensarbete', credits: 15, year: 3, mandatory: true, category: 'fördjupningskurs', field },
-        { id: `${programId}-VFU3`, code: `${programId.toUpperCase()}-VFU3`, name: 'Verksamhetsförlagd utbildning III', credits: 15, year: 3, mandatory: true, category: 'professionskurs', field }
+        { id: `${programPrefix}_ex_y3`, code: `${programPrefix.toUpperCase()}-EX`, name: 'Examensarbete', credits: 15, year: 3, mandatory: true, category: 'fördjupningskurs', field },
+        { id: `${programPrefix}_vfu3_y3`, code: `${programPrefix.toUpperCase()}-VFU3`, name: 'Verksamhetsförlagd utbildning III', credits: 15, year: 3, mandatory: true, category: 'professionskurs', field }
       );
     }
   } else {
     // Bachelor/Master programs
     if (year === 1) {
       defaultCourses.push(
-        { id: `${programId}-INTRO`, code: `${programId.toUpperCase()}-INTRO`, name: `Introduktion till ${field}`, credits: 15, year: 1, mandatory: true, category: 'grundkurs', field },
-        { id: `${programId}-GRUND1`, code: `${programId.toUpperCase()}-GRUND1`, name: `${field} - Grundkurs I`, credits: 15, year: 1, mandatory: true, category: 'grundkurs', field },
-        { id: `${programId}-MET`, code: `${programId.toUpperCase()}-MET`, name: 'Vetenskaplig metod', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Metod' }
+        { id: `${programPrefix}_intro_y1`, code: `${programPrefix.toUpperCase()}-INTRO`, name: `Introduktion till ${field}`, credits: 15, year: 1, mandatory: true, category: 'grundkurs', field },
+        { id: `${programPrefix}_grund1_y1`, code: `${programPrefix.toUpperCase()}-GRUND1`, name: `${field} - Grundkurs I`, credits: 15, year: 1, mandatory: true, category: 'grundkurs', field },
+        { id: `${programPrefix}_met_y1`, code: `${programPrefix.toUpperCase()}-MET`, name: 'Vetenskaplig metod', credits: 7.5, year: 1, mandatory: true, category: 'grundkurs', field: 'Metod' }
       );
     } else if (year === 2) {
       defaultCourses.push(
-        { id: `${programId}-FORD1`, code: `${programId.toUpperCase()}-FORD1`, name: `${field} - Fördjupning I`, credits: 15, year: 2, mandatory: true, category: 'fördjupningskurs', field },
-        { id: `${programId}-FORD2`, code: `${programId.toUpperCase()}-FORD2`, name: `${field} - Fördjupning II`, credits: 15, year: 2, mandatory: true, category: 'fördjupningskurs', field }
+        { id: `${programPrefix}_ford1_y2`, code: `${programPrefix.toUpperCase()}-FORD1`, name: `${field} - Fördjupning I`, credits: 15, year: 2, mandatory: true, category: 'fördjupningskurs', field },
+        { id: `${programPrefix}_ford2_y2`, code: `${programPrefix.toUpperCase()}-FORD2`, name: `${field} - Fördjupning II`, credits: 15, year: 2, mandatory: true, category: 'fördjupningskurs', field }
       );
     } else if (year === 3) {
       defaultCourses.push(
-        { id: `${programId}-KAND`, code: `${programId.toUpperCase()}-KAND`, name: 'Kandidatuppsats', credits: 15, year: 3, mandatory: true, category: 'fördjupningskurs', field },
-        { id: `${programId}-VAL`, code: `${programId.toUpperCase()}-VAL`, name: `Valbara kurser i ${field}`, credits: 15, year: 3, mandatory: false, category: 'valbara', field }
+        { id: `${programPrefix}_kand_y3`, code: `${programPrefix.toUpperCase()}-KAND`, name: 'Kandidatuppsats', credits: 15, year: 3, mandatory: true, category: 'fördjupningskurs', field },
+        { id: `${programPrefix}_val_y3`, code: `${programPrefix.toUpperCase()}-VAL`, name: `Valbara kurser i ${field}`, credits: 15, year: 3, mandatory: false, category: 'valbara', field }
       );
     }
   }
@@ -358,7 +361,7 @@ export async function assignUniversityCoursesToUser(
         console.log(`📚 Creating university course in database: ${course.courseId}`);
         const { error: insertError } = await supabase.from('university_courses').insert({
           id: course.courseId,
-          course_code: course.courseId,
+          course_code: course.courseId.toUpperCase(),
           title: course.title,
           description: course.description,
           credits: course.credits || 7.5,
@@ -367,7 +370,9 @@ export async function assignUniversityCoursesToUser(
         });
         
         if (insertError) {
-          console.warn(`⚠️ Could not create university course ${course.title}:`, insertError.message);
+          console.error(`❌ Could not create university course ${course.title}:`, insertError);
+          // Don't continue to enrollment if course creation failed
+          continue;
         } else {
           console.log(`✅ Created university course: ${course.title}`);
         }
@@ -375,45 +380,16 @@ export async function assignUniversityCoursesToUser(
       
       // Enroll in user_university_courses (the correct table for university students)
       const { error: enrollError } = await supabase.from('user_university_courses').upsert({
-        id: `${userId}-${course.courseId}`,
         user_id: userId,
         course_id: course.courseId,
         program_id: programId,
         progress: 0,
         is_active: true,
-      }, { onConflict: 'id' });
+      }, { onConflict: 'user_id,course_id' });
       
       if (enrollError) {
-        console.warn(`⚠️ Could not enroll in university course ${course.title}:`, enrollError.message);
-        
-        // Fallback: Also try to add to regular courses table for compatibility
-        const { data: existingCourse } = await supabase
-          .from('courses')
-          .select('id')
-          .eq('id', course.courseId)
-          .maybeSingle();
-        
-        if (!existingCourse) {
-          await supabase.from('courses').insert({
-            id: course.courseId,
-            title: course.title,
-            description: course.description,
-            subject: course.subject,
-            level: 'hogskola',
-            resources: ['Kursmaterial', 'Övningsuppgifter'],
-            tips: ['Studera regelbundet'],
-            related_courses: [],
-            progress: 0,
-          });
-        }
-        
-        await supabase.from('user_courses').upsert({
-          id: `${userId}-${course.courseId}`,
-          user_id: userId,
-          course_id: course.courseId,
-          progress: 0,
-          is_active: true,
-        }, { onConflict: 'id' });
+        console.error(`❌ Could not enroll in university course ${course.title}:`, enrollError);
+        continue;
       }
       
       console.log(`✅ Enrolled in: ${course.title}`);

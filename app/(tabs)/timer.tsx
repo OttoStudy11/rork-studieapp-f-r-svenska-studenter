@@ -342,7 +342,7 @@ export default function TimerScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const appState = useRef<AppStateStatus>(AppState.currentState);
-  const timerStartTimeRef = useRef<number | null>(null);
+  const timerEndTimeRef = useRef<number | null>(null);
   const lastKnownTimeLeftRef = useRef<number>(timeLeft);
   const handleTimerCompleteRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -463,14 +463,25 @@ export default function TimerScreen() {
         console.log('🔄 Restoring timer from background');
         console.log('⏱️ Remaining time:', savedState.remainingTime, 'seconds');
         
-        setTimerState(savedState.status);
-        setSessionType(savedState.sessionType);
-        setTimeLeft(savedState.remainingTime);
-        setSessionStartTime(new Date(savedState.startTimestamp));
-        setSelectedCourse(savedState.courseId || '');
-        timerStartTimeRef.current = savedState.startTimestamp;
-        
-        if (savedState.remainingTime > 0) {
+        if (savedState.remainingTime <= 0) {
+          // Timer completed while app was closed
+          console.log('✅ Timer completed while app was closed');
+          timerEndTimeRef.current = null;
+          setTimerState('idle');
+          setSessionType(savedState.sessionType === 'focus' ? 'break' : 'focus');
+          await TimerPersistence.clearTimerState();
+        } else {
+          // Set end time based on remaining time
+          const now = Date.now();
+          timerEndTimeRef.current = now + (savedState.remainingTime * 1000);
+          console.log('⏰ Timer end time set to:', new Date(timerEndTimeRef.current).toISOString());
+          
+          setTimerState(savedState.status);
+          setSessionType(savedState.sessionType);
+          setTimeLeft(savedState.remainingTime);
+          setSessionStartTime(new Date(savedState.startTimestamp));
+          setSelectedCourse(savedState.courseId || '');
+          
           await TimerPersistence.scheduleCompletionNotification(
             savedState.remainingTime,
             savedState.sessionType,
@@ -700,18 +711,24 @@ export default function TimerScreen() {
             ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
             : 'Allmän session';
           
-          // Save current state
+          // Calculate remaining time from end time
+          const now = Date.now();
+          const remainingTime = timerEndTimeRef.current 
+            ? Math.max(0, Math.ceil((timerEndTimeRef.current - now) / 1000))
+            : lastKnownTimeLeftRef.current;
+          
+          // Save current state with accurate remaining time
           await TimerPersistence.saveTimerState({
             status: 'running',
             sessionType,
             totalDuration: sessionType === 'focus' ? focusTime * 60 : breakTime * 60,
-            remainingTime: lastKnownTimeLeftRef.current,
-            startTimestamp: timerStartTimeRef.current || Date.now(),
+            remainingTime,
+            startTimestamp: now,
             courseId: selectedCourse || undefined,
             courseName,
           });
           
-          console.log('💾 Saved timer state to storage, remaining:', lastKnownTimeLeftRef.current, 'seconds');
+          console.log('💾 Saved timer state to storage, remaining:', remainingTime, 'seconds');
         }
       }
 
@@ -726,15 +743,18 @@ export default function TimerScreen() {
             console.log('🔄 Recalculating time after background');
             console.log('⏱️ New remaining time:', savedState.remainingTime, 'seconds');
             
-            // Update state with recalculated time
-            setTimeLeft(savedState.remainingTime);
-            setTimerState('running');
-            timerStartTimeRef.current = savedState.startTimestamp;
-            
             // If timer completed while in background
             if (savedState.remainingTime <= 0) {
               console.log('✅ Timer completed in background');
+              timerEndTimeRef.current = null;
               await handleTimerComplete();
+            } else {
+              // Update state with recalculated time and set new end time
+              const now = Date.now();
+              timerEndTimeRef.current = now + (savedState.remainingTime * 1000);
+              setTimeLeft(savedState.remainingTime);
+              setTimerState('running');
+              console.log('⏰ Timer end time recalculated:', new Date(timerEndTimeRef.current).toISOString());
             }
           }
         }
@@ -761,19 +781,28 @@ export default function TimerScreen() {
         intervalRef.current = null;
       }
       
+      // Use timestamp-based calculation for accurate timing
       intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          const newTime = prev - 1;
-          if (prev <= 1) {
-            console.log('⏱️ Timer completed!');
-            handleTimerCompleteRef.current?.();
-            return 0;
-          }
-          return newTime;
-        });
-      }, 1000);
+        if (!timerEndTimeRef.current) {
+          console.log('⚠️ No end time set, skipping tick');
+          return;
+        }
+        
+        const now = Date.now();
+        const remainingMs = timerEndTimeRef.current - now;
+        const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+        
+        if (remainingSeconds <= 0) {
+          console.log('⏱️ Timer completed!');
+          timerEndTimeRef.current = null;
+          handleTimerCompleteRef.current?.();
+          setTimeLeft(0);
+        } else {
+          setTimeLeft(remainingSeconds);
+        }
+      }, 250); // Check more frequently for better accuracy
       
-      console.log('✅ Interval created:', intervalRef.current);
+      console.log('✅ Interval created with timestamp-based calculation');
       
     } else {
       console.log('⏹️ Timer not running, clearing intervals');
@@ -839,7 +868,11 @@ export default function TimerScreen() {
       const startDate = new Date(now);
       console.log('⏰ Setting session start time:', startDate.toISOString());
       setSessionStartTime(startDate);
-      timerStartTimeRef.current = now;
+      
+      // Set the end time based on full duration
+      const durationSeconds = sessionType === 'focus' ? focusTime * 60 : breakTime * 60;
+      timerEndTimeRef.current = now + (durationSeconds * 1000);
+      console.log('⏰ Timer will end at:', new Date(timerEndTimeRef.current).toISOString());
       
       if (sessionType === 'focus' && dndPermissionGranted) {
         await enableDoNotDisturb();
@@ -849,8 +882,9 @@ export default function TimerScreen() {
       await hapticsManager.triggerHaptic('light');
     } else {
       console.log('⏸️ Resuming timer from pause');
-      // Resuming from pause - reset start time
-      timerStartTimeRef.current = now;
+      // Resuming from pause - set end time based on remaining time
+      timerEndTimeRef.current = now + (timeLeft * 1000);
+      console.log('⏰ Timer will end at:', new Date(timerEndTimeRef.current).toISOString());
     }
     
     console.log('▶️ Setting timer state to running');
@@ -865,7 +899,7 @@ export default function TimerScreen() {
       sessionType,
       totalDuration: sessionType === 'focus' ? focusTime * 60 : breakTime * 60,
       remainingTime: timeLeft,
-      startTimestamp: Date.now(),
+      startTimestamp: now,
       courseId: selectedCourse || undefined,
       courseName,
     });
@@ -897,6 +931,8 @@ export default function TimerScreen() {
   };
 
   const pauseTimer = async () => {
+    // Clear the end time reference when pausing
+    timerEndTimeRef.current = null;
     setTimerState('paused');
     await hapticsManager.triggerHaptic('medium');
     await TimerPersistence.cancelNotification();
@@ -918,6 +954,7 @@ export default function TimerScreen() {
   };
 
   const stopTimer = async () => {
+    timerEndTimeRef.current = null;
     setTimerState('idle');
     setTimeLeft(sessionType === 'focus' ? focusTime * 60 : breakTime * 60);
     setSessionStartTime(null);
@@ -931,6 +968,7 @@ export default function TimerScreen() {
   };
 
   const resetTimer = async () => {
+    timerEndTimeRef.current = null;
     setTimerState('idle');
     setSessionType('focus');
     setTimeLeft(focusTime * 60);

@@ -1298,9 +1298,11 @@ const styles = StyleSheet.create({
   },
   compactTipCard: {
     width: (width - 72) / 2,
+    height: 130,
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -1317,6 +1319,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 18,
+    height: 36,
   },
   compactTipDifficulty: {
     paddingHorizontal: 6,
@@ -1335,6 +1338,7 @@ const styles = StyleSheet.create({
   compactTechniqueCard: {
     borderRadius: 12,
     padding: 16,
+    height: 70,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',

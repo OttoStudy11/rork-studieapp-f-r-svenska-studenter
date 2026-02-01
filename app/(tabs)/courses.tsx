@@ -752,7 +752,7 @@ export default function CoursesScreen() {
                     onPress={() => router.push(`/study-technique/${technique.id}` as any)}
                   >
                     <Text style={styles.compactTechniqueIcon}>{technique.icon}</Text>
-                    <Text style={[styles.compactTechniqueTitle, { color: theme.colors.text }]}>{technique.title}</Text>
+                    <Text style={[styles.compactTechniqueTitle, { color: theme.colors.text }]} numberOfLines={1}>{technique.title}</Text>
                     <View style={[styles.compactTimeTag, { backgroundColor: theme.colors.primary + '15' }]}>
                       <Clock size={10} color={theme.colors.primary} />
                       <Text style={[styles.compactTimeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
@@ -1002,9 +1002,11 @@ const styles = StyleSheet.create({
   },
   compactTipCard: {
     width: (width - 72) / 2,
+    height: 130,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
@@ -1023,6 +1025,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 18,
+    height: 36,
   },
   compactTipDifficulty: {
     paddingHorizontal: 6,
@@ -1041,6 +1044,7 @@ const styles = StyleSheet.create({
   compactTechniqueCard: {
     borderRadius: 16,
     padding: 18,
+    height: 70,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
@@ -1056,9 +1060,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   compactTechniqueTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     flex: 1,
+    numberOfLines: 1,
   },
   compactTimeTag: {
     flexDirection: 'row',

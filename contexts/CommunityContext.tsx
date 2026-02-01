@@ -301,43 +301,66 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Loading pending invites...');
       
-      const { data, error: fetchError } = await (supabase as any)
+      const { data: inviteData, error: fetchError } = await (supabase as any)
         .from('community_invites')
-        .select(`
-          *,
-          community:communities(*),
-          inviter:profiles!inviter_id(username, display_name)
-        `)
+        .select('*')
         .eq('invitee_id', user.id)
         .eq('status', 'pending');
       
       if (fetchError) {
-        console.error('[Communities] Error loading invites:', fetchError);
+        console.error('[Communities] Error loading invites:', fetchError.message || fetchError);
         return;
       }
       
-      const mapped: CommunityInvite[] = (data || []).map((i: any) => ({
-        id: i.id,
-        communityId: i.community_id,
-        inviterId: i.inviter_id,
-        inviteeId: i.invitee_id,
-        status: i.status,
-        createdAt: i.created_at,
-        community: i.community ? {
-          id: i.community.id,
-          name: i.community.name,
-          description: i.community.description || '',
-          type: i.community.type,
-          visibility: i.community.visibility,
-          createdBy: i.community.created_by,
-          memberCount: i.community.member_count || 0,
-          createdAt: i.community.created_at,
-        } : undefined,
-        inviter: i.inviter ? {
-          username: i.inviter.username,
-          displayName: i.inviter.display_name,
-        } : undefined,
-      }));
+      if (!inviteData || inviteData.length === 0) {
+        setPendingInvites([]);
+        console.log('[Communities] No pending invites');
+        return;
+      }
+      
+      const communityIds = [...new Set(inviteData.map((i: any) => i.community_id))];
+      const inviterIds = [...new Set(inviteData.map((i: any) => i.inviter_id))];
+      
+      const { data: communitiesData } = await (supabase as any)
+        .from('communities')
+        .select('*')
+        .in('id', communityIds);
+      
+      const { data: profilesData } = await (supabase as any)
+        .from('profiles')
+        .select('id, username, display_name')
+        .in('id', inviterIds);
+      
+      const communitiesMap = new Map((communitiesData || []).map((c: any) => [c.id, c]));
+      const profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+      
+      const mapped: CommunityInvite[] = inviteData.map((i: any) => {
+        const community = communitiesMap.get(i.community_id);
+        const inviter = profilesMap.get(i.inviter_id);
+        
+        return {
+          id: i.id,
+          communityId: i.community_id,
+          inviterId: i.inviter_id,
+          inviteeId: i.invitee_id,
+          status: i.status,
+          createdAt: i.created_at,
+          community: community ? {
+            id: community.id,
+            name: community.name,
+            description: community.description || '',
+            type: community.type,
+            visibility: community.visibility,
+            createdBy: community.created_by,
+            memberCount: community.member_count || 0,
+            createdAt: community.created_at,
+          } : undefined,
+          inviter: inviter ? {
+            username: inviter.username,
+            displayName: inviter.display_name,
+          } : undefined,
+        };
+      });
       
       setPendingInvites(mapped);
       console.log('[Communities] Loaded', mapped.length, 'pending invites');

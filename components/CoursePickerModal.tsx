@@ -9,9 +9,11 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { X, Search, BookOpen, Check, Filter, GraduationCap } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { X, Search, BookOpen, Check, Filter, GraduationCap, Lock, Crown } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePremium } from '@/contexts/PremiumContext';
 import { supabase } from '@/lib/supabase';
 import { programCourses } from '@/home/project/constants/program-courses';
 import type { Course } from '@/home/project/constants/program-courses';
@@ -41,6 +43,7 @@ interface CoursePickerModalProps {
 export default function CoursePickerModal({ visible, onClose, onSelectCourse }: CoursePickerModalProps) {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const { isPremium } = usePremium();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProgram, setSelectedProgram] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -244,11 +247,21 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
   }, [allCourses, selectedProgram, selectedCategory, searchQuery]);
 
   const handleSelectCourse = (course: UnifiedCourse) => {
+    if (!isPremium) {
+      return;
+    }
     onSelectCourse(course);
     setSearchQuery('');
     setSelectedProgram(null);
     setSelectedCategory(null);
     onClose();
+  };
+
+  const handleCoursePress = (course: UnifiedCourse) => {
+    if (!isPremium) {
+      return;
+    }
+    handleSelectCourse(course);
   };
 
   const clearFilters = () => {
@@ -296,6 +309,35 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
           </View>
         ) : (
           <>
+
+        {/* Premium Banner for non-premium users */}
+        {!isPremium && (
+          <TouchableOpacity 
+            style={[styles.premiumBanner, { backgroundColor: theme.colors.warning + '15' }]}
+            onPress={() => {
+              onClose();
+              router.push('/premium' as any);
+            }}
+            activeOpacity={0.8}
+          >
+            <View style={styles.premiumBannerContent}>
+              <View style={[styles.premiumIconCircle, { backgroundColor: theme.colors.warning + '20' }]}>
+                <Crown size={20} color={theme.colors.warning} />
+              </View>
+              <View style={styles.premiumBannerText}>
+                <Text style={[styles.premiumBannerTitle, { color: theme.colors.text }]}>
+                  Premium krävs
+                </Text>
+                <Text style={[styles.premiumBannerSubtitle, { color: theme.colors.textSecondary }]}>
+                  Uppgradera för att lägga till kurser
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.premiumBannerButton, { backgroundColor: theme.colors.warning }]}>
+              <Text style={styles.premiumBannerButtonText}>Uppgradera</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Search */}
         <View style={styles.searchSection}>
@@ -431,7 +473,8 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
               <FadeInView key={`${course.code}-${index}`} delay={Math.min(index * 30, 500)}>
                 <TouchableOpacity
                   style={[styles.courseCard, { backgroundColor: theme.colors.card }]}
-                  onPress={() => handleSelectCourse(course)}
+                  onPress={() => handleCoursePress(course)}
+                  activeOpacity={isPremium ? 0.7 : 1}
                 >
                   <View style={styles.courseIcon}>
                     <View style={[styles.courseIconInner, { backgroundColor: course.isUniversity ? theme.colors.success + '15' : theme.colors.primary + '15' }]}>
@@ -476,9 +519,15 @@ export default function CoursePickerModal({ visible, onClose, onSelectCourse }: 
                     </View>
                   </View>
 
-                  <View style={[styles.addButton, { backgroundColor: course.isUniversity ? theme.colors.success : theme.colors.primary }]}>
-                    <Check size={16} color="#FFF" />
-                  </View>
+                  {isPremium ? (
+                    <View style={[styles.addButton, { backgroundColor: course.isUniversity ? theme.colors.success : theme.colors.primary }]}>
+                      <Check size={16} color="#FFF" />
+                    </View>
+                  ) : (
+                    <View style={[styles.lockedButton, { backgroundColor: theme.colors.warning + '20' }]}>
+                      <Lock size={16} color={theme.colors.warning} />
+                    </View>
+                  )}
                 </TouchableOpacity>
               </FadeInView>
             ))
@@ -673,6 +722,57 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 12,
+  },
+  lockedButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  premiumBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 16,
+  },
+  premiumBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  premiumIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  premiumBannerText: {
+    flex: 1,
+  },
+  premiumBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  premiumBannerSubtitle: {
+    fontSize: 13,
+  },
+  premiumBannerButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  premiumBannerButtonText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   emptyState: {
     alignItems: 'center',

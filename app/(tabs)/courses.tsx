@@ -53,7 +53,7 @@ interface StudyTechnique {
 export default function CoursesScreen() {
   const { user } = useAuth();
   const { theme, isDark } = useTheme();
-  const { isPremium, showPremiumModal } = usePremium();
+  const { isPremium } = usePremium();
   
   const [courses, setCourses] = useState<any[]>([]);
   const [studyTips, setStudyTips] = useState<StudyTip[]>([]);
@@ -625,13 +625,7 @@ export default function CoursesScreen() {
           </View>
           <TouchableOpacity
             style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
-            onPress={() => {
-              if (!isPremium) {
-                showPremiumModal('Lägg till kurser');
-              } else {
-                setShowCoursePickerModal(true);
-              }
-            }}
+            onPress={() => setShowCoursePickerModal(true)}
           >
             <Plus size={20} color="white" />
           </TouchableOpacity>
@@ -693,13 +687,7 @@ export default function CoursesScreen() {
                 <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>Lägg till kurser för att komma igång</Text>
                 <TouchableOpacity 
                   style={[styles.addButtonLarge, { backgroundColor: theme.colors.primary }]}
-                  onPress={() => {
-                    if (!isPremium) {
-                      showPremiumModal('Lägg till kurser');
-                    } else {
-                      setShowCoursePickerModal(true);
-                    }
-                  }}
+                  onPress={() => setShowCoursePickerModal(true)}
                 >
                   <Plus size={20} color="white" />
                   <Text style={styles.addButtonText}>Lägg till kurs</Text>

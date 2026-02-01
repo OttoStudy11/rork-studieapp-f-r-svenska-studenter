@@ -269,7 +269,7 @@ export async function saveFlashcardBatch(
               course_code: uniCourse.course_code,
               subject: uniCourse.subject_area || 'Universitetskurs',
               description: uniCourse.description || `${uniCourse.title} - ${uniCourse.credits || 7.5} hp`,
-              level: 'hogskola',
+              level: 'högskola',
             })
             .select('id')
             .single();
@@ -311,7 +311,7 @@ export async function saveFlashcardBatch(
             course_code: upperCourseId,
             subject: courseSubject,
             description: `${courseTitle}. Flashcards genererade av AI.`,
-            level: 'hogskola',
+            level: 'högskola',
           })
           .select('id')
           .single();

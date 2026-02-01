@@ -28,36 +28,7 @@ export default function AIChatScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
 
-  useEffect(() => {
-    console.log('[AI Chat] Environment check:');
-    console.log('  TOOLKIT_URL:', process.env.EXPO_PUBLIC_TOOLKIT_URL);
-    console.log('  PROJECT_ID:', process.env.EXPO_PUBLIC_PROJECT_ID);
-    console.log('  TEAM_ID:', process.env.EXPO_PUBLIC_TEAM_ID);
-    console.log('  RORK_DB_ENDPOINT:', process.env.EXPO_PUBLIC_RORK_DB_ENDPOINT);
-    console.log('  RORK_DB_TOKEN:', process.env.EXPO_PUBLIC_RORK_DB_TOKEN ? 'SET' : 'NOT SET');
-    
-    const testConnection = async () => {
-      try {
-        const toolkitUrl = process.env.EXPO_PUBLIC_TOOLKIT_URL || 'https://toolkit.rork.com';
-        console.log('[AI Chat] Testing connection to:', toolkitUrl);
-        const response = await fetch(`${toolkitUrl}/health`, { 
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        console.log('[AI Chat] Health check status:', response.status);
-        if (response.ok) {
-          const data = await response.text();
-          console.log('[AI Chat] Health check response:', data);
-        } else {
-          console.error('[AI Chat] Health check failed:', response.status, response.statusText);
-        }
-      } catch (err) {
-        console.error('[AI Chat] Connection test failed:', err);
-      }
-    };
-    
-    testConnection();
-  }, []);
+
 
   const { messages, error, sendMessage } = useRorkAgent({
     tools: {},

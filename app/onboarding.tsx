@@ -53,6 +53,7 @@ interface OnboardingData {
   gymnasiumGrade: GymnasiumGrade | null;
   university: University | null;
   universityProgram: UniversityProgram | null;
+  universityProgramType: string | null;
   universityYear: UniversityProgramYear | null;
   program: string;
   goals: string[];
@@ -304,6 +305,7 @@ export default function OnboardingScreen() {
     gymnasiumGrade: null,
     university: null,
     universityProgram: null,
+    universityProgramType: null,
     universityYear: null,
     program: '',
     goals: [],
@@ -965,37 +967,108 @@ export default function OnboardingScreen() {
               <View style={styles.programYearSelector}>
                 <Text style={styles.programYearTitle}>Välj program och termin</Text>
                 
-                <View style={styles.universitySubProgramSelector}>
-                  <Text style={styles.subProgramTitle}>Välj program</Text>
-                  <ScrollView style={styles.subProgramScroll} horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={styles.subProgramRow}>
-                      {UNIVERSITY_PROGRAMS.map(program => {
-                          const isSelected = data.universityProgram?.id === program.id;
-                          return (
-                            <AnimatedPressable
-                              key={program.id}
-                              style={[
-                                styles.subProgramChip,
-                                isSelected && styles.selectedSubProgramChip
-                              ]}
-                              onPress={() => setData({ 
-                                ...data, 
-                                universityProgram: program,
-                                universityYear: null
-                              })}
-                            >
-                              <Text style={[
-                                styles.subProgramChipText,
-                                isSelected && styles.selectedSubProgramChipText
-                              ]} numberOfLines={1}>
-                                {program.name.replace('Civilingenjör - ', '').replace('Högskoleingenjör - ', '').replace('Kandidatprogram i ', '').replace('programmet', '')}
-                              </Text>
-                            </AnimatedPressable>
-                          );
-                        })}
+                <View style={styles.universityProgramTypeSelector}>
+                  <Text style={styles.subProgramTitle}>Välj programtyp</Text>
+                  <ScrollView style={styles.programTypeScroll} showsVerticalScrollIndicator={false}>
+                    <View style={styles.programTypeGrid}>
+                      {[
+                        { type: 'civilingenjör', name: 'Civilingenjör', emoji: '⚙️', color: '#F59E0B', description: '5 år, 300 hp' },
+                        { type: 'högskoleingenjör', name: 'Högskoleingenjör', emoji: '🔧', color: '#10B981', description: '3 år, 180 hp' },
+                        { type: 'professionsprogram', name: 'Professionsprogram', emoji: '🎓', color: '#3B82F6', description: 'Läkare, Jurist, Lärare m.m.' },
+                        { type: 'kandidat', name: 'Kandidatprogram', emoji: '📚', color: '#8B5CF6', description: '3 år, 180 hp' },
+                        { type: 'yrkeshögskola', name: 'Yrkeshögskola', emoji: '💼', color: '#EC4899', description: '2 år, praktiskt fokus' },
+                      ].map(programType => {
+                        const isSelected = data.universityProgramType === programType.type;
+                        return (
+                          <AnimatedPressable
+                            key={programType.type}
+                            style={[
+                              styles.programTypeCard,
+                              isSelected && {
+                                backgroundColor: programType.color + '25',
+                                borderColor: programType.color,
+                                borderWidth: 2.5
+                              }
+                            ]}
+                            onPress={() => setData({ 
+                              ...data, 
+                              universityProgramType: programType.type,
+                              universityProgram: null,
+                              universityYear: null
+                            })}
+                          >
+                            <Text style={styles.programTypeEmoji}>{programType.emoji}</Text>
+                            <Text style={[
+                              styles.programTypeName,
+                              isSelected && { color: programType.color, fontWeight: '700' as const }
+                            ]}>
+                              {programType.name}
+                            </Text>
+                            <Text style={[
+                              styles.programTypeDescription,
+                              isSelected && { color: 'rgba(255, 255, 255, 0.9)' }
+                            ]}>
+                              {programType.description}
+                            </Text>
+                          </AnimatedPressable>
+                        );
+                      })}
                     </View>
                   </ScrollView>
                 </View>
+
+                {data.universityProgramType && (() => {
+                  const filteredPrograms = UNIVERSITY_PROGRAMS.filter(p => p.degreeType === data.universityProgramType);
+                  
+                  return (
+                    <View style={styles.universitySubProgramSelector}>
+                      <Text style={styles.subProgramTitle}>
+                        {data.universityProgramType === 'civilingenjör' && 'Välj inriktning'}
+                        {data.universityProgramType === 'högskoleingenjör' && 'Välj inriktning'}
+                        {data.universityProgramType === 'kandidat' && 'Välj ämnesområde'}
+                        {data.universityProgramType === 'professionsprogram' && 'Välj program'}
+                        {data.universityProgramType === 'yrkeshögskola' && 'Välj utbildning'}
+                      </Text>
+                      <ScrollView style={styles.subProgramScroll} horizontal showsHorizontalScrollIndicator={false}>
+                        <View style={styles.subProgramRow}>
+                          {filteredPrograms.map(program => {
+                            const isSelected = data.universityProgram?.id === program.id;
+                            let displayName = program.name;
+                            if (data.universityProgramType === 'civilingenjör') {
+                              displayName = program.name.replace('Civilingenjör - ', '');
+                            } else if (data.universityProgramType === 'högskoleingenjör') {
+                              displayName = program.name.replace('Högskoleingenjör - ', '');
+                            } else if (data.universityProgramType === 'kandidat') {
+                              displayName = program.name.replace('Kandidatprogram i ', '').replace('programmet', '');
+                            }
+                            
+                            return (
+                              <AnimatedPressable
+                                key={program.id}
+                                style={[
+                                  styles.subProgramChip,
+                                  isSelected && styles.selectedSubProgramChip
+                                ]}
+                                onPress={() => setData({ 
+                                  ...data, 
+                                  universityProgram: program,
+                                  universityYear: null
+                                })}
+                              >
+                                <Text style={[
+                                  styles.subProgramChipText,
+                                  isSelected && styles.selectedSubProgramChipText
+                                ]} numberOfLines={1}>
+                                  {displayName}
+                                </Text>
+                              </AnimatedPressable>
+                            );
+                          })}
+                        </View>
+                      </ScrollView>
+                    </View>
+                  );
+                })()}
 
                 {data.universityProgram && (
                   <View style={styles.yearSelectorInline}>
@@ -2568,6 +2641,41 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500' as const,
     textAlign: 'center',
+  },
+  universityProgramTypeSelector: {
+    marginTop: 16,
+  },
+  programTypeScroll: {
+    maxHeight: 450,
+  },
+  programTypeGrid: {
+    gap: 12,
+  },
+  programTypeCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(14, 165, 233, 0.2)',
+    marginBottom: 12,
+  },
+  programTypeEmoji: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  programTypeName: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#1E293B',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  programTypeDescription: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    fontWeight: '500' as const,
   },
   universitySubProgramSelector: {
     marginTop: 16,

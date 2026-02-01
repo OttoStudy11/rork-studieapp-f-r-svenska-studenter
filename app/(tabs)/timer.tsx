@@ -306,6 +306,7 @@ export default function TimerScreen() {
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const timerStartTimeRef = useRef<number | null>(null);
   const lastKnownTimeLeftRef = useRef<number>(timeLeft);
+  const handleTimerCompleteRef = useRef<() => Promise<void>>();
 
 
   const totalTime = sessionType === 'focus' ? focusTime * 60 : breakTime * 60;
@@ -642,6 +643,11 @@ export default function TimerScreen() {
     setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
   }, [sessionType, isDndActive, disableDoNotDisturb, addPomodoroSession, selectedCourse, courses, focusTime, sessionStartTime, sessionCount, dailyGoal, showAchievement, breakTime, motivationalQuotes, checkAchievements, refreshAchievements, settings.notificationsEnabled, awardStudySession]);
 
+  // Keep the ref updated with latest handleTimerComplete
+  useEffect(() => {
+    handleTimerCompleteRef.current = handleTimerComplete;
+  }, [handleTimerComplete]);
+
   // AppState listener for background/foreground - must be after handleTimerComplete is defined
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
@@ -722,7 +728,7 @@ export default function TimerScreen() {
           const newTime = prev - 1;
           if (prev <= 1) {
             console.log('⏱️ Timer completed!');
-            handleTimerComplete();
+            handleTimerCompleteRef.current?.();
             return 0;
           }
           return newTime;
@@ -746,7 +752,7 @@ export default function TimerScreen() {
         intervalRef.current = null;
       }
     };
-  }, [timerState, handleTimerComplete]);
+  }, [timerState]);
 
   useEffect(() => {
     if (timerState !== 'running') {

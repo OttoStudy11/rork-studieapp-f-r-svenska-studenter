@@ -255,6 +255,7 @@ export async function saveFlashcardBatch(
               message: createError.message,
               code: createError.code,
               details: createError.details,
+              hint: createError.hint,
             });
             
             // If it's a unique constraint violation, the course might already exist with different casing
@@ -270,11 +271,34 @@ export async function saveFlashcardBatch(
               if (anyMatch) {
                 effectiveCourseId = anyMatch.id;
                 console.log(`✅ [Flashcards Service] Found existing course after conflict: ${effectiveCourseId}`);
+              } else {
+                // Still couldn't find the course, return error
+                console.error('❌ [Flashcards Service] Could not find or create course after all attempts');
+                return {
+                  success: false,
+                  savedCount: 0,
+                  error: `Kursen "${courseId}" kunde inte hittas eller skapas. Försök med ett giltigt kurs-ID eller kurskod.`
+                };
               }
+            } else {
+              // Other database errors
+              return {
+                success: false,
+                savedCount: 0,
+                error: `Kunde inte skapa kursen: ${createError.message}`
+              };
             }
           } else if (newCourse) {
             effectiveCourseId = newCourse.id;
             console.log(`✅ [Flashcards Service] Created placeholder course: ${effectiveCourseId}`);
+          } else {
+            // No course created and no error? Something is wrong
+            console.error('❌ [Flashcards Service] No course created and no error returned');
+            return {
+              success: false,
+              savedCount: 0,
+              error: 'Kunde inte skapa kursen på grund av ett oväntat fel.'
+            };
           }
         }
       }
@@ -304,7 +328,7 @@ export async function saveFlashcardBatch(
       console.error('❌ [Flashcards Service] Database error saving flashcards:', {
         message: error.message,
         code: error.code,
-        details: error.details,
+        details: JSON.stringify(error.details),
         hint: error.hint,
       });
       
@@ -319,7 +343,7 @@ export async function saveFlashcardBatch(
         return { 
           success: false, 
           savedCount: 0, 
-          error: 'Kursen kunde inte hittas eller skapas. Kontrollera kurs-ID.' 
+          error: `Kursen "${effectiveCourseId}" finns inte i databasen. Försök med ett giltigt kurs-ID eller kurskod (t.ex. MA1A, FY1, etc.).` 
         };
       }
       

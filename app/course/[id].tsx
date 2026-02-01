@@ -175,7 +175,9 @@ export default function CourseDetailScreen() {
       let courseError = null;
       let isUniversity = false;
 
-      // First try gymnasium courses table
+      console.log('🔍 Searching for course with ID:', id);
+
+      // First try gymnasium courses table by ID
       const { data: directData, error: directError } = await supabase
         .from('courses')
         .select('*')
@@ -184,7 +186,7 @@ export default function CourseDetailScreen() {
 
       if (directData) {
         courseData = directData;
-        console.log('✅ Found gymnasium course by ID:', id);
+        console.log('✅ Found gymnasium course by ID:', id, directData.title);
       } else {
         // Try finding gymnasium course by course_code
         const { data: codeData, error: codeError } = await supabase
@@ -195,9 +197,9 @@ export default function CourseDetailScreen() {
 
         if (codeData) {
           courseData = codeData;
-          console.log('✅ Found gymnasium course by course_code:', id);
+          console.log('✅ Found gymnasium course by course_code:', id, codeData.title);
         } else {
-          // Try university courses table
+          // Try university courses table by ID
           console.log('🔍 Trying university_courses table...');
           const { data: uniData, error: uniError } = await supabase
             .from('university_courses')
@@ -217,9 +219,9 @@ export default function CourseDetailScreen() {
               related_courses: []
             };
             isUniversity = true;
-            console.log('✅ Found university course:', id);
+            console.log('✅ Found university course:', id, uniData.title);
           } else {
-            // Try by course_code
+            // Try by course_code in university_courses
             const { data: uniCodeData, error: uniCodeError } = await supabase
               .from('university_courses')
               .select('*')
@@ -238,10 +240,24 @@ export default function CourseDetailScreen() {
                 related_courses: []
               };
               isUniversity = true;
-              console.log('✅ Found university course by course_code:', id);
+              console.log('✅ Found university course by course_code:', id, uniCodeData.title);
             } else {
-              courseError = directError || codeError || uniError || uniCodeError;
-              console.error('❌ Course not found by ID or course_code:', id);
+              // Last resort: try searching with ILIKE for partial matches
+              const { data: searchData } = await supabase
+                .from('courses')
+                .select('*')
+                .or(`id.ilike.%${id}%,course_code.ilike.%${id}%`)
+                .limit(1)
+                .maybeSingle();
+              
+              if (searchData) {
+                courseData = searchData;
+                console.log('✅ Found course by partial match:', id, searchData.title);
+              } else {
+                courseError = directError || codeError || uniError || uniCodeError;
+                console.error('❌ Course not found by ID or course_code:', id);
+                console.error('Errors:', { directError, codeError, uniError, uniCodeError });
+              }
             }
           }
         }

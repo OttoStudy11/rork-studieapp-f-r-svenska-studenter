@@ -96,21 +96,25 @@ export default function CoursesScreen() {
       } else if (userCoursesData) {
         const gymnasiumCourses = userCoursesData
           .filter(uc => uc.courses) // Filter out null courses
-          .map(userCourse => ({
-            id: userCourse.courses.id,
-            userCourseId: userCourse.id,
-            title: userCourse.courses.title,
-            description: userCourse.courses.description,
-            subject: userCourse.courses.subject,
-            level: userCourse.courses.level,
-            progress: userCourse.progress,
-            targetGrade: userCourse.target_grade,
-            isActive: userCourse.is_active,
-            resources: userCourse.courses.resources || [],
-            tips: userCourse.courses.tips || [],
-            relatedCourses: userCourse.courses.related_courses || [],
-            isUniversity: false
-          }));
+          .map(userCourse => {
+            const courseId = userCourse.courses.id || userCourse.course_id;
+            console.log('Processing gymnasium course:', courseId, userCourse.courses.title);
+            return {
+              id: courseId,
+              userCourseId: userCourse.id,
+              title: userCourse.courses.title,
+              description: userCourse.courses.description,
+              subject: userCourse.courses.subject,
+              level: userCourse.courses.level,
+              progress: userCourse.progress,
+              targetGrade: userCourse.target_grade,
+              isActive: userCourse.is_active,
+              resources: userCourse.courses.resources || [],
+              tips: userCourse.courses.tips || [],
+              relatedCourses: userCourse.courses.related_courses || [],
+              isUniversity: false
+            };
+          });
         allCourses = [...allCourses, ...gymnasiumCourses];
       }
 
@@ -148,22 +152,26 @@ export default function CoursesScreen() {
             console.log('Raw university courses data:', JSON.stringify(uniCoursesData, null, 2));
             const universityCourses = uniCoursesData
               .filter((uc: any) => uc.university_courses) // Filter out null courses
-              .map((userCourse: any) => ({
-                id: userCourse.university_courses.id,
-                userCourseId: userCourse.id,
-                title: userCourse.university_courses.title,
-                description: userCourse.university_courses.description || `${userCourse.university_courses.title} - ${userCourse.university_courses.credits} hp`,
-                subject: userCourse.university_courses.subject_area || 'Högskola',
-                level: 'högskola',
-                progress: userCourse.progress || 0,
-                targetGrade: null,
-                isActive: userCourse.is_active,
-                resources: ['Kursmaterial', 'Övningsuppgifter'],
-                tips: ['Studera regelbundet'],
-                relatedCourses: [],
-                isUniversity: true,
-                credits: userCourse.university_courses.credits
-              }));
+              .map((userCourse: any) => {
+                const courseId = userCourse.university_courses.id || userCourse.course_id;
+                console.log('Processing university course:', courseId, userCourse.university_courses.title);
+                return {
+                  id: courseId,
+                  userCourseId: userCourse.id,
+                  title: userCourse.university_courses.title,
+                  description: userCourse.university_courses.description || `${userCourse.university_courses.title} - ${userCourse.university_courses.credits} hp`,
+                  subject: userCourse.university_courses.subject_area || 'Högskola',
+                  level: 'högskola',
+                  progress: userCourse.progress || 0,
+                  targetGrade: null,
+                  isActive: userCourse.is_active,
+                  resources: ['Kursmaterial', 'Övningsuppgifter'],
+                  tips: ['Studera regelbundet'],
+                  relatedCourses: [],
+                  isUniversity: true,
+                  credits: userCourse.university_courses.credits
+                };
+              });
             allCourses = [...allCourses, ...universityCourses];
             console.log('✅ Loaded', universityCourses.length, 'university courses');
           }
@@ -554,7 +562,12 @@ export default function CoursesScreen() {
   };
 
   const navigateToCourse = (courseId: string) => {
-    console.log('Navigating to course detail:', { courseId });
+    if (!courseId) {
+      console.error('Cannot navigate: courseId is undefined or empty');
+      Alert.alert('Fel', 'Kunde inte öppna kursen - kurs-ID saknas');
+      return;
+    }
+    console.log('Navigating to course detail:', { courseId, type: typeof courseId });
     router.push({ pathname: '/course/[id]', params: { id: courseId } } as any);
   };
 

@@ -59,7 +59,7 @@ export default function AIChatScreen() {
     testConnection();
   }, []);
 
-  const { messages, error, sendMessage, isLoading } = useRorkAgent({
+  const { messages, error, sendMessage } = useRorkAgent({
     tools: {},
   });
 

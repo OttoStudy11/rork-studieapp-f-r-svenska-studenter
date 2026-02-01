@@ -187,26 +187,65 @@ export default function CommunityDetailScreen() {
   }, [id]);
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !user || !id) return;
+    if (!messageInput.trim() || !user || !id) {
+      console.log('[Community Chat] Cannot send: missing data', { hasMessage: !!messageInput.trim(), hasUser: !!user, hasId: !!id });
+      return;
+    }
+
+    const messageToSend = messageInput.trim();
+    console.log('[Community Chat] Sending message:', messageToSend.substring(0, 50) + '...');
+    console.log('[Community Chat] User ID:', user.id);
+    console.log('[Community Chat] Community ID:', id);
 
     setIsSending(true);
     try {
-      const { error } = await (supabase as any).from('community_messages').insert({
-        community_id: id,
-        user_id: user.id,
-        message: messageInput.trim(),
-      });
+      // First check if user is a member
+      const { data: membership, error: membershipError } = await (supabase as any)
+        .from('community_members')
+        .select('id')
+        .eq('community_id', id)
+        .eq('user_id', user.id)
+        .single();
 
-      if (error) {
-        showError('Kunde inte skicka meddelande');
+      if (membershipError || !membership) {
+        console.error('[Community Chat] User is not a member:', membershipError);
+        showError('Du måste vara medlem för att skicka meddelanden');
+        setIsSending(false);
         return;
       }
 
+      console.log('[Community Chat] User is a member, inserting message...');
+
+      const { data, error } = await (supabase as any)
+        .from('community_messages')
+        .insert({
+          community_id: id,
+          user_id: user.id,
+          message: messageToSend,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[Community Chat] Insert error:', error);
+        console.error('[Community Chat] Error code:', error.code);
+        console.error('[Community Chat] Error message:', error.message);
+        console.error('[Community Chat] Error details:', error.details);
+        showError(`Kunde inte skicka meddelande: ${error.message || 'Okänt fel'}`);
+        setIsSending(false);
+        return;
+      }
+
+      console.log('[Community Chat] Message sent successfully:', data?.id);
       setMessageInput('');
+      
+      // Reload messages to show the new one
       await loadMessages();
-    } catch (error) {
-      console.error('[Community] Error sending message:', error);
-      showError('Kunde inte skicka meddelande');
+    } catch (error: any) {
+      console.error('[Community Chat] Exception sending message:', error);
+      console.error('[Community Chat] Exception type:', typeof error);
+      console.error('[Community Chat] Exception details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      showError(`Ett fel uppstod: ${error?.message || 'Kunde inte skicka meddelande'}`);
     } finally {
       setIsSending(false);
     }

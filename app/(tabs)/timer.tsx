@@ -345,6 +345,7 @@ export default function TimerScreen() {
   const timerEndTimeRef = useRef<number | null>(null);
   const lastKnownTimeLeftRef = useRef<number>(timeLeft);
   const handleTimerCompleteRef = useRef<(() => Promise<void>) | null>(null);
+  const isCompletingRef = useRef<boolean>(false);
 
 
   const totalTime = sessionType === 'focus' ? focusTime * 60 : breakTime * 60;
@@ -598,98 +599,116 @@ export default function TimerScreen() {
   }, [showSuccess]);
 
   const handleTimerComplete = useCallback(async () => {
-    setTimerState('idle');
-    
-    await soundManager.playSound('complete');
-    await hapticsManager.triggerHaptic('success');
-    await TimerPersistence.clearTimerState();
-    
-    if (isDndActive && sessionType === 'focus') {
-      await disableDoNotDisturb();
+    // Prevent duplicate completions
+    if (isCompletingRef.current) {
+      console.log('⚠️ Timer completion already in progress, skipping...');
+      return;
     }
     
-    if (sessionType === 'focus' && sessionStartTime) {
-      try {
-        await addPomodoroSession({
-          courseId: selectedCourse || undefined,
-          duration: focusTime,
-          startTime: sessionStartTime.toISOString(),
-          endTime: new Date().toISOString()
-        });
-        
-        const courseName = selectedCourse 
-          ? courses.find((c) => c.id === selectedCourse)?.title || 'Okänd kurs'
-          : 'Allmän session';
-        
-        setSessionCount(prev => prev + 1);
-        
-        // Award XP and update challenge progress
-        let pointsEarned = focusTime;
+    isCompletingRef.current = true;
+    console.log('✅ Timer completed! Session type:', sessionType, 'Duration:', sessionType === 'focus' ? focusTime : breakTime, 'minutes');
+    
+    try {
+      setTimerState('idle');
+      timerEndTimeRef.current = null;
+      
+      await soundManager.playSound('complete');
+      await hapticsManager.triggerHaptic('success');
+      await TimerPersistence.clearTimerState();
+      
+      if (isDndActive && sessionType === 'focus') {
+        await disableDoNotDisturb();
+      }
+      
+      if (sessionType === 'focus' && sessionStartTime) {
         try {
-          console.log('🎯 Awarding study session XP and updating challenges...');
-          const levelUpEvent = await awardStudySession(focusTime, selectedCourse || undefined);
-          if (levelUpEvent) {
-            console.log(`🎉 Level up! ${levelUpEvent.previousLevel} -> ${levelUpEvent.newLevel}`);
+          console.log('💾 Saving pomodoro session to database...');
+          await addPomodoroSession({
+            courseId: selectedCourse || undefined,
+            duration: focusTime,
+            startTime: sessionStartTime.toISOString(),
+            endTime: new Date().toISOString()
+          });
+          console.log('✅ Pomodoro session saved');
+          
+          const courseName = selectedCourse 
+            ? courses.find((c) => c.id === selectedCourse)?.title || 'Okänd kurs'
+            : 'Allmän session';
+          
+          setSessionCount(prev => prev + 1);
+          
+          // Award XP and update challenge progress
+          let pointsEarned = focusTime;
+          try {
+            console.log('🎯 Awarding', focusTime, 'minutes of study XP...');
+            const levelUpEvent = await awardStudySession(focusTime, selectedCourse || undefined);
+            if (levelUpEvent) {
+              console.log(`🎉 Level up! ${levelUpEvent.previousLevel} -> ${levelUpEvent.newLevel}`);
+            }
+            pointsEarned = Math.floor(focusTime / 5) * 5;
+            console.log('✅ Study session XP awarded:', pointsEarned, 'XP');
+          } catch (xpError) {
+            console.error('❌ Failed to award study session XP:', xpError);
           }
-          pointsEarned = Math.floor(focusTime / 5) * 5; // XP earned based on 5min intervals
-          console.log('✅ Study session XP awarded successfully');
-        } catch (xpError) {
-          console.log('⚠️ Could not award study session XP:', xpError);
+          
+          // Check for achievements after session is saved
+          try {
+            console.log('🏆 Checking for achievements...');
+            await checkAchievements();
+            await refreshAchievements();
+            console.log('✅ Achievements checked');
+          } catch (achError) {
+            console.error('❌ Failed to check achievements:', achError);
+          }
+          
+          setCompletedSessionData({
+            duration: focusTime,
+            sessionType: 'focus',
+            courseName,
+            coinsEarned: pointsEarned
+          });
+          setShowCompletionScreen(true);
+          
+          if (settings.notificationsEnabled) {
+            await TimerPersistence.showImmediateNotification(
+              '🎯 Focus Session Complete!',
+              `Great work on ${courseName}! You earned ${pointsEarned} points.`
+            );
+          }
+          
+          if (sessionCount + 1 === dailyGoal) {
+            await soundManager.playSound('achievement');
+            showAchievement('Dagsmål uppnått! 🎯', `Du har slutfört ${dailyGoal} sessioner idag!`);
+          }
+        } catch (error) {
+          console.error('❌ Failed to complete focus session:', error);
         }
-        
-        // Check for achievements after session is saved
-        try {
-          console.log('🏆 Checking for achievements after session...');
-          await checkAchievements();
-          await refreshAchievements();
-          console.log('✅ Achievements checked and refreshed successfully');
-        } catch (achError) {
-          console.log('⚠️ Could not check achievements:', achError);
-        }
-        
+      } else {
+        // For break completion, just show a simple completion
         setCompletedSessionData({
-          duration: focusTime,
-          sessionType: 'focus',
-          courseName,
-          coinsEarned: pointsEarned
+          duration: breakTime,
+          sessionType: 'break',
+          courseName: 'Paus',
+          coinsEarned: 0
         });
         setShowCompletionScreen(true);
-        
-        if (settings.notificationsEnabled) {
-          await TimerPersistence.showImmediateNotification(
-            '🎯 Focus Session Complete!',
-            `Great work on ${courseName}! You earned ${pointsEarned} points.`
-          );
-        }
-        
-        if (sessionCount + 1 === dailyGoal) {
-          await soundManager.playSound('achievement');
-          showAchievement('Dagsmål uppnått! 🎯', `Du har slutfört ${dailyGoal} sessioner idag!`);
-        }
-      } catch (error) {
-        console.error('Failed to save pomodoro session:', error);
       }
-    } else {
-      // For break completion, just show a simple completion
-      setCompletedSessionData({
-        duration: breakTime,
-        sessionType: 'break',
-        courseName: 'Paus',
-        coinsEarned: 0
-      });
-      setShowCompletionScreen(true);
-    }
 
-    if (sessionType === 'focus') {
-      setSessionType('break');
-      setTimeLeft(breakTime * 60);
-    } else {
-      setSessionType('focus');
-      setTimeLeft(focusTime * 60);
+      if (sessionType === 'focus') {
+        setSessionType('break');
+        setTimeLeft(breakTime * 60);
+      } else {
+        setSessionType('focus');
+        setTimeLeft(focusTime * 60);
+      }
+      
+      setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
+    } finally {
+      // Always reset the completing flag
+      setTimeout(() => {
+        isCompletingRef.current = false;
+      }, 1000);
     }
-    
-    // Update motivational quote
-    setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
   }, [sessionType, isDndActive, disableDoNotDisturb, addPomodoroSession, selectedCourse, courses, focusTime, sessionStartTime, sessionCount, dailyGoal, showAchievement, breakTime, motivationalQuotes, checkAchievements, refreshAchievements, settings.notificationsEnabled, awardStudySession]);
 
   // Keep the ref updated with latest handleTimerComplete
@@ -741,20 +760,26 @@ export default function TimerScreen() {
           
           if (savedState && savedState.status === 'running') {
             console.log('🔄 Recalculating time after background');
-            console.log('⏱️ New remaining time:', savedState.remainingTime, 'seconds');
+            console.log('⏱️ Saved remaining time:', savedState.remainingTime, 'seconds');
             
             // If timer completed while in background
             if (savedState.remainingTime <= 0) {
-              console.log('✅ Timer completed in background');
+              console.log('✅ Timer completed in background, completing now...');
               timerEndTimeRef.current = null;
-              await handleTimerComplete();
+              setTimerState('idle');
+              // Complete the timer
+              if (handleTimerCompleteRef.current && !isCompletingRef.current) {
+                await handleTimerCompleteRef.current();
+              }
             } else {
               // Update state with recalculated time and set new end time
               const now = Date.now();
               timerEndTimeRef.current = now + (savedState.remainingTime * 1000);
               setTimeLeft(savedState.remainingTime);
+              lastKnownTimeLeftRef.current = savedState.remainingTime;
               setTimerState('running');
               console.log('⏰ Timer end time recalculated:', new Date(timerEndTimeRef.current).toISOString());
+              console.log('⏱️ Will complete in', savedState.remainingTime, 'seconds');
             }
           }
         }
@@ -774,6 +799,7 @@ export default function TimerScreen() {
     
     if (timerState === 'running') {
       console.log('🏃 Timer is running, creating interval');
+      console.log('⏰ End time:', timerEndTimeRef.current ? new Date(timerEndTimeRef.current).toISOString() : 'NOT SET');
       
       if (intervalRef.current) {
         console.log('🧹 Clearing existing interval');
@@ -792,17 +818,23 @@ export default function TimerScreen() {
         const remainingMs = timerEndTimeRef.current - now;
         const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
         
-        if (remainingSeconds <= 0) {
-          console.log('⏱️ Timer completed!');
-          timerEndTimeRef.current = null;
-          handleTimerCompleteRef.current?.();
+        // Update last known time
+        lastKnownTimeLeftRef.current = remainingSeconds;
+        
+        if (remainingSeconds <= 0 && !isCompletingRef.current) {
+          console.log('⏱️ Timer completed! Calling handleTimerComplete...');
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
           setTimeLeft(0);
-        } else {
+          handleTimerCompleteRef.current?.();
+        } else if (remainingSeconds > 0) {
           setTimeLeft(remainingSeconds);
         }
-      }, 250); // Check more frequently for better accuracy
+      }, 100);
       
-      console.log('✅ Interval created with timestamp-based calculation');
+      console.log('✅ Interval created with 100ms precision');
       
     } else {
       console.log('⏹️ Timer not running, clearing intervals');

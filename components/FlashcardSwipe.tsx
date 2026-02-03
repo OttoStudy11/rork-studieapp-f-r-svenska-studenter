@@ -8,13 +8,11 @@ import {
   Dimensions,
   TouchableOpacity,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { Flashcard } from '@/contexts/FlashcardContext';
 import { BlurView } from 'expo-blur';
 import { hapticsManager } from '@/lib/haptics-manager';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
 
 interface FlashcardSwipeProps {
   flashcard: Flashcard;
@@ -33,6 +31,9 @@ export function FlashcardSwipe({
   isExplaining,
   explanation,
 }: FlashcardSwipeProps) {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const SWIPE_THRESHOLD = screenWidth * 0.3;
+  
   const [isFlipped, setIsFlipped] = useState(false);
   const position = useRef(new Animated.ValueXY()).current;
   const rotate = useRef(new Animated.Value(0)).current;
@@ -61,7 +62,7 @@ export function FlashcardSwipe({
   const forceSwipeRight = () => {
     hapticsManager.triggerHaptic('success');
     Animated.timing(position, {
-      toValue: { x: SCREEN_WIDTH + 100, y: 0 },
+      toValue: { x: screenWidth + 100, y: 0 },
       duration: 250,
       useNativeDriver: false,
     }).start(() => {
@@ -73,7 +74,7 @@ export function FlashcardSwipe({
   const forceSwipeLeft = () => {
     hapticsManager.triggerHaptic('warning');
     Animated.timing(position, {
-      toValue: { x: -SCREEN_WIDTH - 100, y: 0 },
+      toValue: { x: -screenWidth - 100, y: 0 },
       duration: 250,
       useNativeDriver: false,
     }).start(() => {
@@ -123,19 +124,19 @@ export function FlashcardSwipe({
   });
 
   const cardRotation = rotate.interpolate({
-    inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
+    inputRange: [-screenWidth / 2, 0, screenWidth / 2],
     outputRange: ['-30deg', '0deg', '30deg'],
     extrapolate: 'clamp',
   });
 
   const likeOpacity = position.x.interpolate({
-    inputRange: [0, SCREEN_WIDTH / 4],
+    inputRange: [0, screenWidth / 4],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
 
   const nopeOpacity = position.x.interpolate({
-    inputRange: [-SCREEN_WIDTH / 4, 0],
+    inputRange: [-screenWidth / 4, 0],
     outputRange: [1, 0],
     extrapolate: 'clamp',
   });
@@ -166,6 +167,9 @@ export function FlashcardSwipe({
     }
   };
 
+  const cardWidth = screenWidth * 0.9;
+  const cardHeight = screenHeight * 0.6;
+
   return (
     <View style={styles.container}>
       <Animated.View
@@ -173,6 +177,8 @@ export function FlashcardSwipe({
         style={[
           styles.card,
           {
+            width: cardWidth,
+            height: cardHeight,
             transform: [
               { translateX: position.x },
               { translateY: position.y },
@@ -294,10 +300,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   card: {
-    width: SCREEN_WIDTH * 0.9,
-    height: SCREEN_HEIGHT * 0.65,
     position: 'absolute',
   },
   cardContent: {

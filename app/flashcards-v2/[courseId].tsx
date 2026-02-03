@@ -48,6 +48,7 @@ export default function FlashcardsScreenV2() {
   const [extractingText, setExtractingText] = useState(false);
   const { theme } = useTheme();
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showAllCards, setShowAllCards] = useState(false);
   const previousCourseId = useRef<string | undefined>(undefined);
 
   // Reset state when courseId changes
@@ -153,6 +154,8 @@ export default function FlashcardsScreenV2() {
       return new Date(progress.next_review_at) <= now;
     });
   }, [flashcards, progressMap]);
+
+  const cardsToStudy = showAllCards ? flashcards : dueCards;
 
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -283,9 +286,9 @@ export default function FlashcardsScreenV2() {
   });
 
   const handleSwipeLeft = async () => {
-    if (currentIndex < dueCards.length) {
+    if (currentIndex < cardsToStudy.length) {
       await reviewMutation.mutateAsync({
-        flashcardId: dueCards[currentIndex].id,
+        flashcardId: cardsToStudy[currentIndex].id,
         correct: false,
       });
       setCurrentIndex((prev) => prev + 1);
@@ -294,9 +297,9 @@ export default function FlashcardsScreenV2() {
   };
 
   const handleSwipeRight = async () => {
-    if (currentIndex < dueCards.length) {
+    if (currentIndex < cardsToStudy.length) {
       await reviewMutation.mutateAsync({
-        flashcardId: dueCards[currentIndex].id,
+        flashcardId: cardsToStudy[currentIndex].id,
         correct: true,
       });
       setCurrentIndex((prev) => prev + 1);
@@ -625,7 +628,7 @@ export default function FlashcardsScreenV2() {
     );
   }
 
-  if (currentIndex >= dueCards.length) {
+  if (currentIndex >= cardsToStudy.length) {
     return (
       <PremiumGate feature="flashcards" fullScreen>
       <View style={styles.container}>
@@ -654,7 +657,7 @@ export default function FlashcardsScreenV2() {
             <Text style={styles.completedEmoji}>🎉</Text>
             <Text style={styles.completedTitle}>Bra jobbat!</Text>
             <Text style={styles.completedText}>
-              Du har gått igenom alla flashcards för idag
+              {showAllCards ? 'Du har gått igenom alla flashcards!' : 'Du har gått igenom alla flashcards för idag'}
             </Text>
 
             <View style={styles.statsGrid}>
@@ -671,6 +674,18 @@ export default function FlashcardsScreenV2() {
                 <Text style={styles.statLabel}>Behärskade</Text>
               </View>
             </View>
+
+            {!showAllCards && dueCards.length === 0 && flashcards.length > 0 && (
+              <TouchableOpacity 
+                style={styles.reviewAllButton} 
+                onPress={() => {
+                  setShowAllCards(true);
+                  setCurrentIndex(0);
+                }}
+              >
+                <Text style={styles.reviewAllButtonText}>Granska alla kort</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity style={styles.doneButton} onPress={() => router.back()}>
               <Text style={styles.doneButtonText}>Tillbaka</Text>
@@ -709,8 +724,11 @@ export default function FlashcardsScreenV2() {
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>{course?.title || 'Flashcards'}</Text>
           <Text style={styles.headerSubtitle}>
-            {currentIndex + 1} / {dueCards.length}
+            {currentIndex + 1} / {cardsToStudy.length}
           </Text>
+          {showAllCards && (
+            <Text style={styles.headerBadge}>Alla kort</Text>
+          )}
         </View>
         <TouchableOpacity 
           style={styles.addButton}
@@ -724,15 +742,15 @@ export default function FlashcardsScreenV2() {
         <View
           style={[
             styles.progressFill,
-            { width: `${((currentIndex + 1) / dueCards.length) * 100}%` },
+            { width: `${((currentIndex + 1) / cardsToStudy.length) * 100}%` },
           ]}
         />
       </View>
 
       <View style={styles.swipeContainer}>
-        {dueCards[currentIndex] && (
+        {cardsToStudy[currentIndex] && (
           <FlashcardSwipe
-            flashcard={dueCards[currentIndex]}
+            flashcard={cardsToStudy[currentIndex]}
             onSwipeLeft={handleSwipeLeft}
             onSwipeRight={handleSwipeRight}
             explanation={aiExplanation}
@@ -1123,6 +1141,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#E0E7FF',
+  },
+  reviewAllButton: {
+    marginTop: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  reviewAllButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  headerBadge: {
+    fontSize: 11,
+    color: '#A5B4FC',
+    marginTop: 2,
+    fontWeight: '600',
   },
   customTextButton: {
     marginTop: 16,

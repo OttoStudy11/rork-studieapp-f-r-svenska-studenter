@@ -12,21 +12,11 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useLocalSearchParams, router, useFocusEffect } from 'expo-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { FlashcardSwipe } from '@/components/FlashcardSwipe';
 import { generateFlashcardsWithAI } from '@/lib/flashcard-ai-v2';
-import {
-  getCourseFlashcards,
-  getUserFlashcardProgress,
-  updateFlashcardProgress,
-  saveFlashcardBatch,
-  getFlashcardStats,
-  UserFlashcardProgress,
-} from '@/services/flashcards';
-import { calculateSM2, getQualityFromSwipe } from '@/lib/sm2-algorithm';
-import { useAuth } from '@/contexts/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import { extractTextFromImage } from '@/lib/vision-ai';
 import { ArrowLeft, Sparkles, BookOpen, RefreshCw, AlertCircle, Plus, Camera, ImageIcon, X } from 'lucide-react-native';
@@ -34,10 +24,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PremiumGate } from '@/components/PremiumGate';
 
+// Local flashcard type for session-only storage (compatible with FlashcardSwipe)
+interface LocalFlashcard {
+  id: string;
+  course_id: string;
+  question: string;
+  answer: string;
+  difficulty: number;
+  explanation?: string;
+  context?: string;
+  tags?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 export default function FlashcardsScreenV2() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [aiExplanation, setAiExplanation] = useState<string | undefined>();
   const [generationCount, setGenerationCount] = useState(20);
@@ -48,8 +50,12 @@ export default function FlashcardsScreenV2() {
   const [extractingText, setExtractingText] = useState(false);
   const { theme } = useTheme();
   const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [showAllCards, setShowAllCards] = useState(false);
   const previousCourseId = useRef<string | undefined>(undefined);
+  
+  // LOCAL STATE ONLY - flashcards are not persisted to database
+  const [localFlashcards, setLocalFlashcards] = useState<LocalFlashcard[]>([]);
+  const [reviewedCards, setReviewedCards] = useState<Set<string>>(new Set());
+  const [correctCards, setCorrectCards] = useState<Set<string>>(new Set());
 
   // Reset state when courseId changes
   useEffect(() => {
@@ -57,21 +63,12 @@ export default function FlashcardsScreenV2() {
       console.log('🎴 Flashcard courseId changed:', courseId);
       setCurrentIndex(0);
       setAiExplanation(undefined);
+      setLocalFlashcards([]);
+      setReviewedCards(new Set());
+      setCorrectCards(new Set());
       previousCourseId.current = courseId;
     }
   }, [courseId]);
-
-  // Invalidate queries on focus for fresh data
-  useFocusEffect(
-    useCallback(() => {
-      console.log('🎴 Flashcards screen focused for course:', courseId);
-      if (courseId) {
-        queryClient.invalidateQueries({ queryKey: ['flashcards-v2', courseId] });
-        queryClient.invalidateQueries({ queryKey: ['flashcard-progress-v2', user?.id, courseId] });
-        queryClient.invalidateQueries({ queryKey: ['flashcard-stats', user?.id, courseId] });
-      }
-    }, [courseId, user?.id, queryClient])
-  );
 
   const motivationalMessages = [
     '🧠 AI:n analyserar kursmaterialet...',
@@ -102,60 +99,16 @@ export default function FlashcardsScreenV2() {
     enabled: !!courseId,
   });
 
-  const {
-    data: flashcards = [],
-    isLoading: isLoadingFlashcards,
-  } = useQuery({
-    queryKey: ['flashcards-v2', courseId],
-    queryFn: async () => {
-      if (!courseId) return [];
-      const { flashcards, error } = await getCourseFlashcards(courseId);
-      if (error) throw new Error(error);
-      return flashcards;
-    },
-    enabled: !!courseId,
-  });
+  // Local stats computed from session state
+  const stats = React.useMemo(() => ({
+    total: localFlashcards.length,
+    reviewed: reviewedCards.size,
+    mastered: correctCards.size,
+    due: localFlashcards.length - reviewedCards.size,
+  }), [localFlashcards.length, reviewedCards.size, correctCards.size]);
 
-  const { data: progressData = [] } = useQuery({
-    queryKey: ['flashcard-progress-v2', user?.id, courseId],
-    queryFn: async () => {
-      if (!user?.id || !courseId) return [];
-      const { progress, error } = await getUserFlashcardProgress(user.id, courseId);
-      if (error) throw new Error(error);
-      return progress;
-    },
-    enabled: !!user?.id && !!courseId,
-  });
-
-  const { data: stats } = useQuery({
-    queryKey: ['flashcard-stats', user?.id, courseId],
-    queryFn: async () => {
-      if (!user?.id || !courseId) {
-        return { total: 0, reviewed: 0, mastered: 0, due: 0 };
-      }
-      return await getFlashcardStats(user.id, courseId);
-    },
-    enabled: !!user?.id && !!courseId,
-  });
-
-  const progressMap = React.useMemo(() => {
-    const map = new Map<string, UserFlashcardProgress>();
-    progressData.forEach((progress) => {
-      map.set(progress.flashcard_id, progress);
-    });
-    return map;
-  }, [progressData]);
-
-  const dueCards = React.useMemo(() => {
-    const now = new Date();
-    return flashcards.filter((card) => {
-      const progress = progressMap.get(card.id);
-      if (!progress) return true;
-      return new Date(progress.next_review_at) <= now;
-    });
-  }, [flashcards, progressMap]);
-
-  const cardsToStudy = showAllCards ? flashcards : dueCards;
+  // All cards are available for study (no spaced repetition since local only)
+  const cardsToStudy = localFlashcards;
 
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -199,26 +152,36 @@ export default function FlashcardsScreenV2() {
         throw new Error(result.error || 'AI kunde inte generera flashcards. Försök igen.');
       }
 
-      console.log(`✅ [Flashcards] Generated ${result.flashcards.length} flashcards, saving to database...`);
+      console.log(`✅ [Flashcards] Generated ${result.flashcards.length} flashcards (local only, not saved to DB)`);
+      
+      // Convert to local flashcards with unique IDs
+      const now = new Date().toISOString();
+      const newLocalFlashcards: LocalFlashcard[] = result.flashcards.map((fc, index) => ({
+        id: `local-${Date.now()}-${index}`,
+        course_id: courseId,
+        question: fc.question,
+        answer: fc.answer,
+        difficulty: fc.difficulty,
+        explanation: fc.explanation,
+        context: fc.context,
+        tags: fc.tags,
+        created_at: now,
+        updated_at: now,
+      }));
 
-      const saveResult = await saveFlashcardBatch(result.flashcards, courseId);
-
-      if (!saveResult.success) {
-        console.error('❌ [Flashcards] Save failed:', saveResult.error);
-        throw new Error(saveResult.error || 'Kunde inte spara flashcards i databasen.');
-      }
-
-      console.log(`✅ [Flashcards] Saved ${saveResult.savedCount} flashcards`);
-      return saveResult;
+      return { flashcards: newLocalFlashcards, count: newLocalFlashcards.length };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['flashcards-v2', courseId] });
-      queryClient.invalidateQueries({ queryKey: ['flashcard-stats'] });
+      // Add new flashcards to local state
+      setLocalFlashcards(prev => [...data.flashcards, ...prev]);
+      setCurrentIndex(0);
+      setReviewedCards(new Set());
+      setCorrectCards(new Set());
       setShowCustomInput(false);
       setCustomText('');
       setGenerationError(null);
       setGenerationProgress(0);
-      Alert.alert('✅ Klart!', `${data.savedCount} flashcards har genererats och sparats!`);
+      Alert.alert('✅ Klart!', `${data.count} flashcards har genererats!\n\nOBS: Flashcards sparas endast under denna session.`);
     },
     onError: (error: any) => {
       console.error('❌ [Flashcards] Generation failed:', error);
@@ -251,83 +214,31 @@ export default function FlashcardsScreenV2() {
     }
   }, [generateMutation.isPending, motivationalMessages.length]);
 
-  const reviewMutation = useMutation({
-    mutationFn: async ({ flashcardId, correct }: { flashcardId: string; correct: boolean }) => {
-      if (!user?.id) throw new Error('User not authenticated');
+  // Local review tracking (no database persistence)
+  const handleReview = useCallback((flashcardId: string, correct: boolean) => {
+    setReviewedCards(prev => new Set(prev).add(flashcardId));
+    if (correct) {
+      setCorrectCards(prev => new Set(prev).add(flashcardId));
+    }
+  }, []);
 
-      const existingProgress = progressMap.get(flashcardId);
-      const quality = getQualityFromSwipe(correct);
-
-      const sm2Result = calculateSM2(
-        quality,
-        existingProgress?.repetitions || 0,
-        existingProgress?.ease_factor || 2.5,
-        existingProgress?.interval || 0
-      );
-
-      return await updateFlashcardProgress(
-        user.id,
-        flashcardId,
-        {
-          easeFactor: sm2Result.easeFactor,
-          interval: sm2Result.interval,
-          repetitions: sm2Result.repetitions,
-          nextReview: sm2Result.nextReview,
-          quality,
-          correct,
-        },
-        existingProgress
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['flashcard-progress-v2'] });
-      queryClient.invalidateQueries({ queryKey: ['flashcard-stats'] });
-    },
-  });
-
-  const handleSwipeLeft = async () => {
+  const handleSwipeLeft = useCallback(() => {
     if (currentIndex < cardsToStudy.length) {
-      await reviewMutation.mutateAsync({
-        flashcardId: cardsToStudy[currentIndex].id,
-        correct: false,
-      });
+      handleReview(cardsToStudy[currentIndex].id, false);
       setCurrentIndex((prev) => prev + 1);
       setAiExplanation(undefined);
     }
-  };
+  }, [currentIndex, cardsToStudy, handleReview]);
 
-  const handleSwipeRight = async () => {
+  const handleSwipeRight = useCallback(() => {
     if (currentIndex < cardsToStudy.length) {
-      await reviewMutation.mutateAsync({
-        flashcardId: cardsToStudy[currentIndex].id,
-        correct: true,
-      });
+      handleReview(cardsToStudy[currentIndex].id, true);
       setCurrentIndex((prev) => prev + 1);
       setAiExplanation(undefined);
     }
-  };
+  }, [currentIndex, cardsToStudy, handleReview]);
 
-  if (isLoadingFlashcards) {
-    return (
-      <PremiumGate feature="flashcards" fullScreen>
-        <View style={styles.container}>
-          <LinearGradient
-            colors={['#1E1B4B', '#0F172A', '#0F172A']}
-            locations={[0, 0.3, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-          <SafeAreaView style={styles.safeArea} edges={['top']}>
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#6366F1" />
-              <Text style={styles.loadingText}>Laddar flashcards...</Text>
-            </View>
-          </SafeAreaView>
-        </View>
-      </PremiumGate>
-    );
-  }
-
-  if (flashcards.length === 0) {
+  if (localFlashcards.length === 0) {
     return (
       <PremiumGate feature="flashcards" fullScreen>
       <View style={styles.container}>
@@ -657,35 +568,34 @@ export default function FlashcardsScreenV2() {
             <Text style={styles.completedEmoji}>🎉</Text>
             <Text style={styles.completedTitle}>Bra jobbat!</Text>
             <Text style={styles.completedText}>
-              {showAllCards ? 'Du har gått igenom alla flashcards!' : 'Du har gått igenom alla flashcards för idag'}
+              Du har gått igenom alla flashcards!
             </Text>
 
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{stats?.total || 0}</Text>
+                <Text style={styles.statValue}>{stats.total}</Text>
                 <Text style={styles.statLabel}>Totalt</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{stats?.reviewed || 0}</Text>
+                <Text style={styles.statValue}>{stats.reviewed}</Text>
                 <Text style={styles.statLabel}>Granskade</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{stats?.mastered || 0}</Text>
-                <Text style={styles.statLabel}>Behärskade</Text>
+                <Text style={styles.statValue}>{stats.mastered}</Text>
+                <Text style={styles.statLabel}>Rätt</Text>
               </View>
             </View>
 
-            {!showAllCards && dueCards.length === 0 && flashcards.length > 0 && (
-              <TouchableOpacity 
-                style={styles.reviewAllButton} 
-                onPress={() => {
-                  setShowAllCards(true);
-                  setCurrentIndex(0);
-                }}
-              >
-                <Text style={styles.reviewAllButtonText}>Granska alla kort</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity 
+              style={styles.reviewAllButton} 
+              onPress={() => {
+                setCurrentIndex(0);
+                setReviewedCards(new Set());
+                setCorrectCards(new Set());
+              }}
+            >
+              <Text style={styles.reviewAllButtonText}>Börja om</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.doneButton} onPress={() => router.back()}>
               <Text style={styles.doneButtonText}>Tillbaka</Text>
@@ -726,9 +636,6 @@ export default function FlashcardsScreenV2() {
           <Text style={styles.headerSubtitle}>
             {currentIndex + 1} / {cardsToStudy.length}
           </Text>
-          {showAllCards && (
-            <Text style={styles.headerBadge}>Alla kort</Text>
-          )}
         </View>
         <TouchableOpacity 
           style={styles.addButton}

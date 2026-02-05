@@ -22,6 +22,7 @@ import { PointsProvider } from "@/contexts/PointsContext";
 import { ChallengesProvider } from "@/contexts/ChallengesContext";
 import { GamificationProvider } from "@/contexts/GamificationContext";
 import { HogskoleprovetProvider } from "@/contexts/HogskoleprovetContext";
+import { HPTrialProvider } from "@/contexts/HPTrialContext";
 import { CommunityProvider } from "@/contexts/CommunityContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -152,11 +153,13 @@ export default function RootLayout() {
                               <AchievementProvider>
                                 <PointsProvider>
                                   <ChallengesProvider>
-                                    <HogskoleprovetProvider>
-                                      <CommunityProvider>
-                                        <RootLayoutNav />
-                                      </CommunityProvider>
-                                    </HogskoleprovetProvider>
+                                    <HPTrialProvider>
+                                      <HogskoleprovetProvider>
+                                        <CommunityProvider>
+                                          <RootLayoutNav />
+                                        </CommunityProvider>
+                                      </HogskoleprovetProvider>
+                                    </HPTrialProvider>
                                   </ChallengesProvider>
                                 </PointsProvider>
                               </AchievementProvider>

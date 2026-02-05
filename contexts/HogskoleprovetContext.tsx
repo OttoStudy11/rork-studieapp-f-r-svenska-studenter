@@ -113,6 +113,8 @@ export interface HPSessionState {
   timeRemaining: number;
   isPaused: boolean;
   isCompleted: boolean;
+  isTrialMode?: boolean;
+  trialId?: string;
 }
 
 const STORAGE_KEYS = {
@@ -133,8 +135,8 @@ interface HogskoleprovetContextValue {
   getQuestionsByTestVersion: (testVersionId: string) => LocalHPQuestion[];
   getAllQuestionsForFullTest: () => LocalHPQuestion[];
   
-  startPracticeSession: (sectionCode: string, testVersionId?: string) => Promise<string | null>;
-  startFullTest: () => Promise<string | null>;
+  startPracticeSession: (sectionCode: string, testVersionId?: string, isTrialMode?: boolean, trialId?: string) => Promise<string | null>;
+  startFullTest: (isTrialMode?: boolean, trialId?: string) => Promise<string | null>;
   
   submitAnswer: (questionId: string, selectedAnswer: string, timeSpentSeconds: number) => void;
   
@@ -493,7 +495,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     return allQuestions;
   }, []);
 
-  const startPracticeSession = useCallback(async (sectionCode: string, testVersionId?: string): Promise<string | null> => {
+  const startPracticeSession = useCallback(async (sectionCode: string, testVersionId?: string, isTrialMode?: boolean, trialId?: string): Promise<string | null> => {
     if (!user?.id) {
       Alert.alert('Fel', 'Du måste vara inloggad för att starta en övning');
       return null;
@@ -539,6 +541,8 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
         timeRemaining: section.timeMinutes * 60,
         isPaused: false,
         isCompleted: false,
+        isTrialMode,
+        trialId,
       };
 
       setSessionState(newSession);
@@ -553,7 +557,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     }
   }, [user?.id, getQuestionsBySection, getQuestionsByTestVersion]);
 
-  const startFullTest = useCallback(async (): Promise<string | null> => {
+  const startFullTest = useCallback(async (isTrialMode?: boolean, trialId?: string): Promise<string | null> => {
     if (!user?.id) {
       Alert.alert('Fel', 'Du måste vara inloggad för att starta provet');
       return null;
@@ -581,6 +585,8 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
         timeRemaining: totalTime * 60,
         isPaused: false,
         isCompleted: false,
+        isTrialMode,
+        trialId,
       };
 
       setSessionState(newSession);

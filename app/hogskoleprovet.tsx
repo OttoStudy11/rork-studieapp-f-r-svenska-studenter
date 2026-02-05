@@ -30,6 +30,9 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
+import { useHPTrial } from '@/contexts/HPTrialContext';
+import { HPTrialSelectionModal } from '@/components/hogskoleprovet/HPTrialSelectionModal';
+import { HPPaywallModal } from '@/components/hogskoleprovet/HPPaywallModal';
 import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HP_FULL_TEST_VERSIONS } from '@/constants/hogskoleprovet';
 import { getRandomTips } from '@/constants/hogskoleprovet-study-tips';
 import { COLORS } from '@/constants/design-system';
@@ -291,12 +294,22 @@ export default function HogskoleprovetScreen() {
     getEstimatedHPScore,
     getUnlockedMilestones,
     isLoading,
+    startPracticeSession: startSession,
+    startFullTest: startTest,
   } = useHogskoleprovet();
+  const { 
+    trialStatus, 
+    startTrial, 
+    checkTrialEligibility,
+  } = useHPTrial();
   
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(0));
   const [fullTestModalVisible, setFullTestModalVisible] = useState(false);
   const [studyTips] = useState(() => getRandomTips(5));
+  const [trialSelectionVisible, setTrialSelectionVisible] = useState(false);
+  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [paywallType, setPaywallType] = useState<'before_trial' | 'after_trial'>('before_trial');
   
   const stats = getUserStats();
   const estimatedScore = getEstimatedHPScore();
@@ -318,9 +331,15 @@ export default function HogskoleprovetScreen() {
     });
   }, [isLoading]);
 
-  const handleStartFullTest = () => {
+  const handleStartFullTest = async () => {
     if (!isPremium) {
-      router.push('/premium' as any);
+      const hasTrialAvailable = await checkTrialEligibility();
+      if (hasTrialAvailable) {
+        setPaywallType('before_trial');
+        setPaywallVisible(true);
+      } else {
+        router.push('/premium' as any);
+      }
       return;
     }
     setFullTestModalVisible(true);
@@ -334,9 +353,15 @@ export default function HogskoleprovetScreen() {
     });
   };
 
-  const handleStartSection = (sectionCode: string) => {
+  const handleStartSection = async (sectionCode: string) => {
     if (!isPremium) {
-      router.push('/premium' as any);
+      const hasTrialAvailable = await checkTrialEligibility();
+      if (hasTrialAvailable) {
+        setPaywallType('before_trial');
+        setPaywallVisible(true);
+      } else {
+        router.push('/premium' as any);
+      }
       return;
     }
     console.log('[HP Screen] Navigating to version selection for:', sectionCode);
@@ -739,6 +764,48 @@ export default function HogskoleprovetScreen() {
           onSelectVersion={handleStartFullTestWithVersion}
         />
       )}
+
+      <HPTrialSelectionModal
+        visible={trialSelectionVisible}
+        onClose={() => setTrialSelectionVisible(false)}
+        onSelectFullTest={async () => {
+          setTrialSelectionVisible(false);
+          const trialId = await startTrial('full_test', 'full_test');
+          if (trialId) {
+            await startTest(true, trialId);
+            router.push({
+              pathname: '/hp-test' as any,
+              params: { isTrialMode: 'true' },
+            });
+          }
+        }}
+        onSelectSection={async (sectionCode) => {
+          setTrialSelectionVisible(false);
+          const trialId = await startTrial('section', sectionCode);
+          if (trialId) {
+            await startSession(sectionCode, undefined, true, trialId);
+            router.push({
+              pathname: '/hp-practice' as any,
+              params: { sectionCode, isTrialMode: 'true' },
+            });
+          }
+        }}
+      />
+
+      <HPPaywallModal
+        visible={paywallVisible}
+        onClose={() => {
+          setPaywallVisible(false);
+          if (paywallType === 'before_trial') {
+            setTrialSelectionVisible(true);
+          }
+        }}
+        onUpgrade={() => {
+          setPaywallVisible(false);
+          router.push('/premium' as any);
+        }}
+        type={paywallType}
+      />
     </View>
   );
 }

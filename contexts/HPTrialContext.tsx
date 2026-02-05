@@ -103,7 +103,10 @@ export const [HPTrialProvider, useHPTrial] = createContextHook(() => {
     (contentType: 'full_test' | 'delprov', contentId?: string): boolean => {
       if (isPremium) return true;
 
-      if (!trialStatus || !trialStatus.trialUsed) return false;
+      if (!trialStatus) return false;
+
+      const trialIsActive = trialStatus.trialUsed || !!trialStatus.trialStartedAt;
+      if (!trialIsActive) return false;
 
       if (trialStatus.trialType === 'full_test' && contentType === 'full_test') {
         return true;
@@ -150,6 +153,8 @@ export const [HPTrialProvider, useHPTrial] = createContextHook(() => {
 
         console.log('[HP Trial] Trial started successfully');
         await fetchTrialStatus();
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
         return true;
       } catch (error) {
         console.error('[HP Trial] Exception starting trial:', error);

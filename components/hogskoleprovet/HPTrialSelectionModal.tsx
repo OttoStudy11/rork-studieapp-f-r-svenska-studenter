@@ -1,8 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, CheckCircle2, Play, BookOpen, GraduationCap } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useHPTrial } from '@/contexts/HPTrialContext';
+import { useToast } from '@/contexts/ToastContext';
 import { HP_SECTIONS, HP_VERBAL_SECTIONS, HP_QUANTITATIVE_SECTIONS } from '@/constants/hogskoleprovet';
 import { COLORS } from '@/constants/design-system';
 
@@ -20,6 +22,47 @@ export function HPTrialSelectionModal({
   onSelectSection,
 }: HPTrialSelectionModalProps) {
   const { theme, isDark } = useTheme();
+  const { startTrial, isTrialAvailable } = useHPTrial();
+  const { showError } = useToast();
+  const [isStarting, setIsStarting] = useState(false);
+
+  const handleSelectFullTest = async () => {
+    setIsStarting(true);
+    try {
+      const success = await startTrial('full_test', 'full');
+      if (success) {
+        onSelectFullTest();
+      } else {
+        showError('Fel', 'Kunde inte starta provperioden. Försök igen.');
+      }
+    } catch (error) {
+      console.error('[Trial] Error starting full test trial:', error);
+      showError('Fel', 'Ett oväntat fel inträffade.');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const handleSelectSection = async (sectionCode: string) => {
+    setIsStarting(true);
+    try {
+      const success = await startTrial('delprov', sectionCode);
+      if (success) {
+        onSelectSection(sectionCode);
+      } else {
+        showError('Fel', 'Kunde inte starta provperioden. Försök igen.');
+      }
+    } catch (error) {
+      console.error('[Trial] Error starting section trial:', error);
+      showError('Fel', 'Ett oväntat fel inträffade.');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  if (!isTrialAvailable) {
+    return null;
+  }
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -62,14 +105,19 @@ export function HPTrialSelectionModal({
 
             <TouchableOpacity
               style={[styles.optionCard, { backgroundColor: theme.colors.surface }]}
-              onPress={onSelectFullTest}
+              onPress={handleSelectFullTest}
               activeOpacity={0.7}
+              disabled={isStarting}
             >
               <LinearGradient
                 colors={['#6366F1', '#8B5CF6']}
                 style={styles.optionIcon}
               >
-                <Play size={28} color="#FFF" fill="#FFF" />
+                {isStarting ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <Play size={28} color="#FFF" fill="#FFF" />
+                )}
               </LinearGradient>
               <View style={styles.optionInfo}>
                 <Text style={[styles.optionTitle, { color: theme.colors.text }]}>
@@ -123,8 +171,9 @@ export function HPTrialSelectionModal({
               <TouchableOpacity
                 key={section.code}
                 style={[styles.sectionCard, { backgroundColor: theme.colors.surface }]}
-                onPress={() => onSelectSection(section.code)}
+                onPress={() => handleSelectSection(section.code)}
                 activeOpacity={0.7}
+                disabled={isStarting}
               >
                 <LinearGradient
                   colors={[...section.gradientColors] as any}
@@ -150,8 +199,9 @@ export function HPTrialSelectionModal({
               <TouchableOpacity
                 key={section.code}
                 style={[styles.sectionCard, { backgroundColor: theme.colors.surface }]}
-                onPress={() => onSelectSection(section.code)}
+                onPress={() => handleSelectSection(section.code)}
                 activeOpacity={0.7}
+                disabled={isStarting}
               >
                 <LinearGradient
                   colors={[...section.gradientColors] as any}

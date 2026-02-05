@@ -299,8 +299,9 @@ export default function HogskoleprovetScreen() {
   } = useHogskoleprovet();
   const { 
     trialStatus, 
-    startTrial, 
-    checkTrialEligibility,
+    isTrialAvailable,
+    canAccessContent,
+    setShowTrialModal,
   } = useHPTrial();
   
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -333,12 +334,14 @@ export default function HogskoleprovetScreen() {
 
   const handleStartFullTest = async () => {
     if (!isPremium) {
-      const hasTrialAvailable = await checkTrialEligibility();
-      if (hasTrialAvailable) {
+      if (canAccessContent('full_test')) {
+        setFullTestModalVisible(true);
+      } else if (isTrialAvailable) {
         setPaywallType('before_trial');
         setPaywallVisible(true);
       } else {
-        router.push('/premium' as any);
+        setPaywallType('after_trial');
+        setPaywallVisible(true);
       }
       return;
     }
@@ -355,12 +358,17 @@ export default function HogskoleprovetScreen() {
 
   const handleStartSection = async (sectionCode: string) => {
     if (!isPremium) {
-      const hasTrialAvailable = await checkTrialEligibility();
-      if (hasTrialAvailable) {
+      if (canAccessContent('delprov', sectionCode)) {
+        router.push({
+          pathname: '/hp-select-version' as any,
+          params: { sectionCode },
+        });
+      } else if (isTrialAvailable) {
         setPaywallType('before_trial');
         setPaywallVisible(true);
       } else {
-        router.push('/premium' as any);
+        setPaywallType('after_trial');
+        setPaywallVisible(true);
       }
       return;
     }
@@ -768,27 +776,16 @@ export default function HogskoleprovetScreen() {
       <HPTrialSelectionModal
         visible={trialSelectionVisible}
         onClose={() => setTrialSelectionVisible(false)}
-        onSelectFullTest={async () => {
+        onSelectFullTest={() => {
           setTrialSelectionVisible(false);
-          const trialId = await startTrial('full_test', 'full_test');
-          if (trialId) {
-            await startTest(true, trialId);
-            router.push({
-              pathname: '/hp-test' as any,
-              params: { isTrialMode: 'true' },
-            });
-          }
+          setFullTestModalVisible(true);
         }}
-        onSelectSection={async (sectionCode) => {
+        onSelectSection={(sectionCode) => {
           setTrialSelectionVisible(false);
-          const trialId = await startTrial('section', sectionCode);
-          if (trialId) {
-            await startSession(sectionCode, undefined, true, trialId);
-            router.push({
-              pathname: '/hp-practice' as any,
-              params: { sectionCode, isTrialMode: 'true' },
-            });
-          }
+          router.push({
+            pathname: '/hp-select-version' as any,
+            params: { sectionCode },
+          });
         }}
       />
 

@@ -1,98 +1,105 @@
 -- Högskoleprov Trial System
--- Allows free users to try one full test OR one section before requiring premium
+-- Allows free users to try one full test or one section before requiring premium
 
--- Create the trial tracking table
+-- Create trial tracking table
 CREATE TABLE IF NOT EXISTS user_hp_trial (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   trial_type TEXT NOT NULL CHECK (trial_type IN ('full_test', 'delprov')),
   trial_content TEXT NOT NULL,
-  trial_started_at TIMESTAMPTZ DEFAULT now(),
-  trial_completed_at TIMESTAMPTZ,
-  trial_score_percentage NUMERIC(5,2),
-  trial_estimated_score NUMERIC(3,2),
-  trial_total_questions INTEGER,
-  trial_correct_answers INTEGER,
-  trial_time_spent INTEGER,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  
   UNIQUE(user_id)
 );
 
--- Create indexes
+-- Add indexes
 CREATE INDEX IF NOT EXISTS idx_user_hp_trial_user_id ON user_hp_trial(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_hp_trial_completed ON user_hp_trial(trial_completed_at) WHERE trial_completed_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_user_hp_trial_started_at ON user_hp_trial(started_at);
 
 -- Enable RLS
 ALTER TABLE user_hp_trial ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
-DROP POLICY IF EXISTS "Users can view their own trial" ON user_hp_trial;
-CREATE POLICY "Users can view their own trial"
+DROP POLICY IF EXISTS "Users can view own trial" ON user_hp_trial;
+CREATE POLICY "Users can view own trial"
   ON user_hp_trial FOR SELECT
   USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can insert their own trial" ON user_hp_trial;
-CREATE POLICY "Users can insert their own trial"
+DROP POLICY IF EXISTS "Users can insert own trial" ON user_hp_trial;
+CREATE POLICY "Users can insert own trial"
   ON user_hp_trial FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can update their own trial" ON user_hp_trial;
-CREATE POLICY "Users can update their own trial"
+DROP POLICY IF EXISTS "Users can update own trial" ON user_hp_trial;
+CREATE POLICY "Users can update own trial"
   ON user_hp_trial FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Function: Get trial status for a user
 CREATE OR REPLACE FUNCTION get_hp_trial_status(p_user_id UUID)
-RETURNS jsonb
+RETURNS TABLE (
+  has_premium BOOLEAN,
+  trial_available BOOLEAN,
+  trial_used BOOLEAN,
+  trial_type TEXT,
+  trial_content TEXT,
+  trial_started_at TIMESTAMPTZ,
+  trial_completed_at TIMESTAMPTZ
+) 
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_trial RECORD;
-  v_profile RECORD;
-  v_result jsonb;
+  v_subscription_type TEXT;
+  v_trial_record RECORD;
 BEGIN
-  -- Get user profile
-  SELECT subscription_type INTO v_profile
+  -- Get user's subscription type
+  SELECT subscription_type INTO v_subscription_type
   FROM profiles
   WHERE id = p_user_id;
-
+  
   -- Check if user has premium
-  IF v_profile.subscription_type = 'premium' THEN
-    RETURN jsonb_build_object(
-      'has_premium', true,
-      'trial_available', false,
-      'trial_used', false
-    );
+  IF v_subscription_type IN ('premium', 'pro') THEN
+    RETURN QUERY SELECT
+      TRUE as has_premium,
+      FALSE as trial_available,
+      FALSE as trial_used,
+      NULL::TEXT as trial_type,
+      NULL::TEXT as trial_content,
+      NULL::TIMESTAMPTZ as trial_started_at,
+      NULL::TIMESTAMPTZ as trial_completed_at;
+    RETURN;
   END IF;
-
-  -- Check for existing trial
-  SELECT * INTO v_trial
+  
+  -- Get trial record
+  SELECT * INTO v_trial_record
   FROM user_hp_trial
   WHERE user_id = p_user_id;
-
-  IF NOT FOUND THEN
-    -- No trial started yet
-    RETURN jsonb_build_object(
-      'has_premium', false,
-      'trial_available', true,
-      'trial_used', false
-    );
+  
+  -- If no trial record exists, trial is available
+  IF v_trial_record IS NULL THEN
+    RETURN QUERY SELECT
+      FALSE as has_premium,
+      TRUE as trial_available,
+      FALSE as trial_used,
+      NULL::TEXT as trial_type,
+      NULL::TEXT as trial_content,
+      NULL::TIMESTAMPTZ as trial_started_at,
+      NULL::TIMESTAMPTZ as trial_completed_at;
+    RETURN;
   END IF;
-
-  -- Trial exists
-  RETURN jsonb_build_object(
-    'has_premium', false,
-    'trial_available', false,
-    'trial_used', true,
-    'trial_type', v_trial.trial_type,
-    'trial_content', v_trial.trial_content,
-    'trial_started_at', v_trial.trial_started_at,
-    'trial_completed_at', v_trial.trial_completed_at,
-    'trial_score_percentage', v_trial.trial_score_percentage,
-    'trial_estimated_score', v_trial.trial_estimated_score
-  );
+  
+  -- Trial has been used
+  RETURN QUERY SELECT
+    FALSE as has_premium,
+    FALSE as trial_available,
+    TRUE as trial_used,
+    v_trial_record.trial_type,
+    v_trial_record.trial_content,
+    v_trial_record.started_at as trial_started_at,
+    v_trial_record.completed_at as trial_completed_at;
 END;
 $$;
 
@@ -102,151 +109,126 @@ CREATE OR REPLACE FUNCTION start_hp_trial(
   p_trial_type TEXT,
   p_trial_content TEXT
 )
-RETURNS jsonb
+RETURNS TABLE (
+  success BOOLEAN,
+  error TEXT,
+  trial_id UUID
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_existing_trial RECORD;
-  v_profile RECORD;
+  v_subscription_type TEXT;
+  v_existing_trial UUID;
+  v_new_trial_id UUID;
 BEGIN
-  -- Validate trial type
-  IF p_trial_type NOT IN ('full_test', 'delprov') THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', 'Invalid trial type'
-    );
-  END IF;
-
-  -- Get user profile
-  SELECT subscription_type INTO v_profile
+  -- Check if user has premium
+  SELECT subscription_type INTO v_subscription_type
   FROM profiles
   WHERE id = p_user_id;
-
-  -- Premium users don't need trials
-  IF v_profile.subscription_type = 'premium' THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', 'Premium users have full access'
-    );
+  
+  IF v_subscription_type IN ('premium', 'pro') THEN
+    RETURN QUERY SELECT
+      FALSE as success,
+      'User already has premium' as error,
+      NULL::UUID as trial_id;
+    RETURN;
   END IF;
-
+  
   -- Check if trial already exists
-  SELECT * INTO v_existing_trial
+  SELECT id INTO v_existing_trial
   FROM user_hp_trial
   WHERE user_id = p_user_id;
-
-  IF FOUND THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', 'Trial already used'
-    );
+  
+  IF v_existing_trial IS NOT NULL THEN
+    RETURN QUERY SELECT
+      FALSE as success,
+      'Trial already used' as error,
+      NULL::UUID as trial_id;
+    RETURN;
   END IF;
-
-  -- Insert new trial
-  INSERT INTO user_hp_trial (
-    user_id,
-    trial_type,
-    trial_content,
-    trial_started_at
-  ) VALUES (
-    p_user_id,
-    p_trial_type,
-    p_trial_content,
-    now()
-  );
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'trial_type', p_trial_type,
-    'trial_content', p_trial_content
-  );
-EXCEPTION
-  WHEN OTHERS THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', SQLERRM
-    );
+  
+  -- Validate trial type
+  IF p_trial_type NOT IN ('full_test', 'delprov') THEN
+    RETURN QUERY SELECT
+      FALSE as success,
+      'Invalid trial type' as error,
+      NULL::UUID as trial_id;
+    RETURN;
+  END IF;
+  
+  -- Create trial record
+  INSERT INTO user_hp_trial (user_id, trial_type, trial_content, started_at)
+  VALUES (p_user_id, p_trial_type, p_trial_content, NOW())
+  RETURNING id INTO v_new_trial_id;
+  
+  RETURN QUERY SELECT
+    TRUE as success,
+    NULL::TEXT as error,
+    v_new_trial_id as trial_id;
 END;
 $$;
 
 -- Function: Complete a trial
-CREATE OR REPLACE FUNCTION complete_hp_trial(
-  p_user_id UUID
+CREATE OR REPLACE FUNCTION complete_hp_trial(p_user_id UUID)
+RETURNS TABLE (
+  success BOOLEAN,
+  error TEXT
 )
-RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+  v_trial_id UUID;
 BEGIN
-  -- Update trial as completed
-  UPDATE user_hp_trial
-  SET 
-    trial_completed_at = now(),
-    updated_at = now()
-  WHERE user_id = p_user_id
-    AND trial_completed_at IS NULL;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', 'No active trial found'
-    );
+  -- Get trial record
+  SELECT id INTO v_trial_id
+  FROM user_hp_trial
+  WHERE user_id = p_user_id;
+  
+  IF v_trial_id IS NULL THEN
+    RETURN QUERY SELECT
+      FALSE as success,
+      'No trial found for user' as error;
+    RETURN;
   END IF;
-
-  RETURN jsonb_build_object(
-    'success', true
-  );
-EXCEPTION
-  WHEN OTHERS THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', SQLERRM
-    );
+  
+  -- Update completion time
+  UPDATE user_hp_trial
+  SET completed_at = NOW()
+  WHERE id = v_trial_id;
+  
+  RETURN QUERY SELECT
+    TRUE as success,
+    NULL::TEXT as error;
 END;
 $$;
 
--- Function: Save trial results (optional, for detailed tracking)
-CREATE OR REPLACE FUNCTION save_hp_trial_results(
-  p_user_id UUID,
-  p_total_questions INTEGER,
-  p_correct_answers INTEGER,
-  p_score_percentage NUMERIC,
-  p_estimated_score NUMERIC,
-  p_time_spent INTEGER
-)
-RETURNS jsonb
+-- Function: Check if trial is available for user
+CREATE OR REPLACE FUNCTION check_hp_trial_available(p_user_id UUID)
+RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+  v_subscription_type TEXT;
+  v_trial_exists BOOLEAN;
 BEGIN
-  UPDATE user_hp_trial
-  SET 
-    trial_total_questions = p_total_questions,
-    trial_correct_answers = p_correct_answers,
-    trial_score_percentage = p_score_percentage,
-    trial_estimated_score = p_estimated_score,
-    trial_time_spent = p_time_spent,
-    trial_completed_at = now(),
-    updated_at = now()
-  WHERE user_id = p_user_id;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', 'Trial not found'
-    );
+  -- Check if user has premium
+  SELECT subscription_type INTO v_subscription_type
+  FROM profiles
+  WHERE id = p_user_id;
+  
+  IF v_subscription_type IN ('premium', 'pro') THEN
+    RETURN FALSE;
   END IF;
-
-  RETURN jsonb_build_object(
-    'success', true
-  );
-EXCEPTION
-  WHEN OTHERS THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', SQLERRM
-    );
+  
+  -- Check if trial already used
+  SELECT EXISTS(
+    SELECT 1 FROM user_hp_trial WHERE user_id = p_user_id
+  ) INTO v_trial_exists;
+  
+  RETURN NOT v_trial_exists;
 END;
 $$;
 
@@ -254,7 +236,12 @@ $$;
 GRANT EXECUTE ON FUNCTION get_hp_trial_status(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION start_hp_trial(UUID, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION complete_hp_trial(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION save_hp_trial_results(UUID, INTEGER, INTEGER, NUMERIC, NUMERIC, INTEGER) TO authenticated;
+GRANT EXECUTE ON FUNCTION check_hp_trial_available(UUID) TO authenticated;
 
--- Add helpful comment
-COMMENT ON TABLE user_hp_trial IS 'Tracks free trial usage for Högskoleprov content. Each user can try once: either full test or one section.';
+-- Verify setup
+DO $$
+BEGIN
+  RAISE NOTICE '✅ HP Trial System created successfully';
+  RAISE NOTICE 'Table: user_hp_trial';
+  RAISE NOTICE 'Functions: get_hp_trial_status, start_hp_trial, complete_hp_trial, check_hp_trial_available';
+END $$;

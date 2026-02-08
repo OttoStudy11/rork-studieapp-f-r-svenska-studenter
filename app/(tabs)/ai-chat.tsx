@@ -76,8 +76,8 @@ export default function AIChatScreen() {
             }
             return {
               type: 'file' as const,
-              mediaType: 'image/jpeg' as const,
-              url: base64,
+              mimeType: 'image/jpeg' as const,
+              uri: base64,
             };
           })
         );

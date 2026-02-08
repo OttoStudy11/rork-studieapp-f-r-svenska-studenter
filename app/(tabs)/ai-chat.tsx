@@ -18,6 +18,7 @@ import { Send, Sparkles, BookOpen, Lightbulb, Brain, Flame, TrendingUp, ImageIco
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PremiumGate } from '@/components/PremiumGate';
+import { useAuth } from '@/contexts/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { MarkdownText } from '@/components/MarkdownText';
@@ -27,11 +28,16 @@ export default function AIChatScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
+  const { user } = useAuth();
 
 
 
   const { messages, error, sendMessage } = useRorkAgent({
     tools: {},
+    context: {
+      userId: user?.id,
+      projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
+    },
   });
 
   const [isSending, setIsSending] = useState(false);
@@ -55,9 +61,16 @@ export default function AIChatScreen() {
     setLocalError(null);
 
     console.log('[AI Chat] Sending message:', userMessage, 'with images:', imagesToSend.length);
+    console.log('[AI Chat] User ID:', user?.id);
     console.log('[AI Chat] Toolkit URL:', process.env.EXPO_PUBLIC_TOOLKIT_URL);
-    console.log('[AI Chat] RORK_DB_ENDPOINT:', process.env.EXPO_PUBLIC_RORK_DB_ENDPOINT);
     console.log('[AI Chat] PROJECT_ID:', process.env.EXPO_PUBLIC_PROJECT_ID);
+    
+    if (!user?.id) {
+      console.error('[AI Chat] No user ID available');
+      setLocalError('Du måste vara inloggad för att använda AI-chatten.');
+      setIsSending(false);
+      return;
+    }
 
     try {
       if (imagesToSend.length > 0) {
@@ -101,7 +114,16 @@ export default function AIChatScreen() {
       if (err instanceof Error) {
         console.error('[AI Chat] Error message:', err.message);
         console.error('[AI Chat] Error stack:', err.stack);
-        errorMessage = err.message || errorMessage;
+        
+        if (err.message.includes('Internal Server Error')) {
+          errorMessage = 'AI-tjänsten är inte tillgänglig för tillfället. Försök igen om en stund.';
+        } else if (err.message.includes('Network')) {
+          errorMessage = 'Nätverksfel. Kontrollera din internetanslutning.';
+        } else if (err.message.includes('Unauthorized') || err.message.includes('401')) {
+          errorMessage = 'Du måste vara inloggad för att använda AI-chatten.';
+        } else {
+          errorMessage = err.message || errorMessage;
+        }
       } else if (typeof err === 'object' && err !== null) {
         console.error('[AI Chat] Error object:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
         errorMessage = (err as any).message || JSON.stringify(err);

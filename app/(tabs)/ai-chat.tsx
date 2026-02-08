@@ -34,10 +34,6 @@ export default function AIChatScreen() {
 
   const { messages, error, sendMessage } = useRorkAgent({
     tools: {},
-    context: {
-      userId: user?.id,
-      projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
-    },
   });
 
   const [isSending, setIsSending] = useState(false);

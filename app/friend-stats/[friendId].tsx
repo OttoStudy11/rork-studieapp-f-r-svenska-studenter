@@ -174,7 +174,7 @@ export default function FriendStatsScreen() {
         // Load friend sessions from pomodoro_sessions
         const { data: friendSessions } = await supabase
           .from('pomodoro_sessions')
-          .select('id, duration, start_time, end_time')
+          .select('id, duration_minutes, start_time, end_time')
           .eq('user_id', friendId);
 
         // Load sessions from this week
@@ -182,7 +182,7 @@ export default function FriendStatsScreen() {
         weekAgo.setDate(weekAgo.getDate() - 7);
         const { data: weekSessions } = await supabase
           .from('pomodoro_sessions')
-          .select('id, duration')
+          .select('id, duration_minutes')
           .eq('user_id', friendId)
           .gte('start_time', weekAgo.toISOString());
 
@@ -217,7 +217,7 @@ export default function FriendStatsScreen() {
 
         // Calculate study time this week
         const studyTimeThisWeek = (weekSessions || []).reduce(
-          (sum: number, s: any) => sum + (s.duration || 0),
+          (sum: number, s: any) => sum + (s.duration_minutes || 0),
           0
         );
 

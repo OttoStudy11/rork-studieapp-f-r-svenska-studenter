@@ -857,7 +857,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         return;
       }
       
-      console.log('Adding pomodoro session for user:', authUser.id);
+      console.log('⏱️ Adding pomodoro session for user:', authUser.id);
       console.log('Session details:', { duration: session.duration, courseId: session.courseId });
       
       // Try to save to database directly
@@ -866,7 +866,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           .insert({
             user_id: authUser.id,
             course_id: session.courseId || null,
-            duration: session.duration,
+            duration_minutes: session.duration,
             start_time: session.startTime,
             end_time: session.endTime
           })
@@ -874,7 +874,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           .single();
         
       if (error) {
-        console.warn('Could not save pomodoro session to database:', error.message);
+        console.warn('❌ Could not save pomodoro session to database:', error.message);
         // Create local session as fallback
         const localSession: PomodoroSession = {
           id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -884,18 +884,54 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           endTime: session.endTime
         };
         setPomodoroSessions(prev => [localSession, ...prev]);
-        console.log('✅ Pomodoro session created locally');
+        console.log('⚠️ Pomodoro session created locally (fallback)');
         return;
       }
       
       if (data) {
         console.log('✅ Pomodoro session saved to database with ID:', data.id);
         
+        // Update user_progress table with new totals
+        try {
+          const { data: currentProgress } = await supabase
+            .from('user_progress')
+            .select('total_study_time, total_sessions')
+            .eq('user_id', authUser.id)
+            .maybeSingle();
+
+          const newTotalMinutes = (currentProgress?.total_study_time || 0) + session.duration;
+          const newTotalSessions = (currentProgress?.total_sessions || 0) + 1;
+
+          console.log('📊 Updating user_progress:', {
+            oldTotal: currentProgress?.total_study_time || 0,
+            newTotal: newTotalMinutes,
+            sessionDuration: session.duration
+          });
+
+          const { error: progressError } = await supabase
+            .from('user_progress')
+            .upsert({
+              user_id: authUser.id,
+              total_study_time: newTotalMinutes,
+              total_sessions: newTotalSessions,
+              last_study_date: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+
+          if (progressError) {
+            console.error('❌ Failed to update user_progress:', progressError);
+          } else {
+            console.log('✅ user_progress updated successfully');
+          }
+        } catch (progressUpdateError) {
+          console.error('❌ Error updating user_progress:', progressUpdateError);
+        }
+        
         // Add to local state with database ID
         const dbSession: PomodoroSession = {
           id: data.id,
           courseId: data.course_id || undefined,
-          duration: data.duration,
+          duration: data.duration_minutes || data.duration || session.duration,
           startTime: data.start_time,
           endTime: data.end_time
         };

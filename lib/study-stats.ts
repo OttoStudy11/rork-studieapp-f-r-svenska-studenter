@@ -16,6 +16,7 @@ export interface UserTotalStudy {
 }
 
 export async function fetchTotalStudyMinutesForUser(userId: string): Promise<number> {
+  // First try user_progress (fastest, pre-aggregated)
   const { data: progress, error: progressError } = await supabase
     .from('user_progress')
     .select('total_study_time')
@@ -24,17 +25,20 @@ export async function fetchTotalStudyMinutesForUser(userId: string): Promise<num
 
   if (!progressError && progress?.total_study_time != null) {
     const minutes = Number(progress.total_study_time);
-    return Number.isFinite(minutes) ? minutes : 0;
+    if (Number.isFinite(minutes) && minutes > 0) {
+      return minutes;
+    }
   }
 
+  // Fallback: Calculate from pomodoro_sessions (this is where sessions are actually stored)
   const { data: sessions, error: sessionsError } = await supabase
-    .from('study_sessions')
+    .from('pomodoro_sessions')
     .select('duration_minutes')
-    .eq('user_id', userId)
-    .eq('status', 'completed');
+    .eq('user_id', userId);
 
   if (sessionsError) {
-    throw sessionsError;
+    console.error('Error fetching pomodoro sessions:', sessionsError);
+    return 0;
   }
 
   const total = (sessions ?? []).reduce((acc, s) => {
@@ -42,6 +46,7 @@ export async function fetchTotalStudyMinutesForUser(userId: string): Promise<num
     return acc + (Number.isFinite(v) ? v : 0);
   }, 0);
 
+  console.log(`Calculated total study time for user ${userId}: ${total} minutes from ${sessions?.length || 0} sessions`);
   return total;
 }
 

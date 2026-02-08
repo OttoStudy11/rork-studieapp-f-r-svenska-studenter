@@ -485,14 +485,20 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       let courses: Course[];
       
       if (userData.studyLevel === 'gymnasie' && userData.selectedCourses && userData.selectedCourses.length > 0 && userData.gymnasium) {
-        console.log('Creating gymnasium courses from selected courses:', userData.selectedCourses);
+        console.log('🎓 Creating gymnasium courses from selected courses:', userData.selectedCourses);
         // Use selected courses for gymnasium
         const selectedCoursesData = getSelectedCoursesData(
           userData.selectedCourses, 
           userData.gymnasium
         );
         
-        console.log('Selected courses data:', selectedCoursesData.length, 'courses');
+        console.log('📚 Selected courses data:', selectedCoursesData.length, 'courses');
+        
+        if (selectedCoursesData.length === 0) {
+          console.error('❌ No courses found for selected IDs:', userData.selectedCourses);
+          console.error('❌ This might mean the course IDs do not match');
+          throw new Error('Inga kurser kunde hittas. Försök igen.');
+        }
         
         courses = selectedCoursesData.map((courseData, index) => ({
           id: courseData.code,
@@ -509,18 +515,24 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         
         // Sync courses to Supabase (BLOCKING - must complete before navigation)
         try {
-          console.log('Syncing courses to Supabase...');
+          console.log('💾 Syncing courses to Supabase...');
+          
+          let successCount = 0;
           
           // First, ensure all courses exist in the courses table
           for (const courseData of selectedCoursesData) {
-            const { data: existingCourse } = await supabase
+            const { data: existingCourse, error: selectError } = await supabase
               .from('courses')
               .select('id')
               .eq('id', courseData.code)
               .maybeSingle();
             
+            if (selectError) {
+              console.error('❌ Error checking course:', courseData.code, selectError);
+            }
+            
             if (!existingCourse) {
-              console.log('Creating course in database:', courseData.code);
+              console.log('📝 Creating course in database:', courseData.code);
               const { error: insertError } = await supabase
                 .from('courses')
                 .insert({
@@ -538,13 +550,18 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
                 });
               
               if (insertError) {
-                console.error('Error inserting course:', insertError);
+                console.error('❌ Error inserting course:', courseData.code, insertError.message);
+              } else {
+                console.log('✅ Course created:', courseData.code);
               }
+            } else {
+              console.log('✓ Course already exists:', courseData.code);
             }
           }
           
           // Then, create user_courses entries
           for (const courseData of selectedCoursesData) {
+            console.log('📌 Enrolling user in course:', courseData.code);
             const { error } = await supabase
               .from('user_courses')
               .upsert({
@@ -558,13 +575,21 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
               });
             
             if (error) {
-              console.error('Error syncing user course:', error);
+              console.error('❌ Error enrolling in course:', courseData.code, error.message);
+            } else {
+              console.log('✅ Enrolled in course:', courseData.code);
+              successCount++;
             }
           }
           
-          console.log('✅ Successfully synced', selectedCoursesData.length, 'courses to Supabase');
-        } catch (error) {
-          console.error('Error syncing courses to Supabase:', error);
+          console.log(`🎉 Successfully synced ${successCount}/${selectedCoursesData.length} courses to Supabase`);
+          
+          if (successCount === 0) {
+            throw new Error('Kunde inte tilldela kurser. Försök igen.');
+          }
+        } catch (error: any) {
+          console.error('❌ Error syncing courses to Supabase:', error);
+          throw new Error(error.message || 'Kunde inte spara kurser');
         }
       } else if (userData.studyLevel === 'högskola') {
         // Use the new course assignment system for university

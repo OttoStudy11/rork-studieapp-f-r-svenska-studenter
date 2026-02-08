@@ -66,7 +66,7 @@ export function getGymnasiumCourses(gymnasium: Gymnasium, selectedProgram?: Gymn
       if (selectedGrade && course.year !== parseInt(selectedGrade)) return;
       
       courses.push({
-        id: `${gymnasium.id}-${program.id}-${course.code}`,
+        id: course.code,
         code: course.code,
         name: course.name,
         points: course.points,

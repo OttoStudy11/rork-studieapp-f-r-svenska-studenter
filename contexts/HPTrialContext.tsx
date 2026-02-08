@@ -47,7 +47,7 @@ export const [HPTrialProvider, useHPTrial] = createContextHook(() => {
     try {
       console.log('[HP Trial] Fetching trial status for user:', user.id);
 
-      const { data, error } = await supabase.rpc('get_hp_trial_status', {
+      const { data, error } = await (supabase.rpc as any)('get_hp_trial_status', {
         p_user_id: user.id,
       });
 
@@ -60,14 +60,15 @@ export const [HPTrialProvider, useHPTrial] = createContextHook(() => {
         return;
       }
 
+      const rpcData = data as any;
       const status: HPTrialStatus = {
-        hasPremium: data.has_premium || false,
-        trialAvailable: data.trial_available || false,
-        trialUsed: data.trial_used || false,
-        trialType: data.trial_type,
-        trialContent: data.trial_content,
-        trialStartedAt: data.trial_started_at,
-        trialCompletedAt: data.trial_completed_at,
+        hasPremium: rpcData?.has_premium || false,
+        trialAvailable: rpcData?.trial_available || false,
+        trialUsed: rpcData?.trial_used || false,
+        trialType: rpcData?.trial_type,
+        trialContent: rpcData?.trial_content,
+        trialStartedAt: rpcData?.trial_started_at,
+        trialCompletedAt: rpcData?.trial_completed_at,
       };
 
       console.log('[HP Trial] Trial status:', status);
@@ -135,7 +136,7 @@ export const [HPTrialProvider, useHPTrial] = createContextHook(() => {
       try {
         console.log('[HP Trial] Starting trial:', { trialType, trialContent });
 
-        const { data, error } = await supabase.rpc('start_hp_trial', {
+        const { data, error } = await (supabase.rpc as any)('start_hp_trial', {
           p_user_id: user.id,
           p_trial_type: trialType,
           p_trial_content: trialContent,
@@ -146,8 +147,9 @@ export const [HPTrialProvider, useHPTrial] = createContextHook(() => {
           return false;
         }
 
-        if (!data?.success) {
-          console.error('[HP Trial] Trial start failed:', data?.error);
+        const rpcData = data as any;
+        if (!rpcData?.success) {
+          console.error('[HP Trial] Trial start failed:', rpcData?.error);
           return false;
         }
 
@@ -177,7 +179,7 @@ export const [HPTrialProvider, useHPTrial] = createContextHook(() => {
     try {
       console.log('[HP Trial] Completing trial', { trialId, scorePercentage });
 
-      const { data, error } = await supabase.rpc('complete_hp_trial', {
+      const { error } = await (supabase.rpc as any)('complete_hp_trial', {
         p_user_id: user.id,
       });
 

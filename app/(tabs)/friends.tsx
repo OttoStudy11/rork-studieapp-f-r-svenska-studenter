@@ -711,11 +711,14 @@ export default function FriendsScreen() {
           ]}
           onPress={() => setActiveTab('friends')}
         >
-          <Text style={[
-            styles.tabText, 
-            { color: theme.colors.textSecondary },
-            activeTab === 'friends' && { color: 'white', fontWeight: '600' }
-          ]}>
+          <Text 
+            style={[
+              styles.tabText, 
+              { color: theme.colors.textSecondary },
+              activeTab === 'friends' && { color: 'white', fontWeight: '600' }
+            ]}
+            numberOfLines={1}
+          >
             Vänner ({friends.length})
           </Text>
         </TouchableOpacity>
@@ -727,11 +730,14 @@ export default function FriendsScreen() {
           ]}
           onPress={() => setActiveTab('requests')}
         >
-          <Text style={[
-            styles.tabText,
-            { color: theme.colors.textSecondary },
-            activeTab === 'requests' && { color: 'white', fontWeight: '600' }
-          ]}>
+          <Text 
+            style={[
+              styles.tabText,
+              { color: theme.colors.textSecondary },
+              activeTab === 'requests' && { color: 'white', fontWeight: '600' }
+            ]}
+            numberOfLines={1}
+          >
             Förfrågningar ({friendRequests.length})
           </Text>
         </TouchableOpacity>
@@ -743,11 +749,14 @@ export default function FriendsScreen() {
           ]}
           onPress={() => setActiveTab('communities')}
         >
-          <Text style={[
-            styles.tabText,
-            { color: theme.colors.textSecondary },
-            activeTab === 'communities' && { color: 'white', fontWeight: '600' }
-          ]}>
+          <Text 
+            style={[
+              styles.tabText,
+              { color: theme.colors.textSecondary },
+              activeTab === 'communities' && { color: 'white', fontWeight: '600' }
+            ]}
+            numberOfLines={1}
+          >
             Communities
           </Text>
         </TouchableOpacity>
@@ -1752,10 +1761,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
+    textAlign: 'center',
   },
   viewSelectorContainer: {
     flexDirection: 'row',

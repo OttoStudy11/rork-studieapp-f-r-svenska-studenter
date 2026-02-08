@@ -1281,14 +1281,23 @@ export default function OnboardingScreen() {
                     style={[
                       styles.goalCard,
                       { borderColor: goal.color },
-                      data.goals.includes(goal.id) ? { backgroundColor: goal.color + '20', borderWidth: 2 } : undefined
+                      data.goals.includes(goal.id) ? { 
+                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                        borderWidth: 3,
+                        borderColor: goal.color,
+                        shadowColor: goal.color,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 8,
+                        elevation: 4,
+                      } : undefined
                     ] as any}
                     onPress={() => toggleGoal(goal.id)}
                   >
                     <Text style={styles.goalEmoji}>{goal.icon}</Text>
                     <Text style={[
                       styles.goalLabel,
-                      data.goals.includes(goal.id) && { fontWeight: '700' as const }
+                      data.goals.includes(goal.id) && { fontWeight: '700' as const, color: goal.color }
                     ]}>
                       {goal.label}
                     </Text>
@@ -1317,14 +1326,23 @@ export default function OnboardingScreen() {
                     style={[
                       styles.goalCard,
                       { borderColor: goal.color },
-                      data.goals.includes(goal.id) ? { backgroundColor: goal.color + '20', borderWidth: 2 } : undefined
+                      data.goals.includes(goal.id) ? { 
+                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                        borderWidth: 3,
+                        borderColor: goal.color,
+                        shadowColor: goal.color,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 8,
+                        elevation: 4,
+                      } : undefined
                     ] as any}
                     onPress={() => toggleGoal(goal.id)}
                   >
                     <Text style={styles.goalEmoji}>{goal.icon}</Text>
                     <Text style={[
                       styles.goalLabel,
-                      data.goals.includes(goal.id) && { fontWeight: '700' as const }
+                      data.goals.includes(goal.id) && { fontWeight: '700' as const, color: goal.color }
                     ]}>
                       {goal.label}
                     </Text>
@@ -1351,16 +1369,22 @@ export default function OnboardingScreen() {
                       styles.paceCard,
                       { borderColor: pace.color },
                       data.learningPace === pace.id ? { 
-                        backgroundColor: pace.color + '20', 
+                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
                         borderWidth: 3,
-                        borderColor: pace.color
+                        borderColor: pace.color,
+                        shadowColor: pace.color,
+                        shadowOffset: { width: 0, height: 6 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 12,
+                        elevation: 6,
                       } : undefined
                     ] as any}
                     onPress={() => setData({ ...data, learningPace: pace.id as any })}
                   >
                     <Text style={styles.paceEmoji}>{pace.icon}</Text>
                     <Text style={[
-                      styles.paceTitle
+                      styles.paceTitle,
+                      data.learningPace === pace.id && { color: pace.color }
                     ]}>
                       {pace.title}
                     </Text>
@@ -1369,7 +1393,7 @@ export default function OnboardingScreen() {
                     ]}>{pace.subtitle}</Text>
                     <Text style={[
                       styles.paceDescription,
-                      data.learningPace === pace.id && { color: '#1E293B' }
+                      data.learningPace === pace.id && { color: '#475569', fontWeight: '600' as const }
                     ]}>{pace.description}</Text>
                   </AnimatedPressable>
                 ))}
@@ -1394,16 +1418,22 @@ export default function OnboardingScreen() {
                       styles.paceCard,
                       { borderColor: pace.color },
                       data.learningPace === pace.id ? { 
-                        backgroundColor: pace.color + '20', 
+                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
                         borderWidth: 3,
-                        borderColor: pace.color
+                        borderColor: pace.color,
+                        shadowColor: pace.color,
+                        shadowOffset: { width: 0, height: 6 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 12,
+                        elevation: 6,
                       } : undefined
                     ] as any}
                     onPress={() => setData({ ...data, learningPace: pace.id as any })}
                   >
                     <Text style={styles.paceEmoji}>{pace.icon}</Text>
                     <Text style={[
-                      styles.paceTitle
+                      styles.paceTitle,
+                      data.learningPace === pace.id && { color: pace.color }
                     ]}>
                       {pace.title}
                     </Text>
@@ -1412,7 +1442,7 @@ export default function OnboardingScreen() {
                     ]}>{pace.subtitle}</Text>
                     <Text style={[
                       styles.paceDescription,
-                      data.learningPace === pace.id && { color: '#1E293B' }
+                      data.learningPace === pace.id && { color: '#475569', fontWeight: '600' as const }
                     ]}>{pace.description}</Text>
                   </AnimatedPressable>
                 ))}
@@ -2390,7 +2420,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#1E293B',
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
   },
   paceContainer: {
     width: '100%',

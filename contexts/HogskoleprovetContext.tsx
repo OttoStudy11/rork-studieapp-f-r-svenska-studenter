@@ -131,7 +131,7 @@ interface HogskoleprovetContextValue {
   availableTestVersions: HPTestVersion[];
   getTestVersionsBySection: (sectionCode: string) => HPTestVersion[];
   
-  getQuestionsBySection: (sectionCode: string, count?: number) => LocalHPQuestion[];
+  getQuestionsBySection: (sectionCode: string, count?: number, testVersion?: string) => LocalHPQuestion[];
   getQuestionsByTestVersion: (testVersionId: string) => LocalHPQuestion[];
   getAllQuestionsForFullTest: () => LocalHPQuestion[];
   
@@ -414,15 +414,58 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     }
   };
 
-  const getQuestionsBySection = useCallback((sectionCode: string, count: number = 40): LocalHPQuestion[] => {
+  const getQuestionsBySection = useCallback((sectionCode: string, count: number = 40, testVersion?: string): LocalHPQuestion[] => {
     const staticQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS];
-    const generatedQuestions = generateHPQuestionBank({ sectionCode, count: Math.max(240, count * 6) });
+    const generatedQuestions = generateHPQuestionBank({ sectionCode, count: Math.max(240, count * 6), testVersion });
 
-    const questions = [...staticQuestions, ...generatedQuestions].filter(q => q.sectionCode === sectionCode);
+    let questions = [...staticQuestions, ...generatedQuestions].filter(q => q.sectionCode === sectionCode);
+    
+    // Filter by testVersion if provided
+    if (testVersion) {
+      const versionFiltered = questions.filter(q => {
+        if (q.testVersion === testVersion) {
+          return true;
+        }
+        
+        // Fallback mapping: Map ord-a/b/c to specific year versions
+        if (q.testVersion) {
+          const versionMap: Record<string, string[]> = {
+            'ord-a': ['ord-2024-spring', 'ord-2023-spring', 'ord-2022-spring'],
+            'ord-b': ['ord-2023-fall', 'ord-2022-fall', 'ord-2021-fall'],
+            'ord-c': ['ord-2021-spring', 'ord-2020-fall'],
+            'las-a': ['las-2024-spring', 'las-2023-spring', 'las-2022-spring'],
+            'las-b': ['las-2023-fall', 'las-2022-fall', 'las-2021-fall'],
+            'las-c': ['las-2021-spring', 'las-2020-fall'],
+            'mek-a': ['mek-2024-spring', 'mek-2023-spring', 'mek-2022-spring'],
+            'mek-b': ['mek-2023-fall', 'mek-2022-fall', 'mek-2021-fall'],
+            'mek-c': ['mek-2021-spring', 'mek-2020-fall'],
+            'xyz-a': ['xyz-2024-spring', 'xyz-2023-spring', 'xyz-2022-spring'],
+            'xyz-b': ['xyz-2023-fall', 'xyz-2022-fall', 'xyz-2021-fall'],
+            'xyz-c': ['xyz-2021-spring', 'xyz-2020-fall'],
+            'kva-a': ['kva-2024-spring', 'kva-2023-spring', 'kva-2022-spring'],
+            'kva-b': ['kva-2023-fall', 'kva-2022-fall', 'kva-2021-fall'],
+            'kva-c': ['kva-2021-spring', 'kva-2020-fall'],
+            'dtk-a': ['dtk-2024-spring', 'dtk-2023-spring', 'dtk-2022-spring'],
+            'dtk-b': ['dtk-2023-fall', 'dtk-2022-fall', 'dtk-2021-fall'],
+            'dtk-c': ['dtk-2021-spring', 'dtk-2020-fall'],
+          };
+          
+          const mappedVersions = versionMap[q.testVersion] || [];
+          return mappedVersions.includes(testVersion);
+        }
+        
+        return false;
+      });
+      
+      if (versionFiltered.length > 0) {
+        questions = versionFiltered;
+      }
+    }
+    
     const shuffled = [...questions].sort(() => Math.random() - 0.5);
     const selectedQuestions = shuffled.slice(0, Math.min(count, questions.length));
 
-    console.log('[HP] getQuestionsBySection', { sectionCode, requested: count, available: questions.length, selected: selectedQuestions.length });
+    console.log('[HP] getQuestionsBySection', { sectionCode, testVersion, requested: count, available: questions.length, selected: selectedQuestions.length });
 
     return selectedQuestions.map(q => shuffleAnswerOptions(q));
   }, []);
@@ -520,7 +563,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
         }
         console.log('[HP] Using test version:', testVersionId, 'questions:', questions.length);
       } else {
-        questions = getQuestionsBySection(sectionCode, section.questionCount || 20);
+        questions = getQuestionsBySection(sectionCode, section.questionCount || 20, undefined);
       }
       
       if (questions.length === 0) {

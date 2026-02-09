@@ -12,7 +12,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-1',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 1,
     questionText: 'Vad betyder ordet "pertinent"?',
     questionType: 'multiple_choice',
@@ -24,7 +24,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-2',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 2,
     questionText: 'Vilket ord är en synonym till "efemär"?',
     questionType: 'multiple_choice',
@@ -36,7 +36,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-3',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 3,
     questionText: 'Vad betyder "pragmatisk"?',
     questionType: 'multiple_choice',
@@ -48,7 +48,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-4',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 4,
     questionText: 'Vilket ord betyder "överdrivet detaljerad"?',
     questionType: 'multiple_choice',
@@ -60,7 +60,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-5',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 5,
     questionText: 'Vad är en antonym till "konkret"?',
     questionType: 'multiple_choice',
@@ -72,7 +72,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-6',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 6,
     questionText: 'Vad betyder "redundant"?',
     questionType: 'multiple_choice',
@@ -84,7 +84,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-7',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 7,
     questionText: 'Vilket ord betyder "motvillig"?',
     questionType: 'multiple_choice',
@@ -96,7 +96,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-8',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 8,
     questionText: 'Vad betyder "eloquent"?',
     questionType: 'multiple_choice',
@@ -108,7 +108,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-9',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 9,
     questionText: 'Vilket ord är motsatsen till "benägen"?',
     questionType: 'multiple_choice',
@@ -120,7 +120,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-10',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 10,
     questionText: 'Vad betyder "paradox"?',
     questionType: 'multiple_choice',
@@ -132,7 +132,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-11',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 11,
     questionText: 'Vilket ord betyder "ihållande och ihärdig"?',
     questionType: 'multiple_choice',
@@ -144,7 +144,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-12',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 12,
     questionText: 'Vad betyder "ambivalent"?',
     questionType: 'multiple_choice',
@@ -156,7 +156,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-13',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 13,
     questionText: 'Vilket ord betyder "oförmögen att läsa och skriva"?',
     questionType: 'multiple_choice',
@@ -168,7 +168,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-14',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 14,
     questionText: 'Vad betyder "altruistisk"?',
     questionType: 'multiple_choice',
@@ -180,7 +180,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-15',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 15,
     questionText: 'Vilket ord betyder "tillfällig lösning"?',
     questionType: 'multiple_choice',
@@ -192,7 +192,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-16',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 16,
     questionText: 'Vad betyder "konventionell"?',
     questionType: 'multiple_choice',
@@ -204,7 +204,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-17',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 17,
     questionText: 'Vilket ord betyder "känslomässigt oberörd"?',
     questionType: 'multiple_choice',
@@ -216,7 +216,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-18',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 18,
     questionText: 'Vad betyder "subtil"?',
     questionType: 'multiple_choice',
@@ -228,7 +228,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-19',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 19,
     questionText: 'Vilket ord betyder "mycket noga med detaljer"?',
     questionType: 'multiple_choice',
@@ -240,7 +240,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-20',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 20,
     questionText: 'Vad betyder "empatisk"?',
     questionType: 'multiple_choice',
@@ -252,7 +252,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-21',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 21,
     questionText: 'Vad betyder "kronologisk"?',
     questionType: 'multiple_choice',
@@ -264,7 +264,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-22',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 22,
     questionText: 'Vilket ord betyder "som kan misstolkas"?',
     questionType: 'multiple_choice',
@@ -276,7 +276,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-23',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 23,
     questionText: 'Vad betyder "dilemma"?',
     questionType: 'multiple_choice',
@@ -288,7 +288,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-24',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 24,
     questionText: 'Vilket ord betyder "att göra något värre"?',
     questionType: 'multiple_choice',
@@ -300,7 +300,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-25',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 25,
     questionText: 'Vad betyder "innovativ"?',
     questionType: 'multiple_choice',
@@ -312,7 +312,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-26',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 26,
     questionText: 'Vilket ord är en synonym till "verifiera"?',
     questionType: 'multiple_choice',
@@ -324,7 +324,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-27',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 27,
     questionText: 'Vad betyder "accelerera"?',
     questionType: 'multiple_choice',
@@ -336,7 +336,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-28',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 28,
     questionText: 'Vilket ord betyder "kritisk granskning"?',
     questionType: 'multiple_choice',
@@ -348,7 +348,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-29',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 29,
     questionText: 'Vad är en antonym till "komplex"?',
     questionType: 'multiple_choice',
@@ -360,7 +360,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-30',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 30,
     questionText: 'Vad betyder "objektiv"?',
     questionType: 'multiple_choice',
@@ -372,7 +372,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-31',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 31,
     questionText: 'Vilket ord betyder "uppmuntra starkt"?',
     questionType: 'multiple_choice',
@@ -384,7 +384,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-32',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 32,
     questionText: 'Vad betyder "hypotetisk"?',
     questionType: 'multiple_choice',
@@ -396,7 +396,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-33',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 33,
     questionText: 'Vilket ord betyder "att göra något lättare"?',
     questionType: 'multiple_choice',
@@ -408,7 +408,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-34',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 34,
     questionText: 'Vad betyder "konsekvent"?',
     questionType: 'multiple_choice',
@@ -420,7 +420,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-35',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 35,
     questionText: 'Vilket ord betyder "ta bort"?',
     questionType: 'multiple_choice',
@@ -432,7 +432,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-36',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 36,
     questionText: 'Vad betyder "sporadisk"?',
     questionType: 'multiple_choice',
@@ -444,7 +444,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-37',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 37,
     questionText: 'Vilket ord betyder "tveksam eller osäker"?',
     questionType: 'multiple_choice',
@@ -456,7 +456,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-38',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 38,
     questionText: 'Vad betyder "substantiell"?',
     questionType: 'multiple_choice',
@@ -468,7 +468,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-39',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 39,
     questionText: 'Vilket ord betyder "lugn och samlad"?',
     questionType: 'multiple_choice',
@@ -480,7 +480,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-40',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 40,
     questionText: 'Vad betyder "prevalent"?',
     questionType: 'multiple_choice',
@@ -494,7 +494,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-1',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 1,
     questionText: 'Vad betyder "arbiträr"?',
     questionType: 'multiple_choice',
@@ -506,7 +506,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-2',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 2,
     questionText: 'Vilket ord betyder "som inte kan undvikas"?',
     questionType: 'multiple_choice',
@@ -518,7 +518,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-3',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 3,
     questionText: 'Vad betyder "eloquens"?',
     questionType: 'multiple_choice',
@@ -530,7 +530,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-4',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 4,
     questionText: 'Vilket ord är en synonym till "dogmatisk"?',
     questionType: 'multiple_choice',
@@ -542,7 +542,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-5',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 5,
     questionText: 'Vad betyder "konkav"?',
     questionType: 'multiple_choice',
@@ -554,7 +554,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-6',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 6,
     questionText: 'Vilket ord betyder "frivillig frånvaro från mat"?',
     questionType: 'multiple_choice',
@@ -566,7 +566,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-7',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 7,
     questionText: 'Vad betyder "deteriorera"?',
     questionType: 'multiple_choice',
@@ -578,7 +578,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-8',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 8,
     questionText: 'Vilket ord betyder "kortfattad och kärnfull"?',
     questionType: 'multiple_choice',
@@ -590,7 +590,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-9',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 9,
     questionText: 'Vad är en antonym till "transparent"?',
     questionType: 'multiple_choice',
@@ -602,7 +602,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-10',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 10,
     questionText: 'Vad betyder "implicera"?',
     questionType: 'multiple_choice',
@@ -614,7 +614,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-11',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 11,
     questionText: 'Vilket ord betyder "överseende och förlåtande"?',
     questionType: 'multiple_choice',
@@ -626,7 +626,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-12',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 12,
     questionText: 'Vad betyder "volatile"?',
     questionType: 'multiple_choice',
@@ -638,7 +638,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-13',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 13,
     questionText: 'Vilket ord betyder "olustig och dyster"?',
     questionType: 'multiple_choice',
@@ -650,7 +650,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-14',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 14,
     questionText: 'Vad betyder "flagrant"?',
     questionType: 'multiple_choice',
@@ -662,7 +662,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-15',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 15,
     questionText: 'Vilket ord betyder "samtidig"?',
     questionType: 'multiple_choice',
@@ -674,7 +674,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-16',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 16,
     questionText: 'Vad betyder "hedonistisk"?',
     questionType: 'multiple_choice',
@@ -686,7 +686,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-17',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 17,
     questionText: 'Vilket ord betyder "som kan förnekas"?',
     questionType: 'multiple_choice',
@@ -698,7 +698,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-18',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 18,
     questionText: 'Vad betyder "eskalerande"?',
     questionType: 'multiple_choice',
@@ -710,7 +710,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-19',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 19,
     questionText: 'Vilket ord betyder "tillbakadragen och tystlåten"?',
     questionType: 'multiple_choice',
@@ -722,7 +722,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-20',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 20,
     questionText: 'Vad betyder "accelerera"?',
     questionType: 'multiple_choice',
@@ -736,7 +736,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-1',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 1,
     questionText: 'Vad betyder "sporadisk"?',
     questionType: 'multiple_choice',
@@ -748,7 +748,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-2',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 2,
     questionText: 'Vilket ord betyder "oförsonlig och hård"?',
     questionType: 'multiple_choice',
@@ -760,7 +760,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-3',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 3,
     questionText: 'Vad betyder "konnoissör"?',
     questionType: 'multiple_choice',
@@ -772,7 +772,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-4',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 4,
     questionText: 'Vilket ord är motsatsen till "frivol"?',
     questionType: 'multiple_choice',
@@ -784,7 +784,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-5',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 5,
     questionText: 'Vad betyder "proliferation"?',
     questionType: 'multiple_choice',
@@ -796,7 +796,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-6',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 6,
     questionText: 'Vilket ord betyder "skicklig och händig"?',
     questionType: 'multiple_choice',
@@ -808,7 +808,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-7',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 7,
     questionText: 'Vad betyder "nostalgi"?',
     questionType: 'multiple_choice',
@@ -820,7 +820,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-8',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 8,
     questionText: 'Vilket ord betyder "överflödande och rik"?',
     questionType: 'multiple_choice',
@@ -832,7 +832,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-9',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 9,
     questionText: 'Vad är en synonym till "militant"?',
     questionType: 'multiple_choice',
@@ -844,7 +844,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-10',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 10,
     questionText: 'Vad betyder "anachronism"?',
     questionType: 'multiple_choice',
@@ -856,7 +856,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-11',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 11,
     questionText: 'Vilket ord betyder "mycket liten"?',
     questionType: 'multiple_choice',
@@ -868,7 +868,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-12',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 12,
     questionText: 'Vad betyder "verbosity"?',
     questionType: 'multiple_choice',
@@ -880,7 +880,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-13',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 13,
     questionText: 'Vilket ord betyder "lämpad för ändamålet"?',
     questionType: 'multiple_choice',
@@ -892,7 +892,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-14',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 14,
     questionText: 'Vad betyder "intrikat"?',
     questionType: 'multiple_choice',
@@ -904,7 +904,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-15',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 15,
     questionText: 'Vilket ord betyder "stödja eller främja"?',
     questionType: 'multiple_choice',
@@ -916,7 +916,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-16',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 16,
     questionText: 'Vad betyder "redundans"?',
     questionType: 'multiple_choice',
@@ -928,7 +928,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-17',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 17,
     questionText: 'Vilket ord betyder "hänsynslös och brutal"?',
     questionType: 'multiple_choice',
@@ -940,7 +940,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-18',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 18,
     questionText: 'Vad betyder "eufemism"?',
     questionType: 'multiple_choice',
@@ -952,7 +952,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-19',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 19,
     questionText: 'Vilket ord betyder "ömsesidig"?',
     questionType: 'multiple_choice',
@@ -964,7 +964,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-20',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 20,
     questionText: 'Vad betyder "obsolet"?',
     questionType: 'multiple_choice',
@@ -982,7 +982,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-1',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 1,
     questionText: 'Vad är författarens huvudsakliga syfte med texten?',
     questionType: 'reading_comprehension',
@@ -1000,7 +1000,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-2',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 2,
     questionText: 'Enligt texten, vad kan hända om vi minskar utsläppen?',
     questionType: 'reading_comprehension',
@@ -1018,7 +1018,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-3',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 3,
     questionText: 'Vilken ton har författaren i texten?',
     questionType: 'reading_comprehension',
@@ -1031,7 +1031,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-4',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 4,
     questionText: 'Vad är textens huvudtema?',
     questionType: 'reading_comprehension',
@@ -1044,7 +1044,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-5',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 5,
     questionText: 'Vilka två perspektiv presenteras i texten?',
     questionType: 'reading_comprehension',
@@ -1062,7 +1062,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-6',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 6,
     questionText: 'Vad kan man dra för slutsats från texten?',
     questionType: 'reading_comprehension',
@@ -1080,7 +1080,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-7',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 7,
     questionText: 'Vad är författarens attityd till ämnet?',
     questionType: 'reading_comprehension',
@@ -1093,7 +1093,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-8',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 8,
     questionText: 'Enligt texten, varför är den svenska modellen framgångsrik?',
     questionType: 'reading_comprehension',
@@ -1111,7 +1111,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-9',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 9,
     questionText: 'Vad är den underliggande budskapet i texten?',
     questionType: 'reading_comprehension',
@@ -1129,7 +1129,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-10',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 10,
     questionText: 'Vad menas med "tillväxtmentalitet" i texten?',
     questionType: 'reading_comprehension',
@@ -1147,7 +1147,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-11',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 11,
     questionText: 'Vilken slutsats kan dras från texten?',
     questionType: 'reading_comprehension',
@@ -1165,7 +1165,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-12',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 12,
     questionText: 'Vad är författarens huvudsakliga argument?',
     questionType: 'reading_comprehension',
@@ -1183,7 +1183,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-13',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 13,
     questionText: 'Hur beskriver texten attityden till sömn?',
     questionType: 'reading_comprehension',
@@ -1201,7 +1201,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-14',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 14,
     questionText: 'Vad är textens syfte?',
     questionType: 'reading_comprehension',
@@ -1219,7 +1219,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-15',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 15,
     questionText: 'Vad indikerar att meditation blir mer accepterad?',
     questionType: 'reading_comprehension',
@@ -1237,7 +1237,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-16',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 16,
     questionText: 'Vilket perspektiv saknas i texten?',
     questionType: 'reading_comprehension',
@@ -1255,7 +1255,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-17',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 17,
     questionText: 'Vad är författarens hållning till CRISPR?',
     questionType: 'reading_comprehension',
@@ -1273,7 +1273,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-18',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 18,
     questionText: 'Vad är textens huvudpoäng?',
     questionType: 'reading_comprehension',
@@ -1291,7 +1291,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-19',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 19,
     questionText: 'Vilket problem med digitala språkverktyg nämns?',
     questionType: 'reading_comprehension',
@@ -1309,7 +1309,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-a-20',
     sectionCode: 'LÄS',
-    testVersion: 'las-a',
+    testVersion: 'las-2024-spring',
     questionNumber: 20,
     questionText: 'Hur skulle man kunna sammanfatta författarens ståndpunkt?',
     questionType: 'reading_comprehension',
@@ -1329,7 +1329,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-1',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 1,
     questionText: 'Vad är författarens huvudsakliga syfte med texten?',
     questionType: 'reading_comprehension',
@@ -1347,7 +1347,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-2',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 2,
     questionText: 'Vilket problem beskrivs i texten?',
     questionType: 'reading_comprehension',
@@ -1365,7 +1365,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-3',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 3,
     questionText: 'Vilken ton har författaren?',
     questionType: 'reading_comprehension',
@@ -1378,7 +1378,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-4',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 4,
     questionText: 'Vad menar författaren är målet med argumentation?',
     questionType: 'reading_comprehension',
@@ -1396,7 +1396,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-5',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 5,
     questionText: 'Vad är textens huvudtema?',
     questionType: 'reading_comprehension',
@@ -1414,7 +1414,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-6',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 6,
     questionText: 'Enligt texten, varför ska företag satsa på hållbarhet?',
     questionType: 'reading_comprehension',
@@ -1432,7 +1432,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-7',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 7,
     questionText: 'Vilken slutsats kan dras från texten?',
     questionType: 'reading_comprehension',
@@ -1450,7 +1450,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-8',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 8,
     questionText: 'Vad är författarens hållning?',
     questionType: 'reading_comprehension',
@@ -1468,7 +1468,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-9',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 9,
     questionText: 'Vilket problem lyfts fram i texten?',
     questionType: 'reading_comprehension',
@@ -1486,7 +1486,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-10',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 10,
     questionText: 'Vilka färdigheter blir viktigare enligt texten?',
     questionType: 'reading_comprehension',
@@ -1504,7 +1504,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-11',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 11,
     questionText: 'Vad är författarens huvudargument?',
     questionType: 'reading_comprehension',
@@ -1522,7 +1522,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-12',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 12,
     questionText: 'Varför är empati viktig enligt författaren?',
     questionType: 'reading_comprehension',
@@ -1540,7 +1540,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-13',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 13,
     questionText: 'Vad är textens syfte?',
     questionType: 'reading_comprehension',
@@ -1558,7 +1558,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-14',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 14,
     questionText: 'Enligt texten, vilken typ av stress är skadlig?',
     questionType: 'reading_comprehension',
@@ -1576,7 +1576,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-15',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 15,
     questionText: 'Vad saknas i texten?',
     questionType: 'reading_comprehension',
@@ -1594,7 +1594,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-16',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 16,
     questionText: 'Vilken ton har författaren?',
     questionType: 'reading_comprehension',
@@ -1612,7 +1612,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-17',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 17,
     questionText: 'Vad är huvudbudskapet?',
     questionType: 'reading_comprehension',
@@ -1630,7 +1630,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-18',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 18,
     questionText: 'Vad menas med "den nordiska modellen"?',
     questionType: 'reading_comprehension',
@@ -1648,7 +1648,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-19',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 19,
     questionText: 'Vilket perspektiv presenteras i texten?',
     questionType: 'reading_comprehension',
@@ -1666,7 +1666,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-20',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 20,
     questionText: 'Vad är den huvudsakliga utmaningen med fjärrarbete enligt texten?',
     questionType: 'reading_comprehension',
@@ -1686,7 +1686,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-1',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 1,
     questionText: 'Vad är författarens huvudpoäng?',
     questionType: 'reading_comprehension',
@@ -1704,7 +1704,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-2',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 2,
     questionText: 'Vad definierar konst enligt texten?',
     questionType: 'reading_comprehension',
@@ -1722,7 +1722,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-3',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 3,
     questionText: 'Vilken ton använder författaren?',
     questionType: 'reading_comprehension',
@@ -1735,7 +1735,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-4',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 4,
     questionText: 'Varför är biodiversitet viktig enligt texten?',
     questionType: 'reading_comprehension',
@@ -1753,7 +1753,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-5',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 5,
     questionText: 'Vad är författarens hållning?',
     questionType: 'reading_comprehension',
@@ -1771,7 +1771,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-6',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 6,
     questionText: 'Vilken lösning föreslås?',
     questionType: 'reading_comprehension',
@@ -1789,7 +1789,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-7',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 7,
     questionText: 'Vad är textens huvudtema?',
     questionType: 'reading_comprehension',
@@ -1807,7 +1807,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-8',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 8,
     questionText: 'Vilka fördelar nämns med urban odling?',
     questionType: 'reading_comprehension',
@@ -1825,7 +1825,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-9',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 9,
     questionText: 'Vilket antagande gör författaren?',
     questionType: 'reading_comprehension',
@@ -1843,7 +1843,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-10',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 10,
     questionText: 'Hur bemöter författaren kritiken?',
     questionType: 'reading_comprehension',
@@ -1861,7 +1861,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-11',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 11,
     questionText: 'Vad är textens syfte?',
     questionType: 'reading_comprehension',
@@ -1879,7 +1879,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-12',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 12,
     questionText: 'Vad ses som styrka enligt texten?',
     questionType: 'reading_comprehension',
@@ -1897,7 +1897,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-13',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 13,
     questionText: 'Vilken slutsats kan dras?',
     questionType: 'reading_comprehension',
@@ -1915,7 +1915,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-14',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 14,
     questionText: 'Vad skiljer vetenskap från pseudovetenskap?',
     questionType: 'reading_comprehension',
@@ -1933,7 +1933,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-15',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 15,
     questionText: 'Vad är författarens hållning?',
     questionType: 'reading_comprehension',
@@ -1951,7 +1951,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-16',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 16,
     questionText: 'Vilken lösning föreslås?',
     questionType: 'reading_comprehension',
@@ -1969,7 +1969,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-17',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 17,
     questionText: 'Vad är textens huvudpoäng?',
     questionType: 'reading_comprehension',
@@ -1987,7 +1987,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-18',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 18,
     questionText: 'Vad menas med att "historia rimmar"?',
     questionType: 'reading_comprehension',
@@ -2005,7 +2005,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-19',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 19,
     questionText: 'Vilken ton använder texten?',
     questionType: 'reading_comprehension',
@@ -2023,7 +2023,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-c-20',
     sectionCode: 'LÄS',
-    testVersion: 'las-c',
+    testVersion: 'las-2021-spring',
     questionNumber: 20,
     questionText: 'Vad betonas i slutet av texten?',
     questionType: 'reading_comprehension',
@@ -2047,7 +2047,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-1',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 1,
     questionText: 'Trots att han var ____ lyckades han ____ alla hinder.',
     questionType: 'multiple_choice',
@@ -2064,7 +2064,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-2',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 2,
     questionText: 'Hennes ____ personlighet gjorde att hon snabbt ____ många vänner.',
     questionType: 'multiple_choice',
@@ -2081,7 +2081,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-3',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 3,
     questionText: 'Vetenskapliga ____ måste alltid kunna ____ av andra forskare.',
     questionType: 'multiple_choice',
@@ -2098,7 +2098,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-4',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 4,
     questionText: 'Den nya teknologin är ____ men kräver ____ investeringar.',
     questionType: 'multiple_choice',
@@ -2115,7 +2115,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-5',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 5,
     questionText: 'För att ____ framgång måste man vara ____ att ta risker.',
     questionType: 'multiple_choice',
@@ -2132,7 +2132,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-6',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 6,
     questionText: 'Hennes ____ erfarenhet inom området gjorde henne till den ____ kandidaten.',
     questionType: 'multiple_choice',
@@ -2149,7 +2149,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-7',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 7,
     questionText: 'Projektet var ____ ambitiöst att många tvivlade på att det skulle ____.',
     questionType: 'multiple_choice',
@@ -2166,7 +2166,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-8',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 8,
     questionText: 'Den ekonomiska ____ har lett till ____ arbetslöshet.',
     questionType: 'multiple_choice',
@@ -2183,7 +2183,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-9',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 9,
     questionText: 'Författarens stil är både ____ och ____, vilket gör texten lättläst men innehållsrik.',
     questionType: 'multiple_choice',
@@ -2200,7 +2200,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-10',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 10,
     questionText: 'Trots ____ ansträngningar kunde de inte ____ problemet.',
     questionType: 'multiple_choice',
@@ -2217,7 +2217,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-11',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 11,
     questionText: 'Den nya lagen kommer att ____ företagens ____ att förorsaka miljöskador.',
     questionType: 'multiple_choice',
@@ -2234,7 +2234,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-12',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 12,
     questionText: 'Hans ____ till detaljer gjorde att projektet blev både ____ och professionellt.',
     questionType: 'multiple_choice',
@@ -2251,7 +2251,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-13',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 13,
     questionText: 'Eftersom situationen var ____, krävdes ____ åtgärder.',
     questionType: 'multiple_choice',
@@ -2268,7 +2268,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-14',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 14,
     questionText: 'Studien ____ att regelbunden träning ____ livslängden.',
     questionType: 'multiple_choice',
@@ -2285,7 +2285,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-15',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 15,
     questionText: 'Den nya metoden är mer ____ än den gamla, vilket gör den ____ för småföretag.',
     questionType: 'multiple_choice',
@@ -2302,7 +2302,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-16',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 16,
     questionText: 'Hennes ____ att acceptera kritik ____ hennes professionella utveckling.',
     questionType: 'multiple_choice',
@@ -2319,7 +2319,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-17',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 17,
     questionText: 'Den ____ bevisen till trots fortsatte hon att ____ teorin.',
     questionType: 'multiple_choice',
@@ -2336,7 +2336,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-18',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 18,
     questionText: 'Hans ____ sätt att tala gjorde det svårt för lyssnarna att ____ hans budskap.',
     questionType: 'multiple_choice',
@@ -2353,7 +2353,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-19',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 19,
     questionText: 'Den ____ forskningen har lett till ____ genombrott inom medicin.',
     questionType: 'multiple_choice',
@@ -2370,7 +2370,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-a-20',
     sectionCode: 'MEK',
-    testVersion: 'mek-a',
+    testVersion: 'mek-2024-spring',
     questionNumber: 20,
     questionText: 'I stället för att ____ problemet valde ledningen att ____ en utredning.',
     questionType: 'multiple_choice',
@@ -2389,7 +2389,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-1',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 1,
     questionText: 'Även om forskningsresultaten var ____, vågade ingen ____ att dra för hastiga slutsatser.',
     questionType: 'multiple_choice',
@@ -2406,7 +2406,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-2',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 2,
     questionText: 'Den nya lagen ____ för att ____ de svagas rättigheter.',
     questionType: 'multiple_choice',
@@ -2423,7 +2423,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-3',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 3,
     questionText: 'Hans ____ framträdande dolde hans ____ osäkerhet.',
     questionType: 'multiple_choice',
@@ -2440,7 +2440,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-4',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 4,
     questionText: 'Ju mer komplicerad tekniken blir, desto ____ blir det för gemene man att ____ den.',
     questionType: 'multiple_choice',
@@ -2457,7 +2457,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-5',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 5,
     questionText: 'Kritikerna ____ att verket var alltför ____ för att tilltala en bred publik.',
     questionType: 'multiple_choice',
@@ -2474,7 +2474,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-6',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 6,
     questionText: 'Den ekonomiska ____ tvingade företaget att ____ antalet anställda.',
     questionType: 'multiple_choice',
@@ -2491,7 +2491,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-7',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 7,
     questionText: 'Hennes ____ sätt att uttrycka sig gjorde att budskapet ____ förlorades.',
     questionType: 'multiple_choice',
@@ -2508,7 +2508,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-8',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 8,
     questionText: 'I stället för att ____ problemet valde de att ____ en konstruktiv dialog.',
     questionType: 'multiple_choice',
@@ -2525,7 +2525,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-9',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 9,
     questionText: 'Hans ____ beteende gjorde det svårt för kollegorna att ____ hur han skulle reagera.',
     questionType: 'multiple_choice',
@@ -2542,7 +2542,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-10',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 10,
     questionText: 'Den ____ informationen i rapporten gjorde att beslutsfattarna ____ dra korrekta slutsatser.',
     questionType: 'multiple_choice',
@@ -2559,7 +2559,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-11',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 11,
     questionText: 'Trots sin ____ ålder visade hon en ____ mognad i sitt sätt att resonera.',
     questionType: 'multiple_choice',
@@ -2576,7 +2576,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-12',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 12,
     questionText: 'Vetenskapen har ____ vårt sätt att ____ världen.',
     questionType: 'multiple_choice',
@@ -2593,7 +2593,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-13',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 13,
     questionText: 'Den nya metoden var både ____ och ____, vilket gjorde den idealisk för storskalig tillämpning.',
     questionType: 'multiple_choice',
@@ -2610,7 +2610,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-14',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 14,
     questionText: 'Hans ____ att ____ nya perspektiv gjorde honom till en värdefull teammedlem.',
     questionType: 'multiple_choice',
@@ -2627,7 +2627,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-15',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 15,
     questionText: 'Historien visar att stora ____ ofta följs av perioder av konsolidering och ____.',
     questionType: 'multiple_choice',
@@ -2644,7 +2644,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-16',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 16,
     questionText: 'Forskningens ____ gör det svårt att ____ de långsiktiga konsekvenserna.',
     questionType: 'multiple_choice',
@@ -2661,7 +2661,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-17',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 17,
     questionText: 'Hennes ____ i förhandlingarna ledde till ett ____ resultat för båda parter.',
     questionType: 'multiple_choice',
@@ -2678,7 +2678,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-18',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 18,
     questionText: 'Den ____ teknologin kommer att ____ hela industrin.',
     questionType: 'multiple_choice',
@@ -2695,7 +2695,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-19',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 19,
     questionText: 'Den ____ debatten förde inte diskussionen framåt utan ____ den snarare.',
     questionType: 'multiple_choice',
@@ -2712,7 +2712,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-b-20',
     sectionCode: 'MEK',
-    testVersion: 'mek-b',
+    testVersion: 'mek-2023-fall',
     questionNumber: 20,
     questionText: 'Att ____ tidigare misstag är avgörande för att ____ framtida framgång.',
     questionType: 'multiple_choice',
@@ -2731,7 +2731,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-1',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 1,
     questionText: 'Den ____ statistiken fick forskarna att ____ sina ursprungliga hypoteser.',
     questionType: 'multiple_choice',
@@ -2748,7 +2748,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-2',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 2,
     questionText: 'För att ____ konkurrenskraften måste företaget ____ i ny teknologi.',
     questionType: 'multiple_choice',
@@ -2765,7 +2765,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-3',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 3,
     questionText: 'Hennes ____ framgång ____ många att följa hennes exempel.',
     questionType: 'multiple_choice',
@@ -2782,7 +2782,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-4',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 4,
     questionText: 'Den ____ bevisen till trots fortsatte skeptikerna att ____ teorin.',
     questionType: 'multiple_choice',
@@ -2799,7 +2799,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-5',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 5,
     questionText: 'Budgetens ____ struktur gjorde det svårt att ____ var pengarna skulle användas.',
     questionType: 'multiple_choice',
@@ -2816,7 +2816,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-6',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 6,
     questionText: 'Miljöproblemen ____ inte längre ____, utan kräver omedelbar handling.',
     questionType: 'multiple_choice',
@@ -2833,7 +2833,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-7',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 7,
     questionText: 'Hans ____ kunskap inom området gjorde honom till en ____ expert.',
     questionType: 'multiple_choice',
@@ -2850,7 +2850,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-8',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 8,
     questionText: 'Den ____ kritiken ____ teamets moral avsevärt.',
     questionType: 'multiple_choice',
@@ -2867,7 +2867,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-9',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 9,
     questionText: 'Trots ____ resurser lyckades projektet ____ alla förväntningar.',
     questionType: 'multiple_choice',
@@ -2884,7 +2884,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-10',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 10,
     questionText: 'Den nya policyn ____ för att ____ jämställdheten på arbetsplatsen.',
     questionType: 'multiple_choice',
@@ -2901,7 +2901,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-11',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 11,
     questionText: 'Hennes ____ sätt att presentera komplicerade idéer gjorde dem ____ för alla.',
     questionType: 'multiple_choice',
@@ -2918,7 +2918,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-12',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 12,
     questionText: 'Den ____ tillväxten under 2000-talet visade sig vara ____ och följdes av en kris.',
     questionType: 'multiple_choice',
@@ -2935,7 +2935,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-13',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 13,
     questionText: 'För att ____ sina mål måste man vara beredd att ____ tillfälliga motgångar.',
     questionType: 'multiple_choice',
@@ -2952,7 +2952,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-14',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 14,
     questionText: 'Den ____ medicinen har revolutionerat behandlingen av tidigare ____ sjukdomar.',
     questionType: 'multiple_choice',
@@ -2969,7 +2969,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-15',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 15,
     questionText: 'Hans ____ till projektet var ____ för dess framgång.',
     questionType: 'multiple_choice',
@@ -2986,7 +2986,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-16',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 16,
     questionText: 'Den ____ marknaden gör det ____ för små företag att konkurrera.',
     questionType: 'multiple_choice',
@@ -3003,7 +3003,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-17',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 17,
     questionText: 'Studiens ____ resultat ____ tidigare forsknings slutsatser.',
     questionType: 'multiple_choice',
@@ -3020,7 +3020,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-18',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 18,
     questionText: 'Genom att ____ olika perspektiv kan vi ____ en mer nyanserad förståelse.',
     questionType: 'multiple_choice',
@@ -3037,7 +3037,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-19',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 19,
     questionText: 'Den ____ infrastrukturen ____ landets ekonomiska utveckling.',
     questionType: 'multiple_choice',
@@ -3054,7 +3054,7 @@ export const ALL_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-c-20',
     sectionCode: 'MEK',
-    testVersion: 'mek-c',
+    testVersion: 'mek-2021-spring',
     questionNumber: 20,
     questionText: 'Trots sina ____ insikter lyckades hon inte ____ sina idéer effektivt.',
     questionType: 'multiple_choice',

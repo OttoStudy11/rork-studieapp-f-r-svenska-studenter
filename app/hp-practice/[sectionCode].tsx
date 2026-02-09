@@ -31,7 +31,7 @@ import * as Haptics from 'expo-haptics';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function HPPracticeScreen() {
-  const { sectionCode } = useLocalSearchParams<{ sectionCode: string }>();
+  const { sectionCode, testVersionId } = useLocalSearchParams<{ sectionCode: string; testVersionId?: string }>();
   const { theme, isDark } = useTheme();
   const { 
     sessionState, 
@@ -54,8 +54,8 @@ export default function HPPracticeScreen() {
   useEffect(() => {
     const initSession = async () => {
       if (!sessionState && sectionCode) {
-        console.log('[HP Practice] Starting session for:', sectionCode);
-        await startPracticeSession(sectionCode);
+        console.log('[HP Practice] Starting session for:', sectionCode, 'testVersion:', testVersionId);
+        await startPracticeSession(sectionCode, testVersionId || undefined);
       }
     };
     initSession();

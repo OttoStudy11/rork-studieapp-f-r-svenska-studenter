@@ -263,7 +263,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-1',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 1,
     questionText: 'Vad betyder ordet "pertinent"?',
     questionType: 'multiple_choice',
@@ -275,7 +275,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-2',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 2,
     questionText: 'Vilket ord är en synonym till "efemär"?',
     questionType: 'multiple_choice',
@@ -287,7 +287,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-3',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 3,
     questionText: 'Vad betyder "pragmatisk"?',
     questionType: 'multiple_choice',
@@ -299,7 +299,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-4',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 4,
     questionText: 'Vilket ord betyder "överdrivet detaljerad"?',
     questionType: 'multiple_choice',
@@ -311,7 +311,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-5',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 5,
     questionText: 'Vad är en antonym till "konkret"?',
     questionType: 'multiple_choice',
@@ -323,7 +323,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-6',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 6,
     questionText: 'Vad betyder "redundant"?',
     questionType: 'multiple_choice',
@@ -335,7 +335,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-7',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 7,
     questionText: 'Vilket ord betyder "motvillig"?',
     questionType: 'multiple_choice',
@@ -347,7 +347,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-8',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 8,
     questionText: 'Vad betyder "eloquent"?',
     questionType: 'multiple_choice',
@@ -359,7 +359,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-9',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 9,
     questionText: 'Vilket ord är motsatsen till "benägen"?',
     questionType: 'multiple_choice',
@@ -371,7 +371,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-10',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 10,
     questionText: 'Vad betyder "paradox"?',
     questionType: 'multiple_choice',
@@ -383,7 +383,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-11',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 11,
     questionText: 'Vilket ord betyder "ihållande och ihärdig"?',
     questionType: 'multiple_choice',
@@ -395,7 +395,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-12',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 12,
     questionText: 'Vad betyder "ambivalent"?',
     questionType: 'multiple_choice',
@@ -407,7 +407,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-13',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 13,
     questionText: 'Vilket ord betyder "oförmögen att läsa och skriva"?',
     questionType: 'multiple_choice',
@@ -419,7 +419,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-14',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 14,
     questionText: 'Vad betyder "altruistisk"?',
     questionType: 'multiple_choice',
@@ -431,7 +431,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-15',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 15,
     questionText: 'Vilket ord betyder "tillfällig lösning"?',
     questionType: 'multiple_choice',
@@ -443,7 +443,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-16',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 16,
     questionText: 'Vad betyder "konventionell"?',
     questionType: 'multiple_choice',
@@ -455,7 +455,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-17',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 17,
     questionText: 'Vilket ord betyder "känslomässigt oberörd"?',
     questionType: 'multiple_choice',
@@ -467,7 +467,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-18',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 18,
     questionText: 'Vad betyder "subtil"?',
     questionType: 'multiple_choice',
@@ -479,7 +479,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-19',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 19,
     questionText: 'Vilket ord betyder "mycket noga med detaljer"?',
     questionType: 'multiple_choice',
@@ -491,7 +491,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-a-20',
     sectionCode: 'ORD',
-    testVersion: 'ord-a',
+    testVersion: 'ord-2024-spring',
     questionNumber: 20,
     questionText: 'Vad betyder "empatisk"?',
     questionType: 'multiple_choice',
@@ -1921,8 +1921,51 @@ export const getSectionByCode = (code: string): HPSectionConfig | undefined => {
   return HP_SECTIONS.find(s => s.code === code);
 };
 
-export const getQuestionsBySection = (sectionCode: string): HPQuestion[] => {
-  return SAMPLE_HP_QUESTIONS.filter(q => q.sectionCode === sectionCode);
+export const getQuestionsBySection = (sectionCode: string, testVersion?: string): HPQuestion[] => {
+  const allQuestions = SAMPLE_HP_QUESTIONS.filter(q => q.sectionCode === sectionCode);
+  
+  if (!testVersion) {
+    return allQuestions;
+  }
+  
+  // Map old testVersion format (ord-a, ord-b, ord-c) to new format (ord-2024-spring, etc.)
+  const versionQuestions = allQuestions.filter(q => {
+    if (q.testVersion === testVersion) {
+      return true;
+    }
+    
+    // Fallback mapping: Map ord-a/b/c to specific year versions
+    if (q.testVersion) {
+      const versionMap: Record<string, string[]> = {
+        'ord-a': ['ord-2024-spring', 'ord-2023-spring', 'ord-2022-spring'],
+        'ord-b': ['ord-2023-fall', 'ord-2022-fall', 'ord-2021-fall'],
+        'ord-c': ['ord-2021-spring', 'ord-2020-fall'],
+        'las-a': ['las-2024-spring', 'las-2023-spring', 'las-2022-spring'],
+        'las-b': ['las-2023-fall', 'las-2022-fall', 'las-2021-fall'],
+        'las-c': ['las-2021-spring', 'las-2020-fall'],
+        'mek-a': ['mek-2024-spring', 'mek-2023-spring', 'mek-2022-spring'],
+        'mek-b': ['mek-2023-fall', 'mek-2022-fall', 'mek-2021-fall'],
+        'mek-c': ['mek-2021-spring', 'mek-2020-fall'],
+        'xyz-a': ['xyz-2024-spring', 'xyz-2023-spring', 'xyz-2022-spring'],
+        'xyz-b': ['xyz-2023-fall', 'xyz-2022-fall', 'xyz-2021-fall'],
+        'xyz-c': ['xyz-2021-spring', 'xyz-2020-fall'],
+        'kva-a': ['kva-2024-spring', 'kva-2023-spring', 'kva-2022-spring'],
+        'kva-b': ['kva-2023-fall', 'kva-2022-fall', 'kva-2021-fall'],
+        'kva-c': ['kva-2021-spring', 'kva-2020-fall'],
+        'dtk-a': ['dtk-2024-spring', 'dtk-2023-spring', 'dtk-2022-spring'],
+        'dtk-b': ['dtk-2023-fall', 'dtk-2022-fall', 'dtk-2021-fall'],
+        'dtk-c': ['dtk-2021-spring', 'dtk-2020-fall'],
+      };
+      
+      const mappedVersions = versionMap[q.testVersion] || [];
+      return mappedVersions.includes(testVersion);
+    }
+    
+    return false;
+  });
+  
+  console.log('[HP] getQuestionsBySection filtered', { sectionCode, testVersion, total: allQuestions.length, filtered: versionQuestions.length });
+  return versionQuestions;
 };
 
 export const calculateHPScore = (correctAnswers: number, totalQuestions: number): number => {

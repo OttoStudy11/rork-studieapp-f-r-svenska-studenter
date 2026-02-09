@@ -11,7 +11,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-1',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 1,
     questionText: 'Vad betyder "manifest"?',
     questionType: 'multiple_choice',
@@ -23,7 +23,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-2',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 2,
     questionText: 'Vilket ord betyder "motarbeta subtilt"?',
     questionType: 'multiple_choice',
@@ -35,7 +35,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-3',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 3,
     questionText: 'Vad är en synonym till "exkludera"?',
     questionType: 'multiple_choice',
@@ -47,7 +47,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-4',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 4,
     questionText: 'Vad betyder "arbiträr"?',
     questionType: 'multiple_choice',
@@ -59,7 +59,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-5',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 5,
     questionText: 'Vilket ord betyder "oföränderlig"?',
     questionType: 'multiple_choice',
@@ -71,7 +71,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-6',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 6,
     questionText: 'Vad är motsatsen till "transparent"?',
     questionType: 'multiple_choice',
@@ -83,7 +83,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-7',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 7,
     questionText: 'Vad betyder "konformitet"?',
     questionType: 'multiple_choice',
@@ -95,7 +95,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-8',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 8,
     questionText: 'Vilket ord betyder "tillfälligt avbrott"?',
     questionType: 'multiple_choice',
@@ -107,7 +107,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-9',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 9,
     questionText: 'Vad betyder "föregångare"?',
     questionType: 'multiple_choice',
@@ -119,7 +119,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-10',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 10,
     questionText: 'Vad är en synonym till "eufori"?',
     questionType: 'multiple_choice',
@@ -131,7 +131,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-11',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 11,
     questionText: 'Vilket ord betyder "gränsöverskridande"?',
     questionType: 'multiple_choice',
@@ -143,7 +143,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-12',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 12,
     questionText: 'Vad betyder "restriktiv"?',
     questionType: 'multiple_choice',
@@ -155,7 +155,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-13',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 13,
     questionText: 'Vad är motsatsen till "volatil"?',
     questionType: 'multiple_choice',
@@ -167,7 +167,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-14',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 14,
     questionText: 'Vilket ord betyder "fördomsfull"?',
     questionType: 'multiple_choice',
@@ -179,7 +179,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-15',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 15,
     questionText: 'Vad betyder "innovativ"?',
     questionType: 'multiple_choice',
@@ -191,7 +191,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-16',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 16,
     questionText: 'Vad är en synonym till "implicit"?',
     questionType: 'multiple_choice',
@@ -203,7 +203,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-17',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 17,
     questionText: 'Vilket ord betyder "försonande"?',
     questionType: 'multiple_choice',
@@ -215,7 +215,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-18',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 18,
     questionText: 'Vad betyder "marginal"?',
     questionType: 'multiple_choice',
@@ -227,7 +227,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-19',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 19,
     questionText: 'Vad är motsatsen till "homogen"?',
     questionType: 'multiple_choice',
@@ -239,7 +239,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-b-20',
     sectionCode: 'ORD',
-    testVersion: 'ord-b',
+    testVersion: 'ord-2023-fall',
     questionNumber: 20,
     questionText: 'Vilket ord betyder "grundläggande förändring"?',
     questionType: 'multiple_choice',
@@ -255,7 +255,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-1',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 1,
     questionText: 'Vad betyder "prekär"?',
     questionType: 'multiple_choice',
@@ -267,7 +267,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-2',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 2,
     questionText: 'Vilket ord betyder "skenhelig"?',
     questionType: 'multiple_choice',
@@ -279,7 +279,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-3',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 3,
     questionText: 'Vad är en synonym till "dogmatisk"?',
     questionType: 'multiple_choice',
@@ -291,7 +291,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-4',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 4,
     questionText: 'Vad betyder "eloquent"?',
     questionType: 'multiple_choice',
@@ -303,7 +303,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-5',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 5,
     questionText: 'Vilket ord betyder "ytterst nödvändig"?',
     questionType: 'multiple_choice',
@@ -315,7 +315,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-6',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 6,
     questionText: 'Vad är motsatsen till "frikostig"?',
     questionType: 'multiple_choice',
@@ -327,7 +327,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-7',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 7,
     questionText: 'Vad betyder "nostalgi"?',
     questionType: 'multiple_choice',
@@ -339,7 +339,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-8',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 8,
     questionText: 'Vad är en synonym till "ädel"?',
     questionType: 'multiple_choice',
@@ -351,7 +351,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-9',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 9,
     questionText: 'Vilket ord betyder "motbjudande"?',
     questionType: 'multiple_choice',
@@ -363,7 +363,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-10',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 10,
     questionText: 'Vad betyder "eftertänksam"?',
     questionType: 'multiple_choice',
@@ -375,7 +375,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-11',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 11,
     questionText: 'Vad är motsatsen till "primitiv"?',
     questionType: 'multiple_choice',
@@ -387,7 +387,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-12',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 12,
     questionText: 'Vilket ord betyder "avskräckande"?',
     questionType: 'multiple_choice',
@@ -399,7 +399,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-13',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 13,
     questionText: 'Vad betyder "komplex"?',
     questionType: 'multiple_choice',
@@ -411,7 +411,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-14',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 14,
     questionText: 'Vad är en synonym till "arrogant"?',
     questionType: 'multiple_choice',
@@ -423,7 +423,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-15',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 15,
     questionText: 'Vilket ord betyder "nedlåtande"?',
     questionType: 'multiple_choice',
@@ -435,7 +435,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-16',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 16,
     questionText: 'Vad betyder "neutral"?',
     questionType: 'multiple_choice',
@@ -447,7 +447,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-17',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 17,
     questionText: 'Vad är motsatsen till "symmetrisk"?',
     questionType: 'multiple_choice',
@@ -459,7 +459,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-18',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 18,
     questionText: 'Vilket ord betyder "fördelaktig"?',
     questionType: 'multiple_choice',
@@ -471,7 +471,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-19',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 19,
     questionText: 'Vad betyder "auktoritär"?',
     questionType: 'multiple_choice',
@@ -483,7 +483,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'ord-c-20',
     sectionCode: 'ORD',
-    testVersion: 'ord-c',
+    testVersion: 'ord-2021-spring',
     questionNumber: 20,
     questionText: 'Vad är en synonym till "fundamental"?',
     questionType: 'multiple_choice',
@@ -499,7 +499,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-1',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 1,
     questionText: 'Vad är textens huvudargument?',
     questionType: 'reading_comprehension',
@@ -517,7 +517,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-2',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 2,
     questionText: 'Vilken ton har författaren?',
     questionType: 'reading_comprehension',
@@ -530,7 +530,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-3',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 3,
     questionText: 'Vad är textens syfte?',
     questionType: 'reading_comprehension',
@@ -548,7 +548,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-4',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 4,
     questionText: 'Enligt texten, vad krävs för mindfulness?',
     questionType: 'reading_comprehension',
@@ -566,7 +566,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-5',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 5,
     questionText: 'Vad kan man dra för slutsats?',
     questionType: 'reading_comprehension',
@@ -584,7 +584,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-6',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 6,
     questionText: 'Vilket perspektiv saknas i texten?',
     questionType: 'reading_comprehension',
@@ -602,7 +602,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-7',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 7,
     questionText: 'Vad är författarens hållning?',
     questionType: 'reading_comprehension',
@@ -615,7 +615,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-8',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 8,
     questionText: 'Vad är textens huvudbudskap?',
     questionType: 'reading_comprehension',
@@ -633,7 +633,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-9',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 9,
     questionText: 'Vilka utmaningar nämns?',
     questionType: 'reading_comprehension',
@@ -651,7 +651,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-10',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 10,
     questionText: 'Vad beskriver texten?',
     questionType: 'reading_comprehension',
@@ -669,7 +669,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-11',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 11,
     questionText: 'Enligt texten, varför är samhällsträdgårdar viktiga?',
     questionType: 'reading_comprehension',
@@ -687,7 +687,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-12',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 12,
     questionText: 'Vad är författarens huvudargument?',
     questionType: 'reading_comprehension',
@@ -705,7 +705,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-13',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 13,
     questionText: 'Vilka två perspektiv presenteras?',
     questionType: 'reading_comprehension',
@@ -723,7 +723,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-14',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 14,
     questionText: 'Vad kan man dra för slutsats?',
     questionType: 'reading_comprehension',
@@ -741,7 +741,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-15',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 15,
     questionText: 'Vad betyder "cirkulär ekonomi" enligt texten?',
     questionType: 'reading_comprehension',
@@ -759,7 +759,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-16',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 16,
     questionText: 'Vad är textens huvudtema?',
     questionType: 'reading_comprehension',
@@ -777,7 +777,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-17',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 17,
     questionText: 'Enligt texten, vad upptäckte arbetsgivare?',
     questionType: 'reading_comprehension',
@@ -795,7 +795,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-18',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 18,
     questionText: 'Vilken ton har texten?',
     questionType: 'reading_comprehension',
@@ -808,7 +808,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-19',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 19,
     questionText: 'Vilka orsaker till mental ohälsa nämns?',
     questionType: 'reading_comprehension',
@@ -826,7 +826,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-b-20',
     sectionCode: 'LÄS',
-    testVersion: 'las-b',
+    testVersion: 'las-2023-fall',
     questionNumber: 20,
     questionText: 'Vad föreslår författaren?',
     questionType: 'reading_comprehension',

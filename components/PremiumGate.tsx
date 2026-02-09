@@ -47,6 +47,12 @@ const FEATURE_CONFIGS = {
     icon: GraduationCap,
     gradient: ['#6366F1', '#8B5CF6'] as const,
   },
+  'quiz': {
+    title: 'Quiz är Premium',
+    description: 'Testa dina kunskaper med AI-genererade flervalsfrågor anpassade för dina kurser',
+    icon: Zap,
+    gradient: ['#F59E0B', '#EF4444'] as const,
+  },
 } as const;
 
 type FeatureType = keyof typeof FEATURE_CONFIGS;
@@ -259,6 +265,7 @@ export function usePremiumFeature(feature: FeatureType) {
     'battle': limits.canUseBattle,
     'statistics': limits.canUseAdvancedStatistics,
     'hogskoleprovet': isPremium,
+    'quiz': limits.canUseFlashcards,
   };
   
   return {

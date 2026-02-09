@@ -41,7 +41,8 @@ import {
   Zap,
   Trophy,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  HelpCircle
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -736,6 +737,40 @@ export default function CourseDetailScreen() {
                 </Text>
                 <View style={styles.flashcardsAction}>
                   <Text style={styles.flashcardsActionText}>Börja träna</Text>
+                  <ChevronRight size={20} color="white" strokeWidth={3} />
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.flashcardsHeroCard, { backgroundColor: theme.colors.card, marginTop: 16 }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push(`/course-quiz/${id}` as any);
+            }}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={['#F59E0B', '#EF4444'] as any}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.flashcardsGradient}
+            >
+              <View style={styles.flashcardsIconBg}>
+                <HelpCircle size={48} color="white" strokeWidth={2.5} />
+              </View>
+              <View style={styles.flashcardsContent}>
+                <View style={styles.flashcardsBadge}>
+                  <Sparkles size={14} color="white" />
+                  <Text style={styles.flashcardsBadgeText}>AI-POWERED</Text>
+                </View>
+                <Text style={styles.flashcardsTitle}>Quiz</Text>
+                <Text style={styles.flashcardsDescription}>
+                  Testa dina kunskaper med AI-genererade flervalsfrågor för din kurs
+                </Text>
+                <View style={styles.flashcardsAction}>
+                  <Text style={styles.flashcardsActionText}>Starta Quiz</Text>
                   <ChevronRight size={20} color="white" strokeWidth={3} />
                 </View>
               </View>

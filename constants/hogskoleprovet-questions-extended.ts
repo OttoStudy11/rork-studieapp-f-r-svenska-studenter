@@ -6,10 +6,10 @@ import { HPQuestion } from './hogskoleprovet';
 
 export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   // =====================================================
-  // ORD TEST B - Ordförståelse (20 questions)
+  // ORD 2023-FALL - Ordförståelse (20 questions)
   // =====================================================
   {
-    id: 'ord-b-1',
+    id: 'ord-2023-fall-1',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 1,
@@ -21,7 +21,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-b-2',
+    id: 'ord-2023-fall-2',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 2,
@@ -33,7 +33,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-b-3',
+    id: 'ord-2023-fall-3',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 3,
@@ -45,7 +45,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-b-4',
+    id: 'ord-2023-fall-4',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 4,
@@ -57,7 +57,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-b-5',
+    id: 'ord-2023-fall-5',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 5,
@@ -69,7 +69,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-b-6',
+    id: 'ord-2023-fall-6',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 6,
@@ -81,7 +81,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-b-7',
+    id: 'ord-2023-fall-7',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 7,
@@ -93,7 +93,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-b-8',
+    id: 'ord-2023-fall-8',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 8,
@@ -105,7 +105,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-b-9',
+    id: 'ord-2023-fall-9',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 9,
@@ -117,7 +117,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-b-10',
+    id: 'ord-2023-fall-10',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 10,
@@ -129,7 +129,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-b-11',
+    id: 'ord-2023-fall-11',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 11,
@@ -141,7 +141,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-b-12',
+    id: 'ord-2023-fall-12',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 12,
@@ -153,7 +153,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-b-13',
+    id: 'ord-2023-fall-13',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 13,
@@ -165,7 +165,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-b-14',
+    id: 'ord-2023-fall-14',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 14,
@@ -177,7 +177,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-b-15',
+    id: 'ord-2023-fall-15',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 15,
@@ -189,7 +189,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-b-16',
+    id: 'ord-2023-fall-16',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 16,
@@ -201,7 +201,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-b-17',
+    id: 'ord-2023-fall-17',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 17,
@@ -213,7 +213,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-b-18',
+    id: 'ord-2023-fall-18',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 18,
@@ -225,7 +225,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-b-19',
+    id: 'ord-2023-fall-19',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 19,
@@ -237,7 +237,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-b-20',
+    id: 'ord-2023-fall-20',
     sectionCode: 'ORD',
     testVersion: 'ord-2023-fall',
     questionNumber: 20,
@@ -250,12 +250,12 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   },
 
   // =====================================================
-  // ORD TEST C - Ordförståelse (20 questions)
+  // ORD 2022-SPRING - Ordförståelse (20 questions)
   // =====================================================
   {
-    id: 'ord-c-1',
+    id: 'ord-2022-spring-1',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 1,
     questionText: 'Vad betyder "prekär"?',
     questionType: 'multiple_choice',
@@ -265,9 +265,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-c-2',
+    id: 'ord-2022-spring-2',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 2,
     questionText: 'Vilket ord betyder "skenhelig"?',
     questionType: 'multiple_choice',
@@ -277,9 +277,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-c-3',
+    id: 'ord-2022-spring-3',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 3,
     questionText: 'Vad är en synonym till "dogmatisk"?',
     questionType: 'multiple_choice',
@@ -289,9 +289,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-c-4',
+    id: 'ord-2022-spring-4',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 4,
     questionText: 'Vad betyder "eloquent"?',
     questionType: 'multiple_choice',
@@ -301,9 +301,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-c-5',
+    id: 'ord-2022-spring-5',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 5,
     questionText: 'Vilket ord betyder "ytterst nödvändig"?',
     questionType: 'multiple_choice',
@@ -313,9 +313,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-c-6',
+    id: 'ord-2022-spring-6',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 6,
     questionText: 'Vad är motsatsen till "frikostig"?',
     questionType: 'multiple_choice',
@@ -325,9 +325,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-c-7',
+    id: 'ord-2022-spring-7',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 7,
     questionText: 'Vad betyder "nostalgi"?',
     questionType: 'multiple_choice',
@@ -337,9 +337,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-c-8',
+    id: 'ord-2022-spring-8',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 8,
     questionText: 'Vad är en synonym till "ädel"?',
     questionType: 'multiple_choice',
@@ -349,9 +349,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-c-9',
+    id: 'ord-2022-spring-9',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 9,
     questionText: 'Vilket ord betyder "motbjudande"?',
     questionType: 'multiple_choice',
@@ -361,9 +361,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-c-10',
+    id: 'ord-2022-spring-10',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 10,
     questionText: 'Vad betyder "eftertänksam"?',
     questionType: 'multiple_choice',
@@ -373,9 +373,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-c-11',
+    id: 'ord-2022-spring-11',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 11,
     questionText: 'Vad är motsatsen till "primitiv"?',
     questionType: 'multiple_choice',
@@ -385,9 +385,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-c-12',
+    id: 'ord-2022-spring-12',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 12,
     questionText: 'Vilket ord betyder "avskräckande"?',
     questionType: 'multiple_choice',
@@ -397,9 +397,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-c-13',
+    id: 'ord-2022-spring-13',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 13,
     questionText: 'Vad betyder "komplex"?',
     questionType: 'multiple_choice',
@@ -409,9 +409,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-c-14',
+    id: 'ord-2022-spring-14',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 14,
     questionText: 'Vad är en synonym till "arrogant"?',
     questionType: 'multiple_choice',
@@ -421,9 +421,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-c-15',
+    id: 'ord-2022-spring-15',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 15,
     questionText: 'Vilket ord betyder "nedlåtande"?',
     questionType: 'multiple_choice',
@@ -433,9 +433,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-c-16',
+    id: 'ord-2022-spring-16',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 16,
     questionText: 'Vad betyder "neutral"?',
     questionType: 'multiple_choice',
@@ -445,9 +445,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-c-17',
+    id: 'ord-2022-spring-17',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 17,
     questionText: 'Vad är motsatsen till "symmetrisk"?',
     questionType: 'multiple_choice',
@@ -457,9 +457,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'ord-c-18',
+    id: 'ord-2022-spring-18',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 18,
     questionText: 'Vilket ord betyder "fördelaktig"?',
     questionType: 'multiple_choice',
@@ -469,9 +469,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'ord-c-19',
+    id: 'ord-2022-spring-19',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 19,
     questionText: 'Vad betyder "auktoritär"?',
     questionType: 'multiple_choice',
@@ -481,9 +481,9 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'ord-c-20',
+    id: 'ord-2022-spring-20',
     sectionCode: 'ORD',
-    testVersion: 'ord-2021-spring',
+    testVersion: 'ord-2022-spring',
     questionNumber: 20,
     questionText: 'Vad är en synonym till "fundamental"?',
     questionType: 'multiple_choice',
@@ -494,10 +494,10 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
   },
 
   // =====================================================
-  // LÄS TEST B - Läsförståelse (20 questions)
+  // LÄS 2023-FALL - Läsförståelse (20 questions)
   // =====================================================
   {
-    id: 'las-b-1',
+    id: 'las-2023-fall-1',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 1,
@@ -515,7 +515,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-2',
+    id: 'las-2023-fall-2',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 2,
@@ -528,7 +528,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'las-b-3',
+    id: 'las-2023-fall-3',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 3,
@@ -546,7 +546,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-4',
+    id: 'las-2023-fall-4',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 4,
@@ -564,7 +564,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-5',
+    id: 'las-2023-fall-5',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 5,
@@ -582,7 +582,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'las-b-6',
+    id: 'las-2023-fall-6',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 6,
@@ -600,7 +600,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'hard',
   },
   {
-    id: 'las-b-7',
+    id: 'las-2023-fall-7',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 7,
@@ -613,7 +613,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-8',
+    id: 'las-2023-fall-8',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 8,
@@ -631,7 +631,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'las-b-9',
+    id: 'las-2023-fall-9',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 9,
@@ -649,7 +649,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-10',
+    id: 'las-2023-fall-10',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 10,
@@ -667,7 +667,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-11',
+    id: 'las-2023-fall-11',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 11,
@@ -685,7 +685,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-12',
+    id: 'las-2023-fall-12',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 12,
@@ -703,7 +703,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'las-b-13',
+    id: 'las-2023-fall-13',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 13,
@@ -721,7 +721,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'las-b-14',
+    id: 'las-2023-fall-14',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 14,
@@ -739,7 +739,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-15',
+    id: 'las-2023-fall-15',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 15,
@@ -757,7 +757,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-16',
+    id: 'las-2023-fall-16',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 16,
@@ -775,7 +775,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-17',
+    id: 'las-2023-fall-17',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 17,
@@ -793,7 +793,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-18',
+    id: 'las-2023-fall-18',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 18,
@@ -806,7 +806,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'medium',
   },
   {
-    id: 'las-b-19',
+    id: 'las-2023-fall-19',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 19,
@@ -824,7 +824,7 @@ export const EXTENDED_HP_QUESTIONS: HPQuestion[] = [
     difficulty: 'easy',
   },
   {
-    id: 'las-b-20',
+    id: 'las-2023-fall-20',
     sectionCode: 'LÄS',
     testVersion: 'las-2023-fall',
     questionNumber: 20,

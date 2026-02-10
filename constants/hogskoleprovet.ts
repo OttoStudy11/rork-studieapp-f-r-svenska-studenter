@@ -258,6 +258,20 @@ export const HP_TEST_VERSIONS: HPTestVersion[] = [
 ];
 
 // All HP questions organized by test version
+// Helper function to get questions by section and version
+export const getQuestionsBySection = (
+  sectionCode: string,
+  testVersion?: string
+): HPQuestion[] => {
+  let questions = SAMPLE_HP_QUESTIONS.filter(q => q.sectionCode === sectionCode);
+  
+  if (testVersion) {
+    questions = questions.filter(q => q.testVersion === testVersion);
+  }
+  
+  return questions;
+};
+
 export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   // ORD - Ordförståelse Test A (20 questions)
   {
@@ -1919,53 +1933,6 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
 
 export const getSectionByCode = (code: string): HPSectionConfig | undefined => {
   return HP_SECTIONS.find(s => s.code === code);
-};
-
-export const getQuestionsBySection = (sectionCode: string, testVersion?: string): HPQuestion[] => {
-  const allQuestions = SAMPLE_HP_QUESTIONS.filter(q => q.sectionCode === sectionCode);
-  
-  if (!testVersion) {
-    return allQuestions;
-  }
-  
-  // Map old testVersion format (ord-a, ord-b, ord-c) to new format (ord-2024-spring, etc.)
-  const versionQuestions = allQuestions.filter(q => {
-    if (q.testVersion === testVersion) {
-      return true;
-    }
-    
-    // Fallback mapping: Map ord-a/b/c to specific year versions
-    if (q.testVersion) {
-      const versionMap: Record<string, string[]> = {
-        'ord-a': ['ord-2024-spring', 'ord-2023-spring', 'ord-2022-spring'],
-        'ord-b': ['ord-2023-fall', 'ord-2022-fall', 'ord-2021-fall'],
-        'ord-c': ['ord-2021-spring', 'ord-2020-fall'],
-        'las-a': ['las-2024-spring', 'las-2023-spring', 'las-2022-spring'],
-        'las-b': ['las-2023-fall', 'las-2022-fall', 'las-2021-fall'],
-        'las-c': ['las-2021-spring', 'las-2020-fall'],
-        'mek-a': ['mek-2024-spring', 'mek-2023-spring', 'mek-2022-spring'],
-        'mek-b': ['mek-2023-fall', 'mek-2022-fall', 'mek-2021-fall'],
-        'mek-c': ['mek-2021-spring', 'mek-2020-fall'],
-        'xyz-a': ['xyz-2024-spring', 'xyz-2023-spring', 'xyz-2022-spring'],
-        'xyz-b': ['xyz-2023-fall', 'xyz-2022-fall', 'xyz-2021-fall'],
-        'xyz-c': ['xyz-2021-spring', 'xyz-2020-fall'],
-        'kva-a': ['kva-2024-spring', 'kva-2023-spring', 'kva-2022-spring'],
-        'kva-b': ['kva-2023-fall', 'kva-2022-fall', 'kva-2021-fall'],
-        'kva-c': ['kva-2021-spring', 'kva-2020-fall'],
-        'dtk-a': ['dtk-2024-spring', 'dtk-2023-spring', 'dtk-2022-spring'],
-        'dtk-b': ['dtk-2023-fall', 'dtk-2022-fall', 'dtk-2021-fall'],
-        'dtk-c': ['dtk-2021-spring', 'dtk-2020-fall'],
-      };
-      
-      const mappedVersions = versionMap[q.testVersion] || [];
-      return mappedVersions.includes(testVersion);
-    }
-    
-    return false;
-  });
-  
-  console.log('[HP] getQuestionsBySection filtered', { sectionCode, testVersion, total: allQuestions.length, filtered: versionQuestions.length });
-  return versionQuestions;
 };
 
 export const calculateHPScore = (correctAnswers: number, totalQuestions: number): number => {

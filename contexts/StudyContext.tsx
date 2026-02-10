@@ -866,10 +866,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           .insert({
             user_id: authUser.id,
             course_id: session.courseId || null,
-            duration_minutes: session.duration,
+            duration: session.duration,
             start_time: session.startTime,
-            end_time: session.endTime,
-            created_at: new Date().toISOString()
+            end_time: session.endTime
           })
           .select()
           .single();
@@ -949,7 +948,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         const dbSession: PomodoroSession = {
           id: data.id,
           courseId: data.course_id || undefined,
-          duration: data.duration_minutes || session.duration,
+          duration: data.duration || session.duration,
           startTime: data.start_time,
           endTime: data.end_time
         };

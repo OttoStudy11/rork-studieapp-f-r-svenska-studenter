@@ -174,7 +174,7 @@ export default function FriendStatsScreen() {
         // Load friend sessions from pomodoro_sessions
         const { data: friendSessions } = await supabase
           .from('pomodoro_sessions')
-          .select('id, duration_minutes, start_time, end_time')
+          .select('id, duration, start_time, end_time')
           .eq('user_id', friendId);
 
         // Load sessions from this week
@@ -182,7 +182,7 @@ export default function FriendStatsScreen() {
         weekAgo.setDate(weekAgo.getDate() - 7);
         const { data: weekSessions } = await supabase
           .from('pomodoro_sessions')
-          .select('id, duration_minutes')
+          .select('id, duration')
           .eq('user_id', friendId)
           .gte('start_time', weekAgo.toISOString());
 
@@ -217,13 +217,13 @@ export default function FriendStatsScreen() {
 
         // Calculate study time this week
         const studyTimeThisWeek = (weekSessions || []).reduce(
-          (sum: number, s: any) => sum + (s.duration_minutes || 0),
+          (sum: number, s: any) => sum + (s.duration || 0),
           0
         );
 
         // Get last active time
         const sortedSessions = [...(friendSessions || [])].sort(
-          (a, b) => new Date(b.end_time || 0).getTime() - new Date(a.end_time || 0).getTime()
+          (a, b) => new Date(b.end_time).getTime() - new Date(a.end_time).getTime()
         );
         const lastSession = sortedSessions[0];
 
@@ -255,7 +255,7 @@ export default function FriendStatsScreen() {
           courses: mappedCourses,
           studyTimeThisWeek,
           sessionsThisWeek: weekSessions?.length || 0,
-          lastActive: lastSession?.end_time || null,
+          lastActive: lastSession ? lastSession.end_time : null,
           totalPoints: friendProgress?.total_points || 0,
         });
       }

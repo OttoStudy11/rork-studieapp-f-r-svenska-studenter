@@ -33,7 +33,7 @@ export async function fetchTotalStudyMinutesForUser(userId: string): Promise<num
   // Fallback: Calculate from pomodoro_sessions (this is where sessions are actually stored)
   const { data: sessions, error: sessionsError } = await supabase
     .from('pomodoro_sessions')
-    .select('duration_minutes')
+    .select('duration')
     .eq('user_id', userId);
 
   if (sessionsError) {
@@ -42,7 +42,7 @@ export async function fetchTotalStudyMinutesForUser(userId: string): Promise<num
   }
 
   const total = (sessions ?? []).reduce((acc, s) => {
-    const v = Number(s.duration_minutes);
+    const v = Number(s.duration);
     return acc + (Number.isFinite(v) ? v : 0);
   }, 0);
 

@@ -128,14 +128,20 @@ SKAPA ${count} UNIKA, HÖGKVALITATIVA FLERVALSFRÅGOR NU.`,
 
   console.log(`✅ AI generated ${result.questions.length} quiz questions`);
 
-  const questions: QuizQuestion[] = result.questions.map((q: any, index: number) => ({
-    id: `quiz-${course.id}-${Date.now()}-${index}`,
-    question: q.question,
-    options: q.options,
-    correctIndex: q.correctIndex,
-    explanation: q.explanation,
-    difficulty: q.difficulty,
-  }));
+  const questions: QuizQuestion[] = result.questions.map((q: any, index: number) => {
+    const correctAnswer = q.options[q.correctIndex];
+    const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+    const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+    
+    return {
+      id: `quiz-${course.id}-${Date.now()}-${index}`,
+      question: q.question,
+      options: shuffledOptions,
+      correctIndex: newCorrectIndex,
+      explanation: q.explanation,
+      difficulty: q.difficulty,
+    };
+  });
 
   return {
     questions,
@@ -205,14 +211,20 @@ SKAPA ${count} UNIKA FLERVALSFRÅGOR NU.`,
 
   console.log(`✅ AI generated ${result.questions.length} quiz questions from text`);
 
-  const questions: QuizQuestion[] = result.questions.map((q: any, index: number) => ({
-    id: `quiz-text-${Date.now()}-${index}`,
-    question: q.question,
-    options: q.options,
-    correctIndex: q.correctIndex,
-    explanation: q.explanation,
-    difficulty: q.difficulty,
-  }));
+  const questions: QuizQuestion[] = result.questions.map((q: any, index: number) => {
+    const correctAnswer = q.options[q.correctIndex];
+    const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+    const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+    
+    return {
+      id: `quiz-text-${Date.now()}-${index}`,
+      question: q.question,
+      options: shuffledOptions,
+      correctIndex: newCorrectIndex,
+      explanation: q.explanation,
+      difficulty: q.difficulty,
+    };
+  });
 
   return {
     questions,

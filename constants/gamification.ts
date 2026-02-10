@@ -114,9 +114,9 @@ export const LEVELS: LevelDefinition[] = [
 
 export const POINT_SOURCES: Record<string, PointSource> = {
   lesson_complete: { type: 'lesson_complete', baseXp: 10, description: 'Slutför en lektion' },
-  quiz_50_75: { type: 'quiz_complete', baseXp: 20, description: 'Quiz med 50-75% rätt' },
-  quiz_75_90: { type: 'quiz_complete', baseXp: 35, description: 'Quiz med 75-90% rätt' },
-  quiz_90_100: { type: 'quiz_complete', baseXp: 50, description: 'Quiz med 90-100% rätt' },
+  quiz_50_75: { type: 'quiz_complete', baseXp: 10, description: 'Quiz med 50-75% rätt' },
+  quiz_75_90: { type: 'quiz_complete', baseXp: 20, description: 'Quiz med 75-90% rätt' },
+  quiz_90_100: { type: 'quiz_complete', baseXp: 30, description: 'Quiz med 90-100% rätt' },
   daily_streak: { type: 'daily_streak', baseXp: 5, description: 'Daglig streak bonus' },
   challenge_easy: { type: 'challenge_complete', baseXp: 35, description: 'Lätt utmaning' },
   challenge_medium: { type: 'challenge_complete', baseXp: 75, description: 'Medel utmaning' },
@@ -125,7 +125,7 @@ export const POINT_SOURCES: Record<string, PointSource> = {
   level_up_bonus: { type: 'level_up_bonus', baseXp: 50, description: 'Nivå upp bonus' },
   module_complete: { type: 'module_complete', baseXp: 50, description: 'Modul slutförd' },
   off_peak_bonus: { type: 'off_peak_bonus', baseXp: 10, description: 'Studera under lugna timmar' },
-  study_session: { type: 'lesson_complete', baseXp: 5, description: 'Per 5 minuter studietid' },
+  study_session: { type: 'lesson_complete', baseXp: 5, description: 'Per minut studietid' },
 };
 
 export const getLevelForXp = (totalXp: number): LevelDefinition => {
@@ -168,7 +168,7 @@ export const calculateQuizXp = (scorePercent: number): number => {
 };
 
 export const calculateStudySessionXp = (minutes: number): number => {
-  return Math.floor(minutes / 5) * POINT_SOURCES.study_session.baseXp;
+  return Math.floor(minutes) * POINT_SOURCES.study_session.baseXp;
 };
 
 export const isOffPeakHour = (): boolean => {

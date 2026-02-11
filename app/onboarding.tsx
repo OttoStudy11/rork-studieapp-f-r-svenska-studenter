@@ -1,48 +1,80 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   ScrollView,
-  SafeAreaView,
+  TouchableOpacity,
   ActivityIndicator,
-  Switch
+  Switch,
+  Animated,
+  Dimensions,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { Image } from 'expo-image';
-import { 
-  GraduationCap, 
-  BookOpen, 
-  MapPin, 
-  Flame, 
-  FileText, 
-  Shield, 
-  Check, 
+import {
+  GraduationCap,
+  BookOpen,
+  MapPin,
+  Flame,
+  FileText,
+  Shield,
+  Check,
   Target,
   Bell,
   Sparkles,
   Trophy,
-  Users
+  Users,
+  Timer,
+  BarChart3,
+  ChevronRight,
+  ChevronLeft,
+  ArrowRight,
+  Search,
+  Star,
+  Zap,
 } from 'lucide-react-native';
 import { SWEDISH_GYMNASIUMS } from '@/constants/gymnasiums';
-import { AnimatedPressable, RippleButton, FadeInView } from '@/components/Animations';
 import { SWEDISH_UNIVERSITIES, UNIVERSITY_PROGRAMS } from '@/constants/universities';
 import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
 import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 import { getGymnasiumCourses, type GymnasiumCourse } from '@/constants/gymnasium-courses';
 import { MAX_COURSES } from '@/lib/course-assignment';
-
-import { type University, type UniversityProgram, type UniversityProgramYear } from '@/constants/universities';
-
+import type { University, UniversityProgram, UniversityProgramYear } from '@/constants/universities';
 import type { AvatarConfig } from '@/constants/avatar-config';
 import { DEFAULT_AVATAR_CONFIG } from '@/constants/avatar-config';
 import AvatarBuilder from '@/components/AvatarBuilder';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const TERMS_OF_SERVICE_SHORT = `Genom att använda StudieStugan godkänner du våra användarvillkor och integritetspolicy. Vi samlar in profilinformation och studiedata för att förbättra din upplevelse. Du måste vara minst 13 år. Fullständiga villkor finns på studiestugan.se.`;
+
+const goalOptions = [
+  { id: 'better_grades', label: 'Högre betyg', icon: '📈', color: '#10B981' },
+  { id: 'focus', label: 'Bättre fokus', icon: '🎯', color: '#3B82F6' },
+  { id: 'planning', label: 'Bättre planering', icon: '📅', color: '#8B5CF6' },
+  { id: 'reduce_stress', label: 'Mindre stress', icon: '🧘', color: '#EC4899' },
+  { id: 'balance', label: 'Balans i livet', icon: '⚖️', color: '#F59E0B' },
+  { id: 'motivation', label: 'Mer motivation', icon: '🔥', color: '#EF4444' },
+  { id: 'friends', label: 'Studera med vänner', icon: '👥', color: '#06B6D4' },
+  { id: 'techniques', label: 'Studietips', icon: '💡', color: '#22C55E' },
+];
+
+const learningPaceOptions = [
+  { id: 'casual', title: 'Avslappnat', subtitle: '15-30 min/dag', icon: '🌱', color: '#10B981', hours: 0.5 },
+  { id: 'regular', title: 'Regelbundet', subtitle: '30-60 min/dag', icon: '📚', color: '#3B82F6', hours: 1 },
+  { id: 'intensive', title: 'Intensivt', subtitle: '60+ min/dag', icon: '🔥', color: '#EF4444', hours: 2 },
+  { id: 'own', title: 'Egen takt', subtitle: 'Flexibelt', icon: '🎯', color: '#8B5CF6', hours: 1 },
+];
 
 interface OnboardingData {
   username: string;
@@ -57,245 +89,30 @@ interface OnboardingData {
   universityYear: UniversityProgramYear | null;
   program: string;
   goals: string[];
-  purpose: string[];
   selectedCourses: Set<string>;
   year: 1 | 2 | 3 | null;
   avatarConfig: AvatarConfig;
   dailyGoalHours: number;
-  acceptedTerms: boolean;
-  acceptedPrivacy: boolean;
-  acceptedGDPR: boolean;
-  acceptedAge: boolean;
   learningPace: 'casual' | 'regular' | 'intensive' | 'own' | '';
+  acceptedTerms: boolean;
   notificationPreferences: {
     dailyReminders: boolean;
-    dailyReminderTime: string;
-    courseCompletion: boolean;
     achievements: boolean;
-    dailyChallenges: boolean;
     streakReminders: boolean;
-    socialUpdates: boolean;
   };
-  selectedStartingCourse: string | null;
 }
-
-const TERMS_OF_SERVICE = `ANVÄNDARVILLKOR FÖR STUDIESTUGAN
-
-Senast uppdaterad: ${new Date().toLocaleDateString('sv-SE')}
-
-1. GODKÄNNANDE AV VILLKOR
-
-Genom att använda Studiestugan-appen ("Tjänsten") godkänner du dessa användarvillkor. Om du inte godkänner villkoren, vänligen använd inte Tjänsten.
-
-2. BESKRIVNING AV TJÄNSTEN
-
-Studiestugan är en studieapp utformad för att hjälpa studenter att:
-- Organisera och planera sina studier
-- Följa sin studieframgång
-- Använda studietekniker och verktyg
-- Interagera med andra studenter
-
-3. ANVÄNDARKONTO
-
-3.1 Du måste skapa ett konto för att använda Tjänsten.
-3.2 Du ansvarar för att hålla dina inloggningsuppgifter säkra.
-3.3 Du måste vara minst 13 år för att använda Tjänsten.
-3.4 All information du anger måste vara korrekt och aktuell.
-
-4. ANVÄNDARENS ANSVAR
-
-4.1 Du får inte använda Tjänsten för olagliga ändamål.
-4.2 Du får inte dela innehåll som är stötande, hotfullt eller kränkande.
-4.3 Du får inte försöka få obehörig åtkomst till Tjänsten.
-4.4 Du ansvarar för allt innehåll du delar via Tjänsten.
-
-5. IMMATERIELLA RÄTTIGHETER
-
-5.1 Allt innehåll i Tjänsten tillhör Studiestugan eller dess licensgivare.
-5.2 Du får inte kopiera, modifiera eller distribuera innehåll utan tillstånd.
-5.3 Innehåll du skapar förblir din egendom, men du ger oss rätt att använda det inom Tjänsten.
-
-6. PREMIUM-FUNKTIONER
-
-6.1 Vissa funktioner kräver en premiumprenonumeration.
-6.2 Betalning hanteras via App Store eller Google Play.
-6.3 Prenumerationer förnyas automatiskt om de inte avbryts.
-6.4 Återbetalningar hanteras enligt respektive butiks policyer.
-
-7. UPPSÄGNING
-
-7.1 Du kan avsluta ditt konto när som helst.
-7.2 Vi förbehåller oss rätten att stänga av eller avsluta konton som bryter mot dessa villkor.
-
-8. ANSVARSBEGRÄNSNING
-
-8.1 Tjänsten tillhandahålls "som den är" utan garantier.
-8.2 Vi ansvarar inte för eventuella förluster eller skador som uppstår genom användning av Tjänsten.
-8.3 Studiestugan är ett studieverktyg och ersätter inte professionell utbildning.
-
-9. ÄNDRINGAR
-
-Vi förbehåller oss rätten att ändra dessa villkor. Fortsatt användning efter ändringar innebär godkännande av de nya villkoren.
-
-10. KONTAKT
-
-Frågor om dessa villkor kan skickas till: support@studiestugan.se`;
-
-const PRIVACY_POLICY = `INTEGRITETSPOLICY FÖR STUDIESTUGAN
-
-Senast uppdaterad: ${new Date().toLocaleDateString('sv-SE')}
-
-1. INTRODUKTION
-
-Denna integritetspolicy beskriver hur Studiestugan ("vi", "oss", "vår") samlar in, använder och skyddar dina personuppgifter när du använder vår app.
-
-2. VILKA UPPGIFTER VI SAMLAR IN
-
-2.1 Kontoinformation:
-- E-postadress
-- Användarnamn och visningsnamn
-- Lösenord (krypterat)
-
-2.2 Profilinformation:
-- Studienivå (gymnasium/högskola)
-- Skola och program
-- Årskurs
-- Avatar-inställningar
-
-2.3 Användningsdata:
-- Studietid och sessioner
-- Kursframsteg
-- Poäng och prestationer
-- Appinteraktioner
-
-2.4 Teknisk information:
-- Enhetstyp och operativsystem
-- App-version
-- Kraschloggar (anonymiserade)
-
-3. HUR VI ANVÄNDER DINA UPPGIFTER
-
-Vi använder dina uppgifter för att:
-- Tillhandahålla och förbättra Tjänsten
-- Spåra din studieframgång
-- Möjliggöra sociala funktioner (vänner, topplistor)
-- Skicka viktiga meddelanden om Tjänsten
-- Analysera och förbättra användarupplevelsen
-
-4. DELNING AV INFORMATION
-
-4.1 Vi säljer aldrig dina personuppgifter.
-4.2 Vi kan dela anonymiserad, aggregerad data för analysändamål.
-4.3 Vi delar information med tjänsteleverantörer som hjälper oss att driva Tjänsten (t.ex. Supabase för datalagring).
-4.4 Vi kan dela information om det krävs enligt lag.
-
-5. DATALAGRING OCH SÄKERHET
-
-5.1 Dina data lagras säkert hos Supabase med kryptering.
-5.2 Vi behåller dina uppgifter så länge ditt konto är aktivt.
-5.3 Du kan begära radering av dina uppgifter när som helst.
-
-6. DINA RÄTTIGHETER (GDPR)
-
-Du har rätt att:
-- Få tillgång till dina personuppgifter
-- Rätta felaktiga uppgifter
-- Radera dina uppgifter
-- Begränsa behandlingen av dina uppgifter
-- Invända mot behandling
-- Dataportabilitet
-- Återkalla samtycke
-
-7. BARN OCH MINDERÅRIGA
-
-7.1 Tjänsten är avsedd för användare som är minst 13 år.
-7.2 Vi samlar inte medvetet in uppgifter från barn under 13 år.
-7.3 För användare under 16 år rekommenderar vi föräldrarnas godkännande.
-
-8. COOKIES OCH LIKNANDE TEKNIKER
-
-Vi använder lokal lagring för att:
-- Hålla dig inloggad
-- Spara dina preferenser
-- Förbättra prestanda
-
-9. TREDJEPARTSTJÄNSTER
-
-Vi använder följande tredjepartstjänster:
-- Supabase (autentisering och datalagring)
-- Expo (app-plattform)
-- App Store/Google Play (betalningar)
-
-10. INTERNATIONELLA ÖVERFÖRINGAR
-
-Dina uppgifter kan överföras till och behandlas i länder utanför EES. Vi säkerställer att lämpliga skyddsåtgärder finns på plats.
-
-11. ÄNDRINGAR I POLICYN
-
-Vi kan uppdatera denna policy. Vi meddelar dig om väsentliga ändringar via appen eller e-post.
-
-12. KONTAKT
-
-För frågor om integritet eller för att utöva dina rättigheter:
-E-post: privacy@studiestugan.se
-
-Dataskyddsombud:
-privacy@studiestugan.se`;
-
-const goalOptions = [
-  { id: 'better_grades', label: 'Få högre betyg', icon: '📈', color: '#10B981' },
-  { id: 'focus', label: 'Förbättra fokus', icon: '🎯', color: '#3B82F6' },
-  { id: 'planning', label: 'Bli bättre på planering', icon: '📅', color: '#8B5CF6' },
-  { id: 'reduce_stress', label: 'Minska stress', icon: '🧘', color: '#EC4899' },
-  { id: 'balance', label: 'Balansera studier & fritid', icon: '⚖️', color: '#F59E0B' },
-  { id: 'motivation', label: 'Öka motivation', icon: '🔥', color: '#EF4444' },
-  { id: 'friends', label: 'Studera med vänner', icon: '👥', color: '#06B6D4' },
-  { id: 'techniques', label: 'Lära studietips', icon: '💡', color: '#22C55E' },
-  { id: 'track_progress', label: 'Spåra mitt framsteg', icon: '📊', color: '#6366F1' },
-  { id: 'organize', label: 'Organisera material', icon: '📚', color: '#14B8A6' },
-];
-
-const learningPaceOptions = [
-  { 
-    id: 'casual', 
-    title: 'Avslappnat', 
-    subtitle: '15-30 min/dag', 
-    description: 'Perfekt för att balansera studier med andra aktiviteter',
-    icon: '🌱',
-    color: '#10B981'
-  },
-  { 
-    id: 'regular', 
-    title: 'Regelbundet', 
-    subtitle: '30-60 min/dag', 
-    description: 'Stadig framgång med konsekvent studietid',
-    icon: '📚',
-    color: '#3B82F6'
-  },
-  { 
-    id: 'intensive', 
-    title: 'Intensivt', 
-    subtitle: '60+ min/dag', 
-    description: 'Maximal fokus för bästa resultat',
-    icon: '🔥',
-    color: '#EF4444'
-  },
-  { 
-    id: 'own', 
-    title: 'Egen takt', 
-    subtitle: 'Flexibelt schema', 
-    description: 'Studera helt efter ditt eget schema',
-    icon: '🎯',
-    color: '#8B5CF6'
-  },
-];
 
 export default function OnboardingScreen() {
   const authContext = useAuth();
   const studyContext = useStudy();
   const toastContext = useToast();
-  
+  const insets = useSafeAreaInsets();
+
   const [step, setStep] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
   const [data, setData] = useState<OnboardingData>({
     username: '',
     displayName: '',
@@ -309,59 +126,48 @@ export default function OnboardingScreen() {
     universityYear: null,
     program: '',
     goals: [],
-    purpose: [],
     selectedCourses: new Set(),
     year: null,
     avatarConfig: DEFAULT_AVATAR_CONFIG,
-    dailyGoalHours: 2,
-    acceptedTerms: false,
-    acceptedPrivacy: false,
-    acceptedGDPR: false,
-    acceptedAge: false,
+    dailyGoalHours: 1,
     learningPace: '',
+    acceptedTerms: false,
     notificationPreferences: {
       dailyReminders: true,
-      dailyReminderTime: '18:00',
-      courseCompletion: true,
       achievements: true,
-      dailyChallenges: true,
       streakReminders: true,
-      socialUpdates: true,
     },
-    selectedStartingCourse: null,
   });
-  const [expandedPolicy, setExpandedPolicy] = useState<'terms' | 'privacy' | null>(null);
+
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [availableCourses, setAvailableCourses] = useState<GymnasiumCourse[]>([]);
   const [gymnasiumSearchQuery, setGymnasiumSearchQuery] = useState('');
   const [universitySearchQuery, setUniversitySearchQuery] = useState('');
-
   const [hasInitializedUsername, setHasInitializedUsername] = useState(false);
-  const [isLoadingCourses, setIsLoadingCourses] = useState(false);
-  const [assignedCourses, setAssignedCourses] = useState<any[]>([]);
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     if (authContext?.user?.email && !hasInitializedUsername) {
-      const emailPrefix = authContext.user!.email.split('@')[0] || '';
+      const emailPrefix = authContext.user.email.split('@')[0] || '';
       const initialUsername = emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_');
       setData(prev => ({
         ...prev,
         displayName: emailPrefix,
-        username: initialUsername
+        username: initialUsername,
       }));
       setHasInitializedUsername(true);
     }
   }, [authContext, hasInitializedUsername]);
 
   useEffect(() => {
-    if (data.gymnasiumProgram && data.year && step === 4) {
-      const defaultGymnasium: Gymnasium = { 
-        id: 'default', 
-        name: 'Gymnasie', 
-        type: 'kommunal', 
-        city: '', 
-        municipality: '' 
+    if (data.gymnasiumProgram && data.year) {
+      const defaultGymnasium: Gymnasium = {
+        id: 'default',
+        name: 'Gymnasie',
+        type: 'kommunal',
+        city: '',
+        municipality: '',
       };
       const courses = getGymnasiumCourses(
         defaultGymnasium,
@@ -369,156 +175,155 @@ export default function OnboardingScreen() {
         data.year.toString() as '1' | '2' | '3'
       );
       setAvailableCourses(courses);
-      
       const mandatoryCourseIds = courses
         .filter((course: GymnasiumCourse) => course.mandatory)
         .map((course: GymnasiumCourse) => course.id);
-      setData((prev: OnboardingData) => ({ 
+      setData(prev => ({
         ...prev,
-        selectedCourses: new Set(mandatoryCourseIds)
+        selectedCourses: new Set(mandatoryCourseIds),
       }));
     }
-  }, [data.gymnasiumProgram, data.year, step]);
-  
+  }, [data.gymnasiumProgram, data.year]);
+
+  const getTotalSteps = useCallback(() => {
+    if (data.studyLevel === '') return 7;
+    return data.studyLevel === 'gymnasie' ? 7 : 6;
+  }, [data.studyLevel]);
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: (step + 1) / getTotalSteps(),
+      duration: 400,
+      useNativeDriver: false,
+    }).start();
+  }, [step, progressAnim, getTotalSteps]);
+
   if (!authContext || !studyContext || !toastContext) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0EA5E9" />
-          <Text style={styles.loadingText}>Laddar...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={[styles.container, { backgroundColor: '#059669' }]}>
+        <ActivityIndicator size="large" color="#FFFFFF" />
+      </View>
     );
   }
-  
+
   const { user } = authContext;
   const { completeOnboarding } = studyContext;
   const { showError, showSuccess } = toastContext;
-  
+
   const checkUsernameAvailability = async (username: string) => {
     if (!username || username.length < 3) {
       setUsernameAvailable(null);
       return;
     }
-    
     if (!/^[a-z0-9_]{3,20}$/.test(username)) {
       setUsernameAvailable(false);
       return;
     }
-    
     setCheckingUsername(true);
     try {
       const { data: result, error } = await supabase.rpc('check_username_available', {
-        username_to_check: username
+        username_to_check: username,
       });
-      
       if (error) {
-        console.error('Error checking username:', error);
         setUsernameAvailable(null);
       } else {
         setUsernameAvailable(result);
       }
-    } catch (error) {
-      console.error('Error checking username:', error);
+    } catch {
       setUsernameAvailable(null);
     } finally {
       setCheckingUsername(false);
     }
   };
 
-  const getTotalSteps = () => {
-    if (data.studyLevel === '') return 14;
-    return data.studyLevel === 'gymnasie' ? 13 : 11;
+  const animateTransition = (nextStep: number) => {
+    const direction = nextStep > step ? -1 : 1;
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 120, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: direction * 30, duration: 120, useNativeDriver: true }),
+    ]).start(() => {
+      setStep(nextStep);
+      slideAnim.setValue(-direction * 30);
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+      ]).start();
+    });
   };
 
   const handleNext = () => {
     if (step < getTotalSteps() - 1) {
-      setStep(step + 1);
+      animateTransition(step + 1);
     } else {
       handleComplete();
     }
   };
 
-  const handleComplete = async () => {
-    if (data.studyLevel && data.displayName && data.username && usernameAvailable) {
-      try {
-        console.log('Completing onboarding with data:', data);
-        
-        const programName = data.studyLevel === 'gymnasie' 
-          ? (data.gymnasiumProgram ? data.gymnasiumProgram.name : data.program || 'Ej valt')
-          : (data.universityProgram ? data.universityProgram.name : data.program || 'Ej valt');
-        
-        const gymnasium: Gymnasium = data.gymnasium || { 
-          id: 'default', 
-          name: 'Gymnasie', 
-          type: 'kommunal', 
-          city: '', 
-          municipality: '' 
-        };
-        
-        const selectedGoalLabels = data.goals
-          .map(id => goalOptions.find(g => g.id === id)?.label)
-          .filter(Boolean)
-          .join(', ');
-
-        // Note: Policy acceptances and preferences will be saved in the completeOnboarding function
-        // These database tables need to be created first: user_policy_acceptances, user_preferences
-        console.log('Saving user preferences:', {
-          learningPace: data.learningPace,
-          notifications: data.notificationPreferences,
-          policies: {
-            terms: data.acceptedTerms,
-            privacy: data.acceptedPrivacy,
-            gdpr: data.acceptedGDPR,
-            age: data.acceptedAge,
-          }
-        });
-        
-        await completeOnboarding({
-          name: data.displayName,
-          username: data.username,
-          displayName: data.displayName,
-          email: user?.email || '',
-          studyLevel: data.studyLevel as 'gymnasie' | 'högskola',
-          program: programName,
-          purpose: selectedGoalLabels || 'Allmän studiehjälp',
-          subscriptionType: 'free',
-          gymnasium: gymnasium,
-          gymnasiumGrade: data.studyLevel === 'gymnasie' && data.year ? String(data.year) : null,
-          universityYear: data.studyLevel === 'högskola' && data.universityYear ? String(data.universityYear) : null,
-          universityProgramId: data.studyLevel === 'högskola' && data.universityProgram ? data.universityProgram.id : undefined,
-          avatar: data.avatarConfig,
-          selectedCourses: Array.from(data.selectedCourses),
-          dailyGoalHours: data.dailyGoalHours
-        });
-        
-        console.log('Onboarding completed successfully');
-        showSuccess('Välkommen! Din profil är nu klar.');
-        router.replace('/(tabs)/home' as any);
-      } catch (error) {
-        console.error('Onboarding error:', error);
-        showError('Något gick fel. Försök igen.');
-      }
+  const handleBack = () => {
+    if (step > 0) {
+      animateTransition(step - 1);
     }
   };
 
-  const assignCoursesAutomatically = async () => {
-    setIsLoadingCourses(true);
-    
+  const handleComplete = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      if (data.studyLevel === 'gymnasie' && data.selectedCourses.size > 0) {
-        const courses = availableCourses.filter(c => data.selectedCourses.has(c.id));
-        setAssignedCourses(courses);
-      }
-      
-      setIsLoadingCourses(false);
-      setStep(step + 1);
+      const programName =
+        data.studyLevel === 'gymnasie'
+          ? data.gymnasiumProgram
+            ? data.gymnasiumProgram.name
+            : data.program || 'Ej valt'
+          : data.universityProgram
+            ? data.universityProgram.name
+            : data.program || 'Ej valt';
+
+      const gymnasium: Gymnasium = data.gymnasium || {
+        id: 'default',
+        name: 'Gymnasie',
+        type: 'kommunal',
+        city: '',
+        municipality: '',
+      };
+
+      const selectedGoalLabels = data.goals
+        .map(id => goalOptions.find(g => g.id === id)?.label)
+        .filter(Boolean)
+        .join(', ');
+
+      await completeOnboarding({
+        name: data.displayName,
+        username: data.username,
+        displayName: data.displayName,
+        email: user?.email || '',
+        studyLevel: data.studyLevel as 'gymnasie' | 'högskola',
+        program: programName,
+        purpose: selectedGoalLabels || 'Allmän studiehjälp',
+        subscriptionType: 'free',
+        gymnasium,
+        gymnasiumGrade:
+          data.studyLevel === 'gymnasie' && data.year ? String(data.year) : null,
+        universityYear:
+          data.studyLevel === 'högskola' && data.universityYear
+            ? String(data.universityYear)
+            : null,
+        universityProgramId:
+          data.studyLevel === 'högskola' && data.universityProgram
+            ? data.universityProgram.id
+            : undefined,
+        avatar: data.avatarConfig,
+        selectedCourses: Array.from(data.selectedCourses),
+        dailyGoalHours: data.dailyGoalHours,
+      });
+
+      showSuccess('Välkommen! Din profil är klar.');
+      router.replace('/(tabs)/home' as any);
     } catch (error) {
-      console.error('Error assigning courses:', error);
-      setIsLoadingCourses(false);
-      showError('Kunde inte tilldela kurser. Försök igen.');
+      console.error('Onboarding error:', error);
+      showError('Något gick fel. Försök igen.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -529,1359 +334,747 @@ export default function OnboardingScreen() {
     setData({ ...data, goals: newGoals });
   };
 
-  const canProceed = () => {
+  const canProceed = (): boolean => {
     switch (step) {
-      case 0: 
+      case 0:
         return true;
-      case 1: 
-        return data.acceptedTerms && data.acceptedPrivacy && data.acceptedGDPR && data.acceptedAge;
-      case 2: 
-        return data.username.trim().length >= 3 && 
-               data.displayName.trim().length > 0 && 
-               usernameAvailable === true;
-      case 3: 
+      case 1:
+        return (
+          data.username.trim().length >= 3 &&
+          data.displayName.trim().length > 0 &&
+          usernameAvailable === true &&
+          data.acceptedTerms
+        );
+      case 2:
+        return data.studyLevel !== '';
+      case 3:
         if (data.studyLevel === 'gymnasie') {
           return data.gymnasiumProgram !== null && data.year !== null;
         }
         return data.universityProgram !== null && data.universityYear !== null;
-      case 4: 
-        if (data.studyLevel === 'gymnasie') {
-          return data.gymnasium !== null;
-        }
-        return data.university !== null;
-      case 5: 
+      case 4:
         if (data.studyLevel === 'gymnasie') {
           return data.selectedCourses.size > 0 && data.selectedCourses.size <= MAX_COURSES;
         }
         return data.goals.length > 0;
-      case 6: 
+      case 5:
         if (data.studyLevel === 'gymnasie') {
-          return data.goals.length > 0;
+          return data.goals.length > 0 && data.learningPace !== '';
         }
         return data.learningPace !== '';
-      case 7: 
-        if (data.studyLevel === 'gymnasie') {
-          return data.learningPace !== '';
-        }
+      case 6:
         return true;
-      case 8:
-        if (data.studyLevel === 'gymnasie') {
-          return true;
-        }
-        return true;
-      case 9:
-        if (data.studyLevel === 'gymnasie') {
-          return true;
-        }
-        return true;
-      case 10:
-        return true;
-      case 11:
-        return true;
-      case 12:
-        return true;
-      default: 
+      default:
         return false;
     }
   };
 
-  const renderStep = () => {
-    switch (step) {
-      case 0:
-        return (
-          <View style={styles.stepContainer}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
-                style={styles.logo}
-                contentFit="contain"
+  const getStepGradient = (): readonly [string, string, string] => {
+    const gradients: readonly (readonly [string, string, string])[] = [
+      ['#059669', '#10B981', '#34D399'] as const,
+      ['#0369A1', '#0EA5E9', '#38BDF8'] as const,
+      ['#7C3AED', '#8B5CF6', '#A78BFA'] as const,
+      ['#B45309', '#F59E0B', '#FBBF24'] as const,
+      ['#059669', '#10B981', '#34D399'] as const,
+      ['#DC2626', '#EF4444', '#F87171'] as const,
+      ['#4338CA', '#6366F1', '#818CF8'] as const,
+    ];
+    return gradients[step % gradients.length];
+  };
+
+  const renderWelcome = () => (
+    <View style={styles.stepContent}>
+      <View style={styles.welcomeHero}>
+        <View style={styles.logoWrapper}>
+          <View style={styles.logoGlow} />
+          <Image
+            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
+            style={styles.logo}
+            contentFit="contain"
+          />
+        </View>
+        <Text style={styles.welcomeTitle}>StudieStugan</Text>
+        <Text style={styles.welcomeTagline}>Din studieassistent för{'\n'}gymnasiet & högskolan</Text>
+      </View>
+
+      <View style={styles.featureGrid}>
+        {[
+          { icon: <BookOpen size={22} color="#10B981" />, label: 'Kurser & Lektioner' },
+          { icon: <Timer size={22} color="#3B82F6" />, label: 'Pomodoro Timer' },
+          { icon: <BarChart3 size={22} color="#F59E0B" />, label: 'Spåra framsteg' },
+          { icon: <Trophy size={22} color="#8B5CF6" />, label: 'Achievements' },
+        ].map((f, i) => (
+          <View key={i} style={styles.featureCard}>
+            <View style={styles.featureIconWrap}>{f.icon}</View>
+            <Text style={styles.featureLabel}>{f.label}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+
+  const renderProfile = () => (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+    >
+      <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.stepContent}>
+          <View style={styles.stepHeader}>
+            <View style={styles.stepIconCircle}>
+              <Users size={28} color="#FFFFFF" />
+            </View>
+            <Text style={styles.stepTitle}>Din profil</Text>
+            <Text style={styles.stepSubtitle}>Skapa ditt konto</Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Visningsnamn</Text>
+            <TextInput
+              style={styles.cardInput}
+              placeholder="Ditt för- och efternamn"
+              placeholderTextColor="#94A3B8"
+              value={data.displayName}
+              onChangeText={text => setData({ ...data, displayName: text })}
+              maxLength={50}
+            />
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Användarnamn</Text>
+            <View style={styles.usernameRow}>
+              <Text style={styles.atSign}>@</Text>
+              <TextInput
+                style={styles.usernameInput}
+                placeholder="användarnamn"
+                placeholderTextColor="#94A3B8"
+                value={data.username}
+                onChangeText={text => {
+                  const clean = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                  setData({ ...data, username: clean });
+                  if (clean.length >= 3) checkUsernameAvailability(clean);
+                  else setUsernameAvailable(null);
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={20}
               />
+              {checkingUsername && <ActivityIndicator size="small" color="#64748B" />}
+              {usernameAvailable === true && <Check size={18} color="#10B981" />}
             </View>
-            <Sparkles size={60} color="white" style={styles.icon} />
-            <Text style={styles.title}>Välkommen till Studiestugan!</Text>
-            <Text style={styles.subtitle}>
-              Din personliga studieassistent för gymnasiet och högskolan
-            </Text>
-            
-            <View style={styles.welcomeFeatures}>
-              <View style={styles.featureItem}>
-                <BookOpen size={24} color="white" />
-                <Text style={styles.featureText}>Strukturerat lärande</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Target size={24} color="white" />
-                <Text style={styles.featureText}>Spåra dina framsteg</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Trophy size={24} color="white" />
-                <Text style={styles.featureText}>Lås upp prestationer</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Users size={24} color="white" />
-                <Text style={styles.featureText}>Studera med vänner</Text>
-              </View>
-            </View>
-
-            <Text style={styles.subtleText}>
-              Låt oss sätta upp din profil på några minuter
-            </Text>
+            {usernameAvailable === false && (
+              <Text style={styles.errorHint}>Användarnamnet är inte tillgängligt</Text>
+            )}
+            <Text style={styles.hint}>3-20 tecken, bokstäver, siffror och _</Text>
           </View>
-        );
 
-      case 1:
-        return (
-          <View style={styles.stepContainer}>
-            <Shield size={60} color="white" style={styles.icon} />
-            <Text style={styles.title}>Villkor & Integritet</Text>
-            <Text style={styles.subtitle}>Läs och godkänn för att fortsätta</Text>
-            
-            <ScrollView style={styles.legalScrollView} showsVerticalScrollIndicator={false}>
-              <View style={styles.legalContainer}>
-                <AnimatedPressable
-                  style={styles.policyCard}
-                  onPress={() => setExpandedPolicy(expandedPolicy === 'terms' ? null : 'terms')}
-                >
-                  <View style={styles.policyHeader}>
-                    <View style={styles.policyIconContainer}>
-                      <FileText size={24} color="#0EA5E9" />
-                    </View>
-                    <View style={styles.policyTitleContainer}>
-                      <Text style={styles.policyTitle}>Användarvillkor</Text>
-                      <Text style={styles.policySubtitle}>
-                        Tryck för att {expandedPolicy === 'terms' ? 'dölja' : 'läsa'}
-                      </Text>
-                    </View>
-                  </View>
-                </AnimatedPressable>
-                
-                {expandedPolicy === 'terms' && (
-                  <View style={styles.policyContent}>
-                    <ScrollView style={styles.policyTextScroll} nestedScrollEnabled={true}>
-                      <Text style={styles.policyText}>{TERMS_OF_SERVICE}</Text>
-                    </ScrollView>
-                  </View>
-                )}
-                
-                <AnimatedPressable
-                  style={styles.policyCard}
-                  onPress={() => setExpandedPolicy(expandedPolicy === 'privacy' ? null : 'privacy')}
-                >
-                  <View style={styles.policyHeader}>
-                    <View style={styles.policyIconContainer}>
-                      <Shield size={24} color="#10B981" />
-                    </View>
-                    <View style={styles.policyTitleContainer}>
-                      <Text style={styles.policyTitle}>Integritetspolicy</Text>
-                      <Text style={styles.policySubtitle}>
-                        Tryck för att {expandedPolicy === 'privacy' ? 'dölja' : 'läsa'}
-                      </Text>
-                    </View>
-                  </View>
-                </AnimatedPressable>
-                
-                {expandedPolicy === 'privacy' && (
-                  <View style={styles.policyContent}>
-                    <ScrollView style={styles.policyTextScroll} nestedScrollEnabled={true}>
-                      <Text style={styles.policyText}>{PRIVACY_POLICY}</Text>
-                    </ScrollView>
-                  </View>
-                )}
-                
-                <View style={styles.acceptanceContainer}>
-                  <AnimatedPressable
-                    style={[
-                      styles.checkboxRow,
-                      data.acceptedTerms ? styles.checkboxRowChecked : undefined
-                    ] as any}
-                    onPress={() => setData({ ...data, acceptedTerms: !data.acceptedTerms })}
-                  >
-                    <View style={[
-                      styles.checkbox,
-                      data.acceptedTerms ? styles.checkboxChecked : undefined
-                    ]}>
-                      {data.acceptedTerms && <Check size={16} color="white" />}
-                    </View>
-                    <Text style={styles.checkboxLabel}>
-                      Jag har läst och godkänner användarvillkoren
-                    </Text>
-                  </AnimatedPressable>
-                  
-                  <AnimatedPressable
-                    style={[
-                      styles.checkboxRow,
-                      data.acceptedPrivacy ? styles.checkboxRowChecked : undefined
-                    ] as any}
-                    onPress={() => setData({ ...data, acceptedPrivacy: !data.acceptedPrivacy })}
-                  >
-                    <View style={[
-                      styles.checkbox,
-                      data.acceptedPrivacy ? styles.checkboxChecked : undefined
-                    ]}>
-                      {data.acceptedPrivacy && <Check size={16} color="white" />}
-                    </View>
-                    <Text style={styles.checkboxLabel}>
-                      Jag har läst och godkänner integritetspolicyn
-                    </Text>
-                  </AnimatedPressable>
-
-                  <AnimatedPressable
-                    style={[
-                      styles.checkboxRow,
-                      data.acceptedGDPR ? styles.checkboxRowChecked : undefined
-                    ] as any}
-                    onPress={() => setData({ ...data, acceptedGDPR: !data.acceptedGDPR })}
-                  >
-                    <View style={[
-                      styles.checkbox,
-                      data.acceptedGDPR ? styles.checkboxChecked : undefined
-                    ]}>
-                      {data.acceptedGDPR && <Check size={16} color="white" />}
-                    </View>
-                    <Text style={styles.checkboxLabel}>
-                      Jag godkänner behandling av personuppgifter enligt GDPR
-                    </Text>
-                  </AnimatedPressable>
-
-                  <AnimatedPressable
-                    style={[
-                      styles.checkboxRow,
-                      data.acceptedAge ? styles.checkboxRowChecked : undefined
-                    ] as any}
-                    onPress={() => setData({ ...data, acceptedAge: !data.acceptedAge })}
-                  >
-                    <View style={[
-                      styles.checkbox,
-                      data.acceptedAge ? styles.checkboxChecked : undefined
-                    ]}>
-                      {data.acceptedAge && <Check size={16} color="white" />}
-                    </View>
-                    <Text style={styles.checkboxLabel}>
-                      Jag bekräftar att jag är minst 13 år gammal
-                    </Text>
-                  </AnimatedPressable>
-                </View>
-              </View>
-            </ScrollView>
-          </View>
-        );
-
-      case 2:
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.title}>Hej {user?.email?.split('@')[0] || 'där'}!</Text>
-            <Text style={styles.subtitle}>Skapa ditt användarnamn och visningsnamn</Text>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Användarnamn (för att lägga till vänner)</Text>
-              <View style={styles.usernameInputContainer}>
-                <Text style={styles.atSymbol}>@</Text>
-                <TextInput
-                  style={styles.usernameInput}
-                  placeholder="användarnamn"
-                  placeholderTextColor="rgba(255,255,255,0.5)"
-                  value={data.username}
-                  onChangeText={(text) => {
-                    const cleanText = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                    setData({ ...data, username: cleanText });
-                    
-                    if (cleanText.length >= 3) {
-                      checkUsernameAvailability(cleanText);
-                    } else {
-                      setUsernameAvailable(null);
-                    }
-                  }}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  maxLength={20}
-                />
-              </View>
-              {checkingUsername && (
-                <Text style={styles.inputHint}>Kontrollerar tillgänglighet...</Text>
-              )}
-              {usernameAvailable === false && (
-                <Text style={[styles.inputHint, { color: '#EF4444' }]}>
-                  Användarnamnet är inte tillgängligt eller ogiltigt
-                </Text>
-              )}
-              {usernameAvailable === true && (
-                <Text style={[styles.inputHint, { color: '#10B981' }]}>
-                  ✓ Användarnamnet är tillgängligt
-                </Text>
-              )}
-              <Text style={styles.inputHint}>
-                3-20 tecken, endast bokstäver, siffror och _
+          <View style={styles.card}>
+            <View style={styles.termsRow}>
+              <TouchableOpacity
+                style={[styles.termsCheckbox, data.acceptedTerms && styles.termsCheckboxChecked]}
+                onPress={() => setData({ ...data, acceptedTerms: !data.acceptedTerms })}
+                activeOpacity={0.7}
+              >
+                {data.acceptedTerms && <Check size={14} color="#FFFFFF" />}
+              </TouchableOpacity>
+              <Text style={styles.termsText}>
+                Jag godkänner användarvillkoren, integritetspolicyn och bekräftar att jag är minst 13 år
               </Text>
             </View>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Visningsnamn (för- och efternamn)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ditt för- och efternamn"
-                placeholderTextColor="rgba(255,255,255,0.5)"
-                value={data.displayName}
-                onChangeText={(text) => setData({ ...data, displayName: text })}
-                maxLength={50}
-              />
-            </View>
           </View>
-        );
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
 
-      case 3:
-        return (
-          <View style={styles.stepContainer}>
-            <GraduationCap size={72} color="white" style={styles.icon} />
-            <Text style={styles.title}>Välj studienivå</Text>
-            <Text style={styles.subtitle}>Studerar du på gymnasiet eller högskola?</Text>
-            
-            <View style={styles.optionsContainer}>
-              <AnimatedPressable
-                style={[
-                  styles.optionCard,
-                  data.studyLevel === 'gymnasie' ? styles.selectedOptionCard : undefined
-                ] as any}
-                onPress={() => setData({ ...data, studyLevel: 'gymnasie' })}
-              >
-                <View style={[
-                  styles.optionIconContainer,
-                  data.studyLevel === 'gymnasie' ? { backgroundColor: 'rgba(16, 185, 129, 0.15)' } : undefined
-                ]}>
-                  <GraduationCap size={48} color={data.studyLevel === 'gymnasie' ? '#10B981' : 'white'} />
-                </View>
-                <Text style={[
-                  styles.optionTitle,
-                  data.studyLevel === 'gymnasie' ? styles.selectedOptionTitle : undefined
-                ]}>
-                  Gymnasiet
-                </Text>
-                <Text style={[
-                  styles.optionDescription,
-                  data.studyLevel === 'gymnasie' && { color: 'rgba(255, 255, 255, 0.95)' }
-                ]}>
-                  Välj ditt program och årskurs
-                </Text>
-              </AnimatedPressable>
-              
-              <AnimatedPressable
-                style={[
-                  styles.optionCard,
-                  data.studyLevel === 'högskola' ? styles.selectedOptionCard : undefined
-                ] as any}
-                onPress={() => setData({ ...data, studyLevel: 'högskola' })}
-              >
-                <View style={[
-                  styles.optionIconContainer,
-                  data.studyLevel === 'högskola' ? { backgroundColor: 'rgba(16, 185, 129, 0.15)' } : undefined
-                ]}>
-                  <BookOpen size={48} color={data.studyLevel === 'högskola' ? '#10B981' : 'white'} />
-                </View>
-                <Text style={[
-                  styles.optionTitle,
-                  data.studyLevel === 'högskola' ? styles.selectedOptionTitle : undefined
-                ]}>
-                  Högskola/Universitet
-                </Text>
-                <Text style={[
-                  styles.optionDescription,
-                  data.studyLevel === 'högskola' ? { color: 'rgba(255, 255, 255, 0.95)' } : undefined
-                ]}>
-                  Välj ditt program och termin
-                </Text>
-              </AnimatedPressable>
+  const renderStudyLevel = () => (
+    <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
+      <View style={styles.stepContent}>
+        <View style={styles.stepHeader}>
+          <View style={styles.stepIconCircle}>
+            <GraduationCap size={28} color="#FFFFFF" />
+          </View>
+          <Text style={styles.stepTitle}>Studienivå</Text>
+          <Text style={styles.stepSubtitle}>Var studerar du?</Text>
+        </View>
+
+        <View style={styles.levelCards}>
+          <TouchableOpacity
+            style={[styles.levelCard, data.studyLevel === 'gymnasie' && styles.levelCardSelected]}
+            onPress={() => setData({ ...data, studyLevel: 'gymnasie' })}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.levelIconWrap, data.studyLevel === 'gymnasie' && styles.levelIconWrapSelected]}>
+              <GraduationCap size={36} color={data.studyLevel === 'gymnasie' ? '#10B981' : '#94A3B8'} />
+            </View>
+            <Text style={[styles.levelTitle, data.studyLevel === 'gymnasie' && styles.levelTitleSelected]}>Gymnasiet</Text>
+            <Text style={styles.levelDesc}>Program & årskurs</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.levelCard, data.studyLevel === 'högskola' && styles.levelCardSelected]}
+            onPress={() => setData({ ...data, studyLevel: 'högskola' })}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.levelIconWrap, data.studyLevel === 'högskola' && styles.levelIconWrapSelected]}>
+              <BookOpen size={36} color={data.studyLevel === 'högskola' ? '#10B981' : '#94A3B8'} />
+            </View>
+            <Text style={[styles.levelTitle, data.studyLevel === 'högskola' && styles.levelTitleSelected]}>Högskola</Text>
+            <Text style={styles.levelDesc}>Program & termin</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ScrollView>
+  );
+
+  const renderProgramSelection = () => (
+    <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
+      <View style={styles.stepContent}>
+        <View style={styles.stepHeader}>
+          <View style={styles.stepIconCircle}>
+            <BookOpen size={28} color="#FFFFFF" />
+          </View>
+          <Text style={styles.stepTitle}>
+            {data.studyLevel === 'gymnasie' ? 'Program & Årskurs' : 'Program & Termin'}
+          </Text>
+        </View>
+
+        {data.studyLevel === 'gymnasie' && (
+          <>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Välj program</Text>
+              <View style={styles.programChips}>
+                {[
+                  { id: 'na', name: 'Naturvetenskap', emoji: '🔬', color: '#10B981' },
+                  { id: 'te', name: 'Teknik', emoji: '⚙️', color: '#F59E0B' },
+                  { id: 'sa', name: 'Samhällsvetenskap', emoji: '🏛️', color: '#3B82F6' },
+                  { id: 'ek', name: 'Ekonomi', emoji: '💼', color: '#8B5CF6' },
+                  { id: 'es', name: 'Estetiska', emoji: '🎨', color: '#EC4899' },
+                  { id: 'hu', name: 'Humanistiska', emoji: '📚', color: '#06B6D4' },
+                ].map(p => (
+                  <TouchableOpacity
+                    key={p.id}
+                    style={[
+                      styles.programChip,
+                      data.gymnasiumProgram?.id === p.id && { backgroundColor: p.color + '20', borderColor: p.color },
+                    ]}
+                    onPress={() =>
+                      setData({
+                        ...data,
+                        gymnasiumProgram: {
+                          id: p.id,
+                          name: p.name + 'programmet',
+                          abbreviation: p.id.toUpperCase(),
+                          category: 'högskoleförberedande',
+                        },
+                      })
+                    }
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.programChipEmoji}>{p.emoji}</Text>
+                    <Text
+                      style={[
+                        styles.programChipText,
+                        data.gymnasiumProgram?.id === p.id && { color: p.color, fontWeight: '700' as const },
+                      ]}
+                    >
+                      {p.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
-            {data.studyLevel === 'gymnasie' && (
-              <View style={styles.programYearSelector}>
-                <Text style={styles.programYearTitle}>Välj program och årskurs</Text>
-                
-                <ScrollView style={styles.programScroll} showsVerticalScrollIndicator={false}>
-                  <View style={styles.programGrid}>
-                    {[
-                      { id: 'na', name: 'Naturvetenskap', emoji: '🔬', color: '#10B981' },
-                      { id: 'te', name: 'Teknik', emoji: '⚙️', color: '#F59E0B' },
-                      { id: 'sa', name: 'Samhällsvetenskap', emoji: '🏛️', color: '#3B82F6' },
-                      { id: 'ek', name: 'Ekonomi', emoji: '💼', color: '#8B5CF6' },
-                      { id: 'es', name: 'Estetiska', emoji: '🎨', color: '#EC4899' },
-                      { id: 'hu', name: 'Humanistiska', emoji: '📚', color: '#06B6D4' },
-                    ].map(program => (
-                      <AnimatedPressable
-                        key={program.id}
-                        style={[
-                          styles.programMiniCard,
-                          data.gymnasiumProgram?.id === program.id ? {
-                            backgroundColor: program.color + '25',
-                            borderColor: program.color,
-                            borderWidth: 2.5
-                          } : undefined
-                        ] as any}
-                        onPress={() => setData({ 
-                          ...data, 
-                          gymnasiumProgram: { 
-                            id: program.id, 
-                            name: program.name + 'programmet', 
-                            abbreviation: program.id.toUpperCase(), 
-                            category: 'högskoleförberedande' 
-                          } 
-                        })}
-                      >
-                        <Text style={styles.programMiniEmoji}>{program.emoji}</Text>
-                        <Text style={[
-                          styles.programMiniName,
-                          data.gymnasiumProgram?.id === program.id ? { color: program.color, fontWeight: '700' as const } : undefined
-                        ]}>
-                          {program.name}
-                        </Text>
-                      </AnimatedPressable>
-                    ))}
-                  </View>
-                </ScrollView>
-
-                {data.gymnasiumProgram && (
-                  <View style={styles.yearSelector}>
-                    <Text style={styles.yearSelectorTitle}>Välj årskurs</Text>
-                    <View style={styles.yearButtons}>
-                      {[1, 2, 3].map(year => (
-                        <AnimatedPressable
-                          key={year}
-                          style={[
-                            styles.yearButton,
-                            data.year === year ? styles.selectedYearButton : undefined
-                          ] as any}
-                          onPress={() => setData({ ...data, year: year as 1 | 2 | 3 })}
-                        >
-                          <Text style={[
-                            styles.yearButtonText,
-                            data.year === year ? styles.selectedYearButtonText : undefined
-                          ]}>
-                            År {year}
-                          </Text>
-                        </AnimatedPressable>
-                      ))}
-                    </View>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {data.studyLevel === 'högskola' && (
-              <View style={styles.programYearSelector}>
-                <Text style={styles.programYearTitle}>Välj program och termin</Text>
-                
-                <View style={styles.universityProgramTypeSelector}>
-                  <Text style={styles.subProgramTitle}>Välj programtyp</Text>
-                  <ScrollView style={styles.programTypeScroll} showsVerticalScrollIndicator={false}>
-                    <View style={styles.programTypeGrid}>
-                      {[
-                        { type: 'civilingenjör', name: 'Civilingenjör', emoji: '⚙️', color: '#F59E0B', description: '5 år, 300 hp' },
-                        { type: 'högskoleingenjör', name: 'Högskoleingenjör', emoji: '🔧', color: '#10B981', description: '3 år, 180 hp' },
-                        { type: 'professionsprogram', name: 'Professionsprogram', emoji: '🎓', color: '#3B82F6', description: 'Läkare, Jurist, Lärare m.m.' },
-                        { type: 'kandidat', name: 'Kandidatprogram', emoji: '📚', color: '#8B5CF6', description: '3 år, 180 hp' },
-                        { type: 'yrkeshögskola', name: 'Yrkeshögskola', emoji: '💼', color: '#EC4899', description: '2 år, praktiskt fokus' },
-                      ].map(programType => {
-                        const isSelected = data.universityProgramType === programType.type;
-                        return (
-                          <AnimatedPressable
-                            key={programType.type}
-                            style={[
-                              styles.programTypeCard,
-                              isSelected ? {
-                                backgroundColor: programType.color + '25',
-                                borderColor: programType.color,
-                                borderWidth: 2.5
-                              } : undefined
-                            ] as any}
-                            onPress={() => setData({ 
-                              ...data, 
-                              universityProgramType: programType.type,
-                              universityProgram: null,
-                              universityYear: null
-                            })}
-                          >
-                            <Text style={styles.programTypeEmoji}>{programType.emoji}</Text>
-                            <Text style={[
-                              styles.programTypeName,
-                              isSelected && { color: programType.color, fontWeight: '700' as const }
-                            ]}>
-                              {programType.name}
-                            </Text>
-                            <Text style={[
-                              styles.programTypeDescription,
-                              isSelected && { color: 'rgba(255, 255, 255, 0.9)' }
-                            ]}>
-                              {programType.description}
-                            </Text>
-                          </AnimatedPressable>
-                        );
-                      })}
-                    </View>
-                  </ScrollView>
-                </View>
-
-                {data.universityProgramType && (() => {
-                  const filteredPrograms = UNIVERSITY_PROGRAMS.filter(p => p.degreeType === data.universityProgramType);
-                  
-                  return (
-                    <View style={styles.universitySubProgramSelector}>
-                      <Text style={styles.subProgramTitle}>
-                        {data.universityProgramType === 'civilingenjör' && 'Välj inriktning'}
-                        {data.universityProgramType === 'högskoleingenjör' && 'Välj inriktning'}
-                        {data.universityProgramType === 'kandidat' && 'Välj ämnesområde'}
-                        {data.universityProgramType === 'professionsprogram' && 'Välj program'}
-                        {data.universityProgramType === 'yrkeshögskola' && 'Välj utbildning'}
+            {data.gymnasiumProgram && (
+              <View style={styles.card}>
+                <Text style={styles.cardLabel}>Välj årskurs</Text>
+                <View style={styles.yearRow}>
+                  {[1, 2, 3].map(y => (
+                    <TouchableOpacity
+                      key={y}
+                      style={[styles.yearBtn, data.year === y && styles.yearBtnSelected]}
+                      onPress={() => setData({ ...data, year: y as 1 | 2 | 3 })}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.yearBtnText, data.year === y && styles.yearBtnTextSelected]}>
+                        År {y}
                       </Text>
-                      <ScrollView style={styles.subProgramScroll} horizontal showsHorizontalScrollIndicator={false}>
-                        <View style={styles.subProgramRow}>
-                          {filteredPrograms.map(program => {
-                            const isSelected = data.universityProgram?.id === program.id;
-                            let displayName = program.name;
-                            if (data.universityProgramType === 'civilingenjör') {
-                              displayName = program.name.replace('Civilingenjör - ', '');
-                            } else if (data.universityProgramType === 'högskoleingenjör') {
-                              displayName = program.name.replace('Högskoleingenjör - ', '');
-                            } else if (data.universityProgramType === 'kandidat') {
-                              displayName = program.name.replace('Kandidatprogram i ', '').replace('programmet', '');
-                            }
-                            
-                            return (
-                              <AnimatedPressable
-                                key={program.id}
-                                style={[
-                                  styles.subProgramChip,
-                                  isSelected ? styles.selectedSubProgramChip : undefined
-                                ] as any}
-                                onPress={() => setData({ 
-                                  ...data, 
-                                  universityProgram: program,
-                                  universityYear: null
-                                })}
-                              >
-                                <Text style={[
-                                  styles.subProgramChipText,
-                                  isSelected && styles.selectedSubProgramChipText
-                                ]} numberOfLines={1}>
-                                  {displayName}
-                                </Text>
-                              </AnimatedPressable>
-                            );
-                          })}
-                        </View>
-                      </ScrollView>
-                    </View>
-                  );
-                })()}
-
-                {data.universityProgram && (
-                  <View style={styles.yearSelectorInline}>
-                    <Text style={styles.yearSelectorTitle}>Välj termin</Text>
-                    <View style={styles.termButtonsGrid}>
-                      {Array.from({ length: Math.min(data.universityProgram.durationYears * 2, 10) }, (_, i) => i + 1).map(term => (
-                        <AnimatedPressable
-                          key={term}
-                          style={[
-                            styles.termButton,
-                            data.universityYear === term ? styles.selectedTermButton : undefined
-                          ] as any}
-                          onPress={() => setData({ ...data, universityYear: term as 1 | 2 | 3 | 4 | 5 })}
-                        >
-                          <Text style={[
-                            styles.termButtonText,
-                            data.universityYear === term ? styles.selectedTermButtonText : undefined
-                          ]}>
-                            T{term}
-                          </Text>
-                        </AnimatedPressable>
-                      ))}
-                    </View>
-                  </View>
-                )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             )}
-          </View>
-        );
 
-      case 4:
-        if (data.studyLevel === 'gymnasie') {
-          return (
-            <View style={styles.stepContainer}>
-              <MapPin size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Vilken skola går du på?</Text>
-              <Text style={styles.subtitle}>Välj ditt gymnasium</Text>
-              
-              <View style={styles.searchContainer}>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Välj gymnasium (valfritt)</Text>
+              <View style={styles.searchRow}>
+                <Search size={16} color="#94A3B8" />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Sök gymnasium..."
-                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  placeholderTextColor="#94A3B8"
                   value={gymnasiumSearchQuery}
                   onChangeText={setGymnasiumSearchQuery}
                 />
               </View>
-              
-              <ScrollView style={styles.selectionList} showsVerticalScrollIndicator={false}>
-                {SWEDISH_GYMNASIUMS
-                  .filter(g => g.name.toLowerCase().includes(gymnasiumSearchQuery.toLowerCase()))
-                  .slice(0, 20)
-                  .map((gymnasium) => (
-                    <AnimatedPressable
-                      key={gymnasium.id}
-                      style={[
-                        styles.selectionCard,
-                        data.gymnasium?.id === gymnasium.id ? styles.selectedCard : undefined
-                      ] as any}
-                      onPress={() => setData({ ...data, gymnasium })}
+              <ScrollView style={styles.schoolList} nestedScrollEnabled>
+                {SWEDISH_GYMNASIUMS.filter(g =>
+                  g.name.toLowerCase().includes(gymnasiumSearchQuery.toLowerCase())
+                )
+                  .slice(0, 12)
+                  .map(g => (
+                    <TouchableOpacity
+                      key={g.id}
+                      style={[styles.schoolItem, data.gymnasium?.id === g.id && styles.schoolItemSelected]}
+                      onPress={() => setData({ ...data, gymnasium: g })}
+                      activeOpacity={0.7}
                     >
-                      <View style={styles.selectionCardContent}>
-                        <Text style={[
-                          styles.selectionCardTitle,
-                          data.gymnasium?.id === gymnasium.id ? styles.selectedCardTitle : undefined
-                        ]}>
-                          {gymnasium.name}
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.schoolName, data.gymnasium?.id === g.id && styles.schoolNameSelected]}>
+                          {g.name}
                         </Text>
-                        <Text style={[
-                          styles.selectionCardSubtitle,
-                          data.gymnasium?.id === gymnasium.id && { color: '#059669', fontWeight: '600' as const }
-                        ]}>
-                          {gymnasium.city} • {gymnasium.type}
-                        </Text>
+                        <Text style={styles.schoolCity}>{g.city}</Text>
                       </View>
-                      {data.gymnasium?.id === gymnasium.id && (
-                        <Check size={20} color="#10B981" />
-                      )}
-                    </AnimatedPressable>
+                      {data.gymnasium?.id === g.id && <Check size={16} color="#10B981" />}
+                    </TouchableOpacity>
                   ))}
               </ScrollView>
             </View>
-          );
-        } else {
-          return (
-            <View style={styles.stepContainer}>
-              <MapPin size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Vilken högskola går du på?</Text>
-              <Text style={styles.subtitle}>Välj ditt universitet eller högskola</Text>
-              
-              <View style={styles.searchContainer}>
+          </>
+        )}
+
+        {data.studyLevel === 'högskola' && (
+          <>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Välj programtyp</Text>
+              <View style={styles.programChips}>
+                {[
+                  { type: 'civilingenjör', name: 'Civilingenjör', emoji: '⚙️', color: '#F59E0B' },
+                  { type: 'högskoleingenjör', name: 'Högskoleingenjör', emoji: '🔧', color: '#10B981' },
+                  { type: 'professionsprogram', name: 'Professionsprogram', emoji: '🎓', color: '#3B82F6' },
+                  { type: 'kandidat', name: 'Kandidat', emoji: '📚', color: '#8B5CF6' },
+                  { type: 'yrkeshögskola', name: 'YH', emoji: '💼', color: '#EC4899' },
+                ].map(pt => (
+                  <TouchableOpacity
+                    key={pt.type}
+                    style={[
+                      styles.programChip,
+                      data.universityProgramType === pt.type && { backgroundColor: pt.color + '20', borderColor: pt.color },
+                    ]}
+                    onPress={() =>
+                      setData({
+                        ...data,
+                        universityProgramType: pt.type,
+                        universityProgram: null,
+                        universityYear: null,
+                      })
+                    }
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.programChipEmoji}>{pt.emoji}</Text>
+                    <Text
+                      style={[
+                        styles.programChipText,
+                        data.universityProgramType === pt.type && { color: pt.color, fontWeight: '700' as const },
+                      ]}
+                    >
+                      {pt.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {data.universityProgramType && (
+              <View style={styles.card}>
+                <Text style={styles.cardLabel}>Välj program</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                  {UNIVERSITY_PROGRAMS.filter(p => p.degreeType === data.universityProgramType).map(prog => {
+                    const isSelected = data.universityProgram?.id === prog.id;
+                    return (
+                      <TouchableOpacity
+                        key={prog.id}
+                        style={[styles.horizChip, isSelected && styles.horizChipSelected]}
+                        onPress={() => setData({ ...data, universityProgram: prog, universityYear: null })}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.horizChipText, isSelected && styles.horizChipTextSelected]} numberOfLines={1}>
+                          {prog.name.replace(/^(Civilingenjör|Högskoleingenjör|Kandidatprogram i) - ?/, '')}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {data.universityProgram && (
+              <View style={styles.card}>
+                <Text style={styles.cardLabel}>Välj termin</Text>
+                <View style={styles.yearRow}>
+                  {Array.from(
+                    { length: Math.min(data.universityProgram.durationYears * 2, 10) },
+                    (_, i) => i + 1
+                  ).map(t => (
+                    <TouchableOpacity
+                      key={t}
+                      style={[styles.yearBtn, data.universityYear === t && styles.yearBtnSelected]}
+                      onPress={() => setData({ ...data, universityYear: t as UniversityProgramYear })}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.yearBtnText, data.universityYear === t && styles.yearBtnTextSelected]}>
+                        T{t}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Välj högskola (valfritt)</Text>
+              <View style={styles.searchRow}>
+                <Search size={16} color="#94A3B8" />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Sök högskola..."
-                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  placeholderTextColor="#94A3B8"
                   value={universitySearchQuery}
                   onChangeText={setUniversitySearchQuery}
                 />
               </View>
-              
-              <ScrollView style={styles.selectionList} showsVerticalScrollIndicator={false}>
-                {SWEDISH_UNIVERSITIES
-                  .filter(u => 
+              <ScrollView style={styles.schoolList} nestedScrollEnabled>
+                {SWEDISH_UNIVERSITIES.filter(
+                  u =>
                     u.name.toLowerCase().includes(universitySearchQuery.toLowerCase()) ||
                     u.city.toLowerCase().includes(universitySearchQuery.toLowerCase())
-                  )
-                  .slice(0, 20)
-                  .map((university) => (
-                    <AnimatedPressable
-                      key={university.id}
-                      style={[
-                        styles.selectionCard,
-                        data.university?.id === university.id ? styles.selectedCard : undefined
-                      ] as any}
-                      onPress={() => setData({ ...data, university })}
+                )
+                  .slice(0, 12)
+                  .map(u => (
+                    <TouchableOpacity
+                      key={u.id}
+                      style={[styles.schoolItem, data.university?.id === u.id && styles.schoolItemSelected]}
+                      onPress={() => setData({ ...data, university: u })}
+                      activeOpacity={0.7}
                     >
-                      <View style={styles.selectionCardContent}>
-                        <Text style={[
-                          styles.selectionCardTitle,
-                          data.university?.id === university.id ? styles.selectedCardTitle : undefined
-                        ]}>
-                          {university.name}
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.schoolName, data.university?.id === u.id && styles.schoolNameSelected]}>
+                          {u.name}
                         </Text>
-                        <Text style={[
-                          styles.selectionCardSubtitle,
-                          data.university?.id === university.id && { color: '#059669', fontWeight: '600' as const }
-                        ]}>
-                          {university.city} • {university.category}
-                        </Text>
+                        <Text style={styles.schoolCity}>{u.city}</Text>
                       </View>
-                      {data.university?.id === university.id && (
-                        <Check size={20} color="#10B981" />
-                      )}
-                    </AnimatedPressable>
+                      {data.university?.id === u.id && <Check size={16} color="#10B981" />}
+                    </TouchableOpacity>
                   ))}
               </ScrollView>
             </View>
-          );
-        }
+          </>
+        )}
+      </View>
+    </ScrollView>
+  );
 
-      case 5:
-        if (data.studyLevel === 'gymnasie') {
-          return (
-            <View style={styles.stepContainer}>
-              <BookOpen size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Välj kurser</Text>
-              <Text style={styles.subtitle}>Välj de kurser du läser just nu (max {MAX_COURSES})</Text>
-              
-              <View style={styles.courseCountBadge}>
-                <Text style={styles.courseCountText}>
-                  {data.selectedCourses.size}/{MAX_COURSES} kurser valda
-                </Text>
+  const renderCourses = () => {
+    if (data.studyLevel === 'gymnasie') {
+      return (
+        <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.stepContent}>
+            <View style={styles.stepHeader}>
+              <View style={styles.stepIconCircle}>
+                <BookOpen size={28} color="#FFFFFF" />
               </View>
-              
-              <ScrollView style={styles.coursesList} showsVerticalScrollIndicator={false}>
-                {availableCourses.map((course) => (
-                  <AnimatedPressable
-                    key={course.id}
-                    style={[
-                      styles.courseCard,
-                      data.selectedCourses.has(course.id) ? styles.selectedCourseCard : undefined
-                    ] as any}
-                    onPress={() => {
-                      const newSelected = new Set(data.selectedCourses);
-                      if (newSelected.has(course.id)) {
-                        if (!course.mandatory) newSelected.delete(course.id);
-                      } else {
-                        if (newSelected.size < MAX_COURSES) {
-                          newSelected.add(course.id);
-                        }
-                      }
-                      setData({ ...data, selectedCourses: newSelected });
-                    }}
-                  >
-                    <View style={styles.courseCardContent}>
-                      <Text style={styles.courseEmoji}>📚</Text>
-                      <View style={styles.courseCardInfo}>
-                        <Text style={[
-                          styles.courseCardTitle,
-                          data.selectedCourses.has(course.id) ? styles.selectedCourseCardTitle : undefined
-                        ]}>
-                          {course.name}
-                        </Text>
-                        {course.mandatory && (
-                          <View style={styles.mandatoryBadge}>
-                            <Text style={styles.mandatoryText}>Obligatorisk</Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                    {data.selectedCourses.has(course.id) && (
-                      <Check size={20} color="#10B981" />
-                    )}
-                  </AnimatedPressable>
-                ))}
-              </ScrollView>
+              <Text style={styles.stepTitle}>Välj kurser</Text>
+              <Text style={styles.stepSubtitle}>
+                {data.selectedCourses.size}/{MAX_COURSES} kurser valda
+              </Text>
             </View>
-          );
-        } else {
-          return (
-            <View style={styles.stepContainer}>
-              <Target size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Vad är dina studiemål?</Text>
-              <Text style={styles.subtitle}>Välj minst ett mål (kan välja flera)</Text>
-              
-              <ScrollView style={styles.goalsList} showsVerticalScrollIndicator={false}>
-                {goalOptions.map((goal) => (
-                  <AnimatedPressable
-                    key={goal.id}
-                    style={[
-                      styles.goalCard,
-                      { borderColor: goal.color },
-                      data.goals.includes(goal.id) ? { 
-                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-                        borderWidth: 3,
-                        borderColor: goal.color,
-                        shadowColor: goal.color,
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 8,
-                        elevation: 4,
-                      } : undefined
-                    ] as any}
-                    onPress={() => toggleGoal(goal.id)}
-                  >
-                    <Text style={styles.goalEmoji}>{goal.icon}</Text>
-                    <Text style={[
-                      styles.goalLabel,
-                      data.goals.includes(goal.id) && { fontWeight: '700' as const, color: goal.color }
-                    ]}>
-                      {goal.label}
-                    </Text>
-                    {data.goals.includes(goal.id) && (
-                      <Check size={20} color={goal.color} />
-                    )}
-                  </AnimatedPressable>
-                ))}
-              </ScrollView>
-            </View>
-          );
-        }
-
-      case 6:
-        if (data.studyLevel === 'gymnasie') {
-          return (
-            <View style={styles.stepContainer}>
-              <Target size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Vad är dina studiemål?</Text>
-              <Text style={styles.subtitle}>Välj minst ett mål (kan välja flera)</Text>
-              
-              <ScrollView style={styles.goalsList} showsVerticalScrollIndicator={false}>
-                {goalOptions.map((goal) => (
-                  <AnimatedPressable
-                    key={goal.id}
-                    style={[
-                      styles.goalCard,
-                      { borderColor: goal.color },
-                      data.goals.includes(goal.id) ? { 
-                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-                        borderWidth: 3,
-                        borderColor: goal.color,
-                        shadowColor: goal.color,
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 8,
-                        elevation: 4,
-                      } : undefined
-                    ] as any}
-                    onPress={() => toggleGoal(goal.id)}
-                  >
-                    <Text style={styles.goalEmoji}>{goal.icon}</Text>
-                    <Text style={[
-                      styles.goalLabel,
-                      data.goals.includes(goal.id) && { fontWeight: '700' as const, color: goal.color }
-                    ]}>
-                      {goal.label}
-                    </Text>
-                    {data.goals.includes(goal.id) && (
-                      <Check size={20} color={goal.color} />
-                    )}
-                  </AnimatedPressable>
-                ))}
-              </ScrollView>
-            </View>
-          );
-        } else {
-          return (
-            <View style={styles.stepContainer}>
-              <Flame size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Vilket studietempo passar dig?</Text>
-              <Text style={styles.subtitle}>Välj hur du vill lära dig</Text>
-              
-              <View style={styles.paceContainer}>
-                {learningPaceOptions.map((pace) => (
-                  <AnimatedPressable
-                    key={pace.id}
-                    style={[
-                      styles.paceCard,
-                      { borderColor: pace.color },
-                      data.learningPace === pace.id ? { 
-                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-                        borderWidth: 3,
-                        borderColor: pace.color,
-                        shadowColor: pace.color,
-                        shadowOffset: { width: 0, height: 6 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 12,
-                        elevation: 6,
-                      } : undefined
-                    ] as any}
-                    onPress={() => setData({ ...data, learningPace: pace.id as any })}
-                  >
-                    <Text style={styles.paceEmoji}>{pace.icon}</Text>
-                    <Text style={[
-                      styles.paceTitle,
-                      data.learningPace === pace.id && { color: pace.color }
-                    ]}>
-                      {pace.title}
-                    </Text>
-                    <Text style={[
-                      styles.paceSubtitle
-                    ]}>{pace.subtitle}</Text>
-                    <Text style={[
-                      styles.paceDescription,
-                      data.learningPace === pace.id && { color: '#475569', fontWeight: '600' as const }
-                    ]}>{pace.description}</Text>
-                  </AnimatedPressable>
-                ))}
-              </View>
-            </View>
-          );
-        }
-
-      case 7:
-        if (data.studyLevel === 'gymnasie') {
-          return (
-            <View style={styles.stepContainer}>
-              <Flame size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Vilket studietempo passar dig?</Text>
-              <Text style={styles.subtitle}>Välj hur du vill lära dig</Text>
-              
-              <View style={styles.paceContainer}>
-                {learningPaceOptions.map((pace) => (
-                  <AnimatedPressable
-                    key={pace.id}
-                    style={[
-                      styles.paceCard,
-                      { borderColor: pace.color },
-                      data.learningPace === pace.id ? { 
-                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-                        borderWidth: 3,
-                        borderColor: pace.color,
-                        shadowColor: pace.color,
-                        shadowOffset: { width: 0, height: 6 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 12,
-                        elevation: 6,
-                      } : undefined
-                    ] as any}
-                    onPress={() => setData({ ...data, learningPace: pace.id as any })}
-                  >
-                    <Text style={styles.paceEmoji}>{pace.icon}</Text>
-                    <Text style={[
-                      styles.paceTitle,
-                      data.learningPace === pace.id && { color: pace.color }
-                    ]}>
-                      {pace.title}
-                    </Text>
-                    <Text style={[
-                      styles.paceSubtitle
-                    ]}>{pace.subtitle}</Text>
-                    <Text style={[
-                      styles.paceDescription,
-                      data.learningPace === pace.id && { color: '#475569', fontWeight: '600' as const }
-                    ]}>{pace.description}</Text>
-                  </AnimatedPressable>
-                ))}
-              </View>
-            </View>
-          );
-        } else {
-          return (
-            <View style={styles.stepContainer}>
-              <Bell size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Notifikationer</Text>
-              <Text style={styles.subtitle}>Anpassa dina påminnelser</Text>
-              
-              <View style={styles.notificationsContainer}>
-                <View style={styles.notificationItem}>
-                  <View style={styles.notificationInfo}>
-                    <Text style={styles.notificationTitle}>Dagliga påminnelser</Text>
-                    <Text style={styles.notificationDescription}>Få påminnelser att studera</Text>
-                  </View>
-                  <Switch
-                    value={data.notificationPreferences.dailyReminders}
-                    onValueChange={(val) => setData({
-                      ...data,
-                      notificationPreferences: { ...data.notificationPreferences, dailyReminders: val }
-                    })}
-                  />
-                </View>
-                
-                <View style={styles.notificationItem}>
-                  <View style={styles.notificationInfo}>
-                    <Text style={styles.notificationTitle}>Achievement-notiser</Text>
-                    <Text style={styles.notificationDescription}>När du låser upp prestationer</Text>
-                  </View>
-                  <Switch
-                    value={data.notificationPreferences.achievements}
-                    onValueChange={(val) => setData({
-                      ...data,
-                      notificationPreferences: { ...data.notificationPreferences, achievements: val }
-                    })}
-                  />
-                </View>
-                
-                <View style={styles.notificationItem}>
-                  <View style={styles.notificationInfo}>
-                    <Text style={styles.notificationTitle}>Dagliga utmaningar</Text>
-                    <Text style={styles.notificationDescription}>Påminnelser om challenges</Text>
-                  </View>
-                  <Switch
-                    value={data.notificationPreferences.dailyChallenges}
-                    onValueChange={(val) => setData({
-                      ...data,
-                      notificationPreferences: { ...data.notificationPreferences, dailyChallenges: val }
-                    })}
-                  />
-                </View>
-                
-                <View style={styles.notificationItem}>
-                  <View style={styles.notificationInfo}>
-                    <Text style={styles.notificationTitle}>Streak-påminnelser</Text>
-                    <Text style={styles.notificationDescription}>Behåll din streak igång</Text>
-                  </View>
-                  <Switch
-                    value={data.notificationPreferences.streakReminders}
-                    onValueChange={(val) => setData({
-                      ...data,
-                      notificationPreferences: { ...data.notificationPreferences, streakReminders: val }
-                    })}
-                  />
-                </View>
-              </View>
-            </View>
-          );
-        }
-
-      case 8:
-        if (data.studyLevel === 'gymnasie') {
-          return (
-            <View style={styles.stepContainer}>
-              <Bell size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Notifikationer</Text>
-              <Text style={styles.subtitle}>Anpassa dina påminnelser</Text>
-              
-              <View style={styles.notificationsContainer}>
-                <View style={styles.notificationItem}>
-                  <View style={styles.notificationInfo}>
-                    <Text style={styles.notificationTitle}>Dagliga påminnelser</Text>
-                    <Text style={styles.notificationDescription}>Få påminnelser att studera</Text>
-                  </View>
-                  <Switch
-                    value={data.notificationPreferences.dailyReminders}
-                    onValueChange={(val) => setData({
-                      ...data,
-                      notificationPreferences: { ...data.notificationPreferences, dailyReminders: val }
-                    })}
-                  />
-                </View>
-                
-                <View style={styles.notificationItem}>
-                  <View style={styles.notificationInfo}>
-                    <Text style={styles.notificationTitle}>Achievement-notiser</Text>
-                    <Text style={styles.notificationDescription}>När du låser upp prestationer</Text>
-                  </View>
-                  <Switch
-                    value={data.notificationPreferences.achievements}
-                    onValueChange={(val) => setData({
-                      ...data,
-                      notificationPreferences: { ...data.notificationPreferences, achievements: val }
-                    })}
-                  />
-                </View>
-                
-                <View style={styles.notificationItem}>
-                  <View style={styles.notificationInfo}>
-                    <Text style={styles.notificationTitle}>Dagliga utmaningar</Text>
-                    <Text style={styles.notificationDescription}>Påminnelser om challenges</Text>
-                  </View>
-                  <Switch
-                    value={data.notificationPreferences.dailyChallenges}
-                    onValueChange={(val) => setData({
-                      ...data,
-                      notificationPreferences: { ...data.notificationPreferences, dailyChallenges: val }
-                    })}
-                  />
-                </View>
-                
-                <View style={styles.notificationItem}>
-                  <View style={styles.notificationInfo}>
-                    <Text style={styles.notificationTitle}>Streak-påminnelser</Text>
-                    <Text style={styles.notificationDescription}>Behåll din streak igång</Text>
-                  </View>
-                  <Switch
-                    value={data.notificationPreferences.streakReminders}
-                    onValueChange={(val) => setData({
-                      ...data,
-                      notificationPreferences: { ...data.notificationPreferences, streakReminders: val }
-                    })}
-                  />
-                </View>
-              </View>
-            </View>
-          );
-        } else {
-          return (
-            <View style={styles.stepContainer}>
-              <Users size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Skapa din profil</Text>
-              <Text style={styles.subtitle}>Anpassa din avatar</Text>
-              
-              <View style={styles.avatarContainer}>
-                <AvatarBuilder
-                  config={data.avatarConfig}
-                  onConfigChange={(config) => setData({ ...data, avatarConfig: config })}
-                />
-              </View>
-            </View>
-          );
-        }
-
-      case 9:
-        if (data.studyLevel === 'gymnasie') {
-          return (
-            <View style={styles.stepContainer}>
-              <Users size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Skapa din profil</Text>
-              <Text style={styles.subtitle}>Anpassa din avatar</Text>
-              
-              <View style={styles.avatarContainer}>
-                <AvatarBuilder
-                  config={data.avatarConfig}
-                  onConfigChange={(config) => setData({ ...data, avatarConfig: config })}
-                />
-              </View>
-            </View>
-          );
-        } else {
-          return (
-            <View style={styles.stepContainer}>
-              <ActivityIndicator size="large" color="white" />
-              <Text style={styles.title}>Förbereder dina kurser...</Text>
-              <Text style={styles.subtitle}>Detta tar bara några sekunder</Text>
-            </View>
-          );
-        }
-
-      case 10:
-        if (data.studyLevel === 'gymnasie') {
-          if (isLoadingCourses) {
-            return (
-              <View style={styles.stepContainer}>
-                <ActivityIndicator size="large" color="white" />
-                <Text style={styles.title}>Förbereder dina kurser...</Text>
-                <Text style={styles.subtitle}>Detta tar bara några sekunder</Text>
-              </View>
-            );
-          }
-          return (
-            <View style={styles.stepContainer}>
-              <Trophy size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Dina kurser är redo!</Text>
-              <Text style={styles.subtitle}>Du har tilldelats {assignedCourses.length} kurser</Text>
-              
-              <ScrollView style={styles.assignedCoursesList} showsVerticalScrollIndicator={false}>
-                {assignedCourses.map((course) => (
-                  <View key={course.id} style={styles.assignedCourseCard}>
-                    <Text style={styles.assignedCourseEmoji}>📚</Text>
-                    <Text style={styles.assignedCourseName}>{course.name}</Text>
-                    <Check size={20} color="#10B981" />
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          );
-        } else {
-          return (
-            <View style={styles.stepContainer}>
-              <Trophy size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Allt klart!</Text>
-              <Text style={styles.subtitle}>Din profil är nu komplett</Text>
-              
-              <View style={styles.summaryContainer}>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Skola</Text>
-                  <Text style={styles.summaryValue}>{data.university?.name || 'Ingen vald'}</Text>
-                </View>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Program</Text>
-                  <Text style={styles.summaryValue}>{data.universityProgram?.name || 'Inget valt'}</Text>
-                </View>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Studietempo</Text>
-                  <Text style={styles.summaryValue}>
-                    {learningPaceOptions.find(p => p.id === data.learningPace)?.title || 'Ej valt'}
+            {availableCourses.map(course => (
+              <TouchableOpacity
+                key={course.id}
+                style={[styles.courseItem, data.selectedCourses.has(course.id) && styles.courseItemSelected]}
+                onPress={() => {
+                  const newSelected = new Set(data.selectedCourses);
+                  if (newSelected.has(course.id)) {
+                    if (!course.mandatory) newSelected.delete(course.id);
+                  } else if (newSelected.size < MAX_COURSES) {
+                    newSelected.add(course.id);
+                  }
+                  setData({ ...data, selectedCourses: newSelected });
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.courseEmoji}>📚</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.courseName, data.selectedCourses.has(course.id) && styles.courseNameSelected]}>
+                    {course.name}
                   </Text>
+                  {course.mandatory && <Text style={styles.mandatoryBadge}>Obligatorisk</Text>}
                 </View>
-              </View>
-            </View>
-          );
-        }
-
-      case 11:
-        if (data.studyLevel === 'gymnasie') {
-          return (
-            <View style={styles.stepContainer}>
-              <BookOpen size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Vilken kurs vill du börja med?</Text>
-              <Text style={styles.subtitle}>Välj en kurs för att komma igång</Text>
-              
-              <ScrollView style={styles.startingCoursesList} showsVerticalScrollIndicator={false}>
-                {assignedCourses.slice(0, 5).map((course) => (
-                  <AnimatedPressable
-                    key={course.id}
-                    style={[
-                      styles.startingCourseCard,
-                      data.selectedStartingCourse === course.id ? styles.selectedStartingCourseCard : undefined
-                    ] as any}
-                    onPress={() => setData({ ...data, selectedStartingCourse: course.id })}
-                  >
-                    <View style={styles.startingCourseContent}>
-                      <Text style={styles.startingCourseEmoji}>📚</Text>
-                      <View style={styles.startingCourseInfo}>
-                        <Text style={[
-                          styles.startingCourseTitle,
-                          data.selectedStartingCourse === course.id ? styles.selectedStartingCourseTitle : undefined
-                        ]}>
-                          {course.name}
-                        </Text>
-                        <Text style={styles.startingCourseDescription}>
-                          Börja med grunderna
-                        </Text>
-                      </View>
-                    </View>
-                    {data.selectedStartingCourse === course.id && (
-                      <Check size={20} color="#10B981" />
-                    )}
-                  </AnimatedPressable>
-                ))}
-              </ScrollView>
-              
-              <Text style={styles.skipText}>Du kan också hoppa över och utforska alla kurser senare</Text>
-            </View>
-          );
-        } else {
-          return (
-            <View style={styles.stepContainer}>
-              <Sparkles size={60} color="white" style={styles.icon} />
-              <Text style={styles.title}>Välkommen ombord! 🎉</Text>
-              <Text style={styles.subtitle}>Du är nu redo att börja din studieresa</Text>
-              
-              <View style={styles.welcomeChecklistContainer}>
-                <View style={styles.checklistItem}>
-                  <Check size={20} color="#10B981" />
-                  <Text style={styles.checklistText}>Profil skapad</Text>
-                </View>
-                <View style={styles.checklistItem}>
-                  <Check size={20} color="#10B981" />
-                  <Text style={styles.checklistText}>Kurser tilldelade</Text>
-                </View>
-                <View style={styles.checklistItem}>
-                  <Check size={20} color="#10B981" />
-                  <Text style={styles.checklistText}>Inställningar konfigurerade</Text>
-                </View>
-                <View style={styles.checklistItem}>
-                  <Check size={20} color="#10B981" />
-                  <Text style={styles.checklistText}>Redo att börja studera</Text>
-                </View>
-              </View>
-              
-              <View style={styles.quickTipsContainer}>
-                <Text style={styles.quickTipsTitle}>Snabbtips för att komma igång:</Text>
-                <View style={styles.tipItem}>
-                  <Text style={styles.tipEmoji}>📖</Text>
-                  <Text style={styles.tipText}>Slutför lektioner i din egen takt</Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Text style={styles.tipEmoji}>🔥</Text>
-                  <Text style={styles.tipText}>Håll din streak igång genom att studera dagligen</Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Text style={styles.tipEmoji}>🏆</Text>
-                  <Text style={styles.tipText}>Lås upp prestationer när du lär dig</Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Text style={styles.tipEmoji}>👥</Text>
-                  <Text style={styles.tipText}>Lägg till vänner för att jämföra framsteg</Text>
-                </View>
-              </View>
-            </View>
-          );
-        }
-
-      case 12:
-        return (
-          <View style={styles.stepContainer}>
-            <Sparkles size={60} color="white" style={styles.icon} />
-            <Text style={styles.title}>Välkommen ombord! 🎉</Text>
-            <Text style={styles.subtitle}>Du är nu redo att börja din studieresa</Text>
-            
-            <View style={styles.welcomeChecklistContainer}>
-              <View style={styles.checklistItem}>
-                <Check size={20} color="#10B981" />
-                <Text style={styles.checklistText}>Profil skapad</Text>
-              </View>
-              <View style={styles.checklistItem}>
-                <Check size={20} color="#10B981" />
-                <Text style={styles.checklistText}>Kurser tilldelade</Text>
-              </View>
-              <View style={styles.checklistItem}>
-                <Check size={20} color="#10B981" />
-                <Text style={styles.checklistText}>Inställningar konfigurerade</Text>
-              </View>
-              <View style={styles.checklistItem}>
-                <Check size={20} color="#10B981" />
-                <Text style={styles.checklistText}>Redo att börja studera</Text>
-              </View>
-            </View>
-            
-            <View style={styles.quickTipsContainer}>
-              <Text style={styles.quickTipsTitle}>Snabbtips för att komma igång:</Text>
-              <View style={styles.tipItem}>
-                <Text style={styles.tipEmoji}>📖</Text>
-                <Text style={styles.tipText}>Slutför lektioner i din egen takt</Text>
-              </View>
-              <View style={styles.tipItem}>
-                <Text style={styles.tipEmoji}>🔥</Text>
-                <Text style={styles.tipText}>Håll din streak igång genom att studera dagligen</Text>
-              </View>
-              <View style={styles.tipItem}>
-                <Text style={styles.tipEmoji}>🏆</Text>
-                <Text style={styles.tipText}>Lås upp prestationer när du lär dig</Text>
-              </View>
-              <View style={styles.tipItem}>
-                <Text style={styles.tipEmoji}>👥</Text>
-                <Text style={styles.tipText}>Lägg till vänner för att jämföra framsteg</Text>
-              </View>
-            </View>
+                {data.selectedCourses.has(course.id) && <Check size={18} color="#10B981" />}
+              </TouchableOpacity>
+            ))}
           </View>
-        );
+        </ScrollView>
+      );
+    }
 
+    return (
+      <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.stepContent}>
+          <View style={styles.stepHeader}>
+            <View style={styles.stepIconCircle}>
+              <Target size={28} color="#FFFFFF" />
+            </View>
+            <Text style={styles.stepTitle}>Studiemål</Text>
+            <Text style={styles.stepSubtitle}>Välj minst ett mål</Text>
+          </View>
+          <View style={styles.goalsGrid}>
+            {goalOptions.map(goal => (
+              <TouchableOpacity
+                key={goal.id}
+                style={[
+                  styles.goalChip,
+                  data.goals.includes(goal.id) && { backgroundColor: goal.color + '18', borderColor: goal.color },
+                ]}
+                onPress={() => toggleGoal(goal.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.goalEmoji}>{goal.icon}</Text>
+                <Text style={[styles.goalLabel, data.goals.includes(goal.id) && { color: goal.color, fontWeight: '700' as const }]}>
+                  {goal.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  const renderGoalsAndPace = () => (
+    <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
+      <View style={styles.stepContent}>
+        {data.studyLevel === 'gymnasie' && (
+          <>
+            <View style={styles.stepHeader}>
+              <View style={styles.stepIconCircle}>
+                <Target size={28} color="#FFFFFF" />
+              </View>
+              <Text style={styles.stepTitle}>Mål & Tempo</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Studiemål</Text>
+              <View style={styles.goalsGrid}>
+                {goalOptions.map(goal => (
+                  <TouchableOpacity
+                    key={goal.id}
+                    style={[
+                      styles.goalChip,
+                      data.goals.includes(goal.id) && { backgroundColor: goal.color + '18', borderColor: goal.color },
+                    ]}
+                    onPress={() => toggleGoal(goal.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.goalEmoji}>{goal.icon}</Text>
+                    <Text style={[styles.goalLabel, data.goals.includes(goal.id) && { color: goal.color, fontWeight: '700' as const }]}>
+                      {goal.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </>
+        )}
+
+        {data.studyLevel !== 'gymnasie' && (
+          <View style={styles.stepHeader}>
+            <View style={styles.stepIconCircle}>
+              <Flame size={28} color="#FFFFFF" />
+            </View>
+            <Text style={styles.stepTitle}>Studietempo</Text>
+          </View>
+        )}
+
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Välj tempo</Text>
+          {learningPaceOptions.map(pace => (
+            <TouchableOpacity
+              key={pace.id}
+              style={[
+                styles.paceItem,
+                data.learningPace === pace.id && { backgroundColor: pace.color + '12', borderColor: pace.color },
+              ]}
+              onPress={() =>
+                setData({ ...data, learningPace: pace.id as any, dailyGoalHours: pace.hours })
+              }
+              activeOpacity={0.7}
+            >
+              <Text style={styles.paceEmoji}>{pace.icon}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.paceTitle, data.learningPace === pace.id && { color: pace.color }]}>
+                  {pace.title}
+                </Text>
+                <Text style={styles.paceSubtitle}>{pace.subtitle}</Text>
+              </View>
+              {data.learningPace === pace.id && <Check size={18} color={pace.color} />}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </ScrollView>
+  );
+
+  const renderFinish = () => (
+    <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
+      <View style={styles.stepContent}>
+        <View style={styles.stepHeader}>
+          <View style={[styles.stepIconCircle, { backgroundColor: 'rgba(16, 185, 129, 0.25)' }]}>
+            <Sparkles size={28} color="#FFFFFF" />
+          </View>
+          <Text style={styles.stepTitle}>Allt klart! 🎉</Text>
+          <Text style={styles.stepSubtitle}>Anpassa din avatar och börja studera</Text>
+        </View>
+
+        <View style={styles.avatarSection}>
+          <AvatarBuilder
+            config={data.avatarConfig}
+            onConfigChange={config => setData({ ...data, avatarConfig: config })}
+          />
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Notifikationer</Text>
+          {[
+            { key: 'dailyReminders' as const, label: 'Dagliga påminnelser', desc: 'Påminnelse att studera' },
+            { key: 'achievements' as const, label: 'Achievements', desc: 'När du låser upp prestationer' },
+            { key: 'streakReminders' as const, label: 'Streak-påminnelser', desc: 'Behåll din streak' },
+          ].map(n => (
+            <View key={n.key} style={styles.notifRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.notifTitle}>{n.label}</Text>
+                <Text style={styles.notifDesc}>{n.desc}</Text>
+              </View>
+              <Switch
+                value={data.notificationPreferences[n.key]}
+                onValueChange={val =>
+                  setData({
+                    ...data,
+                    notificationPreferences: { ...data.notificationPreferences, [n.key]: val },
+                  })
+                }
+                trackColor={{ false: '#374151', true: '#10B981' }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Nivå</Text>
+            <Text style={styles.summaryValue}>
+              {data.studyLevel === 'gymnasie' ? 'Gymnasiet' : 'Högskola'}
+            </Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Program</Text>
+            <Text style={styles.summaryValue} numberOfLines={1}>
+              {data.gymnasiumProgram?.name || data.universityProgram?.name || '-'}
+            </Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Tempo</Text>
+            <Text style={styles.summaryValue}>
+              {learningPaceOptions.find(p => p.id === data.learningPace)?.title || '-'}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
+  );
+
+  const renderStep = () => {
+    switch (step) {
+      case 0:
+        return renderWelcome();
+      case 1:
+        return renderProfile();
+      case 2:
+        return renderStudyLevel();
+      case 3:
+        return renderProgramSelection();
+      case 4:
+        return renderCourses();
+      case 5:
+        return renderGoalsAndPace();
+      case 6:
+        return renderFinish();
       default:
-        return <Text style={styles.title}>Steg {step + 1} - Under utveckling</Text>;
+        return null;
     }
   };
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#0EA5E9', '#06B6D4', '#10B981']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradient}
-      >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent} 
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View 
+      <LinearGradient colors={getStepGradient()} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
+        <View style={[styles.safeArea, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }]}>
+          <View style={styles.topBar}>
+            <View style={styles.progressBarContainer}>
+              <Animated.View
                 style={[
-                  styles.progressFill, 
-                  { width: `${((step + 1) / getTotalSteps()) * 100}%` }
-                ]} 
+                  styles.progressBarFill,
+                  {
+                    width: progressAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  },
+                ]}
               />
             </View>
-            <Text style={styles.progressText}>
-              {step + 1} av {getTotalSteps()}
+            <Text style={styles.progressLabel}>
+              {step + 1}/{getTotalSteps()}
             </Text>
           </View>
 
-          <FadeInView key={step} duration={300}>
+          <Animated.View
+            style={[
+              styles.animatedContent,
+              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+            ]}
+          >
             {renderStep()}
-          </FadeInView>
+          </Animated.View>
 
-          <View style={styles.buttonContainer}>
-            {step > 0 && (
-              <AnimatedPressable
-                style={styles.backButton}
-                onPress={() => setStep(step - 1)}
-              >
-                <Text style={styles.backButtonText}>Tillbaka</Text>
-              </AnimatedPressable>
+          <View style={styles.bottomBar}>
+            {step > 0 ? (
+              <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
+                <ChevronLeft size={20} color="#FFFFFF" />
+                <Text style={styles.backBtnText}>Tillbaka</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.backBtn} />
             )}
-            
-            <RippleButton
-              style={[
-                styles.nextButton,
-                !canProceed() ? styles.disabledButton : undefined
-              ] as any}
-              onPress={step === 9 && data.studyLevel === 'gymnasie' ? assignCoursesAutomatically : handleNext}
-              disabled={!canProceed()}
-              rippleColor="#1F2937"
-              rippleOpacity={0.2}
+
+            <TouchableOpacity
+              style={[styles.nextBtn, !canProceed() && styles.nextBtnDisabled]}
+              onPress={handleNext}
+              disabled={!canProceed() || isSubmitting}
+              activeOpacity={0.8}
             >
-              <Text style={styles.nextButtonText}>
-                {step === getTotalSteps() - 1 ? 'Slutför' : 'Nästa'}
-              </Text>
-            </RippleButton>
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#1E293B" />
+              ) : (
+                <>
+                  <Text style={styles.nextBtnText}>
+                    {step === getTotalSteps() - 1 ? 'Slutför' : 'Nästa'}
+                  </Text>
+                  <ArrowRight size={18} color="#1E293B" />
+                </>
+              )}
+            </TouchableOpacity>
           </View>
-        </ScrollView>
+        </View>
       </LinearGradient>
     </View>
   );
@@ -1890,910 +1083,572 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   gradient: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
-    paddingTop: 50,
-    paddingBottom: 30,
+  safeArea: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
-  progressContainer: {
-    marginBottom: 24,
-    paddingHorizontal: 4,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: 8,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: 'white',
-    borderRadius: 8,
-  },
-  progressText: {
-    color: 'white',
-    fontSize: 13,
-    textAlign: 'center',
-    fontWeight: '600' as const,
-    opacity: 0.9,
-    letterSpacing: 0.5,
-  },
-  stepContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-    minHeight: 400,
-  },
-  icon: {
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700' as const,
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 8,
-    letterSpacing: -0.5,
-    paddingHorizontal: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.85)',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 22,
-    fontWeight: '400' as const,
-    paddingHorizontal: 8,
-  },
-  subtleText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
-    marginTop: 16,
-  },
-  welcomeFeatures: {
-    width: '100%',
-    gap: 16,
-    marginTop: 24,
-  },
-  featureItem: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 16,
-    borderRadius: 12,
+    marginBottom: 8,
     gap: 12,
   },
-  featureText: {
-    color: 'white',
-    fontSize: 16,
+  progressBarContainer: {
+    flex: 1,
+    height: 5,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 3,
+  },
+  progressLabel: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
     fontWeight: '600' as const,
+    minWidth: 30,
+    textAlign: 'right',
   },
-  inputContainer: {
-    width: '100%',
-    marginBottom: 16,
+  animatedContent: {
+    flex: 1,
   },
-  inputLabel: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: 'white',
-    marginBottom: 10,
-    letterSpacing: 0.2,
-  },
-  input: {
-    width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 18,
-    fontSize: 16,
-    color: '#1E293B',
-  },
-  usernameInputContainer: {
+  bottomBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 18,
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    gap: 12,
   },
-  atSymbol: {
-    fontSize: 17,
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 4,
+    minWidth: 100,
+  },
+  backBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '600' as const,
+  },
+  nextBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    gap: 8,
+    flex: 1,
+    maxWidth: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  nextBtnDisabled: {
+    opacity: 0.4,
+  },
+  nextBtnText: {
+    color: '#1E293B',
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  stepScroll: {
+    flex: 1,
+  },
+  stepContent: {
+    paddingBottom: 20,
+  },
+  stepHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+    marginTop: 8,
+  },
+  stepIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  stepTitle: {
+    fontSize: 26,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  stepSubtitle: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+  },
+  welcomeHero: {
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 32,
+  },
+  logoWrapper: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    position: 'relative' as const,
+  },
+  logoGlow: {
+    position: 'absolute' as const,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  logo: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+  },
+  welcomeTitle: {
+    fontSize: 34,
+    fontWeight: '800' as const,
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  welcomeTagline: {
+    fontSize: 17,
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  featureGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  featureCard: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 16,
+    padding: 16,
+    width: (SCREEN_WIDTH - 64) / 2,
+    alignItems: 'center',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  featureIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F0FDF4',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  featureLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#1E293B',
+    textAlign: 'center',
+  },
+  card: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardLabel: {
+    fontSize: 14,
+    fontWeight: '700' as const,
     color: '#475569',
-    marginRight: 4,
+    marginBottom: 12,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  cardInput: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    padding: 16,
+    fontSize: 16,
+    color: '#1E293B',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    gap: 4,
+  },
+  atSign: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#64748B',
   },
   usernameInput: {
     flex: 1,
     fontSize: 16,
     color: '#1E293B',
+    padding: 0,
   },
-  inputHint: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.75)',
-    marginTop: 8,
-    lineHeight: 18,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 24,
-    gap: 12,
-    paddingHorizontal: 4,
-  },
-  backButton: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-  },
-  backButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600' as const,
-    textAlign: 'center',
-  },
-  nextButton: {
-    flex: 2,
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 18,
-  },
-  nextButtonText: {
-    color: '#1E293B',
-    fontSize: 17,
-    fontWeight: '700' as const,
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  disabledButton: {
-    opacity: 0.4,
-  },
-  logoContainer: {
-    marginBottom: 24,
-    alignItems: 'center',
-  },
-  logo: {
-    width: 120,
-    height: 120,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#0EA5E9',
-  },
-  loadingText: {
-    fontSize: 18,
-    color: 'white',
-    fontWeight: '600' as const,
-    marginTop: 16,
-  },
-  legalScrollView: {
-    maxHeight: 450,
-    width: '100%',
-    marginTop: 16,
-  },
-  legalContainer: {
-    gap: 16,
-  },
-  policyCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 20,
-  },
-  policyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  policyIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: 'rgba(14, 165, 233, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  policyTitleContainer: {
-    flex: 1,
-  },
-  policyTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  policySubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-  },
-  policyContent: {
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
-    borderRadius: 16,
-    padding: 16,
-    marginTop: -8,
-  },
-  policyTextScroll: {
-    maxHeight: 200,
-  },
-  policyText: {
-    fontSize: 13,
-    lineHeight: 20,
-    color: '#475569',
-  },
-  acceptanceContainer: {
-    gap: 12,
+  hint: {
+    fontSize: 12,
+    color: '#94A3B8',
     marginTop: 8,
   },
-  checkboxRow: {
+  errorHint: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 6,
+  },
+  termsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'flex-start',
+    gap: 12,
   },
-  checkboxRowChecked: {
-    borderColor: '#10B981',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-  },
-  checkbox: {
-    width: 28,
-    height: 28,
+  termsCheckbox: {
+    width: 24,
+    height: 24,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: '#CBD5E1',
-    backgroundColor: 'white',
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
-    marginRight: 14,
+    alignItems: 'center',
+    marginTop: 2,
   },
-  checkboxChecked: {
+  termsCheckboxChecked: {
     backgroundColor: '#10B981',
     borderColor: '#10B981',
   },
-  checkboxLabel: {
+  termsText: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: '#1E293B',
+    fontSize: 13,
+    color: '#64748B',
     lineHeight: 20,
   },
-  optionsContainer: {
-    width: '100%',
-    gap: 20,
-    marginTop: 32,
+  levelCards: {
+    flexDirection: 'row',
+    gap: 16,
   },
-  optionCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  levelCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: 24,
     padding: 28,
     alignItems: 'center',
     borderWidth: 2.5,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    shadowColor: '#000',
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  levelCardSelected: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderColor: '#10B981',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 8,
   },
-  selectedOptionCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
-    borderColor: '#10B981',
-    borderWidth: 3,
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-  optionIconContainer: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    alignItems: 'center',
+  levelIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
-    marginBottom: 16,
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  optionTitle: {
-    fontSize: 24,
-    fontWeight: '800' as const,
-    color: 'white',
-    marginBottom: 8,
-    letterSpacing: -0.5,
+  levelIconWrapSelected: {
+    backgroundColor: '#F0FDF4',
   },
-  selectedOptionTitle: {
-    color: '#1E293B',
-  },
-  optionDescription: {
-    fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  programYearSelector: {
-    width: '100%',
-    marginTop: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 20,
-  },
-  programYearTitle: {
+  levelTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  levelTitleSelected: {
     color: '#1E293B',
-    marginBottom: 16,
-    textAlign: 'center',
   },
-  programScroll: {
-    maxHeight: 180,
+  levelDesc: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
   },
-  programGrid: {
+  programChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    justifyContent: 'center',
   },
-  programMiniCard: {
-    backgroundColor: 'rgba(14, 165, 233, 0.08)',
-    borderRadius: 14,
-    padding: 14,
+  programChip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    width: '30%',
-    minWidth: 95,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderWidth: 2,
-    borderColor: 'rgba(14, 165, 233, 0.2)',
+    borderColor: '#E2E8F0',
+    gap: 8,
   },
-  programMiniEmoji: {
-    fontSize: 32,
-    marginBottom: 6,
+  programChipEmoji: {
+    fontSize: 20,
   },
-  programMiniName: {
-    fontSize: 11,
+  programChipText: {
+    fontSize: 13,
     fontWeight: '600' as const,
-    color: '#1E293B',
-    textAlign: 'center',
+    color: '#475569',
   },
-  yearSelector: {
-    marginTop: 20,
-  },
-  yearSelectorTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: '#1E293B',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  yearButtons: {
+  yearRow: {
     flexDirection: 'row',
     gap: 12,
-    justifyContent: 'center',
+    flexWrap: 'wrap',
   },
-  yearButton: {
-    flex: 1,
-    backgroundColor: 'rgba(14, 165, 233, 0.08)',
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
+  yearBtn: {
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
     borderWidth: 2,
-    borderColor: 'rgba(14, 165, 233, 0.2)',
+    borderColor: '#E2E8F0',
   },
-  selectedYearButton: {
+  yearBtnSelected: {
     backgroundColor: '#10B981',
     borderColor: '#10B981',
   },
-  yearButtonText: {
+  yearBtnText: {
     fontSize: 15,
     fontWeight: '600' as const,
-    color: '#1E293B',
+    color: '#475569',
   },
-  selectedYearButtonText: {
-    color: 'white',
-    fontWeight: '700' as const,
+  yearBtnTextSelected: {
+    color: '#FFFFFF',
   },
-  searchContainer: {
-    width: '100%',
-    marginBottom: 16,
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+    marginBottom: 12,
   },
   searchInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 18,
-    fontSize: 16,
+    flex: 1,
+    fontSize: 15,
     color: '#1E293B',
+    padding: 0,
   },
-  selectionList: {
-    maxHeight: 400,
-    width: '100%',
+  schoolList: {
+    maxHeight: 180,
   },
-  selectionCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+  schoolItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    marginBottom: 4,
+    borderWidth: 1.5,
     borderColor: 'transparent',
   },
-  selectedCard: {
+  schoolItemSelected: {
+    backgroundColor: '#F0FDF4',
     borderColor: '#10B981',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
   },
-  selectionCardContent: {
-    flex: 1,
-  },
-  selectionCardTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
+  schoolName: {
+    fontSize: 14,
+    fontWeight: '600' as const,
     color: '#1E293B',
+  },
+  schoolNameSelected: {
+    color: '#059669',
+  },
+  schoolCity: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  horizontalScroll: {
     marginBottom: 4,
   },
-  selectedCardTitle: {
-    color: '#10B981',
+  horizChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    marginRight: 8,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
   },
-  selectionCardSubtitle: {
+  horizChipSelected: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  horizChipText: {
     fontSize: 13,
-    color: '#64748B',
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
+    color: '#475569',
   },
-  coursesList: {
-    maxHeight: 400,
-    width: '100%',
+  horizChipTextSelected: {
+    color: '#FFFFFF',
   },
-  courseCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+  courseItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 8,
+    gap: 12,
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  selectedCourseCard: {
+  courseItemSelected: {
     borderColor: '#10B981',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-  },
-  courseCardContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    backgroundColor: 'rgba(255,255,255,0.98)',
   },
   courseEmoji: {
-    fontSize: 32,
+    fontSize: 22,
   },
-  courseCardInfo: {
-    flex: 1,
-  },
-  courseCardTitle: {
-    fontSize: 16,
+  courseName: {
+    fontSize: 14,
     fontWeight: '600' as const,
     color: '#1E293B',
-    marginBottom: 4,
   },
-  selectedCourseCardTitle: {
-    color: '#10B981',
+  courseNameSelected: {
+    color: '#059669',
   },
   mandatoryBadge: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  mandatoryText: {
     fontSize: 11,
-    color: '#92400E',
-    fontWeight: '700' as const,
-  },
-  goalsList: {
-    maxHeight: 400,
-    width: '100%',
-  },
-  goalCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderWidth: 2,
-  },
-  goalEmoji: {
-    fontSize: 24,
-  },
-  goalLabel: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1E293B',
+    color: '#F59E0B',
     fontWeight: '600' as const,
+    marginTop: 2,
   },
-  paceContainer: {
-    width: '100%',
-    gap: 16,
-    marginTop: 16,
-  },
-  paceCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 2,
-  },
-  paceEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  paceTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: '#1E293B',
-    marginBottom: 8,
-  },
-  paceSubtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    marginBottom: 8,
-    fontWeight: '600' as const,
-  },
-  paceDescription: {
-    fontSize: 13,
-    color: '#475569',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  notificationsContainer: {
-    width: '100%',
-    gap: 16,
-    marginTop: 16,
-  },
-  notificationItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 18,
-  },
-  notificationInfo: {
-    flex: 1,
-  },
-  notificationTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  notificationDescription: {
-    fontSize: 13,
-    color: '#64748B',
-    fontWeight: '500' as const,
-  },
-  avatarContainer: {
-    width: '100%',
-    marginTop: 16,
-  },
-  assignedCoursesList: {
-    maxHeight: 400,
-    width: '100%',
-    marginTop: 16,
-  },
-  assignedCourseCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    gap: 12,
-  },
-  assignedCourseEmoji: {
-    fontSize: 32,
-  },
-  assignedCourseName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: '#1E293B',
-  },
-  summaryContainer: {
-    width: '100%',
-    gap: 16,
-    marginTop: 24,
-  },
-  summaryItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 18,
-  },
-  summaryLabel: {
-    fontSize: 13,
-    color: '#64748B',
-    marginBottom: 6,
-    fontWeight: '600' as const,
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: '#1E293B',
-  },
-  welcomeChecklistContainer: {
-    width: '100%',
-    gap: 16,
-    marginTop: 24,
-  },
-  checklistItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 18,
-    gap: 12,
-  },
-  checklistText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: '#1E293B',
-  },
-  startingCoursesList: {
-    maxHeight: 400,
-    width: '100%',
-    marginTop: 16,
-  },
-  startingCourseCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  selectedStartingCourseCard: {
-    borderColor: '#10B981',
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-  },
-  startingCourseContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  startingCourseEmoji: {
-    fontSize: 48,
-  },
-  startingCourseInfo: {
-    flex: 1,
-  },
-  startingCourseTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: '#1E293B',
-    marginBottom: 6,
-  },
-  selectedStartingCourseTitle: {
-    color: '#10B981',
-  },
-  startingCourseDescription: {
-    fontSize: 14,
-    color: '#64748B',
-    lineHeight: 20,
-    fontWeight: '500' as const,
-  },
-  skipText: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.75)',
-    textAlign: 'center',
-    marginTop: 16,
-    lineHeight: 20,
-  },
-  quickTipsContainer: {
-    width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 20,
-    padding: 20,
-    marginTop: 24,
-    gap: 12,
-  },
-  quickTipsTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: 'white',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  tipItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 14,
-  },
-  tipEmoji: {
-    fontSize: 24,
-  },
-  tipText: {
-    flex: 1,
-    fontSize: 14,
-    color: 'white',
-    fontWeight: '500' as const,
-    lineHeight: 20,
-  },
-  universityPickerContainer: {
-    width: '100%',
-    marginTop: 16,
-  },
-  universityProgramGrid: {
+  goalsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    justifyContent: 'center',
   },
-  universityProgramCard: {
-    backgroundColor: 'rgba(14, 165, 233, 0.08)',
-    borderRadius: 14,
-    padding: 14,
+  goalChip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    width: '48%',
-    minWidth: 140,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
     borderWidth: 2,
-    borderColor: 'rgba(14, 165, 233, 0.2)',
-    minHeight: 100,
-    justifyContent: 'space-between',
+    borderColor: 'rgba(255,255,255,0.3)',
   },
-  universityProgramName: {
+  goalEmoji: {
+    fontSize: 18,
+  },
+  goalLabel: {
     fontSize: 13,
     fontWeight: '600' as const,
+    color: '#475569',
+  },
+  paceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 10,
+    gap: 14,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FAFAFA',
+  },
+  paceEmoji: {
+    fontSize: 24,
+  },
+  paceTitle: {
+    fontSize: 15,
+    fontWeight: '700' as const,
     color: '#1E293B',
-    textAlign: 'center',
-    marginBottom: 6,
-    lineHeight: 18,
   },
-  universityProgramMeta: {
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: '500' as const,
-    textAlign: 'center',
+  paceSubtitle: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 2,
   },
-  universityProgramTypeSelector: {
-    marginTop: 16,
+  avatarSection: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
   },
-  programTypeScroll: {
-    maxHeight: 450,
+  notifRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
-  programTypeGrid: {
-    gap: 12,
+  notifTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#1E293B',
   },
-  programTypeCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  notifDesc: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  summaryCard: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 16,
     padding: 20,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(14, 165, 233, 0.2)',
-    marginBottom: 12,
-  },
-  programTypeEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  programTypeName: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: '#1E293B',
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  programTypeDescription: {
-    fontSize: 13,
-    color: '#64748B',
-    textAlign: 'center',
-    fontWeight: '500' as const,
-  },
-  universitySubProgramSelector: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(14, 165, 233, 0.15)',
-  },
-  subProgramTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#64748B',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  subProgramScroll: {
-    maxHeight: 50,
-  },
-  subProgramRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 4,
-  },
-  subProgramChip: {
-    backgroundColor: 'rgba(14, 165, 233, 0.1)',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
     borderWidth: 1.5,
-    borderColor: 'rgba(14, 165, 233, 0.2)',
+    borderColor: 'rgba(255,255,255,0.25)',
   },
-  selectedSubProgramChip: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-  },
-  subProgramChipText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#1E293B',
-  },
-  selectedSubProgramChipText: {
-    color: 'white',
-  },
-  yearSelectorInline: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(14, 165, 233, 0.15)',
-  },
-  termButtonsGrid: {
+  summaryRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'center',
-  },
-  termButton: {
-    backgroundColor: 'rgba(14, 165, 233, 0.08)',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    minWidth: 50,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(14, 165, 233, 0.2)',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
-  selectedTermButton: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-  },
-  termButtonText: {
+  summaryLabel: {
     fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#1E293B',
+    color: 'rgba(255,255,255,0.7)',
   },
-  selectedTermButtonText: {
-    color: 'white',
-    fontWeight: '700' as const,
-  },
-  courseCountBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginBottom: 16,
-    alignSelf: 'center',
-  },
-  courseCountText: {
+  summaryValue: {
     fontSize: 14,
     fontWeight: '700' as const,
-    color: '#1E293B',
+    color: '#FFFFFF',
+    maxWidth: 180,
   },
 });

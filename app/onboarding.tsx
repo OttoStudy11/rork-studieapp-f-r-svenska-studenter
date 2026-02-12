@@ -24,24 +24,20 @@ import { Image } from 'expo-image';
 import {
   GraduationCap,
   BookOpen,
-  MapPin,
   Flame,
-  FileText,
-  Shield,
-  Check,
   Target,
-  Bell,
   Sparkles,
   Trophy,
   Users,
   Timer,
   BarChart3,
-  ChevronRight,
   ChevronLeft,
   ArrowRight,
   Search,
-  Star,
+  Check,
   Zap,
+  Brain,
+  Rocket,
 } from 'lucide-react-native';
 import { SWEDISH_GYMNASIUMS } from '@/constants/gymnasiums';
 import { SWEDISH_UNIVERSITIES, UNIVERSITY_PROGRAMS } from '@/constants/universities';
@@ -56,24 +52,22 @@ import AvatarBuilder from '@/components/AvatarBuilder';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TERMS_OF_SERVICE_SHORT = `Genom att använda StudieStugan godkänner du våra användarvillkor och integritetspolicy. Vi samlar in profilinformation och studiedata för att förbättra din upplevelse. Du måste vara minst 13 år. Fullständiga villkor finns på studiestugan.se.`;
-
 const goalOptions = [
-  { id: 'better_grades', label: 'Högre betyg', icon: '📈', color: '#10B981' },
-  { id: 'focus', label: 'Bättre fokus', icon: '🎯', color: '#3B82F6' },
-  { id: 'planning', label: 'Bättre planering', icon: '📅', color: '#8B5CF6' },
-  { id: 'reduce_stress', label: 'Mindre stress', icon: '🧘', color: '#EC4899' },
-  { id: 'balance', label: 'Balans i livet', icon: '⚖️', color: '#F59E0B' },
-  { id: 'motivation', label: 'Mer motivation', icon: '🔥', color: '#EF4444' },
-  { id: 'friends', label: 'Studera med vänner', icon: '👥', color: '#06B6D4' },
-  { id: 'techniques', label: 'Studietips', icon: '💡', color: '#22C55E' },
+  { id: 'better_grades', label: 'Högre betyg', icon: '📈', color: '#34D399' },
+  { id: 'focus', label: 'Bättre fokus', icon: '🎯', color: '#60A5FA' },
+  { id: 'planning', label: 'Bättre planering', icon: '📅', color: '#A78BFA' },
+  { id: 'reduce_stress', label: 'Mindre stress', icon: '🧘', color: '#F472B6' },
+  { id: 'balance', label: 'Balans i livet', icon: '⚖️', color: '#FBBF24' },
+  { id: 'motivation', label: 'Mer motivation', icon: '🔥', color: '#FB923C' },
+  { id: 'friends', label: 'Studera med vänner', icon: '👥', color: '#38BDF8' },
+  { id: 'techniques', label: 'Studietips', icon: '💡', color: '#4ADE80' },
 ];
 
 const learningPaceOptions = [
-  { id: 'casual', title: 'Avslappnat', subtitle: '15-30 min/dag', icon: '🌱', color: '#10B981', hours: 0.5 },
-  { id: 'regular', title: 'Regelbundet', subtitle: '30-60 min/dag', icon: '📚', color: '#3B82F6', hours: 1 },
-  { id: 'intensive', title: 'Intensivt', subtitle: '60+ min/dag', icon: '🔥', color: '#EF4444', hours: 2 },
-  { id: 'own', title: 'Egen takt', subtitle: 'Flexibelt', icon: '🎯', color: '#8B5CF6', hours: 1 },
+  { id: 'casual', title: 'Avslappnat', subtitle: '15-30 min/dag', icon: '🌱', color: '#34D399', hours: 0.5 },
+  { id: 'regular', title: 'Regelbundet', subtitle: '30-60 min/dag', icon: '📚', color: '#60A5FA', hours: 1 },
+  { id: 'intensive', title: 'Intensivt', subtitle: '60+ min/dag', icon: '🔥', color: '#FB923C', hours: 2 },
+  { id: 'own', title: 'Egen takt', subtitle: 'Flexibelt', icon: '🎯', color: '#A78BFA', hours: 1 },
 ];
 
 interface OnboardingData {
@@ -102,6 +96,16 @@ interface OnboardingData {
   };
 }
 
+const ACCENT = '#10B981';
+const ACCENT_LIGHT = '#D1FAE5';
+const BG = '#FFFFFF';
+const BG_SECONDARY = '#F8FAFB';
+const TEXT_PRIMARY = '#0F172A';
+const TEXT_SECONDARY = '#64748B';
+const TEXT_MUTED = '#94A3B8';
+const BORDER = '#E8ECF0';
+const CARD_BG = '#FFFFFF';
+
 export default function OnboardingScreen() {
   const authContext = useAuth();
   const studyContext = useStudy();
@@ -112,6 +116,7 @@ export default function OnboardingScreen() {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const [data, setData] = useState<OnboardingData>({
     username: '',
@@ -146,6 +151,15 @@ export default function OnboardingScreen() {
   const [universitySearchQuery, setUniversitySearchQuery] = useState('');
   const [hasInitializedUsername, setHasInitializedUsername] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.05, duration: 2000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulseAnim]);
 
   useEffect(() => {
     if (authContext?.user?.email && !hasInitializedUsername) {
@@ -200,8 +214,8 @@ export default function OnboardingScreen() {
 
   if (!authContext || !studyContext || !toastContext) {
     return (
-      <View style={[styles.container, { backgroundColor: '#059669' }]}>
-        <ActivityIndicator size="large" color="#FFFFFF" />
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={ACCENT} />
       </View>
     );
   }
@@ -239,14 +253,14 @@ export default function OnboardingScreen() {
   const animateTransition = (nextStep: number) => {
     const direction = nextStep > step ? -1 : 1;
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 0, duration: 120, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: direction * 30, duration: 120, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 0, duration: 100, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: direction * 20, duration: 100, useNativeDriver: true }),
     ]).start(() => {
       setStep(nextStep);
-      slideAnim.setValue(-direction * 30);
+      slideAnim.setValue(-direction * 20);
       Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
+        Animated.spring(slideAnim, { toValue: 0, tension: 60, friction: 10, useNativeDriver: true }),
       ]).start();
     });
   };
@@ -369,44 +383,42 @@ export default function OnboardingScreen() {
     }
   };
 
-  const getStepGradient = (): readonly [string, string, string] => {
-    const gradients: readonly (readonly [string, string, string])[] = [
-      ['#059669', '#10B981', '#34D399'] as const,
-      ['#0369A1', '#0EA5E9', '#38BDF8'] as const,
-      ['#7C3AED', '#8B5CF6', '#A78BFA'] as const,
-      ['#B45309', '#F59E0B', '#FBBF24'] as const,
-      ['#059669', '#10B981', '#34D399'] as const,
-      ['#DC2626', '#EF4444', '#F87171'] as const,
-      ['#4338CA', '#6366F1', '#818CF8'] as const,
-    ];
-    return gradients[step % gradients.length];
-  };
-
   const renderWelcome = () => (
-    <View style={styles.stepContent}>
-      <View style={styles.welcomeHero}>
-        <View style={styles.logoWrapper}>
-          <View style={styles.logoGlow} />
-          <Image
-            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
-            style={styles.logo}
-            contentFit="contain"
-          />
-        </View>
+    <View style={styles.welcomeContainer}>
+      <View style={styles.welcomeTop}>
+        <Animated.View style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }]}>
+          <LinearGradient
+            colors={['#059669', '#10B981', '#34D399']}
+            style={styles.logoGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Image
+              source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
+              style={styles.logo}
+              contentFit="contain"
+            />
+          </LinearGradient>
+        </Animated.View>
+
         <Text style={styles.welcomeTitle}>StudieStugan</Text>
-        <Text style={styles.welcomeTagline}>Din studieassistent för{'\n'}gymnasiet & högskolan</Text>
+        <Text style={styles.welcomeSubtitle}>
+          Din personliga studieassistent för gymnasiet & högskolan
+        </Text>
       </View>
 
-      <View style={styles.featureGrid}>
+      <View style={styles.featuresContainer}>
         {[
-          { icon: <BookOpen size={22} color="#10B981" />, label: 'Kurser & Lektioner' },
-          { icon: <Timer size={22} color="#3B82F6" />, label: 'Pomodoro Timer' },
-          { icon: <BarChart3 size={22} color="#F59E0B" />, label: 'Spåra framsteg' },
-          { icon: <Trophy size={22} color="#8B5CF6" />, label: 'Achievements' },
-        ].map((f, i) => (
-          <View key={i} style={styles.featureCard}>
-            <View style={styles.featureIconWrap}>{f.icon}</View>
-            <Text style={styles.featureLabel}>{f.label}</Text>
+          { icon: <BookOpen size={20} color="#059669" />, title: 'Kurser & Lektioner', bg: '#ECFDF5' },
+          { icon: <Timer size={20} color="#0369A1" />, title: 'Pomodoro Timer', bg: '#E0F2FE' },
+          { icon: <BarChart3 size={20} color="#B45309" />, title: 'Spåra framsteg', bg: '#FEF3C7' },
+          { icon: <Trophy size={20} color="#7C3AED" />, title: 'Achievements', bg: '#EDE9FE' },
+        ].map((feat, i) => (
+          <View key={i} style={styles.featureRow}>
+            <View style={[styles.featureIcon, { backgroundColor: feat.bg }]}>
+              {feat.icon}
+            </View>
+            <Text style={styles.featureTitle}>{feat.title}</Text>
           </View>
         ))}
       </View>
@@ -418,145 +430,170 @@ export default function OnboardingScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={{ flex: 1 }}
     >
-      <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <View style={styles.stepContent}>
-          <View style={styles.stepHeader}>
-            <View style={styles.stepIconCircle}>
-              <Users size={28} color="#FFFFFF" />
-            </View>
-            <Text style={styles.stepTitle}>Din profil</Text>
-            <Text style={styles.stepSubtitle}>Skapa ditt konto</Text>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionIcon, { backgroundColor: '#E0F2FE' }]}>
+            <Users size={24} color="#0369A1" />
           </View>
+          <Text style={styles.sectionTitle}>Skapa din profil</Text>
+          <Text style={styles.sectionDesc}>Välj ett namn och användarnamn</Text>
+        </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Visningsnamn</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Visningsnamn</Text>
+          <View style={styles.inputWrapper}>
             <TextInput
-              style={styles.cardInput}
+              style={styles.textInput}
               placeholder="Ditt för- och efternamn"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={TEXT_MUTED}
               value={data.displayName}
               onChangeText={text => setData({ ...data, displayName: text })}
               maxLength={50}
             />
           </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Användarnamn</Text>
-            <View style={styles.usernameRow}>
-              <Text style={styles.atSign}>@</Text>
-              <TextInput
-                style={styles.usernameInput}
-                placeholder="användarnamn"
-                placeholderTextColor="#94A3B8"
-                value={data.username}
-                onChangeText={text => {
-                  const clean = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                  setData({ ...data, username: clean });
-                  if (clean.length >= 3) checkUsernameAvailability(clean);
-                  else setUsernameAvailable(null);
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={20}
-              />
-              {checkingUsername && <ActivityIndicator size="small" color="#64748B" />}
-              {usernameAvailable === true && <Check size={18} color="#10B981" />}
-            </View>
-            {usernameAvailable === false && (
-              <Text style={styles.errorHint}>Användarnamnet är inte tillgängligt</Text>
-            )}
-            <Text style={styles.hint}>3-20 tecken, bokstäver, siffror och _</Text>
-          </View>
-
-          <View style={styles.card}>
-            <View style={styles.termsRow}>
-              <TouchableOpacity
-                style={[styles.termsCheckbox, data.acceptedTerms && styles.termsCheckboxChecked]}
-                onPress={() => setData({ ...data, acceptedTerms: !data.acceptedTerms })}
-                activeOpacity={0.7}
-              >
-                {data.acceptedTerms && <Check size={14} color="#FFFFFF" />}
-              </TouchableOpacity>
-              <Text style={styles.termsText}>
-                Jag godkänner användarvillkoren, integritetspolicyn och bekräftar att jag är minst 13 år
-              </Text>
-            </View>
-          </View>
         </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Användarnamn</Text>
+          <View style={[styles.inputWrapper, styles.usernameWrapper]}>
+            <Text style={styles.atPrefix}>@</Text>
+            <TextInput
+              style={[styles.textInput, { flex: 1, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 }]}
+              placeholder="användarnamn"
+              placeholderTextColor={TEXT_MUTED}
+              value={data.username}
+              onChangeText={text => {
+                const clean = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                setData({ ...data, username: clean });
+                if (clean.length >= 3) checkUsernameAvailability(clean);
+                else setUsernameAvailable(null);
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={20}
+            />
+            {checkingUsername && <ActivityIndicator size="small" color={TEXT_MUTED} />}
+            {usernameAvailable === true && (
+              <View style={styles.checkBadge}>
+                <Check size={12} color="#FFFFFF" />
+              </View>
+            )}
+          </View>
+          {usernameAvailable === false && (
+            <Text style={styles.errorText}>Användarnamnet är inte tillgängligt</Text>
+          )}
+          <Text style={styles.hintText}>3-20 tecken, bokstäver, siffror och _</Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.termsContainer}
+          onPress={() => setData({ ...data, acceptedTerms: !data.acceptedTerms })}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.checkbox, data.acceptedTerms && styles.checkboxChecked]}>
+            {data.acceptedTerms && <Check size={13} color="#FFFFFF" />}
+          </View>
+          <Text style={styles.termsLabel}>
+            Jag godkänner användarvillkoren och bekräftar att jag är minst 13 år
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 
   const renderStudyLevel = () => (
-    <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
-      <View style={styles.stepContent}>
-        <View style={styles.stepHeader}>
-          <View style={styles.stepIconCircle}>
-            <GraduationCap size={28} color="#FFFFFF" />
-          </View>
-          <Text style={styles.stepTitle}>Studienivå</Text>
-          <Text style={styles.stepSubtitle}>Var studerar du?</Text>
+    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <View style={styles.sectionHeader}>
+        <View style={[styles.sectionIcon, { backgroundColor: '#EDE9FE' }]}>
+          <GraduationCap size={24} color="#7C3AED" />
         </View>
+        <Text style={styles.sectionTitle}>Var studerar du?</Text>
+        <Text style={styles.sectionDesc}>Välj din utbildningsnivå</Text>
+      </View>
 
-        <View style={styles.levelCards}>
-          <TouchableOpacity
-            style={[styles.levelCard, data.studyLevel === 'gymnasie' && styles.levelCardSelected]}
-            onPress={() => setData({ ...data, studyLevel: 'gymnasie' })}
-            activeOpacity={0.8}
+      <View style={styles.levelRow}>
+        <TouchableOpacity
+          style={[styles.levelCard, data.studyLevel === 'gymnasie' && styles.levelCardActive]}
+          onPress={() => setData({ ...data, studyLevel: 'gymnasie' })}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={data.studyLevel === 'gymnasie' ? ['#059669', '#10B981'] : ['#F1F5F9', '#F8FAFC']}
+            style={styles.levelGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
           >
-            <View style={[styles.levelIconWrap, data.studyLevel === 'gymnasie' && styles.levelIconWrapSelected]}>
-              <GraduationCap size={36} color={data.studyLevel === 'gymnasie' ? '#10B981' : '#94A3B8'} />
+            <GraduationCap size={40} color={data.studyLevel === 'gymnasie' ? '#FFFFFF' : '#94A3B8'} />
+          </LinearGradient>
+          <Text style={[styles.levelTitle, data.studyLevel === 'gymnasie' && styles.levelTitleActive]}>
+            Gymnasiet
+          </Text>
+          <Text style={styles.levelSub}>Program & årskurs</Text>
+          {data.studyLevel === 'gymnasie' && (
+            <View style={styles.levelCheck}>
+              <Check size={14} color="#FFFFFF" />
             </View>
-            <Text style={[styles.levelTitle, data.studyLevel === 'gymnasie' && styles.levelTitleSelected]}>Gymnasiet</Text>
-            <Text style={styles.levelDesc}>Program & årskurs</Text>
-          </TouchableOpacity>
+          )}
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.levelCard, data.studyLevel === 'högskola' && styles.levelCardSelected]}
-            onPress={() => setData({ ...data, studyLevel: 'högskola' })}
-            activeOpacity={0.8}
+        <TouchableOpacity
+          style={[styles.levelCard, data.studyLevel === 'högskola' && styles.levelCardActive]}
+          onPress={() => setData({ ...data, studyLevel: 'högskola' })}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={data.studyLevel === 'högskola' ? ['#0369A1', '#0EA5E9'] : ['#F1F5F9', '#F8FAFC']}
+            style={styles.levelGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
           >
-            <View style={[styles.levelIconWrap, data.studyLevel === 'högskola' && styles.levelIconWrapSelected]}>
-              <BookOpen size={36} color={data.studyLevel === 'högskola' ? '#10B981' : '#94A3B8'} />
+            <BookOpen size={40} color={data.studyLevel === 'högskola' ? '#FFFFFF' : '#94A3B8'} />
+          </LinearGradient>
+          <Text style={[styles.levelTitle, data.studyLevel === 'högskola' && styles.levelTitleActive]}>
+            Högskola
+          </Text>
+          <Text style={styles.levelSub}>Program & termin</Text>
+          {data.studyLevel === 'högskola' && (
+            <View style={[styles.levelCheck, { backgroundColor: '#0EA5E9' }]}>
+              <Check size={14} color="#FFFFFF" />
             </View>
-            <Text style={[styles.levelTitle, data.studyLevel === 'högskola' && styles.levelTitleSelected]}>Högskola</Text>
-            <Text style={styles.levelDesc}>Program & termin</Text>
-          </TouchableOpacity>
-        </View>
+          )}
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
 
   const renderProgramSelection = () => (
-    <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
-      <View style={styles.stepContent}>
-        <View style={styles.stepHeader}>
-          <View style={styles.stepIconCircle}>
-            <BookOpen size={28} color="#FFFFFF" />
-          </View>
-          <Text style={styles.stepTitle}>
-            {data.studyLevel === 'gymnasie' ? 'Program & Årskurs' : 'Program & Termin'}
-          </Text>
+    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <View style={styles.sectionHeader}>
+        <View style={[styles.sectionIcon, { backgroundColor: '#FEF3C7' }]}>
+          <BookOpen size={24} color="#B45309" />
         </View>
+        <Text style={styles.sectionTitle}>
+          {data.studyLevel === 'gymnasie' ? 'Program & Årskurs' : 'Program & Termin'}
+        </Text>
+      </View>
 
-        {data.studyLevel === 'gymnasie' && (
-          <>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Välj program</Text>
-              <View style={styles.programChips}>
-                {[
-                  { id: 'na', name: 'Naturvetenskap', emoji: '🔬', color: '#10B981' },
-                  { id: 'te', name: 'Teknik', emoji: '⚙️', color: '#F59E0B' },
-                  { id: 'sa', name: 'Samhällsvetenskap', emoji: '🏛️', color: '#3B82F6' },
-                  { id: 'ek', name: 'Ekonomi', emoji: '💼', color: '#8B5CF6' },
-                  { id: 'es', name: 'Estetiska', emoji: '🎨', color: '#EC4899' },
-                  { id: 'hu', name: 'Humanistiska', emoji: '📚', color: '#06B6D4' },
-                ].map(p => (
+      {data.studyLevel === 'gymnasie' && (
+        <>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Välj program</Text>
+            <View style={styles.chipGrid}>
+              {[
+                { id: 'na', name: 'Naturvetenskap', emoji: '🔬', color: '#059669' },
+                { id: 'te', name: 'Teknik', emoji: '⚙️', color: '#B45309' },
+                { id: 'sa', name: 'Samhällsvetenskap', emoji: '🏛️', color: '#0369A1' },
+                { id: 'ek', name: 'Ekonomi', emoji: '💼', color: '#7C3AED' },
+                { id: 'es', name: 'Estetiska', emoji: '🎨', color: '#DB2777' },
+                { id: 'hu', name: 'Humanistiska', emoji: '📚', color: '#0891B2' },
+              ].map(p => {
+                const selected = data.gymnasiumProgram?.id === p.id;
+                return (
                   <TouchableOpacity
                     key={p.id}
                     style={[
-                      styles.programChip,
-                      data.gymnasiumProgram?.id === p.id && { backgroundColor: p.color + '20', borderColor: p.color },
+                      styles.chip,
+                      selected && { backgroundColor: p.color + '12', borderColor: p.color },
                     ]}
                     onPress={() =>
                       setData({
@@ -571,95 +608,104 @@ export default function OnboardingScreen() {
                     }
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.programChipEmoji}>{p.emoji}</Text>
-                    <Text
-                      style={[
-                        styles.programChipText,
-                        data.gymnasiumProgram?.id === p.id && { color: p.color, fontWeight: '700' as const },
-                      ]}
-                    >
+                    <Text style={styles.chipEmoji}>{p.emoji}</Text>
+                    <Text style={[styles.chipLabel, selected && { color: p.color, fontWeight: '700' as const }]}>
                       {p.name}
+                    </Text>
+                    {selected && (
+                      <View style={[styles.chipCheck, { backgroundColor: p.color }]}>
+                        <Check size={10} color="#FFFFFF" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {data.gymnasiumProgram && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Välj årskurs</Text>
+              <View style={styles.yearButtons}>
+                {[1, 2, 3].map(y => (
+                  <TouchableOpacity
+                    key={y}
+                    style={[styles.yearBtn, data.year === y && styles.yearBtnActive]}
+                    onPress={() => setData({ ...data, year: y as 1 | 2 | 3 })}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.yearBtnNum, data.year === y && styles.yearBtnNumActive]}>
+                      {y}
+                    </Text>
+                    <Text style={[styles.yearBtnLabel, data.year === y && styles.yearBtnLabelActive]}>
+                      År {y}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
+          )}
 
-            {data.gymnasiumProgram && (
-              <View style={styles.card}>
-                <Text style={styles.cardLabel}>Välj årskurs</Text>
-                <View style={styles.yearRow}>
-                  {[1, 2, 3].map(y => (
-                    <TouchableOpacity
-                      key={y}
-                      style={[styles.yearBtn, data.year === y && styles.yearBtnSelected]}
-                      onPress={() => setData({ ...data, year: y as 1 | 2 | 3 })}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.yearBtnText, data.year === y && styles.yearBtnTextSelected]}>
-                        År {y}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Välj gymnasium (valfritt)</Text>
-              <View style={styles.searchRow}>
-                <Search size={16} color="#94A3B8" />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Sök gymnasium..."
-                  placeholderTextColor="#94A3B8"
-                  value={gymnasiumSearchQuery}
-                  onChangeText={setGymnasiumSearchQuery}
-                />
-              </View>
-              <ScrollView style={styles.schoolList} nestedScrollEnabled>
-                {SWEDISH_GYMNASIUMS.filter(g =>
-                  g.name.toLowerCase().includes(gymnasiumSearchQuery.toLowerCase())
-                )
-                  .slice(0, 12)
-                  .map(g => (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Gymnasium (valfritt)</Text>
+            <View style={styles.searchBox}>
+              <Search size={16} color={TEXT_MUTED} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Sök gymnasium..."
+                placeholderTextColor={TEXT_MUTED}
+                value={gymnasiumSearchQuery}
+                onChangeText={setGymnasiumSearchQuery}
+              />
+            </View>
+            <ScrollView style={styles.listContainer} nestedScrollEnabled>
+              {SWEDISH_GYMNASIUMS.filter(g =>
+                g.name.toLowerCase().includes(gymnasiumSearchQuery.toLowerCase())
+              )
+                .slice(0, 10)
+                .map(g => {
+                  const selected = data.gymnasium?.id === g.id;
+                  return (
                     <TouchableOpacity
                       key={g.id}
-                      style={[styles.schoolItem, data.gymnasium?.id === g.id && styles.schoolItemSelected]}
+                      style={[styles.listItem, selected && styles.listItemActive]}
                       onPress={() => setData({ ...data, gymnasium: g })}
                       activeOpacity={0.7}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.schoolName, data.gymnasium?.id === g.id && styles.schoolNameSelected]}>
+                        <Text style={[styles.listItemTitle, selected && { color: '#059669' }]}>
                           {g.name}
                         </Text>
-                        <Text style={styles.schoolCity}>{g.city}</Text>
+                        <Text style={styles.listItemSub}>{g.city}</Text>
                       </View>
-                      {data.gymnasium?.id === g.id && <Check size={16} color="#10B981" />}
+                      {selected && <Check size={16} color="#059669" />}
                     </TouchableOpacity>
-                  ))}
-              </ScrollView>
-            </View>
-          </>
-        )}
+                  );
+                })}
+            </ScrollView>
+          </View>
+        </>
+      )}
 
-        {data.studyLevel === 'högskola' && (
-          <>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Välj programtyp</Text>
-              <View style={styles.programChips}>
-                {[
-                  { type: 'civilingenjör', name: 'Civilingenjör', emoji: '⚙️', color: '#F59E0B' },
-                  { type: 'högskoleingenjör', name: 'Högskoleingenjör', emoji: '🔧', color: '#10B981' },
-                  { type: 'professionsprogram', name: 'Professionsprogram', emoji: '🎓', color: '#3B82F6' },
-                  { type: 'kandidat', name: 'Kandidat', emoji: '📚', color: '#8B5CF6' },
-                  { type: 'yrkeshögskola', name: 'YH', emoji: '💼', color: '#EC4899' },
-                ].map(pt => (
+      {data.studyLevel === 'högskola' && (
+        <>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Programtyp</Text>
+            <View style={styles.chipGrid}>
+              {[
+                { type: 'civilingenjör', name: 'Civilingenjör', emoji: '⚙️', color: '#B45309' },
+                { type: 'högskoleingenjör', name: 'Högskoleingenjör', emoji: '🔧', color: '#059669' },
+                { type: 'professionsprogram', name: 'Profession', emoji: '🎓', color: '#0369A1' },
+                { type: 'kandidat', name: 'Kandidat', emoji: '📚', color: '#7C3AED' },
+                { type: 'yrkeshögskola', name: 'YH', emoji: '💼', color: '#DB2777' },
+              ].map(pt => {
+                const selected = data.universityProgramType === pt.type;
+                return (
                   <TouchableOpacity
                     key={pt.type}
                     style={[
-                      styles.programChip,
-                      data.universityProgramType === pt.type && { backgroundColor: pt.color + '20', borderColor: pt.color },
+                      styles.chip,
+                      selected && { backgroundColor: pt.color + '12', borderColor: pt.color },
                     ]}
                     onPress={() =>
                       setData({
@@ -671,127 +717,132 @@ export default function OnboardingScreen() {
                     }
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.programChipEmoji}>{pt.emoji}</Text>
-                    <Text
-                      style={[
-                        styles.programChipText,
-                        data.universityProgramType === pt.type && { color: pt.color, fontWeight: '700' as const },
-                      ]}
-                    >
+                    <Text style={styles.chipEmoji}>{pt.emoji}</Text>
+                    <Text style={[styles.chipLabel, selected && { color: pt.color, fontWeight: '700' as const }]}>
                       {pt.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {data.universityProgramType && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Välj program</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {UNIVERSITY_PROGRAMS.filter(p => p.degreeType === data.universityProgramType).map(prog => {
+                  const isSelected = data.universityProgram?.id === prog.id;
+                  return (
+                    <TouchableOpacity
+                      key={prog.id}
+                      style={[styles.hChip, isSelected && styles.hChipActive]}
+                      onPress={() => setData({ ...data, universityProgram: prog, universityYear: null })}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.hChipText, isSelected && styles.hChipTextActive]} numberOfLines={1}>
+                        {prog.name.replace(/^(Civilingenjör|Högskoleingenjör|Kandidatprogram i) - ?/, '')}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
+          {data.universityProgram && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Termin</Text>
+              <View style={styles.yearButtons}>
+                {Array.from(
+                  { length: Math.min(data.universityProgram.durationYears * 2, 10) },
+                  (_, i) => i + 1
+                ).map(t => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[styles.yearBtn, data.universityYear === t && styles.yearBtnActive]}
+                    onPress={() => setData({ ...data, universityYear: t as UniversityProgramYear })}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.yearBtnNum, data.universityYear === t && styles.yearBtnNumActive]}>
+                      {t}
+                    </Text>
+                    <Text style={[styles.yearBtnLabel, data.universityYear === t && styles.yearBtnLabelActive]}>
+                      T{t}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
+          )}
 
-            {data.universityProgramType && (
-              <View style={styles.card}>
-                <Text style={styles.cardLabel}>Välj program</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-                  {UNIVERSITY_PROGRAMS.filter(p => p.degreeType === data.universityProgramType).map(prog => {
-                    const isSelected = data.universityProgram?.id === prog.id;
-                    return (
-                      <TouchableOpacity
-                        key={prog.id}
-                        style={[styles.horizChip, isSelected && styles.horizChipSelected]}
-                        onPress={() => setData({ ...data, universityProgram: prog, universityYear: null })}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.horizChipText, isSelected && styles.horizChipTextSelected]} numberOfLines={1}>
-                          {prog.name.replace(/^(Civilingenjör|Högskoleingenjör|Kandidatprogram i) - ?/, '')}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            )}
-
-            {data.universityProgram && (
-              <View style={styles.card}>
-                <Text style={styles.cardLabel}>Välj termin</Text>
-                <View style={styles.yearRow}>
-                  {Array.from(
-                    { length: Math.min(data.universityProgram.durationYears * 2, 10) },
-                    (_, i) => i + 1
-                  ).map(t => (
-                    <TouchableOpacity
-                      key={t}
-                      style={[styles.yearBtn, data.universityYear === t && styles.yearBtnSelected]}
-                      onPress={() => setData({ ...data, universityYear: t as UniversityProgramYear })}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.yearBtnText, data.universityYear === t && styles.yearBtnTextSelected]}>
-                        T{t}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Välj högskola (valfritt)</Text>
-              <View style={styles.searchRow}>
-                <Search size={16} color="#94A3B8" />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Sök högskola..."
-                  placeholderTextColor="#94A3B8"
-                  value={universitySearchQuery}
-                  onChangeText={setUniversitySearchQuery}
-                />
-              </View>
-              <ScrollView style={styles.schoolList} nestedScrollEnabled>
-                {SWEDISH_UNIVERSITIES.filter(
-                  u =>
-                    u.name.toLowerCase().includes(universitySearchQuery.toLowerCase()) ||
-                    u.city.toLowerCase().includes(universitySearchQuery.toLowerCase())
-                )
-                  .slice(0, 12)
-                  .map(u => (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Högskola (valfritt)</Text>
+            <View style={styles.searchBox}>
+              <Search size={16} color={TEXT_MUTED} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Sök högskola..."
+                placeholderTextColor={TEXT_MUTED}
+                value={universitySearchQuery}
+                onChangeText={setUniversitySearchQuery}
+              />
+            </View>
+            <ScrollView style={styles.listContainer} nestedScrollEnabled>
+              {SWEDISH_UNIVERSITIES.filter(
+                u =>
+                  u.name.toLowerCase().includes(universitySearchQuery.toLowerCase()) ||
+                  u.city.toLowerCase().includes(universitySearchQuery.toLowerCase())
+              )
+                .slice(0, 10)
+                .map(u => {
+                  const selected = data.university?.id === u.id;
+                  return (
                     <TouchableOpacity
                       key={u.id}
-                      style={[styles.schoolItem, data.university?.id === u.id && styles.schoolItemSelected]}
+                      style={[styles.listItem, selected && styles.listItemActive]}
                       onPress={() => setData({ ...data, university: u })}
                       activeOpacity={0.7}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.schoolName, data.university?.id === u.id && styles.schoolNameSelected]}>
+                        <Text style={[styles.listItemTitle, selected && { color: '#059669' }]}>
                           {u.name}
                         </Text>
-                        <Text style={styles.schoolCity}>{u.city}</Text>
+                        <Text style={styles.listItemSub}>{u.city}</Text>
                       </View>
-                      {data.university?.id === u.id && <Check size={16} color="#10B981" />}
+                      {selected && <Check size={16} color="#059669" />}
                     </TouchableOpacity>
-                  ))}
-              </ScrollView>
-            </View>
-          </>
-        )}
-      </View>
+                  );
+                })}
+            </ScrollView>
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 
   const renderCourses = () => {
     if (data.studyLevel === 'gymnasie') {
       return (
-        <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
-          <View style={styles.stepContent}>
-            <View style={styles.stepHeader}>
-              <View style={styles.stepIconCircle}>
-                <BookOpen size={28} color="#FFFFFF" />
-              </View>
-              <Text style={styles.stepTitle}>Välj kurser</Text>
-              <Text style={styles.stepSubtitle}>
-                {data.selectedCourses.size}/{MAX_COURSES} kurser valda
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionIcon, { backgroundColor: '#ECFDF5' }]}>
+              <BookOpen size={24} color="#059669" />
+            </View>
+            <Text style={styles.sectionTitle}>Välj dina kurser</Text>
+            <View style={styles.courseBadge}>
+              <Text style={styles.courseBadgeText}>
+                {data.selectedCourses.size} / {MAX_COURSES}
               </Text>
             </View>
-            {availableCourses.map(course => (
+          </View>
+
+          {availableCourses.map(course => {
+            const selected = data.selectedCourses.has(course.id);
+            return (
               <TouchableOpacity
                 key={course.id}
-                style={[styles.courseItem, data.selectedCourses.has(course.id) && styles.courseItemSelected]}
+                style={[styles.courseRow, selected && styles.courseRowActive]}
                 onPress={() => {
                   const newSelected = new Set(data.selectedCourses);
                   if (newSelected.has(course.id)) {
@@ -803,279 +854,274 @@ export default function OnboardingScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.courseEmoji}>📚</Text>
+                <View style={[styles.courseCheck, selected && styles.courseCheckActive]}>
+                  {selected && <Check size={13} color="#FFFFFF" />}
+                </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.courseName, data.selectedCourses.has(course.id) && styles.courseNameSelected]}>
+                  <Text style={[styles.courseTitle, selected && { color: '#059669' }]}>
                     {course.name}
                   </Text>
-                  {course.mandatory && <Text style={styles.mandatoryBadge}>Obligatorisk</Text>}
+                  {course.mandatory && (
+                    <Text style={styles.mandatoryTag}>Obligatorisk</Text>
+                  )}
                 </View>
-                {data.selectedCourses.has(course.id) && <Check size={18} color="#10B981" />}
               </TouchableOpacity>
-            ))}
-          </View>
+            );
+          })}
         </ScrollView>
       );
     }
 
     return (
-      <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.stepContent}>
-          <View style={styles.stepHeader}>
-            <View style={styles.stepIconCircle}>
-              <Target size={28} color="#FFFFFF" />
-            </View>
-            <Text style={styles.stepTitle}>Studiemål</Text>
-            <Text style={styles.stepSubtitle}>Välj minst ett mål</Text>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionIcon, { backgroundColor: '#FCE7F3' }]}>
+            <Target size={24} color="#DB2777" />
           </View>
-          <View style={styles.goalsGrid}>
-            {goalOptions.map(goal => (
+          <Text style={styles.sectionTitle}>Dina studiemål</Text>
+          <Text style={styles.sectionDesc}>Välj minst ett mål</Text>
+        </View>
+
+        <View style={styles.goalsWrap}>
+          {goalOptions.map(goal => {
+            const selected = data.goals.includes(goal.id);
+            return (
               <TouchableOpacity
                 key={goal.id}
-                style={[
-                  styles.goalChip,
-                  data.goals.includes(goal.id) && { backgroundColor: goal.color + '18', borderColor: goal.color },
-                ]}
+                style={[styles.goalCard, selected && { borderColor: goal.color, backgroundColor: goal.color + '08' }]}
                 onPress={() => toggleGoal(goal.id)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.goalEmoji}>{goal.icon}</Text>
-                <Text style={[styles.goalLabel, data.goals.includes(goal.id) && { color: goal.color, fontWeight: '700' as const }]}>
+                <Text style={styles.goalIcon}>{goal.icon}</Text>
+                <Text style={[styles.goalText, selected && { color: goal.color, fontWeight: '700' as const }]}>
                   {goal.label}
                 </Text>
+                {selected && (
+                  <View style={[styles.goalCheck, { backgroundColor: goal.color }]}>
+                    <Check size={10} color="#FFFFFF" />
+                  </View>
+                )}
               </TouchableOpacity>
-            ))}
-          </View>
+            );
+          })}
         </View>
       </ScrollView>
     );
   };
 
   const renderGoalsAndPace = () => (
-    <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
-      <View style={styles.stepContent}>
-        {data.studyLevel === 'gymnasie' && (
-          <>
-            <View style={styles.stepHeader}>
-              <View style={styles.stepIconCircle}>
-                <Target size={28} color="#FFFFFF" />
-              </View>
-              <Text style={styles.stepTitle}>Mål & Tempo</Text>
+    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      {data.studyLevel === 'gymnasie' && (
+        <>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionIcon, { backgroundColor: '#FCE7F3' }]}>
+              <Target size={24} color="#DB2777" />
             </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Studiemål</Text>
-              <View style={styles.goalsGrid}>
-                {goalOptions.map(goal => (
+            <Text style={styles.sectionTitle}>Mål & Tempo</Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Studiemål</Text>
+            <View style={styles.goalsWrap}>
+              {goalOptions.map(goal => {
+                const selected = data.goals.includes(goal.id);
+                return (
                   <TouchableOpacity
                     key={goal.id}
-                    style={[
-                      styles.goalChip,
-                      data.goals.includes(goal.id) && { backgroundColor: goal.color + '18', borderColor: goal.color },
-                    ]}
+                    style={[styles.goalCard, selected && { borderColor: goal.color, backgroundColor: goal.color + '08' }]}
                     onPress={() => toggleGoal(goal.id)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.goalEmoji}>{goal.icon}</Text>
-                    <Text style={[styles.goalLabel, data.goals.includes(goal.id) && { color: goal.color, fontWeight: '700' as const }]}>
+                    <Text style={styles.goalIcon}>{goal.icon}</Text>
+                    <Text style={[styles.goalText, selected && { color: goal.color, fontWeight: '700' as const }]}>
                       {goal.label}
                     </Text>
                   </TouchableOpacity>
-                ))}
-              </View>
+                );
+              })}
             </View>
-          </>
-        )}
-
-        {data.studyLevel !== 'gymnasie' && (
-          <View style={styles.stepHeader}>
-            <View style={styles.stepIconCircle}>
-              <Flame size={28} color="#FFFFFF" />
-            </View>
-            <Text style={styles.stepTitle}>Studietempo</Text>
           </View>
-        )}
+        </>
+      )}
 
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Välj tempo</Text>
-          {learningPaceOptions.map(pace => (
+      {data.studyLevel !== 'gymnasie' && (
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionIcon, { backgroundColor: '#FEF3C7' }]}>
+            <Flame size={24} color="#B45309" />
+          </View>
+          <Text style={styles.sectionTitle}>Studietempo</Text>
+          <Text style={styles.sectionDesc}>Hur mycket vill du studera per dag?</Text>
+        </View>
+      )}
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Välj tempo</Text>
+        {learningPaceOptions.map(pace => {
+          const selected = data.learningPace === pace.id;
+          return (
             <TouchableOpacity
               key={pace.id}
-              style={[
-                styles.paceItem,
-                data.learningPace === pace.id && { backgroundColor: pace.color + '12', borderColor: pace.color },
-              ]}
+              style={[styles.paceRow, selected && { borderColor: pace.color, backgroundColor: pace.color + '08' }]}
               onPress={() =>
                 setData({ ...data, learningPace: pace.id as any, dailyGoalHours: pace.hours })
               }
               activeOpacity={0.7}
             >
-              <Text style={styles.paceEmoji}>{pace.icon}</Text>
+              <Text style={styles.paceIcon}>{pace.icon}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.paceTitle, data.learningPace === pace.id && { color: pace.color }]}>
+                <Text style={[styles.paceName, selected && { color: pace.color }]}>
                   {pace.title}
                 </Text>
-                <Text style={styles.paceSubtitle}>{pace.subtitle}</Text>
+                <Text style={styles.paceDetail}>{pace.subtitle}</Text>
               </View>
-              {data.learningPace === pace.id && <Check size={18} color={pace.color} />}
+              {selected && (
+                <View style={[styles.paceCheck, { backgroundColor: pace.color }]}>
+                  <Check size={12} color="#FFFFFF" />
+                </View>
+              )}
             </TouchableOpacity>
-          ))}
-        </View>
+          );
+        })}
       </View>
     </ScrollView>
   );
 
   const renderFinish = () => (
-    <ScrollView style={styles.stepScroll} showsVerticalScrollIndicator={false}>
-      <View style={styles.stepContent}>
-        <View style={styles.stepHeader}>
-          <View style={[styles.stepIconCircle, { backgroundColor: 'rgba(16, 185, 129, 0.25)' }]}>
-            <Sparkles size={28} color="#FFFFFF" />
-          </View>
-          <Text style={styles.stepTitle}>Allt klart! 🎉</Text>
-          <Text style={styles.stepSubtitle}>Anpassa din avatar och börja studera</Text>
+    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <View style={styles.sectionHeader}>
+        <View style={[styles.sectionIcon, { backgroundColor: '#ECFDF5' }]}>
+          <Sparkles size={24} color="#059669" />
         </View>
+        <Text style={styles.sectionTitle}>Nästan klart!</Text>
+        <Text style={styles.sectionDesc}>Anpassa din avatar och inställningar</Text>
+      </View>
 
-        <View style={styles.avatarSection}>
-          <AvatarBuilder
-            config={data.avatarConfig}
-            onConfigChange={config => setData({ ...data, avatarConfig: config })}
-          />
-        </View>
+      <View style={styles.card}>
+        <AvatarBuilder
+          config={data.avatarConfig}
+          onConfigChange={config => setData({ ...data, avatarConfig: config })}
+        />
+      </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Notifikationer</Text>
-          {[
-            { key: 'dailyReminders' as const, label: 'Dagliga påminnelser', desc: 'Påminnelse att studera' },
-            { key: 'achievements' as const, label: 'Achievements', desc: 'När du låser upp prestationer' },
-            { key: 'streakReminders' as const, label: 'Streak-påminnelser', desc: 'Behåll din streak' },
-          ].map(n => (
-            <View key={n.key} style={styles.notifRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.notifTitle}>{n.label}</Text>
-                <Text style={styles.notifDesc}>{n.desc}</Text>
-              </View>
-              <Switch
-                value={data.notificationPreferences[n.key]}
-                onValueChange={val =>
-                  setData({
-                    ...data,
-                    notificationPreferences: { ...data.notificationPreferences, [n.key]: val },
-                  })
-                }
-                trackColor={{ false: '#374151', true: '#10B981' }}
-                thumbColor="#FFFFFF"
-              />
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Notifikationer</Text>
+        {[
+          { key: 'dailyReminders' as const, label: 'Dagliga påminnelser', desc: 'Påminnelse att studera' },
+          { key: 'achievements' as const, label: 'Achievements', desc: 'När du låser upp prestationer' },
+          { key: 'streakReminders' as const, label: 'Streak-påminnelser', desc: 'Behåll din streak' },
+        ].map((n, i) => (
+          <View key={n.key} style={[styles.notifItem, i === 2 && { borderBottomWidth: 0 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.notifLabel}>{n.label}</Text>
+              <Text style={styles.notifSub}>{n.desc}</Text>
             </View>
-          ))}
-        </View>
+            <Switch
+              value={data.notificationPreferences[n.key]}
+              onValueChange={val =>
+                setData({
+                  ...data,
+                  notificationPreferences: { ...data.notificationPreferences, [n.key]: val },
+                })
+              }
+              trackColor={{ false: '#E2E8F0', true: '#34D399' }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+        ))}
+      </View>
 
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Nivå</Text>
-            <Text style={styles.summaryValue}>
-              {data.studyLevel === 'gymnasie' ? 'Gymnasiet' : 'Högskola'}
-            </Text>
+      <View style={styles.summaryContainer}>
+        <Text style={styles.summaryTitle}>Sammanfattning</Text>
+        {[
+          { label: 'Nivå', value: data.studyLevel === 'gymnasie' ? 'Gymnasiet' : 'Högskola' },
+          { label: 'Program', value: data.gymnasiumProgram?.name || data.universityProgram?.name || '-' },
+          { label: 'Tempo', value: learningPaceOptions.find(p => p.id === data.learningPace)?.title || '-' },
+        ].map((row, i) => (
+          <View key={i} style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>{row.label}</Text>
+            <Text style={styles.summaryValue} numberOfLines={1}>{row.value}</Text>
           </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Program</Text>
-            <Text style={styles.summaryValue} numberOfLines={1}>
-              {data.gymnasiumProgram?.name || data.universityProgram?.name || '-'}
-            </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Tempo</Text>
-            <Text style={styles.summaryValue}>
-              {learningPaceOptions.find(p => p.id === data.learningPace)?.title || '-'}
-            </Text>
-          </View>
-        </View>
+        ))}
       </View>
     </ScrollView>
   );
 
   const renderStep = () => {
     switch (step) {
-      case 0:
-        return renderWelcome();
-      case 1:
-        return renderProfile();
-      case 2:
-        return renderStudyLevel();
-      case 3:
-        return renderProgramSelection();
-      case 4:
-        return renderCourses();
-      case 5:
-        return renderGoalsAndPace();
-      case 6:
-        return renderFinish();
-      default:
-        return null;
+      case 0: return renderWelcome();
+      case 1: return renderProfile();
+      case 2: return renderStudyLevel();
+      case 3: return renderProgramSelection();
+      case 4: return renderCourses();
+      case 5: return renderGoalsAndPace();
+      case 6: return renderFinish();
+      default: return null;
     }
   };
 
+  const isLastStep = step === getTotalSteps() - 1;
+
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={getStepGradient()} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
-        <View style={[styles.safeArea, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }]}>
-          <View style={styles.topBar}>
-            <View style={styles.progressBarContainer}>
-              <Animated.View
-                style={[
-                  styles.progressBarFill,
-                  {
-                    width: progressAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0%', '100%'],
-                    }),
-                  },
-                ]}
-              />
-            </View>
-            <Text style={styles.progressLabel}>
-              {step + 1}/{getTotalSteps()}
-            </Text>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View style={styles.header}>
+        <View style={styles.progressRow}>
+          <View style={styles.progressTrack}>
+            <Animated.View
+              style={[
+                styles.progressFill,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
           </View>
-
-          <Animated.View
-            style={[
-              styles.animatedContent,
-              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-            ]}
-          >
-            {renderStep()}
-          </Animated.View>
-
-          <View style={styles.bottomBar}>
-            {step > 0 ? (
-              <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-                <ChevronLeft size={20} color="#FFFFFF" />
-                <Text style={styles.backBtnText}>Tillbaka</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.backBtn} />
-            )}
-
-            <TouchableOpacity
-              style={[styles.nextBtn, !canProceed() && styles.nextBtnDisabled]}
-              onPress={handleNext}
-              disabled={!canProceed() || isSubmitting}
-              activeOpacity={0.8}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#1E293B" />
-              ) : (
-                <>
-                  <Text style={styles.nextBtnText}>
-                    {step === getTotalSteps() - 1 ? 'Slutför' : 'Nästa'}
-                  </Text>
-                  <ArrowRight size={18} color="#1E293B" />
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.progressText}>
+            {step + 1}/{getTotalSteps()}
+          </Text>
         </View>
-      </LinearGradient>
+      </View>
+
+      <Animated.View
+        style={[
+          styles.content,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        {renderStep()}
+      </Animated.View>
+
+      <View style={styles.footer}>
+        {step > 0 ? (
+          <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
+            <ChevronLeft size={20} color={TEXT_SECONDARY} />
+            <Text style={styles.backText}>Tillbaka</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={{ minWidth: 100 }} />
+        )}
+
+        <TouchableOpacity
+          style={[styles.nextButton, !canProceed() && styles.nextButtonDisabled]}
+          onPress={handleNext}
+          disabled={!canProceed() || isSubmitting}
+          activeOpacity={0.8}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Text style={styles.nextText}>
+                {isLastStep ? 'Slutför' : step === 0 ? 'Kom igång' : 'Nästa'}
+              </Text>
+              {!isLastStep && <ArrowRight size={18} color="#FFFFFF" />}
+              {isLastStep && <Rocket size={18} color="#FFFFFF" />}
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -1083,260 +1129,508 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: BG,
   },
-  gradient: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
+  header: {
     paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  topBar: {
+  progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
     gap: 12,
   },
-  progressBarContainer: {
+  progressTrack: {
     flex: 1,
-    height: 5,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    height: 6,
+    backgroundColor: '#F1F5F9',
     borderRadius: 3,
     overflow: 'hidden',
   },
-  progressBarFill: {
+  progressFill: {
     height: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: ACCENT,
     borderRadius: 3,
   },
-  progressLabel: {
-    color: 'rgba(255,255,255,0.8)',
+  progressText: {
     fontSize: 13,
     fontWeight: '600' as const,
-    minWidth: 30,
-    textAlign: 'right',
+    color: TEXT_MUTED,
+    minWidth: 32,
+    textAlign: 'right' as const,
   },
-  animatedContent: {
+  content: {
     flex: 1,
+    paddingHorizontal: 20,
   },
-  bottomBar: {
+  footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
     paddingTop: 12,
+    paddingBottom: 8,
     gap: 12,
   },
-  backBtn: {
+  backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
     gap: 4,
     minWidth: 100,
   },
-  backBtnText: {
-    color: '#FFFFFF',
+  backText: {
     fontSize: 15,
     fontWeight: '600' as const,
+    color: TEXT_SECONDARY,
   },
-  nextBtn: {
+  nextButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: '#059669',
+    borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 28,
     gap: 8,
     flex: 1,
-    maxWidth: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    maxWidth: 220,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
     shadowRadius: 12,
-    elevation: 5,
+    elevation: 6,
   },
-  nextBtnDisabled: {
-    opacity: 0.4,
+  nextButtonDisabled: {
+    backgroundColor: '#CBD5E1',
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  nextBtnText: {
-    color: '#1E293B',
+  nextText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700' as const,
   },
-  stepScroll: {
+
+  welcomeContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
-  stepContent: {
-    paddingBottom: 20,
-  },
-  stepHeader: {
+  welcomeTop: {
     alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoContainer: {
     marginBottom: 24,
-    marginTop: 8,
   },
-  stepIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.25)',
-  },
-  stepTitle: {
-    fontSize: 26,
-    fontWeight: '700' as const,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    marginBottom: 6,
-  },
-  stepSubtitle: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
-  },
-  welcomeHero: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 32,
-  },
-  logoWrapper: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-    position: 'relative' as const,
-  },
-  logoGlow: {
-    position: 'absolute' as const,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  logo: {
+  logoGradient: {
     width: 110,
     height: 110,
-    borderRadius: 55,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
   },
   welcomeTitle: {
-    fontSize: 34,
+    fontSize: 32,
     fontWeight: '800' as const,
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     letterSpacing: -0.5,
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  welcomeTagline: {
-    fontSize: 17,
-    color: 'rgba(255,255,255,0.85)',
-    textAlign: 'center',
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: TEXT_SECONDARY,
+    textAlign: 'center' as const,
     lineHeight: 24,
+    maxWidth: 280,
   },
-  featureGrid: {
+  featuresContainer: {
+    backgroundColor: BG_SECONDARY,
+    borderRadius: 20,
+    padding: 8,
+  },
+  featureRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    justifyContent: 'center',
-  },
-  featureCard: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 16,
-    padding: 16,
-    width: (SCREEN_WIDTH - 64) / 2,
     alignItems: 'center',
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 14,
   },
-  featureIconWrap: {
+  featureIcon: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#F0FDF4',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  featureLabel: {
+  featureTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: TEXT_PRIMARY,
+  },
+
+  sectionHeader: {
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  sectionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    color: TEXT_PRIMARY,
+    textAlign: 'center' as const,
+    letterSpacing: -0.3,
+    marginBottom: 6,
+  },
+  sectionDesc: {
+    fontSize: 15,
+    color: TEXT_SECONDARY,
+    textAlign: 'center' as const,
+  },
+
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: '#1E293B',
-    textAlign: 'center',
-  },
-  card: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardLabel: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: '#475569',
-    marginBottom: 12,
+    color: TEXT_SECONDARY,
+    marginBottom: 8,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
   },
-  cardInput: {
-    backgroundColor: '#F1F5F9',
+  inputWrapper: {
+    backgroundColor: BG_SECONDARY,
     borderRadius: 14,
-    padding: 16,
-    fontSize: 16,
-    color: '#1E293B',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: BORDER,
   },
-  usernameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 14,
+  textInput: {
+    fontSize: 16,
+    color: TEXT_PRIMARY,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    gap: 4,
   },
-  atSign: {
+  usernameWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  atPrefix: {
     fontSize: 16,
-    fontWeight: '600' as const,
-    color: '#64748B',
+    fontWeight: '700' as const,
+    color: TEXT_MUTED,
+    marginRight: 4,
   },
-  usernameInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1E293B',
-    padding: 0,
+  checkBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  hint: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 8,
-  },
-  errorHint: {
+  errorText: {
     fontSize: 12,
     color: '#EF4444',
     marginTop: 6,
   },
-  termsRow: {
+  hintText: {
+    fontSize: 12,
+    color: TEXT_MUTED,
+    marginTop: 6,
+  },
+  termsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    backgroundColor: BG_SECONDARY,
+    borderRadius: 14,
+    padding: 16,
     gap: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
-  termsCheckbox: {
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 1,
+  },
+  checkboxChecked: {
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
+  },
+  termsLabel: {
+    flex: 1,
+    fontSize: 13,
+    color: TEXT_SECONDARY,
+    lineHeight: 20,
+  },
+
+  levelRow: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  levelCard: {
+    flex: 1,
+    backgroundColor: CARD_BG,
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: BORDER,
+    position: 'relative' as const,
+  },
+  levelCardActive: {
+    borderColor: ACCENT,
+    shadowColor: ACCENT,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  levelGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  levelTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    color: TEXT_PRIMARY,
+    marginBottom: 4,
+  },
+  levelTitleActive: {
+    color: '#059669',
+  },
+  levelSub: {
+    fontSize: 13,
+    color: TEXT_MUTED,
+  },
+  levelCheck: {
+    position: 'absolute' as const,
+    top: 12,
+    right: 12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: ACCENT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  card: {
+    backgroundColor: CARD_BG,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: TEXT_SECONDARY,
+    marginBottom: 14,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.4,
+  },
+
+  chipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: BG_SECONDARY,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    gap: 8,
+  },
+  chipEmoji: {
+    fontSize: 18,
+  },
+  chipLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: TEXT_SECONDARY,
+  },
+  chipCheck: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  yearButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  yearBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    backgroundColor: BG_SECONDARY,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    minWidth: 68,
+  },
+  yearBtnActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  yearBtnNum: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: TEXT_PRIMARY,
+  },
+  yearBtnNumActive: {
+    color: '#FFFFFF',
+  },
+  yearBtnLabel: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+    color: TEXT_MUTED,
+    marginTop: 2,
+  },
+  yearBtnLabelActive: {
+    color: 'rgba(255,255,255,0.8)',
+  },
+
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: BG_SECONDARY,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    gap: 8,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: TEXT_PRIMARY,
+    padding: 0,
+  },
+  listContainer: {
+    maxHeight: 180,
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginBottom: 2,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  listItemActive: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#BBF7D0',
+  },
+  listItemTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: TEXT_PRIMARY,
+  },
+  listItemSub: {
+    fontSize: 12,
+    color: TEXT_MUTED,
+    marginTop: 1,
+  },
+
+  hChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: BG_SECONDARY,
+    marginRight: 8,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+  },
+  hChipActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  hChipText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: TEXT_SECONDARY,
+  },
+  hChipTextActive: {
+    color: '#FFFFFF',
+  },
+
+  courseBadge: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  courseBadgeText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: '#059669',
+  },
+  courseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: CARD_BG,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 8,
+    gap: 12,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+  },
+  courseRowActive: {
+    borderColor: '#BBF7D0',
+    backgroundColor: '#F0FDF4',
+  },
+  courseCheck: {
     width: 24,
     height: 24,
     borderRadius: 8,
@@ -1345,293 +1639,120 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 2,
   },
-  termsCheckboxChecked: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
+  courseCheckActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
   },
-  termsText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#64748B',
-    lineHeight: 20,
+  courseTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: TEXT_PRIMARY,
   },
-  levelCards: {
+  mandatoryTag: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#B45309',
+    marginTop: 3,
+  },
+
+  goalsWrap: {
     flexDirection: 'row',
-    gap: 16,
+    flexWrap: 'wrap',
+    gap: 10,
   },
-  levelCard: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 24,
-    padding: 28,
+  goalCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2.5,
-    borderColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: CARD_BG,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: BORDER,
   },
-  levelCardSelected: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderColor: '#10B981',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
+  goalIcon: {
+    fontSize: 18,
   },
-  levelIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  goalText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: TEXT_SECONDARY,
+  },
+  goalCheck: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 14,
   },
-  levelIconWrapSelected: {
-    backgroundColor: '#F0FDF4',
-  },
-  levelTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  levelTitleSelected: {
-    color: '#1E293B',
-  },
-  levelDesc: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
-  },
-  programChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  programChip: {
+
+  paceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-    gap: 8,
-  },
-  programChipEmoji: {
-    fontSize: 20,
-  },
-  programChipText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#475569',
-  },
-  yearRow: {
-    flexDirection: 'row',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  yearBtn: {
-    paddingHorizontal: 22,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-  },
-  yearBtnSelected: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-  },
-  yearBtnText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: '#475569',
-  },
-  yearBtnTextSelected: {
-    color: '#FFFFFF',
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 8,
-    marginBottom: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#1E293B',
-    padding: 0,
-  },
-  schoolList: {
-    maxHeight: 180,
-  },
-  schoolItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    marginBottom: 4,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  schoolItemSelected: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#10B981',
-  },
-  schoolName: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#1E293B',
-  },
-  schoolNameSelected: {
-    color: '#059669',
-  },
-  schoolCity: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 2,
-  },
-  horizontalScroll: {
-    marginBottom: 4,
-  },
-  horizChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: '#F1F5F9',
-    marginRight: 8,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-  },
-  horizChipSelected: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-  },
-  horizChipText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#475569',
-  },
-  horizChipTextSelected: {
-    color: '#FFFFFF',
-  },
-  courseItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 16,
     padding: 16,
+    borderRadius: 14,
     marginBottom: 8,
-    gap: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  courseItemSelected: {
-    borderColor: '#10B981',
-    backgroundColor: 'rgba(255,255,255,0.98)',
-  },
-  courseEmoji: {
-    fontSize: 22,
-  },
-  courseName: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#1E293B',
-  },
-  courseNameSelected: {
-    color: '#059669',
-  },
-  mandatoryBadge: {
-    fontSize: 11,
-    color: '#F59E0B',
-    fontWeight: '600' as const,
-    marginTop: 2,
-  },
-  goalsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  goalChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 8,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  goalEmoji: {
-    fontSize: 18,
-  },
-  goalLabel: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#475569',
-  },
-  paceItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 14,
-    marginBottom: 10,
     gap: 14,
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FAFAFA',
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    backgroundColor: BG_SECONDARY,
   },
-  paceEmoji: {
+  paceIcon: {
     fontSize: 24,
   },
-  paceTitle: {
+  paceName: {
     fontSize: 15,
     fontWeight: '700' as const,
-    color: '#1E293B',
+    color: TEXT_PRIMARY,
   },
-  paceSubtitle: {
+  paceDetail: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: TEXT_MUTED,
     marginTop: 2,
   },
-  avatarSection: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
+  paceCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  notifRow: {
+
+  notifItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
-  notifTitle: {
+  notifLabel: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: '#1E293B',
+    color: TEXT_PRIMARY,
   },
-  notifDesc: {
+  notifSub: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: TEXT_MUTED,
     marginTop: 2,
   },
-  summaryCard: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+
+  summaryContainer: {
+    backgroundColor: BG_SECONDARY,
     borderRadius: 16,
-    padding: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.25)',
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  summaryTitle: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: TEXT_SECONDARY,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.4,
+    marginBottom: 12,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -1639,16 +1760,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: BORDER,
   },
   summaryLabel: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+    color: TEXT_MUTED,
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: '700' as const,
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     maxWidth: 180,
   },
 });

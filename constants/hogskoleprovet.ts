@@ -519,6 +519,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-1',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 1,
     questionText: 'Vad är författarens huvudsakliga syfte med texten?',
     questionType: 'reading_comprehension',
@@ -536,6 +537,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-2',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 2,
     questionText: 'Enligt texten, vad kan hända om vi minskar utsläppen?',
     questionType: 'reading_comprehension',
@@ -553,6 +555,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-3',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 3,
     questionText: 'Vilken ton har författaren i texten?',
     questionType: 'reading_comprehension',
@@ -565,6 +568,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-4',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 4,
     questionText: 'Vad är textens huvudtema?',
     questionType: 'reading_comprehension',
@@ -577,6 +581,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-5',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 5,
     questionText: 'Vilka två perspektiv presenteras i texten?',
     questionType: 'reading_comprehension',
@@ -594,6 +599,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-6',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 6,
     questionText: 'Vad kan man dra för slutsats från texten?',
     questionType: 'reading_comprehension',
@@ -611,6 +617,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-7',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 7,
     questionText: 'Vad är författarens attityd till ämnet?',
     questionType: 'reading_comprehension',
@@ -623,6 +630,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-8',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 8,
     questionText: 'Enligt texten, varför är den svenska modellen framgångsrik?',
     questionType: 'reading_comprehension',
@@ -640,6 +648,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-9',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 9,
     questionText: 'Vad är den underliggande budskapet i texten?',
     questionType: 'reading_comprehension',
@@ -657,6 +666,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-10',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 10,
     questionText: 'Vad menas med "tillväxtmentalitet" i texten?',
     questionType: 'reading_comprehension',
@@ -674,6 +684,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-11',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 11,
     questionText: 'Vilken slutsats kan dras från texten?',
     questionType: 'reading_comprehension',
@@ -691,6 +702,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-12',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 12,
     questionText: 'Vad är författarens huvudsakliga argument?',
     questionType: 'reading_comprehension',
@@ -708,6 +720,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-13',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 13,
     questionText: 'Hur beskriver texten attityden till sömn?',
     questionType: 'reading_comprehension',
@@ -725,6 +738,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-14',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 14,
     questionText: 'Vad är textens syfte?',
     questionType: 'reading_comprehension',
@@ -742,6 +756,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-15',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 15,
     questionText: 'Vad indikerar att meditation blir mer accepterad?',
     questionType: 'reading_comprehension',
@@ -759,6 +774,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-16',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 16,
     questionText: 'Vilket perspektiv saknas i texten?',
     questionType: 'reading_comprehension',
@@ -776,6 +792,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-17',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 17,
     questionText: 'Vad är författarens hållning till CRISPR?',
     questionType: 'reading_comprehension',
@@ -793,6 +810,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-18',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 18,
     questionText: 'Vad är textens huvudpoäng?',
     questionType: 'reading_comprehension',
@@ -810,6 +828,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-19',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 19,
     questionText: 'Vilket problem med digitala språkverktyg nämns?',
     questionType: 'reading_comprehension',
@@ -827,6 +846,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'las-20',
     sectionCode: 'LÄS',
+    testVersion: 'las-2024-spring',
     questionNumber: 20,
     questionText: 'Hur skulle man kunna sammanfatta författarens ståndpunkt?',
     questionType: 'reading_comprehension',
@@ -846,6 +866,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-1',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 1,
     questionText: 'Trots att han var ____ lyckades han ____ alla hinder.',
     questionType: 'multiple_choice',
@@ -862,6 +883,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-2',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 2,
     questionText: 'Hennes ____ personlighet gjorde att hon snabbt ____ många vänner.',
     questionType: 'multiple_choice',
@@ -878,6 +900,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-3',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 3,
     questionText: 'Vetenskapliga ____ måste alltid kunna ____ av andra forskare.',
     questionType: 'multiple_choice',
@@ -894,6 +917,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-4',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 4,
     questionText: 'Hennes ____ att lära sig nya språk är imponerande; hon talar redan fem flytande.',
     questionType: 'multiple_choice',
@@ -910,6 +934,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-5',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 5,
     questionText: 'Det var inte förrän senare som vi insåg den ____ betydelsen av hennes upptäckt.',
     questionType: 'multiple_choice',
@@ -926,6 +951,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-6',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 6,
     questionText: 'Även om forskningen har gjort stora framsteg, finns det fortfarande mycket som är ____ för vetenskapen.',
     questionType: 'multiple_choice',
@@ -942,6 +968,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-7',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 7,
     questionText: 'Hans argument var så ____ att ingen kunde ifrågasätta hans slutsats.',
     questionType: 'multiple_choice',
@@ -958,6 +985,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-8',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 8,
     questionText: 'Den nya teknologin är ____ men kräver ____ investeringar.',
     questionType: 'multiple_choice',
@@ -974,6 +1002,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-9',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 9,
     questionText: 'För att ____ framgång måste man vara ____ att ta risker.',
     questionType: 'multiple_choice',
@@ -990,6 +1019,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-10',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 10,
     questionText: 'Hennes ____ erfarenhet inom området gjorde henne till den ____ kandidaten.',
     questionType: 'multiple_choice',
@@ -1006,6 +1036,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-11',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 11,
     questionText: 'Projektet var ____ ambitiöst att många tvivlade på att det skulle ____.',
     questionType: 'multiple_choice',
@@ -1022,6 +1053,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-12',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 12,
     questionText: 'Den ekonomiska ____ har lett till ____ arbetslöshet.',
     questionType: 'multiple_choice',
@@ -1038,6 +1070,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-13',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 13,
     questionText: 'Författarens stil är både ____ och ____, vilket gör texten lättläst men innehållsrik.',
     questionType: 'multiple_choice',
@@ -1054,6 +1087,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-14',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 14,
     questionText: 'Trots ____ ansträngningar kunde de inte ____ problemet.',
     questionType: 'multiple_choice',
@@ -1070,6 +1104,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-15',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 15,
     questionText: 'Den nya lagen kommer att ____ företagens ____ att förorsaka miljöskador.',
     questionType: 'multiple_choice',
@@ -1086,6 +1121,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-16',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 16,
     questionText: 'Hans ____ till detaljer gjorde att projektet blev både ____ och professionellt.',
     questionType: 'multiple_choice',
@@ -1102,6 +1138,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-17',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 17,
     questionText: 'Eftersom situationen var ____, krävdes ____ åtgärder.',
     questionType: 'multiple_choice',
@@ -1118,6 +1155,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-18',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 18,
     questionText: 'Studien ____ att regelbunden träning ____ livslängden.',
     questionType: 'multiple_choice',
@@ -1134,6 +1172,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-19',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 19,
     questionText: 'Den nya metoden är mer ____ än den gamla, vilket gör den ____ för småföretag.',
     questionType: 'multiple_choice',
@@ -1150,6 +1189,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'mek-20',
     sectionCode: 'MEK',
+    testVersion: 'mek-2024-spring',
     questionNumber: 20,
     questionText: 'Hennes ____ att acceptera kritik ____ hennes professionella utveckling.',
     questionType: 'multiple_choice',
@@ -1168,6 +1208,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-1',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 1,
     questionText: 'Ett stapeldiagram visar försäljningen för fyra månader: Jan: 100, Feb: 150, Mar: 125, Apr: 175. Hur stor är den procentuella ökningen från januari till april?',
     questionType: 'multiple_choice',
@@ -1179,6 +1220,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-2',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 2,
     questionText: 'En cirkeldiagram visar fördelningen av en budget: Personal 40%, Lokaler 25%, Material 20%, Övrigt 15%. Om totalbudgeten är 2 000 000 kr, hur mycket går till lokaler?',
     questionType: 'multiple_choice',
@@ -1190,6 +1232,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-3',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 3,
     questionText: 'En tabell visar temperaturer: Måndag 12°C, Tisdag 15°C, Onsdag 11°C, Torsdag 14°C, Fredag 18°C. Vad är medeltemperaturen?',
     questionType: 'multiple_choice',
@@ -1201,6 +1244,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-4',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 4,
     questionText: 'Ett linjediagram visar företagets omsättning: 2020: 5M kr, 2021: 6M kr, 2022: 7,5M kr, 2023: 9M kr. Vilket år hade störst procentuell tillväxt?',
     questionType: 'multiple_choice',
@@ -1212,6 +1256,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-5',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 5,
     questionText: 'En tabell visar antal sålda bilar per märke: Toyota 450, Volvo 380, BMW 290, Audi 240. Vad är Volvos marknadsandel?',
     questionType: 'multiple_choice',
@@ -1223,6 +1268,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-6',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 6,
     questionText: 'Ett stapeldiagram visar elförbrukning per månad (kWh): Jan 800, Feb 750, Mar 650, Apr 500. Vad är genomsnittlig förbrukning?',
     questionType: 'multiple_choice',
@@ -1234,6 +1280,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-7',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 7,
     questionText: 'En cirkeldiagram visar tidsfördelning: Arbete 35%, Sömn 30%, Fritid 20%, Övrigt 15%. Hur många timmar per vecka är fritid?',
     questionType: 'multiple_choice',
@@ -1245,6 +1292,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-8',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 8,
     questionText: 'Ett diagram visar försäljning Q1: 1000, Q2: 1200, Q3: 1100, Q4: 1500. Vilket kvartal hade störst avvikelse från genomsnittet?',
     questionType: 'multiple_choice',
@@ -1256,6 +1304,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-9',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 9,
     questionText: 'En tabell visar antal invånare per stad (tusental): Stockholm 980, Göteborg 580, Malmö 350. Hur många procent bor i Stockholm?',
     questionType: 'multiple_choice',
@@ -1267,6 +1316,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-10',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 10,
     questionText: 'Ett linjediagram visar temperaturförändring: Kl 06: -2°C, Kl 12: 5°C, Kl 18: 3°C. Vad är medeltemperaturen?',
     questionType: 'multiple_choice',
@@ -1278,6 +1328,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-11',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 11,
     questionText: 'En tabell visar arbetslöshet: 2020: 8,5%, 2021: 7,8%, 2022: 7,2%, 2023: 6,9%. Med hur många procentenheter minskade arbetslösheten totalt?',
     questionType: 'multiple_choice',
@@ -1289,6 +1340,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-12',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 12,
     questionText: 'Ett stapeldiagram visar antal besökare: Måndag 420, Tisdag 380, Onsdag 450, Torsdag 410, Fredag 540. Vilken dag hade 20% fler besökare än genomsnittet?',
     questionType: 'multiple_choice',
@@ -1300,6 +1352,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-13',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 13,
     questionText: 'En cirkeldiagram visar energimix: Vind 45%, Sol 25%, Vattenkraft 20%, Övrigt 10%. Om total produktion är 8000 GWh, hur mycket är vindkraft?',
     questionType: 'multiple_choice',
@@ -1311,6 +1364,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-14',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 14,
     questionText: 'Ett linjediagram visar aktiekurs: Vecka 1: 100 kr, Vecka 2: 110 kr, Vecka 3: 99 kr, Vecka 4: 121 kr. Vad är total procentuell förändring?',
     questionType: 'multiple_choice',
@@ -1322,6 +1376,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-15',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 15,
     questionText: 'En tabell visar exportvärde (miljarder): 2021: 145, 2022: 158, 2023: 174. Vad är genomsnittlig årlig ökning?',
     questionType: 'multiple_choice',
@@ -1333,6 +1388,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-16',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 16,
     questionText: 'Ett stapeldiagram visar antal elever per årskurs: Åk 1: 280, Åk 2: 290, Åk 3: 270, Åk 4: 260. Hur många procent av eleverna går i åk 1 och 2?',
     questionType: 'multiple_choice',
@@ -1344,6 +1400,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-17',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 17,
     questionText: 'En tabell visar bränsleförbrukning (liter/mil): Bil A: 0,65, Bil B: 0,58, Bil C: 0,72. Hur mycket sparar Bil B jämfört med genomsnittet på 100 mil?',
     questionType: 'multiple_choice',
@@ -1355,6 +1412,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-18',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 18,
     questionText: 'Ett cirkeldiagram visar röstfördelning: Parti A 32%, B 28%, C 22%, D 18%. Om 50000 röstade, hur många fler röster fick A än D?',
     questionType: 'multiple_choice',
@@ -1366,6 +1424,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-19',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 19,
     questionText: 'En tabell visar regn (mm): Januari 45, Februari 38, Mars 52, April 41. Vilket mönster stämmer?',
     questionType: 'multiple_choice',
@@ -1377,6 +1436,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'xyz-20',
     sectionCode: 'XYZ',
+    testVersion: 'xyz-2024-spring',
     questionNumber: 20,
     questionText: 'Ett linjediagram visar population (miljoner): 2015: 9,8, 2018: 10,1, 2021: 10,4, 2024: 10,7. Vad är genomsnittlig årlig ökning?',
     questionType: 'multiple_choice',
@@ -1390,6 +1450,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-1',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 1,
     questionText: 'Jämför: Kvantitet I: 3² + 4²  |  Kvantitet II: 5²',
     questionType: 'comparison',
@@ -1406,6 +1467,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-2',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 2,
     questionText: 'x > 0. Jämför: Kvantitet I: 2x  |  Kvantitet II: x²',
     questionType: 'comparison',
@@ -1422,6 +1484,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-3',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 3,
     questionText: 'Jämför: Kvantitet I: 0,5 × 0,5  |  Kvantitet II: 0,5 + 0,5',
     questionType: 'comparison',
@@ -1438,6 +1501,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-4',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 4,
     questionText: 'Jämför: Kvantitet I: 15% av 200  |  Kvantitet II: 20% av 150',
     questionType: 'comparison',
@@ -1454,6 +1518,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-5',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 5,
     questionText: 'Jämför: Kvantitet I: √64  |  Kvantitet II: ∛64',
     questionType: 'comparison',
@@ -1470,6 +1535,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-6',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 6,
     questionText: 'En vara kostar 800 kr. Först höjs priset 25%, sedan sänks 25%. Jämför: I: Slutpris  |  II: 800 kr',
     questionType: 'comparison',
@@ -1486,6 +1552,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-7',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 7,
     questionText: 'Jämför: Kvantitet I: 2/3 av 90  |  Kvantitet II: 3/4 av 80',
     questionType: 'comparison',
@@ -1502,6 +1569,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-8',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 8,
     questionText: 'x = 5. Jämför: Kvantitet I: (x+2)²  |  Kvantitet II: x² + 4',
     questionType: 'comparison',
@@ -1518,6 +1586,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-9',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 9,
     questionText: 'Jämför: Kvantitet I: 0,5²  |  Kvantitet II: (1/2)³',
     questionType: 'comparison',
@@ -1534,6 +1603,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-10',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 10,
     questionText: 'Jämför: Kvantitet I: Medelvärde av 10, 20, 30  |  Kvantitet II: Median av 10, 20, 30',
     questionType: 'comparison',
@@ -1550,6 +1620,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-11',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 11,
     questionText: 'x < 0. Jämför: Kvantitet I: x³  |  Kvantitet II: x⁴',
     questionType: 'comparison',
@@ -1566,6 +1637,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-12',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 12,
     questionText: 'Jämför: Kvantitet I: 40% rabatt på 500 kr  |  Kvantitet II: 300 kr',
     questionType: 'comparison',
@@ -1582,6 +1654,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-13',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 13,
     questionText: 'Jämför: Kvantitet I: 5! (fakultet)  |  Kvantitet II: 5⁴',
     questionType: 'comparison',
@@ -1598,6 +1671,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-14',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 14,
     questionText: 'Jämför: Kvantitet I: Omkrets av cirkel med radie 5  |  Kvantitet II: 30',
     questionType: 'comparison',
@@ -1614,6 +1688,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-15',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 15,
     questionText: 'x = 3, y = 4. Jämför: Kvantitet I: x² + y²  |  Kvantitet II: (x+y)²',
     questionType: 'comparison',
@@ -1630,6 +1705,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-16',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 16,
     questionText: 'Jämför: Kvantitet I: 7/8  |  Kvantitet II: 0,875',
     questionType: 'comparison',
@@ -1646,6 +1722,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-17',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 17,
     questionText: 'Jämför: Kvantitet I: Area av kvadrat med sida 6  |  Kvantitet II: Area av rektangel 4×9',
     questionType: 'comparison',
@@ -1662,6 +1739,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-18',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 18,
     questionText: 'a > b > 0. Jämför: Kvantitet I: a/b  |  Kvantitet II: 1',
     questionType: 'comparison',
@@ -1678,6 +1756,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-19',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 19,
     questionText: 'Jämför: Kvantitet I: 10% av 10% av 1000  |  Kvantitet II: 1% av 1000',
     questionType: 'comparison',
@@ -1694,6 +1773,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'kva-20',
     sectionCode: 'KVA',
+    testVersion: 'kva-2024-spring',
     questionNumber: 20,
     questionText: 'Jämför: Kvantitet I: Antal minuter i 3 timmar  |  Kvantitet II: Antal sekunder i 3 minuter',
     questionType: 'comparison',
@@ -1712,6 +1792,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-1',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 1,
     questionText: 'En graf visar att företagets vinst ökade med 20% per år under 3 år. Om startvinsten var 1 miljon kr, vad är vinsten efter 3 år (avrundad)?',
     questionType: 'multiple_choice',
@@ -1723,6 +1804,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-2',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 2,
     questionText: 'Data visar att 60% av 500 anställda pendlar med bil och 25% med kollektivtrafik. Resten cyklar. Hur många cyklar?',
     questionType: 'multiple_choice',
@@ -1734,6 +1816,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-3',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 3,
     questionText: 'Ett linjediagram visar befolkningstillväxt. År 2000: 8 miljoner, År 2020: 10 miljoner. Vad är den genomsnittliga årliga tillväxten?',
     questionType: 'multiple_choice',
@@ -1745,6 +1828,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-4',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 4,
     questionText: 'En databas har 10 TB data som växer 15% per månad. Hur stor är databasen efter 2 månader?',
     questionType: 'multiple_choice',
@@ -1756,6 +1840,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-5',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 5,
     questionText: 'Ett nätverk har kapacitet 1000 Mbps. 40% används av streaming, 30% av nedladdningar. Hur mycket bandbredd är ledig?',
     questionType: 'multiple_choice',
@@ -1767,6 +1852,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-6',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 6,
     questionText: 'En server hanterar 500 requests/sekund. Vid peak ökar trafiken 180%. Hur många requests under peak?',
     questionType: 'multiple_choice',
@@ -1778,6 +1864,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-7',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 7,
     questionText: 'En solcellspark producerar 2000 kWh per dag. Vid 85% effektivitet, hur mycket når elnätet?',
     questionType: 'multiple_choice',
@@ -1789,6 +1876,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-8',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 8,
     questionText: 'En algoritm processar 1000 items på 5 sekunder. Vid parallellisering med 4 kärnor (75% effektivitet), hur lång tid?',
     questionType: 'multiple_choice',
@@ -1800,6 +1888,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-9',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 9,
     questionText: 'En app har 10000 användare. 35% är dagligt aktiva. Av de aktiva använder 60% premium. Hur många premium-användare?',
     questionType: 'multiple_choice',
@@ -1811,6 +1900,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-10',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 10,
     questionText: 'En fabrik producerar 800 enheter/dag med 95% kvalitetsgrad. Hur många godkända enheter per vecka?',
     questionType: 'multiple_choice',
@@ -1822,6 +1912,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-11',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 11,
     questionText: 'En investering på 50000 kr ger 8% årlig avkastning (sammansatt). Värde efter 5 år?',
     questionType: 'multiple_choice',
@@ -1833,6 +1924,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-12',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 12,
     questionText: 'En tank har 500 liter vatten. 12% förångas per dag. Hur mycket kvar efter 3 dagar?',
     questionType: 'multiple_choice',
@@ -1844,6 +1936,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-13',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 13,
     questionText: 'En webbsida har 50000 besökare. Konverteringsgrad 2,5%. Genomsnittligt värde 400 kr. Total intäkt?',
     questionType: 'multiple_choice',
@@ -1855,6 +1948,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-14',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 14,
     questionText: 'En sensor mäter temperatur med ±0,5°C noggrannhet. Vid avläsning 22°C, vilket intervall är säkert?',
     questionType: 'multiple_choice',
@@ -1866,6 +1960,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-15',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 15,
     questionText: 'En maskin har 98% uptime. På ett år (8760 timmar), hur många timmar downtime?',
     questionType: 'multiple_choice',
@@ -1877,6 +1972,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-16',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 16,
     questionText: 'Ett projekt har budget 2M kr. 45% går till personal, 30% till utrustning. Hur mycket till övrigt?',
     questionType: 'multiple_choice',
@@ -1888,6 +1984,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-17',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 17,
     questionText: 'En batterikapacitet minskar 5% per år. Efter hur många år är kapaciteten under 80%?',
     questionType: 'multiple_choice',
@@ -1899,6 +1996,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-18',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 18,
     questionText: 'En rapport säger att CO2-utsläpp ska minska 55% till 2030. Om nuvarande är 100 Mton, vad är målet?',
     questionType: 'multiple_choice',
@@ -1910,6 +2008,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-19',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 19,
     questionText: 'En process tar 120 minuter. Efter optimering minskar tiden 40%. Ny processtid?',
     questionType: 'multiple_choice',
@@ -1921,6 +2020,7 @@ export const SAMPLE_HP_QUESTIONS: HPQuestion[] = [
   {
     id: 'dtk-20',
     sectionCode: 'DTK',
+    testVersion: 'dtk-2024-spring',
     questionNumber: 20,
     questionText: 'En population fördubblas var 10:e år. Om start är 1000, vad är populationen efter 30 år?',
     questionType: 'multiple_choice',

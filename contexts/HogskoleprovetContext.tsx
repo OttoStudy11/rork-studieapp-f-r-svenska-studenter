@@ -417,60 +417,74 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
   const getQuestionsBySection = useCallback((sectionCode: string, count: number = 40, testVersion?: string): LocalHPQuestion[] => {
     const staticQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS];
 
-    let questions = staticQuestions.filter(q => q.sectionCode === sectionCode);
-    
-    // Filter by testVersion if provided
     if (testVersion) {
-      const versionFiltered = questions.filter(q => q.testVersion === testVersion);
-      
+      const versionFiltered = staticQuestions.filter(
+        q => q.sectionCode === sectionCode && q.testVersion === testVersion
+      );
+
       if (versionFiltered.length >= count) {
-        questions = versionFiltered;
         console.log('[HP] Using static questions for version', { sectionCode, testVersion, count: versionFiltered.length });
-      } else {
-        const needed = count - versionFiltered.length;
-        const generatedQuestions = generateHPQuestionBank({ sectionCode, count: needed * 2, testVersion });
-        questions = [...versionFiltered, ...generatedQuestions];
-        console.log('[HP] Mixed static + generated', { sectionCode, testVersion, static: versionFiltered.length, generated: generatedQuestions.length });
+        return versionFiltered.slice(0, count).map(q => shuffleAnswerOptions(q));
       }
-    } else {
-      const generatedQuestions = generateHPQuestionBank({ sectionCode, count: count * 2, testVersion });
-      questions = [...questions, ...generatedQuestions];
+
+      const needed = count - versionFiltered.length;
+      const generatedQuestions = generateHPQuestionBank({
+        sectionCode,
+        count: needed,
+        testVersion,
+        seed: `section-${sectionCode}-${testVersion}`,
+      });
+      const combined = [...versionFiltered, ...generatedQuestions].slice(0, count);
+      console.log('[HP] Mixed static + generated', { sectionCode, testVersion, staticCount: versionFiltered.length, generatedCount: generatedQuestions.length, total: combined.length });
+      return combined.map(q => shuffleAnswerOptions(q));
     }
-    
-    const shuffled = [...questions].sort(() => Math.random() - 0.5);
-    const selectedQuestions = shuffled.slice(0, Math.min(count, questions.length));
 
-    console.log('[HP] getQuestionsBySection final', { sectionCode, testVersion, requested: count, selected: selectedQuestions.length });
+    const sectionQuestions = staticQuestions.filter(q => q.sectionCode === sectionCode);
+    const generatedQuestions = generateHPQuestionBank({ sectionCode, count: Math.max(count, 40), seed: `section-random-${sectionCode}` });
+    const allQ = [...sectionQuestions, ...generatedQuestions];
+    const shuffled = [...allQ].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, Math.min(count, allQ.length));
 
-    return selectedQuestions.map(q => shuffleAnswerOptions(q));
+    console.log('[HP] getQuestionsBySection final', { sectionCode, requested: count, selected: selected.length });
+    return selected.map(q => shuffleAnswerOptions(q));
   }, []);
 
   const getQuestionsByTestVersion = useCallback((testVersionId: string): LocalHPQuestion[] => {
     const staticQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS];
-
     const baseVersionQuestions = staticQuestions.filter(q => q.testVersion === testVersionId);
-    if (baseVersionQuestions.length >= 20) {
-      console.log('[HP] getQuestionsByTestVersion using static', { testVersionId, count: baseVersionQuestions.length });
-      return baseVersionQuestions.map(q => shuffleAnswerOptions(q));
-    }
 
     const sectionCode = HP_TEST_VERSIONS.find(v => v.id === testVersionId)?.sectionCode;
-    if (!sectionCode) {
-      console.warn('[HP] getQuestionsByTestVersion could not resolve sectionCode', { testVersionId });
-      return baseVersionQuestions.map(q => shuffleAnswerOptions(q));
+    const targetCount = 20;
+
+    if (baseVersionQuestions.length >= targetCount) {
+      console.log('[HP] getQuestionsByTestVersion using static', { testVersionId, count: baseVersionQuestions.length });
+      return baseVersionQuestions.slice(0, targetCount).map(q => shuffleAnswerOptions(q));
     }
 
-    const needed = Math.max(0, 20 - baseVersionQuestions.length);
-    const generatedTopUp = generateHPQuestionBank({ sectionCode, count: Math.max(needed * 8, 80), testVersion: testVersionId }).slice(0, needed);
+    if (!sectionCode) {
+      console.warn('[HP] getQuestionsByTestVersion could not resolve sectionCode', { testVersionId });
+      if (baseVersionQuestions.length > 0) return baseVersionQuestions.map(q => shuffleAnswerOptions(q));
+      return generateHPQuestionBank({ sectionCode: 'ORD', count: targetCount, testVersion: testVersionId, seed: `fallback-${testVersionId}` }).map(q => shuffleAnswerOptions(q));
+    }
 
-    console.log('[HP] getQuestionsByTestVersion top-up', {
+    const needed = targetCount - baseVersionQuestions.length;
+    const generatedTopUp = generateHPQuestionBank({
+      sectionCode,
+      count: needed,
+      testVersion: testVersionId,
+      seed: `version-${testVersionId}`,
+    });
+
+    const combined = [...baseVersionQuestions, ...generatedTopUp].slice(0, targetCount);
+    console.log('[HP] getQuestionsByTestVersion', {
       testVersionId,
       sectionCode,
       staticCount: baseVersionQuestions.length,
       generatedCount: generatedTopUp.length,
+      total: combined.length,
     });
 
-    return [...baseVersionQuestions, ...generatedTopUp].map(q => shuffleAnswerOptions(q));
+    return combined.map(q => shuffleAnswerOptions(q));
   }, []);
 
   const getTestVersionsBySection = useCallback((sectionCode: string): HPTestVersion[] => {
@@ -487,29 +501,45 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     return filtered;
   }, []);
 
-  const getAllQuestionsForFullTest = useCallback((): LocalHPQuestion[] => {
+  const getAllQuestionsForFullTest = useCallback((fullTestVersionId?: string): LocalHPQuestion[] => {
     const allQuestions: LocalHPQuestion[] = [];
-
     const staticQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS];
 
-    HP_SECTIONS.forEach(section => {
-      const generated = generateHPQuestionBank({ sectionCode: section.code, count: 260 });
-      const sectionQuestions = [...staticQuestions, ...generated].filter(q => q.sectionCode === section.code);
+    const versionSuffix = fullTestVersionId ? fullTestVersionId.replace('hp-', '') : `random-${Date.now()}`;
 
-      const shuffled = [...sectionQuestions].sort(() => Math.random() - 0.5);
-      const selected = shuffled.slice(0, Math.min(20, sectionQuestions.length));
+    HP_SECTIONS.forEach(section => {
+      const sectionVersionId = `${section.code.toLowerCase()}-${versionSuffix}`;
+
+      const versionStatic = staticQuestions.filter(
+        q => q.sectionCode === section.code && q.testVersion === sectionVersionId
+      );
+
+      let sectionQuestions: LocalHPQuestion[];
+
+      if (versionStatic.length >= 20) {
+        sectionQuestions = versionStatic.slice(0, 20);
+      } else {
+        const needed = 20 - versionStatic.length;
+        const generated = generateHPQuestionBank({
+          sectionCode: section.code,
+          count: needed,
+          testVersion: sectionVersionId,
+          seed: `fulltest-${sectionVersionId}`,
+        });
+        sectionQuestions = [...versionStatic, ...generated].slice(0, 20);
+      }
 
       console.log('[HP] FullTest section pick', {
         sectionCode: section.code,
-        available: sectionQuestions.length,
-        selected: selected.length,
+        versionId: sectionVersionId,
+        staticCount: versionStatic.length,
+        totalPicked: sectionQuestions.length,
       });
 
-      allQuestions.push(...selected.map(q => shuffleAnswerOptions(q)));
+      allQuestions.push(...sectionQuestions.map(q => shuffleAnswerOptions(q)));
     });
 
-    console.log('[HP] getAllQuestionsForFullTest', { total: allQuestions.length });
-
+    console.log('[HP] getAllQuestionsForFullTest', { total: allQuestions.length, fullTestVersionId });
     return allQuestions;
   }, []);
 

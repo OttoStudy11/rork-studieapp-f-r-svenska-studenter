@@ -488,18 +488,17 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
           console.log('✅ point_transaction recorded successfully');
         }
 
-        // Sync to user_progress table
+        // Sync total_points to user_progress table
         const { error: progressError } = await supabase.from('user_progress').upsert({
           user_id: authUser.id,
-          total_xp: newTotalXp,
           total_points: newTotalXp,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
         
         if (progressError) {
-          console.error('❌ Error syncing user_progress:', progressError);
+          console.error('❌ Error syncing user_progress total_points:', progressError);
         } else {
-          console.log('✅ user_progress synced successfully');
+          console.log('✅ user_progress total_points synced:', newTotalXp);
         }
         
         // Also try to update profiles for leaderboard (total_points column may not exist)
@@ -632,25 +631,6 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
     // Update challenge progress
     await updateChallengeProgress('study_minutes', minutes);
     await updateChallengeProgress('sessions_count', 1);
-    
-    // Update user_progress study stats
-    if (authUser && isAuthenticated) {
-      try {
-        // Update with available columns
-        const { error: updateError } = await (supabase as any).from('user_progress').upsert({
-          user_id: authUser.id,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
-        
-        if (updateError) {
-          console.error('❌ Error updating study stats:', updateError);
-        } else {
-          console.log(`✅ Study session recorded for user`);
-        }
-      } catch (error) {
-        console.log('⚠️ Could not update study stats:', error);
-      }
-    }
     
     const xp = calculateStudySessionXp(minutes);
     if (xp > 0) {

@@ -898,7 +898,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           console.log('📊 Fetching current user_progress...');
           const { data: currentProgress, error: fetchError } = await supabase
             .from('user_progress')
-            .select('total_study_time, total_sessions')
+            .select('total_study_time, total_sessions, current_streak, longest_streak, last_study_date')
             .eq('user_id', authUser.id)
             .maybeSingle();
 
@@ -911,20 +911,52 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           const newTotalMinutes = oldTotalTime + session.duration;
           const newTotalSessions = oldTotalSessions + 1;
 
+          // Calculate streak
+          const today = new Date();
+          const todayStr = today.toISOString().split('T')[0];
+          let currentStreak = currentProgress?.current_streak || 0;
+          let longestStreak = currentProgress?.longest_streak || 0;
+
+          if (currentProgress?.last_study_date) {
+            const lastDate = new Date(currentProgress.last_study_date);
+            const lastDateStr = lastDate.toISOString().split('T')[0];
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+            if (lastDateStr === todayStr) {
+              // Already studied today, keep streak
+            } else if (lastDateStr === yesterdayStr) {
+              // Studied yesterday, increment streak
+              currentStreak += 1;
+            } else {
+              // Missed a day, reset streak
+              currentStreak = 1;
+            }
+          } else {
+            // First session ever
+            currentStreak = 1;
+          }
+          longestStreak = Math.max(longestStreak, currentStreak);
+
           console.log('📊 Updating user_progress:', {
             oldTotalTime,
             newTotalTime: newTotalMinutes,
             sessionDuration: session.duration,
             oldSessions: oldTotalSessions,
-            newSessions: newTotalSessions
+            newSessions: newTotalSessions,
+            currentStreak,
+            longestStreak
           });
 
-          const { error: progressError, data: progressData } = await supabase
+          const { error: progressError } = await supabase
             .from('user_progress')
             .upsert({
               user_id: authUser.id,
               total_study_time: newTotalMinutes,
               total_sessions: newTotalSessions,
+              current_streak: currentStreak,
+              longest_streak: longestStreak,
               last_study_date: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             }, {
@@ -934,11 +966,11 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
 
           if (progressError) {
             console.error('❌ Failed to update user_progress:', progressError);
-            console.error('❌ Error details:', progressError);
+            console.error('❌ Error details:', JSON.stringify(progressError));
           } else {
             console.log('✅ user_progress updated successfully');
             console.log('✅ New total study time:', newTotalMinutes, 'minutes');
-            console.log('✅ Progress data:', progressData);
+            console.log('✅ Streak:', currentStreak, '| Longest:', longestStreak);
           }
         } catch (progressUpdateError) {
           console.error('❌ Exception updating user_progress:', progressUpdateError);

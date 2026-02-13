@@ -18,7 +18,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
@@ -575,8 +575,47 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </SlideInView>
 
+        {/* Study Insights Card */}
+        <SlideInView direction="up" delay={225} duration={300}>
+          <TouchableOpacity 
+            style={[styles.insightsCard, { backgroundColor: theme.colors.card }]}
+            onPress={() => router.push('/study-insights' as any)}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={isDark ? ['#0D9488', '#059669'] : ['#10B981', '#059669']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.insightsCardGradient}
+            >
+              <View style={styles.insightsCardContent}>
+                <View style={styles.insightsCardLeft}>
+                  <View style={styles.insightsIconContainer}>
+                    <Brain size={24} color="white" />
+                  </View>
+                  <View style={styles.insightsCardInfo}>
+                    <Text style={styles.insightsCardTitle}>Studieinsikter</Text>
+                    <Text style={styles.insightsCardSubtitle} numberOfLines={2}>Spaced repetition, smart analys & kunskapsluckor</Text>
+                  </View>
+                </View>
+                <ChevronRight size={24} color="rgba(255,255,255,0.8)" />
+              </View>
+              <View style={styles.insightsCardMeta}>
+                <View style={styles.insightsMetaItem}>
+                  <Zap size={12} color="rgba(255,255,255,0.8)" />
+                  <Text style={styles.insightsMetaText}>AI-driven</Text>
+                </View>
+                <View style={styles.hpMetaDot} />
+                <View style={styles.insightsMetaItem}>
+                  <Text style={styles.insightsMetaText}>Repetition • Mönster • Analys</Text>
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </SlideInView>
+
         {/* Compact XP Card */}
-        <SlideInView direction="up" delay={250} duration={300}>
+        <SlideInView direction="up" delay={275} duration={300}>
           <TouchableOpacity 
             style={[styles.compactXpCard, { backgroundColor: theme.colors.card }]}
             onPress={() => router.push('/achievements' as any)}
@@ -1774,5 +1813,70 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400' as const,
   },
-
+  insightsCard: {
+    marginHorizontal: 24,
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  insightsCardGradient: {
+    padding: 20,
+    position: 'relative' as const,
+  },
+  insightsCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  insightsCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
+  },
+  insightsIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  insightsCardInfo: {
+    flex: 1,
+  },
+  insightsCardTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: 'white',
+    marginBottom: 4,
+  },
+  insightsCardSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 18,
+  },
+  insightsCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+  },
+  insightsMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  insightsMetaText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.8)',
+  },
 });

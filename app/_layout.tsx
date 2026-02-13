@@ -108,6 +108,7 @@ function AppContent() {
         <Stack.Screen name="hp-results" options={{ headerShown: false }} />
         <Stack.Screen name="hp-stats" options={{ headerShown: false }} />
         <Stack.Screen name="community/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="study-insights" options={{ headerShown: false }} />
       </Stack>
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>

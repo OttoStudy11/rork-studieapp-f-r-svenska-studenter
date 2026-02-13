@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
+import { router } from 'expo-router';
 import CharacterAvatar from './CharacterAvatar';
 import { 
   Palette,
@@ -18,7 +19,9 @@ import {
   Backpack,
   Footprints,
   Smile,
+  Lock,
 } from 'lucide-react-native';
+import { usePremium } from '@/contexts/PremiumContext';
 import type { AvatarConfig } from '@/constants/avatar-config';
 import {
   BODY_COLORS,
@@ -61,6 +64,7 @@ export default function AvatarBuilder({
   onCancel 
 }: AvatarBuilderProps) {
   const [internalConfig, setInternalConfig] = useState<AvatarConfig>(initialConfig || externalConfig || DEFAULT_AVATAR_CONFIG);
+  const { isPremium } = usePremium();
   
   const config = externalConfig || internalConfig;
   const [activeCategory, setActiveCategory] = useState<CustomizationCategory>('body');
@@ -75,14 +79,22 @@ export default function AvatarBuilder({
     { id: 'background' as const, name: 'Bakgrund', icon: Palette },
   ];
 
-  const updateConfig = (key: keyof AvatarConfig, value: string) => {
+  const updateConfig = useCallback((key: keyof AvatarConfig, value: string) => {
     const newConfig = { ...config, [key]: value };
     if (onConfigChange) {
       onConfigChange(newConfig);
     } else {
       setInternalConfig(newConfig);
     }
-  };
+  }, [config, onConfigChange]);
+
+  const handlePremiumItemPress = useCallback((item: { isPremium?: boolean }, key: keyof AvatarConfig, value: string) => {
+    if (item.isPremium && !isPremium) {
+      router.push('/premium' as any);
+      return;
+    }
+    updateConfig(key, value);
+  }, [isPremium, updateConfig]);
 
   const renderCategoryContent = () => {
     switch (activeCategory) {
@@ -97,15 +109,18 @@ export default function AvatarBuilder({
                   style={[
                     styles.colorOption,
                     { backgroundColor: color.color },
-                    config.bodyColor === color.id && styles.selectedOption
+                    config.bodyColor === color.id && styles.selectedOption,
+                    color.isPremium && !isPremium && styles.lockedOption,
                   ]}
-                  onPress={() => updateConfig('bodyColor', color.id)}
+                  onPress={() => handlePremiumItemPress(color, 'bodyColor', color.id)}
                 >
-                  {config.bodyColor === color.id && (
+                  {color.isPremium && !isPremium ? (
+                    <Lock size={16} color="#FFD700" />
+                  ) : config.bodyColor === color.id ? (
                     <View style={styles.checkmark}>
                       <Text style={styles.checkmarkText}>✓</Text>
                     </View>
-                  )}
+                  ) : null}
                 </TouchableOpacity>
               ))}
             </View>
@@ -122,17 +137,21 @@ export default function AvatarBuilder({
                   key={expression.id}
                   style={[
                     styles.emojiOption,
-                    config.faceExpression === expression.id && styles.selectedEmojiOption
+                    config.faceExpression === expression.id && styles.selectedEmojiOption,
+                    expression.isPremium && !isPremium && styles.lockedEmojiOption,
                   ]}
-                  onPress={() => updateConfig('faceExpression', expression.id)}
+                  onPress={() => handlePremiumItemPress(expression, 'faceExpression', expression.id)}
                 >
                   <Text style={styles.emojiText}>{expression.emoji}</Text>
-                  <Text style={[
-                    styles.emojiLabel,
-                    config.faceExpression === expression.id && styles.selectedEmojiLabel
-                  ]}>
-                    {expression.name}
-                  </Text>
+                  <View style={styles.emojiLabelRow}>
+                    <Text style={[
+                      styles.emojiLabel,
+                      config.faceExpression === expression.id && styles.selectedEmojiLabel
+                    ]}>
+                      {expression.name}
+                    </Text>
+                    {expression.isPremium && !isPremium && <Lock size={10} color="#FFD700" />}
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -149,9 +168,10 @@ export default function AvatarBuilder({
                   key={hat.id}
                   style={[
                     styles.listOption,
-                    config.hat === hat.id && styles.selectedListOption
+                    config.hat === hat.id && styles.selectedListOption,
+                    hat.isPremium && !isPremium && styles.lockedListOption,
                   ]}
-                  onPress={() => updateConfig('hat', hat.id)}
+                  onPress={() => handlePremiumItemPress(hat, 'hat', hat.id)}
                 >
                   <Text style={[
                     styles.listOptionText,
@@ -159,6 +179,7 @@ export default function AvatarBuilder({
                   ]}>
                     {hat.name}
                   </Text>
+                  {hat.isPremium && !isPremium && <Lock size={14} color="#FFD700" />}
                 </TouchableOpacity>
               ))}
             </View>
@@ -200,9 +221,10 @@ export default function AvatarBuilder({
                   key={outfit.id}
                   style={[
                     styles.listOption,
-                    config.outfit === outfit.id && styles.selectedListOption
+                    config.outfit === outfit.id && styles.selectedListOption,
+                    outfit.isPremium && !isPremium && styles.lockedListOption,
                   ]}
-                  onPress={() => updateConfig('outfit', outfit.id)}
+                  onPress={() => handlePremiumItemPress(outfit, 'outfit', outfit.id)}
                 >
                   <Text style={[
                     styles.listOptionText,
@@ -210,6 +232,7 @@ export default function AvatarBuilder({
                   ]}>
                     {outfit.name}
                   </Text>
+                  {outfit.isPremium && !isPremium && <Lock size={14} color="#FFD700" />}
                 </TouchableOpacity>
               ))}
             </View>
@@ -268,9 +291,10 @@ export default function AvatarBuilder({
                   key={backpack.id}
                   style={[
                     styles.listOption,
-                    config.backpack === backpack.id && styles.selectedListOption
+                    config.backpack === backpack.id && styles.selectedListOption,
+                    backpack.isPremium && !isPremium && styles.lockedListOption,
                   ]}
-                  onPress={() => updateConfig('backpack', backpack.id)}
+                  onPress={() => handlePremiumItemPress(backpack, 'backpack', backpack.id)}
                 >
                   <Text style={[
                     styles.listOptionText,
@@ -278,6 +302,7 @@ export default function AvatarBuilder({
                   ]}>
                     {backpack.name}
                   </Text>
+                  {backpack.isPremium && !isPremium && <Lock size={14} color="#FFD700" />}
                 </TouchableOpacity>
               ))}
             </View>
@@ -372,15 +397,18 @@ export default function AvatarBuilder({
                   style={[
                     styles.colorOption,
                     { backgroundColor: color.color },
-                    config.backgroundColor === color.id && styles.selectedOption
+                    config.backgroundColor === color.id && styles.selectedOption,
+                    color.isPremium && !isPremium && styles.lockedOption,
                   ]}
-                  onPress={() => updateConfig('backgroundColor', color.id)}
+                  onPress={() => handlePremiumItemPress(color, 'backgroundColor', color.id)}
                 >
-                  {config.backgroundColor === color.id && (
+                  {color.isPremium && !isPremium ? (
+                    <Lock size={16} color="#FFD700" />
+                  ) : config.backgroundColor === color.id ? (
                     <View style={styles.checkmark}>
                       <Text style={styles.checkmarkText}>✓</Text>
                     </View>
-                  )}
+                  ) : null}
                 </TouchableOpacity>
               ))}
             </View>
@@ -733,5 +761,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: 'white',
+  },
+  lockedOption: {
+    opacity: 0.7,
+    borderColor: '#FFD700',
+    borderWidth: 1.5,
+  },
+  lockedEmojiOption: {
+    opacity: 0.7,
+    borderColor: '#FFD700',
+    borderWidth: 1.5,
+  },
+  lockedListOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderColor: '#FFD700',
+    borderWidth: 1.5,
+    opacity: 0.7,
+  },
+  emojiLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
 });

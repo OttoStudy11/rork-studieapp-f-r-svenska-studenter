@@ -1,6 +1,7 @@
 import { generateObject } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
 import { supabase } from './supabase';
+import { canGenerateAI, incrementAIUsage } from './ai-usage-tracker';
 
 export interface QuizQuestion {
   id: string;
@@ -75,11 +76,16 @@ async function resolveCourseId(courseId: string): Promise<{ id: string; title: s
   throw new Error('Kursen hittades inte.');
 }
 
-export async function generateQuizFromCourse(options: GenerateQuizOptions): Promise<GeneratedQuiz> {
+export async function generateQuizFromCourse(options: GenerateQuizOptions, isPremium: boolean = false): Promise<GeneratedQuiz> {
   const { courseId, count: requestedCount = 10 } = options;
   const count = Math.min(requestedCount, MAX_QUESTIONS);
 
   console.log('🧠 Starting quiz generation for course:', courseId);
+
+  const usageCheck = await canGenerateAI(isPremium);
+  if (!usageCheck.allowed) {
+    throw new Error(`Du har nått gränsen på ${usageCheck.limit} AI-genereringar per vecka. Uppgradera till Premium för obegränsade genereringar!`);
+  }
 
   const course = await resolveCourseId(courseId);
   console.log('✅ Resolved course:', course.title);
@@ -143,6 +149,8 @@ SKAPA ${count} UNIKA, HÖGKVALITATIVA FLERVALSFRÅGOR NU.`,
     };
   });
 
+  await incrementAIUsage();
+
   return {
     questions,
     title: course.title,
@@ -150,12 +158,17 @@ SKAPA ${count} UNIKA, HÖGKVALITATIVA FLERVALSFRÅGOR NU.`,
   };
 }
 
-export async function generateQuizFromText(options: GenerateQuizFromTextOptions): Promise<GeneratedQuiz> {
+export async function generateQuizFromText(options: GenerateQuizFromTextOptions, isPremium: boolean = false): Promise<GeneratedQuiz> {
   const { text, courseId, count: requestedCount = 10 } = options;
   const count = Math.min(requestedCount, MAX_QUESTIONS);
 
   if (text.trim().length < 50) {
     throw new Error('Texten är för kort. Ange minst 50 tecken.');
+  }
+
+  const usageCheck = await canGenerateAI(isPremium);
+  if (!usageCheck.allowed) {
+    throw new Error(`Du har nått gränsen på ${usageCheck.limit} AI-genereringar per vecka. Uppgradera till Premium för obegränsade genereringar!`);
   }
 
   console.log('🧠 Generating quiz from user text, length:', text.length);
@@ -225,6 +238,8 @@ SKAPA ${count} UNIKA FLERVALSFRÅGOR NU.`,
       difficulty: q.difficulty,
     };
   });
+
+  await incrementAIUsage();
 
   return {
     questions,

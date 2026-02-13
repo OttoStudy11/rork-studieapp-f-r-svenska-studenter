@@ -36,6 +36,9 @@ import {
   X,
   Shield,
   ExternalLink,
+  Palette,
+  User,
+  Brain,
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import {
@@ -279,24 +282,44 @@ export default function PremiumScreen() {
 
   const features = [
     {
+      icon: Sparkles,
+      title: 'Obegränsade AI-genereringar',
+      description: 'Generera quiz och flashcards utan veckogräns (gratis: 10/vecka)',
+      gradient: ['#EC4899', '#DB2777'] as const,
+      badge: 'Nytt'
+    },
+    {
+      icon: Brain,
+      title: 'Avancerad Studieanalys',
+      description: 'Full prestationsdashboard med prediktioner, trender och insikter',
+      gradient: ['#06B6D4', '#0891B2'] as const,
+      badge: 'Nytt'
+    },
+    {
+      icon: Palette,
+      title: 'Anpassade Teman & Avatarer',
+      description: 'Premium-exklusiva avatar-objekt, 8 unika appteman och specialfärger',
+      gradient: ['#8B5CF6', '#7C3AED'] as const,
+      badge: 'Nytt'
+    },
+    {
       icon: Infinity,
       title: 'Obegränsade Kurser',
       description: 'Lägg till hur många kurser du vill utan begränsningar',
-      gradient: ['#8B5CF6', '#7C3AED'] as const,
+      gradient: ['#7C3AED', '#6D28D9'] as const,
       badge: 'Populärt'
     },
     {
       icon: BarChart3,
       title: 'Avancerad Statistik',
       description: 'Detaljerade grafer, insikter och trendanalys av din studietid',
-      gradient: ['#06B6D4', '#0891B2'] as const,
-      badge: 'Nytt'
+      gradient: ['#3B82F6', '#2563EB'] as const,
     },
     {
-      icon: Sparkles,
+      icon: User,
       title: 'AI-assisterad Lärande',
       description: 'Personliga studietips och AI-chatbot som hjälper dig studera smartare',
-      gradient: ['#EC4899', '#DB2777'] as const,
+      gradient: ['#F59E0B', '#D97706'] as const,
       badge: 'AI'
     },
     {
@@ -306,10 +329,10 @@ export default function PremiumScreen() {
       gradient: ['#EF4444', '#DC2626'] as const
     },
     {
-      icon: Sparkles,
+      icon: Zap,
       title: 'AI-genererade Flashcards',
-      description: 'Automatiskt genererade flashcards med spaced repetition för bättre minne',
-      gradient: ['#F59E0B', '#D97706'] as const,
+      description: 'Obegränsade AI-flashcards med spaced repetition för bättre minne',
+      gradient: ['#F97316', '#EA580C'] as const,
       badge: 'AI'
     },
     {
@@ -322,15 +345,8 @@ export default function PremiumScreen() {
       icon: Star,
       title: 'Prioriterad Support',
       description: 'Få snabb och personlig hjälp direkt från teamet',
-      gradient: ['#3B82F6', '#2563EB'] as const
+      gradient: ['#10B981', '#059669'] as const
     },
-    {
-      icon: Zap,
-      title: 'Allt Framtida Innehåll',
-      description: 'Få tillgång till alla nya premium-funktioner automatiskt',
-      gradient: ['#10B981', '#059669'] as const,
-      badge: 'Kommande'
-    }
   ];
 
   const handlePurchase = async () => {

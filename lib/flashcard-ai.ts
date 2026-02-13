@@ -1,6 +1,7 @@
 import { generateObject } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
 import { supabase } from './supabase';
+import { canGenerateAI, incrementAIUsage } from './ai-usage-tracker';
 
 export interface GenerateFlashcardsOptions {
   courseId: string;
@@ -145,13 +146,20 @@ Religion i konflikt och fred:
 };
 
 export async function generateFlashcardsFromContent(
-  options: GenerateFlashcardsOptions
+  options: GenerateFlashcardsOptions,
+  isPremium: boolean = false
 ): Promise<void> {
   try {
     const { courseId, moduleId, lessonId, count: requestedCount = 20 } = options;
     const count = Math.min(requestedCount, MAX_FLASHCARDS);
 
     console.log('🎯 Starting flashcard generation with options:', options);
+
+    const usageCheck = await canGenerateAI(isPremium);
+    if (!usageCheck.allowed) {
+      throw new Error(`Du har nått gränsen på ${usageCheck.limit} AI-genereringar per vecka. Uppgradera till Premium för obegränsade genereringar!`);
+    }
+    console.log(`📊 AI usage: ${usageCheck.limit - usageCheck.remaining}/${usageCheck.limit} denna vecka`);
 
     let courseName = '';
     let courseDescription = '';
@@ -373,6 +381,7 @@ Fokusera på att täcka hela kursens centrala innehåll jämnt, med betoning på
       throw new Error(`Kunde inte spara flashcards: ${insertError.message}`);
     }
 
+    await incrementAIUsage();
     console.log(`✅ Successfully generated ${flashcardsToInsert.length} flashcards for ${courseName}`);
   } catch (error: any) {
     console.error('❌ Error in generateFlashcardsFromContent:', error);
@@ -388,7 +397,8 @@ Fokusera på att täcka hela kursens centrala innehåll jämnt, med betoning på
 }
 
 export async function generateFlashcardsFromText(
-  options: GenerateFlashcardsFromTextOptions
+  options: GenerateFlashcardsFromTextOptions,
+  isPremium: boolean = false
 ): Promise<void> {
   try {
     const { text, courseId, moduleId, lessonId, count: requestedCount = 15 } = options;
@@ -396,6 +406,11 @@ export async function generateFlashcardsFromText(
 
     console.log('🎯 Starting flashcard generation from user text');
     console.log('📖 Text length:', text.length, 'characters');
+
+    const usageCheck = await canGenerateAI(isPremium);
+    if (!usageCheck.allowed) {
+      throw new Error(`Du har nått gränsen på ${usageCheck.limit} AI-genereringar per vecka. Uppgradera till Premium för obegränsade genereringar!`);
+    }
 
     if (text.trim().length < 50) {
       throw new Error('Texten är för kort. Vänligen ange minst 50 tecken.');
@@ -527,6 +542,7 @@ ${text}
       throw new Error(`Kunde inte spara flashcards: ${insertError.message}`);
     }
 
+    await incrementAIUsage();
     console.log(`✅ Successfully generated ${flashcardsToInsert.length} flashcards from user text`);
   } catch (error: any) {
     console.error('❌ Error in generateFlashcardsFromText:', error);

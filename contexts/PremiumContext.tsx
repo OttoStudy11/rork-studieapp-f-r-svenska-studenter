@@ -27,6 +27,13 @@ import {
   getOfflinePremiumStatus,
   shouldSyncPremiumStatus,
 } from '@/lib/premium-storage';
+import {
+  getAIUsageCount,
+  incrementAIUsage,
+  canGenerateAI,
+  FREE_AI_LIMIT,
+} from '@/lib/ai-usage-tracker';
+import { APP_THEMES, AppThemeConfig } from '@/constants/premium-themes';
 
 // ============================================================================
 // TYPES
@@ -37,6 +44,7 @@ export interface PremiumLimits {
   maxCourses: number;
   maxNotes: number;
   maxFriends: number;
+  maxAIGenerationsPerWeek: number;
   canCustomizeTimer: boolean;
   canExportData: boolean;
   canUseAdvancedStats: boolean;
@@ -46,6 +54,8 @@ export interface PremiumLimits {
   canUseFlashcards: boolean;
   canUseBattle: boolean;
   canUseAdvancedStatistics: boolean;
+  canUsePremiumAvatarItems: boolean;
+  canUseAdvancedAnalytics: boolean;
 }
 
 export interface PremiumContextType {
@@ -59,6 +69,14 @@ export interface PremiumContextType {
   canAddCourse: (currentCount: number) => boolean;
   canAddNote: (currentCount: number) => boolean;
   canAddFriend: (currentCount: number) => boolean;
+  
+  checkAIGenerationLimit: () => Promise<{ allowed: boolean; remaining: number; limit: number }>;
+  trackAIGeneration: () => Promise<number>;
+  aiUsageCount: number;
+  
+  availableThemes: AppThemeConfig[];
+  activeAppTheme: AppThemeConfig;
+  setActiveAppTheme: (themeId: string) => Promise<void>;
   
   purchasePackage: (pkg: PurchasesPackage) => Promise<boolean>;
   restorePurchases: () => Promise<boolean>;
@@ -81,6 +99,7 @@ const FREE_LIMITS: PremiumLimits = {
   maxCourses: 3,
   maxNotes: 10,
   maxFriends: 3,
+  maxAIGenerationsPerWeek: FREE_AI_LIMIT,
   canCustomizeTimer: false,
   canExportData: false,
   canUseAdvancedStats: false,
@@ -90,12 +109,15 @@ const FREE_LIMITS: PremiumLimits = {
   canUseFlashcards: false,
   canUseBattle: false,
   canUseAdvancedStatistics: false,
+  canUsePremiumAvatarItems: false,
+  canUseAdvancedAnalytics: false,
 };
 
 const PREMIUM_LIMITS: PremiumLimits = {
   maxCourses: Infinity,
   maxNotes: Infinity,
   maxFriends: Infinity,
+  maxAIGenerationsPerWeek: Infinity,
   canCustomizeTimer: true,
   canExportData: true,
   canUseAdvancedStats: true,
@@ -105,6 +127,8 @@ const PREMIUM_LIMITS: PremiumLimits = {
   canUseFlashcards: true,
   canUseBattle: true,
   canUseAdvancedStatistics: true,
+  canUsePremiumAvatarItems: true,
+  canUseAdvancedAnalytics: true,
 };
 
 // ============================================================================
@@ -120,6 +144,9 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
   const [isOffline, setIsOffline] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [devPremiumEnabled, setDevPremiumEnabledState] = useState(false);
+  
+  const [aiUsageCount, setAiUsageCount] = useState<number>(0);
+  const [activeAppThemeId, setActiveAppThemeId] = useState<string>('default');
   
   const listenerCleanupRef = useRef<(() => void) | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -480,6 +507,64 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
     return true;
   }, [processCustomerInfo, showSuccess, showError, showInfo]);
 
+  // AI generation tracking
+  const checkAIGenerationLimit = useCallback(async () => {
+    const result = await canGenerateAI(isPremium || devPremiumEnabled);
+    setAiUsageCount(await getAIUsageCount());
+    return result;
+  }, [isPremium, devPremiumEnabled]);
+
+  const trackAIGeneration = useCallback(async () => {
+    const newCount = await incrementAIUsage();
+    setAiUsageCount(newCount);
+    return newCount;
+  }, []);
+
+  // Load AI usage on mount
+  useEffect(() => {
+    getAIUsageCount().then(setAiUsageCount).catch(() => {});
+  }, []);
+
+  // App theme management
+  const loadAppTheme = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem('active_app_theme');
+      if (stored) {
+        setActiveAppThemeId(stored);
+      }
+    } catch (error) {
+      console.error('[Premium] Failed to load app theme:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAppTheme();
+  }, [loadAppTheme]);
+
+  const setActiveAppTheme = useCallback(async (themeId: string) => {
+    const themeConfig = APP_THEMES.find(t => t.id === themeId);
+    if (!themeConfig) return;
+    if (themeConfig.isPremium && !isPremium && !devPremiumEnabled) {
+      showInfo('Premium krävs', 'Detta tema är exklusivt för Premium-användare.');
+      return;
+    }
+    try {
+      await AsyncStorage.setItem('active_app_theme', themeId);
+      setActiveAppThemeId(themeId);
+      console.log('[Premium] App theme set to:', themeId);
+    } catch (error) {
+      console.error('[Premium] Failed to save app theme:', error);
+    }
+  }, [isPremium, devPremiumEnabled, showInfo]);
+
+  const availableThemes = useMemo(() => {
+    return APP_THEMES;
+  }, []);
+
+  const activeAppTheme = useMemo(() => {
+    return APP_THEMES.find(t => t.id === activeAppThemeId) || APP_THEMES[0];
+  }, [activeAppThemeId]);
+
   // Demo mode functions
   const enableDemoMode = useCallback(() => {
     setIsDemoMode(true);
@@ -500,6 +585,12 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
     canAddCourse,
     canAddNote,
     canAddFriend,
+    checkAIGenerationLimit,
+    trackAIGeneration,
+    aiUsageCount,
+    availableThemes,
+    activeAppTheme,
+    setActiveAppTheme,
     purchasePackage,
     restorePurchases,
     getOfferings,
@@ -520,6 +611,12 @@ export const [PremiumProvider, usePremium] = createContextHook(() => {
     canAddCourse,
     canAddNote,
     canAddFriend,
+    checkAIGenerationLimit,
+    trackAIGeneration,
+    aiUsageCount,
+    availableThemes,
+    activeAppTheme,
+    setActiveAppTheme,
     purchasePackage,
     restorePurchases,
     getOfferings,

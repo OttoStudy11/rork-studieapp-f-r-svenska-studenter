@@ -31,6 +31,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
 import { useHPTrial } from '@/contexts/HPTrialContext';
+import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
+import { FreemiumBanner } from '@/components/FreemiumBanner';
 import { HPTrialSelectionModal } from '@/components/hogskoleprovet/HPTrialSelectionModal';
 import { HPPaywallModal } from '@/components/hogskoleprovet/HPPaywallModal';
 import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HP_FULL_TEST_VERSIONS } from '@/constants/hogskoleprovet';
@@ -289,6 +291,8 @@ const modalStyles = StyleSheet.create({
 export default function HogskoleprovetScreen() {
   const { theme, isDark } = useTheme();
   const { isPremium } = usePremium();
+  const freemium = useFreemiumLimits();
+  const hpLimit = freemium.checkHPSection();
   const { 
     getUserStats, 
     getEstimatedHPScore,
@@ -358,7 +362,8 @@ export default function HogskoleprovetScreen() {
 
   const handleStartSection = async (sectionCode: string) => {
     if (!isPremium) {
-      if (canAccessContent('delprov', sectionCode)) {
+      if (hpLimit.isAllowed || canAccessContent('delprov', sectionCode)) {
+        freemium.trackUsage('hp_section', { sectionCode });
         router.push({
           pathname: '/hp-select-version' as any,
           params: { sectionCode },
@@ -452,6 +457,13 @@ export default function HogskoleprovetScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {!isPremium && (
+          <FreemiumBanner
+            feature="hp_section"
+            status={hpLimit}
+            style={{ marginHorizontal: 20, marginBottom: 16 }}
+          />
+        )}
         {isPremium && stats.totalAttempts > 0 && (
           <Animated.View style={[styles.scoreCard, { opacity: fadeAnim }]}>
             <LinearGradient

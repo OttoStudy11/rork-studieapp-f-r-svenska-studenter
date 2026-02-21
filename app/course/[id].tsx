@@ -48,6 +48,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import type { Database } from '@/lib/database.types';
 import { AIStudyInsights, AIQuickHelp } from '@/components/AIStudyInsights';
+import { FreemiumBanner } from '@/components/FreemiumBanner';
+import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
+import { Crown } from 'lucide-react-native';
 
 type Course = Database['public']['Tables']['courses']['Row'];
 type CourseLesson = Database['public']['Tables']['course_lessons']['Row'];
@@ -119,6 +122,7 @@ export default function CourseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const { theme, isDark } = useTheme();
+  const freemium = useFreemiumLimits();
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<ModuleWithLessons[]>([]);
   const [studyGuides, setStudyGuides] = useState<StudyGuide[]>([]);
@@ -861,16 +865,29 @@ export default function CourseDetailScreen() {
 
           {showContent && (
             <Animated.View style={styles.contentCollapse}>
-              {modules.map((module, moduleIndex) => (
-            <View key={module.id} style={[styles.moduleCard, { backgroundColor: theme.colors.card }]}>
+              {modules.map((module, moduleIndex) => {
+                const moduleLimit = freemium.checkCourseModule(moduleIndex);
+                const isModuleLocked = !moduleLimit.isAllowed;
+
+                return (
+            <View key={module.id} style={[styles.moduleCard, { backgroundColor: theme.colors.card }, isModuleLocked && { opacity: 0.6 }]}>
               <View style={[styles.moduleHeader, { borderBottomColor: theme.colors.border }]}>
-                <Text style={[styles.moduleTitle, { color: theme.colors.text }]}>
-                  {moduleIndex + 1}. {module.title}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={[styles.moduleTitle, { color: theme.colors.text, flex: 1 }]}>
+                    {moduleIndex + 1}. {module.title}
+                  </Text>
+                  {isModuleLocked && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFD700' + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, gap: 4 }}>
+                      <Crown size={12} color="#FFD700" />
+                      <Text style={{ fontSize: 11, fontWeight: '700' as const, color: '#FFD700' }}>Premium</Text>
+                    </View>
+                  )}
+                </View>
                 {module.description && <Text style={[styles.moduleDescription, { color: theme.colors.textSecondary }]}>{module.description}</Text>}
                 <Text style={[styles.moduleHours, { color: theme.colors.textMuted }]}>{module.estimated_hours}h uppskattad tid</Text>
               </View>
               
+              {!isModuleLocked && (
               <View style={styles.lessonsContainer}>
                 {module.lessons.map((lesson, lessonIndex) => {
                   const LessonIcon = getLessonTypeIcon(lesson.lesson_type);
@@ -943,8 +960,22 @@ export default function CourseDetailScreen() {
                   );
                 })}
               </View>
+              )}
+              {isModuleLocked && (
+                <View style={{ padding: 16, alignItems: 'center' }}>
+                  <TouchableOpacity
+                    onPress={() => router.push('/premium' as any)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFD700' + '15', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 }}
+                    activeOpacity={0.7}
+                  >
+                    <Lock size={14} color="#FFD700" />
+                    <Text style={{ fontSize: 13, fontWeight: '600' as const, color: '#FFD700' }}>Lås upp med Premium</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
-              ))}
+                );
+              })}
             </Animated.View>
           )}
         </View>

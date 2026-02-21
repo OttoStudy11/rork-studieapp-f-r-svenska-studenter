@@ -22,6 +22,8 @@ import { generateQuizFromCourse, generateQuizFromText } from '@/lib/quiz-ai';
 import type { GeneratedQuiz } from '@/lib/quiz-ai';
 import { XP_VALUES } from '@/constants/xp-system';
 import { PremiumGate } from '@/components/PremiumGate';
+import { FreemiumBanner, FreemiumLimitReached } from '@/components/FreemiumBanner';
+import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import {
@@ -53,6 +55,8 @@ export default function CourseQuizScreen() {
   const { theme } = useTheme();
 
   const { addXp, isReady: gamificationReady } = useGamification();
+  const freemium = useFreemiumLimits();
+  const quizLimit = freemium.checkQuiz();
 
 
   const [quizState, setQuizState] = useState<QuizState>('loading');
@@ -97,6 +101,7 @@ export default function CourseQuizScreen() {
     },
     onSuccess: (data) => {
       console.log('✅ Quiz generated:', data.questions.length, 'questions');
+      freemium.trackUsage('course_quiz', { courseId: courseId || '' });
       setQuiz(data);
       setQuizState('playing');
       setCurrentIndex(0);
@@ -119,6 +124,7 @@ export default function CourseQuizScreen() {
     },
     onSuccess: (data) => {
       console.log('✅ Quiz from text generated:', data.questions.length, 'questions');
+      freemium.trackUsage('course_quiz', { courseId: courseId || '' });
       setQuiz(data);
       setQuizState('playing');
       setCurrentIndex(0);
@@ -313,19 +319,40 @@ export default function CourseQuizScreen() {
   }
 
   if (quizState === 'empty') {
-    return (
-      <PremiumGate feature="quiz" fullScreen={true}>
-        <SafeAreaView style={[styles.container, { backgroundColor: '#0F172A' }]} edges={['top']}>
+    if (!quizLimit.isPremium && !quizLimit.isAllowed) {
+      return (
+        <View style={[styles.container, { backgroundColor: '#0F172A' }]}>
           <Stack.Screen options={{ headerShown: false }} />
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerBackButton}>
-              <ArrowLeft size={24} color="#F1F5F9" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Quiz</Text>
-            <View style={styles.headerBackButton} />
-          </View>
+          <FreemiumLimitReached
+            feature="course_quiz"
+            status={quizLimit}
+            onGoBack={() => router.back()}
+          />
+        </View>
+      );
+    }
 
-          <View style={styles.emptyContainer}>
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: '#0F172A' }]} edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerBackButton}>
+            <ArrowLeft size={24} color="#F1F5F9" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Quiz</Text>
+          <View style={styles.headerBackButton} />
+        </View>
+
+        {!quizLimit.isPremium && (
+          <FreemiumBanner
+            feature="course_quiz"
+            status={quizLimit}
+            compact
+            style={{ marginHorizontal: 16, marginBottom: 8 }}
+          />
+        )}
+
+        <View style={styles.emptyContainer}>
             <View style={styles.emptyIconWrap}>
               <LinearGradient
                 colors={['#F59E0B', '#EF4444']}
@@ -428,7 +455,6 @@ export default function CourseQuizScreen() {
             </KeyboardAvoidingView>
           )}
         </SafeAreaView>
-      </PremiumGate>
     );
   }
 
@@ -600,7 +626,6 @@ export default function CourseQuizScreen() {
     const progress = ((currentIndex + 1) / quiz.questions.length) * 100;
 
     return (
-      <PremiumGate feature="quiz" fullScreen={true}>
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
           <Stack.Screen options={{ headerShown: false }} />
 
@@ -794,7 +819,6 @@ export default function CourseQuizScreen() {
             )}
           </View>
         </View>
-      </PremiumGate>
     );
   }
 

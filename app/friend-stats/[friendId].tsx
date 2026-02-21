@@ -34,6 +34,8 @@ import {
 import { FadeInView, SlideInView } from '@/components/Animations';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PremiumGate } from '@/components/PremiumGate';
+import { FreemiumBanner, FreemiumLimitReached } from '@/components/FreemiumBanner';
+import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
 import { LevelComparison } from '@/components/LevelProgress';
 import { getLevelForXp } from '@/constants/gamification';
 
@@ -86,6 +88,8 @@ export default function FriendStatsScreen() {
   const [yourStats, setYourStats] = useState<{ studyTime: number; sessionCount: number; streak: number; courseCount: number; totalXp: number } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const freemium = useFreemiumLimits();
+  const friendStatsLimit = freemium.checkFriendStats();
 
   const loadStats = useCallback(async () => {
     if (!friendId || !user) return;
@@ -299,7 +303,11 @@ export default function FriendStatsScreen() {
 
   useEffect(() => {
     if (friendId && user) {
-      void loadStats();
+      void loadStats().then(() => {
+        if (!freemium.isPremium) {
+          freemium.trackUsage('friend_stats', { friendId: friendId || '' });
+        }
+      });
     }
   }, [friendId, loadStats, user]);
 
@@ -431,8 +439,26 @@ export default function FriendStatsScreen() {
     );
   }
 
+  if (!friendStatsLimit.isPremium && !friendStatsLimit.isAllowed) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <FreemiumLimitReached
+          feature="friend_stats"
+          status={friendStatsLimit}
+          onGoBack={() => router.back()}
+        />
+      </View>
+    );
+  }
+
+  const handleTrackFriendView = () => {
+    if (!friendStatsLimit.isPremium) {
+      freemium.trackUsage('friend_stats', { friendId: friendId || '' });
+    }
+  };
+
   return (
-    <PremiumGate feature="battle" fullScreen={true}>
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Stack.Screen
         options={{
@@ -453,6 +479,14 @@ export default function FriendStatsScreen() {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {!friendStatsLimit.isPremium && (
+          <FreemiumBanner
+            feature="friend_stats"
+            status={friendStatsLimit}
+            compact
+            style={{ marginHorizontal: 16, marginTop: 8, marginBottom: 4 }}
+          />
+        )}
         {/* Header with avatars */}
         <FadeInView delay={0}>
           <View style={styles.headerSection}>
@@ -793,7 +827,6 @@ export default function FriendStatsScreen() {
         </SlideInView>
       </ScrollView>
     </SafeAreaView>
-    </PremiumGate>
   );
 }
 

@@ -12,6 +12,8 @@ import { Crown, Sparkles, Zap, BarChart3, Users, GraduationCap, ArrowLeft } from
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
+import { FreemiumBanner } from '@/components/FreemiumBanner';
+import type { FreemiumStatus, FreemiumFeature } from '@/constants/freemiumLimits';
 
 
 
@@ -62,18 +64,25 @@ interface PremiumGateProps {
   children: React.ReactNode;
   showLoadingWhileChecking?: boolean;
   fullScreen?: boolean;
+  mode?: 'block' | 'limit';
+  freemiumStatus?: FreemiumStatus;
+  freemiumFeature?: FreemiumFeature;
+  bannerPosition?: 'top' | 'bottom';
 }
 
 export function PremiumGate({ 
   feature, 
   children, 
   showLoadingWhileChecking = false,
-  fullScreen = false 
+  fullScreen = false,
+  mode = 'block',
+  freemiumStatus,
+  freemiumFeature,
+  bannerPosition = 'top',
 }: PremiumGateProps) {
   const { isPremium, isLoading, isOffline } = usePremium();
   const { theme, isDark } = useTheme();
 
-  // Show loading state while checking premium status
   if (isLoading && showLoadingWhileChecking) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
@@ -85,9 +94,32 @@ export function PremiumGate({
     );
   }
 
-  // User has premium access - show children
   if (isPremium) {
     return <>{children}</>;
+  }
+
+  if (mode === 'limit' && freemiumStatus && freemiumFeature) {
+    if (freemiumStatus.isAllowed) {
+      return (
+        <View style={{ flex: fullScreen ? 1 : undefined }}>
+          {bannerPosition === 'top' && (
+            <FreemiumBanner
+              feature={freemiumFeature}
+              status={freemiumStatus}
+              style={{ marginHorizontal: 16, marginTop: 8, marginBottom: 4 }}
+            />
+          )}
+          {children}
+          {bannerPosition === 'bottom' && (
+            <FreemiumBanner
+              feature={freemiumFeature}
+              status={freemiumStatus}
+              style={{ marginHorizontal: 16, marginBottom: 8, marginTop: 4 }}
+            />
+          )}
+        </View>
+      );
+    }
   }
 
   // User does not have premium - show gate with inline overlay

@@ -23,6 +23,8 @@ import { ArrowLeft, Sparkles, BookOpen, RefreshCw, AlertCircle, Plus, Camera, Im
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PremiumGate } from '@/components/PremiumGate';
+import { FreemiumBanner, FreemiumLimitReached } from '@/components/FreemiumBanner';
+import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
 
 // Local flashcard type for session-only storage (compatible with FlashcardSwipe)
 interface LocalFlashcard {
@@ -40,6 +42,8 @@ interface LocalFlashcard {
 
 export default function FlashcardsScreenV2() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
+  const freemium = useFreemiumLimits();
+  const flashcardLimit = freemium.checkFlashcards(courseId || '');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [aiExplanation, setAiExplanation] = useState<string | undefined>();
   const [generationCount, setGenerationCount] = useState(20);
@@ -239,8 +243,25 @@ export default function FlashcardsScreenV2() {
   }, [currentIndex, cardsToStudy, handleReview]);
 
   if (localFlashcards.length === 0) {
+    if (!flashcardLimit.isPremium && !flashcardLimit.isAllowed) {
+      return (
+        <View style={styles.container}>
+          <LinearGradient
+            colors={['#1E1B4B', '#0F172A', '#0F172A']}
+            locations={[0, 0.3, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          <Stack.Screen options={{ headerShown: false }} />
+          <FreemiumLimitReached
+            feature="flashcards"
+            status={flashcardLimit}
+            onGoBack={() => router.back()}
+          />
+        </View>
+      );
+    }
+
     return (
-      <PremiumGate feature="flashcards" fullScreen>
       <View style={styles.container}>
         <LinearGradient
           colors={['#1E1B4B', '#0F172A', '#0F172A']}
@@ -535,13 +556,11 @@ export default function FlashcardsScreenV2() {
         </Modal>
         </SafeAreaView>
       </View>
-      </PremiumGate>
     );
   }
 
   if (currentIndex >= cardsToStudy.length) {
     return (
-      <PremiumGate feature="flashcards" fullScreen>
       <View style={styles.container}>
         <LinearGradient
           colors={['#1E1B4B', '#0F172A', '#0F172A']}
@@ -613,12 +632,10 @@ export default function FlashcardsScreenV2() {
         </View>
         </SafeAreaView>
       </View>
-      </PremiumGate>
     );
   }
 
   return (
-    <PremiumGate feature="flashcards" fullScreen>
     <View style={styles.container}>
       <LinearGradient
         colors={['#1E1B4B', '#0F172A', '#0F172A']}
@@ -966,7 +983,6 @@ export default function FlashcardsScreenV2() {
       </Modal>
       </SafeAreaView>
     </View>
-    </PremiumGate>
   );
 }
 

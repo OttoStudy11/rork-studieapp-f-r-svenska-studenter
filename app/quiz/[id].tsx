@@ -31,6 +31,8 @@ import { useGamification } from '@/contexts/GamificationContext';
 import { XP_VALUES } from '@/constants/xp-system';
 import * as Haptics from 'expo-haptics';
 import type { Database } from '@/lib/database.types';
+import { FreemiumBanner, FreemiumLimitReached } from '@/components/FreemiumBanner';
+import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
 
 type CourseExercise = Database['public']['Tables']['course_exercises']['Row'];
 
@@ -52,6 +54,8 @@ export default function QuizScreen() {
   const { theme } = useTheme();
   const { user } = useAuth();
   const { addXp, isReady: gamificationReady } = useGamification();
+  const freemium = useFreemiumLimits();
+  const quizLimit = freemium.checkQuiz();
 
   const [exercise, setExercise] = useState<CourseExercise | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -129,6 +133,9 @@ export default function QuizScreen() {
 
       console.log('Exercise loaded:', data.title);
       setExercise(data);
+      if (!freemium.isPremium) {
+        freemium.trackUsage('quiz', { exerciseId: id || '' });
+      }
 
       const parsedQuestions = parseQuestions(data.questions, data.exercise_type);
       const parsedAnswers = parseCorrectAnswers(data.correct_answers);
@@ -364,6 +371,19 @@ export default function QuizScreen() {
       default: return theme.colors.textMuted;
     }
   };
+
+  if (!quizLimit.isPremium && !quizLimit.isAllowed) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <FreemiumLimitReached
+          feature="quiz"
+          status={quizLimit}
+          onGoBack={() => router.back()}
+        />
+      </View>
+    );
+  }
 
   if (isLoading) {
     return (

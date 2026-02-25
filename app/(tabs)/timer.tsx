@@ -46,6 +46,15 @@ const BG_THEMES = [
   { colors: ['#0F172A', '#1E293B'] as [string, string], dark: true, dot: '#475569' },
 ];
 
+const STATS_BG: string[] = [
+  '#F8FAFC',
+  '#FFFBF5',
+  '#F0F7FF',
+  '#F0FDF8',
+  '#FFF5F6',
+  '#080E1A',
+];
+
 type TimerState = 'idle' | 'running' | 'paused';
 type SessionType = 'focus' | 'break';
 
@@ -252,7 +261,7 @@ export default function TimerScreen() {
   const { awardStudySession } = useGamification();
   const { settings } = useTimerSettings();
   const insets = useSafeAreaInsets();
-  usePremium();
+  const { isPremium } = usePremium();
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [sessionType, setSessionType] = useState<SessionType>('focus');
   const [timeLeft, setTimeLeft] = useState(25 * 60);
@@ -1735,21 +1744,41 @@ export default function TimerScreen() {
           )}
         </View>
 
-        <View style={[styles.sectionContainer, { backgroundColor: theme.colors.background, paddingTop: 28 }]}>
+        <View style={[styles.sectionContainer, { backgroundColor: STATS_BG[bgIndex], paddingTop: 28 }]}>
           <View style={styles.statsSectionHeader}>
             <View style={styles.statsSectionTitleRow}>
-              <View style={[styles.statsSectionAccent, { backgroundColor: theme.colors.primary }]} />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
+              <Text style={[styles.sectionTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Statistik</Text>
             </View>
-            <Text style={[styles.statsSectionSubtitle, { color: theme.colors.textMuted }]}>Din studieprestanda</Text>
+            <Text style={[styles.statsSectionSubtitle, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#64748B' }]}>Din studieprestanda</Text>
           </View>
-          <PremiumGate feature="statistics" fullScreen={false}>
+          {!isPremium && (
+            <View style={[styles.premiumGateInline, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.06)' : '#FFFFFF' }]}>
+              <View style={styles.premiumGateIconRow}>
+                <View style={styles.premiumGateCrown}>
+                  <Text style={{ fontSize: 26 }}>{'\uD83D\uDC51'}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.premiumGateTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Avancerad Statistik</Text>
+                  <Text style={[styles.premiumGateDesc, { color: isDarkBg ? 'rgba(255,255,255,0.5)' : '#64748B' }]}>{'L\u00e5s upp detaljerade insikter om ditt studiebeteende'}</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.premiumGateBtn}
+                onPress={() => { require('expo-router').router.push('/premium'); }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.premiumGateBtnText}>{'\u2B50 Uppgradera till Premium'}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-          <View style={[styles.focusScoreCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.07, shadowRadius: 14, elevation: 3 }]}>
+          {isPremium && (
+          <>
+          <View style={[styles.focusScoreCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDarkBg ? 0 : 0.06, shadowRadius: 14, elevation: 3 }]}>
             <View style={styles.focusScoreRow}>
               <View style={styles.focusScoreLeft}>
-                <Text style={[styles.focusScoreLabel, { color: theme.colors.textMuted }]}>FOKUSPOÄNG</Text>
-                <Text style={[styles.focusScoreValue, { color: theme.colors.text }]}>{focusScore.score}</Text>
+                <Text style={[styles.focusScoreLabel, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>FOKUSPOÄNG</Text>
+                <Text style={[styles.focusScoreValue, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>{focusScore.score}</Text>
                 <View style={[styles.focusScoreBadge, { backgroundColor: theme.colors.primary + '18' }]}>
                   <Trophy size={11} color={theme.colors.primary} />
                   <Text style={[styles.focusScoreLevel, { color: theme.colors.primary }]}>{focusScore.level}</Text>
@@ -1757,7 +1786,7 @@ export default function TimerScreen() {
               </View>
               <View style={styles.focusScoreRight}>
                 <Svg width={96} height={96}>
-                  <Circle cx={48} cy={48} r={40} stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'} strokeWidth={6} fill="none" />
+                  <Circle cx={48} cy={48} r={40} stroke={isDarkBg ? 'rgba(255,255,255,0.08)' : '#E2E8F0'} strokeWidth={6} fill="none" />
                   <Circle cx={48} cy={48} r={40} stroke={theme.colors.primary} strokeWidth={6} fill="none" strokeDasharray={2 * Math.PI * 40} strokeDashoffset={2 * Math.PI * 40 * (1 - focusScore.score / 100)} strokeLinecap="round" transform="rotate(-90 48 48)" />
                 </Svg>
                 <View style={styles.focusScoreCenter}>
@@ -1765,10 +1794,10 @@ export default function TimerScreen() {
                 </View>
               </View>
             </View>
-            <Text style={[styles.focusScoreDesc, { color: theme.colors.textSecondary }]}>{focusScore.description}</Text>
+            <Text style={[styles.focusScoreDesc, { color: isDarkBg ? 'rgba(255,255,255,0.55)' : '#475569' }]}>{focusScore.description}</Text>
           </View>
 
-          <View style={[styles.viewToggle, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#EBEBEB' }]}>
+          <View style={[styles.viewToggle, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.08)' : '#EEF2F7' }]}>
             {(['day', 'week'] as const).map((view) => (
               <TouchableOpacity 
                 key={view}
@@ -1781,7 +1810,7 @@ export default function TimerScreen() {
               >
                 <Text style={[
                   styles.viewToggleText,
-                  { color: selectedStatView === view ? '#FFFFFF' : theme.colors.textMuted }
+                  { color: selectedStatView === view ? '#FFFFFF' : (isDarkBg ? 'rgba(255,255,255,0.5)' : '#64748B') }
                 ]}>{view === 'day' ? 'Idag' : 'Vecka'}</Text>
               </TouchableOpacity>
             ))}
@@ -1793,12 +1822,12 @@ export default function TimerScreen() {
               { value: selectedStatView === 'day' ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m` : `${Math.floor(weekStats.minutes / 60)}h`, label: 'Total tid', icon: Zap, color: '#F59E0B' },
               { value: streakStats.longest.toString(), label: 'Bästa streak', icon: Flame, color: '#EF4444' },
             ].map((stat, i) => (
-              <View key={i} style={[styles.statsGridCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
-                <View style={[styles.statsGridIcon, { backgroundColor: stat.color + '18' }]}>
+              <View key={i} style={[styles.statsGridCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+                <View style={[styles.statsGridIcon, { backgroundColor: stat.color + '22' }]}>
                   <stat.icon size={17} color={stat.color} />
                 </View>
-                <Text style={[styles.statsGridValue, { color: theme.colors.text }]}>{stat.value}</Text>
-                <Text style={[styles.statsGridLabel, { color: theme.colors.textMuted }]}>{stat.label}</Text>
+                <Text style={[styles.statsGridValue, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>{stat.value}</Text>
+                <Text style={[styles.statsGridLabel, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{stat.label}</Text>
               </View>
             ))}
           </View>
@@ -1836,8 +1865,8 @@ export default function TimerScreen() {
           </View>
 
           {selectedStatView === 'week' && (
-            <View style={[styles.weeklyGraph, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
-              <Text style={[styles.graphTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
+            <View style={[styles.weeklyGraph, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+              <Text style={[styles.graphTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Veckoöversikt</Text>
               <View style={styles.graphBars}>
                 {weekStats.dailyStats.map((day: any, i: number) => {
                   const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
@@ -1853,7 +1882,7 @@ export default function TimerScreen() {
                             styles.dayBar, 
                             { 
                               height: `${barHeight}%`,
-                              backgroundColor: isToday ? theme.colors.primary : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
+                              backgroundColor: isToday ? theme.colors.primary : (isDarkBg ? 'rgba(255,255,255,0.1)' : '#E2E8F0'),
                             }
                           ]} 
                         />
@@ -1861,7 +1890,7 @@ export default function TimerScreen() {
                       <Text style={[
                         styles.dayLabel, 
                         { 
-                          color: isToday ? theme.colors.primary : theme.colors.textMuted,
+                          color: isToday ? theme.colors.primary : (isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8'),
                           fontWeight: isToday ? '600' as const : '400' as const
                         }
                       ]}>{dayName}</Text>
@@ -1872,10 +1901,10 @@ export default function TimerScreen() {
             </View>
           )}
 
-          <View style={[styles.productivityCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+          <View style={[styles.productivityCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Activity size={16} color={theme.colors.secondary} />
-              <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>Produktivitet per tid</Text>
+              <Text style={[styles.cardHeaderTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Produktivitet per tid</Text>
             </View>
             <View style={styles.productivityBars}>
               {Object.entries(productivityByTimeOfDay.periods).map(([key, period]) => {
@@ -1890,13 +1919,13 @@ export default function TimerScreen() {
                       <View style={[styles.productivityIcon, { backgroundColor: theme.colors.secondary + '14' }]}>
                         <IconComponent size={13} color={theme.colors.secondary} />
                       </View>
-                      <Text style={[styles.productivityLabel, { color: theme.colors.text }]}>{period.label}</Text>
+                      <Text style={[styles.productivityLabel, { color: isDarkBg ? 'rgba(255,255,255,0.8)' : '#334155' }]}>{period.label}</Text>
                     </View>
                     <View style={styles.productivityBarContainer}>
-                      <View style={[styles.productivityBarBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                      <View style={[styles.productivityBarBg, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}>
                         <View style={[styles.productivityBarFill, { width: `${Math.max(percentage, 2)}%`, backgroundColor: theme.colors.secondary }]} />
                       </View>
-                      <Text style={[styles.productivityValue, { color: theme.colors.textMuted }]}>
+                      <Text style={[styles.productivityValue, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>
                         {Math.round(period.minutes / 60)}h
                       </Text>
                     </View>
@@ -1907,10 +1936,10 @@ export default function TimerScreen() {
           </View>
 
           {courseDistribution.length > 0 && (
-            <View style={[styles.courseDistCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+            <View style={[styles.courseDistCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
               <View style={styles.cardHeader}>
                 <PieChart size={16} color={theme.colors.primary} />
-                <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>Kursfördelning</Text>
+                <Text style={[styles.cardHeaderTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Kursfördelning</Text>
               </View>
               {courseDistribution.slice(0, 5).map((course, index) => {
                 const totalMinutes = courseDistribution.reduce((sum, c) => sum + c.minutes, 0);
@@ -1919,25 +1948,25 @@ export default function TimerScreen() {
                   <View key={index} style={styles.courseDistItem}>
                     <View style={styles.courseDistLeft}>
                       <View style={[styles.courseDistDot, { backgroundColor: course.color }]} />
-                      <Text style={[styles.courseDistName, { color: theme.colors.text }]} numberOfLines={1}>{course.name}</Text>
+                      <Text style={[styles.courseDistName, { color: isDarkBg ? 'rgba(255,255,255,0.85)' : '#1E293B' }]} numberOfLines={1}>{course.name}</Text>
                     </View>
-                    <Text style={[styles.courseDistPercent, { color: theme.colors.textMuted }]}>{percentage}%</Text>
+                    <Text style={[styles.courseDistPercent, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{percentage}%</Text>
                   </View>
                 );
               })}
             </View>
           )}
 
-          <View style={[styles.heatmapCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+          <View style={[styles.heatmapCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Calendar size={16} color={theme.colors.warning} />
-              <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>
+              <Text style={[styles.cardHeaderTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>
                 {monthlyHeatmap.monthName.charAt(0).toUpperCase() + monthlyHeatmap.monthName.slice(1)}
               </Text>
             </View>
             <View style={styles.heatmapWeekdays}>
               {['M', 'T', 'O', 'T', 'F', 'L', 'S'].map((day, i) => (
-                <Text key={`${day}-${i}`} style={[styles.heatmapWeekday, { color: theme.colors.textMuted }]}>{day}</Text>
+                <Text key={`${day}-${i}`} style={[styles.heatmapWeekday, { color: isDarkBg ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>{day}</Text>
               ))}
             </View>
             <View style={styles.heatmapGrid}>
@@ -1946,7 +1975,7 @@ export default function TimerScreen() {
               ))}
               {monthlyHeatmap.data.map((day) => {
                 const intensityColors = [
-                  isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                  isDarkBg ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
                   theme.colors.primary + '30',
                   theme.colors.primary + '55',
                   theme.colors.primary + '88',
@@ -1965,7 +1994,7 @@ export default function TimerScreen() {
                   >
                     <Text style={[
                       styles.heatmapDayText,
-                      { color: day.intensity >= 2 ? '#FFFFFF' : theme.colors.textMuted },
+                      { color: day.intensity >= 2 ? '#FFFFFF' : (isDarkBg ? 'rgba(255,255,255,0.35)' : '#94A3B8') },
                       isToday && { fontWeight: '700' as const }
                     ]}>
                       {day.day}
@@ -1975,13 +2004,13 @@ export default function TimerScreen() {
               })}
             </View>
             <View style={styles.heatmapLegend}>
-              <Text style={[styles.heatmapLegendText, { color: theme.colors.textMuted }]}>Mindre</Text>
+              <Text style={[styles.heatmapLegendText, { color: isDarkBg ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>Mindre</Text>
               <View style={styles.heatmapLegendColors}>
                 {[0, 1, 2, 3, 4].map(i => (
                   <View 
                     key={i} 
                     style={[styles.heatmapLegendCell, { backgroundColor: [
-                      isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                      isDarkBg ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
                       theme.colors.primary + '30',
                       theme.colors.primary + '55',
                       theme.colors.primary + '88',
@@ -1990,7 +2019,7 @@ export default function TimerScreen() {
                   />
                 ))}
               </View>
-              <Text style={[styles.heatmapLegendText, { color: theme.colors.textMuted }]}>Mer</Text>
+              <Text style={[styles.heatmapLegendText, { color: isDarkBg ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>Mer</Text>
             </View>
           </View>
 
@@ -2000,34 +2029,35 @@ export default function TimerScreen() {
               { value: `${Math.floor(totalAllTime / 60)}h`, label: 'Totalt', icon: Target, color: theme.colors.secondary },
               { value: `${pomodoroSessions.length > 0 ? Math.round(totalAllTime / pomodoroSessions.length) : 0}m`, label: 'Snitt', icon: Brain, color: theme.colors.warning },
             ].map((stat, i) => (
-              <View key={i} style={[styles.extraStatCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+              <View key={i} style={[styles.extraStatCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
                 <stat.icon size={16} color={stat.color} />
-                <Text style={[styles.extraStatValue, { color: theme.colors.text }]}>{stat.value}</Text>
-                <Text style={[styles.extraStatLabel, { color: theme.colors.textMuted }]}>{stat.label}</Text>
+                <Text style={[styles.extraStatValue, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>{stat.value}</Text>
+                <Text style={[styles.extraStatLabel, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{stat.label}</Text>
               </View>
             ))}
           </View>
 
-          <View style={[styles.insightsCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+          <View style={[styles.insightsCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Lightbulb size={16} color="#F59E0B" />
-              <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>Insikter</Text>
+              <Text style={[styles.cardHeaderTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Insikter</Text>
             </View>
             {studyInsights.map((insight, index) => (
               <View 
                 key={index} 
-                style={[styles.insightItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8F9FA' }]}
+                style={[styles.insightItem, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.05)' : '#F8FAFC' }]}
               >
                 <Text style={styles.insightEmoji}>{insight.icon}</Text>
                 <View style={styles.insightContent}>
-                  <Text style={[styles.insightTitle, { color: theme.colors.text }]}>{insight.title}</Text>
-                  <Text style={[styles.insightDesc, { color: theme.colors.textMuted }]}>{insight.description}</Text>
+                  <Text style={[styles.insightTitle, { color: isDarkBg ? '#FFFFFF' : '#1E293B' }]}>{insight.title}</Text>
+                  <Text style={[styles.insightDesc, { color: isDarkBg ? 'rgba(255,255,255,0.5)' : '#64748B' }]}>{insight.description}</Text>
                 </View>
               </View>
             ))}
           </View>
 
-          </PremiumGate>
+          </>
+          )}
         </View>
       </ScrollView>
 
@@ -2360,24 +2390,67 @@ const styles = StyleSheet.create({
     borderWidth: 2.5,
   },
   statsSectionHeader: {
-    marginBottom: 18,
+    marginBottom: 20,
   },
   statsSectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 4,
-  },
-  statsSectionAccent: {
-    width: 4,
-    height: 26,
-    borderRadius: 2,
+    marginBottom: 3,
   },
   statsSectionSubtitle: {
     fontSize: 13,
     fontWeight: '400',
-    marginLeft: 14,
-    marginTop: 2,
+    marginTop: 3,
+  },
+  premiumGateInline: {
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.25)',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  premiumGateIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 16,
+  },
+  premiumGateCrown: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,215,0,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumGateTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    marginBottom: 4,
+  },
+  premiumGateDesc: {
+    fontSize: 13,
+    fontWeight: '400',
+    lineHeight: 18,
+  },
+  premiumGateBtn: {
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: '#F59E0B',
+  },
+  premiumGateBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.1,
   },
   scrollView: {
     flex: 1,
@@ -2791,7 +2864,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   focusScoreCard: {
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 20,
     marginBottom: 14,
   },
@@ -2802,19 +2875,20 @@ const styles = StyleSheet.create({
   },
   focusScoreLeft: {
     flex: 1,
+    paddingRight: 8,
   },
   focusScoreLabel: {
     fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 1.2,
-    marginBottom: 4,
+    letterSpacing: 1.5,
+    marginBottom: 6,
     textTransform: 'uppercase',
   },
   focusScoreValue: {
-    fontSize: 56,
+    fontSize: 60,
     fontWeight: '900',
     letterSpacing: -3,
-    lineHeight: 60,
+    lineHeight: 64,
   },
   focusScoreBadge: {
     flexDirection: 'row',
@@ -2868,8 +2942,8 @@ const styles = StyleSheet.create({
   },
   statsGridCard: {
     flex: 1,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
     alignItems: 'center',
   },
   statsGridIcon: {
@@ -2881,7 +2955,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statsGridValue: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     letterSpacing: -0.8,
     marginBottom: 2,
@@ -2895,8 +2969,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   weekComparisonCard: {
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 18,
+    padding: 18,
     marginBottom: 14,
   },
   weekComparisonHeader: {
@@ -2924,9 +2998,9 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   weekComparisonValue: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '800',
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
   weekComparisonDivider: {
     width: 1,
@@ -2983,8 +3057,8 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   productivityCard: {
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 18,
+    padding: 18,
     marginBottom: 14,
   },
   cardHeader: {
@@ -3047,8 +3121,8 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   courseDistCard: {
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 18,
+    padding: 18,
     marginBottom: 14,
   },
   courseDistItem: {
@@ -3078,8 +3152,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   heatmapCard: {
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 18,
+    padding: 18,
     marginBottom: 14,
   },
   heatmapWeekdays: {
@@ -3136,12 +3210,12 @@ const styles = StyleSheet.create({
   },
   extraStatCard: {
     flex: 1,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
     alignItems: 'center',
   },
   extraStatValue: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     marginTop: 8,
     marginBottom: 2,
@@ -3153,17 +3227,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   insightsCard: {
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 18,
+    padding: 18,
     marginBottom: 14,
   },
   insightItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 6,
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 8,
   },
   insightEmoji: {
     fontSize: 18,
@@ -3175,12 +3249,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     marginBottom: 3,
-    letterSpacing: -0.1,
+    letterSpacing: -0.2,
   },
   insightDesc: {
     fontSize: 12,
     fontWeight: '400',
-    lineHeight: 18,
+    lineHeight: 19,
   },
   completionOverlay: {
     flex: 1,

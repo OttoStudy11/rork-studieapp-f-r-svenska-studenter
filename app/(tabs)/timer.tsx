@@ -37,6 +37,15 @@ import * as Notifications from 'expo-notifications';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+const BG_THEMES = [
+  { colors: ['#FFFFFF', '#F0F0F0'] as [string, string], dark: false, dot: '#D1D5DB' },
+  { colors: ['#FFF7ED', '#FDDCBC'] as [string, string], dark: false, dot: '#F97316' },
+  { colors: ['#EEF6FF', '#BFDBFE'] as [string, string], dark: false, dot: '#3B82F6' },
+  { colors: ['#ECFDF5', '#A7F3D0'] as [string, string], dark: false, dot: '#10B981' },
+  { colors: ['#FFF1F2', '#FECDD3'] as [string, string], dark: false, dot: '#F43F5E' },
+  { colors: ['#0F172A', '#1E293B'] as [string, string], dark: true, dot: '#475569' },
+];
+
 type TimerState = 'idle' | 'running' | 'paused';
 type SessionType = 'focus' | 'break';
 
@@ -274,11 +283,13 @@ export default function TimerScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const [showAddExam, setShowAddExam] = useState(false);
+  const [bgIndex, setBgIndex] = useState<number>(0);
   
   void motivationalQuote;
   void totalFocusToday;
   void weeklyAverage;
   void bestStreak;
+  const isDarkBg = BG_THEMES[bgIndex].dark;
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   const [completedSessionData, setCompletedSessionData] = useState<{
     duration: number;
@@ -1207,7 +1218,7 @@ export default function TimerScreen() {
     return pomodoroSessions.reduce((sum, s) => sum + s.duration, 0);
   }, [pomodoroSessions]);
 
-  const timerCircleSize = Math.min(SCREEN_WIDTH - 60, 300);
+  const timerCircleSize = Math.min(SCREEN_WIDTH - 100, 230);
   const timerRadius = (timerCircleSize / 2) - 22;
   const circumference = 2 * Math.PI * timerRadius;
 
@@ -1231,7 +1242,7 @@ export default function TimerScreen() {
       const isActive = (i / totalTicks) <= elapsed;
       elements.push(
         <React.Fragment key={`tick-${i}`}>
-          <Circle cx={x1} cy={y1} r={isMajor ? 1.5 : 1.0} fill={isActive ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.13)'} />
+          <Circle cx={x1} cy={y1} r={isMajor ? 1.5 : 1.0} fill={isActive ? (isDarkBg ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)') : (isDarkBg ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.13)')} />
           <Circle cx={x2} cy={y2} r={0.1} fill="transparent" />
         </React.Fragment>
       );
@@ -1243,8 +1254,8 @@ export default function TimerScreen() {
     const ny = center + nLen * Math.sin(needleAngle);
     elements.push(
       <React.Fragment key="needle">
-        <Circle cx={nx} cy={ny} r={4} fill="#111827" />
-        <Circle cx={center} cy={center} r={4} fill="rgba(0,0,0,0.3)" />
+        <Circle cx={nx} cy={ny} r={4} fill={isDarkBg ? '#FFFFFF' : '#111827'} />
+        <Circle cx={center} cy={center} r={4} fill={isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'} />
       </React.Fragment>
     );
     return elements;
@@ -1252,46 +1263,61 @@ export default function TimerScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle={isDarkBg ? 'light-content' : 'dark-content'} />
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: '#FFFFFF' }]}>
+        <LinearGradient colors={BG_THEMES[bgIndex].colors} style={styles.timerBackground}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
-              <Text style={[styles.headerTitle, { color: '#111827' }]}>Timer</Text>
+              <Text style={[styles.headerTitle, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>Timer</Text>
             </View>
             <View style={styles.headerRight}>
               <TouchableOpacity
-                style={[styles.headerIconButton, { backgroundColor: 'rgba(0,0,0,0.06)' }]}
+                style={[styles.headerIconButton, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)' }]}
                 onPress={() => { soundManager.setEnabled(!settings.soundEnabled); }}
                 activeOpacity={0.7}
               >
                 {settings.soundEnabled ? (
-                  <Volume2 size={18} color="rgba(0,0,0,0.5)" />
+                  <Volume2 size={18} color={isDarkBg ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'} />
                 ) : (
-                  <VolumeX size={18} color="rgba(0,0,0,0.25)" />
+                  <VolumeX size={18} color={isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'} />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.headerIconButton, { backgroundColor: 'rgba(0,0,0,0.06)' }]}
+                style={[styles.headerIconButton, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)' }]}
                 onPress={() => setShowSettings(true)}
                 activeOpacity={0.7}
               >
-                <Settings size={18} color="rgba(0,0,0,0.5)" />
+                <Settings size={18} color={isDarkBg ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'} />
               </TouchableOpacity>
             </View>
+          </View>
+          <View style={styles.bgPickerRow}>
+            {BG_THEMES.map((bg, i) => (
+              <TouchableOpacity
+                key={i}
+                style={[
+                  styles.bgPickerDot,
+                  { backgroundColor: bg.dot },
+                  i === bgIndex && [styles.bgPickerDotActive, { borderColor: isDarkBg ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.45)' }]
+                ]}
+                onPress={() => setBgIndex(i)}
+                activeOpacity={0.8}
+              />
+            ))}
           </View>
         </View>
 
         <View style={styles.timerSection}>
-          <Text style={styles.timerSessionName}>
+          <Text style={[styles.timerSessionName, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>
             {sessionType === 'focus' ? 'Fokus' : 'Paus'}
           </Text>
-          <Text style={styles.timerSessionSub}>{getSelectedCourseTitle()}</Text>
+          <Text style={[styles.timerSessionSub, { color: isDarkBg ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)' }]}>{getSelectedCourseTitle()}</Text>
 
           <Animated.View style={[styles.timerWrapper, { transform: [{ scale: timerState === 'running' ? pulseAnim : scaleAnim }] }]}>
             <View style={[styles.timerDarkCircle, { width: timerCircleSize, height: timerCircleSize }]}>
@@ -1300,14 +1326,14 @@ export default function TimerScreen() {
                   cx={timerCircleSize / 2}
                   cy={timerCircleSize / 2}
                   r={timerCircleSize / 2}
-                  fill="#F8F8F8"
+                  fill={isDarkBg ? '#1E2A3A' : '#F8F8F8'}
                 />
                 {renderWatchFace()}
                 <Circle
                   cx={timerCircleSize / 2}
                   cy={timerCircleSize / 2}
                   r={timerRadius}
-                  stroke="rgba(0,0,0,0.06)"
+                  stroke={isDarkBg ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}
                   strokeWidth={1}
                   fill="none"
                 />
@@ -1315,7 +1341,7 @@ export default function TimerScreen() {
                   cx={timerCircleSize / 2}
                   cy={timerCircleSize / 2}
                   r={timerRadius}
-                  stroke="rgba(0,0,0,0.75)"
+                  stroke={isDarkBg ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)'}
                   strokeWidth={1.5}
                   fill="none"
                   strokeDasharray={circumference}
@@ -1327,26 +1353,26 @@ export default function TimerScreen() {
             </View>
           </Animated.View>
 
-          <Text style={styles.timerDigitsBelow}>{formatTime(timeLeft)}</Text>
+          <Text style={[styles.timerDigitsBelow, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>{formatTime(timeLeft)}</Text>
         </View>
 
         {sessionType === 'focus' && timerState === 'idle' && (
           <View style={styles.courseSection}>
-            <Text style={[styles.sectionLabel, { color: 'rgba(0,0,0,0.35)' }]}>KURS</Text>
+            <Text style={[styles.sectionLabel, { color: isDarkBg ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)' }]}>KURS</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.courseListContent}>
               <TouchableOpacity
                 style={[
                   styles.courseChip,
                   { 
-                    backgroundColor: !selectedCourse ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.04)',
-                    borderColor: !selectedCourse ? 'rgba(0,0,0,0.2)' : 'transparent',
+                    backgroundColor: !selectedCourse ? (isDarkBg ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.1)') : (isDarkBg ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)'),
+                    borderColor: !selectedCourse ? (isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)') : 'transparent',
                     borderWidth: 1,
                   }
                 ]}
                 onPress={() => setSelectedCourse('')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.courseChipText, { color: !selectedCourse ? '#111827' : 'rgba(0,0,0,0.4)' }]}>Allmänt</Text>
+                <Text style={[styles.courseChipText, { color: !selectedCourse ? (isDarkBg ? '#FFFFFF' : '#111827') : (isDarkBg ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)') }]}>Allmänt</Text>
               </TouchableOpacity>
               {courses.map((course) => (
                 <TouchableOpacity
@@ -1354,15 +1380,15 @@ export default function TimerScreen() {
                   style={[
                     styles.courseChip,
                     { 
-                      backgroundColor: selectedCourse === course.id ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.04)',
-                      borderColor: selectedCourse === course.id ? 'rgba(0,0,0,0.2)' : 'transparent',
+                      backgroundColor: selectedCourse === course.id ? (isDarkBg ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.1)') : (isDarkBg ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)'),
+                      borderColor: selectedCourse === course.id ? (isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)') : 'transparent',
                       borderWidth: 1,
                     }
                   ]}
                   onPress={() => setSelectedCourse(course.id)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.courseChipText, { color: selectedCourse === course.id ? '#111827' : 'rgba(0,0,0,0.4)' }]} numberOfLines={1}>{course.title}</Text>
+                  <Text style={[styles.courseChipText, { color: selectedCourse === course.id ? (isDarkBg ? '#FFFFFF' : '#111827') : (isDarkBg ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)') }]} numberOfLines={1}>{course.title}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -1379,15 +1405,15 @@ export default function TimerScreen() {
                     style={[
                       styles.quickTimeChip,
                       { 
-                        backgroundColor: focusTime === time ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.05)',
-                        borderColor: focusTime === time ? 'rgba(0,0,0,0.22)' : 'transparent',
+                        backgroundColor: focusTime === time ? (isDarkBg ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.1)') : (isDarkBg ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
+                        borderColor: focusTime === time ? (isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.22)') : 'transparent',
                         borderWidth: 1,
                       }
                     ]}
                     onPress={() => { setFocusTime(time); setTimeLeft(time * 60); }}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.quickTimeText, { color: focusTime === time ? '#111827' : 'rgba(0,0,0,0.4)' }]}>{time} min</Text>
+                    <Text style={[styles.quickTimeText, { color: focusTime === time ? (isDarkBg ? '#FFFFFF' : '#111827') : (isDarkBg ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)') }]}>{time} min</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -1397,8 +1423,8 @@ export default function TimerScreen() {
                 onPress={startTimer}
                 activeOpacity={0.85}
               >
-                <View style={styles.playButtonInner}>
-                  <Play size={28} color="#FFFFFF" fill="#FFFFFF" />
+                <View style={[styles.playButtonInner, { backgroundColor: isDarkBg ? '#FFFFFF' : '#111827' }]}>
+                  <Play size={28} color={isDarkBg ? '#111827' : '#FFFFFF'} fill={isDarkBg ? '#111827' : '#FFFFFF'} />
                 </View>
               </TouchableOpacity>
             </View>
@@ -1417,17 +1443,17 @@ export default function TimerScreen() {
                 onPress={timerState === 'running' ? pauseTimer : startTimer}
                 activeOpacity={0.85}
               >
-                <View style={styles.mainControlInner}>
+                <View style={[styles.mainControlInner, { backgroundColor: isDarkBg ? '#FFFFFF' : '#111827' }]}>
                   {timerState === 'running' ? (
-                    <Pause size={26} color="#FFFFFF" fill="#FFFFFF" />
+                    <Pause size={26} color={isDarkBg ? '#111827' : '#FFFFFF'} fill={isDarkBg ? '#111827' : '#FFFFFF'} />
                   ) : (
-                    <Play size={26} color="#FFFFFF" fill="#FFFFFF" />
+                    <Play size={26} color={isDarkBg ? '#111827' : '#FFFFFF'} fill={isDarkBg ? '#111827' : '#FFFFFF'} />
                   )}
                 </View>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.controlButton, { backgroundColor: 'rgba(0,0,0,0.06)' }]} 
+                style={[styles.controlButton, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]} 
                 onPress={async () => {
                   setSessionType(sessionType === 'focus' ? 'break' : 'focus');
                   setTimeLeft(sessionType === 'focus' ? breakTime * 60 : focusTime * 60);
@@ -1438,7 +1464,7 @@ export default function TimerScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <SkipForward size={20} color="rgba(0,0,0,0.45)" />
+                <SkipForward size={20} color={isDarkBg ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)'} />
               </TouchableOpacity>
             </View>
           )}
@@ -1450,15 +1476,16 @@ export default function TimerScreen() {
             { value: `${sessionCount}/${dailyGoal}`, label: 'Dagsmål', icon: Target, color: '#A78BFA' },
             { value: `${todayStats.minutes}m`, label: 'Idag', icon: Zap, color: '#34D399' },
           ].map((stat, i) => (
-            <View key={i} style={[styles.statMiniCard, { backgroundColor: 'rgba(0,0,0,0.05)' }]}>
+            <View key={i} style={[styles.statMiniCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.05)' }]}>
               <View style={[styles.statMiniIcon, { backgroundColor: stat.color + '22' }]}>
                 <stat.icon size={16} color={stat.color} />
               </View>
-              <Text style={[styles.statMiniValue, { color: '#111827' }]}>{stat.value}</Text>
-              <Text style={[styles.statMiniLabel, { color: 'rgba(0,0,0,0.4)' }]}>{stat.label}</Text>
+              <Text style={[styles.statMiniValue, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>{stat.value}</Text>
+              <Text style={[styles.statMiniLabel, { color: isDarkBg ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)' }]}>{stat.label}</Text>
             </View>
           ))}
         </View>
+        </LinearGradient>
 
         <View style={[styles.sectionContainer, { backgroundColor: theme.colors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 24, marginTop: 4 }]}>
           <TouchableOpacity 
@@ -1661,34 +1688,40 @@ export default function TimerScreen() {
           )}
         </View>
 
-        <View style={[styles.sectionContainer, { backgroundColor: theme.colors.background, paddingTop: 24 }]}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
+        <View style={[styles.sectionContainer, { backgroundColor: theme.colors.background, paddingTop: 28 }]}>
+          <View style={styles.statsSectionHeader}>
+            <View style={styles.statsSectionTitleRow}>
+              <View style={[styles.statsSectionAccent, { backgroundColor: theme.colors.primary }]} />
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
+            </View>
+            <Text style={[styles.statsSectionSubtitle, { color: theme.colors.textMuted }]}>Din studieprestanda</Text>
+          </View>
           <PremiumGate feature="statistics" fullScreen={false}>
 
-          <View style={[styles.focusScoreCard, { backgroundColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.05)' }]}>
+          <View style={[styles.focusScoreCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.07, shadowRadius: 14, elevation: 3 }]}>
             <View style={styles.focusScoreRow}>
               <View style={styles.focusScoreLeft}>
                 <Text style={[styles.focusScoreLabel, { color: theme.colors.textMuted }]}>FOKUSPOÄNG</Text>
                 <Text style={[styles.focusScoreValue, { color: theme.colors.text }]}>{focusScore.score}</Text>
-                <View style={[styles.focusScoreBadge, { backgroundColor: theme.colors.primary + '14' }]}>
-                  <Trophy size={12} color={theme.colors.primary} />
+                <View style={[styles.focusScoreBadge, { backgroundColor: theme.colors.primary + '18' }]}>
+                  <Trophy size={11} color={theme.colors.primary} />
                   <Text style={[styles.focusScoreLevel, { color: theme.colors.primary }]}>{focusScore.level}</Text>
                 </View>
               </View>
               <View style={styles.focusScoreRight}>
-                <Svg width={90} height={90}>
-                  <Circle cx={45} cy={45} r={38} stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'} strokeWidth={5} fill="none" />
-                  <Circle cx={45} cy={45} r={38} stroke={theme.colors.primary} strokeWidth={5} fill="none" strokeDasharray={2 * Math.PI * 38} strokeDashoffset={2 * Math.PI * 38 * (1 - focusScore.score / 100)} strokeLinecap="round" transform="rotate(-90 45 45)" />
+                <Svg width={96} height={96}>
+                  <Circle cx={48} cy={48} r={40} stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'} strokeWidth={6} fill="none" />
+                  <Circle cx={48} cy={48} r={40} stroke={theme.colors.primary} strokeWidth={6} fill="none" strokeDasharray={2 * Math.PI * 40} strokeDashoffset={2 * Math.PI * 40 * (1 - focusScore.score / 100)} strokeLinecap="round" transform="rotate(-90 48 48)" />
                 </Svg>
                 <View style={styles.focusScoreCenter}>
-                  <Award size={22} color={theme.colors.primary} />
+                  <Award size={24} color={theme.colors.primary} />
                 </View>
               </View>
             </View>
             <Text style={[styles.focusScoreDesc, { color: theme.colors.textSecondary }]}>{focusScore.description}</Text>
           </View>
 
-          <View style={[styles.viewToggle, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]}>
+          <View style={[styles.viewToggle, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#EBEBEB' }]}>
             {(['day', 'week'] as const).map((view) => (
               <TouchableOpacity 
                 key={view}
@@ -1713,9 +1746,9 @@ export default function TimerScreen() {
               { value: selectedStatView === 'day' ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m` : `${Math.floor(weekStats.minutes / 60)}h`, label: 'Total tid', icon: Zap, color: '#F59E0B' },
               { value: streakStats.longest.toString(), label: 'Bästa streak', icon: Flame, color: '#EF4444' },
             ].map((stat, i) => (
-              <View key={i} style={[styles.statsGridCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
-                <View style={[styles.statsGridIcon, { backgroundColor: stat.color + '14' }]}>
-                  <stat.icon size={16} color={stat.color} />
+              <View key={i} style={[styles.statsGridCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+                <View style={[styles.statsGridIcon, { backgroundColor: stat.color + '18' }]}>
+                  <stat.icon size={17} color={stat.color} />
                 </View>
                 <Text style={[styles.statsGridValue, { color: theme.colors.text }]}>{stat.value}</Text>
                 <Text style={[styles.statsGridLabel, { color: theme.colors.textMuted }]}>{stat.label}</Text>
@@ -1723,7 +1756,7 @@ export default function TimerScreen() {
             ))}
           </View>
 
-          <View style={[styles.weekComparisonCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+          <View style={[styles.weekComparisonCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.weekComparisonHeader}>
               <BarChart3 size={16} color={theme.colors.primary} />
               <Text style={[styles.weekComparisonTitle, { color: theme.colors.text }]}>Veckoförändring</Text>
@@ -1756,7 +1789,7 @@ export default function TimerScreen() {
           </View>
 
           {selectedStatView === 'week' && (
-            <View style={[styles.weeklyGraph, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+            <View style={[styles.weeklyGraph, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
               <Text style={[styles.graphTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
               <View style={styles.graphBars}>
                 {weekStats.dailyStats.map((day: any, i: number) => {
@@ -1792,7 +1825,7 @@ export default function TimerScreen() {
             </View>
           )}
 
-          <View style={[styles.productivityCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+          <View style={[styles.productivityCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Activity size={16} color={theme.colors.secondary} />
               <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>Produktivitet per tid</Text>
@@ -1827,7 +1860,7 @@ export default function TimerScreen() {
           </View>
 
           {courseDistribution.length > 0 && (
-            <View style={[styles.courseDistCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+            <View style={[styles.courseDistCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
               <View style={styles.cardHeader}>
                 <PieChart size={16} color={theme.colors.primary} />
                 <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>Kursfördelning</Text>
@@ -1848,7 +1881,7 @@ export default function TimerScreen() {
             </View>
           )}
 
-          <View style={[styles.heatmapCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+          <View style={[styles.heatmapCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Calendar size={16} color={theme.colors.warning} />
               <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>
@@ -1920,7 +1953,7 @@ export default function TimerScreen() {
               { value: `${Math.floor(totalAllTime / 60)}h`, label: 'Totalt', icon: Target, color: theme.colors.secondary },
               { value: `${pomodoroSessions.length > 0 ? Math.round(totalAllTime / pomodoroSessions.length) : 0}m`, label: 'Snitt', icon: Brain, color: theme.colors.warning },
             ].map((stat, i) => (
-              <View key={i} style={[styles.extraStatCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+              <View key={i} style={[styles.extraStatCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
                 <stat.icon size={16} color={stat.color} />
                 <Text style={[styles.extraStatValue, { color: theme.colors.text }]}>{stat.value}</Text>
                 <Text style={[styles.extraStatLabel, { color: theme.colors.textMuted }]}>{stat.label}</Text>
@@ -1928,7 +1961,7 @@ export default function TimerScreen() {
             ))}
           </View>
 
-          <View style={[styles.insightsCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+          <View style={[styles.insightsCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Lightbulb size={16} color="#F59E0B" />
               <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>Insikter</Text>
@@ -1936,7 +1969,7 @@ export default function TimerScreen() {
             {studyInsights.map((insight, index) => (
               <View 
                 key={index} 
-                style={[styles.insightItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)' }]}
+                style={[styles.insightItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8F9FA' }]}
               >
                 <Text style={styles.insightEmoji}>{insight.icon}</Text>
                 <View style={styles.insightContent}>
@@ -2258,6 +2291,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  timerBackground: {
+    paddingBottom: 4,
+  },
+  bgPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  bgPickerDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  bgPickerDotActive: {
+    borderWidth: 2.5,
+  },
+  statsSectionHeader: {
+    marginBottom: 18,
+  },
+  statsSectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  statsSectionAccent: {
+    width: 4,
+    height: 26,
+    borderRadius: 2,
+  },
+  statsSectionSubtitle: {
+    fontSize: 13,
+    fontWeight: '400',
+    marginLeft: 14,
+    marginTop: 2,
+  },
   scrollView: {
     flex: 1,
   },
@@ -2524,10 +2598,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    marginBottom: 16,
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.8,
+    marginBottom: 0,
   },
   expandableCard: {
     borderRadius: 16,
@@ -2683,16 +2757,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   focusScoreLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 1,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.2,
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
   focusScoreValue: {
-    fontSize: 48,
-    fontWeight: '800',
-    letterSpacing: -2,
-    lineHeight: 52,
+    fontSize: 56,
+    fontWeight: '900',
+    letterSpacing: -3,
+    lineHeight: 60,
   },
   focusScoreBadge: {
     flexDirection: 'row',
@@ -2759,17 +2834,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statsGridValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.8,
     marginBottom: 2,
     textAlign: 'center',
   },
   statsGridLabel: {
     fontSize: 10,
-    fontWeight: '500',
+    fontWeight: '600',
     textAlign: 'center',
-    letterSpacing: 0.2,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   weekComparisonCard: {
     borderRadius: 14,
@@ -2783,8 +2859,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   weekComparisonTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   weekComparisonContent: {
     flexDirection: 'row',
@@ -2800,9 +2877,9 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   weekComparisonValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+    fontSize: 19,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
   weekComparisonDivider: {
     width: 1,
@@ -2827,9 +2904,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   graphTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     marginBottom: 14,
+    letterSpacing: -0.2,
   },
   graphBars: {
     flexDirection: 'row',
@@ -2869,8 +2947,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardHeaderTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   productivityBars: {
     gap: 14,
@@ -3015,11 +3094,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   extraStatValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     marginTop: 8,
     marginBottom: 2,
-    letterSpacing: -0.3,
+    letterSpacing: -0.8,
   },
   extraStatLabel: {
     fontSize: 10,
@@ -3047,13 +3126,14 @@ const styles = StyleSheet.create({
   },
   insightTitle: {
     fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontWeight: '700',
+    marginBottom: 3,
+    letterSpacing: -0.1,
   },
   insightDesc: {
     fontSize: 12,
     fontWeight: '400',
-    lineHeight: 17,
+    lineHeight: 18,
   },
   completionOverlay: {
     flex: 1,

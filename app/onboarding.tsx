@@ -92,14 +92,14 @@ const TESTIMONIALS = [
   {
     text: 'Äntligen en app som förstår hur stressigt det är att plugga. AI-flashcards är magiska!',
     name: 'Viktor',
-    age: 21,
+    age: 20,
     city: 'Göteborg',
   },
   {
-    text: 'AI-flashcards sparade mig timmar inför tentan. 10/10 rekommenderar!',
-    name: 'Sara',
-    age: 20,
-    city: 'Malmö',
+    text: 'Quizzen sparade mig timmar inför tentan. 10/10 rekommenderar!',
+    name: 'Erik',
+    age: 18,
+    city: 'Gävle',
   },
 ];
 

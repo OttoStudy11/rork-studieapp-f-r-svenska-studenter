@@ -966,10 +966,6 @@ function NotAloneStep({ data }: StepProps) {
         81% vill ha bättre <Text style={styles.bold}>studierutiner</Text>.{'\n\n'}
         Vi är här för att hjälpa 🙏
       </Text>
-      <TouchableOpacity style={[styles.cta, { marginTop: 32 }]} activeOpacity={0.85}>
-        <Text style={styles.ctaText}>Fortsätt</Text>
-        <ArrowRight size={18} color="#fff" />
-      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -1180,11 +1176,11 @@ function PaywallStep({ offerings, selectedPkg, setSelectedPkg, isPurchasing, isR
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.paywallTitle}>Starta din 7-dagars{'\n'}provperiod.</Text>
+      <Text style={styles.paywallTitle}>{'Få full tillgång till\nStudieStugan Premium.'}</Text>
       <Text style={styles.paywallSub}>Avsluta när du vill.</Text>
 
       <Text style={[styles.bigBody, { textAlign: 'left', marginTop: 12, marginBottom: 20 }]}>
-        Vi vill bara att du ska använda StudieStugan om det <Text style={styles.bold}>verkligen förändrar dina studieresultat</Text>. Börja med en 7-dagars gratis provperiod – avsluta när som helst.
+        Vi vill att du ska använda StudieStugan om det <Text style={styles.bold}>verkligen förändrar dina studieresultat</Text>. Välj en plan och kom igång direkt.
       </Text>
 
       <Text style={styles.featuresSectionTitle}>Allt ingår i Premium:</Text>
@@ -1242,7 +1238,7 @@ function PaywallStep({ offerings, selectedPkg, setSelectedPkg, isPurchasing, isR
         {isPurchasing ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <Text style={styles.ctaText}>Starta din 7-dagars provperiod</Text>
+          <Text style={styles.ctaText}>Kom igång med Premium</Text>
         )}
       </TouchableOpacity>
 

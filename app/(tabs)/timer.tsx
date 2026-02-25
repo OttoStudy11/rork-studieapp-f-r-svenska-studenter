@@ -309,6 +309,10 @@ export default function TimerScreen() {
   const handleTimerCompleteRef = useRef<(() => Promise<void>) | null>(null);
   const isCompletingRef = useRef<boolean>(false);
   const sessionStartTimeRef = useRef<Date | null>(null);
+  const sessionTypeRef = useRef<SessionType>(sessionType);
+  const selectedCourseRef = useRef<string>(selectedCourse);
+  const focusTimeRef = useRef<number>(focusTime);
+  const breakTimeRef = useRef<number>(breakTime);
   const addPomodoroSessionRef = useRef(addPomodoroSession);
   const awardStudySessionRef = useRef(awardStudySession);
   const coursesRef = useRef(courses);
@@ -322,6 +326,16 @@ export default function TimerScreen() {
   useEffect(() => {
     lastKnownTimeLeftRef.current = timeLeft;
   }, [timeLeft]);
+
+  useEffect(() => { sessionTypeRef.current = sessionType; }, [sessionType]);
+  useEffect(() => { selectedCourseRef.current = selectedCourse; }, [selectedCourse]);
+  useEffect(() => { focusTimeRef.current = focusTime; }, [focusTime]);
+  useEffect(() => { breakTimeRef.current = breakTime; }, [breakTime]);
+  useEffect(() => { addPomodoroSessionRef.current = addPomodoroSession; }, [addPomodoroSession]);
+  useEffect(() => { awardStudySessionRef.current = awardStudySession; }, [awardStudySession]);
+  useEffect(() => { coursesRef.current = courses; }, [courses]);
+  useEffect(() => { checkAchievementsRef.current = checkAchievements; }, [checkAchievements]);
+  useEffect(() => { refreshAchievementsRef.current = refreshAchievements; }, [refreshAchievements]);
 
   const motivationalQuotes = useMemo(() => [
     'Du är fantastisk! Fortsätt så! 💪',
@@ -441,8 +455,18 @@ export default function TimerScreen() {
             setSelectedCourse(savedState.courseId || '');
           }
           if (savedState.sessionStartTimestamp) {
-            sessionStartTimeRef.current = new Date(savedState.sessionStartTimestamp);
-            setSessionStartTime(new Date(savedState.sessionStartTimestamp));
+            const startDate = new Date(savedState.sessionStartTimestamp);
+            sessionStartTimeRef.current = startDate;
+            setSessionStartTime(startDate);
+          }
+          if (savedState.courseId !== undefined) {
+            selectedCourseRef.current = savedState.courseId || '';
+          }
+          if (savedState.sessionType) {
+            sessionTypeRef.current = savedState.sessionType;
+          }
+          if (savedState.totalDuration) {
+            focusTimeRef.current = Math.round(savedState.totalDuration / 60);
           }
           await TimerPersistence.clearTimerState();
           setTimeout(async () => {
@@ -585,7 +609,17 @@ export default function TimerScreen() {
     }
     
     isCompletingRef.current = true;
-    console.log('✅ Timer completed! Session type:', sessionType, 'Duration:', sessionType === 'focus' ? focusTime : breakTime, 'minutes');
+
+    // Use refs so we always have fresh values even when called from background restoration
+    const currentSessionType = sessionTypeRef.current;
+    const currentFocusTime = focusTimeRef.current;
+    const currentBreakTime = breakTimeRef.current;
+    const currentSelectedCourse = selectedCourseRef.current;
+    const currentSessionStartTime = sessionStartTimeRef.current;
+    const currentCourses = coursesRef.current;
+
+    console.log('✅ Timer completed! Session type:', currentSessionType, 'Duration:', currentSessionType === 'focus' ? currentFocusTime : currentBreakTime, 'minutes');
+    console.log('📅 Session start time:', currentSessionStartTime?.toISOString() ?? 'null');
     
     try {
       setTimerState('idle');
@@ -595,35 +629,35 @@ export default function TimerScreen() {
       await hapticsManager.triggerHaptic('success');
       await TimerPersistence.clearTimerState();
       
-      if (isDndActive && sessionType === 'focus') {
+      if (isDndActive && currentSessionType === 'focus') {
         await disableDoNotDisturb();
       }
       
-      if (sessionType === 'focus' && sessionStartTime) {
+      if (currentSessionType === 'focus' && currentSessionStartTime) {
         try {
           console.log('💾 Saving pomodoro session to database...');
-          await addPomodoroSession({
-            courseId: selectedCourse || undefined,
-            duration: focusTime,
-            startTime: sessionStartTime.toISOString(),
+          await addPomodoroSessionRef.current({
+            courseId: currentSelectedCourse || undefined,
+            duration: currentFocusTime,
+            startTime: currentSessionStartTime.toISOString(),
             endTime: new Date().toISOString()
           });
           console.log('✅ Pomodoro session saved');
           
-          const courseName = selectedCourse 
-            ? courses.find((c) => c.id === selectedCourse)?.title || 'Okänd kurs'
+          const courseName = currentSelectedCourse 
+            ? currentCourses.find((c) => c.id === currentSelectedCourse)?.title || 'Okänd kurs'
             : 'Allmän session';
           
           setSessionCount(prev => prev + 1);
           
-          let pointsEarned = focusTime;
+          let pointsEarned = currentFocusTime;
           try {
-            console.log('🎯 Awarding', focusTime, 'minutes of study XP...');
-            const levelUpEvent = await awardStudySession(focusTime, selectedCourse || undefined);
+            console.log('🎯 Awarding', currentFocusTime, 'minutes of study XP...');
+            const levelUpEvent = await awardStudySessionRef.current(currentFocusTime, currentSelectedCourse || undefined);
             if (levelUpEvent) {
               console.log(`🎉 Level up! ${levelUpEvent.previousLevel} -> ${levelUpEvent.newLevel}`);
             }
-            pointsEarned = Math.floor(focusTime / 5) * 5;
+            pointsEarned = Math.floor(currentFocusTime / 5) * 5;
             console.log('✅ Study session XP awarded:', pointsEarned, 'XP');
           } catch (xpError) {
             console.error('❌ Failed to award study session XP:', xpError);
@@ -631,15 +665,15 @@ export default function TimerScreen() {
           
           try {
             console.log('🏆 Checking for achievements...');
-            await checkAchievements();
-            await refreshAchievements();
+            await checkAchievementsRef.current();
+            await refreshAchievementsRef.current();
             console.log('✅ Achievements checked');
           } catch (achError) {
             console.error('❌ Failed to check achievements:', achError);
           }
           
           setCompletedSessionData({
-            duration: focusTime,
+            duration: currentFocusTime,
             sessionType: 'focus',
             courseName,
             coinsEarned: pointsEarned
@@ -662,7 +696,7 @@ export default function TimerScreen() {
         }
       } else {
         setCompletedSessionData({
-          duration: breakTime,
+          duration: currentBreakTime,
           sessionType: 'break',
           courseName: 'Paus',
           coinsEarned: 0
@@ -670,12 +704,14 @@ export default function TimerScreen() {
         setShowCompletionScreen(true);
       }
 
-      if (sessionType === 'focus') {
+      if (currentSessionType === 'focus') {
         setSessionType('break');
-        setTimeLeft(breakTime * 60);
+        sessionTypeRef.current = 'break';
+        setTimeLeft(currentBreakTime * 60);
       } else {
         setSessionType('focus');
-        setTimeLeft(focusTime * 60);
+        sessionTypeRef.current = 'focus';
+        setTimeLeft(currentFocusTime * 60);
       }
       
       setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
@@ -684,7 +720,7 @@ export default function TimerScreen() {
         isCompletingRef.current = false;
       }, 1000);
     }
-  }, [sessionType, isDndActive, disableDoNotDisturb, addPomodoroSession, selectedCourse, courses, focusTime, sessionStartTime, sessionCount, dailyGoal, showAchievement, breakTime, motivationalQuotes, checkAchievements, refreshAchievements, settings.notificationsEnabled, awardStudySession]);
+  }, [isDndActive, disableDoNotDisturb, sessionCount, dailyGoal, showAchievement, motivationalQuotes, settings.notificationsEnabled]);
 
   useEffect(() => {
     handleTimerCompleteRef.current = handleTimerComplete;
@@ -743,8 +779,18 @@ export default function TimerScreen() {
                 setSelectedCourse(savedState.courseId || '');
               }
               if (savedState.sessionStartTimestamp) {
-                sessionStartTimeRef.current = new Date(savedState.sessionStartTimestamp);
-                setSessionStartTime(new Date(savedState.sessionStartTimestamp));
+                const startDate = new Date(savedState.sessionStartTimestamp);
+                sessionStartTimeRef.current = startDate;
+                setSessionStartTime(startDate);
+              }
+              if (savedState.courseId !== undefined) {
+                selectedCourseRef.current = savedState.courseId || '';
+              }
+              if (savedState.sessionType) {
+                sessionTypeRef.current = savedState.sessionType;
+              }
+              if (savedState.totalDuration) {
+                focusTimeRef.current = Math.round(savedState.totalDuration / 60);
               }
               if (handleTimerCompleteRef.current && !isCompletingRef.current) {
                 await handleTimerCompleteRef.current();
@@ -861,6 +907,7 @@ export default function TimerScreen() {
     if (timerState === 'idle') {
       const startDate = new Date(now);
       setSessionStartTime(startDate);
+      sessionStartTimeRef.current = startDate;
       
       const durationSeconds = sessionType === 'focus' ? focusTime * 60 : breakTime * 60;
       timerEndTimeRef.current = now + (durationSeconds * 1000);

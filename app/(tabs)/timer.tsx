@@ -346,6 +346,12 @@ export default function TimerScreen() {
   const lastKnownTimeLeftRef = useRef<number>(timeLeft);
   const handleTimerCompleteRef = useRef<(() => Promise<void>) | null>(null);
   const isCompletingRef = useRef<boolean>(false);
+  const sessionStartTimeRef = useRef<Date | null>(null);
+  const addPomodoroSessionRef = useRef(addPomodoroSession);
+  const awardStudySessionRef = useRef(awardStudySession);
+  const coursesRef = useRef(courses);
+  const checkAchievementsRef = useRef(checkAchievements);
+  const refreshAchievementsRef = useRef(refreshAchievements);
 
 
   const totalTime = sessionType === 'focus' ? focusTime * 60 : breakTime * 60;
@@ -465,12 +471,30 @@ export default function TimerScreen() {
         console.log('⏱️ Remaining time:', savedState.remainingTime, 'seconds');
         
         if (savedState.remainingTime <= 0) {
-          // Timer completed while app was closed
-          console.log('✅ Timer completed while app was closed');
+          // Timer completed while app was closed - save the session
+          console.log('✅ Timer completed while app was closed, saving session...');
           timerEndTimeRef.current = null;
           setTimerState('idle');
-          setSessionType(savedState.sessionType === 'focus' ? 'break' : 'focus');
+          setSessionType(savedState.sessionType);
+          if (savedState.sessionType === 'focus') {
+            const duration = Math.round(savedState.totalDuration / 60);
+            setFocusTime(duration);
+          }
+          if (savedState.courseId !== undefined) {
+            setSelectedCourse(savedState.courseId || '');
+          }
+          // Restore original session start time so handleTimerComplete can save the session
+          if (savedState.sessionStartTimestamp) {
+            sessionStartTimeRef.current = new Date(savedState.sessionStartTimestamp);
+            setSessionStartTime(new Date(savedState.sessionStartTimestamp));
+          }
           await TimerPersistence.clearTimerState();
+          // Delay slightly so state updates and refs settle before saving
+          setTimeout(async () => {
+            if (handleTimerCompleteRef.current && !isCompletingRef.current) {
+              await handleTimerCompleteRef.current();
+            }
+          }, 500);
         } else {
           // Set end time based on remaining time
           const now = Date.now();
@@ -480,7 +504,11 @@ export default function TimerScreen() {
           setTimerState(savedState.status);
           setSessionType(savedState.sessionType);
           setTimeLeft(savedState.remainingTime);
-          setSessionStartTime(new Date(savedState.startTimestamp));
+          const startTime = savedState.sessionStartTimestamp 
+            ? new Date(savedState.sessionStartTimestamp) 
+            : new Date(savedState.startTimestamp);
+          setSessionStartTime(startTime);
+          sessionStartTimeRef.current = startTime;
           setSelectedCourse(savedState.courseId || '');
           
           await TimerPersistence.scheduleCompletionNotification(
@@ -736,13 +764,14 @@ export default function TimerScreen() {
             ? Math.max(0, Math.ceil((timerEndTimeRef.current - now) / 1000))
             : lastKnownTimeLeftRef.current;
           
-          // Save current state with accurate remaining time
+          // Save current state with accurate remaining time and original session start
           await TimerPersistence.saveTimerState({
             status: 'running',
             sessionType,
             totalDuration: sessionType === 'focus' ? focusTime * 60 : breakTime * 60,
             remainingTime,
             startTimestamp: now,
+            sessionStartTimestamp: sessionStartTimeRef.current?.getTime() ?? now,
             courseId: selectedCourse || undefined,
             courseName,
           });
@@ -767,6 +796,18 @@ export default function TimerScreen() {
               console.log('✅ Timer completed in background, completing now...');
               timerEndTimeRef.current = null;
               setTimerState('idle');
+              setSessionType(savedState.sessionType);
+              if (savedState.sessionType === 'focus') {
+                setFocusTime(Math.round(savedState.totalDuration / 60));
+              }
+              if (savedState.courseId !== undefined) {
+                setSelectedCourse(savedState.courseId || '');
+              }
+              // Restore session start time so the session can be saved
+              if (savedState.sessionStartTimestamp) {
+                sessionStartTimeRef.current = new Date(savedState.sessionStartTimestamp);
+                setSessionStartTime(new Date(savedState.sessionStartTimestamp));
+              }
               // Complete the timer
               if (handleTimerCompleteRef.current && !isCompletingRef.current) {
                 await handleTimerCompleteRef.current();
@@ -926,12 +967,14 @@ export default function TimerScreen() {
       ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
       : 'Allmän session';
     
+    const sessionOriginalStart = timerState === 'idle' ? now : (sessionStartTimeRef.current?.getTime() ?? now);
     await TimerPersistence.saveTimerState({
       status: 'running',
       sessionType,
       totalDuration: sessionType === 'focus' ? focusTime * 60 : breakTime * 60,
       remainingTime: timeLeft,
       startTimestamp: now,
+      sessionStartTimestamp: sessionOriginalStart,
       courseId: selectedCourse || undefined,
       courseName,
     });

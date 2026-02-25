@@ -14,6 +14,7 @@ export interface TimerState {
   totalDuration: number;
   remainingTime: number;
   startTimestamp: number;
+  sessionStartTimestamp?: number;
   pausedAt?: number;
   courseId?: string;
   courseName: string;
@@ -42,7 +43,8 @@ export class TimerPersistence {
         state.remainingTime = Math.max(0, state.remainingTime - elapsed);
         
         if (state.remainingTime <= 0) {
-          state.status = 'idle';
+          state.remainingTime = 0;
+          // Keep status as 'running' so callers know the session completed and needs saving
         } else {
           state.startTimestamp = now;
         }

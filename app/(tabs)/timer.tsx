@@ -1231,7 +1231,7 @@ export default function TimerScreen() {
       const isActive = (i / totalTicks) <= elapsed;
       elements.push(
         <React.Fragment key={`tick-${i}`}>
-          <Circle cx={x1} cy={y1} r={isMajor ? 1.5 : 1.0} fill={isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.18)'} />
+          <Circle cx={x1} cy={y1} r={isMajor ? 1.5 : 1.0} fill={isActive ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.13)'} />
           <Circle cx={x2} cy={y2} r={0.1} fill="transparent" />
         </React.Fragment>
       );
@@ -1243,45 +1243,45 @@ export default function TimerScreen() {
     const ny = center + nLen * Math.sin(needleAngle);
     elements.push(
       <React.Fragment key="needle">
-        <Circle cx={nx} cy={ny} r={4} fill="white" />
-        <Circle cx={center} cy={center} r={4} fill="rgba(255,255,255,0.5)" />
+        <Circle cx={nx} cy={ny} r={4} fill="#111827" />
+        <Circle cx={center} cy={center} r={4} fill="rgba(0,0,0,0.3)" />
       </React.Fragment>
     );
     return elements;
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: '#0D1117' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#0D1117" />
+    <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: '#0D1117' }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: '#FFFFFF' }]}>
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
-              <Text style={[styles.headerTitle, { color: '#FFFFFF' }]}>Timer</Text>
+              <Text style={[styles.headerTitle, { color: '#111827' }]}>Timer</Text>
             </View>
             <View style={styles.headerRight}>
               <TouchableOpacity
-                style={[styles.headerIconButton, { backgroundColor: 'rgba(255,255,255,0.08)' }]}
+                style={[styles.headerIconButton, { backgroundColor: 'rgba(0,0,0,0.06)' }]}
                 onPress={() => { soundManager.setEnabled(!settings.soundEnabled); }}
                 activeOpacity={0.7}
               >
                 {settings.soundEnabled ? (
-                  <Volume2 size={18} color="rgba(255,255,255,0.7)" />
+                  <Volume2 size={18} color="rgba(0,0,0,0.5)" />
                 ) : (
-                  <VolumeX size={18} color="rgba(255,255,255,0.35)" />
+                  <VolumeX size={18} color="rgba(0,0,0,0.25)" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.headerIconButton, { backgroundColor: 'rgba(255,255,255,0.08)' }]}
+                style={[styles.headerIconButton, { backgroundColor: 'rgba(0,0,0,0.06)' }]}
                 onPress={() => setShowSettings(true)}
                 activeOpacity={0.7}
               >
-                <Settings size={18} color="rgba(255,255,255,0.7)" />
+                <Settings size={18} color="rgba(0,0,0,0.5)" />
               </TouchableOpacity>
             </View>
           </View>
@@ -1300,14 +1300,14 @@ export default function TimerScreen() {
                   cx={timerCircleSize / 2}
                   cy={timerCircleSize / 2}
                   r={timerCircleSize / 2}
-                  fill="#111827"
+                  fill="#F8F8F8"
                 />
                 {renderWatchFace()}
                 <Circle
                   cx={timerCircleSize / 2}
                   cy={timerCircleSize / 2}
                   r={timerRadius}
-                  stroke="rgba(255,255,255,0.06)"
+                  stroke="rgba(0,0,0,0.06)"
                   strokeWidth={1}
                   fill="none"
                 />
@@ -1315,7 +1315,7 @@ export default function TimerScreen() {
                   cx={timerCircleSize / 2}
                   cy={timerCircleSize / 2}
                   r={timerRadius}
-                  stroke="rgba(255,255,255,0.65)"
+                  stroke="rgba(0,0,0,0.75)"
                   strokeWidth={1.5}
                   fill="none"
                   strokeDasharray={circumference}
@@ -1332,21 +1332,21 @@ export default function TimerScreen() {
 
         {sessionType === 'focus' && timerState === 'idle' && (
           <View style={styles.courseSection}>
-            <Text style={[styles.sectionLabel, { color: 'rgba(255,255,255,0.4)' }]}>KURS</Text>
+            <Text style={[styles.sectionLabel, { color: 'rgba(0,0,0,0.35)' }]}>KURS</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.courseListContent}>
               <TouchableOpacity
                 style={[
                   styles.courseChip,
                   { 
-                    backgroundColor: !selectedCourse ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)',
-                    borderColor: !selectedCourse ? 'rgba(255,255,255,0.3)' : 'transparent',
+                    backgroundColor: !selectedCourse ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.04)',
+                    borderColor: !selectedCourse ? 'rgba(0,0,0,0.2)' : 'transparent',
                     borderWidth: 1,
                   }
                 ]}
                 onPress={() => setSelectedCourse('')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.courseChipText, { color: !selectedCourse ? '#FFFFFF' : 'rgba(255,255,255,0.5)' }]}>Allmänt</Text>
+                <Text style={[styles.courseChipText, { color: !selectedCourse ? '#111827' : 'rgba(0,0,0,0.4)' }]}>Allmänt</Text>
               </TouchableOpacity>
               {courses.map((course) => (
                 <TouchableOpacity
@@ -1354,15 +1354,15 @@ export default function TimerScreen() {
                   style={[
                     styles.courseChip,
                     { 
-                      backgroundColor: selectedCourse === course.id ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)',
-                      borderColor: selectedCourse === course.id ? 'rgba(255,255,255,0.3)' : 'transparent',
+                      backgroundColor: selectedCourse === course.id ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.04)',
+                      borderColor: selectedCourse === course.id ? 'rgba(0,0,0,0.2)' : 'transparent',
                       borderWidth: 1,
                     }
                   ]}
                   onPress={() => setSelectedCourse(course.id)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.courseChipText, { color: selectedCourse === course.id ? '#FFFFFF' : 'rgba(255,255,255,0.5)' }]} numberOfLines={1}>{course.title}</Text>
+                  <Text style={[styles.courseChipText, { color: selectedCourse === course.id ? '#111827' : 'rgba(0,0,0,0.4)' }]} numberOfLines={1}>{course.title}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -1379,15 +1379,15 @@ export default function TimerScreen() {
                     style={[
                       styles.quickTimeChip,
                       { 
-                        backgroundColor: focusTime === time ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.07)',
-                        borderColor: focusTime === time ? 'rgba(255,255,255,0.35)' : 'transparent',
+                        backgroundColor: focusTime === time ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.05)',
+                        borderColor: focusTime === time ? 'rgba(0,0,0,0.22)' : 'transparent',
                         borderWidth: 1,
                       }
                     ]}
                     onPress={() => { setFocusTime(time); setTimeLeft(time * 60); }}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.quickTimeText, { color: focusTime === time ? '#FFFFFF' : 'rgba(255,255,255,0.45)' }]}>{time} min</Text>
+                    <Text style={[styles.quickTimeText, { color: focusTime === time ? '#111827' : 'rgba(0,0,0,0.4)' }]}>{time} min</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -1398,7 +1398,7 @@ export default function TimerScreen() {
                 activeOpacity={0.85}
               >
                 <View style={styles.playButtonInner}>
-                  <Play size={28} color="#0D1117" fill="#0D1117" />
+                  <Play size={28} color="#FFFFFF" fill="#FFFFFF" />
                 </View>
               </TouchableOpacity>
             </View>
@@ -1419,15 +1419,15 @@ export default function TimerScreen() {
               >
                 <View style={styles.mainControlInner}>
                   {timerState === 'running' ? (
-                    <Pause size={26} color="#0D1117" fill="#0D1117" />
+                    <Pause size={26} color="#FFFFFF" fill="#FFFFFF" />
                   ) : (
-                    <Play size={26} color="#0D1117" fill="#0D1117" />
+                    <Play size={26} color="#FFFFFF" fill="#FFFFFF" />
                   )}
                 </View>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.controlButton, { backgroundColor: 'rgba(255,255,255,0.08)' }]} 
+                style={[styles.controlButton, { backgroundColor: 'rgba(0,0,0,0.06)' }]} 
                 onPress={async () => {
                   setSessionType(sessionType === 'focus' ? 'break' : 'focus');
                   setTimeLeft(sessionType === 'focus' ? breakTime * 60 : focusTime * 60);
@@ -1438,7 +1438,7 @@ export default function TimerScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <SkipForward size={20} color="rgba(255,255,255,0.6)" />
+                <SkipForward size={20} color="rgba(0,0,0,0.45)" />
               </TouchableOpacity>
             </View>
           )}
@@ -1450,12 +1450,12 @@ export default function TimerScreen() {
             { value: `${sessionCount}/${dailyGoal}`, label: 'Dagsmål', icon: Target, color: '#A78BFA' },
             { value: `${todayStats.minutes}m`, label: 'Idag', icon: Zap, color: '#34D399' },
           ].map((stat, i) => (
-            <View key={i} style={[styles.statMiniCard, { backgroundColor: 'rgba(255,255,255,0.07)' }]}>
+            <View key={i} style={[styles.statMiniCard, { backgroundColor: 'rgba(0,0,0,0.05)' }]}>
               <View style={[styles.statMiniIcon, { backgroundColor: stat.color + '22' }]}>
                 <stat.icon size={16} color={stat.color} />
               </View>
-              <Text style={[styles.statMiniValue, { color: '#FFFFFF' }]}>{stat.value}</Text>
-              <Text style={[styles.statMiniLabel, { color: 'rgba(255,255,255,0.4)' }]}>{stat.label}</Text>
+              <Text style={[styles.statMiniValue, { color: '#111827' }]}>{stat.value}</Text>
+              <Text style={[styles.statMiniLabel, { color: 'rgba(0,0,0,0.4)' }]}>{stat.label}</Text>
             </View>
           ))}
         </View>
@@ -2306,14 +2306,14 @@ const styles = StyleSheet.create({
   timerSessionName: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#111827',
     letterSpacing: -0.5,
     textAlign: 'center',
   },
   timerSessionSub: {
     fontSize: 14,
     fontWeight: '400',
-    color: 'rgba(255,255,255,0.45)',
+    color: 'rgba(0,0,0,0.4)',
     marginTop: 4,
     marginBottom: 20,
     textAlign: 'center',
@@ -2324,16 +2324,16 @@ const styles = StyleSheet.create({
   timerDarkCircle: {
     borderRadius: 999,
     overflow: 'hidden',
-    shadowColor: '#000000',
+    shadowColor: '#AAAAAA',
     shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.6,
+    shadowOpacity: 0.4,
     shadowRadius: 32,
     elevation: 20,
   },
   timerDigitsBelow: {
     fontSize: 44,
     fontWeight: '300',
-    color: '#FFFFFF',
+    color: '#111827',
     letterSpacing: 3,
     marginTop: 22,
     fontVariant: ['tabular-nums'],
@@ -2423,10 +2423,10 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#FFFFFF',
+    backgroundColor: '#111827',
+    shadowColor: '#111827',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 10,
   },
@@ -2436,7 +2436,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#111827',
   },
   quickTimeRow: {
     flexDirection: 'row',
@@ -2472,10 +2472,10 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#FFFFFF',
+    backgroundColor: '#111827',
+    shadowColor: '#111827',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 8,
   },
@@ -2485,7 +2485,7 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#111827',
   },
   statsRow: {
     flexDirection: 'row',

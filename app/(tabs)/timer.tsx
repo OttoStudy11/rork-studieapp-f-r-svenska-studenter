@@ -11,10 +11,12 @@ import {
   Platform,
   TextInput,
   AppState,
-  AppStateStatus
+  AppStateStatus,
+  Dimensions,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -33,7 +35,7 @@ import AddExamModal from '@/components/AddExamModal';
 
 import * as Notifications from 'expo-notifications';
 
-
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type TimerState = 'idle' | 'running' | 'paused';
 type SessionType = 'focus' | 'break';
@@ -63,37 +65,27 @@ interface CompletionScreenProps {
 
 function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions }: CompletionScreenProps) {
   const { theme } = useTheme();
-  const [starsVisible, setStarsVisible] = useState(false);
+  const insets = useSafeAreaInsets();
   const [isSaved, setIsSaved] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const starsAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const checkmarkAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 300,
+        duration: 400,
         useNativeDriver: true,
       }),
       Animated.spring(scaleAnim, {
         toValue: 1,
-        tension: 50,
-        friction: 7,
+        tension: 60,
+        friction: 8,
         useNativeDriver: true,
       }),
     ]).start();
-
-    setTimeout(() => {
-      setStarsVisible(true);
-      Animated.timing(starsAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start();
-    }, 500);
-  }, [fadeAnim, scaleAnim, starsAnim]);
+  }, [fadeAnim, scaleAnim]);
 
   const handleSave = useCallback(() => {
     setIsSaved(true);
@@ -106,7 +98,7 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
     
     setTimeout(() => {
       onSave();
-    }, 800);
+    }, 600);
   }, [checkmarkAnim, onSave]);
 
   if (!data) return null;
@@ -114,19 +106,12 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
   const progressPercentage = Math.min(Math.round((currentSessions / dailyGoal) * 100), 100);
   const isFocusSession = data.sessionType === 'focus';
 
-  const stars = Array.from({ length: 15 }, (_, i) => ({
-    id: i,
-    left: Math.random() * 100,
-    top: Math.random() * 100,
-    size: Math.random() * 16 + 8,
-  }));
-
   const getMotivationalMessage = () => {
-    if (progressPercentage >= 100) return 'Fantastiskt! Dagsmål uppnått! 🎉';
-    if (progressPercentage >= 75) return 'Nästan där! Fortsätt så! 💪';
-    if (progressPercentage >= 50) return 'Halvvägs! Bra jobbat! 🌟';
-    if (progressPercentage >= 25) return 'Bra start! Kör på! 🚀';
-    return 'Första steget är taget! ⭐';
+    if (progressPercentage >= 100) return 'Dagsmål uppnått!';
+    if (progressPercentage >= 75) return 'Nästan där!';
+    if (progressPercentage >= 50) return 'Halvvägs!';
+    if (progressPercentage >= 25) return 'Bra start!';
+    return 'Första steget!';
   };
 
   return (
@@ -139,97 +124,70 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
         }
       ]}
     >
-      <View style={[styles.completionContainer, { backgroundColor: '#1a1a2e' }]}>
+      <View style={[styles.completionContainer, { backgroundColor: theme.colors.background, paddingTop: insets.top + 20 }]}>
         <TouchableOpacity 
-          style={styles.completionCloseButton} 
+          style={[styles.completionCloseButton, { backgroundColor: theme.colors.card }]}
           onPress={onDiscard}
           activeOpacity={0.7}
         >
-          <X size={24} color="#8e8e93" />
+          <X size={20} color={theme.colors.textSecondary} />
         </TouchableOpacity>
 
-        {starsVisible && (
-          <Animated.View 
-            style={[
-              styles.starsContainer,
-              { opacity: starsAnim }
-            ]}
-          >
-            {stars.map((star) => (
-              <Animated.View
-                key={star.id}
-                style={[
-                  styles.star,
-                  {
-                    left: `${star.left}%`,
-                    top: `${star.top}%`,
-                    width: star.size,
-                    height: star.size,
-                  }
-                ]}
-              >
-                <Star 
-                  size={star.size} 
-                  color="#FFD700" 
-                  fill="#FFD700" 
-                  opacity={0.4}
-                />
-              </Animated.View>
-            ))}
-          </Animated.View>
-        )}
-
         <View style={styles.completionContent}>
-          <Text style={styles.completionTitle}>
-            {isFocusSession ? getMotivationalMessage() : 'Paus avslutad! ☕'}
+          <View style={[styles.completionEmojiCircle, { backgroundColor: theme.colors.primary + '12' }]}>
+            <Text style={styles.completionEmoji}>{isFocusSession ? '🎯' : '☕'}</Text>
+          </View>
+          
+          <Text style={[styles.completionTitle, { color: theme.colors.text }]}>
+            {isFocusSession ? getMotivationalMessage() : 'Paus avslutad'}
+          </Text>
+          <Text style={[styles.completionSubtitle, { color: theme.colors.textSecondary }]}>
+            {isFocusSession ? 'Session slutförd' : 'Redo att fortsätta'}
           </Text>
           
-          <View style={styles.progressContainer}>
-            <Svg width={180} height={180}>
+          <View style={styles.completionProgressWrapper}>
+            <Svg width={160} height={160}>
               <Circle
-                cx={90}
-                cy={90}
-                r={70}
-                stroke="#2c2c54"
-                strokeWidth={10}
+                cx={80}
+                cy={80}
+                r={66}
+                stroke={theme.colors.border}
+                strokeWidth={6}
                 fill="none"
               />
               <Circle
-                cx={90}
-                cy={90}
-                r={70}
+                cx={80}
+                cy={80}
+                r={66}
                 stroke={theme.colors.primary}
-                strokeWidth={10}
+                strokeWidth={6}
                 fill="none"
-                strokeDasharray={2 * Math.PI * 70}
-                strokeDashoffset={2 * Math.PI * 70 * (1 - progressPercentage / 100)}
+                strokeDasharray={2 * Math.PI * 66}
+                strokeDashoffset={2 * Math.PI * 66 * (1 - progressPercentage / 100)}
                 strokeLinecap="round"
-                transform="rotate(-90 90 90)"
+                transform="rotate(-90 80 80)"
               />
             </Svg>
-            <View style={styles.progressContent}>
-              <Text style={styles.progressPercentage}>{progressPercentage}%</Text>
-              <Text style={styles.progressLabel}>av dagsmål</Text>
+            <View style={styles.completionProgressInner}>
+              <Text style={[styles.completionProgressValue, { color: theme.colors.text }]}>{progressPercentage}%</Text>
+              <Text style={[styles.completionProgressLabel, { color: theme.colors.textMuted }]}>dagsmål</Text>
             </View>
           </View>
 
-          <View style={styles.completionStatsRow}>
+          <View style={[styles.completionStatsRow, { backgroundColor: theme.colors.card }]}>
             <View style={styles.completionStatItem}>
-              <Clock size={20} color={theme.colors.primary} />
-              <Text style={styles.completionStatValue}>{data.duration} min</Text>
-              <Text style={styles.completionStatLabel}>Studietid</Text>
+              <Text style={[styles.completionStatValue, { color: theme.colors.text }]}>{data.duration}</Text>
+              <Text style={[styles.completionStatUnit, { color: theme.colors.textMuted }]}>min</Text>
             </View>
-            <View style={[styles.completionStatDivider, { backgroundColor: '#3d3d5c' }]} />
+            <View style={[styles.completionStatDivider, { backgroundColor: theme.colors.border }]} />
             <View style={styles.completionStatItem}>
-              <BookOpen size={20} color={theme.colors.secondary} />
-              <Text style={styles.completionStatValue} numberOfLines={1}>{data.courseName}</Text>
-              <Text style={styles.completionStatLabel}>Kurs</Text>
+              <Text style={[styles.completionStatValue, { color: theme.colors.text }]} numberOfLines={1}>{data.courseName}</Text>
+              <Text style={[styles.completionStatUnit, { color: theme.colors.textMuted }]}>kurs</Text>
             </View>
-            <View style={[styles.completionStatDivider, { backgroundColor: '#3d3d5c' }]} />
+            <View style={[styles.completionStatDivider, { backgroundColor: theme.colors.border }]} />
             <View style={styles.completionStatItem}>
-              <Zap size={20} color="#FFD700" />
-              <Text style={[styles.completionStatValue, { color: '#FFD700' }]}>+{data.coinsEarned}</Text>
-              <Text style={styles.completionStatLabel}>XP</Text>
+              <Text style={[styles.completionStatValue, { color: '#F59E0B' }]}>+{data.coinsEarned}</Text>
+              <Text style={[styles.completionStatUnit, { color: theme.colors.textMuted }]}>XP</Text>
             </View>
           </View>
 
@@ -243,38 +201,31 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
                 }
               ]}
             >
-              <CheckCircle size={28} color={theme.colors.success} />
-              <Text style={[styles.savedText, { color: theme.colors.success }]}>Sparad!</Text>
+              <CheckCircle size={22} color={theme.colors.success} />
+              <Text style={[styles.savedText, { color: theme.colors.success }]}>Sparad</Text>
             </Animated.View>
           )}
         </View>
 
-        <View style={styles.actionButtons}>
-          <LinearGradient
-            colors={isSaved ? ['#4CAF50', '#45a049'] : [theme.colors.primary, theme.colors.secondary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.saveButtonGradient}
+        <View style={[styles.completionActions, { paddingBottom: insets.bottom + 16 }]}>
+          <TouchableOpacity 
+            style={[styles.completionPrimaryButton, { backgroundColor: isSaved ? theme.colors.success : theme.colors.primary }]}
+            onPress={handleSave}
+            activeOpacity={0.8}
+            disabled={isSaved}
           >
-            <TouchableOpacity 
-              style={styles.saveButton} 
-              onPress={handleSave}
-              activeOpacity={0.8}
-              disabled={isSaved}
-            >
-              <Text style={styles.saveButtonText}>
-                {isSaved ? '✓ Sparad' : 'Spara & Stäng'}
-              </Text>
-            </TouchableOpacity>
-          </LinearGradient>
+            <Text style={styles.completionPrimaryButtonText}>
+              {isSaved ? '✓ Sparad' : 'Spara session'}
+            </Text>
+          </TouchableOpacity>
           
           {!isSaved && (
             <TouchableOpacity 
-              style={styles.discardButton} 
+              style={styles.completionSecondaryButton}
               onPress={onDiscard}
               activeOpacity={0.7}
             >
-              <Text style={styles.discardButtonText}>Stäng utan att spara</Text>
+              <Text style={[styles.completionSecondaryButtonText, { color: theme.colors.textMuted }]}>Stäng utan att spara</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -291,10 +242,11 @@ export default function TimerScreen() {
   const { currentStreak, checkAchievements, refreshAchievements } = useAchievements();
   const { awardStudySession } = useGamification();
   const { settings } = useTimerSettings();
+  const insets = useSafeAreaInsets();
   usePremium();
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [sessionType, setSessionType] = useState<SessionType>('focus');
-  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
   const [focusTime, setFocusTime] = useState(25);
@@ -305,7 +257,7 @@ export default function TimerScreen() {
   const [selectedStatView, setSelectedStatView] = useState<'day' | 'week'>('day');
 
   const [sessionCount, setSessionCount] = useState(0);
-  const [dailyGoal] = useState(4); // Daily session goal
+  const [dailyGoal] = useState(4);
   const [motivationalQuote, setMotivationalQuote] = useState('');
   const [totalFocusToday, setTotalFocusToday] = useState(0);
   const [weeklyAverage, setWeeklyAverage] = useState(0);
@@ -323,7 +275,6 @@ export default function TimerScreen() {
 
   const [showAddExam, setShowAddExam] = useState(false);
   
-  // Suppress unused variable warnings for now
   void motivationalQuote;
   void totalFocusToday;
   void weeklyAverage;
@@ -431,7 +382,6 @@ export default function TimerScreen() {
   }, [pomodoroSessions]);
 
   const calculateStats = useCallback(() => {
-    // Calculate today's total focus time
     const today = new Date().toDateString();
     const todaySessions = pomodoroSessions.filter(session => {
       const sessionDate = new Date(session.endTime).toDateString();
@@ -440,7 +390,6 @@ export default function TimerScreen() {
     const todayMinutes = todaySessions.reduce((sum, session) => sum + session.duration, 0);
     setTotalFocusToday(todayMinutes);
 
-    // Calculate weekly average
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const weekSessions = pomodoroSessions.filter(session => {
@@ -450,12 +399,10 @@ export default function TimerScreen() {
     const weekMinutes = weekSessions.reduce((sum, session) => sum + session.duration, 0);
     setWeeklyAverage(Math.round(weekMinutes / 7));
 
-    // Get best streak
     const streakStats = getStreakStats();
     setBestStreak(streakStats.longest);
   }, [pomodoroSessions, getStreakStats]);
 
-  // Check notification permissions on mount and set random quote
   useEffect(() => {
     const initializeTimer = async () => {
       await checkNotificationPermissions();
@@ -471,7 +418,6 @@ export default function TimerScreen() {
         console.log('⏱️ Remaining time:', savedState.remainingTime, 'seconds');
         
         if (savedState.remainingTime <= 0) {
-          // Timer completed while app was closed - save the session
           console.log('✅ Timer completed while app was closed, saving session...');
           timerEndTimeRef.current = null;
           setTimerState('idle');
@@ -483,20 +429,17 @@ export default function TimerScreen() {
           if (savedState.courseId !== undefined) {
             setSelectedCourse(savedState.courseId || '');
           }
-          // Restore original session start time so handleTimerComplete can save the session
           if (savedState.sessionStartTimestamp) {
             sessionStartTimeRef.current = new Date(savedState.sessionStartTimestamp);
             setSessionStartTime(new Date(savedState.sessionStartTimestamp));
           }
           await TimerPersistence.clearTimerState();
-          // Delay slightly so state updates and refs settle before saving
           setTimeout(async () => {
             if (handleTimerCompleteRef.current && !isCompletingRef.current) {
               await handleTimerCompleteRef.current();
             }
           }, 500);
         } else {
-          // Set end time based on remaining time
           const now = Date.now();
           timerEndTimeRef.current = now + (savedState.remainingTime * 1000);
           console.log('⏰ Timer end time set to:', new Date(timerEndTimeRef.current).toISOString());
@@ -525,33 +468,31 @@ export default function TimerScreen() {
     
     initializeTimer();
     
-    // Start pulse animation
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 1500,
+          toValue: 1.03,
+          duration: 2000,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 1500,
+          duration: 2000,
           useNativeDriver: true,
         }),
       ])
     ).start();
 
-    // Scale animation for timer
     Animated.loop(
       Animated.sequence([
         Animated.timing(scaleAnim, {
-          toValue: 1.02,
-          duration: 2000,
+          toValue: 1.01,
+          duration: 2500,
           useNativeDriver: true,
         }),
         Animated.timing(scaleAnim, {
           toValue: 1,
-          duration: 2000,
+          duration: 2500,
           useNativeDriver: true,
         }),
       ])
@@ -627,7 +568,6 @@ export default function TimerScreen() {
   }, [showSuccess]);
 
   const handleTimerComplete = useCallback(async () => {
-    // Prevent duplicate completions
     if (isCompletingRef.current) {
       console.log('⚠️ Timer completion already in progress, skipping...');
       return;
@@ -665,7 +605,6 @@ export default function TimerScreen() {
           
           setSessionCount(prev => prev + 1);
           
-          // Award XP and update challenge progress
           let pointsEarned = focusTime;
           try {
             console.log('🎯 Awarding', focusTime, 'minutes of study XP...');
@@ -679,7 +618,6 @@ export default function TimerScreen() {
             console.error('❌ Failed to award study session XP:', xpError);
           }
           
-          // Check for achievements after session is saved
           try {
             console.log('🏆 Checking for achievements...');
             await checkAchievements();
@@ -712,7 +650,6 @@ export default function TimerScreen() {
           console.error('❌ Failed to complete focus session:', error);
         }
       } else {
-        // For break completion, just show a simple completion
         setCompletedSessionData({
           duration: breakTime,
           sessionType: 'break',
@@ -732,24 +669,20 @@ export default function TimerScreen() {
       
       setMotivationalQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
     } finally {
-      // Always reset the completing flag
       setTimeout(() => {
         isCompletingRef.current = false;
       }, 1000);
     }
   }, [sessionType, isDndActive, disableDoNotDisturb, addPomodoroSession, selectedCourse, courses, focusTime, sessionStartTime, sessionCount, dailyGoal, showAchievement, breakTime, motivationalQuotes, checkAchievements, refreshAchievements, settings.notificationsEnabled, awardStudySession]);
 
-  // Keep the ref updated with latest handleTimerComplete
   useEffect(() => {
     handleTimerCompleteRef.current = handleTimerComplete;
   }, [handleTimerComplete]);
 
-  // AppState listener for background/foreground - must be after handleTimerComplete is defined
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       console.log('📱 App state changed:', appState.current, '->', nextAppState);
 
-      // App going to background
       if (appState.current.match(/active/) && nextAppState.match(/inactive|background/)) {
         console.log('📱 App going to background');
         
@@ -758,13 +691,11 @@ export default function TimerScreen() {
             ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
             : 'Allmän session';
           
-          // Calculate remaining time from end time
           const now = Date.now();
           const remainingTime = timerEndTimeRef.current 
             ? Math.max(0, Math.ceil((timerEndTimeRef.current - now) / 1000))
             : lastKnownTimeLeftRef.current;
           
-          // Save current state with accurate remaining time and original session start
           await TimerPersistence.saveTimerState({
             status: 'running',
             sessionType,
@@ -780,7 +711,6 @@ export default function TimerScreen() {
         }
       }
 
-      // App coming to foreground
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         console.log('📱 App coming to foreground');
         
@@ -789,9 +719,7 @@ export default function TimerScreen() {
           
           if (savedState && savedState.status === 'running') {
             console.log('🔄 Recalculating time after background');
-            console.log('⏱️ Saved remaining time:', savedState.remainingTime, 'seconds');
             
-            // If timer completed while in background
             if (savedState.remainingTime <= 0) {
               console.log('✅ Timer completed in background, completing now...');
               timerEndTimeRef.current = null;
@@ -803,24 +731,19 @@ export default function TimerScreen() {
               if (savedState.courseId !== undefined) {
                 setSelectedCourse(savedState.courseId || '');
               }
-              // Restore session start time so the session can be saved
               if (savedState.sessionStartTimestamp) {
                 sessionStartTimeRef.current = new Date(savedState.sessionStartTimestamp);
                 setSessionStartTime(new Date(savedState.sessionStartTimestamp));
               }
-              // Complete the timer
               if (handleTimerCompleteRef.current && !isCompletingRef.current) {
                 await handleTimerCompleteRef.current();
               }
             } else {
-              // Update state with recalculated time and set new end time
               const now = Date.now();
               timerEndTimeRef.current = now + (savedState.remainingTime * 1000);
               setTimeLeft(savedState.remainingTime);
               lastKnownTimeLeftRef.current = savedState.remainingTime;
               setTimerState('running');
-              console.log('⏰ Timer end time recalculated:', new Date(timerEndTimeRef.current).toISOString());
-              console.log('⏱️ Will complete in', savedState.remainingTime, 'seconds');
             }
           }
         }
@@ -839,19 +762,13 @@ export default function TimerScreen() {
     console.log('⚙️ Timer effect triggered, state:', timerState);
     
     if (timerState === 'running') {
-      console.log('🏃 Timer is running, creating interval');
-      console.log('⏰ End time:', timerEndTimeRef.current ? new Date(timerEndTimeRef.current).toISOString() : 'NOT SET');
-      
       if (intervalRef.current) {
-        console.log('🧹 Clearing existing interval');
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
       
-      // Use timestamp-based calculation for accurate timing
       intervalRef.current = setInterval(() => {
         if (!timerEndTimeRef.current) {
-          console.log('⚠️ No end time set, skipping tick');
           return;
         }
         
@@ -859,11 +776,9 @@ export default function TimerScreen() {
         const remainingMs = timerEndTimeRef.current - now;
         const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
         
-        // Update last known time
         lastKnownTimeLeftRef.current = remainingSeconds;
         
         if (remainingSeconds <= 0 && !isCompletingRef.current) {
-          console.log('⏱️ Timer completed! Calling handleTimerComplete...');
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
@@ -875,10 +790,7 @@ export default function TimerScreen() {
         }
       }, 100);
       
-      console.log('✅ Interval created with 100ms precision');
-      
     } else {
-      console.log('⏹️ Timer not running, clearing intervals');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -886,7 +798,6 @@ export default function TimerScreen() {
     }
 
     return () => {
-      console.log('🧹 Cleaning up timer intervals');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -934,18 +845,14 @@ export default function TimerScreen() {
   }, [progress, progressAnim]);
 
   const startTimer = async () => {
-    console.log('🎬 Starting timer, current state:', timerState);
     const now = Date.now();
     
     if (timerState === 'idle') {
       const startDate = new Date(now);
-      console.log('⏰ Setting session start time:', startDate.toISOString());
       setSessionStartTime(startDate);
       
-      // Set the end time based on full duration
       const durationSeconds = sessionType === 'focus' ? focusTime * 60 : breakTime * 60;
       timerEndTimeRef.current = now + (durationSeconds * 1000);
-      console.log('⏰ Timer will end at:', new Date(timerEndTimeRef.current).toISOString());
       
       if (sessionType === 'focus' && dndPermissionGranted) {
         await enableDoNotDisturb();
@@ -954,13 +861,9 @@ export default function TimerScreen() {
       await soundManager.playSound('start');
       await hapticsManager.triggerHaptic('light');
     } else {
-      console.log('⏸️ Resuming timer from pause');
-      // Resuming from pause - set end time based on remaining time
       timerEndTimeRef.current = now + (timeLeft * 1000);
-      console.log('⏰ Timer will end at:', new Date(timerEndTimeRef.current).toISOString());
     }
     
-    console.log('▶️ Setting timer state to running');
     setTimerState('running');
     
     const courseName = selectedCourse 
@@ -986,7 +889,6 @@ export default function TimerScreen() {
         courseName
       );
       
-      // Show initial background notification
       if (settings.backgroundTimerEnabled) {
         await TimerPersistence.updateBackgroundNotification(
           timeLeft,
@@ -1006,7 +908,6 @@ export default function TimerScreen() {
   };
 
   const pauseTimer = async () => {
-    // Clear the end time reference when pausing
     timerEndTimeRef.current = null;
     setTimerState('paused');
     await hapticsManager.triggerHaptic('medium');
@@ -1059,10 +960,6 @@ export default function TimerScreen() {
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
-
-
-
-
 
   const getSelectedCourseTitle = useCallback(() => {
     if (!selectedCourse) return 'Allmän session';
@@ -1310,7 +1207,9 @@ export default function TimerScreen() {
     return pomodoroSessions.reduce((sum, s) => sum + s.duration, 0);
   }, [pomodoroSessions]);
 
-  const circumference = 2 * Math.PI * 120;
+  const timerCircleSize = Math.min(SCREEN_WIDTH - 80, 280);
+  const timerRadius = (timerCircleSize / 2) - 8;
+  const circumference = 2 * Math.PI * timerRadius;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -1320,130 +1219,111 @@ export default function TimerScreen() {
       />
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
-              <Text style={[styles.greeting, { color: theme.colors.text }]}>Timer 🎯</Text>
-              <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Fokus</Text>
+              <Text style={[styles.headerSubtitle, { color: theme.colors.textMuted }]}>
                 {sessionType === 'focus' ? 'Fokusera på dina mål' : 'Ta en välförtjänt paus'}
               </Text>
             </View>
             <View style={styles.headerRight}>
               <TouchableOpacity
-                style={[styles.headerButton, { backgroundColor: theme.colors.primary + '15' }]}
-                onPress={() => setShowSettings(true)}
-                activeOpacity={0.7}
-              >
-                <Settings size={22} color={theme.colors.primary} />
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.headerButton, { backgroundColor: theme.colors.secondary + '15' }]}
+                style={[styles.headerIconButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
                 onPress={() => {
                   soundManager.setEnabled(!settings.soundEnabled);
                 }}
                 activeOpacity={0.7}
               >
                 {settings.soundEnabled ? (
-                  <Volume2 size={22} color={theme.colors.secondary} />
+                  <Volume2 size={18} color={theme.colors.textSecondary} />
                 ) : (
-                  <VolumeX size={22} color={theme.colors.secondary} />
+                  <VolumeX size={18} color={theme.colors.textSecondary} />
                 )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.headerIconButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
+                onPress={() => setShowSettings(true)}
+                activeOpacity={0.7}
+              >
+                <Settings size={18} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
-
-
-        {/* Hero Timer Card */}
         <View style={styles.timerSection}>
-            <View style={styles.timerWrapper}>
-              <Svg width={260} height={260} style={styles.timerSvg}>
-                <Circle
-                  cx={130}
-                  cy={130}
-                  r={110}
-                  stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'}
-                  strokeWidth={8}
-                  fill="none"
-                />
-                <Circle
-                  cx={130}
-                  cy={130}
-                  r={110}
-                  stroke={sessionType === 'focus' ? theme.colors.primary : theme.colors.secondary}
-                  strokeWidth={8}
-                  fill="none"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={circumference * (1 - progress)}
-                  strokeLinecap="round"
-                  transform={`rotate(-90 130 130)`}
-                />
-              </Svg>
-              
-              <View style={styles.timerInnerContent}>
-                <Animated.View>
-                  <Text style={[styles.timerText, { color: theme.colors.text }]}>
-                    {formatTime(timeLeft)}
-                  </Text>
-                </Animated.View>
-                
-                <View style={styles.timerMetaContainer}>
-                  <Text style={[styles.sessionCourse, { color: theme.colors.textSecondary }]}>
-                    {getSelectedCourseTitle()}
-                  </Text>
-                  
-                  <View style={styles.sessionBadgeWrapper}>
-                    <LinearGradient
-                      colors={sessionType === 'focus' 
-                        ? [theme.colors.primary, theme.colors.primary + 'DD'] as any
-                        : [theme.colors.secondary, theme.colors.secondary + 'DD'] as any
-                      }
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.sessionBadgeGradient}
-                    >
-                      {sessionType === 'focus' ? (
-                        <Brain size={14} color="#FFFFFF" strokeWidth={2.5} />
-                      ) : (
-                        <Coffee size={14} color="#FFFFFF" strokeWidth={2.5} />
-                      )}
-                      <Text style={styles.sessionBadgeText}>
-                        {sessionType === 'focus' ? 'Fokus' : 'Paus'}
-                      </Text>
-                    </LinearGradient>
-                  </View>
-                </View>
+          <Animated.View style={[styles.timerWrapper, { transform: [{ scale: timerState === 'running' ? pulseAnim : scaleAnim }] }]}>
+            <Svg width={timerCircleSize} height={timerCircleSize}>
+              <Circle
+                cx={timerCircleSize / 2}
+                cy={timerCircleSize / 2}
+                r={timerRadius}
+                stroke={isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}
+                strokeWidth={5}
+                fill="none"
+              />
+              <Circle
+                cx={timerCircleSize / 2}
+                cy={timerCircleSize / 2}
+                r={timerRadius}
+                stroke={sessionType === 'focus' ? theme.colors.primary : theme.colors.warning}
+                strokeWidth={5}
+                fill="none"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference * (1 - progress)}
+                strokeLinecap="round"
+                transform={`rotate(-90 ${timerCircleSize / 2} ${timerCircleSize / 2})`}
+                opacity={0.9}
+              />
+            </Svg>
+            
+            <View style={[styles.timerInnerContent, { width: timerCircleSize, height: timerCircleSize }]}>
+              <Text style={[styles.timerDigits, { color: theme.colors.text }]}>
+                {formatTime(timeLeft)}
+              </Text>
+              <View style={[styles.sessionTypePill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                {sessionType === 'focus' ? (
+                  <Brain size={12} color={theme.colors.primary} strokeWidth={2.5} />
+                ) : (
+                  <Coffee size={12} color={theme.colors.warning} strokeWidth={2.5} />
+                )}
+                <Text style={[styles.sessionTypePillText, { color: sessionType === 'focus' ? theme.colors.primary : theme.colors.warning }]}>
+                  {sessionType === 'focus' ? 'Fokus' : 'Paus'}
+                </Text>
               </View>
+              <Text style={[styles.timerCourseLabel, { color: theme.colors.textMuted }]} numberOfLines={1}>
+                {getSelectedCourseTitle()}
+              </Text>
             </View>
+          </Animated.View>
         </View>
 
-        {/* Course Selection */}
         {sessionType === 'focus' && timerState === 'idle' && (
           <View style={styles.courseSection}>
-            <Text style={[styles.courseSectionTitle, { color: theme.colors.text }]}>Välj kurs</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseList}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>KURS</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.courseListContent}>
               <TouchableOpacity
                 style={[
                   styles.courseChip,
-                  !selectedCourse && styles.courseChipActive,
                   { 
-                    backgroundColor: !selectedCourse ? theme.colors.primary : theme.colors.card,
-                    borderColor: !selectedCourse ? theme.colors.primary : 'transparent'
+                    backgroundColor: !selectedCourse 
+                      ? (isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)')
+                      : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                    borderColor: !selectedCourse ? theme.colors.primary + '40' : 'transparent',
+                    borderWidth: 1,
                   }
                 ]}
                 onPress={() => setSelectedCourse('')}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
                 <Text style={[
                   styles.courseChipText,
-                  { color: !selectedCourse ? '#FFFFFF' : theme.colors.text }
+                  { color: !selectedCourse ? theme.colors.primary : theme.colors.textSecondary }
                 ]}>Allmänt</Text>
               </TouchableOpacity>
               {courses.map((course) => (
@@ -1451,443 +1331,292 @@ export default function TimerScreen() {
                   key={course.id}
                   style={[
                     styles.courseChip,
-                    selectedCourse === course.id && styles.courseChipActive,
                     { 
-                      backgroundColor: selectedCourse === course.id ? theme.colors.primary : theme.colors.card,
-                      borderColor: selectedCourse === course.id ? theme.colors.primary : 'transparent'
+                      backgroundColor: selectedCourse === course.id 
+                        ? (isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)')
+                        : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                      borderColor: selectedCourse === course.id ? theme.colors.primary + '40' : 'transparent',
+                      borderWidth: 1,
                     }
                   ]}
                   onPress={() => setSelectedCourse(course.id)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.7}
                 >
                   <Text style={[
                     styles.courseChipText,
-                    { color: selectedCourse === course.id ? '#FFFFFF' : theme.colors.text }
-                  ]}>{course.title}</Text>
+                    { color: selectedCourse === course.id ? theme.colors.primary : theme.colors.textSecondary }
+                  ]} numberOfLines={1}>{course.title}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
         )}
 
-        {/* Controls */}
-        <View style={styles.controls}>
+        <View style={styles.controlsSection}>
           {timerState === 'idle' ? (
             <View style={styles.idleControls}>
-              <LinearGradient
-                colors={theme.colors.gradient as any}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.mainButtonGradient}
+              <TouchableOpacity 
+                style={[styles.playButton]}
+                onPress={startTimer}
+                activeOpacity={0.85}
               >
-                <TouchableOpacity 
-                  style={styles.mainButton} 
-                  onPress={startTimer}
-                  activeOpacity={0.8}
+                <LinearGradient
+                  colors={sessionType === 'focus' ? [theme.colors.primary, '#818CF8'] : ['#F59E0B', '#FBBF24'] as any}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.playButtonGradient}
                 >
-                  <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
-                </TouchableOpacity>
-              </LinearGradient>
+                  <Play size={28} color="#FFFFFF" fill="#FFFFFF" />
+                </LinearGradient>
+              </TouchableOpacity>
               
-              <View style={styles.quickActions}>
-                <TouchableOpacity
-                  style={[styles.quickActionButton, { backgroundColor: theme.colors.card }]}
-                  onPress={() => {
-                    setFocusTime(15);
-                    setTimeLeft(15 * 60);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.quickActionText, { color: theme.colors.text }]}>15 min</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.quickActionButton, { backgroundColor: theme.colors.card }]}
-                  onPress={() => {
-                    setFocusTime(25);
-                    setTimeLeft(25 * 60);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.quickActionText, { color: theme.colors.text }]}>25 min</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.quickActionButton, { backgroundColor: theme.colors.card }]}
-                  onPress={() => {
-                    setFocusTime(45);
-                    setTimeLeft(45 * 60);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.quickActionText, { color: theme.colors.text }]}>45 min</Text>
-                </TouchableOpacity>
+              <View style={styles.quickTimeRow}>
+                {[15, 25, 45].map((time) => (
+                  <TouchableOpacity
+                    key={time}
+                    style={[
+                      styles.quickTimeChip,
+                      { 
+                        backgroundColor: focusTime === time 
+                          ? (isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)')
+                          : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+                        borderColor: focusTime === time ? theme.colors.primary + '30' : 'transparent',
+                        borderWidth: 1,
+                      }
+                    ]}
+                    onPress={() => {
+                      setFocusTime(time);
+                      setTimeLeft(time * 60);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.quickTimeText,
+                      { color: focusTime === time ? theme.colors.primary : theme.colors.textMuted }
+                    ]}>{time} min</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
           ) : (
             <View style={styles.activeControls}>
               <TouchableOpacity 
-                style={[styles.controlButton, { backgroundColor: theme.colors.card }]} 
+                style={[styles.controlButton, { backgroundColor: isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.06)' }]} 
                 onPress={stopTimer}
                 activeOpacity={0.7}
               >
-                <Square size={24} color={theme.colors.error} />
+                <Square size={20} color={theme.colors.error} />
               </TouchableOpacity>
               
-              <LinearGradient
-                colors={timerState === 'running' 
-                  ? [theme.colors.warning, theme.colors.warning + 'DD'] as any
-                  : theme.colors.gradient as any
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.mainButtonGradient}
+              <TouchableOpacity
+                style={styles.mainControlButton}
+                onPress={timerState === 'running' ? pauseTimer : startTimer}
+                activeOpacity={0.85}
               >
-                <TouchableOpacity
-                  style={styles.mainButton}
-                  onPress={timerState === 'running' ? pauseTimer : startTimer}
-                  activeOpacity={0.8}
+                <LinearGradient
+                  colors={timerState === 'running' 
+                    ? ['#F59E0B', '#FBBF24'] 
+                    : [theme.colors.primary, '#818CF8'] as any
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.mainControlGradient}
                 >
                   {timerState === 'running' ? (
-                    <Pause size={32} color="#FFFFFF" fill="#FFFFFF" />
+                    <Pause size={26} color="#FFFFFF" fill="#FFFFFF" />
                   ) : (
-                    <Play size={32} color="#FFFFFF" fill="#FFFFFF" />
+                    <Play size={26} color="#FFFFFF" fill="#FFFFFF" />
                   )}
-                </TouchableOpacity>
-              </LinearGradient>
+                </LinearGradient>
+              </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.controlButton, { backgroundColor: theme.colors.card }]} 
+                style={[styles.controlButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]} 
                 onPress={async () => {
-                  // Skip session without counting it
                   setSessionType(sessionType === 'focus' ? 'break' : 'focus');
                   setTimeLeft(sessionType === 'focus' ? breakTime * 60 : focusTime * 60);
                   setTimerState('idle');
                   setSessionStartTime(null);
-                  
-                  // Disable DND if active
                   if (isDndActive) {
                     await disableDoNotDisturb();
                   }
-                  
-                  // Show toast to inform user that session was skipped and not counted
                   showSuccess('Session skipped', 'Tiden räknas inte i din statistik');
                 }}
                 activeOpacity={0.7}
               >
-                <SkipForward size={24} color={theme.colors.text} />
+                <SkipForward size={20} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
           )}
         </View>
 
-        {/* Quick Stats Row */}
-        <View style={styles.quickStatsRow}>
-          <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
-            <View style={[styles.quickStatIconWrapper, { backgroundColor: theme.colors.warning + '20' }]}>
-              <Flame size={24} color={theme.colors.warning} />
+        <View style={styles.statsRow}>
+          {[
+            { value: currentStreak.toString(), label: 'Streak', icon: Flame, color: '#F59E0B' },
+            { value: `${sessionCount}/${dailyGoal}`, label: 'Dagsmål', icon: Target, color: theme.colors.primary },
+            { value: `${todayStats.minutes}m`, label: 'Idag', icon: Zap, color: '#10B981' },
+          ].map((stat, i) => (
+            <View 
+              key={i} 
+              style={[
+                styles.statMiniCard, 
+                { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }
+              ]}
+            >
+              <View style={[styles.statMiniIcon, { backgroundColor: stat.color + '14' }]}>
+                <stat.icon size={16} color={stat.color} />
+              </View>
+              <Text style={[styles.statMiniValue, { color: theme.colors.text }]}>{stat.value}</Text>
+              <Text style={[styles.statMiniLabel, { color: theme.colors.textMuted }]}>{stat.label}</Text>
             </View>
-            <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>{currentStreak}</Text>
-            <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Streak</Text>
-          </View>
-          
-          <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
-            <View style={[styles.quickStatIconWrapper, { backgroundColor: theme.colors.primary + '20' }]}>
-              <Target size={24} color={theme.colors.primary} />
-            </View>
-            <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>
-              {sessionCount}/{dailyGoal}
-            </Text>
-            <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Dagsmål</Text>
-          </View>
-          
-          <View style={[styles.quickStatCard, { backgroundColor: theme.colors.card }]}>
-            <View style={[styles.quickStatIconWrapper, { backgroundColor: theme.colors.secondary + '20' }]}>
-              <Zap size={24} color={theme.colors.secondary} />
-            </View>
-            <Text style={[styles.quickStatValue, { color: theme.colors.text }]}>{todayStats.minutes}m</Text>
-            <Text style={[styles.quickStatLabel, { color: theme.colors.textSecondary }]}>Idag</Text>
-          </View>
+          ))}
         </View>
 
-        {/* Planning & History Section */}
-        <View style={styles.plannerSection}>
+        <View style={styles.sectionContainer}>
           <TouchableOpacity 
-            style={[styles.plannerCard, { backgroundColor: theme.colors.card }]}
+            style={[styles.expandableCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}
             onPress={() => setShowPlanner(!showPlanner)}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
           >
-            <View style={styles.plannerHeader}>
-              <LinearGradient
-                colors={[theme.colors.primary, theme.colors.secondary] as any}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.plannerIcon}
-              >
-                <Calendar size={22} color="#FFF" />
-              </LinearGradient>
-              <View style={styles.plannerInfo}>
-                <Text style={[styles.plannerTitle, { color: theme.colors.text }]}>Planering & Prov</Text>
-                <Text style={[styles.plannerSubtitle, { color: theme.colors.textSecondary }]}>
+            <View style={styles.expandableCardInner}>
+              <View style={[styles.expandableIcon, { backgroundColor: theme.colors.primary + '14' }]}>
+                <Calendar size={18} color={theme.colors.primary} />
+              </View>
+              <View style={styles.expandableInfo}>
+                <Text style={[styles.expandableTitle, { color: theme.colors.text }]}>Planering & Prov</Text>
+                <Text style={[styles.expandableSubtitle, { color: theme.colors.textMuted }]}>
                   {upcomingExams.length > 0 ? `${upcomingExams.length} kommande prov` : 'Planera dina sessioner'}
                 </Text>
               </View>
-              <View style={[styles.chevronContainer, { backgroundColor: theme.colors.background }]}>
-                {showPlanner ? (
-                  <ChevronUp size={18} color={theme.colors.primary} />
-                ) : (
-                  <ChevronDown size={18} color={theme.colors.primary} />
-                )}
-              </View>
+              {showPlanner ? (
+                <ChevronUp size={18} color={theme.colors.textMuted} />
+              ) : (
+                <ChevronDown size={18} color={theme.colors.textMuted} />
+              )}
             </View>
           </TouchableOpacity>
 
           {showPlanner && (
-            <View style={styles.plannerContainer}>
-              {/* Exams Section - Moved to top */}
+            <View style={styles.plannerBody}>
               <TouchableOpacity 
-                style={styles.plannerSectionHeader}
+                style={[styles.plannerSectionHeader, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)' }]}
                 onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'exams' ? null : 'exams')}
                 activeOpacity={0.7}
               >
                 <View style={styles.plannerSectionLeft}>
-                  <FileText size={20} color={theme.colors.warning} />
+                  <FileText size={16} color={theme.colors.warning} />
                   <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Prov</Text>
                 </View>
                 <View style={styles.plannerSectionRight}>
                   <TouchableOpacity
-                    style={[styles.addSessionButton, { backgroundColor: theme.colors.warning }]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setShowAddExam(true);
-                    }}
+                    style={[styles.addButton, { backgroundColor: theme.colors.warning + '18' }]}
+                    onPress={(e) => { e.stopPropagation(); setShowAddExam(true); }}
                     activeOpacity={0.8}
                   >
-                    <Plus size={16} color="#FFFFFF" />
+                    <Plus size={14} color={theme.colors.warning} />
                   </TouchableOpacity>
                   {expandedSectionPlanner === 'exams' ? (
-                    <ChevronUp size={20} color={theme.colors.textSecondary} />
+                    <ChevronUp size={16} color={theme.colors.textMuted} />
                   ) : (
-                    <ChevronDown size={20} color={theme.colors.textSecondary} />
+                    <ChevronDown size={16} color={theme.colors.textMuted} />
                   )}
                 </View>
               </TouchableOpacity>
 
               {expandedSectionPlanner === 'exams' && (
-                <View style={styles.sessionsList}>
+                <View style={styles.listBody}>
                   {upcomingExams.length === 0 && completedExams.length === 0 ? (
                     <View style={styles.emptyState}>
-                      <FileText size={48} color={theme.colors.textSecondary} opacity={0.3} />
-                      <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
-                        Inga prov schemalagda
-                      </Text>
-                      <Text style={[styles.emptyStateSubtext, { color: theme.colors.textSecondary }]}>
-                        Tryck på + för att lägga till ett prov
-                      </Text>
+                      <FileText size={36} color={theme.colors.textMuted} opacity={0.3} />
+                      <Text style={[styles.emptyStateText, { color: theme.colors.textMuted }]}>Inga prov schemalagda</Text>
                     </View>
                   ) : (
                     <>
-                      {upcomingExams.length > 0 && (
-                        <View style={styles.examSection}>
-                          <Text style={[styles.examSectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
-                          {upcomingExams.map((exam) => {
-                            const courseName = exam.courseId 
-                              ? courses.find((c) => c.id === exam.courseId)?.title || 'Allmän kurs'
-                              : 'Allmänt prov';
-                            
-                            return (
-                              <View key={exam.id} style={[styles.examCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.warning }]}>
-                                <View style={styles.examCardHeader}>
-                                  <View style={styles.examCardLeft}>
-                                    <FileText size={20} color={theme.colors.warning} />
-                                    <View>
-                                      <Text style={[styles.examTitle, { color: theme.colors.text }]}>
-                                        {exam.title}
-                                      </Text>
-                                      <Text style={[styles.examCourse, { color: theme.colors.textSecondary }]}>
-                                        {courseName}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                </View>
-                                <View style={styles.examCardDetails}>
-                                  <View style={styles.examDetailRow}>
-                                    <Calendar size={16} color={theme.colors.textSecondary} />
-                                    <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
-                                      {new Date(exam.examDate).toLocaleDateString('sv-SE', { 
-                                        weekday: 'long',
-                                        month: 'long',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
-                                    </Text>
-                                  </View>
-                                  {exam.location && (
-                                    <View style={styles.examDetailRow}>
-                                      <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
-                                        📍 {exam.location}
-                                      </Text>
-                                    </View>
-                                  )}
-                                  {exam.durationMinutes && (
-                                    <View style={styles.examDetailRow}>
-                                      <Clock size={16} color={theme.colors.textSecondary} />
-                                      <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
-                                        {exam.durationMinutes} minuter
-                                      </Text>
-                                    </View>
-                                  )}
-                                </View>
-                                {exam.notes && (
-                                  <Text style={[styles.examNotes, { color: theme.colors.textSecondary }]} numberOfLines={2}>
-                                    {exam.notes}
-                                  </Text>
-                                )}
-                              </View>
-                            );
-                          })}
+                      {upcomingExams.map((exam) => {
+                        const courseName = exam.courseId 
+                          ? courses.find((c) => c.id === exam.courseId)?.title || 'Allmän kurs'
+                          : 'Allmänt prov';
+                        return (
+                          <View key={exam.id} style={[styles.listCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)', borderLeftColor: theme.colors.warning, borderLeftWidth: 3 }]}>
+                            <Text style={[styles.listCardTitle, { color: theme.colors.text }]}>{exam.title}</Text>
+                            <Text style={[styles.listCardSubtitle, { color: theme.colors.textMuted }]}>{courseName}</Text>
+                            <View style={styles.listCardMeta}>
+                              <Calendar size={12} color={theme.colors.textMuted} />
+                              <Text style={[styles.listCardMetaText, { color: theme.colors.textMuted }]}>
+                                {new Date(exam.examDate).toLocaleDateString('sv-SE', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              </Text>
+                            </View>
+                          </View>
+                        );
+                      })}
+                      {completedExams.slice(0, 3).map((exam) => (
+                        <View key={exam.id} style={[styles.listCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', borderLeftColor: theme.colors.success, borderLeftWidth: 3, opacity: 0.6 }]}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <CheckCircle size={14} color={theme.colors.success} />
+                            <Text style={[styles.listCardTitle, { color: theme.colors.text }]}>{exam.title}</Text>
+                          </View>
+                          {exam.grade && (
+                            <Text style={[styles.listCardSubtitle, { color: theme.colors.success }]}>Betyg: {exam.grade}</Text>
+                          )}
                         </View>
-                      )}
-
-                      {completedExams.length > 0 && (
-                        <View style={[styles.examSection, { marginTop: 16 }]}>
-                          <Text style={[styles.examSectionTitle, { color: theme.colors.text }]}>Genomförda prov</Text>
-                          {completedExams.slice(0, 5).map((exam) => {
-                            const courseName = exam.courseId 
-                              ? courses.find((c) => c.id === exam.courseId)?.title || 'Allmän kurs'
-                              : 'Allmänt prov';
-                            
-                            return (
-                              <View key={exam.id} style={[styles.examCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.success, opacity: 0.7 }]}>
-                                <View style={styles.examCardHeader}>
-                                  <View style={styles.examCardLeft}>
-                                    <CheckCircle size={20} color={theme.colors.success} />
-                                    <View>
-                                      <Text style={[styles.examTitle, { color: theme.colors.text }]}>
-                                        {exam.title}
-                                      </Text>
-                                      <Text style={[styles.examCourse, { color: theme.colors.textSecondary }]}>
-                                        {courseName}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                  {exam.grade && (
-                                    <View style={[styles.gradeBadge, { backgroundColor: theme.colors.success + '20' }]}>
-                                      <Text style={[styles.gradeText, { color: theme.colors.success }]}>
-                                        {exam.grade}
-                                      </Text>
-                                    </View>
-                                  )}
-                                </View>
-                                <View style={styles.examCardDetails}>
-                                  <View style={styles.examDetailRow}>
-                                    <Calendar size={16} color={theme.colors.textSecondary} />
-                                    <Text style={[styles.examDetailText, { color: theme.colors.textSecondary }]}>
-                                      {new Date(exam.examDate).toLocaleDateString('sv-SE', { 
-                                        month: 'short',
-                                        day: 'numeric'
-                                      })}
-                                    </Text>
-                                  </View>
-                                </View>
-                              </View>
-                            );
-                          })}
-                        </View>
-                      )}
+                      ))}
                     </>
                   )}
                 </View>
               )}
 
-              {/* Upcoming Sessions */}
               <TouchableOpacity 
-                style={[styles.plannerSectionHeader, { marginTop: 16 }]}
+                style={[styles.plannerSectionHeader, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)', marginTop: 8 }]}
                 onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'upcoming' ? null : 'upcoming')}
                 activeOpacity={0.7}
               >
                 <View style={styles.plannerSectionLeft}>
-                  <Clock size={20} color={theme.colors.primary} />
-                  <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Kommande Sessioner</Text>
+                  <Clock size={16} color={theme.colors.primary} />
+                  <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Kommande</Text>
                 </View>
                 <View style={styles.plannerSectionRight}>
                   <TouchableOpacity
-                    style={[styles.addSessionButton, { backgroundColor: theme.colors.primary }]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setShowAddSession(true);
-                    }}
+                    style={[styles.addButton, { backgroundColor: theme.colors.primary + '18' }]}
+                    onPress={(e) => { e.stopPropagation(); setShowAddSession(true); }}
                     activeOpacity={0.8}
                   >
-                    <Plus size={16} color="#FFFFFF" />
+                    <Plus size={14} color={theme.colors.primary} />
                   </TouchableOpacity>
                   {expandedSectionPlanner === 'upcoming' ? (
-                    <ChevronUp size={20} color={theme.colors.textSecondary} />
+                    <ChevronUp size={16} color={theme.colors.textMuted} />
                   ) : (
-                    <ChevronDown size={20} color={theme.colors.textSecondary} />
+                    <ChevronDown size={16} color={theme.colors.textMuted} />
                   )}
                 </View>
               </TouchableOpacity>
 
               {expandedSectionPlanner === 'upcoming' && (
-                <View style={styles.sessionsList}>
+                <View style={styles.listBody}>
                   {plannedSessions.filter(s => !s.completed && new Date(s.date) >= new Date()).length === 0 ? (
                     <View style={styles.emptyState}>
-                      <Calendar size={48} color={theme.colors.textSecondary} opacity={0.3} />
-                      <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
-                        Inga planerade sessioner än
-                      </Text>
-                      <Text style={[styles.emptyStateSubtext, { color: theme.colors.textSecondary }]}>
-                        Tryck på + för att lägga till en session
-                      </Text>
+                      <Calendar size={36} color={theme.colors.textMuted} opacity={0.3} />
+                      <Text style={[styles.emptyStateText, { color: theme.colors.textMuted }]}>Inga planerade sessioner</Text>
                     </View>
                   ) : (
                     plannedSessions
                       .filter(s => !s.completed && new Date(s.date) >= new Date())
                       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                       .map((session) => (
-                        <View key={session.id} style={[styles.sessionCard, { backgroundColor: theme.colors.card }]}>
-                          <View style={styles.sessionCardHeader}>
-                            <BookOpen size={20} color={theme.colors.primary} />
-                            <Text style={[styles.sessionCourseText, { color: theme.colors.text }]}>
-                              {session.courseName}
-                            </Text>
+                        <View key={session.id} style={[styles.listCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)' }]}>
+                          <Text style={[styles.listCardTitle, { color: theme.colors.text }]}>{session.courseName}</Text>
+                          <View style={styles.listCardMeta}>
+                            <Clock size={12} color={theme.colors.textMuted} />
+                            <Text style={[styles.listCardMetaText, { color: theme.colors.textMuted }]}>{session.duration} min</Text>
                           </View>
-                          <View style={styles.sessionCardDetails}>
-                            <View style={styles.sessionDetailRow}>
-                              <Calendar size={16} color={theme.colors.textSecondary} />
-                              <Text style={[styles.sessionDetailText, { color: theme.colors.textSecondary }]}>
-                                {new Date(session.date).toLocaleDateString('sv-SE', { 
-                                  weekday: 'short', 
-                                  month: 'short', 
-                                  day: 'numeric'
-                                })}
-                              </Text>
-                            </View>
-                            <View style={styles.sessionDetailRow}>
-                              <Clock size={16} color={theme.colors.textSecondary} />
-                              <Text style={[styles.sessionDetailText, { color: theme.colors.textSecondary }]}>
-                                {session.duration} min
-                              </Text>
-                            </View>
-                          </View>
-                          {session.notes && (
-                            <Text style={[styles.sessionNotes, { color: theme.colors.textSecondary }]} numberOfLines={2}>
-                              {session.notes}
-                            </Text>
-                          )}
                           <TouchableOpacity
-                            style={[styles.completeButton, { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }]}
+                            style={[styles.completeButton, { backgroundColor: theme.colors.primary + '12' }]}
                             onPress={() => {
-                              setPlannedSessions(prev => 
-                                prev.map(s => s.id === session.id ? { ...s, completed: true } : s)
-                              );
+                              setPlannedSessions(prev => prev.map(s => s.id === session.id ? { ...s, completed: true } : s));
                               showSuccess('Session markerad', 'Sessionen har markerats som slutförd');
                             }}
                             activeOpacity={0.7}
                           >
-                            <Text style={[styles.completeButtonText, { color: theme.colors.primary }]}>Markera som slutförd</Text>
+                            <Text style={[styles.completeButtonText, { color: theme.colors.primary }]}>Markera slutförd</Text>
                           </TouchableOpacity>
                         </View>
                       ))
@@ -1895,73 +1624,48 @@ export default function TimerScreen() {
                 </View>
               )}
 
-              {/* History */}
               <TouchableOpacity 
-                style={[styles.plannerSectionHeader, { marginTop: 16 }]}
+                style={[styles.plannerSectionHeader, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)', marginTop: 8 }]}
                 onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'history' ? null : 'history')}
                 activeOpacity={0.7}
               >
                 <View style={styles.plannerSectionLeft}>
-                  <BookOpen size={20} color={theme.colors.secondary} />
+                  <BookOpen size={16} color={theme.colors.secondary} />
                   <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Historik</Text>
                 </View>
                 {expandedSectionPlanner === 'history' ? (
-                  <ChevronUp size={20} color={theme.colors.textSecondary} />
+                  <ChevronUp size={16} color={theme.colors.textMuted} />
                 ) : (
-                  <ChevronDown size={20} color={theme.colors.textSecondary} />
+                  <ChevronDown size={16} color={theme.colors.textMuted} />
                 )}
               </TouchableOpacity>
 
               {expandedSectionPlanner === 'history' && (
-                <View style={styles.sessionsList}>
+                <View style={styles.listBody}>
                   {pomodoroSessions.length === 0 ? (
                     <View style={styles.emptyState}>
-                      <BookOpen size={48} color={theme.colors.textSecondary} opacity={0.3} />
-                      <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
-                        Ingen historik än
-                      </Text>
-                      <Text style={[styles.emptyStateSubtext, { color: theme.colors.textSecondary }]}>
-                        Slutför en session för att se den här
-                      </Text>
+                      <BookOpen size={36} color={theme.colors.textMuted} opacity={0.3} />
+                      <Text style={[styles.emptyStateText, { color: theme.colors.textMuted }]}>Ingen historik än</Text>
                     </View>
                   ) : (
-                    pomodoroSessions
-                      .slice(0, 10)
-                      .map((session) => {
-                        const courseName = session.courseId 
-                          ? courses.find((c) => c.id === session.courseId)?.title || 'Okänd kurs'
-                          : 'Allmän session';
-                        
-                        return (
-                          <View key={session.id} style={[styles.historyCard, { backgroundColor: theme.colors.card }]}>
-                            <View style={styles.historyCardHeader}>
-                              <View style={styles.historyCardLeft}>
-                                <Brain size={20} color={theme.colors.secondary} />
-                                <Text style={[styles.historyCourseText, { color: theme.colors.text }]}>
-                                  {courseName}
-                                </Text>
-                              </View>
-                              <View style={[styles.historyBadge, { backgroundColor: theme.colors.secondary + '20' }]}>
-                                <Text style={[styles.historyBadgeText, { color: theme.colors.secondary }]}>
-                                  {session.duration} min
-                                </Text>
-                              </View>
-                            </View>
-                            <View style={styles.historyCardDetails}>
-                              <Calendar size={14} color={theme.colors.textSecondary} />
-                              <Text style={[styles.historyDetailText, { color: theme.colors.textSecondary }]}>
-                                {new Date(session.endTime).toLocaleDateString('sv-SE', { 
-                                  weekday: 'short',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </Text>
-                            </View>
+                    pomodoroSessions.slice(0, 10).map((session) => {
+                      const courseName = session.courseId 
+                        ? courses.find((c) => c.id === session.courseId)?.title || 'Okänd kurs'
+                        : 'Allmän session';
+                      return (
+                        <View key={session.id} style={[styles.historyItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)' }]}>
+                          <View style={styles.historyItemLeft}>
+                            <Text style={[styles.historyItemTitle, { color: theme.colors.text }]}>{courseName}</Text>
+                            <Text style={[styles.historyItemDate, { color: theme.colors.textMuted }]}>
+                              {new Date(session.endTime).toLocaleDateString('sv-SE', { weekday: 'short', month: 'short', day: 'numeric' })}
+                            </Text>
                           </View>
-                        );
-                      })
+                          <View style={[styles.historyItemBadge, { backgroundColor: theme.colors.secondary + '14' }]}>
+                            <Text style={[styles.historyItemBadgeText, { color: theme.colors.secondary }]}>{session.duration}m</Text>
+                          </View>
+                        </View>
+                      );
+                    })
                   )}
                 </View>
               )}
@@ -1969,245 +1673,141 @@ export default function TimerScreen() {
           )}
         </View>
 
-        {/* Statistics Section - PREMIUM FEATURE */}
-        <View style={styles.statsSection}>
-          <Text style={[styles.statsSectionTitle, { color: theme.colors.text }]}>Avancerad Statistik</Text>
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
           <PremiumGate feature="statistics" fullScreen={false}>
 
-          {/* Focus Score Hero Card */}
-          <LinearGradient
-            colors={theme.colors.gradient as any}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.focusScoreCard}
-          >
-            <View style={styles.focusScoreContent}>
+          <View style={[styles.focusScoreCard, { backgroundColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.05)' }]}>
+            <View style={styles.focusScoreRow}>
               <View style={styles.focusScoreLeft}>
-                <Text style={styles.focusScoreLabel}>FOKUSPOÄNG</Text>
-                <Text style={styles.focusScoreValue}>{focusScore.score}</Text>
-                <View style={styles.focusScoreBadge}>
-                  <Trophy size={14} color="#FFD700" />
-                  <Text style={styles.focusScoreLevel}>{focusScore.level}</Text>
+                <Text style={[styles.focusScoreLabel, { color: theme.colors.textMuted }]}>FOKUSPOÄNG</Text>
+                <Text style={[styles.focusScoreValue, { color: theme.colors.text }]}>{focusScore.score}</Text>
+                <View style={[styles.focusScoreBadge, { backgroundColor: theme.colors.primary + '14' }]}>
+                  <Trophy size={12} color={theme.colors.primary} />
+                  <Text style={[styles.focusScoreLevel, { color: theme.colors.primary }]}>{focusScore.level}</Text>
                 </View>
               </View>
               <View style={styles.focusScoreRight}>
-                <Svg width={100} height={100}>
-                  <Circle
-                    cx={50}
-                    cy={50}
-                    r={42}
-                    stroke="rgba(255,255,255,0.2)"
-                    strokeWidth={8}
-                    fill="none"
-                  />
-                  <Circle
-                    cx={50}
-                    cy={50}
-                    r={42}
-                    stroke="#FFFFFF"
-                    strokeWidth={8}
-                    fill="none"
-                    strokeDasharray={2 * Math.PI * 42}
-                    strokeDashoffset={2 * Math.PI * 42 * (1 - focusScore.score / 100)}
-                    strokeLinecap="round"
-                    transform="rotate(-90 50 50)"
-                  />
+                <Svg width={90} height={90}>
+                  <Circle cx={45} cy={45} r={38} stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'} strokeWidth={5} fill="none" />
+                  <Circle cx={45} cy={45} r={38} stroke={theme.colors.primary} strokeWidth={5} fill="none" strokeDasharray={2 * Math.PI * 38} strokeDashoffset={2 * Math.PI * 38 * (1 - focusScore.score / 100)} strokeLinecap="round" transform="rotate(-90 45 45)" />
                 </Svg>
                 <View style={styles.focusScoreCenter}>
-                  <Award size={28} color="#FFFFFF" />
+                  <Award size={22} color={theme.colors.primary} />
                 </View>
               </View>
             </View>
-            <Text style={styles.focusScoreDescription}>{focusScore.description}</Text>
-          </LinearGradient>
-
-          {/* View Toggle */}
-          <LinearGradient
-            colors={[theme.colors.card, theme.colors.card + 'DD'] as any}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.viewToggle}
-          >
-            <TouchableOpacity 
-              style={[
-                styles.viewButton,
-                selectedStatView === 'day' && { backgroundColor: theme.colors.primary }
-              ]}
-              onPress={() => setSelectedStatView('day')}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.viewButtonText,
-                { color: selectedStatView === 'day' ? '#FFFFFF' : theme.colors.textSecondary }
-              ]}>Idag</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                styles.viewButton,
-                selectedStatView === 'week' && { backgroundColor: theme.colors.primary }
-              ]}
-              onPress={() => setSelectedStatView('week')}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.viewButtonText,
-                { color: selectedStatView === 'week' ? '#FFFFFF' : theme.colors.textSecondary }
-              ]}>Vecka</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-
-          {/* Enhanced Stats Cards */}
-          <View style={styles.statsGrid}>
-            <LinearGradient
-              colors={[theme.colors.primary + '20', theme.colors.primary + '10'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statCard}
-            >
-              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.primary + '30' }]}>
-                <Brain size={20} color={theme.colors.primary} />
-              </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {selectedStatView === 'day' ? todayStats.sessions : weekStats.sessions}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                Sessioner
-              </Text>
-            </LinearGradient>
-            
-            <LinearGradient
-              colors={[theme.colors.secondary + '20', theme.colors.secondary + '10'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statCard}
-            >
-              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.secondary + '30' }]}>
-                <Zap size={20} color={theme.colors.secondary} />
-              </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {selectedStatView === 'day' 
-                  ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m`
-                  : `${Math.floor(weekStats.minutes / 60)}h`
-                }
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                Total tid
-              </Text>
-            </LinearGradient>
-            
-            <LinearGradient
-              colors={[theme.colors.warning + '20', theme.colors.warning + '10'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statCard}
-            >
-              <View style={[styles.statIconContainer, { backgroundColor: theme.colors.warning + '30' }]}>
-                <Flame size={20} color={theme.colors.warning} />
-              </View>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {streakStats.longest}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                Bästa streak
-              </Text>
-            </LinearGradient>
+            <Text style={[styles.focusScoreDesc, { color: theme.colors.textSecondary }]}>{focusScore.description}</Text>
           </View>
 
-          {/* Week Comparison Card */}
-          <View style={[styles.weekComparisonCard, { backgroundColor: theme.colors.card }]}>
+          <View style={[styles.viewToggle, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]}>
+            {(['day', 'week'] as const).map((view) => (
+              <TouchableOpacity 
+                key={view}
+                style={[
+                  styles.viewToggleButton,
+                  selectedStatView === view && { backgroundColor: theme.colors.primary }
+                ]}
+                onPress={() => setSelectedStatView(view)}
+                activeOpacity={0.8}
+              >
+                <Text style={[
+                  styles.viewToggleText,
+                  { color: selectedStatView === view ? '#FFFFFF' : theme.colors.textMuted }
+                ]}>{view === 'day' ? 'Idag' : 'Vecka'}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.statsGrid}>
+            {[
+              { value: selectedStatView === 'day' ? todayStats.sessions.toString() : weekStats.sessions.toString(), label: 'Sessioner', icon: Brain, color: theme.colors.primary },
+              { value: selectedStatView === 'day' ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m` : `${Math.floor(weekStats.minutes / 60)}h`, label: 'Total tid', icon: Zap, color: '#F59E0B' },
+              { value: streakStats.longest.toString(), label: 'Bästa streak', icon: Flame, color: '#EF4444' },
+            ].map((stat, i) => (
+              <View key={i} style={[styles.statsGridCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+                <View style={[styles.statsGridIcon, { backgroundColor: stat.color + '14' }]}>
+                  <stat.icon size={16} color={stat.color} />
+                </View>
+                <Text style={[styles.statsGridValue, { color: theme.colors.text }]}>{stat.value}</Text>
+                <Text style={[styles.statsGridLabel, { color: theme.colors.textMuted }]}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={[styles.weekComparisonCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
             <View style={styles.weekComparisonHeader}>
-              <BarChart3 size={20} color={theme.colors.primary} />
+              <BarChart3 size={16} color={theme.colors.primary} />
               <Text style={[styles.weekComparisonTitle, { color: theme.colors.text }]}>Veckoförändring</Text>
             </View>
             <View style={styles.weekComparisonContent}>
               <View style={styles.weekComparisonItem}>
-                <Text style={[styles.weekComparisonLabel, { color: theme.colors.textSecondary }]}>Denna vecka</Text>
+                <Text style={[styles.weekComparisonLabel, { color: theme.colors.textMuted }]}>Denna vecka</Text>
                 <Text style={[styles.weekComparisonValue, { color: theme.colors.text }]}>
                   {Math.floor(weekComparison.thisWeek.minutes / 60)}h {weekComparison.thisWeek.minutes % 60}m
                 </Text>
               </View>
-              <View style={styles.weekComparisonDivider} />
+              <View style={[styles.weekComparisonDivider, { backgroundColor: theme.colors.border }]} />
               <View style={styles.weekComparisonItem}>
-                <Text style={[styles.weekComparisonLabel, { color: theme.colors.textSecondary }]}>Förra veckan</Text>
+                <Text style={[styles.weekComparisonLabel, { color: theme.colors.textMuted }]}>Förra veckan</Text>
                 <Text style={[styles.weekComparisonValue, { color: theme.colors.text }]}>
                   {Math.floor(weekComparison.lastWeek.minutes / 60)}h {weekComparison.lastWeek.minutes % 60}m
                 </Text>
               </View>
-              <View style={[
-                styles.weekComparisonBadge, 
-                { backgroundColor: weekComparison.isImprovement ? theme.colors.success + '20' : theme.colors.error + '20' }
-              ]}>
+              <View style={[styles.weekComparisonBadge, { backgroundColor: weekComparison.isImprovement ? '#10B981' + '14' : '#EF4444' + '14' }]}>
                 {weekComparison.isImprovement ? (
-                  <TrendingUp size={16} color={theme.colors.success} />
+                  <TrendingUp size={14} color="#10B981" />
                 ) : (
-                  <TrendingDown size={16} color={theme.colors.error} />
+                  <TrendingDown size={14} color="#EF4444" />
                 )}
-                <Text style={[
-                  styles.weekComparisonBadgeText,
-                  { color: weekComparison.isImprovement ? theme.colors.success : theme.colors.error }
-                ]}>
+                <Text style={[styles.weekComparisonBadgeText, { color: weekComparison.isImprovement ? '#10B981' : '#EF4444' }]}>
                   {weekComparison.percentChange > 0 ? '+' : ''}{weekComparison.percentChange}%
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* Weekly Graph */}
           {selectedStatView === 'week' && (
-            <LinearGradient
-              colors={[theme.colors.card, theme.colors.card + 'EE'] as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.weeklyGraph}
-            >
+            <View style={[styles.weeklyGraph, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
               <Text style={[styles.graphTitle, { color: theme.colors.text }]}>Veckoöversikt</Text>
               <View style={styles.graphBars}>
                 {weekStats.dailyStats.map((day: any, i: number) => {
                   const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
                   const isToday = day.date.toDateString() === new Date().toDateString();
-                  const maxMinutes = Math.max(60, Math.max(...weekStats.dailyStats.map(d => d.minutes)));
+                  const maxMinutes = Math.max(60, Math.max(...weekStats.dailyStats.map((d: any) => d.minutes)));
                   const barHeight = Math.max(4, (day.minutes / maxMinutes) * 100);
                   
                   return (
                     <View key={`day-${i}`} style={styles.dayColumn}>
                       <View style={styles.barContainer}>
-                        <LinearGradient
-                          colors={isToday 
-                            ? theme.colors.gradient as any
-                            : [theme.colors.border, theme.colors.border + 'AA'] as any
-                          }
-                          start={{ x: 0, y: 1 }}
-                          end={{ x: 0, y: 0 }}
+                        <View
                           style={[
                             styles.dayBar, 
-                            { height: `${barHeight}%` }
+                            { 
+                              height: `${barHeight}%`,
+                              backgroundColor: isToday ? theme.colors.primary : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
+                            }
                           ]} 
                         />
-                        {day.minutes > 0 && (
-                          <Text style={[styles.barValue, { color: theme.colors.text }]}>
-                            {Math.round(day.minutes / 60)}h
-                          </Text>
-                        )}
                       </View>
                       <Text style={[
                         styles.dayLabel, 
                         { 
-                          color: isToday ? theme.colors.primary : theme.colors.textSecondary,
-                          fontWeight: isToday ? '700' : '500'
+                          color: isToday ? theme.colors.primary : theme.colors.textMuted,
+                          fontWeight: isToday ? '600' as const : '400' as const
                         }
                       ]}>{dayName}</Text>
                     </View>
                   );
                 })}
               </View>
-            </LinearGradient>
+            </View>
           )}
 
-          {/* Productivity by Time of Day */}
-          <View style={[styles.productivityCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.productivityHeader}>
-              <Activity size={20} color={theme.colors.secondary} />
-              <Text style={[styles.productivityTitle, { color: theme.colors.text }]}>Produktivitet per tid</Text>
+          <View style={[styles.productivityCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+            <View style={styles.cardHeader}>
+              <Activity size={16} color={theme.colors.secondary} />
+              <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>Produktivitet per tid</Text>
             </View>
             <View style={styles.productivityBars}>
               {Object.entries(productivityByTimeOfDay.periods).map(([key, period]) => {
@@ -2219,24 +1819,16 @@ export default function TimerScreen() {
                 return (
                   <View key={key} style={styles.productivityRow}>
                     <View style={styles.productivityLabelContainer}>
-                      <View style={[styles.productivityIcon, { backgroundColor: theme.colors.secondary + '20' }]}>
-                        <IconComponent size={16} color={theme.colors.secondary} />
+                      <View style={[styles.productivityIcon, { backgroundColor: theme.colors.secondary + '14' }]}>
+                        <IconComponent size={13} color={theme.colors.secondary} />
                       </View>
-                      <View>
-                        <Text style={[styles.productivityLabel, { color: theme.colors.text }]}>{period.label}</Text>
-                        <Text style={[styles.productivityHours, { color: theme.colors.textSecondary }]}>{period.hours}</Text>
-                      </View>
+                      <Text style={[styles.productivityLabel, { color: theme.colors.text }]}>{period.label}</Text>
                     </View>
                     <View style={styles.productivityBarContainer}>
-                      <View style={[styles.productivityBarBg, { backgroundColor: theme.colors.border }]}>
-                        <LinearGradient
-                          colors={theme.colors.gradient as any}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={[styles.productivityBarFill, { width: `${Math.max(percentage, 2)}%` }]}
-                        />
+                      <View style={[styles.productivityBarBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                        <View style={[styles.productivityBarFill, { width: `${Math.max(percentage, 2)}%`, backgroundColor: theme.colors.secondary }]} />
                       </View>
-                      <Text style={[styles.productivityValue, { color: theme.colors.text }]}>
+                      <Text style={[styles.productivityValue, { color: theme.colors.textMuted }]}>
                         {Math.round(period.minutes / 60)}h
                       </Text>
                     </View>
@@ -2246,52 +1838,38 @@ export default function TimerScreen() {
             </View>
           </View>
 
-          {/* Course Distribution */}
           {courseDistribution.length > 0 && (
-            <View style={[styles.courseDistributionCard, { backgroundColor: theme.colors.card }]}>
-              <View style={styles.courseDistributionHeader}>
-                <PieChart size={20} color={theme.colors.primary} />
-                <Text style={[styles.courseDistributionTitle, { color: theme.colors.text }]}>Kursfördelning</Text>
+            <View style={[styles.courseDistCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+              <View style={styles.cardHeader}>
+                <PieChart size={16} color={theme.colors.primary} />
+                <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>Kursfördelning</Text>
               </View>
-              <View style={styles.courseDistributionList}>
-                {courseDistribution.slice(0, 5).map((course, index) => {
-                  const totalMinutes = courseDistribution.reduce((sum, c) => sum + c.minutes, 0);
-                  const percentage = totalMinutes > 0 ? Math.round((course.minutes / totalMinutes) * 100) : 0;
-                  
-                  return (
-                    <View key={index} style={styles.courseDistributionItem}>
-                      <View style={styles.courseDistributionLeft}>
-                        <View style={[styles.courseColorDot, { backgroundColor: course.color }]} />
-                        <Text style={[styles.courseDistributionName, { color: theme.colors.text }]} numberOfLines={1}>
-                          {course.name}
-                        </Text>
-                      </View>
-                      <View style={styles.courseDistributionRight}>
-                        <View style={[styles.courseDistributionBarBg, { backgroundColor: theme.colors.border }]}>
-                          <View style={[styles.courseDistributionBarFill, { width: `${percentage}%`, backgroundColor: course.color }]} />
-                        </View>
-                        <Text style={[styles.courseDistributionPercent, { color: theme.colors.textSecondary }]}>
-                          {percentage}%
-                        </Text>
-                      </View>
+              {courseDistribution.slice(0, 5).map((course, index) => {
+                const totalMinutes = courseDistribution.reduce((sum, c) => sum + c.minutes, 0);
+                const percentage = totalMinutes > 0 ? Math.round((course.minutes / totalMinutes) * 100) : 0;
+                return (
+                  <View key={index} style={styles.courseDistItem}>
+                    <View style={styles.courseDistLeft}>
+                      <View style={[styles.courseDistDot, { backgroundColor: course.color }]} />
+                      <Text style={[styles.courseDistName, { color: theme.colors.text }]} numberOfLines={1}>{course.name}</Text>
                     </View>
-                  );
-                })}
-              </View>
+                    <Text style={[styles.courseDistPercent, { color: theme.colors.textMuted }]}>{percentage}%</Text>
+                  </View>
+                );
+              })}
             </View>
           )}
 
-          {/* Monthly Heatmap */}
-          <View style={[styles.heatmapCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.heatmapHeader}>
-              <Calendar size={20} color={theme.colors.warning} />
-              <Text style={[styles.heatmapTitle, { color: theme.colors.text }]}>
+          <View style={[styles.heatmapCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+            <View style={styles.cardHeader}>
+              <Calendar size={16} color={theme.colors.warning} />
+              <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>
                 {monthlyHeatmap.monthName.charAt(0).toUpperCase() + monthlyHeatmap.monthName.slice(1)}
               </Text>
             </View>
             <View style={styles.heatmapWeekdays}>
-              {['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'].map(day => (
-                <Text key={day} style={[styles.heatmapWeekday, { color: theme.colors.textSecondary }]}>{day}</Text>
+              {['M', 'T', 'O', 'T', 'F', 'L', 'S'].map((day, i) => (
+                <Text key={`${day}-${i}`} style={[styles.heatmapWeekday, { color: theme.colors.textMuted }]}>{day}</Text>
               ))}
             </View>
             <View style={styles.heatmapGrid}>
@@ -2300,10 +1878,10 @@ export default function TimerScreen() {
               ))}
               {monthlyHeatmap.data.map((day) => {
                 const intensityColors = [
-                  theme.colors.border,
-                  theme.colors.primary + '40',
-                  theme.colors.primary + '70',
-                  theme.colors.primary + 'AA',
+                  isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                  theme.colors.primary + '30',
+                  theme.colors.primary + '55',
+                  theme.colors.primary + '88',
                   theme.colors.primary
                 ];
                 const isToday = day.day === new Date().getDate();
@@ -2314,12 +1892,12 @@ export default function TimerScreen() {
                     style={[
                       styles.heatmapCell,
                       { backgroundColor: intensityColors[day.intensity] },
-                      isToday && styles.heatmapCellToday
+                      isToday && { borderWidth: 1.5, borderColor: theme.colors.warning }
                     ]}
                   >
                     <Text style={[
                       styles.heatmapDayText,
-                      { color: day.intensity >= 2 ? '#FFFFFF' : theme.colors.textSecondary },
+                      { color: day.intensity >= 2 ? '#FFFFFF' : theme.colors.textMuted },
                       isToday && { fontWeight: '700' as const }
                     ]}>
                       {day.day}
@@ -2329,124 +1907,84 @@ export default function TimerScreen() {
               })}
             </View>
             <View style={styles.heatmapLegend}>
-              <Text style={[styles.heatmapLegendText, { color: theme.colors.textSecondary }]}>Mindre</Text>
+              <Text style={[styles.heatmapLegendText, { color: theme.colors.textMuted }]}>Mindre</Text>
               <View style={styles.heatmapLegendColors}>
                 {[0, 1, 2, 3, 4].map(i => (
                   <View 
                     key={i} 
-                    style={[
-                      styles.heatmapLegendCell,
-                      { backgroundColor: [
-                        theme.colors.border,
-                        theme.colors.primary + '40',
-                        theme.colors.primary + '70',
-                        theme.colors.primary + 'AA',
-                        theme.colors.primary
-                      ][i] }
-                    ]} 
+                    style={[styles.heatmapLegendCell, { backgroundColor: [
+                      isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                      theme.colors.primary + '30',
+                      theme.colors.primary + '55',
+                      theme.colors.primary + '88',
+                      theme.colors.primary
+                    ][i] }]} 
                   />
                 ))}
               </View>
-              <Text style={[styles.heatmapLegendText, { color: theme.colors.textSecondary }]}>Mer</Text>
+              <Text style={[styles.heatmapLegendText, { color: theme.colors.textMuted }]}>Mer</Text>
             </View>
           </View>
 
-          {/* Extra Stats Row */}
           <View style={styles.extraStatsRow}>
-            <View style={[styles.extraStatCard, { backgroundColor: theme.colors.card }]}>
-              <Clock size={20} color={theme.colors.primary} />
-              <Text style={[styles.extraStatValue, { color: theme.colors.text }]}>{longestSession}m</Text>
-              <Text style={[styles.extraStatLabel, { color: theme.colors.textSecondary }]}>Längsta session</Text>
-            </View>
-            <View style={[styles.extraStatCard, { backgroundColor: theme.colors.card }]}>
-              <Target size={20} color={theme.colors.secondary} />
-              <Text style={[styles.extraStatValue, { color: theme.colors.text }]}>
-                {Math.floor(totalAllTime / 60)}h
-              </Text>
-              <Text style={[styles.extraStatLabel, { color: theme.colors.textSecondary }]}>Totalt all tid</Text>
-            </View>
-            <View style={[styles.extraStatCard, { backgroundColor: theme.colors.card }]}>
-              <Brain size={20} color={theme.colors.warning} />
-              <Text style={[styles.extraStatValue, { color: theme.colors.text }]}>
-                {pomodoroSessions.length > 0 ? Math.round(totalAllTime / pomodoroSessions.length) : 0}m
-              </Text>
-              <Text style={[styles.extraStatLabel, { color: theme.colors.textSecondary }]}>Snitt/session</Text>
-            </View>
+            {[
+              { value: `${longestSession}m`, label: 'Längsta', icon: Clock, color: theme.colors.primary },
+              { value: `${Math.floor(totalAllTime / 60)}h`, label: 'Totalt', icon: Target, color: theme.colors.secondary },
+              { value: `${pomodoroSessions.length > 0 ? Math.round(totalAllTime / pomodoroSessions.length) : 0}m`, label: 'Snitt', icon: Brain, color: theme.colors.warning },
+            ].map((stat, i) => (
+              <View key={i} style={[styles.extraStatCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+                <stat.icon size={16} color={stat.color} />
+                <Text style={[styles.extraStatValue, { color: theme.colors.text }]}>{stat.value}</Text>
+                <Text style={[styles.extraStatLabel, { color: theme.colors.textMuted }]}>{stat.label}</Text>
+              </View>
+            ))}
           </View>
 
-          {/* Study Insights */}
-          <View style={[styles.insightsCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.insightsHeader}>
-              <Lightbulb size={20} color="#FFD700" />
-              <Text style={[styles.insightsTitle, { color: theme.colors.text }]}>Insikter</Text>
+          <View style={[styles.insightsCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+            <View style={styles.cardHeader}>
+              <Lightbulb size={16} color="#F59E0B" />
+              <Text style={[styles.cardHeaderTitle, { color: theme.colors.text }]}>Insikter</Text>
             </View>
-            <View style={styles.insightsList}>
-              {studyInsights.map((insight, index) => (
-                <View 
-                  key={index} 
-                  style={[
-                    styles.insightItem,
-                    { 
-                      backgroundColor: insight.type === 'success' ? theme.colors.success + '10' :
-                        insight.type === 'warning' ? theme.colors.warning + '10' : theme.colors.primary + '10'
-                    }
-                  ]}
-                >
-                  <Text style={styles.insightIcon}>{insight.icon}</Text>
-                  <View style={styles.insightContent}>
-                    <Text style={[styles.insightItemTitle, { color: theme.colors.text }]}>{insight.title}</Text>
-                    <Text style={[styles.insightItemDescription, { color: theme.colors.textSecondary }]}>
-                      {insight.description}
-                    </Text>
-                  </View>
+            {studyInsights.map((insight, index) => (
+              <View 
+                key={index} 
+                style={[styles.insightItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)' }]}
+              >
+                <Text style={styles.insightEmoji}>{insight.icon}</Text>
+                <View style={styles.insightContent}>
+                  <Text style={[styles.insightTitle, { color: theme.colors.text }]}>{insight.title}</Text>
+                  <Text style={[styles.insightDesc, { color: theme.colors.textMuted }]}>{insight.description}</Text>
                 </View>
-              ))}
-            </View>
+              </View>
+            ))}
           </View>
 
           </PremiumGate>
         </View>
       </ScrollView>
 
-      {/* Completion Screen Modal */}
-      <Modal
-        visible={showCompletionScreen}
-        animationType="fade"
-        presentationStyle="overFullScreen"
-        transparent={true}
-      >
+      <Modal visible={showCompletionScreen} animationType="fade" presentationStyle="overFullScreen" transparent={true}>
         <CompletionScreen
           data={completedSessionData}
-          onSave={() => {
-            setShowCompletionScreen(false);
-            setCompletedSessionData(null);
-          }}
-          onDiscard={() => {
-            setShowCompletionScreen(false);
-            setCompletedSessionData(null);
-          }}
+          onSave={() => { setShowCompletionScreen(false); setCompletedSessionData(null); }}
+          onDiscard={() => { setShowCompletionScreen(false); setCompletedSessionData(null); }}
           dailyGoal={dailyGoal}
           currentSessions={sessionCount}
         />
       </Modal>
 
-      {/* Settings Modal */}
-      <Modal
-        visible={showSettings}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
+      <Modal visible={showSettings} animationType="slide" presentationStyle="pageSheet">
         <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
             <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Inställningar</Text>
             <TouchableOpacity onPress={() => setShowSettings(false)}>
-              <Text style={[styles.modalCloseButton, { color: theme.colors.primary }]}>Stäng</Text>
+              <Text style={[styles.modalCloseText, { color: theme.colors.primary }]}>Klar</Text>
             </TouchableOpacity>
           </View>
           
-          <View style={styles.modalContent}>
+          <View style={styles.modalBody}>
             <View style={styles.settingGroup}>
-              <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Fokustid (minuter)</Text>
+              <Text style={[styles.settingLabel, { color: theme.colors.textSecondary }]}>FOKUSTID</Text>
               <View style={styles.timeSelector}>
                 {[15, 25, 45, 60].map((time) => (
                   <TouchableOpacity
@@ -2454,9 +1992,9 @@ export default function TimerScreen() {
                     style={[
                       styles.timeOption,
                       { 
-                        backgroundColor: focusTime === time ? theme.colors.primary : theme.colors.card,
-                        borderWidth: 2,
-                        borderColor: focusTime === time ? theme.colors.primary : 'transparent'
+                        backgroundColor: focusTime === time 
+                          ? theme.colors.primary 
+                          : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
                       }
                     ]}
                     onPress={() => {
@@ -2464,21 +2002,20 @@ export default function TimerScreen() {
                       if (sessionType === 'focus' && timerState === 'idle') {
                         setTimeLeft(time * 60);
                       }
-                      showSuccess('Inställning sparad', `Fokustid: ${time} minuter`);
                     }}
                     activeOpacity={0.8}
                   >
                     <Text style={[
                       styles.timeOptionText,
                       { color: focusTime === time ? '#FFFFFF' : theme.colors.text }
-                    ]}>{time}</Text>
+                    ]}>{time}m</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
 
             <View style={styles.settingGroup}>
-              <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Paustid (minuter)</Text>
+              <Text style={[styles.settingLabel, { color: theme.colors.textSecondary }]}>PAUSTID</Text>
               <View style={styles.timeSelector}>
                 {[5, 10, 15, 20].map((time) => (
                   <TouchableOpacity
@@ -2486,9 +2023,9 @@ export default function TimerScreen() {
                     style={[
                       styles.timeOption,
                       { 
-                        backgroundColor: breakTime === time ? theme.colors.primary : theme.colors.card,
-                        borderWidth: 2,
-                        borderColor: breakTime === time ? theme.colors.primary : 'transparent'
+                        backgroundColor: breakTime === time 
+                          ? theme.colors.primary 
+                          : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
                       }
                     ]}
                     onPress={() => {
@@ -2496,47 +2033,38 @@ export default function TimerScreen() {
                       if (sessionType === 'break' && timerState === 'idle') {
                         setTimeLeft(time * 60);
                       }
-                      showSuccess('Inställning sparad', `Paustid: ${time} minuter`);
                     }}
                     activeOpacity={0.8}
                   >
                     <Text style={[
                       styles.timeOptionText,
                       { color: breakTime === time ? '#FFFFFF' : theme.colors.text }
-                    ]}>{time}</Text>
+                    ]}>{time}m</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
 
             <TouchableOpacity 
-              style={[styles.resetButton, { backgroundColor: theme.colors.error }]} 
+              style={[styles.resetButton, { backgroundColor: '#EF4444' + '12' }]}
               onPress={async () => {
                 await resetTimer();
                 showSuccess('Timer återställd', 'Redo för en ny session');
               }}
+              activeOpacity={0.7}
             >
-              <Text style={styles.resetButtonText}>Återställ timer</Text>
+              <Text style={[styles.resetButtonText, { color: '#EF4444' }]}>Återställ timer</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Add Exam Modal */}
-      <AddExamModal
-        visible={showAddExam}
-        onClose={() => setShowAddExam(false)}
-      />
+      <AddExamModal visible={showAddExam} onClose={() => setShowAddExam(false)} />
 
-      {/* Add Session Modal */}
-      <Modal
-        visible={showAddSession}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
+      <Modal visible={showAddSession} animationType="slide" presentationStyle="pageSheet">
         <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Ny Studiesession</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Ny session</Text>
             <TouchableOpacity onPress={() => {
               setShowAddSession(false);
               setNewSessionCourse('');
@@ -2546,29 +2074,31 @@ export default function TimerScreen() {
               setShowDatePicker(false);
               setShowTimePicker(false);
             }}>
-              <Text style={[styles.modalCloseButton, { color: theme.colors.primary }]}>Stäng</Text>
+              <Text style={[styles.modalCloseText, { color: theme.colors.primary }]}>Stäng</Text>
             </TouchableOpacity>
           </View>
           
-          <ScrollView style={styles.modalContent}>
+          <ScrollView style={styles.modalBody}>
             <View style={styles.settingGroup}>
-              <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Kurs</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseList}>
+              <Text style={[styles.settingLabel, { color: theme.colors.textSecondary }]}>KURS</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.courseListContent}>
                 <TouchableOpacity
                   style={[
                     styles.courseChip,
-                    !newSessionCourse && styles.courseChipActive,
                     { 
-                      backgroundColor: !newSessionCourse ? theme.colors.primary : theme.colors.card,
-                      borderColor: !newSessionCourse ? theme.colors.primary : 'transparent'
+                      backgroundColor: !newSessionCourse 
+                        ? (isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)')
+                        : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                      borderColor: !newSessionCourse ? theme.colors.primary + '40' : 'transparent',
+                      borderWidth: 1,
                     }
                   ]}
                   onPress={() => setNewSessionCourse('')}
-                  activeOpacity={0.8}
+                  activeOpacity={0.7}
                 >
                   <Text style={[
                     styles.courseChipText,
-                    { color: !newSessionCourse ? '#FFFFFF' : theme.colors.text }
+                    { color: !newSessionCourse ? theme.colors.primary : theme.colors.textSecondary }
                   ]}>Allmänt</Text>
                 </TouchableOpacity>
                 {courses.map((course) => (
@@ -2576,18 +2106,20 @@ export default function TimerScreen() {
                     key={course.id}
                     style={[
                       styles.courseChip,
-                      newSessionCourse === course.id && styles.courseChipActive,
                       { 
-                        backgroundColor: newSessionCourse === course.id ? theme.colors.primary : theme.colors.card,
-                        borderColor: newSessionCourse === course.id ? theme.colors.primary : 'transparent'
+                        backgroundColor: newSessionCourse === course.id 
+                          ? (isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)')
+                          : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                        borderColor: newSessionCourse === course.id ? theme.colors.primary + '40' : 'transparent',
+                        borderWidth: 1,
                       }
                     ]}
                     onPress={() => setNewSessionCourse(course.id)}
-                    activeOpacity={0.8}
+                    activeOpacity={0.7}
                   >
                     <Text style={[
                       styles.courseChipText,
-                      { color: newSessionCourse === course.id ? '#FFFFFF' : theme.colors.text }
+                      { color: newSessionCourse === course.id ? theme.colors.primary : theme.colors.textSecondary }
                     ]}>{course.title}</Text>
                   </TouchableOpacity>
                 ))}
@@ -2595,7 +2127,7 @@ export default function TimerScreen() {
             </View>
 
             <View style={styles.settingGroup}>
-              <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Längd (minuter)</Text>
+              <Text style={[styles.settingLabel, { color: theme.colors.textSecondary }]}>LÄNGD</Text>
               <View style={styles.timeSelector}>
                 {[15, 25, 45, 60, 90].map((time) => (
                   <TouchableOpacity
@@ -2603,9 +2135,9 @@ export default function TimerScreen() {
                     style={[
                       styles.timeOption,
                       { 
-                        backgroundColor: newSessionDuration === time ? theme.colors.primary : theme.colors.card,
-                        borderWidth: 2,
-                        borderColor: newSessionDuration === time ? theme.colors.primary : 'transparent'
+                        backgroundColor: newSessionDuration === time 
+                          ? theme.colors.primary 
+                          : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
                       }
                     ]}
                     onPress={() => setNewSessionDuration(time)}
@@ -2614,42 +2146,33 @@ export default function TimerScreen() {
                     <Text style={[
                       styles.timeOptionText,
                       { color: newSessionDuration === time ? '#FFFFFF' : theme.colors.text }
-                    ]}>{time}</Text>
+                    ]}>{time}m</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
 
             <View style={styles.settingGroup}>
-              <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Datum & Tid</Text>
-              <View style={styles.dateTimeContainer}>
+              <Text style={[styles.settingLabel, { color: theme.colors.textSecondary }]}>DATUM & TID</Text>
+              <View style={styles.dateTimeRow}>
                 <TouchableOpacity
-                  style={[styles.dateTimeButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                  style={[styles.dateTimeBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
                   onPress={() => setShowDatePicker(true)}
                   activeOpacity={0.7}
                 >
-                  <Calendar size={20} color={theme.colors.primary} />
-                  <Text style={[styles.dateTimeButtonText, { color: theme.colors.text }]}>
-                    {newSessionDate.toLocaleDateString('sv-SE', { 
-                      weekday: 'short',
-                      month: 'short', 
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
+                  <Calendar size={16} color={theme.colors.primary} />
+                  <Text style={[styles.dateTimeBtnText, { color: theme.colors.text }]}>
+                    {newSessionDate.toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' })}
                   </Text>
                 </TouchableOpacity>
-                
                 <TouchableOpacity
-                  style={[styles.dateTimeButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                  style={[styles.dateTimeBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
                   onPress={() => setShowTimePicker(true)}
                   activeOpacity={0.7}
                 >
-                  <Clock size={20} color={theme.colors.secondary} />
-                  <Text style={[styles.dateTimeButtonText, { color: theme.colors.text }]}>
-                    {newSessionDate.toLocaleTimeString('sv-SE', { 
-                      hour: '2-digit', 
-                      minute: '2-digit'
-                    })}
+                  <Clock size={16} color={theme.colors.secondary} />
+                  <Text style={[styles.dateTimeBtnText, { color: theme.colors.text }]}>
+                    {newSessionDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -2663,16 +2186,11 @@ export default function TimerScreen() {
                   textColor={theme.colors.text}
                   accentColor={theme.colors.primary}
                   onChange={(event, selectedDate) => {
-                    if (Platform.OS === 'android') {
-                      setShowDatePicker(false);
-                    }
-                    if (selectedDate) {
-                      setNewSessionDate(selectedDate);
-                    }
+                    if (Platform.OS === 'android') setShowDatePicker(false);
+                    if (selectedDate) setNewSessionDate(selectedDate);
                   }}
                 />
               )}
-              
               {(Platform.OS === 'ios' || showTimePicker) && showTimePicker && (
                 <DateTimePicker
                   value={newSessionDate}
@@ -2681,43 +2199,28 @@ export default function TimerScreen() {
                   textColor={theme.colors.text}
                   accentColor={theme.colors.primary}
                   onChange={(event, selectedTime) => {
-                    if (Platform.OS === 'android') {
-                      setShowTimePicker(false);
-                    }
-                    if (selectedTime) {
-                      setNewSessionDate(selectedTime);
-                    }
+                    if (Platform.OS === 'android') setShowTimePicker(false);
+                    if (selectedTime) setNewSessionDate(selectedTime);
                   }}
                 />
               )}
-              
               {Platform.OS === 'ios' && (showDatePicker || showTimePicker) && (
                 <TouchableOpacity
-                  style={[styles.doneButton, { backgroundColor: theme.colors.primary }]}
-                  onPress={() => {
-                    setShowDatePicker(false);
-                    setShowTimePicker(false);
-                  }}
+                  style={[styles.donePickerBtn, { backgroundColor: theme.colors.primary }]}
+                  onPress={() => { setShowDatePicker(false); setShowTimePicker(false); }}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.doneButtonText}>Klar</Text>
+                  <Text style={styles.donePickerBtnText}>Klar</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             <View style={styles.settingGroup}>
-              <Text style={[styles.settingLabel, { color: theme.colors.text }]}>Anteckningar (valfritt)</Text>
+              <Text style={[styles.settingLabel, { color: theme.colors.textSecondary }]}>ANTECKNINGAR</Text>
               <TextInput
-                style={[
-                  styles.notesInput,
-                  { 
-                    backgroundColor: theme.colors.card,
-                    color: theme.colors.text,
-                    borderColor: theme.colors.border
-                  }
-                ]}
+                style={[styles.notesInput, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', color: theme.colors.text }]}
                 placeholder="Vad ska du plugga?"
-                placeholderTextColor={theme.colors.textSecondary}
+                placeholderTextColor={theme.colors.textMuted}
                 value={newSessionNotes}
                 onChangeText={setNewSessionNotes}
                 multiline
@@ -2725,53 +2228,37 @@ export default function TimerScreen() {
               />
             </View>
 
-            <LinearGradient
-              colors={theme.colors.gradient as any}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.saveButtonGradient}
+            <TouchableOpacity 
+              style={[styles.addSessionBtn, { backgroundColor: theme.colors.primary }]}
+              onPress={() => {
+                const courseName = newSessionCourse 
+                  ? courses.find((c) => c.id === newSessionCourse)?.title || 'Okänd kurs'
+                  : 'Allmän session';
+                
+                const newSession: PlannedSession = {
+                  id: `planned-${Date.now()}`,
+                  courseId: newSessionCourse || undefined,
+                  courseName,
+                  date: newSessionDate,
+                  duration: newSessionDuration,
+                  notes: newSessionNotes || undefined,
+                  completed: false
+                };
+                
+                setPlannedSessions(prev => [...prev, newSession]);
+                setShowAddSession(false);
+                setNewSessionCourse('');
+                setNewSessionNotes('');
+                setNewSessionDuration(25);
+                setNewSessionDate(new Date());
+                setShowDatePicker(false);
+                setShowTimePicker(false);
+                showSuccess('Session planerad', `${courseName} - ${newSessionDuration} min`);
+              }}
+              activeOpacity={0.8}
             >
-              <TouchableOpacity 
-                style={styles.saveButton} 
-                onPress={() => {
-                  const courseName = newSessionCourse 
-                    ? courses.find((c) => c.id === newSessionCourse)?.title || 'Okänd kurs'
-                    : 'Allmän session';
-                  
-                  const newSession: PlannedSession = {
-                    id: `planned-${Date.now()}`,
-                    courseId: newSessionCourse || undefined,
-                    courseName,
-                    date: newSessionDate,
-                    duration: newSessionDuration,
-                    notes: newSessionNotes || undefined,
-                    completed: false
-                  };
-                  
-                  setPlannedSessions(prev => [...prev, newSession]);
-                  setShowAddSession(false);
-                  setNewSessionCourse('');
-                  setNewSessionNotes('');
-                  setNewSessionDuration(25);
-                  setNewSessionDate(new Date());
-                  setShowDatePicker(false);
-                  setShowTimePicker(false);
-                  showSuccess('Session planerad', `${courseName} - ${newSessionDuration} min`);
-                  
-                  const scheduledDate = new Date(newSessionDate);
-                  const now = new Date();
-                  if (scheduledDate > now) {
-                    const hours = Math.floor((scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60));
-                    if (hours < 24) {
-                      showAchievement('Planerad! 📅', `Session schemalagd om ${hours}h`);
-                    }
-                  }
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.saveButtonText}>Lägg till session</Text>
-              </TouchableOpacity>
-            </LinearGradient>
+              <Text style={styles.addSessionBtnText}>Lägg till session</Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
       </Modal>
@@ -2788,787 +2275,258 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 40,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 8,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   headerLeft: {
     flex: 1,
   },
   headerRight: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
-  greeting: {
-    fontSize: 28,
+  headerTitle: {
+    fontSize: 32,
     fontWeight: '700',
-    marginBottom: 4,
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
   },
-  subtitle: {
-    fontSize: 16,
+  headerSubtitle: {
+    fontSize: 15,
     fontWeight: '400',
+    marginTop: 2,
+    letterSpacing: -0.2,
   },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  headerIconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
   },
   timerSection: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
+    alignItems: 'center',
+    paddingVertical: 20,
   },
   timerWrapper: {
     alignItems: 'center',
     position: 'relative',
   },
-  timerSvg: {
-    position: 'absolute',
-  },
   timerInnerContent: {
-    width: 260,
-    height: 260,
+    position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  timerText: {
-    fontSize: 56,
+  timerDigits: {
+    fontSize: 54,
     fontWeight: '200',
     fontVariant: ['tabular-nums'],
-    textAlign: 'center',
-    letterSpacing: -1,
-    marginBottom: 12,
+    letterSpacing: -2,
     fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
+      ios: 'Menlo',
+      android: 'monospace',
+      default: 'monospace',
     }),
   },
-  timerMetaContainer: {
+  sessionTypePill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-  },
-  sessionCourse: {
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
-    letterSpacing: 0.2,
-  },
-  sessionBadgeWrapper: {
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
+    marginTop: 10,
   },
-  sessionBadgeGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    gap: 6,
-  },
-  sessionBadgeText: {
+  sessionTypePillText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
+    letterSpacing: 0.3,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    color: '#FFFFFF',
   },
-  sessionTypeIndicator: {
-    alignItems: 'center',
-  },
-  sessionTypeBadgeGradient: {
-    borderRadius: 24,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  sessionTypeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  sessionTypeText: {
+  timerCourseLabel: {
     fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontWeight: '500',
+    marginTop: 8,
+    maxWidth: 160,
+    textAlign: 'center',
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
     letterSpacing: 1,
-    color: '#FFFFFF',
+    textTransform: 'uppercase',
+    marginBottom: 10,
+    paddingHorizontal: 20,
   },
   courseSection: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  courseSectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
     marginBottom: 16,
-    letterSpacing: -0.3,
   },
-  courseList: {
-    flexDirection: 'row',
+  courseListContent: {
+    paddingHorizontal: 20,
+    gap: 8,
   },
   courseChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    marginRight: 12,
-    borderWidth: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  courseChipActive: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 6,
   },
   courseChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-    letterSpacing: 0.2,
+    fontSize: 13,
+    fontWeight: '500',
   },
-  controls: {
+  controlsSection: {
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  idleControls: {
+    alignItems: 'center',
+    gap: 24,
   },
   playButton: {
+    borderRadius: 40,
+  },
+  playButtonGradient: {
     width: 80,
     height: 80,
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'column',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  quickTimeRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  quickTimeChip: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 16,
+  },
+  quickTimeText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
   activeControls: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 20,
   },
-  secondaryButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  controlButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
-
-
-  dateSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  mainControlButton: {
+    borderRadius: 36,
+  },
+  mainControlGradient: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
-    marginBottom: 20,
-    gap: 16,
+    alignItems: 'center',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  dateArrow: {
-    padding: 8,
-  },
-  dateText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  viewToggle: {
+  statsRow: {
     flexDirection: 'row',
-    borderRadius: 14,
-    padding: 4,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    paddingHorizontal: 20,
+    gap: 10,
+    marginTop: 20,
+    marginBottom: 24,
   },
-  viewButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  viewButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  statCard: {
+  statMiniCard: {
     flex: 1,
+    alignItems: 'center',
+    paddingVertical: 16,
     borderRadius: 16,
-    padding: 18,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
   },
-  statValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    marginBottom: 4,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
-  },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  weeklyGraph: {
+  statMiniIcon: {
+    width: 36,
+    height: 36,
     borderRadius: 18,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  graphTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 16,
-  },
-  graphBars: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    height: 120,
-  },
-  dayColumn: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  barContainer: {
-    width: '100%',
-    height: 100,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
-  dayBar: {
-    width: 24,
-    borderRadius: 4,
-    minHeight: 4,
-  },
-  dayLabel: {
-    fontSize: 11,
-    fontWeight: '400',
-  },
-  modalContainer: {
-    flex: 1,
-    paddingTop: 60,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  modalCloseButton: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  modalContent: {
-    flex: 1,
-    padding: 20,
-  },
-  settingGroup: {
-    marginBottom: 32,
-  },
-  settingLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 16,
-  },
-  timeSelector: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  timeOption: {
-    borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  timeOptionText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  resetButton: {
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 32,
-  },
-  resetButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-
-  sessionTypeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
-  sessionCounter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
-    marginTop: 12,
-  },
-  sessionCounterText: {
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  playButtonGradient: {
-    borderRadius: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  playButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-    marginTop: 4,
-  },
-
-  quickStatsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 24,
-    marginBottom: 24,
-    gap: 12,
-  },
-  quickStatCard: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 20,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  quickStatIconWrapper: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  quickStatValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    textAlign: 'center',
-    marginBottom: 4,
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
-  },
-  quickStatLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  plannerSection: {
-    paddingHorizontal: 24,
-    marginBottom: 24,
-  },
-  plannerCard: {
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  plannerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    gap: 16,
-  },
-  plannerIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  plannerInfo: {
-    flex: 1,
-  },
-  plannerTitle: {
+  statMiniValue: {
     fontSize: 18,
     fontWeight: '700',
-    letterSpacing: -0.4,
-    marginBottom: 4,
-  },
-  plannerSubtitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    opacity: 0.8,
-  },
-  chevronContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statsSection: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  statsSectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
     letterSpacing: -0.5,
+    marginBottom: 2,
+  },
+  statMiniLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0.2,
+  },
+  sectionContainer: {
+    paddingHorizontal: 20,
     marginBottom: 20,
   },
-  statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    marginBottom: 16,
   },
-  barValue: {
-    position: 'absolute',
-    bottom: '105%',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-
-
-  sessionProgressBar: {
-    width: 100,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 8,
-    overflow: 'hidden',
-  },
-  sessionProgressFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  idleControls: {
-    alignItems: 'center',
-    gap: 30,
-  },
-  mainButtonGradient: {
-    borderRadius: 44,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  mainButton: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  quickActionButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+  expandableCard: {
     borderRadius: 16,
-    minWidth: 80,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  quickActionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  controlButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  // Completion Screen Styles
-  completionOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  completionContainer: {
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: 20,
-    padding: 30,
-    alignItems: 'center',
-    position: 'relative',
     overflow: 'hidden',
   },
-  completionCloseButton: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(142, 142, 147, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  starsContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-  star: {
-    position: 'absolute',
-  },
-  completionContent: {
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  completionTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 24,
-    textAlign: 'center',
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
-  },
-  progressContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  progressContent: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressPercentage: {
-    fontSize: 48,
-    fontWeight: '800',
-    color: 'white',
-    textAlign: 'center',
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
-  },
-  progressLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#8e8e93',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  completionStatsRow: {
+  expandableCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-    paddingHorizontal: 8,
-  },
-  completionStatItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-  },
-  completionStatValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  completionStatLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#8e8e93',
-    textAlign: 'center',
-  },
-  completionStatDivider: {
-    width: 1,
-    height: 40,
-    marginHorizontal: 12,
-  },
-  savedConfirmation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  savedText: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  actionButtons: {
-    width: '100%',
-    gap: 16,
-    zIndex: 2,
-  },
-  saveButtonGradient: {
-    borderRadius: 25,
-    shadowColor: '#40E0D0',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  saveButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 25,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: 'white',
-    textAlign: 'center',
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
-  },
-  discardButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    alignItems: 'center',
-  },
-  discardButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#8e8e93',
-    textAlign: 'center',
-    fontFamily: Platform.select({
-      ios: 'SF Pro Display',
-      android: 'Roboto',
-      default: 'system',
-    }),
-  },
-  sectionHeaderButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    padding: 16,
     gap: 12,
   },
-  plannerContainer: {
+  expandableIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  expandableInfo: {
+    flex: 1,
+  },
+  expandableTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  expandableSubtitle: {
+    fontSize: 13,
+    fontWeight: '400',
+    marginTop: 2,
+  },
+  plannerBody: {
     marginTop: 8,
+    gap: 2,
   },
   plannerSectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.02)',
   },
   plannerSectionLeft: {
     flexDirection: 'row',
@@ -3576,258 +2534,104 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   plannerSectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   plannerSectionRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
-  addSessionButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  addButton: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sessionsList: {
-    marginTop: 12,
-    gap: 12,
+  listBody: {
+    marginTop: 6,
+    gap: 6,
+    paddingHorizontal: 4,
+  },
+  listCard: {
+    borderRadius: 12,
+    padding: 14,
+  },
+  listCardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  listCardSubtitle: {
+    fontSize: 12,
+    fontWeight: '400',
+  },
+  listCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 6,
+  },
+  listCardMetaText: {
+    fontSize: 12,
+    fontWeight: '400',
   },
   emptyState: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-    gap: 12,
+    paddingVertical: 32,
+    gap: 8,
   },
   emptyStateText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  emptyStateSubtext: {
     fontSize: 14,
-    textAlign: 'center',
-  },
-  sessionCard: {
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  sessionCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  sessionCourseText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  sessionCardDetails: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 8,
-  },
-  sessionDetailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sessionDetailText: {
-    fontSize: 14,
-  },
-  sessionNotes: {
-    fontSize: 14,
-    marginTop: 8,
-    marginBottom: 12,
-    lineHeight: 20,
+    fontWeight: '500',
   },
   completeButton: {
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     alignItems: 'center',
-    borderWidth: 1.5,
-    marginTop: 8,
+    marginTop: 10,
+    alignSelf: 'flex-start',
   },
   completeButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
-  historyCard: {
-    borderRadius: 12,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  historyCardHeader: {
+  historyItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    borderRadius: 12,
+    padding: 14,
   },
-  historyCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  historyItemLeft: {
     flex: 1,
   },
-  historyCourseText: {
-    fontSize: 15,
+  historyItemTitle: {
+    fontSize: 14,
     fontWeight: '600',
-    flex: 1,
+    marginBottom: 2,
   },
-  historyBadge: {
+  historyItemDate: {
+    fontSize: 12,
+    fontWeight: '400',
+  },
+  historyItemBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
   },
-  historyBadgeText: {
-    fontSize: 13,
+  historyItemBadgeText: {
+    fontSize: 12,
     fontWeight: '600',
-  },
-  historyCardDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  historyDetailText: {
-    fontSize: 13,
-  },
-  notesInput: {
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 15,
-    minHeight: 80,
-    textAlignVertical: 'top',
-    borderWidth: 1,
-  },
-  dateTimeContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  dateTimeButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  dateTimeButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    flex: 1,
-  },
-  doneButton: {
-    marginTop: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  doneButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  examSection: {
-    marginTop: 8,
-  },
-  examSectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    opacity: 0.7,
-  },
-  examCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  examCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  examCardLeft: {
-    flexDirection: 'row',
-    gap: 12,
-    flex: 1,
-  },
-  examTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  examCourse: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  examCardDetails: {
-    gap: 8,
-  },
-  examDetailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  examDetailText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  examNotes: {
-    fontSize: 14,
-    fontWeight: '400',
-    lineHeight: 20,
-    marginTop: 12,
-    fontStyle: 'italic',
-  },
-  gradeBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  gradeText: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.5,
   },
   focusScoreCard: {
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 14,
   },
-  focusScoreContent: {
+  focusScoreRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -3836,34 +2640,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   focusScoreLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 1.5,
-    marginBottom: 8,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginBottom: 4,
   },
   focusScoreValue: {
-    fontSize: 56,
+    fontSize: 48,
     fontWeight: '800',
-    color: '#FFFFFF',
     letterSpacing: -2,
-    lineHeight: 60,
+    lineHeight: 52,
   },
   focusScoreBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     marginTop: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
     alignSelf: 'flex-start',
   },
   focusScoreLevel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   focusScoreRight: {
     position: 'relative',
@@ -3875,32 +2675,73 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  focusScoreDescription: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.9)',
-    marginTop: 16,
+  focusScoreDesc: {
+    fontSize: 13,
+    fontWeight: '400',
+    marginTop: 14,
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 3,
+    marginBottom: 14,
+  },
+  viewToggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  viewToggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  statsGridCard: {
+    flex: 1,
+    borderRadius: 14,
+    padding: 14,
+    alignItems: 'center',
+  },
+  statsGridIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statsGridValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    marginBottom: 2,
     textAlign: 'center',
   },
+  statsGridLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
   weekComparisonCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
   },
   weekComparisonHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: 14,
   },
   weekComparisonTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
   },
   weekComparisonContent: {
     flexDirection: 'row',
@@ -3911,54 +2752,85 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   weekComparisonLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 4,
+    fontSize: 11,
+    fontWeight: '400',
+    marginBottom: 3,
   },
   weekComparisonValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
+    letterSpacing: -0.3,
   },
   weekComparisonDivider: {
     width: 1,
-    height: 40,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-    marginHorizontal: 16,
+    height: 36,
+    marginHorizontal: 14,
   },
   weekComparisonBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
   },
   weekComparisonBadgeText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
+  },
+  weeklyGraph: {
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 14,
+  },
+  graphTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 14,
+  },
+  graphBars: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 100,
+  },
+  dayColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  barContainer: {
+    width: '100%',
+    height: 80,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  dayBar: {
+    width: 20,
+    borderRadius: 6,
+    minHeight: 4,
+  },
+  dayLabel: {
+    fontSize: 10,
+    fontWeight: '400',
   },
   productivityCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
   },
-  productivityHeader: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 20,
+    gap: 8,
+    marginBottom: 16,
   },
-  productivityTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+  cardHeaderTitle: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   productivityBars: {
-    gap: 16,
+    gap: 14,
   },
   productivityRow: {
     flexDirection: 'row',
@@ -3968,22 +2840,18 @@ const styles = StyleSheet.create({
   productivityLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    width: 100,
+    gap: 8,
+    width: 110,
   },
   productivityIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   productivityLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  productivityHours: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '500',
   },
   productivityBarContainer: {
@@ -3991,234 +2859,395 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    maxWidth: 160,
+    maxWidth: 150,
   },
   productivityBarBg: {
     flex: 1,
-    height: 8,
-    borderRadius: 4,
+    height: 6,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   productivityBarFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   productivityValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    width: 32,
+    fontSize: 12,
+    fontWeight: '600',
+    width: 28,
     textAlign: 'right',
   },
-  courseDistributionCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+  courseDistCard: {
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
   },
-  courseDistributionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 20,
-  },
-  courseDistributionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  courseDistributionList: {
-    gap: 14,
-  },
-  courseDistributionItem: {
+  courseDistItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 8,
   },
-  courseDistributionLeft: {
+  courseDistLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    flex: 1,
-    maxWidth: '45%',
-  },
-  courseColorDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  courseDistributionName: {
-    fontSize: 14,
-    fontWeight: '600',
+    gap: 8,
     flex: 1,
   },
-  courseDistributionRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  courseDistributionBarBg: {
-    flex: 1,
+  courseDistDot: {
+    width: 8,
     height: 8,
     borderRadius: 4,
-    overflow: 'hidden',
   },
-  courseDistributionBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  courseDistributionPercent: {
+  courseDistName: {
     fontSize: 13,
-    fontWeight: '700',
-    width: 40,
-    textAlign: 'right',
+    fontWeight: '500',
+    flex: 1,
+  },
+  courseDistPercent: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   heatmapCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  heatmapHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
-  },
-  heatmapTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    textTransform: 'capitalize',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
   },
   heatmapWeekdays: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   heatmapWeekday: {
-    fontSize: 11,
-    fontWeight: '600',
-    width: 36,
+    fontSize: 10,
+    fontWeight: '500',
+    width: 34,
     textAlign: 'center',
   },
   heatmapGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
+    gap: 3,
   },
   heatmapCell: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heatmapCellToday: {
-    borderWidth: 2,
-    borderColor: '#FFD700',
-  },
   heatmapDayText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 11,
+    fontWeight: '400',
   },
   heatmapLegend: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
-    gap: 8,
+    marginTop: 14,
+    gap: 6,
   },
   heatmapLegendText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 10,
+    fontWeight: '400',
   },
   heatmapLegendColors: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 3,
   },
   heatmapLegendCell: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
+    width: 14,
+    height: 14,
+    borderRadius: 3,
   },
   extraStatsRow: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 16,
+    marginBottom: 14,
   },
   extraStatCard: {
     flex: 1,
     borderRadius: 14,
-    padding: 16,
+    padding: 14,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
   extraStatValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginTop: 10,
-    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 8,
+    marginBottom: 2,
+    letterSpacing: -0.3,
   },
   extraStatLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '500',
     textAlign: 'center',
   },
   insightsCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  insightsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
-  },
-  insightsTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  insightsList: {
-    gap: 12,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
   },
   insightItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
-    padding: 14,
-    borderRadius: 12,
+    gap: 10,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 6,
   },
-  insightIcon: {
-    fontSize: 20,
+  insightEmoji: {
+    fontSize: 18,
   },
   insightContent: {
     flex: 1,
   },
-  insightItemTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+  insightTitle: {
+    fontSize: 13,
+    fontWeight: '600',
     marginBottom: 2,
   },
-  insightItemDescription: {
-    fontSize: 13,
+  insightDesc: {
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 17,
+  },
+  completionOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completionContainer: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'space-between',
+  },
+  completionCloseButton: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  completionContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  completionEmojiCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  completionEmoji: {
+    fontSize: 36,
+  },
+  completionTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: -0.8,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  completionSubtitle: {
+    fontSize: 15,
+    fontWeight: '400',
+    marginBottom: 28,
+  },
+  completionProgressWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 28,
+  },
+  completionProgressInner: {
+    position: 'absolute',
+    alignItems: 'center',
+  },
+  completionProgressValue: {
+    fontSize: 36,
+    fontWeight: '700',
+    letterSpacing: -1,
+  },
+  completionProgressLabel: {
+    fontSize: 12,
     fontWeight: '500',
-    lineHeight: 18,
+    marginTop: 2,
+  },
+  completionStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    width: '100%',
+  },
+  completionStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  completionStatValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  completionStatUnit: {
+    fontSize: 11,
+    fontWeight: '400',
+  },
+  completionStatDivider: {
+    width: 1,
+    height: 32,
+    marginHorizontal: 8,
+  },
+  savedConfirmation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+  },
+  savedText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  completionActions: {
+    paddingHorizontal: 24,
+    gap: 12,
+  },
+  completionPrimaryButton: {
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  completionPrimaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  completionSecondaryButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  completionSecondaryButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  modalContainer: {
+    flex: 1,
+    paddingTop: 60,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+  },
+  modalCloseText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  modalBody: {
+    flex: 1,
+    padding: 20,
+  },
+  settingGroup: {
+    marginBottom: 28,
+  },
+  settingLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
+  timeSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  timeOption: {
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    minWidth: 56,
+    alignItems: 'center',
+  },
+  timeOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  resetButton: {
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  resetButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  dateTimeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  dateTimeBtnText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  donePickerBtn: {
+    marginTop: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  donePickerBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  notesInput: {
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    minHeight: 72,
+    textAlignVertical: 'top',
+  },
+  addSessionBtn: {
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  addSessionBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

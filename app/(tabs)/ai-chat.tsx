@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,10 @@ import {
   Image,
   Alert,
   Clipboard,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Send, Sparkles, BookOpen, Lightbulb, Brain, Flame, TrendingUp, ImageIcon, X, Copy } from 'lucide-react-native';
+import { Send, Sparkles, BookOpen, Lightbulb, Brain, Flame, TrendingUp, ImageIcon, X, Copy, ArrowUp } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PremiumGate } from '@/components/PremiumGate';
@@ -29,8 +30,16 @@ export default function AIChatScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
+  const inputFadeAnim = useRef(new Animated.Value(0)).current;
 
-
+  useEffect(() => {
+    Animated.timing(inputFadeAnim, {
+      toValue: 1,
+      duration: 400,
+      delay: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [inputFadeAnim]);
 
   const { messages, error, sendMessage } = useRorkAgent({
     tools: {},
@@ -40,7 +49,7 @@ export default function AIChatScreen() {
   const [localError, setLocalError] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if ((!input.trim() && selectedImages.length === 0) || isSending) return;
 
     if (!process.env.EXPO_PUBLIC_TOOLKIT_URL) {
@@ -57,9 +66,6 @@ export default function AIChatScreen() {
     setLocalError(null);
 
     console.log('[AI Chat] Sending message:', userMessage, 'with images:', imagesToSend.length);
-    console.log('[AI Chat] User ID:', user?.id);
-    console.log('[AI Chat] Toolkit URL:', process.env.EXPO_PUBLIC_TOOLKIT_URL);
-    console.log('[AI Chat] PROJECT_ID:', process.env.EXPO_PUBLIC_PROJECT_ID);
     
     if (!user?.id) {
       console.error('[AI Chat] No user ID available');
@@ -99,18 +105,12 @@ export default function AIChatScreen() {
         await sendMessage(userMessage);
       }
       console.log('[AI Chat] Message sent successfully');
-      console.log('[AI Chat] Messages after send:', messages.length);
     } catch (err) {
       console.error('[AI Chat] Error sending message:', err);
-      console.error('[AI Chat] Error type:', typeof err);
-      console.error('[AI Chat] Error constructor:', err?.constructor?.name);
       
       let errorMessage = 'Ett fel uppstod. Försök igen.';
       
       if (err instanceof Error) {
-        console.error('[AI Chat] Error message:', err.message);
-        console.error('[AI Chat] Error stack:', err.stack);
-        
         if (err.message.includes('Internal Server Error')) {
           errorMessage = 'AI-tjänsten är inte tillgänglig för tillfället. Försök igen om en stund.';
         } else if (err.message.includes('Network')) {
@@ -121,64 +121,101 @@ export default function AIChatScreen() {
           errorMessage = err.message || errorMessage;
         }
       } else if (typeof err === 'object' && err !== null) {
-        console.error('[AI Chat] Error object:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
         errorMessage = (err as any).message || JSON.stringify(err);
       }
       
-      console.error('[AI Chat] Final error message:', errorMessage);
       setLocalError(errorMessage);
     } finally {
       setIsSending(false);
     }
-  };
+  }, [input, selectedImages, isSending, user?.id, sendMessage]);
 
   useEffect(() => {
-    console.log('[AI Chat] Messages updated:', messages.length);
-    console.log('[AI Chat] Current messages:', JSON.stringify(messages, null, 2));
     if (error) {
       console.error('[AI Chat] useRorkAgent error:', error);
-      console.error('[AI Chat] Error type:', typeof error);
-      console.error('[AI Chat] Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
       setLocalError(typeof error === 'string' ? error : (error as any)?.message || 'Ett fel uppstod');
     }
-  }, [messages, error]);
+  }, [error]);
 
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
 
-  const cleanText = (text: string) => {
-    return text;
-  };
-
-  const handleCopyMessage = (text: string) => {
+  const handleCopyMessage = useCallback((text: string) => {
     Clipboard.setString(text);
     Alert.alert('Kopierat!', 'Texten har kopierats till urklipp.');
-  };
+  }, []);
 
-  const renderMessage = (message: any) => {
+  const handlePickImage = useCallback(async () => {
+    Alert.alert(
+      'Lägg till bild',
+      'Välj hur du vill lägga till en bild',
+      [
+        {
+          text: 'Ta foto',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till kameran.');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: 'images' as any,
+              quality: 0.7,
+              allowsEditing: true,
+            });
+            if (!result.canceled && result.assets[0]) {
+              setSelectedImages(prev => [...prev, result.assets[0].uri]);
+            }
+          },
+        },
+        {
+          text: 'Välj från galleri',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till ditt fotoalbum.');
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: 'images' as any,
+              quality: 0.7,
+              allowsEditing: true,
+              allowsMultipleSelection: false,
+            });
+            if (!result.canceled && result.assets[0]) {
+              setSelectedImages(prev => [...prev, result.assets[0].uri]);
+            }
+          },
+        },
+        { text: 'Avbryt', style: 'cancel' },
+      ]
+    );
+  }, []);
+
+  const renderMessage = useCallback((message: any) => {
     const isUser = message.role === 'user';
 
     return (
       <View
         key={message.id}
         style={[
-          styles.messageContainer,
-          isUser ? styles.userMessageContainer : styles.assistantMessageContainer,
+          styles.messageRow,
+          isUser ? styles.userMessageRow : styles.aiMessageRow,
         ]}
       >
         {!isUser && (
-          <View style={[styles.aiIconContainer, { backgroundColor: theme.colors.primary }]}>
-            <Sparkles size={16} color="#fff" />
+          <View style={[styles.aiAvatar, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}>
+            <Sparkles size={14} color={theme.colors.primary} />
           </View>
         )}
-        <View style={{ flex: 1, maxWidth: '75%' }}>
+        <View style={{ flex: 1, maxWidth: isUser ? '80%' : undefined }}>
           <View
             style={[
-              styles.messageBubble,
+              styles.bubble,
               isUser 
-                ? { ...styles.userBubble, backgroundColor: theme.colors.primary } 
-                : { ...styles.assistantBubble, backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                ? [styles.userBubble, { backgroundColor: theme.colors.primary }]
+                : [styles.aiBubble, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }],
             ]}
           >
             {message.parts.map((part: any, index: number) => {
@@ -186,18 +223,12 @@ export default function AIChatScreen() {
                 return (
                   <View key={`${message.id}-${index}`}>
                     {isUser ? (
-                      <Text
-                        style={[
-                          styles.messageText,
-                          styles.userMessageText,
-                        ]}
-                        selectable
-                      >
-                        {cleanText(part.text)}
+                      <Text style={styles.userText} selectable>
+                        {part.text}
                       </Text>
                     ) : (
-                      <MarkdownText style={[styles.messageText, { color: theme.colors.text }]}>
-                        {cleanText(part.text)}
+                      <MarkdownText style={[styles.aiText, { color: theme.colors.text }]}>
+                        {part.text}
                       </MarkdownText>
                     )}
                   </View>
@@ -207,223 +238,201 @@ export default function AIChatScreen() {
             })}
           </View>
           {!isUser && (
-            <View style={styles.messageActions}>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: theme.colors.surface }]}
-                onPress={() => {
-                  const textParts = message.parts
-                    .filter((p: any) => p.type === 'text')
-                    .map((p: any) => p.text)
-                    .join('\n');
-                  handleCopyMessage(textParts);
-                }}
-              >
-                <Copy size={14} color={theme.colors.textSecondary} />
-                <Text style={[styles.actionButtonText, { color: theme.colors.textSecondary }]}>Kopiera</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.copyAction}
+              onPress={() => {
+                const textParts = message.parts
+                  .filter((p: any) => p.type === 'text')
+                  .map((p: any) => p.text)
+                  .join('\n');
+                handleCopyMessage(textParts);
+              }}
+              activeOpacity={0.6}
+            >
+              <Copy size={12} color={theme.colors.textMuted} />
+              <Text style={[styles.copyActionText, { color: theme.colors.textMuted }]}>Kopiera</Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>
     );
-  };
+  }, [isDark, theme.colors, handleCopyMessage]);
+
+  const suggestions = [
+    { text: 'Hur kan jag plugga mer effektivt?', icon: TrendingUp, color: theme.colors.primary },
+    { text: 'Tips för att komma ihåg saker bättre', icon: Lightbulb, color: '#F59E0B' },
+    { text: 'Förklara Pomodoro-tekniken', icon: Flame, color: '#EF4444' },
+    { text: 'Hjälp mig med matematik', icon: BookOpen, color: '#10B981' },
+  ];
+
+  const hasInput = input.trim().length > 0 || selectedImages.length > 0;
 
   return (
     <PremiumGate feature="ai-chat" fullScreen>
-      <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
-      <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
-        <View style={styles.headerTop}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.greeting, { color: theme.colors.text }]}>🤖 StudieStugan AI</Text>
-            <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>Din personliga studieguide</Text>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.headerContent}>
+            <View style={[styles.headerIcon, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}>
+              <Sparkles size={18} color={theme.colors.primary} />
+            </View>
+            <View>
+              <Text style={[styles.headerTitle, { color: theme.colors.text }]}>StudieStugan AI</Text>
+              <Text style={[styles.headerSubtitle, { color: theme.colors.textMuted }]}>Din personliga studieguide</Text>
+            </View>
           </View>
         </View>
-      </View>
-      
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.messagesContainer}
-          contentContainerStyle={styles.messagesContent}
-          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          {messages.length === 0 ? (
-            <View style={styles.emptyState}>
-              <View style={[styles.emptyIconContainer, { backgroundColor: `${theme.colors.primary}20` }]}>
-                <Brain size={48} color={theme.colors.primary} />
-              </View>
-              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Hej! Hur kan jag hjälpa dig? 🚀</Text>
-              <Text style={[styles.emptySubtitle, { color: theme.colors.textMuted }]}>
-                Fråga mig om vad som helst! Jag kan hjälpa dig med studier, ge tips och förklaringar.
-              </Text>
-              <View style={styles.suggestionsContainer}>
-                <TouchableOpacity
-                  style={[styles.suggestionButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.primary + '30' }]}
-                  onPress={() => setInput('Hur kan jag plugga mer effektivt?')}
-                >
-                  <View style={[styles.suggestionIcon, { backgroundColor: theme.colors.primary + '15' }]}>
-                    <TrendingUp size={18} color={theme.colors.primary} />
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.messagesArea}
+            contentContainerStyle={styles.messagesContent}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            showsVerticalScrollIndicator={false}
+          >
+            {messages.length === 0 ? (
+              <Animated.View style={[styles.emptyState, { opacity: inputFadeAnim }]}>
+                <View style={[styles.emptyIcon, { backgroundColor: isDark ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.06)' }]}>
+                  <Brain size={40} color={theme.colors.primary} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
+                  Hej! Hur kan jag hjälpa dig?
+                </Text>
+                <Text style={[styles.emptySubtitle, { color: theme.colors.textMuted }]}>
+                  Fråga mig om studier, få tips och förklaringar
+                </Text>
+                <View style={styles.suggestionsGrid}>
+                  {suggestions.map((item, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[styles.suggestionCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}
+                      onPress={() => setInput(item.text)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.suggestionIconWrap, { backgroundColor: item.color + '12' }]}>
+                        <item.icon size={16} color={item.color} />
+                      </View>
+                      <Text style={[styles.suggestionText, { color: theme.colors.text }]} numberOfLines={2}>
+                        {item.text}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </Animated.View>
+            ) : (
+              messages.map((message) => renderMessage(message))
+            )}
+
+            {isSending && (
+              <View style={styles.typingRow}>
+                <View style={[styles.aiAvatar, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}>
+                  <Sparkles size={14} color={theme.colors.primary} />
+                </View>
+                <View style={[styles.typingBubble, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
+                  <View style={styles.typingDots}>
+                    <TypingDot delay={0} color={theme.colors.textMuted} />
+                    <TypingDot delay={200} color={theme.colors.textMuted} />
+                    <TypingDot delay={400} color={theme.colors.textMuted} />
                   </View>
-                  <Text style={[styles.suggestionText, { color: theme.colors.text }]}>Hur kan jag plugga mer effektivt?</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.suggestionButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.secondary + '30' }]}
-                  onPress={() => setInput('Ge mig tips för att komma ihåg saker bättre')}
+                </View>
+              </View>
+            )}
+
+            {(error || localError) && (
+              <View style={[styles.errorCard, { backgroundColor: isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.05)' }]}>
+                <Text style={[styles.errorText, { color: '#EF4444' }]}>
+                  {localError || (typeof error === 'string' ? error : error?.message) || 'Ett fel uppstod. Försök igen.'}
+                </Text>
+                <TouchableOpacity 
+                  style={[styles.errorDismiss, { backgroundColor: '#EF4444' + '14' }]}
+                  onPress={() => setLocalError(null)}
                 >
-                  <View style={[styles.suggestionIcon, { backgroundColor: theme.colors.secondary + '15' }]}>
-                    <Lightbulb size={18} color={theme.colors.secondary} />
-                  </View>
-                  <Text style={[styles.suggestionText, { color: theme.colors.text }]}>Ge mig tips för att komma ihåg saker bättre</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.suggestionButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.warning + '30' }]}
-                  onPress={() => setInput('Förklara Pomodoro-tekniken')}
-                >
-                  <View style={[styles.suggestionIcon, { backgroundColor: theme.colors.warning + '15' }]}>
-                    <Flame size={18} color={theme.colors.warning} />
-                  </View>
-                  <Text style={[styles.suggestionText, { color: theme.colors.text }]}>Förklara Pomodoro-tekniken</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.suggestionButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.success + '30' }]}
-                  onPress={() => setInput('Hjälp mig med matematik')}
-                >
-                  <View style={[styles.suggestionIcon, { backgroundColor: theme.colors.success + '15' }]}>
-                    <BookOpen size={18} color={theme.colors.success} />
-                  </View>
-                  <Text style={[styles.suggestionText, { color: theme.colors.text }]}>Hjälp mig med matematik</Text>
+                  <Text style={[styles.errorDismissText, { color: '#EF4444' }]}>Stäng</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          ) : (
-            messages.map((message) => renderMessage(message))
-          )}
-          {isSending && (
-            <View style={styles.loadingContainer}>
-              <View style={[styles.aiIconContainer, { backgroundColor: theme.colors.primary }]}>
-                <Sparkles size={16} color="#fff" />
-              </View>
-              <View style={[styles.loadingBubble, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-              </View>
-            </View>
-          )}
-          {(error || localError) && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>
-                {localError || (typeof error === 'string' ? error : error?.message) || 'Ett fel uppstod. Försök igen.'}
-              </Text>
-              <TouchableOpacity 
-                style={styles.dismissErrorButton}
-                onPress={() => {
-                  setLocalError(null);
-                }}
+            )}
+          </ScrollView>
+
+          <View style={[styles.inputArea, { paddingBottom: Math.max(insets.bottom + 60, 76) }]}>
+            {selectedImages.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewRow} contentContainerStyle={styles.imagePreviewContent}>
+                {selectedImages.map((uri, index) => (
+                  <View key={index} style={styles.imagePreview}>
+                    <Image source={{ uri }} style={styles.previewImage} />
+                    <TouchableOpacity
+                      style={styles.removeImage}
+                      onPress={() => setSelectedImages(prev => prev.filter((_, i) => i !== index))}
+                    >
+                      <X size={12} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+            <View style={[
+              styles.inputRow, 
+              { 
+                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                borderColor: hasInput ? theme.colors.primary + '30' : 'transparent',
+              }
+            ]}>
+              <TouchableOpacity
+                style={styles.attachButton}
+                onPress={handlePickImage}
+                disabled={isSending}
+                activeOpacity={0.6}
               >
-                <Text style={styles.dismissErrorText}>Stäng</Text>
+                <ImageIcon size={20} color={theme.colors.textMuted} />
+              </TouchableOpacity>
+              <TextInput
+                style={[styles.textInput, { color: theme.colors.text }]}
+                value={input}
+                onChangeText={setInput}
+                placeholder="Ställ en fråga..."
+                placeholderTextColor={theme.colors.textMuted}
+                multiline
+                maxLength={1000}
+                editable={!isSending}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.sendBtn,
+                  { backgroundColor: hasInput && !isSending ? theme.colors.primary : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)') },
+                ]}
+                onPress={handleSend}
+                disabled={!hasInput || isSending}
+                activeOpacity={0.7}
+              >
+                <ArrowUp size={18} color={hasInput && !isSending ? '#FFFFFF' : theme.colors.textMuted} strokeWidth={2.5} />
               </TouchableOpacity>
             </View>
-          )}
-        </ScrollView>
-
-        <View style={[styles.inputContainer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border, paddingBottom: Math.max(insets.bottom + 60, 70) }]}>
-          {selectedImages.length > 0 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewContainer}>
-              {selectedImages.map((uri, index) => (
-                <View key={index} style={styles.imagePreviewWrapper}>
-                  <Image source={{ uri }} style={styles.selectedImage} />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => setSelectedImages(prev => prev.filter((_, i) => i !== index))}
-                  >
-                    <X size={16} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
-          )}
-          <View style={styles.inputRow}>
-            <TouchableOpacity
-              style={[styles.imagePickerButton, { backgroundColor: isDark ? theme.colors.background : '#f5f5f5' }]}
-              onPress={async () => {
-                Alert.alert(
-                  'Lägg till bild',
-                  'Välj hur du vill lägga till en bild',
-                  [
-                    {
-                      text: 'Ta foto',
-                      onPress: async () => {
-                        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-                        if (status !== 'granted') {
-                          Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till kameran.');
-                          return;
-                        }
-                        const result = await ImagePicker.launchCameraAsync({
-                          mediaTypes: 'images' as any,
-                          quality: 0.7,
-                          allowsEditing: true,
-                        });
-                        if (!result.canceled && result.assets[0]) {
-                          setSelectedImages(prev => [...prev, result.assets[0].uri]);
-                        }
-                      },
-                    },
-                    {
-                      text: 'Välj från galleri',
-                      onPress: async () => {
-                        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                        if (status !== 'granted') {
-                          Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till ditt fotoalbum.');
-                          return;
-                        }
-                        const result = await ImagePicker.launchImageLibraryAsync({
-                          mediaTypes: 'images' as any,
-                          quality: 0.7,
-                          allowsEditing: true,
-                          allowsMultipleSelection: false,
-                        });
-                        if (!result.canceled && result.assets[0]) {
-                          setSelectedImages(prev => [...prev, result.assets[0].uri]);
-                        }
-                      },
-                    },
-                    { text: 'Avbryt', style: 'cancel' },
-                  ]
-                );
-              }}
-              disabled={isSending}
-            >
-              <ImageIcon size={22} color={theme.colors.primary} />
-            </TouchableOpacity>
-            <TextInput
-              style={[styles.input, { backgroundColor: isDark ? theme.colors.background : '#f5f5f5', color: theme.colors.text }]}
-              value={input}
-              onChangeText={setInput}
-              placeholder="Skriv ditt meddelande..."
-              placeholderTextColor={theme.colors.textMuted}
-              multiline
-              maxLength={1000}
-              editable={!isSending}
-            />
-            <TouchableOpacity
-              style={[
-                styles.sendButton, 
-                { backgroundColor: theme.colors.primary },
-                (!input.trim() && selectedImages.length === 0 || isSending) && styles.sendButtonDisabled
-              ]}
-              onPress={handleSend}
-              disabled={(!input.trim() && selectedImages.length === 0) || isSending}
-            >
-              <Send size={20} color="#fff" />
-            </TouchableOpacity>
           </View>
-        </View>
-      </KeyboardAvoidingView>
-    </View>
+        </KeyboardAvoidingView>
+      </View>
     </PremiumGate>
+  );
+}
+
+function TypingDot({ delay, color }: { delay: number; color: string }) {
+  const anim = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [anim, delay]);
+
+  return (
+    <Animated.View style={[styles.dot, { backgroundColor: color, opacity: anim }]} />
   );
 }
 
@@ -432,271 +441,252 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
   },
-  headerTop: {
+  headerContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: 12,
   },
-  headerLeft: {
-    flex: 1,
+  headerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  greeting: {
-    fontSize: 28,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: '700',
-    marginBottom: 4,
     letterSpacing: -0.5,
   },
-  subtitle: {
-    fontSize: 16,
+  headerSubtitle: {
+    fontSize: 13,
     fontWeight: '400',
+    marginTop: 1,
   },
   keyboardView: {
     flex: 1,
   },
-  messagesContainer: {
+  messagesArea: {
     flex: 1,
   },
   messagesContent: {
-    padding: 16,
-    paddingBottom: 8,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   emptyState: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 60,
+    paddingTop: 48,
+    paddingHorizontal: 20,
   },
-  emptyIconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   emptyTitle: {
-    fontSize: 26,
-    fontWeight: '700' as const,
-    marginBottom: 12,
-    textAlign: 'center',
+    fontSize: 22,
+    fontWeight: '700',
     letterSpacing: -0.5,
+    marginBottom: 6,
+    textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '400',
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 40,
-    paddingHorizontal: 8,
+    lineHeight: 22,
+    marginBottom: 32,
   },
-  suggestionsContainer: {
+  suggestionsGrid: {
     width: '100%',
+    gap: 8,
+  },
+  suggestionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 14,
     gap: 12,
   },
-  suggestionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  suggestionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  suggestionIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   suggestionText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
+    fontSize: 14,
+    fontWeight: '500',
     flex: 1,
-    lineHeight: 20,
+    lineHeight: 19,
   },
-  messageContainer: {
+  messageRow: {
     flexDirection: 'row',
     marginBottom: 16,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
-  userMessageContainer: {
+  userMessageRow: {
     justifyContent: 'flex-end',
   },
-  assistantMessageContainer: {
+  aiMessageRow: {
     justifyContent: 'flex-start',
+    gap: 8,
   },
-  aiIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  aiAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginTop: 2,
   },
-  messageBubble: {
-    maxWidth: '75%',
+  bubble: {
     padding: 14,
     borderRadius: 18,
   },
   userBubble: {
-    borderBottomRightRadius: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderBottomRightRadius: 6,
+    alignSelf: 'flex-end',
   },
-  assistantBubble: {
-    borderBottomLeftRadius: 4,
-    borderWidth: 1.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+  aiBubble: {
+    borderBottomLeftRadius: 6,
   },
-  messageText: {
+  userText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#FFFFFF',
+    fontWeight: '400',
+  },
+  aiText: {
     fontSize: 15,
     lineHeight: 22,
   },
-  userMessageText: {
-    color: '#fff',
-  },
-  loadingContainer: {
+  copyAction: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    alignSelf: 'flex-start',
+  },
+  copyActionText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  typingRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
     marginBottom: 16,
   },
-  loadingBubble: {
-    padding: 16,
-    borderRadius: 16,
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
+  typingBubble: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 18,
+    borderBottomLeftRadius: 6,
   },
-  errorContainer: {
-    backgroundColor: '#ffebee',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+  typingDots: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  errorCard: {
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+    alignItems: 'center',
   },
   errorText: {
-    color: '#c62828',
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '500',
     textAlign: 'center',
-    marginBottom: 8,
+    lineHeight: 18,
+    marginBottom: 10,
   },
-  dismissErrorButton: {
-    backgroundColor: '#c62828',
+  errorDismiss: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignSelf: 'center',
-    marginTop: 4,
+    paddingVertical: 7,
+    borderRadius: 8,
   },
-  dismissErrorText: {
-    color: '#fff',
-    fontSize: 14,
+  errorDismissText: {
+    fontSize: 13,
     fontWeight: '600',
   },
-  inputContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    borderTopWidth: 1,
-    alignItems: 'flex-end',
+  inputArea: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
   },
-  input: {
-    flex: 1,
-    borderRadius: 22,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    fontSize: 15,
-    maxHeight: 100,
-    marginRight: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+  imagePreviewRow: {
+    maxHeight: 80,
+    marginBottom: 8,
   },
-  sendButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  imagePreviewContent: {
+    gap: 8,
+    paddingHorizontal: 4,
+  },
+  imagePreview: {
+    position: 'relative',
+  },
+  previewImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 10,
+  },
+  removeImage: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  sendButtonDisabled: {
-    opacity: 0.4,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-  },
-  imagePickerButton: {
-    width: 44,
-    height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
+    borderWidth: 1,
+    paddingLeft: 6,
+    paddingRight: 6,
+    paddingVertical: 4,
+    gap: 2,
   },
-  imagePreviewContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    maxHeight: 120,
-  },
-  imagePreviewWrapper: {
-    position: 'relative',
-    marginRight: 8,
-  },
-  selectedImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
+  attachButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  messageActions: {
-    flexDirection: 'row',
-    marginTop: 6,
-    gap: 8,
+  textInput: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
+    maxHeight: 100,
+    paddingVertical: 9,
+    paddingHorizontal: 4,
   },
-  actionButton: {
-    flexDirection: 'row',
+  sendBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  actionButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
+    marginBottom: 2,
   },
 });

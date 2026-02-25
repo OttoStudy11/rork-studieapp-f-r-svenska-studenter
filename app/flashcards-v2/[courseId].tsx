@@ -43,7 +43,7 @@ interface LocalFlashcard {
 export default function FlashcardsScreenV2() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
   const freemium = useFreemiumLimits();
-  const flashcardLimit = freemium.checkFlashcards(courseId || '');
+  const flashcardLimit = freemium.checkFlashcards();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [aiExplanation, setAiExplanation] = useState<string | undefined>();
   const [generationCount, setGenerationCount] = useState(20);

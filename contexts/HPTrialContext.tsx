@@ -1,7 +1,6 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 import { usePremium } from './PremiumContext';
 
@@ -27,7 +26,36 @@ export interface HPTrialContextType {
   setShowTrialModal: (show: boolean) => void;
 }
 
-const STORAGE_KEY = 'hp_trial_status';
+const TRIAL_KEY_PREFIX = 'hp_trial_v3';
+
+interface StoredTrial {
+  userId: string;
+  trialUsed: boolean;
+  trialType?: 'full_test' | 'delprov';
+  trialContent?: string;
+  trialStartedAt?: string;
+  trialCompletedAt?: string;
+}
+
+async function loadTrial(userId: string): Promise<StoredTrial | null> {
+  try {
+    const raw = await AsyncStorage.getItem(`${TRIAL_KEY_PREFIX}_${userId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredTrial;
+    if (parsed.userId !== userId) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function saveTrial(trial: StoredTrial): Promise<void> {
+  try {
+    await AsyncStorage.setItem(`${TRIAL_KEY_PREFIX}_${trial.userId}`, JSON.stringify(trial));
+  } catch (error) {
+    console.error('[HP Trial] Failed to save trial:', error);
+  }
+}
 
 export const [HPTrialProvider, useHPTrial] = createContextHook(() => {
   const { user, isAuthenticated } = useAuth();
@@ -37,49 +65,50 @@ export const [HPTrialProvider, useHPTrial] = createContextHook(() => {
   const [isLoading, setIsLoading] = useState(true);
   const [showTrialModal, setShowTrialModal] = useState(false);
 
+  const buildStatus = useCallback((stored: StoredTrial | null, userId: string): HPTrialStatus => {
+    if (!stored) {
+      return {
+        hasPremium: isPremium,
+        trialAvailable: true,
+        trialUsed: false,
+      };
+    }
+    return {
+      hasPremium: isPremium,
+      trialAvailable: !stored.trialUsed,
+      trialUsed: stored.trialUsed,
+      trialType: stored.trialType,
+      trialContent: stored.trialContent,
+      trialStartedAt: stored.trialStartedAt,
+      trialCompletedAt: stored.trialCompletedAt,
+    };
+  }, [isPremium]);
+
   const fetchTrialStatus = useCallback(async () => {
-    if (!user?.id) {
+    const userId = user?.id;
+    if (!userId) {
       setTrialStatus(null);
       setIsLoading(false);
       return;
     }
 
     try {
-      console.log('[HP Trial] Fetching trial status for user:', user.id);
-
-      const { data, error } = await (supabase.rpc as any)('get_hp_trial_status', {
-        p_user_id: user.id,
-      });
-
-      if (error) {
-        console.error('[HP Trial] Error fetching trial status:', error);
-        const cached = await AsyncStorage.getItem(`${STORAGE_KEY}_${user.id}`);
-        if (cached) {
-          setTrialStatus(JSON.parse(cached));
-        }
-        return;
-      }
-
-      const rpcData = data as any;
-      const status: HPTrialStatus = {
-        hasPremium: rpcData?.has_premium || false,
-        trialAvailable: rpcData?.trial_available || false,
-        trialUsed: rpcData?.trial_used || false,
-        trialType: rpcData?.trial_type,
-        trialContent: rpcData?.trial_content,
-        trialStartedAt: rpcData?.trial_started_at,
-        trialCompletedAt: rpcData?.trial_completed_at,
-      };
-
+      console.log('[HP Trial] Loading local trial status for user:', userId);
+      const stored = await loadTrial(userId);
+      const status = buildStatus(stored, userId);
       console.log('[HP Trial] Trial status:', status);
       setTrialStatus(status);
-      await AsyncStorage.setItem(`${STORAGE_KEY}_${user.id}`, JSON.stringify(status));
     } catch (error) {
-      console.error('[HP Trial] Exception fetching trial status:', error);
+      console.error('[HP Trial] Exception loading trial status:', error);
+      setTrialStatus({
+        hasPremium: isPremium,
+        trialAvailable: true,
+        trialUsed: false,
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, buildStatus, isPremium]);
 
   const refreshTrialStatus = useCallback(async () => {
     await fetchTrialStatus();
@@ -103,7 +132,6 @@ export const [HPTrialProvider, useHPTrial] = createContextHook(() => {
   const canAccessContent = useCallback(
     (contentType: 'full_test' | 'delprov', contentId?: string): boolean => {
       if (isPremium) return true;
-
       if (!trialStatus) return false;
 
       const trialIsActive = trialStatus.trialUsed || !!trialStatus.trialStartedAt;
@@ -128,74 +156,76 @@ export const [HPTrialProvider, useHPTrial] = createContextHook(() => {
 
   const startTrial = useCallback(
     async (trialType: 'full_test' | 'delprov', trialContent: string): Promise<boolean> => {
-      if (!user?.id) {
+      const userId = user?.id;
+      if (!userId) {
         console.error('[HP Trial] No user ID');
         return false;
       }
 
       try {
-        console.log('[HP Trial] Starting trial:', { trialType, trialContent });
+        console.log('[HP Trial] Starting trial:', { trialType, trialContent, userId });
 
-        const { data, error } = await (supabase.rpc as any)('start_hp_trial', {
-          p_user_id: user.id,
-          p_trial_type: trialType,
-          p_trial_content: trialContent,
-        });
-
-        if (error) {
-          console.error('[HP Trial] Error starting trial:', error);
+        const existing = await loadTrial(userId);
+        if (existing?.trialUsed) {
+          console.log('[HP Trial] Trial already used for this user');
           return false;
         }
 
-        const rpcData = data as any;
-        if (!rpcData?.success) {
-          console.error('[HP Trial] Trial start failed:', rpcData?.error);
-          return false;
-        }
+        const newTrial: StoredTrial = {
+          userId,
+          trialUsed: true,
+          trialType,
+          trialContent,
+          trialStartedAt: new Date().toISOString(),
+        };
+
+        await saveTrial(newTrial);
+        const status = buildStatus(newTrial, userId);
+        setTrialStatus(status);
 
         console.log('[HP Trial] Trial started successfully');
-        await fetchTrialStatus();
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
         return true;
       } catch (error) {
         console.error('[HP Trial] Exception starting trial:', error);
         return false;
       }
     },
-    [user?.id, fetchTrialStatus]
+    [user?.id, buildStatus]
   );
 
   const completeTrial = useCallback(async (
-    trialId: string,
-    totalQuestions: number,
-    correctAnswers: number,
-    scorePercentage: number,
-    estimatedScore: number,
-    timeSpent: number
+    _trialId: string,
+    _totalQuestions: number,
+    _correctAnswers: number,
+    _scorePercentage: number,
+    _estimatedScore: number,
+    _timeSpent: number
   ): Promise<boolean> => {
-    if (!user?.id) return false;
+    const userId = user?.id;
+    if (!userId) return false;
 
     try {
-      console.log('[HP Trial] Completing trial', { trialId, scorePercentage });
+      console.log('[HP Trial] Completing trial for user:', userId);
 
-      const { error } = await (supabase.rpc as any)('complete_hp_trial', {
-        p_user_id: user.id,
-      });
+      const existing = await loadTrial(userId);
+      if (!existing) return false;
 
-      if (error) {
-        console.error('[HP Trial] Error completing trial:', error);
-        return false;
-      }
+      const updated: StoredTrial = {
+        ...existing,
+        trialCompletedAt: new Date().toISOString(),
+      };
+
+      await saveTrial(updated);
+      const status = buildStatus(updated, userId);
+      setTrialStatus(status);
 
       console.log('[HP Trial] Trial completed successfully');
-      await fetchTrialStatus();
       return true;
     } catch (error) {
       console.error('[HP Trial] Exception completing trial:', error);
       return false;
     }
-  }, [user?.id, fetchTrialStatus]);
+  }, [user?.id, buildStatus]);
 
   return useMemo(
     () => ({

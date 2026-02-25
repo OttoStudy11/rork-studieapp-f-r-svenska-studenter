@@ -21,7 +21,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Sparkles, BookOpen, Plus, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { calculateSM2, getQualityFromSwipe } from '@/lib/sm2-algorithm';
-import { PremiumGate } from '@/components/PremiumGate';
+import { FreemiumLimitReached } from '@/components/FreemiumBanner';
+import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
 
 interface Flashcard {
   id: string;
@@ -56,12 +57,23 @@ export default function FlashcardsScreen() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const freemium = useFreemiumLimits();
+  const flashcardLimit = freemium.checkFlashcards();
+  const [sessionTracked, setSessionTracked] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [aiExplanation, setAiExplanation] = useState<string | undefined>();
   const [isExplaining, setIsExplaining] = useState(false);
   const [showInputModal, setShowInputModal] = useState(false);
   const [inputText, setInputText] = useState('');
   const [isGeneratingFromText, setIsGeneratingFromText] = useState(false);
+
+  React.useEffect(() => {
+    if (!sessionTracked && flashcardLimit.isAllowed && !freemium.isPremium && courseId) {
+      setSessionTracked(true);
+      freemium.trackUsage('flashcards', { courseId });
+      console.log('[Flashcards] Session tracked for freemium user');
+    }
+  }, [sessionTracked, flashcardLimit.isAllowed, freemium.isPremium, courseId]);
 
   const { data: course } = useQuery({
     queryKey: ['course', courseId],
@@ -471,8 +483,20 @@ export default function FlashcardsScreen() {
     );
   }
 
+  if (!freemium.isPremium && !flashcardLimit.isAllowed && !sessionTracked) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <FreemiumLimitReached
+          feature="flashcards"
+          status={flashcardLimit}
+          onGoBack={() => router.back()}
+        />
+      </View>
+    );
+  }
+
   return (
-    <PremiumGate feature="flashcards" fullScreen={true}>
     <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen
         options={{
@@ -594,7 +618,6 @@ export default function FlashcardsScreen() {
         </View>
       </View>
     </SafeAreaView>
-    </PremiumGate>
   );
 }
 

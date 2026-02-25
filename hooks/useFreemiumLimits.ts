@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { FREEMIUM_LIMITS, FreemiumFeature, FreemiumStatus } from '@/constants/freemiumLimits';
 
-const USAGE_STORAGE_KEY = 'freemium_usage_v1';
+const USAGE_KEY_PREFIX = 'freemium_usage_v3';
 
 interface UsageRecord {
   feature: FreemiumFeature;
@@ -14,19 +14,7 @@ interface UsageRecord {
 
 interface StoredUsage {
   records: UsageRecord[];
-  lastCleanup: number;
-}
-
-function getStartOfDay(): Date {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return now;
-}
-
-function getEndOfDay(): Date {
-  const end = getStartOfDay();
-  end.setDate(end.getDate() + 1);
-  return end;
+  userId: string;
 }
 
 function getStartOfWeek(): Date {
@@ -44,75 +32,77 @@ function getEndOfWeek(): Date {
   return end;
 }
 
-async function loadUsage(): Promise<StoredUsage> {
+async function loadUsage(userId: string): Promise<StoredUsage> {
   try {
-    const raw = await AsyncStorage.getItem(USAGE_STORAGE_KEY);
-    if (!raw) return { records: [], lastCleanup: Date.now() };
+    const key = `${USAGE_KEY_PREFIX}_${userId}`;
+    const raw = await AsyncStorage.getItem(key);
+    if (!raw) return { records: [], userId };
     const parsed = JSON.parse(raw) as StoredUsage;
+    if (parsed.userId !== userId) return { records: [], userId };
     return parsed;
   } catch (error) {
     console.error('[Freemium] Failed to load usage:', error);
-    return { records: [], lastCleanup: Date.now() };
+    return { records: [], userId };
   }
 }
 
 async function saveUsage(usage: StoredUsage): Promise<void> {
   try {
-    await AsyncStorage.setItem(USAGE_STORAGE_KEY, JSON.stringify(usage));
+    const key = `${USAGE_KEY_PREFIX}_${usage.userId}`;
+    await AsyncStorage.setItem(key, JSON.stringify(usage));
   } catch (error) {
     console.error('[Freemium] Failed to save usage:', error);
   }
 }
 
-function cleanOldRecords(records: UsageRecord[]): UsageRecord[] {
-  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  return records.filter((r) => r.timestamp > weekAgo);
-}
-
 export function useFreemiumLimits() {
   const { isPremium } = usePremium();
   const { user } = useAuth();
-  const [usage, setUsage] = useState<StoredUsage>({ records: [], lastCleanup: Date.now() });
+  const [usage, setUsage] = useState<StoredUsage>({ records: [], userId: '' });
   const [isLoaded, setIsLoaded] = useState(false);
+  const loadedForUser = useRef<string | null>(null);
 
   useEffect(() => {
-    loadUsage().then((data) => {
-      const now = Date.now();
-      if (now - data.lastCleanup > 24 * 60 * 60 * 1000) {
-        data.records = cleanOldRecords(data.records);
-        data.lastCleanup = now;
-        saveUsage(data);
-      }
+    const userId = user?.id;
+    if (!userId) {
+      setUsage({ records: [], userId: '' });
+      setIsLoaded(true);
+      return;
+    }
+    if (loadedForUser.current === userId) return;
+    loadedForUser.current = userId;
+    setIsLoaded(false);
+    loadUsage(userId).then((data) => {
       setUsage(data);
       setIsLoaded(true);
+      console.log(`[Freemium] Loaded ${data.records.length} usage records for user ${userId}`);
     });
-  }, []);
+  }, [user?.id]);
 
   const trackUsage = useCallback(
     async (feature: FreemiumFeature, metadata?: Record<string, string>) => {
       if (isPremium) return;
+      const userId = user?.id;
+      if (!userId) return;
       const record: UsageRecord = {
         feature,
         timestamp: Date.now(),
         metadata,
       };
       const updated: StoredUsage = {
-        ...usage,
+        userId,
         records: [...usage.records, record],
       };
       setUsage(updated);
       await saveUsage(updated);
       console.log(`[Freemium] Tracked usage: ${feature}`, metadata);
     },
-    [isPremium, usage],
+    [isPremium, usage, user?.id],
   );
 
-  const getDailyCount = useCallback(
+  const getTotalCount = useCallback(
     (feature: FreemiumFeature): number => {
-      const startOfDay = getStartOfDay().getTime();
-      return usage.records.filter(
-        (r) => r.feature === feature && r.timestamp >= startOfDay,
-      ).length;
+      return usage.records.filter((r) => r.feature === feature).length;
     },
     [usage.records],
   );
@@ -127,29 +117,35 @@ export function useFreemiumLimits() {
     [usage.records],
   );
 
-  const getTotalCountForCourse = useCallback(
-    (feature: FreemiumFeature, courseId: string): number => {
-      return usage.records.filter(
-        (r) => r.feature === feature && r.metadata?.courseId === courseId,
-      ).length;
-    },
-    [usage.records],
-  );
-
   const checkQuiz = useCallback((): FreemiumStatus => {
     if (isPremium) {
-      return { isAllowed: true, remaining: Infinity, total: FREEMIUM_LIMITS.quiz.daily, resetAt: null, isPremium: true };
+      return { isAllowed: true, remaining: Infinity, total: FREEMIUM_LIMITS.quiz.total, resetAt: null, isPremium: true };
     }
-    const used = getDailyCount('quiz') + getDailyCount('course_quiz');
-    const remaining = Math.max(0, FREEMIUM_LIMITS.quiz.daily - used);
+    const used = getTotalCount('quiz') + getTotalCount('course_quiz');
+    const remaining = Math.max(0, FREEMIUM_LIMITS.quiz.total - used);
     return {
       isAllowed: remaining > 0,
       remaining,
-      total: FREEMIUM_LIMITS.quiz.daily,
-      resetAt: getEndOfDay(),
+      total: FREEMIUM_LIMITS.quiz.total,
+      resetAt: null,
       isPremium: false,
     };
-  }, [isPremium, getDailyCount]);
+  }, [isPremium, getTotalCount]);
+
+  const checkFlashcards = useCallback((): FreemiumStatus => {
+    if (isPremium) {
+      return { isAllowed: true, remaining: Infinity, total: FREEMIUM_LIMITS.flashcards.total, resetAt: null, isPremium: true };
+    }
+    const used = getTotalCount('flashcards');
+    const remaining = Math.max(0, FREEMIUM_LIMITS.flashcards.total - used);
+    return {
+      isAllowed: remaining > 0,
+      remaining,
+      total: FREEMIUM_LIMITS.flashcards.total,
+      resetAt: null,
+      isPremium: false,
+    };
+  }, [isPremium, getTotalCount]);
 
   const checkFriendStats = useCallback((): FreemiumStatus => {
     if (isPremium) {
@@ -166,38 +162,20 @@ export function useFreemiumLimits() {
     };
   }, [isPremium, getWeeklyCount]);
 
-  const checkFlashcards = useCallback(
-    (courseId: string): FreemiumStatus => {
-      if (isPremium) {
-        return { isAllowed: true, remaining: Infinity, total: FREEMIUM_LIMITS.flashcardsPerCourse, resetAt: null, isPremium: true };
-      }
-      const used = getTotalCountForCourse('flashcards', courseId);
-      const remaining = Math.max(0, FREEMIUM_LIMITS.flashcardsPerCourse - used);
-      return {
-        isAllowed: remaining > 0,
-        remaining,
-        total: FREEMIUM_LIMITS.flashcardsPerCourse,
-        resetAt: null,
-        isPremium: false,
-      };
-    },
-    [isPremium, getTotalCountForCourse],
-  );
-
   const checkHPSection = useCallback((): FreemiumStatus => {
     if (isPremium) {
-      return { isAllowed: true, remaining: Infinity, total: FREEMIUM_LIMITS.hpSections, resetAt: null, isPremium: true };
+      return { isAllowed: true, remaining: Infinity, total: FREEMIUM_LIMITS.hpTrial, resetAt: null, isPremium: true };
     }
-    const used = getDailyCount('hp_section');
-    const remaining = Math.max(0, FREEMIUM_LIMITS.hpSections - used);
+    const used = getTotalCount('hp_section');
+    const remaining = Math.max(0, FREEMIUM_LIMITS.hpTrial - used);
     return {
       isAllowed: remaining > 0,
       remaining,
-      total: FREEMIUM_LIMITS.hpSections,
-      resetAt: getEndOfDay(),
+      total: FREEMIUM_LIMITS.hpTrial,
+      resetAt: null,
       isPremium: false,
     };
-  }, [isPremium, getDailyCount]);
+  }, [isPremium, getTotalCount]);
 
   const checkCourseModule = useCallback(
     (moduleIndex: number): FreemiumStatus => {
@@ -226,7 +204,7 @@ export function useFreemiumLimits() {
       checkFlashcards,
       checkHPSection,
       checkCourseModule,
-      getDailyCount,
+      getTotalCount,
       getWeeklyCount,
     }),
     [
@@ -238,7 +216,7 @@ export function useFreemiumLimits() {
       checkFlashcards,
       checkHPSection,
       checkCourseModule,
-      getDailyCount,
+      getTotalCount,
       getWeeklyCount,
     ],
   );

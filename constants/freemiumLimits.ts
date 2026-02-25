@@ -1,11 +1,10 @@
 export const FREEMIUM_LIMITS = {
-  quiz: { daily: 3 },
-  courseQuiz: { daily: 3 },
+  quiz: { total: 1 },
+  flashcards: { total: 1 },
   friendStats: { weekly: 1 },
-  flashcardsPerCourse: 20,
-  studyPlans: 1,
-  hpSections: 1,
+  hpTrial: 1,
   courseModules: 1,
+  studyPlans: 1,
 } as const;
 
 export type FreemiumFeature =
@@ -50,7 +49,7 @@ export function getFeatureLabel(feature: FreemiumFeature): string {
     case 'quiz': return 'quiz';
     case 'course_quiz': return 'quiz';
     case 'friend_stats': return 'vänjämförelse';
-    case 'flashcards': return 'flashcards';
+    case 'flashcards': return 'flashcard-session';
     case 'study_plan': return 'studieplan';
     case 'hp_section': return 'HP-delprov';
     case 'course_module': return 'kursmodul';

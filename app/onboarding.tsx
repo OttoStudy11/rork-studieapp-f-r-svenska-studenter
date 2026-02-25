@@ -7,37 +7,29 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Switch,
   Animated,
   Dimensions,
   Platform,
   KeyboardAvoidingView,
+  PanResponder,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
+import { usePremium } from '@/contexts/PremiumContext';
 import { supabase } from '@/lib/supabase';
 import { Image } from 'expo-image';
 import {
-  GraduationCap,
-  BookOpen,
-  Flame,
-  Target,
-  Sparkles,
-  Trophy,
-  Users,
-  Timer,
-  BarChart3,
   ChevronLeft,
   ArrowRight,
   Search,
   Check,
-  Zap,
-  Brain,
-  Rocket,
+  Star,
+  Crown,
+  Shield,
+  RefreshCw,
 } from 'lucide-react-native';
 import { SWEDISH_GYMNASIUMS } from '@/constants/gymnasiums';
 import { SWEDISH_UNIVERSITIES, UNIVERSITY_PROGRAMS } from '@/constants/universities';
@@ -48,26 +40,67 @@ import { MAX_COURSES } from '@/lib/course-assignment';
 import type { University, UniversityProgram, UniversityProgramYear } from '@/constants/universities';
 import type { AvatarConfig } from '@/constants/avatar-config';
 import { DEFAULT_AVATAR_CONFIG } from '@/constants/avatar-config';
-import AvatarBuilder from '@/components/AvatarBuilder';
+import { PurchasesPackage } from 'react-native-purchases';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SW, height: SH } = Dimensions.get('window');
 
-const goalOptions = [
-  { id: 'better_grades', label: 'Högre betyg', icon: '📈', color: '#34D399' },
-  { id: 'focus', label: 'Bättre fokus', icon: '🎯', color: '#60A5FA' },
-  { id: 'planning', label: 'Bättre planering', icon: '📅', color: '#A78BFA' },
-  { id: 'reduce_stress', label: 'Mindre stress', icon: '🧘', color: '#F472B6' },
-  { id: 'balance', label: 'Balans i livet', icon: '⚖️', color: '#FBBF24' },
-  { id: 'motivation', label: 'Mer motivation', icon: '🔥', color: '#FB923C' },
-  { id: 'friends', label: 'Studera med vänner', icon: '👥', color: '#38BDF8' },
-  { id: 'techniques', label: 'Studietips', icon: '💡', color: '#4ADE80' },
+const BG = '#FFFFFF';
+const BG2 = '#F2F2F7';
+const TEXT1 = '#1C1C1E';
+const TEXT2 = '#636366';
+const TEXT3 = '#AEAEB2';
+const ACCENT = '#10B981';
+const DARK_BTN = '#1C1C1E';
+const BORDER = '#E5E5EA';
+
+const TOTAL_QUESTION_STEPS = 8;
+
+const PROBLEMS = [
+  { id: 'procrastination', label: 'Svårt att komma igång', emoji: '😰' },
+  { id: 'memory', label: 'För mycket att komma ihåg', emoji: '📚' },
+  { id: 'time', label: 'Dålig tidsplanering', emoji: '⏰' },
+  { id: 'motivation', label: 'Låg motivation', emoji: '😴' },
+  { id: 'focus', label: 'Svårt att fokusera', emoji: '📝' },
+  { id: 'start', label: 'Vet inte var jag ska börja', emoji: '🎯' },
 ];
 
-const learningPaceOptions = [
-  { id: 'casual', title: 'Avslappnat', subtitle: '15-30 min/dag', icon: '🌱', color: '#34D399', hours: 0.5 },
-  { id: 'regular', title: 'Regelbundet', subtitle: '30-60 min/dag', icon: '📚', color: '#60A5FA', hours: 1 },
-  { id: 'intensive', title: 'Intensivt', subtitle: '60+ min/dag', icon: '🔥', color: '#FB923C', hours: 2 },
-  { id: 'own', title: 'Egen takt', subtitle: 'Flexibelt', icon: '🎯', color: '#A78BFA', hours: 1 },
+const GOALS = [
+  { id: 'better_grades', label: 'Bättre betyg', emoji: '🎯' },
+  { id: 'hp_score', label: 'Högre HP-poäng', emoji: '📈' },
+  { id: 'less_stress', label: 'Mindre stress', emoji: '😌' },
+  { id: 'routines', label: 'Bättre studierutiner', emoji: '💪' },
+  { id: 'memory', label: 'Komma ihåg mer', emoji: '🧠' },
+  { id: 'save_time', label: 'Spara tid', emoji: '⏰' },
+  { id: 'dreams', label: 'Nå mina drömmar', emoji: '🏆' },
+];
+
+const DAILY_MINS = [
+  { value: 15, label: '15 minuter', note: '' },
+  { value: 30, label: '30 minuter', note: 'REKOMMENDERAD' },
+  { value: 45, label: '45 minuter', note: '' },
+  { value: 60, label: '60 minuter', note: '' },
+  { value: 90, label: '90+ minuter', note: '' },
+];
+
+const TESTIMONIALS = [
+  {
+    text: 'StudieStugan hjälpte mig höja mitt HP-resultat från 1.0 till 1.6!',
+    name: 'Emma',
+    age: 19,
+    city: 'Stockholm',
+  },
+  {
+    text: 'Äntligen en app som förstår hur stressigt det är att plugga. AI-flashcards är magiska!',
+    name: 'Viktor',
+    age: 21,
+    city: 'Göteborg',
+  },
+  {
+    text: 'AI-flashcards sparade mig timmar inför tentan. 10/10 rekommenderar!',
+    name: 'Sara',
+    age: 20,
+    city: 'Malmö',
+  },
 ];
 
 interface OnboardingData {
@@ -83,40 +116,73 @@ interface OnboardingData {
   universityYear: UniversityProgramYear | null;
   program: string;
   goals: string[];
+  problems: string[];
   selectedCourses: Set<string>;
   year: 1 | 2 | 3 | null;
   avatarConfig: AvatarConfig;
-  dailyGoalHours: number;
-  learningPace: 'casual' | 'regular' | 'intensive' | 'own' | '';
+  dailyGoalMinutes: number;
+  stressLevel: number;
   acceptedTerms: boolean;
-  notificationPreferences: {
-    dailyReminders: boolean;
-    achievements: boolean;
-    streakReminders: boolean;
-  };
 }
 
-const ACCENT = '#10B981';
-const ACCENT_LIGHT = '#D1FAE5';
-const BG = '#FFFFFF';
-const BG_SECONDARY = '#F8FAFB';
-const TEXT_PRIMARY = '#0F172A';
-const TEXT_SECONDARY = '#64748B';
-const TEXT_MUTED = '#94A3B8';
-const BORDER = '#E8ECF0';
-const CARD_BG = '#FFFFFF';
+const STEPS = [
+  'welcome',
+  'profile',
+  'intro',
+  'level',
+  'school',
+  'problems',
+  'stress',
+  'notalone',
+  'dailygoal',
+  'goals',
+  'wow',
+  'socialproof',
+  'testimonials',
+  'paywall',
+] as const;
+
+type StepName = typeof STEPS[number];
+
+const QUESTION_STEPS: StepName[] = ['level', 'school', 'problems', 'stress', 'dailygoal', 'goals'];
+const PROGRESS_LABEL: Partial<Record<StepName, string>> = {
+  level: 'Utbildning',
+  school: 'Skola',
+  problems: 'Utmaningar',
+  stress: 'Stress',
+  dailygoal: 'Mål',
+  goals: 'Önskemål',
+};
+
+function getStressEmoji(val: number): string {
+  if (val <= 2) return '😌';
+  if (val <= 4) return '🙂';
+  if (val <= 6) return '😐';
+  if (val <= 8) return '😟';
+  return '😰';
+}
+
+function getStressLabel(val: number): string {
+  if (val <= 2) return 'Jag är ganska lugn.';
+  if (val <= 4) return 'Jag känner lite stress ibland.';
+  if (val <= 6) return 'Jag känner mig stressad ibland.';
+  if (val <= 8) return 'Jag känner mig ofta stressad.';
+  return 'Jag är extremt stressad inför prov.';
+}
 
 export default function OnboardingScreen() {
   const authContext = useAuth();
   const studyContext = useStudy();
   const toastContext = useToast();
+  const premiumContext = usePremium();
   const insets = useSafeAreaInsets();
 
-  const [step, setStep] = useState(0);
+  const [stepIdx, setStepIdx] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const testimonialIdx = useRef(0);
+  const [testimonialDisplay, setTestimonialDisplay] = useState(0);
 
   const [data, setData] = useState<OnboardingData>({
     username: '',
@@ -131,852 +197,492 @@ export default function OnboardingScreen() {
     universityYear: null,
     program: '',
     goals: [],
+    problems: [],
     selectedCourses: new Set(),
     year: null,
     avatarConfig: DEFAULT_AVATAR_CONFIG,
-    dailyGoalHours: 1,
-    learningPace: '',
+    dailyGoalMinutes: 30,
+    stressLevel: 5,
     acceptedTerms: false,
-    notificationPreferences: {
-      dailyReminders: true,
-      achievements: true,
-      streakReminders: true,
-    },
   });
 
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [availableCourses, setAvailableCourses] = useState<GymnasiumCourse[]>([]);
-  const [gymnasiumSearchQuery, setGymnasiumSearchQuery] = useState('');
-  const [universitySearchQuery, setUniversitySearchQuery] = useState('');
-  const [hasInitializedUsername, setHasInitializedUsername] = useState(false);
+  const [gymnasiumSearch, setGymnasiumSearch] = useState('');
+  const [universitySearch, setUniversitySearch] = useState('');
+  const [hasInitUsername, setHasInitUsername] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [offerings, setOfferings] = useState<PurchasesPackage[]>([]);
+  const [selectedPkg, setSelectedPkg] = useState<'annual' | 'monthly'>('annual');
+  const [isRestoringPurchase, setIsRestoringPurchase] = useState(false);
+
+  const currentStep: StepName = STEPS[stepIdx];
 
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.05, duration: 2000, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
-      ])
-    ).start();
-  }, [pulseAnim]);
-
-  useEffect(() => {
-    if (authContext?.user?.email && !hasInitializedUsername) {
-      const emailPrefix = authContext.user.email.split('@')[0] || '';
-      const initialUsername = emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    if (authContext?.user?.email && !hasInitUsername) {
+      const prefix = authContext.user.email.split('@')[0] || '';
       setData(prev => ({
         ...prev,
-        displayName: emailPrefix,
-        username: initialUsername,
+        displayName: prefix,
+        username: prefix.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
       }));
-      setHasInitializedUsername(true);
+      setHasInitUsername(true);
     }
-  }, [authContext, hasInitializedUsername]);
+  }, [authContext, hasInitUsername]);
 
   useEffect(() => {
     if (data.gymnasiumProgram && data.year) {
-      const defaultGymnasium: Gymnasium = {
-        id: 'default',
-        name: 'Gymnasie',
-        type: 'kommunal',
-        city: '',
-        municipality: '',
+      const gym: Gymnasium = data.gymnasium || {
+        id: 'default', name: 'Gymnasie', type: 'kommunal', city: '', municipality: '',
       };
-      const courses = getGymnasiumCourses(
-        defaultGymnasium,
-        data.gymnasiumProgram,
-        data.year.toString() as '1' | '2' | '3'
-      );
+      const courses = getGymnasiumCourses(gym, data.gymnasiumProgram, data.year.toString() as '1' | '2' | '3');
       setAvailableCourses(courses);
-      const mandatoryCourseIds = courses
-        .filter((course: GymnasiumCourse) => course.mandatory)
-        .map((course: GymnasiumCourse) => course.id);
-      setData(prev => ({
-        ...prev,
-        selectedCourses: new Set(mandatoryCourseIds),
-      }));
+      const mandatoryIds = courses.filter((c: GymnasiumCourse) => c.mandatory).map((c: GymnasiumCourse) => c.id);
+      setData(prev => ({ ...prev, selectedCourses: new Set(mandatoryIds) }));
     }
   }, [data.gymnasiumProgram, data.year]);
 
-  const getTotalSteps = useCallback(() => {
-    if (data.studyLevel === '') return 7;
-    return data.studyLevel === 'gymnasie' ? 7 : 6;
-  }, [data.studyLevel]);
+  useEffect(() => {
+    if (currentStep === 'paywall' && premiumContext) {
+      premiumContext.getOfferings().then(off => {
+        if (off?.availablePackages) setOfferings(off.availablePackages);
+      }).catch(() => {});
+    }
+  }, [currentStep, premiumContext]);
+
+  const questionStepIndex = QUESTION_STEPS.indexOf(currentStep);
+  const isQuestionStep = questionStepIndex >= 0;
+  const questionProgress = isQuestionStep ? (questionStepIndex + 1) / QUESTION_STEPS.length : 0;
 
   useEffect(() => {
     Animated.timing(progressAnim, {
-      toValue: (step + 1) / getTotalSteps(),
-      duration: 400,
+      toValue: questionProgress,
+      duration: 350,
       useNativeDriver: false,
     }).start();
-  }, [step, progressAnim, getTotalSteps]);
+  }, [questionProgress, progressAnim]);
 
-  if (!authContext || !studyContext || !toastContext) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={ACCENT} />
-      </View>
-    );
-  }
-
-  const { user } = authContext;
-  const { completeOnboarding } = studyContext;
-  const { showError, showSuccess } = toastContext;
-
-  const checkUsernameAvailability = async (username: string) => {
-    if (!username || username.length < 3) {
-      setUsernameAvailable(null);
-      return;
-    }
-    if (!/^[a-z0-9_]{3,20}$/.test(username)) {
-      setUsernameAvailable(false);
-      return;
-    }
-    setCheckingUsername(true);
-    try {
-      const { data: result, error } = await supabase.rpc('check_username_available', {
-        username_to_check: username,
-      });
-      if (error) {
-        setUsernameAvailable(null);
-      } else {
-        setUsernameAvailable(result);
-      }
-    } catch {
-      setUsernameAvailable(null);
-    } finally {
-      setCheckingUsername(false);
-    }
-  };
-
-  const animateTransition = (nextStep: number) => {
-    const direction = nextStep > step ? -1 : 1;
+  const animateTransition = useCallback((nextIdx: number) => {
+    const dir = nextIdx > stepIdx ? -1 : 1;
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 0, duration: 100, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: direction * 20, duration: 100, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: dir * 24, duration: 100, useNativeDriver: true }),
     ]).start(() => {
-      setStep(nextStep);
-      slideAnim.setValue(-direction * 20);
+      setStepIdx(nextIdx);
+      slideAnim.setValue(-dir * 24);
       Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
-        Animated.spring(slideAnim, { toValue: 0, tension: 60, friction: 10, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.spring(slideAnim, { toValue: 0, tension: 70, friction: 12, useNativeDriver: true }),
       ]).start();
     });
-  };
+  }, [stepIdx, fadeAnim, slideAnim]);
 
-  const handleNext = () => {
-    if (step < getTotalSteps() - 1) {
-      animateTransition(step + 1);
+  const goNext = useCallback(() => {
+    if (stepIdx < STEPS.length - 1) {
+      animateTransition(stepIdx + 1);
     } else {
       handleComplete();
     }
-  };
+  }, [stepIdx, animateTransition]);
 
-  const handleBack = () => {
-    if (step > 0) {
-      animateTransition(step - 1);
-    }
-  };
+  const goBack = useCallback(() => {
+    if (stepIdx > 0) animateTransition(stepIdx - 1);
+  }, [stepIdx, animateTransition]);
 
   const handleComplete = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || !authContext || !studyContext || !toastContext) return;
     setIsSubmitting(true);
-
     try {
       const programName =
         data.studyLevel === 'gymnasie'
-          ? data.gymnasiumProgram
-            ? data.gymnasiumProgram.name
-            : data.program || 'Ej valt'
-          : data.universityProgram
-            ? data.universityProgram.name
-            : data.program || 'Ej valt';
+          ? data.gymnasiumProgram?.name || data.program || 'Ej valt'
+          : data.universityProgram?.name || data.program || 'Ej valt';
 
-      const gymnasium: Gymnasium = data.gymnasium || {
-        id: 'default',
-        name: 'Gymnasie',
-        type: 'kommunal',
-        city: '',
-        municipality: '',
+      const gym: Gymnasium = data.gymnasium || {
+        id: 'default', name: 'Gymnasie', type: 'kommunal', city: '', municipality: '',
       };
 
-      const selectedGoalLabels = data.goals
-        .map(id => goalOptions.find(g => g.id === id)?.label)
-        .filter(Boolean)
-        .join(', ');
-
-      await completeOnboarding({
+      await studyContext.completeOnboarding({
         name: data.displayName,
         username: data.username,
         displayName: data.displayName,
-        email: user?.email || '',
+        email: authContext.user?.email || '',
         studyLevel: data.studyLevel as 'gymnasie' | 'högskola',
         program: programName,
-        purpose: selectedGoalLabels || 'Allmän studiehjälp',
+        purpose: data.goals.join(', ') || 'Allmän studiehjälp',
         subscriptionType: 'free',
-        gymnasium,
-        gymnasiumGrade:
-          data.studyLevel === 'gymnasie' && data.year ? String(data.year) : null,
-        universityYear:
-          data.studyLevel === 'högskola' && data.universityYear
-            ? String(data.universityYear)
-            : null,
-        universityProgramId:
-          data.studyLevel === 'högskola' && data.universityProgram
-            ? data.universityProgram.id
-            : undefined,
+        gymnasium: gym,
+        gymnasiumGrade: data.studyLevel === 'gymnasie' && data.year ? String(data.year) : null,
+        universityYear: data.studyLevel === 'högskola' && data.universityYear ? String(data.universityYear) : null,
+        universityProgramId: data.studyLevel === 'högskola' && data.universityProgram ? data.universityProgram.id : undefined,
         avatar: data.avatarConfig,
         selectedCourses: Array.from(data.selectedCourses),
-        dailyGoalHours: data.dailyGoalHours,
+        dailyGoalHours: data.dailyGoalMinutes / 60,
       });
 
-      showSuccess('Välkommen! Din profil är klar.');
+      toastContext.showSuccess('Välkommen till StudieStugan! 🎉');
       router.replace('/(tabs)/home' as any);
-    } catch (error) {
-      console.error('Onboarding error:', error);
-      showError('Något gick fel. Försök igen.');
+    } catch (err) {
+      console.error('Onboarding complete error:', err);
+      toastContext?.showError('Något gick fel. Försök igen.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const toggleGoal = (goalId: string) => {
-    const newGoals = data.goals.includes(goalId)
-      ? data.goals.filter(id => id !== goalId)
-      : [...data.goals, goalId];
-    setData({ ...data, goals: newGoals });
-  };
-
-  const canProceed = (): boolean => {
-    switch (step) {
-      case 0:
-        return true;
-      case 1:
-        return (
-          data.username.trim().length >= 3 &&
-          data.displayName.trim().length > 0 &&
-          usernameAvailable === true &&
-          data.acceptedTerms
-        );
-      case 2:
-        return data.studyLevel !== '';
-      case 3:
-        if (data.studyLevel === 'gymnasie') {
-          return data.gymnasiumProgram !== null && data.year !== null;
-        }
-        return data.universityProgram !== null && data.universityYear !== null;
-      case 4:
-        if (data.studyLevel === 'gymnasie') {
-          return data.selectedCourses.size > 0 && data.selectedCourses.size <= MAX_COURSES;
-        }
-        return data.goals.length > 0;
-      case 5:
-        if (data.studyLevel === 'gymnasie') {
-          return data.goals.length > 0 && data.learningPace !== '';
-        }
-        return data.learningPace !== '';
-      case 6:
-        return true;
-      default:
-        return false;
+  const handlePurchase = async () => {
+    if (!premiumContext || isPurchasing) return;
+    const pkg = offerings.find(p =>
+      selectedPkg === 'annual' ? p.packageType === 'ANNUAL' || p.identifier.includes('annual') || p.identifier.includes('year')
+        : p.packageType === 'MONTHLY' || p.identifier.includes('monthly') || p.identifier.includes('month')
+    ) || offerings[0];
+    if (!pkg) {
+      handleComplete();
+      return;
+    }
+    setIsPurchasing(true);
+    try {
+      const success = await premiumContext.purchasePackage(pkg);
+      if (success) {
+        toastContext?.showSuccess('Premium aktiverat! 🎉');
+        router.replace('/(tabs)/home' as any);
+      }
+    } catch (err) {
+      console.error('Purchase error:', err);
+    } finally {
+      setIsPurchasing(false);
     }
   };
 
-  const renderWelcome = () => (
-    <View style={styles.welcomeContainer}>
-      <View style={styles.welcomeTop}>
-        <Animated.View style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }]}>
-          <LinearGradient
-            colors={['#059669', '#10B981', '#34D399']}
-            style={styles.logoGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Image
-              source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
-              style={styles.logo}
-              contentFit="contain"
-            />
-          </LinearGradient>
-        </Animated.View>
+  const handleRestore = async () => {
+    if (!premiumContext || isRestoringPurchase) return;
+    setIsRestoringPurchase(true);
+    try {
+      await premiumContext.restorePurchases();
+      toastContext?.showSuccess('Köp återställt!');
+    } catch {
+      toastContext?.showError('Kunde inte återställa köp');
+    } finally {
+      setIsRestoringPurchase(false);
+    }
+  };
 
-        <Text style={styles.welcomeTitle}>StudieStugan</Text>
-        <Text style={styles.welcomeSubtitle}>
-          Din personliga studieassistent för gymnasiet & högskolan
-        </Text>
-      </View>
+  const checkUsername = async (username: string) => {
+    if (!username || username.length < 3) { setUsernameAvailable(null); return; }
+    if (!/^[a-z0-9_]{3,20}$/.test(username)) { setUsernameAvailable(false); return; }
+    setCheckingUsername(true);
+    try {
+      const { data: result, error } = await supabase.rpc('check_username_available', { username_to_check: username });
+      setUsernameAvailable(error ? null : result);
+    } catch { setUsernameAvailable(null); }
+    finally { setCheckingUsername(false); }
+  };
 
-      <View style={styles.featuresContainer}>
-        {[
-          { icon: <BookOpen size={20} color="#059669" />, title: 'Kurser & Lektioner', bg: '#ECFDF5' },
-          { icon: <Timer size={20} color="#0369A1" />, title: 'Pomodoro Timer', bg: '#E0F2FE' },
-          { icon: <BarChart3 size={20} color="#B45309" />, title: 'Spåra framsteg', bg: '#FEF3C7' },
-          { icon: <Trophy size={20} color="#7C3AED" />, title: 'Achievements', bg: '#EDE9FE' },
-        ].map((feat, i) => (
-          <View key={i} style={styles.featureRow}>
-            <View style={[styles.featureIcon, { backgroundColor: feat.bg }]}>
-              {feat.icon}
+  const canProceed = (): boolean => {
+    switch (currentStep) {
+      case 'welcome': return true;
+      case 'profile':
+        return data.username.length >= 3 && data.displayName.length > 0 && usernameAvailable === true && data.acceptedTerms;
+      case 'intro': return true;
+      case 'level': return data.studyLevel !== '';
+      case 'school':
+        if (data.studyLevel === 'gymnasie') return data.gymnasiumProgram !== null && data.year !== null;
+        return data.universityProgram !== null && data.universityYear !== null;
+      case 'problems': return data.problems.length > 0;
+      case 'stress': return true;
+      case 'notalone': return true;
+      case 'dailygoal': return true;
+      case 'goals': return data.goals.length > 0;
+      case 'wow': return true;
+      case 'socialproof': return true;
+      case 'testimonials': return true;
+      case 'paywall': return true;
+      default: return false;
+    }
+  };
+
+  const showHeader = !['welcome', 'intro', 'notalone', 'wow', 'socialproof', 'testimonials', 'paywall'].includes(currentStep);
+  const showProgress = isQuestionStep;
+
+  if (!authContext || !studyContext || !toastContext) {
+    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={ACCENT} /></View>;
+  }
+
+  return (
+    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      {showHeader && (
+        <View style={styles.navBar}>
+          <TouchableOpacity style={styles.backBtn} onPress={goBack} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <ChevronLeft size={24} color={TEXT1} />
+          </TouchableOpacity>
+          {showProgress && (
+            <Text style={styles.stepLabel}>
+              {questionStepIndex + 1} / {QUESTION_STEPS.length}{' '}
+              <Text style={styles.stepLabelName}>{PROGRESS_LABEL[currentStep]}</Text>
+            </Text>
+          )}
+          {!showProgress && <View style={{ flex: 1 }} />}
+          {isQuestionStep && (
+            <TouchableOpacity onPress={goNext} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Text style={styles.skipText}>Hoppa över</Text>
+            </TouchableOpacity>
+          )}
+          {!isQuestionStep && <View style={{ width: 80 }} />}
+        </View>
+      )}
+
+      {showProgress && (
+        <View style={styles.progressContainer}>
+          {QUESTION_STEPS.map((_, i) => (
+            <View key={i} style={styles.progressSegmentWrap}>
+              <View
+                style={[
+                  styles.progressSegment,
+                  i <= questionStepIndex && styles.progressSegmentActive,
+                ]}
+              />
             </View>
-            <Text style={styles.featureTitle}>{feat.title}</Text>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      )}
+
+      <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <StepRenderer
+          step={currentStep}
+          data={data}
+          setData={setData}
+          usernameAvailable={usernameAvailable}
+          checkingUsername={checkingUsername}
+          checkUsername={checkUsername}
+          availableCourses={availableCourses}
+          gymnasiumSearch={gymnasiumSearch}
+          setGymnasiumSearch={setGymnasiumSearch}
+          universitySearch={universitySearch}
+          setUniversitySearch={setUniversitySearch}
+          testimonialDisplay={testimonialDisplay}
+          setTestimonialDisplay={setTestimonialDisplay}
+          offerings={offerings}
+          selectedPkg={selectedPkg}
+          setSelectedPkg={setSelectedPkg}
+          isPurchasing={isPurchasing}
+          isRestoringPurchase={isRestoringPurchase}
+          onPurchase={handlePurchase}
+          onRestore={handleRestore}
+          onSkip={handleComplete}
+        />
+      </Animated.View>
+
+      {currentStep !== 'paywall' && (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.cta, !canProceed() && styles.ctaDisabled]}
+            onPress={goNext}
+            disabled={!canProceed() || isSubmitting}
+            activeOpacity={0.85}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Text style={styles.ctaText}>
+                  {currentStep === 'welcome' ? 'Kom igång' : currentStep === 'testimonials' ? 'Fortsätt' : 'Fortsätt'}
+                </Text>
+                <ArrowRight size={18} color="#fff" />
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
+}
 
-  const renderProfile = () => (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1 }}
-    >
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <View style={styles.sectionHeader}>
-          <View style={[styles.sectionIcon, { backgroundColor: '#E0F2FE' }]}>
-            <Users size={24} color="#0369A1" />
-          </View>
-          <Text style={styles.sectionTitle}>Skapa din profil</Text>
-          <Text style={styles.sectionDesc}>Välj ett namn och användarnamn</Text>
+interface StepProps {
+  step: StepName;
+  data: OnboardingData;
+  setData: (d: OnboardingData) => void;
+  usernameAvailable: boolean | null;
+  checkingUsername: boolean;
+  checkUsername: (u: string) => void;
+  availableCourses: GymnasiumCourse[];
+  gymnasiumSearch: string;
+  setGymnasiumSearch: (s: string) => void;
+  universitySearch: string;
+  setUniversitySearch: (s: string) => void;
+  testimonialDisplay: number;
+  setTestimonialDisplay: (n: number) => void;
+  offerings: PurchasesPackage[];
+  selectedPkg: 'annual' | 'monthly';
+  setSelectedPkg: (t: 'annual' | 'monthly') => void;
+  isPurchasing: boolean;
+  isRestoringPurchase: boolean;
+  onPurchase: () => void;
+  onRestore: () => void;
+  onSkip: () => void;
+}
+
+function StepRenderer(props: StepProps) {
+  const { step } = props;
+  switch (step) {
+    case 'welcome': return <WelcomeStep {...props} />;
+    case 'profile': return <ProfileStep {...props} />;
+    case 'intro': return <IntroStep {...props} />;
+    case 'level': return <LevelStep {...props} />;
+    case 'school': return <SchoolStep {...props} />;
+    case 'problems': return <ProblemsStep {...props} />;
+    case 'stress': return <StressStep {...props} />;
+    case 'notalone': return <NotAloneStep {...props} />;
+    case 'dailygoal': return <DailyGoalStep {...props} />;
+    case 'goals': return <GoalsStep {...props} />;
+    case 'wow': return <WowStep {...props} />;
+    case 'socialproof': return <SocialProofStep {...props} />;
+    case 'testimonials': return <TestimonialsStep {...props} />;
+    case 'paywall': return <PaywallStep {...props} />;
+    default: return null;
+  }
+}
+
+function WelcomeStep({ }: StepProps) {
+  const scaleAnim = useRef(new Animated.Value(0.85)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return (
+    <ScrollView contentContainerStyle={styles.centered} showsVerticalScrollIndicator={false}>
+      <Animated.View style={{ transform: [{ scale: scaleAnim }], opacity: fadeAnim, alignItems: 'center' }}>
+        <View style={styles.logoWrap}>
+          <Image
+            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
+            style={styles.logoImg}
+            contentFit="contain"
+          />
+        </View>
+      </Animated.View>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <Text style={styles.welcomeTitle}>
+          Du behöver inte plugga hårdare.{'\n'}Du behöver plugga <Text style={{ color: ACCENT }}>smartare.</Text>
+        </Text>
+        <Text style={styles.welcomeBody}>
+          Allt du behöver är <Text style={styles.bold}>rätt verktyg</Text> och{' '}
+          <Text style={styles.bold}>en personlig plan</Text> som funkar för dig.
+        </Text>
+      </Animated.View>
+    </ScrollView>
+  );
+}
+
+function ProfileStep({ data, setData, usernameAvailable, checkingUsername, checkUsername }: StepProps) {
+  const insets = useSafeAreaInsets();
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <Text style={styles.pageTitle}>Bra jobbat! 🎉</Text>
+        <Text style={styles.pageSubtitle}>Tusentals studenter har förbättrat sina resultat. Låt oss skapa din profil.</Text>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Vad heter du?</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ditt namn"
+            placeholderTextColor={TEXT3}
+            value={data.displayName}
+            onChangeText={t => setData({ ...data, displayName: t })}
+            maxLength={50}
+          />
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Visningsnamn</Text>
-          <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Välj användarnamn</Text>
+          <View style={styles.usernameRow}>
+            <Text style={styles.atSign}>@</Text>
             <TextInput
-              style={styles.textInput}
-              placeholder="Ditt för- och efternamn"
-              placeholderTextColor={TEXT_MUTED}
-              value={data.displayName}
-              onChangeText={text => setData({ ...data, displayName: text })}
-              maxLength={50}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Användarnamn</Text>
-          <View style={[styles.inputWrapper, styles.usernameWrapper]}>
-            <Text style={styles.atPrefix}>@</Text>
-            <TextInput
-              style={[styles.textInput, { flex: 1, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 0 }]}
+              style={[styles.input, { flex: 1, borderLeftWidth: 0, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }]}
               placeholder="användarnamn"
-              placeholderTextColor={TEXT_MUTED}
+              placeholderTextColor={TEXT3}
               value={data.username}
-              onChangeText={text => {
-                const clean = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
+              onChangeText={t => {
+                const clean = t.toLowerCase().replace(/[^a-z0-9_]/g, '');
                 setData({ ...data, username: clean });
-                if (clean.length >= 3) checkUsernameAvailability(clean);
-                else setUsernameAvailable(null);
+                if (clean.length >= 3) checkUsername(clean);
+                else { }
               }}
               autoCapitalize="none"
               autoCorrect={false}
               maxLength={20}
             />
-            {checkingUsername && <ActivityIndicator size="small" color={TEXT_MUTED} />}
-            {usernameAvailable === true && (
-              <View style={styles.checkBadge}>
-                <Check size={12} color="#FFFFFF" />
-              </View>
-            )}
+            <View style={styles.usernameStatus}>
+              {checkingUsername && <ActivityIndicator size="small" color={TEXT3} />}
+              {usernameAvailable === true && <Check size={16} color={ACCENT} />}
+              {usernameAvailable === false && <Text style={{ color: '#EF4444', fontSize: 12 }}>✕</Text>}
+            </View>
           </View>
           {usernameAvailable === false && (
-            <Text style={styles.errorText}>Användarnamnet är inte tillgängligt</Text>
+            <Text style={styles.errorTxt}>Användarnamnet är inte tillgängligt</Text>
           )}
-          <Text style={styles.hintText}>3-20 tecken, bokstäver, siffror och _</Text>
+          <Text style={styles.hintTxt}>3–20 tecken, bokstäver, siffror och _</Text>
         </View>
 
         <TouchableOpacity
-          style={styles.termsContainer}
+          style={styles.termsRow}
           onPress={() => setData({ ...data, acceptedTerms: !data.acceptedTerms })}
           activeOpacity={0.7}
         >
-          <View style={[styles.checkbox, data.acceptedTerms && styles.checkboxChecked]}>
-            {data.acceptedTerms && <Check size={13} color="#FFFFFF" />}
+          <View style={[styles.checkbox, data.acceptedTerms && styles.checkboxOn]}>
+            {data.acceptedTerms && <Check size={12} color="#fff" />}
           </View>
-          <Text style={styles.termsLabel}>
-            Jag godkänner användarvillkoren och bekräftar att jag är minst 13 år
-          </Text>
+          <Text style={styles.termsText}>Jag godkänner användarvillkoren och bekräftar att jag är minst 13 år</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
+}
 
-  const renderStudyLevel = () => (
-    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-      <View style={styles.sectionHeader}>
-        <View style={[styles.sectionIcon, { backgroundColor: '#EDE9FE' }]}>
-          <GraduationCap size={24} color="#7C3AED" />
-        </View>
-        <Text style={styles.sectionTitle}>Var studerar du?</Text>
-        <Text style={styles.sectionDesc}>Välj din utbildningsnivå</Text>
-      </View>
-
-      <View style={styles.levelRow}>
-        <TouchableOpacity
-          style={[styles.levelCard, data.studyLevel === 'gymnasie' && styles.levelCardActive]}
-          onPress={() => setData({ ...data, studyLevel: 'gymnasie' })}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={data.studyLevel === 'gymnasie' ? ['#059669', '#10B981'] : ['#F1F5F9', '#F8FAFC']}
-            style={styles.levelGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <GraduationCap size={40} color={data.studyLevel === 'gymnasie' ? '#FFFFFF' : '#94A3B8'} />
-          </LinearGradient>
-          <Text style={[styles.levelTitle, data.studyLevel === 'gymnasie' && styles.levelTitleActive]}>
-            Gymnasiet
-          </Text>
-          <Text style={styles.levelSub}>Program & årskurs</Text>
-          {data.studyLevel === 'gymnasie' && (
-            <View style={styles.levelCheck}>
-              <Check size={14} color="#FFFFFF" />
-            </View>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.levelCard, data.studyLevel === 'högskola' && styles.levelCardActive]}
-          onPress={() => setData({ ...data, studyLevel: 'högskola' })}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={data.studyLevel === 'högskola' ? ['#0369A1', '#0EA5E9'] : ['#F1F5F9', '#F8FAFC']}
-            style={styles.levelGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <BookOpen size={40} color={data.studyLevel === 'högskola' ? '#FFFFFF' : '#94A3B8'} />
-          </LinearGradient>
-          <Text style={[styles.levelTitle, data.studyLevel === 'högskola' && styles.levelTitleActive]}>
-            Högskola
-          </Text>
-          <Text style={styles.levelSub}>Program & termin</Text>
-          {data.studyLevel === 'högskola' && (
-            <View style={[styles.levelCheck, { backgroundColor: '#0EA5E9' }]}>
-              <Check size={14} color="#FFFFFF" />
-            </View>
-          )}
-        </TouchableOpacity>
+function IntroStep({ }: StepProps) {
+  return (
+    <ScrollView contentContainerStyle={styles.centered} showsVerticalScrollIndicator={false}>
+      <Text style={{ fontSize: 80, textAlign: 'center', marginBottom: 24 }}>🎓</Text>
+      <Text style={styles.pageTitle}>För att hjälpa dig bäst behöver vi förstå din situation</Text>
+      <Text style={styles.pageBody}>Några snabba frågor – tar bara 60 sekunder.</Text>
+      <View style={styles.infoCard}>
+        <Text style={styles.infoCardText}>✓ Dina svar används för att personalisera din studieplan</Text>
+        <Text style={styles.infoCardText}>✓ Du kan hoppa över frågor du inte vill svara på</Text>
+        <Text style={styles.infoCardText}>✓ Du kan ändra allt i inställningarna senare</Text>
       </View>
     </ScrollView>
   );
+}
 
-  const renderProgramSelection = () => (
-    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-      <View style={styles.sectionHeader}>
-        <View style={[styles.sectionIcon, { backgroundColor: '#FEF3C7' }]}>
-          <BookOpen size={24} color="#B45309" />
-        </View>
-        <Text style={styles.sectionTitle}>
-          {data.studyLevel === 'gymnasie' ? 'Program & Årskurs' : 'Program & Termin'}
-        </Text>
-      </View>
-
-      {data.studyLevel === 'gymnasie' && (
-        <>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Välj program</Text>
-            <View style={styles.chipGrid}>
-              {[
-                { id: 'na', name: 'Naturvetenskap', emoji: '🔬', color: '#059669' },
-                { id: 'te', name: 'Teknik', emoji: '⚙️', color: '#B45309' },
-                { id: 'sa', name: 'Samhällsvetenskap', emoji: '🏛️', color: '#0369A1' },
-                { id: 'ek', name: 'Ekonomi', emoji: '💼', color: '#7C3AED' },
-                { id: 'es', name: 'Estetiska', emoji: '🎨', color: '#DB2777' },
-                { id: 'hu', name: 'Humanistiska', emoji: '📚', color: '#0891B2' },
-              ].map(p => {
-                const selected = data.gymnasiumProgram?.id === p.id;
-                return (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={[
-                      styles.chip,
-                      selected && { backgroundColor: p.color + '12', borderColor: p.color },
-                    ]}
-                    onPress={() =>
-                      setData({
-                        ...data,
-                        gymnasiumProgram: {
-                          id: p.id,
-                          name: p.name + 'programmet',
-                          abbreviation: p.id.toUpperCase(),
-                          category: 'högskoleförberedande',
-                        },
-                      })
-                    }
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.chipEmoji}>{p.emoji}</Text>
-                    <Text style={[styles.chipLabel, selected && { color: p.color, fontWeight: '700' as const }]}>
-                      {p.name}
-                    </Text>
-                    {selected && (
-                      <View style={[styles.chipCheck, { backgroundColor: p.color }]}>
-                        <Check size={10} color="#FFFFFF" />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {data.gymnasiumProgram && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Välj årskurs</Text>
-              <View style={styles.yearButtons}>
-                {[1, 2, 3].map(y => (
-                  <TouchableOpacity
-                    key={y}
-                    style={[styles.yearBtn, data.year === y && styles.yearBtnActive]}
-                    onPress={() => setData({ ...data, year: y as 1 | 2 | 3 })}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.yearBtnNum, data.year === y && styles.yearBtnNumActive]}>
-                      {y}
-                    </Text>
-                    <Text style={[styles.yearBtnLabel, data.year === y && styles.yearBtnLabelActive]}>
-                      År {y}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )}
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Gymnasium (valfritt)</Text>
-            <View style={styles.searchBox}>
-              <Search size={16} color={TEXT_MUTED} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Sök gymnasium..."
-                placeholderTextColor={TEXT_MUTED}
-                value={gymnasiumSearchQuery}
-                onChangeText={setGymnasiumSearchQuery}
-              />
-            </View>
-            <ScrollView style={styles.listContainer} nestedScrollEnabled>
-              {SWEDISH_GYMNASIUMS.filter(g =>
-                g.name.toLowerCase().includes(gymnasiumSearchQuery.toLowerCase())
-              )
-                .slice(0, 10)
-                .map(g => {
-                  const selected = data.gymnasium?.id === g.id;
-                  return (
-                    <TouchableOpacity
-                      key={g.id}
-                      style={[styles.listItem, selected && styles.listItemActive]}
-                      onPress={() => setData({ ...data, gymnasium: g })}
-                      activeOpacity={0.7}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.listItemTitle, selected && { color: '#059669' }]}>
-                          {g.name}
-                        </Text>
-                        <Text style={styles.listItemSub}>{g.city}</Text>
-                      </View>
-                      {selected && <Check size={16} color="#059669" />}
-                    </TouchableOpacity>
-                  );
-                })}
-            </ScrollView>
-          </View>
-        </>
-      )}
-
-      {data.studyLevel === 'högskola' && (
-        <>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Programtyp</Text>
-            <View style={styles.chipGrid}>
-              {[
-                { type: 'civilingenjör', name: 'Civilingenjör', emoji: '⚙️', color: '#B45309' },
-                { type: 'högskoleingenjör', name: 'Högskoleingenjör', emoji: '🔧', color: '#059669' },
-                { type: 'professionsprogram', name: 'Profession', emoji: '🎓', color: '#0369A1' },
-                { type: 'kandidat', name: 'Kandidat', emoji: '📚', color: '#7C3AED' },
-                { type: 'yrkeshögskola', name: 'YH', emoji: '💼', color: '#DB2777' },
-              ].map(pt => {
-                const selected = data.universityProgramType === pt.type;
-                return (
-                  <TouchableOpacity
-                    key={pt.type}
-                    style={[
-                      styles.chip,
-                      selected && { backgroundColor: pt.color + '12', borderColor: pt.color },
-                    ]}
-                    onPress={() =>
-                      setData({
-                        ...data,
-                        universityProgramType: pt.type,
-                        universityProgram: null,
-                        universityYear: null,
-                      })
-                    }
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.chipEmoji}>{pt.emoji}</Text>
-                    <Text style={[styles.chipLabel, selected && { color: pt.color, fontWeight: '700' as const }]}>
-                      {pt.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {data.universityProgramType && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Välj program</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {UNIVERSITY_PROGRAMS.filter(p => p.degreeType === data.universityProgramType).map(prog => {
-                  const isSelected = data.universityProgram?.id === prog.id;
-                  return (
-                    <TouchableOpacity
-                      key={prog.id}
-                      style={[styles.hChip, isSelected && styles.hChipActive]}
-                      onPress={() => setData({ ...data, universityProgram: prog, universityYear: null })}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.hChipText, isSelected && styles.hChipTextActive]} numberOfLines={1}>
-                        {prog.name.replace(/^(Civilingenjör|Högskoleingenjör|Kandidatprogram i) - ?/, '')}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
-
-          {data.universityProgram && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Termin</Text>
-              <View style={styles.yearButtons}>
-                {Array.from(
-                  { length: Math.min(data.universityProgram.durationYears * 2, 10) },
-                  (_, i) => i + 1
-                ).map(t => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[styles.yearBtn, data.universityYear === t && styles.yearBtnActive]}
-                    onPress={() => setData({ ...data, universityYear: t as UniversityProgramYear })}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.yearBtnNum, data.universityYear === t && styles.yearBtnNumActive]}>
-                      {t}
-                    </Text>
-                    <Text style={[styles.yearBtnLabel, data.universityYear === t && styles.yearBtnLabelActive]}>
-                      T{t}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )}
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Högskola (valfritt)</Text>
-            <View style={styles.searchBox}>
-              <Search size={16} color={TEXT_MUTED} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Sök högskola..."
-                placeholderTextColor={TEXT_MUTED}
-                value={universitySearchQuery}
-                onChangeText={setUniversitySearchQuery}
-              />
-            </View>
-            <ScrollView style={styles.listContainer} nestedScrollEnabled>
-              {SWEDISH_UNIVERSITIES.filter(
-                u =>
-                  u.name.toLowerCase().includes(universitySearchQuery.toLowerCase()) ||
-                  u.city.toLowerCase().includes(universitySearchQuery.toLowerCase())
-              )
-                .slice(0, 10)
-                .map(u => {
-                  const selected = data.university?.id === u.id;
-                  return (
-                    <TouchableOpacity
-                      key={u.id}
-                      style={[styles.listItem, selected && styles.listItemActive]}
-                      onPress={() => setData({ ...data, university: u })}
-                      activeOpacity={0.7}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.listItemTitle, selected && { color: '#059669' }]}>
-                          {u.name}
-                        </Text>
-                        <Text style={styles.listItemSub}>{u.city}</Text>
-                      </View>
-                      {selected && <Check size={16} color="#059669" />}
-                    </TouchableOpacity>
-                  );
-                })}
-            </ScrollView>
-          </View>
-        </>
-      )}
-    </ScrollView>
-  );
-
-  const renderCourses = () => {
-    if (data.studyLevel === 'gymnasie') {
-      return (
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIcon, { backgroundColor: '#ECFDF5' }]}>
-              <BookOpen size={24} color="#059669" />
-            </View>
-            <Text style={styles.sectionTitle}>Välj dina kurser</Text>
-            <View style={styles.courseBadge}>
-              <Text style={styles.courseBadgeText}>
-                {data.selectedCourses.size} / {MAX_COURSES}
-              </Text>
-            </View>
-          </View>
-
-          {availableCourses.map(course => {
-            const selected = data.selectedCourses.has(course.id);
-            return (
-              <TouchableOpacity
-                key={course.id}
-                style={[styles.courseRow, selected && styles.courseRowActive]}
-                onPress={() => {
-                  const newSelected = new Set(data.selectedCourses);
-                  if (newSelected.has(course.id)) {
-                    if (!course.mandatory) newSelected.delete(course.id);
-                  } else if (newSelected.size < MAX_COURSES) {
-                    newSelected.add(course.id);
-                  }
-                  setData({ ...data, selectedCourses: newSelected });
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.courseCheck, selected && styles.courseCheckActive]}>
-                  {selected && <Check size={13} color="#FFFFFF" />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.courseTitle, selected && { color: '#059669' }]}>
-                    {course.name}
-                  </Text>
-                  {course.mandatory && (
-                    <Text style={styles.mandatoryTag}>Obligatorisk</Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      );
-    }
-
-    return (
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        <View style={styles.sectionHeader}>
-          <View style={[styles.sectionIcon, { backgroundColor: '#FCE7F3' }]}>
-            <Target size={24} color="#DB2777" />
-          </View>
-          <Text style={styles.sectionTitle}>Dina studiemål</Text>
-          <Text style={styles.sectionDesc}>Välj minst ett mål</Text>
-        </View>
-
-        <View style={styles.goalsWrap}>
-          {goalOptions.map(goal => {
-            const selected = data.goals.includes(goal.id);
-            return (
-              <TouchableOpacity
-                key={goal.id}
-                style={[styles.goalCard, selected && { borderColor: goal.color, backgroundColor: goal.color + '08' }]}
-                onPress={() => toggleGoal(goal.id)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.goalIcon}>{goal.icon}</Text>
-                <Text style={[styles.goalText, selected && { color: goal.color, fontWeight: '700' as const }]}>
-                  {goal.label}
-                </Text>
-                {selected && (
-                  <View style={[styles.goalCheck, { backgroundColor: goal.color }]}>
-                    <Check size={10} color="#FFFFFF" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </ScrollView>
-    );
-  };
-
-  const renderGoalsAndPace = () => (
-    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-      {data.studyLevel === 'gymnasie' && (
-        <>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIcon, { backgroundColor: '#FCE7F3' }]}>
-              <Target size={24} color="#DB2777" />
-            </View>
-            <Text style={styles.sectionTitle}>Mål & Tempo</Text>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Studiemål</Text>
-            <View style={styles.goalsWrap}>
-              {goalOptions.map(goal => {
-                const selected = data.goals.includes(goal.id);
-                return (
-                  <TouchableOpacity
-                    key={goal.id}
-                    style={[styles.goalCard, selected && { borderColor: goal.color, backgroundColor: goal.color + '08' }]}
-                    onPress={() => toggleGoal(goal.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.goalIcon}>{goal.icon}</Text>
-                    <Text style={[styles.goalText, selected && { color: goal.color, fontWeight: '700' as const }]}>
-                      {goal.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        </>
-      )}
-
-      {data.studyLevel !== 'gymnasie' && (
-        <View style={styles.sectionHeader}>
-          <View style={[styles.sectionIcon, { backgroundColor: '#FEF3C7' }]}>
-            <Flame size={24} color="#B45309" />
-          </View>
-          <Text style={styles.sectionTitle}>Studietempo</Text>
-          <Text style={styles.sectionDesc}>Hur mycket vill du studera per dag?</Text>
-        </View>
-      )}
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Välj tempo</Text>
-        {learningPaceOptions.map(pace => {
-          const selected = data.learningPace === pace.id;
+function LevelStep({ data, setData }: StepProps) {
+  return (
+    <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <Text style={styles.questionTitle}>Var pluggar du?</Text>
+      <View style={{ gap: 12, marginTop: 8 }}>
+        {[
+          { id: 'gymnasie', label: 'Gymnasium', sub: 'Naturvetenskap, Teknik, Samhäll...', emoji: '📚' },
+          { id: 'högskola', label: 'Högskola / Universitet', sub: 'Kandidat, Civilingenjör, Master...', emoji: '🎓' },
+        ].map(opt => {
+          const sel = data.studyLevel === opt.id;
           return (
             <TouchableOpacity
-              key={pace.id}
-              style={[styles.paceRow, selected && { borderColor: pace.color, backgroundColor: pace.color + '08' }]}
-              onPress={() =>
-                setData({ ...data, learningPace: pace.id as any, dailyGoalHours: pace.hours })
-              }
-              activeOpacity={0.7}
+              key={opt.id}
+              style={[styles.optionCard, sel && styles.optionCardSel]}
+              onPress={() => setData({ ...data, studyLevel: opt.id as any })}
+              activeOpacity={0.75}
             >
-              <Text style={styles.paceIcon}>{pace.icon}</Text>
+              <Text style={styles.optionEmoji}>{opt.emoji}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.paceName, selected && { color: pace.color }]}>
-                  {pace.title}
-                </Text>
-                <Text style={styles.paceDetail}>{pace.subtitle}</Text>
+                <Text style={[styles.optionLabel, sel && styles.optionLabelSel]}>{opt.label}</Text>
+                <Text style={styles.optionSub}>{opt.sub}</Text>
               </View>
-              {selected && (
-                <View style={[styles.paceCheck, { backgroundColor: pace.color }]}>
-                  <Check size={12} color="#FFFFFF" />
+              {sel && (
+                <View style={styles.optionCheck}>
+                  <Check size={13} color="#fff" />
                 </View>
               )}
             </TouchableOpacity>
@@ -985,791 +691,1408 @@ export default function OnboardingScreen() {
       </View>
     </ScrollView>
   );
+}
 
-  const renderFinish = () => (
-    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-      <View style={styles.sectionHeader}>
-        <View style={[styles.sectionIcon, { backgroundColor: '#ECFDF5' }]}>
-          <Sparkles size={24} color="#059669" />
+function SchoolStep({ data, setData, availableCourses, gymnasiumSearch, setGymnasiumSearch, universitySearch, setUniversitySearch }: StepProps) {
+  if (data.studyLevel === 'gymnasie') {
+    return (
+      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+        <Text style={styles.questionTitle}>Vilket program går du?</Text>
+
+        <View style={{ gap: 10, marginTop: 8 }}>
+          {[
+            { id: 'na', name: 'Naturvetenskap', emoji: '🔬' },
+            { id: 'te', name: 'Teknik', emoji: '⚙️' },
+            { id: 'sa', name: 'Samhällsvetenskap', emoji: '🏛️' },
+            { id: 'ek', name: 'Ekonomi', emoji: '💼' },
+            { id: 'es', name: 'Estetiska', emoji: '🎨' },
+            { id: 'hu', name: 'Humanistiska', emoji: '📚' },
+          ].map(p => {
+            const sel = data.gymnasiumProgram?.id === p.id;
+            return (
+              <TouchableOpacity
+                key={p.id}
+                style={[styles.optionCard, sel && styles.optionCardSel]}
+                onPress={() => setData({ ...data, gymnasiumProgram: { id: p.id, name: p.name + 'programmet', abbreviation: p.id.toUpperCase(), category: 'högskoleförberedande' } })}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.optionEmoji}>{p.emoji}</Text>
+                <Text style={[styles.optionLabel, sel && styles.optionLabelSel]}>{p.name}</Text>
+                {sel && <View style={styles.optionCheck}><Check size={13} color="#fff" /></View>}
+              </TouchableOpacity>
+            );
+          })}
         </View>
-        <Text style={styles.sectionTitle}>Nästan klart!</Text>
-        <Text style={styles.sectionDesc}>Anpassa din avatar och inställningar</Text>
-      </View>
 
-      <View style={styles.card}>
-        <AvatarBuilder
-          config={data.avatarConfig}
-          onConfigChange={config => setData({ ...data, avatarConfig: config })}
-        />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Notifikationer</Text>
-        {[
-          { key: 'dailyReminders' as const, label: 'Dagliga påminnelser', desc: 'Påminnelse att studera' },
-          { key: 'achievements' as const, label: 'Achievements', desc: 'När du låser upp prestationer' },
-          { key: 'streakReminders' as const, label: 'Streak-påminnelser', desc: 'Behåll din streak' },
-        ].map((n, i) => (
-          <View key={n.key} style={[styles.notifItem, i === 2 && { borderBottomWidth: 0 }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.notifLabel}>{n.label}</Text>
-              <Text style={styles.notifSub}>{n.desc}</Text>
+        {data.gymnasiumProgram && (
+          <>
+            <Text style={[styles.questionTitle, { marginTop: 28 }]}>Vilken årskurs?</Text>
+            <View style={styles.yearRow}>
+              {[1, 2, 3].map(y => (
+                <TouchableOpacity key={y} style={[styles.yearBtn, data.year === y && styles.yearBtnSel]} onPress={() => setData({ ...data, year: y as 1 | 2 | 3 })} activeOpacity={0.75}>
+                  <Text style={[styles.yearBtnText, data.year === y && styles.yearBtnTextSel]}>År {y}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-            <Switch
-              value={data.notificationPreferences[n.key]}
-              onValueChange={val =>
-                setData({
-                  ...data,
-                  notificationPreferences: { ...data.notificationPreferences, [n.key]: val },
-                })
-              }
-              trackColor={{ false: '#E2E8F0', true: '#34D399' }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-        ))}
+          </>
+        )}
+
+        {data.year && availableCourses.length > 0 && (
+          <>
+            <Text style={[styles.questionTitle, { marginTop: 28 }]}>Välj dina kurser</Text>
+            <Text style={styles.pageSubtitle}>{data.selectedCourses.size}/{MAX_COURSES} valda</Text>
+            {availableCourses.map((course: GymnasiumCourse) => {
+              const sel = data.selectedCourses.has(course.id);
+              return (
+                <TouchableOpacity
+                  key={course.id}
+                  style={[styles.courseRow, sel && styles.courseRowSel]}
+                  onPress={() => {
+                    const ns = new Set(data.selectedCourses);
+                    if (ns.has(course.id)) { if (!course.mandatory) ns.delete(course.id); }
+                    else if (ns.size < MAX_COURSES) ns.add(course.id);
+                    setData({ ...data, selectedCourses: ns });
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <View style={[styles.smallCheck, sel && styles.smallCheckOn]}>{sel && <Check size={11} color="#fff" />}</View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.courseTitle, sel && { color: ACCENT }]}>{course.name}</Text>
+                    {course.mandatory && <Text style={styles.mandTag}>Obligatorisk</Text>}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </>
+        )}
+
+        <Text style={[styles.questionTitle, { marginTop: 28 }]}>Gymnasium (valfritt)</Text>
+        <View style={styles.searchRow}>
+          <Search size={16} color={TEXT3} />
+          <TextInput style={styles.searchInput} placeholder="Sök gymnasium..." placeholderTextColor={TEXT3} value={gymnasiumSearch} onChangeText={setGymnasiumSearch} />
+        </View>
+        {gymnasiumSearch.length > 0 && SWEDISH_GYMNASIUMS.filter(g => g.name.toLowerCase().includes(gymnasiumSearch.toLowerCase())).slice(0, 8).map(g => {
+          const sel = data.gymnasium?.id === g.id;
+          return (
+            <TouchableOpacity key={g.id} style={[styles.listItem, sel && styles.listItemSel]} onPress={() => setData({ ...data, gymnasium: g })} activeOpacity={0.7}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.listItemTitle, sel && { color: ACCENT }]}>{g.name}</Text>
+                <Text style={styles.listItemSub}>{g.city}</Text>
+              </View>
+              {sel && <Check size={15} color={ACCENT} />}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    );
+  }
+
+  return (
+    <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <Text style={styles.questionTitle}>Vilken programtyp?</Text>
+      <View style={{ gap: 10, marginTop: 8 }}>
+        {[
+          { type: 'civilingenjör', name: 'Civilingenjör', emoji: '⚙️' },
+          { type: 'högskoleingenjör', name: 'Högskoleingenjör', emoji: '🔧' },
+          { type: 'professionsprogram', name: 'Professionsprogram', emoji: '🎓' },
+          { type: 'kandidat', name: 'Kandidatprogram', emoji: '📚' },
+          { type: 'yrkeshögskola', name: 'Yrkeshögskola', emoji: '💼' },
+        ].map(pt => {
+          const sel = data.universityProgramType === pt.type;
+          return (
+            <TouchableOpacity key={pt.type} style={[styles.optionCard, sel && styles.optionCardSel]} onPress={() => setData({ ...data, universityProgramType: pt.type, universityProgram: null, universityYear: null })} activeOpacity={0.75}>
+              <Text style={styles.optionEmoji}>{pt.emoji}</Text>
+              <Text style={[styles.optionLabel, sel && styles.optionLabelSel]}>{pt.name}</Text>
+              {sel && <View style={styles.optionCheck}><Check size={13} color="#fff" /></View>}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      <View style={styles.summaryContainer}>
-        <Text style={styles.summaryTitle}>Sammanfattning</Text>
-        {[
-          { label: 'Nivå', value: data.studyLevel === 'gymnasie' ? 'Gymnasiet' : 'Högskola' },
-          { label: 'Program', value: data.gymnasiumProgram?.name || data.universityProgram?.name || '-' },
-          { label: 'Tempo', value: learningPaceOptions.find(p => p.id === data.learningPace)?.title || '-' },
-        ].map((row, i) => (
-          <View key={i} style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>{row.label}</Text>
-            <Text style={styles.summaryValue} numberOfLines={1}>{row.value}</Text>
+      {data.universityProgramType && (
+        <>
+          <Text style={[styles.questionTitle, { marginTop: 28 }]}>Välj program</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+            {UNIVERSITY_PROGRAMS.filter(p => p.degreeType === data.universityProgramType).map(prog => {
+              const sel = data.universityProgram?.id === prog.id;
+              return (
+                <TouchableOpacity key={prog.id} style={[styles.hChip, sel && styles.hChipSel]} onPress={() => setData({ ...data, universityProgram: prog, universityYear: null })} activeOpacity={0.75}>
+                  <Text style={[styles.hChipText, sel && styles.hChipTextSel]} numberOfLines={1}>
+                    {prog.name.replace(/^(Civilingenjör|Högskoleingenjör|Kandidatprogram i) - ?/, '')}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </>
+      )}
+
+      {data.universityProgram && (
+        <>
+          <Text style={[styles.questionTitle, { marginTop: 28 }]}>Vilken termin?</Text>
+          <View style={[styles.yearRow, { flexWrap: 'wrap', gap: 8 }]}>
+            {Array.from({ length: Math.min(data.universityProgram.durationYears * 2, 10) }, (_, i) => i + 1).map(t => (
+              <TouchableOpacity key={t} style={[styles.yearBtn, data.universityYear === t && styles.yearBtnSel]} onPress={() => setData({ ...data, universityYear: t as UniversityProgramYear })} activeOpacity={0.75}>
+                <Text style={[styles.yearBtnText, data.universityYear === t && styles.yearBtnTextSel]}>T{t}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        ))}
+        </>
+      )}
+
+      <Text style={[styles.questionTitle, { marginTop: 28 }]}>Högskola / Universitet (valfritt)</Text>
+      <View style={styles.searchRow}>
+        <Search size={16} color={TEXT3} />
+        <TextInput style={styles.searchInput} placeholder="Sök högskola..." placeholderTextColor={TEXT3} value={universitySearch} onChangeText={setUniversitySearch} />
+      </View>
+      {universitySearch.length > 0 && SWEDISH_UNIVERSITIES.filter(u => u.name.toLowerCase().includes(universitySearch.toLowerCase()) || u.city.toLowerCase().includes(universitySearch.toLowerCase())).slice(0, 8).map(u => {
+        const sel = data.university?.id === u.id;
+        return (
+          <TouchableOpacity key={u.id} style={[styles.listItem, sel && styles.listItemSel]} onPress={() => setData({ ...data, university: u })} activeOpacity={0.7}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.listItemTitle, sel && { color: ACCENT }]}>{u.name}</Text>
+              <Text style={styles.listItemSub}>{u.city}</Text>
+            </View>
+            {sel && <Check size={15} color={ACCENT} />}
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+function ProblemsStep({ data, setData }: StepProps) {
+  const toggle = (id: string) => {
+    const np = data.problems.includes(id) ? data.problems.filter(x => x !== id) : [...data.problems, id];
+    setData({ ...data, problems: np });
+  };
+  return (
+    <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <Text style={styles.questionTitle}>Vad är ditt största problem med studierna?</Text>
+      <Text style={styles.pageSubtitle}>Du kan välja flera</Text>
+      <View style={{ gap: 10, marginTop: 8 }}>
+        {PROBLEMS.map(p => {
+          const sel = data.problems.includes(p.id);
+          return (
+            <TouchableOpacity key={p.id} style={[styles.optionCard, sel && styles.optionCardSel]} onPress={() => toggle(p.id)} activeOpacity={0.75}>
+              <Text style={styles.optionEmoji}>{p.emoji}</Text>
+              <Text style={[styles.optionLabel, sel && styles.optionLabelSel]}>{p.label}</Text>
+              {sel && <View style={styles.optionCheck}><Check size={13} color="#fff" /></View>}
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </ScrollView>
   );
+}
 
-  const renderStep = () => {
-    switch (step) {
-      case 0: return renderWelcome();
-      case 1: return renderProfile();
-      case 2: return renderStudyLevel();
-      case 3: return renderProgramSelection();
-      case 4: return renderCourses();
-      case 5: return renderGoalsAndPace();
-      case 6: return renderFinish();
-      default: return null;
-    }
-  };
+function StressStep({ data, setData }: StepProps) {
+  const sliderWidth = SW - 48;
+  const thumbSize = 28;
+  const trackWidth = sliderWidth - thumbSize;
+  const thumbX = useRef(new Animated.Value((data.stressLevel / 10) * trackWidth)).current;
+  const currentVal = useRef(data.stressLevel);
 
-  const isLastStep = step === getTotalSteps() - 1;
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {},
+      onPanResponderMove: (_, gs) => {
+        const currentThumbX = (currentVal.current / 10) * trackWidth;
+        const newX = Math.max(0, Math.min(trackWidth, currentThumbX + gs.dx));
+        thumbX.setValue(newX);
+        const newVal = Math.round((newX / trackWidth) * 10);
+        if (newVal !== currentVal.current) {
+          currentVal.current = newVal;
+          setData({ ...data, stressLevel: newVal });
+        }
+      },
+      onPanResponderRelease: (_, gs) => {
+        const currentThumbX = (currentVal.current / 10) * trackWidth;
+        const newX = Math.max(0, Math.min(trackWidth, currentThumbX + gs.dx));
+        const snappedVal = Math.round((newX / trackWidth) * 10);
+        const snappedX = (snappedVal / 10) * trackWidth;
+        Animated.spring(thumbX, { toValue: snappedX, tension: 80, friction: 8, useNativeDriver: false }).start();
+        currentVal.current = snappedVal;
+        setData({ ...data, stressLevel: snappedVal });
+      },
+    })
+  ).current;
+
+  const fillWidth = thumbX.interpolate({ inputRange: [0, trackWidth], outputRange: [thumbSize / 2, trackWidth + thumbSize / 2], extrapolate: 'clamp' });
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <View style={styles.header}>
-        <View style={styles.progressRow}>
-          <View style={styles.progressTrack}>
-            <Animated.View
-              style={[
-                styles.progressFill,
-                {
-                  width: progressAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0%', '100%'],
-                  }),
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.progressText}>
-            {step + 1}/{getTotalSteps()}
-          </Text>
+    <View style={styles.page}>
+      <Text style={styles.questionTitle}>Hur stressad brukar du vara inför prov?</Text>
+
+      <View style={styles.stressCenter}>
+        <Text style={styles.stressEmoji}>{getStressEmoji(data.stressLevel)}</Text>
+        <Text style={styles.stressLabel}>{getStressLabel(data.stressLevel)}</Text>
+
+        <View style={[styles.sliderTrack, { width: sliderWidth }]} {...panResponder.panHandlers}>
+          <Animated.View style={[styles.sliderFill, { width: fillWidth }]} />
+          <Animated.View style={[styles.sliderThumb, { transform: [{ translateX: thumbX }] }]} />
         </View>
-      </View>
 
-      <Animated.View
-        style={[
-          styles.content,
-          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-        ]}
-      >
-        {renderStep()}
-      </Animated.View>
-
-      <View style={styles.footer}>
-        {step > 0 ? (
-          <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
-            <ChevronLeft size={20} color={TEXT_SECONDARY} />
-            <Text style={styles.backText}>Tillbaka</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={{ minWidth: 100 }} />
-        )}
-
-        <TouchableOpacity
-          style={[styles.nextButton, !canProceed() && styles.nextButtonDisabled]}
-          onPress={handleNext}
-          disabled={!canProceed() || isSubmitting}
-          activeOpacity={0.8}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <>
-              <Text style={styles.nextText}>
-                {isLastStep ? 'Slutför' : step === 0 ? 'Kom igång' : 'Nästa'}
-              </Text>
-              {!isLastStep && <ArrowRight size={18} color="#FFFFFF" />}
-              {isLastStep && <Rocket size={18} color="#FFFFFF" />}
-            </>
-          )}
-        </TouchableOpacity>
+        <View style={[styles.sliderLabels, { width: sliderWidth }]}>
+          <Text style={styles.sliderLabelText}>😌 Lugn</Text>
+          <Text style={styles.sliderLabelText}>😰 Extremt stressad</Text>
+        </View>
       </View>
     </View>
   );
 }
 
+function NotAloneStep({ data }: StepProps) {
+  const pct = Math.max(10, Math.min(90, data.stressLevel * 10));
+  const totalDots = 100;
+  const stressedDots = Math.round((pct / 100) * totalDots);
+
+  return (
+    <ScrollView contentContainerStyle={styles.bigPage} showsVerticalScrollIndicator={false}>
+      <View style={styles.dotGrid}>
+        {Array.from({ length: totalDots }).map((_, i) => (
+          <Text key={i} style={[styles.dot, i < stressedDots ? styles.dotStressed : styles.dotGrey]}>
+            {i < stressedDots ? '●' : '○'}
+          </Text>
+        ))}
+      </View>
+      <Text style={styles.bigTitle}>Du är inte ensam 💙</Text>
+      <Text style={styles.bigBody}>
+        <Text style={styles.bold}>{pct}%</Text> av svenska studenter känner samma stress inför prov.
+      </Text>
+      <Text style={[styles.bigBody, { marginTop: 12 }]}>
+        68% kämpar med <Text style={styles.bold}>motivationen</Text>.{'\n'}
+        81% vill ha bättre <Text style={styles.bold}>studierutiner</Text>.{'\n\n'}
+        Vi är här för att hjälpa 🙏
+      </Text>
+      <TouchableOpacity style={[styles.cta, { marginTop: 32 }]} activeOpacity={0.85}>
+        <Text style={styles.ctaText}>Fortsätt</Text>
+        <ArrowRight size={18} color="#fff" />
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+function DailyGoalStep({ data, setData }: StepProps) {
+  const problem = data.problems[0];
+  const motivText = problem === 'motivation'
+    ? 'Det känns som att du ibland saknar motivation. Låt oss ändra på det!'
+    : problem === 'time'
+      ? 'Med en daglig plan blir tidshanteringen mycket enklare.'
+      : 'Konsistens är nyckeln – välj en tid du kan hålla varje dag.';
+
+  return (
+    <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <Text style={styles.questionTitle}>Hur många minuter vill du plugga per dag?</Text>
+      <Text style={styles.pageSubtitle}>{motivText}</Text>
+      <View style={{ gap: 10, marginTop: 8 }}>
+        {DAILY_MINS.map(opt => {
+          const sel = data.dailyGoalMinutes === opt.value;
+          return (
+            <TouchableOpacity key={opt.value} style={[styles.optionCard, sel && styles.optionCardSel]} onPress={() => setData({ ...data, dailyGoalMinutes: opt.value })} activeOpacity={0.75}>
+              <Text style={styles.optionEmoji}>⏱️</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.optionLabel, sel && styles.optionLabelSel]}>{opt.label}</Text>
+                {opt.note ? <Text style={styles.recommendedTag}>{opt.note}</Text> : null}
+              </View>
+              {sel && <View style={styles.optionCheck}><Check size={13} color="#fff" /></View>}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <Text style={styles.hintTxt}>Vi rekommenderar att börja med 30 minuter</Text>
+    </ScrollView>
+  );
+}
+
+function GoalsStep({ data, setData }: StepProps) {
+  const toggle = (id: string) => {
+    const ng = data.goals.includes(id) ? data.goals.filter(x => x !== id) : [...data.goals, id];
+    setData({ ...data, goals: ng });
+  };
+  return (
+    <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <Text style={styles.questionTitle}>Vad vill du uppnå med StudieStugan?</Text>
+      <Text style={styles.pageSubtitle}>Välj allt som stämmer</Text>
+      <View style={{ gap: 10, marginTop: 8 }}>
+        {GOALS.map(g => {
+          const sel = data.goals.includes(g.id);
+          return (
+            <TouchableOpacity key={g.id} style={[styles.optionCard, sel && styles.optionCardSel]} onPress={() => toggle(g.id)} activeOpacity={0.75}>
+              <Text style={styles.optionEmoji}>{g.emoji}</Text>
+              <Text style={[styles.optionLabel, sel && styles.optionLabelSel]}>{g.label}</Text>
+              {sel && <View style={styles.optionCheck}><Check size={13} color="#fff" /></View>}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </ScrollView>
+  );
+}
+
+function WowStep({ data }: StepProps) {
+  const scaleAnim = useRef(new Animated.Value(0.7)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, tension: 50, friction: 7, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return (
+    <ScrollView contentContainerStyle={styles.bigPage} showsVerticalScrollIndicator={false}>
+      <Animated.Text style={[styles.wowEmoji, { transform: [{ scale: scaleAnim }], opacity: fadeAnim }]}>✨</Animated.Text>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <Text style={styles.bigTitle}>Från och med nu blir allt kristallklart</Text>
+        <Text style={styles.bigBody}>Vi har skapat din personliga studieplan baserat på:</Text>
+        <View style={styles.checkList}>
+          {[
+            `Din stressnivå (${data.stressLevel}/10)`,
+            `Dina ${data.goals.length || 1} studiemål`,
+            `${data.dailyGoalMinutes} minuter per dag`,
+            `Dina utmaningar`,
+          ].map((item, i) => (
+            <View key={i} style={styles.checkRow}>
+              <View style={styles.checkBubble}><Check size={14} color="#fff" /></View>
+              <Text style={styles.checkText}>{item}</Text>
+            </View>
+          ))}
+        </View>
+      </Animated.View>
+    </ScrollView>
+  );
+}
+
+function SocialProofStep({ }: StepProps) {
+  return (
+    <ScrollView contentContainerStyle={styles.bigPage} showsVerticalScrollIndicator={false}>
+      <Text style={styles.bigTitle}>Betrodd av 10 000+ svenska studenter</Text>
+
+      <View style={styles.statsRow}>
+        {[
+          { value: '4.8 ⭐', label: 'Betyg' },
+          { value: '10K+', label: 'Studenter' },
+          { value: '92%', label: 'Nöjda' },
+        ].map((s, i) => (
+          <View key={i} style={styles.statBox}>
+            <Text style={styles.statValue}>{s.value}</Text>
+            <Text style={styles.statLabel}>{s.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      <Text style={styles.bigBody}>StudieStugan har hjälpt tusentals svenska studenter nå sina mål – från gymnasiet till universitetet.</Text>
+
+      <View style={styles.featureList}>
+        {[
+          '🤖 Personlig AI-studiecoach',
+          '🎴 Smart flashcard-system',
+          '📊 Djupgående statistik',
+          '⚔️ Plugga mot kompisar',
+          '🎯 Högskoleprovet-träning',
+        ].map((f, i) => (
+          <View key={i} style={styles.featureRow}>
+            <Text style={styles.featureText}>{f}</Text>
+          </View>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+function TestimonialsStep({ testimonialDisplay, setTestimonialDisplay }: StepProps) {
+  return (
+    <ScrollView contentContainerStyle={styles.bigPage} showsVerticalScrollIndicator={false}>
+      <Text style={styles.bigTitle}>Vad andra studenter säger</Text>
+
+      <View style={styles.testimonialCard}>
+        <View style={styles.starsRow}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star key={i} size={18} color="#F59E0B" fill="#F59E0B" />
+          ))}
+        </View>
+        <Text style={styles.testimonialText}>"{TESTIMONIALS[testimonialDisplay].text}"</Text>
+        <Text style={styles.testimonialAuthor}>
+          — {TESTIMONIALS[testimonialDisplay].name}, {TESTIMONIALS[testimonialDisplay].age}, {TESTIMONIALS[testimonialDisplay].city}
+        </Text>
+      </View>
+
+      <View style={styles.dotsRow}>
+        {TESTIMONIALS.map((_, i) => (
+          <TouchableOpacity key={i} onPress={() => setTestimonialDisplay(i)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <View style={[styles.testimonialDot, i === testimonialDisplay && styles.testimonialDotActive]} />
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.trustRow}>
+        <View style={styles.trustItem}>
+          <Shield size={16} color={ACCENT} />
+          <Text style={styles.trustText}>Säkra betalningar</Text>
+        </View>
+        <View style={styles.trustItem}>
+          <RefreshCw size={16} color={ACCENT} />
+          <Text style={styles.trustText}>Avsluta när du vill</Text>
+        </View>
+        <View style={styles.trustItem}>
+          <Crown size={16} color={ACCENT} />
+          <Text style={styles.trustText}>7 dagars gratis</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
+function PaywallStep({ offerings, selectedPkg, setSelectedPkg, isPurchasing, isRestoringPurchase, onPurchase, onRestore, onSkip }: StepProps) {
+  const insets = useSafeAreaInsets();
+  const annualPkg = offerings.find(p => p.packageType === 'ANNUAL' || p.identifier.includes('annual') || p.identifier.includes('year'));
+  const monthlyPkg = offerings.find(p => p.packageType === 'MONTHLY' || p.identifier.includes('monthly') || p.identifier.includes('month'));
+
+  const annualPrice = annualPkg?.product?.priceString || '249 kr/år';
+  const monthlyPrice = monthlyPkg?.product?.priceString || '49 kr/mån';
+  const annualMonthly = annualPkg ? `Endast ${((annualPkg.product?.price || 249) / 12).toFixed(0)} kr/månad` : 'Endast 21 kr/månad';
+
+  const FEATURES = [
+    'Personlig AI-studieplan',
+    'Obegränsade AI-flashcards',
+    'Högskoleprovet-träning',
+    'Svenska kurser & lektioner',
+    'Plugga med vänner – Battle',
+    'Obegränsade quiz & tester',
+    'Avancerad statistik & insikter',
+    'Ingen reklam',
+  ];
+
+  return (
+    <ScrollView
+      contentContainerStyle={[styles.paywallPage, { paddingBottom: insets.bottom + 24 }]}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.paywallHeader}>
+        <Image
+          source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
+          style={styles.paywallLogo}
+          contentFit="contain"
+        />
+        <TouchableOpacity onPress={onSkip} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={styles.closeBtnText}>✕</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.paywallTitle}>Starta din 7-dagars{'\n'}provperiod.</Text>
+      <Text style={styles.paywallSub}>Avsluta när du vill.</Text>
+
+      <Text style={[styles.bigBody, { textAlign: 'left', marginTop: 12, marginBottom: 20 }]}>
+        Vi vill bara att du ska använda StudieStugan om det <Text style={styles.bold}>verkligen förändrar dina studieresultat</Text>. Börja med en 7-dagars gratis provperiod – avsluta när som helst.
+      </Text>
+
+      <Text style={styles.featuresSectionTitle}>Allt ingår i Premium:</Text>
+      {FEATURES.map((f, i) => (
+        <View key={i} style={styles.paywallFeatureRow}>
+          <View style={styles.paywallCheck}><Check size={13} color="#fff" /></View>
+          <Text style={styles.paywallFeatureText}>{f}</Text>
+        </View>
+      ))}
+
+      <View style={{ gap: 12, marginTop: 28 }}>
+        <TouchableOpacity
+          style={[styles.pkgCard, selectedPkg === 'annual' && styles.pkgCardSel]}
+          onPress={() => setSelectedPkg('annual')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.pkgPopular}>
+            <Text style={styles.pkgPopularText}>MEST POPULÄR</Text>
+          </View>
+          <View style={styles.pkgRow}>
+            <View>
+              <Text style={styles.pkgTitle}>📦 Årsplan</Text>
+              <Text style={styles.pkgSub}>{annualMonthly}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.pkgPrice}>{annualPrice}</Text>
+              <View style={[styles.pkgRadio, selectedPkg === 'annual' && styles.pkgRadioSel]}>
+                {selectedPkg === 'annual' && <View style={styles.pkgRadioInner} />}
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.pkgCard, selectedPkg === 'monthly' && styles.pkgCardSel]}
+          onPress={() => setSelectedPkg('monthly')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.pkgRow}>
+            <View>
+              <Text style={styles.pkgTitle}>📦 Månadsplan</Text>
+              <Text style={styles.pkgSub}>Förnyas månadsvis</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.pkgPrice}>{monthlyPrice}</Text>
+              <View style={[styles.pkgRadio, selectedPkg === 'monthly' && styles.pkgRadioSel]}>
+                {selectedPkg === 'monthly' && <View style={styles.pkgRadioInner} />}
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity style={[styles.cta, { marginTop: 24 }]} onPress={onPurchase} disabled={isPurchasing} activeOpacity={0.88}>
+        {isPurchasing ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.ctaText}>Starta din 7-dagars provperiod</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.skipPaywallBtn} onPress={onSkip} activeOpacity={0.7}>
+        <Text style={styles.skipPaywallText}>Fortsätt utan premium</Text>
+      </TouchableOpacity>
+
+      <View style={styles.trustBadges}>
+        <View style={styles.trustBadge}>
+          <Shield size={14} color={TEXT3} />
+          <Text style={styles.trustBadgeText}>Säkra betalningar</Text>
+        </View>
+        <View style={styles.trustBadge}>
+          <RefreshCw size={14} color={TEXT3} />
+          <Text style={styles.trustBadgeText}>Avsluta när du vill</Text>
+        </View>
+      </View>
+
+      <View style={styles.legalLinks}>
+        <TouchableOpacity onPress={isRestoringPurchase ? undefined : onRestore}>
+          <Text style={styles.legalLink}>{isRestoringPurchase ? 'Återställer...' : 'Återställ köp'}</Text>
+        </TouchableOpacity>
+        <Text style={styles.legalSep}>·</Text>
+        <TouchableOpacity>
+          <Text style={styles.legalLink}>Villkor</Text>
+        </TouchableOpacity>
+        <Text style={styles.legalSep}>·</Text>
+        <TouchableOpacity>
+          <Text style={styles.legalLink}>Integritetspolicy</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
     backgroundColor: BG,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: BG,
   },
-  progressRow: {
+  navBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 8,
+    justifyContent: 'space-between',
   },
-  progressTrack: {
+  backBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  stepLabel: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: TEXT2,
+    textAlign: 'center',
+  },
+  stepLabelName: {
+    color: TEXT1,
+  },
+  skipText: {
+    fontSize: 14,
+    color: TEXT2,
+    fontWeight: '500' as const,
+    width: 80,
+    textAlign: 'right',
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 4,
+    marginBottom: 4,
+  },
+  progressSegmentWrap: {
     flex: 1,
-    height: 6,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 3,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: BG2,
     overflow: 'hidden',
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: ACCENT,
-    borderRadius: 3,
+  progressSegment: {
+    flex: 1,
+    backgroundColor: BG2,
+    borderRadius: 2,
   },
-  progressText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: TEXT_MUTED,
-    minWidth: 32,
-    textAlign: 'right' as const,
+  progressSegmentActive: {
+    backgroundColor: ACCENT,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 12,
     paddingBottom: 8,
-    gap: 12,
   },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    gap: 4,
-    minWidth: 100,
-  },
-  backText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: TEXT_SECONDARY,
-  },
-  nextButton: {
+  cta: {
+    backgroundColor: DARK_BTN,
+    borderRadius: 32,
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#059669',
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 28,
     gap: 8,
-    flex: 1,
-    maxWidth: 220,
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
   },
-  nextButtonDisabled: {
-    backgroundColor: '#CBD5E1',
-    shadowOpacity: 0,
-    elevation: 0,
+  ctaDisabled: {
+    backgroundColor: '#C7C7CC',
   },
-  nextText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  ctaText: {
+    color: '#fff',
+    fontSize: 17,
     fontWeight: '700' as const,
   },
-
-  welcomeContainer: {
-    flex: 1,
+  centered: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    paddingBottom: 24,
+    alignItems: 'flex-start',
+  },
+  page: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  bigPage: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    alignItems: 'flex-start',
+  },
+  logoWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 22,
+    backgroundColor: '#ECFDF5',
     justifyContent: 'center',
-  },
-  welcomeTop: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
+    overflow: 'hidden',
   },
-  logoContainer: {
-    marginBottom: 24,
-  },
-  logoGradient: {
-    width: 110,
-    height: 110,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
+  logoImg: {
+    width: 68,
+    height: 68,
   },
   welcomeTitle: {
     fontSize: 32,
     fontWeight: '800' as const,
-    color: TEXT_PRIMARY,
-    letterSpacing: -0.5,
-    marginBottom: 10,
-  },
-  welcomeSubtitle: {
-    fontSize: 16,
-    color: TEXT_SECONDARY,
-    textAlign: 'center' as const,
-    lineHeight: 24,
-    maxWidth: 280,
-  },
-  featuresContainer: {
-    backgroundColor: BG_SECONDARY,
-    borderRadius: 20,
-    padding: 8,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    gap: 14,
-  },
-  featureIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  featureTitle: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: TEXT_PRIMARY,
-  },
-
-  sectionHeader: {
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  sectionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    color: TEXT1,
+    lineHeight: 40,
     marginBottom: 16,
+    letterSpacing: -0.5,
   },
-  sectionTitle: {
-    fontSize: 24,
+  welcomeBody: {
+    fontSize: 18,
+    color: TEXT2,
+    lineHeight: 28,
+  },
+  bold: {
     fontWeight: '700' as const,
-    color: TEXT_PRIMARY,
-    textAlign: 'center' as const,
-    letterSpacing: -0.3,
-    marginBottom: 6,
+    color: TEXT1,
   },
-  sectionDesc: {
+  pageTitle: {
+    fontSize: 30,
+    fontWeight: '800' as const,
+    color: TEXT1,
+    lineHeight: 38,
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  pageSubtitle: {
+    fontSize: 16,
+    color: TEXT2,
+    lineHeight: 24,
+    marginBottom: 4,
+  },
+  pageBody: {
+    fontSize: 17,
+    color: TEXT2,
+    lineHeight: 26,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  infoCard: {
+    backgroundColor: '#ECFDF5',
+    borderRadius: 16,
+    padding: 20,
+    gap: 10,
+    width: '100%',
+  },
+  infoCardText: {
     fontSize: 15,
-    color: TEXT_SECONDARY,
-    textAlign: 'center' as const,
+    color: '#065F46',
+    lineHeight: 22,
+    fontWeight: '500' as const,
   },
-
+  questionTitle: {
+    fontSize: 26,
+    fontWeight: '800' as const,
+    color: TEXT1,
+    lineHeight: 34,
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
   inputGroup: {
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600' as const,
-    color: TEXT_SECONDARY,
+    color: TEXT2,
     marginBottom: 8,
-    textTransform: 'uppercase' as const,
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  inputWrapper: {
-    backgroundColor: BG_SECONDARY,
+  input: {
+    backgroundColor: BG2,
     borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: BORDER,
-  },
-  textInput: {
-    fontSize: 16,
-    color: TEXT_PRIMARY,
+    height: 52,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    fontSize: 17,
+    color: TEXT1,
+    borderWidth: 0,
   },
-  usernameWrapper: {
+  usernameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    backgroundColor: BG2,
+    borderRadius: 14,
+    overflow: 'hidden',
   },
-  atPrefix: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: TEXT_MUTED,
-    marginRight: 4,
+  atSign: {
+    paddingLeft: 16,
+    fontSize: 17,
+    color: TEXT2,
+    fontWeight: '600' as const,
   },
-  checkBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#10B981',
-    justifyContent: 'center',
-    alignItems: 'center',
+  usernameStatus: {
+    paddingRight: 14,
+    paddingLeft: 8,
   },
-  errorText: {
-    fontSize: 12,
+  errorTxt: {
     color: '#EF4444',
+    fontSize: 13,
     marginTop: 6,
   },
-  hintText: {
-    fontSize: 12,
-    color: TEXT_MUTED,
+  hintTxt: {
+    color: TEXT3,
+    fontSize: 13,
     marginTop: 6,
   },
-  termsContainer: {
+  termsRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: BG_SECONDARY,
-    borderRadius: 14,
-    padding: 16,
     gap: 12,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: BORDER,
+    marginTop: 4,
   },
   checkbox: {
     width: 22,
     height: 22,
-    borderRadius: 7,
+    borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: BORDER,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 1,
+    flexShrink: 0,
   },
-  checkboxChecked: {
+  checkboxOn: {
     backgroundColor: ACCENT,
     borderColor: ACCENT,
   },
-  termsLabel: {
+  termsText: {
     flex: 1,
-    fontSize: 13,
-    color: TEXT_SECONDARY,
+    fontSize: 14,
+    color: TEXT2,
     lineHeight: 20,
   },
-
-  levelRow: {
+  optionCard: {
     flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: BG2,
+    borderRadius: 16,
+    padding: 18,
     gap: 14,
-  },
-  levelCard: {
-    flex: 1,
-    backgroundColor: CARD_BG,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
     borderWidth: 2,
-    borderColor: BORDER,
-    position: 'relative' as const,
+    borderColor: 'transparent',
   },
-  levelCardActive: {
+  optionCardSel: {
+    backgroundColor: '#ECFDF5',
     borderColor: ACCENT,
-    shadowColor: ACCENT,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
   },
-  levelGradient: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
+  optionEmoji: {
+    fontSize: 22,
   },
-  levelTitle: {
+  optionLabel: {
     fontSize: 17,
-    fontWeight: '700' as const,
-    color: TEXT_PRIMARY,
-    marginBottom: 4,
+    fontWeight: '600' as const,
+    color: TEXT1,
+    flex: 1,
   },
-  levelTitleActive: {
-    color: '#059669',
+  optionLabelSel: {
+    color: ACCENT,
   },
-  levelSub: {
+  optionSub: {
     fontSize: 13,
-    color: TEXT_MUTED,
+    color: TEXT3,
+    marginTop: 2,
   },
-  levelCheck: {
-    position: 'absolute' as const,
-    top: 12,
-    right: 12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  optionCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: ACCENT,
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: BORDER,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: TEXT_SECONDARY,
-    marginBottom: 14,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.4,
-  },
-
-  chipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: BG_SECONDARY,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderWidth: 1.5,
-    borderColor: BORDER,
-    gap: 8,
-  },
-  chipEmoji: {
-    fontSize: 18,
-  },
-  chipLabel: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: TEXT_SECONDARY,
-  },
-  chipCheck: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  yearButtons: {
+  yearRow: {
     flexDirection: 'row',
     gap: 10,
-    flexWrap: 'wrap',
+    marginTop: 8,
   },
   yearBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    flex: 1,
+    backgroundColor: BG2,
     borderRadius: 14,
-    backgroundColor: BG_SECONDARY,
-    borderWidth: 1.5,
-    borderColor: BORDER,
-    minWidth: 68,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  yearBtnActive: {
-    backgroundColor: '#059669',
-    borderColor: '#059669',
+  yearBtnSel: {
+    backgroundColor: '#ECFDF5',
+    borderColor: ACCENT,
   },
-  yearBtnNum: {
-    fontSize: 20,
+  yearBtnText: {
+    fontSize: 16,
     fontWeight: '700' as const,
-    color: TEXT_PRIMARY,
+    color: TEXT2,
   },
-  yearBtnNumActive: {
-    color: '#FFFFFF',
+  yearBtnTextSel: {
+    color: ACCENT,
   },
-  yearBtnLabel: {
-    fontSize: 11,
-    fontWeight: '500' as const,
-    color: TEXT_MUTED,
-    marginTop: 2,
-  },
-  yearBtnLabelActive: {
-    color: 'rgba(255,255,255,0.8)',
-  },
-
-  searchBox: {
+  courseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: BG2,
+    borderRadius: 12,
+    padding: 14,
+    gap: 12,
+    marginBottom: 6,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  courseRowSel: {
+    backgroundColor: '#ECFDF5',
+    borderColor: ACCENT,
+  },
+  smallCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: BORDER,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  smallCheckOn: {
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
+  },
+  courseTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: TEXT1,
+  },
+  mandTag: {
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '600' as const,
+    marginTop: 2,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: BG2,
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    height: 44,
     gap: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: BORDER,
+    marginTop: 8,
+    marginBottom: 4,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: TEXT_PRIMARY,
-    padding: 0,
-  },
-  listContainer: {
-    maxHeight: 180,
+    color: TEXT1,
   },
   listItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    marginBottom: 2,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  listItemActive: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#BBF7D0',
-  },
-  listItemTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: TEXT_PRIMARY,
-  },
-  listItemSub: {
-    fontSize: 12,
-    color: TEXT_MUTED,
-    marginTop: 1,
-  },
-
-  hChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: BG_SECONDARY,
-    marginRight: 8,
-    borderWidth: 1.5,
-    borderColor: BORDER,
-  },
-  hChipActive: {
-    backgroundColor: '#059669',
-    borderColor: '#059669',
-  },
-  hChipText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: TEXT_SECONDARY,
-  },
-  hChipTextActive: {
-    color: '#FFFFFF',
-  },
-
-  courseBadge: {
-    backgroundColor: '#ECFDF5',
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginTop: 8,
-  },
-  courseBadgeText: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: '#059669',
-  },
-  courseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: CARD_BG,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 8,
-    gap: 12,
-    borderWidth: 1.5,
-    borderColor: BORDER,
-  },
-  courseRowActive: {
-    borderColor: '#BBF7D0',
-    backgroundColor: '#F0FDF4',
-  },
-  courseCheck: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  courseCheckActive: {
-    backgroundColor: '#059669',
-    borderColor: '#059669',
-  },
-  courseTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: TEXT_PRIMARY,
-  },
-  mandatoryTag: {
-    fontSize: 11,
-    fontWeight: '600' as const,
-    color: '#B45309',
-    marginTop: 3,
-  },
-
-  goalsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  goalCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: CARD_BG,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 8,
-    borderWidth: 1.5,
-    borderColor: BORDER,
-  },
-  goalIcon: {
-    fontSize: 18,
-  },
-  goalText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: TEXT_SECONDARY,
-  },
-  goalCheck: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  paceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 14,
-    marginBottom: 8,
-    gap: 14,
-    borderWidth: 1.5,
-    borderColor: BORDER,
-    backgroundColor: BG_SECONDARY,
-  },
-  paceIcon: {
-    fontSize: 24,
-  },
-  paceName: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: TEXT_PRIMARY,
-  },
-  paceDetail: {
-    fontSize: 12,
-    color: TEXT_MUTED,
-    marginTop: 2,
-  },
-  paceCheck: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  notifItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  notifLabel: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: TEXT_PRIMARY,
-  },
-  notifSub: {
-    fontSize: 12,
-    color: TEXT_MUTED,
-    marginTop: 2,
-  },
-
-  summaryContainer: {
-    backgroundColor: BG_SECONDARY,
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-  },
-  summaryTitle: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: TEXT_SECONDARY,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.4,
-    marginBottom: 12,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  summaryLabel: {
-    fontSize: 14,
-    color: TEXT_MUTED,
+  listItemSel: {
+    backgroundColor: '#ECFDF5',
   },
-  summaryValue: {
+  listItemTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: TEXT1,
+  },
+  listItemSub: {
+    fontSize: 12,
+    color: TEXT3,
+    marginTop: 1,
+  },
+  hChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: BG2,
+    borderRadius: 22,
+    marginRight: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  hChipSel: {
+    backgroundColor: '#ECFDF5',
+    borderColor: ACCENT,
+  },
+  hChipText: {
     fontSize: 14,
+    fontWeight: '600' as const,
+    color: TEXT2,
+    maxWidth: 160,
+  },
+  hChipTextSel: {
+    color: ACCENT,
+  },
+  stressCenter: {
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  stressEmoji: {
+    fontSize: 64,
+    marginBottom: 12,
+  },
+  stressLabel: {
+    fontSize: 17,
+    color: TEXT2,
+    fontWeight: '500' as const,
+    marginBottom: 40,
+    textAlign: 'center',
+  },
+  sliderTrack: {
+    height: 6,
+    backgroundColor: BG2,
+    borderRadius: 3,
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  sliderFill: {
+    position: 'absolute',
+    left: 0,
+    height: 6,
+    backgroundColor: ACCENT,
+    borderRadius: 3,
+  },
+  sliderThumb: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: ACCENT,
+    top: -11,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  sliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 14,
+  },
+  sliderLabelText: {
+    fontSize: 13,
+    color: TEXT3,
+  },
+  dotGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: SW - 48,
+    marginBottom: 28,
+  },
+  dot: {
+    fontSize: 14,
+    lineHeight: 20,
+    width: (SW - 48) / 10,
+    textAlign: 'center',
+  },
+  dotStressed: {
+    color: '#EF4444',
+  },
+  dotGrey: {
+    color: '#E5E5EA',
+  },
+  bigTitle: {
+    fontSize: 30,
+    fontWeight: '800' as const,
+    color: TEXT1,
+    lineHeight: 38,
+    marginBottom: 16,
+    letterSpacing: -0.5,
+  },
+  bigBody: {
+    fontSize: 17,
+    color: TEXT2,
+    lineHeight: 28,
+  },
+  wowEmoji: {
+    fontSize: 80,
+    textAlign: 'center',
+    marginBottom: 24,
+    alignSelf: 'center',
+  },
+  checkList: {
+    gap: 14,
+    marginTop: 20,
+  },
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  checkBubble: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: ACCENT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkText: {
+    fontSize: 16,
+    color: TEXT1,
+    fontWeight: '500' as const,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginVertical: 20,
+    width: '100%',
+  },
+  statBox: {
+    flex: 1,
+    backgroundColor: BG2,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+    color: TEXT1,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: TEXT2,
+    fontWeight: '500' as const,
+  },
+  featureList: {
+    gap: 10,
+    marginTop: 20,
+    width: '100%',
+  },
+  featureRow: {
+    backgroundColor: BG2,
+    borderRadius: 12,
+    padding: 14,
+  },
+  featureText: {
+    fontSize: 15,
+    color: TEXT1,
+    fontWeight: '500' as const,
+  },
+  testimonialCard: {
+    backgroundColor: BG2,
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    marginTop: 16,
+    marginBottom: 20,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 14,
+  },
+  testimonialText: {
+    fontSize: 18,
+    color: TEXT1,
+    lineHeight: 28,
+    fontWeight: '500' as const,
+    fontStyle: 'italic',
+    marginBottom: 16,
+  },
+  testimonialAuthor: {
+    fontSize: 14,
+    color: TEXT2,
+    fontWeight: '600' as const,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 28,
+  },
+  testimonialDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: BG2,
+  },
+  testimonialDotActive: {
+    backgroundColor: DARK_BTN,
+    width: 20,
+    borderRadius: 4,
+  },
+  trustRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  trustItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  trustText: {
+    fontSize: 13,
+    color: '#065F46',
+    fontWeight: '600' as const,
+  },
+  recommendedTag: {
+    fontSize: 11,
     fontWeight: '700' as const,
-    color: TEXT_PRIMARY,
-    maxWidth: 180,
+    color: ACCENT,
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
+  paywallPage: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+  },
+  paywallHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  paywallLogo: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: BG2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeBtnText: {
+    fontSize: 16,
+    color: TEXT2,
+    fontWeight: '700' as const,
+  },
+  paywallTitle: {
+    fontSize: 32,
+    fontWeight: '800' as const,
+    color: TEXT1,
+    lineHeight: 40,
+    letterSpacing: -0.5,
+  },
+  paywallSub: {
+    fontSize: 22,
+    fontWeight: '400' as const,
+    color: TEXT3,
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  featuresSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: TEXT2,
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  paywallFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 10,
+  },
+  paywallCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: ACCENT,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  paywallFeatureText: {
+    fontSize: 16,
+    color: TEXT1,
+    fontWeight: '500' as const,
+  },
+  pkgCard: {
+    backgroundColor: BG2,
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  pkgCardSel: {
+    backgroundColor: '#ECFDF5',
+    borderColor: ACCENT,
+  },
+  pkgPopular: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: ACCENT,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderBottomLeftRadius: 12,
+  },
+  pkgPopularText: {
+    fontSize: 10,
+    fontWeight: '800' as const,
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  pkgRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  pkgTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    color: TEXT1,
+  },
+  pkgSub: {
+    fontSize: 13,
+    color: TEXT2,
+    marginTop: 3,
+  },
+  pkgPrice: {
+    fontSize: 17,
+    fontWeight: '800' as const,
+    color: TEXT1,
+    marginBottom: 6,
+  },
+  pkgRadio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: BORDER,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pkgRadioSel: {
+    borderColor: ACCENT,
+  },
+  pkgRadioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: ACCENT,
+  },
+  skipPaywallBtn: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  skipPaywallText: {
+    fontSize: 15,
+    color: TEXT2,
+    fontWeight: '500' as const,
+  },
+  trustBadges: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  trustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  trustBadgeText: {
+    fontSize: 12,
+    color: TEXT3,
+    fontWeight: '500' as const,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    paddingBottom: 8,
+  },
+  legalLink: {
+    fontSize: 12,
+    color: TEXT3,
+    textDecorationLine: 'underline',
+  },
+  legalSep: {
+    fontSize: 12,
+    color: TEXT3,
   },
 });

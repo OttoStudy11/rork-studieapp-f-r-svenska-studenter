@@ -1063,12 +1063,12 @@ function WowStep({ data }: StepProps) {
 function SocialProofStep({ }: StepProps) {
   return (
     <ScrollView contentContainerStyle={styles.bigPage} showsVerticalScrollIndicator={false}>
-      <Text style={styles.bigTitle}>Betrodd av 10 000+ svenska studenter</Text>
+      <Text style={styles.bigTitle}>Betrodd av tusentals svenska studenter</Text>
 
       <View style={styles.statsRow}>
         {[
           { value: '4.8 ⭐', label: 'Betyg' },
-          { value: '10K+', label: 'Studenter' },
+          { value: 'Tusentals', label: 'Studenter' },
           { value: '92%', label: 'Nöjda' },
         ].map((s, i) => (
           <View key={i} style={styles.statBox}>

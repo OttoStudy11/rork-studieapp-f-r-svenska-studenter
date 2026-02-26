@@ -270,11 +270,23 @@ export default function PremiumScreen() {
       });
     }
 
-    // If no packages found, show debug info in dev mode
-    if (plans.length === 0 && getDebugMode()) {
-      console.warn('[Premium Screen] No packages found. Available packages:', 
+    // Fallback: if no plans matched, show all available packages
+    if (plans.length === 0 && packages.length > 0) {
+      console.warn('[Premium Screen] No packages matched filters. Showing all available packages:', 
         packages.map(p => ({ id: p.identifier, type: p.packageType }))
       );
+      packages.forEach(pkg => {
+        const isAnnual = isAnnualPackage(pkg);
+        plans.push({
+          id: isAnnual ? 'yearly' : 'monthly',
+          pkg,
+          title: isAnnual ? 'Årsvis' : 'Månadsvis',
+          price: pkg.product.priceString,
+          period: isAnnual ? '/år' : '/månad',
+          savings: isAnnual ? 'Bäst värde' : undefined,
+          isFeatured: isAnnual,
+        });
+      });
     }
 
     return plans;

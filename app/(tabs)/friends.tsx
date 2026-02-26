@@ -280,22 +280,26 @@ export default function FriendsScreen() {
       setFriends(mappedFriends);
       setFriendRequests(mappedRequests);
       
-      // Fetch actual session counts for leaderboard using pomodoro_sessions
-      const { data: sessionCounts, error: sessionError } = await supabase
+      // Fetch session data (count + duration) for friends AND current user
+      const allUserIds = [...friendIds, user.id];
+      const { data: sessionData, error: sessionError } = await supabase
         .from('pomodoro_sessions')
-        .select('user_id')
-        .in('user_id', friendIds);
-      
+        .select('user_id, duration')
+        .in('user_id', allUserIds);
+
       if (sessionError) {
-        console.warn('Could not load session counts:', sessionError);
+        console.warn('Could not load session data:', sessionError);
       }
-      
-      // Count sessions per user
+
+      // Aggregate sessions per user (count + total duration)
       const sessionCountMap: Record<string, number> = {};
-      sessionCounts?.forEach((session: any) => {
-        sessionCountMap[session.user_id] = (sessionCountMap[session.user_id] || 0) + 1;
+      const sessionStudyTimeMap: Record<string, number> = {};
+      (sessionData ?? []).forEach((s: any) => {
+        if (!s.user_id) return;
+        sessionCountMap[s.user_id] = (sessionCountMap[s.user_id] || 0) + 1;
+        sessionStudyTimeMap[s.user_id] = (sessionStudyTimeMap[s.user_id] || 0) + (Number(s.duration) || 0);
       });
-      
+
       // Get current user progress
       const { data: fetchedUserProgress } = await supabase
         .from('user_progress')
@@ -304,17 +308,20 @@ export default function FriendsScreen() {
         .maybeSingle();
 
       setCurrentUserProgress(fetchedUserProgress);
-      
-      // Get current user session count from pomodoro_sessions
-      const { data: currentUserSessions } = await supabase
-        .from('pomodoro_sessions')
-        .select('user_id')
-        .eq('user_id', user.id);
-      
+
+      // Resolve study time: prefer user_progress if > 0, else use session aggregation
+      const resolveStudyTime = (userId: string, progressTime: number | undefined): number => {
+        const pt = progressTime || 0;
+        const st = sessionStudyTimeMap[userId] || 0;
+        return Math.max(pt, st);
+      };
+
+      const currentUserStudyTime = resolveStudyTime(user.id, fetchedUserProgress?.total_study_time ?? 0);
+
       const allUsersForLeaderboard = [
         ...mappedFriends.map((friend) => ({
           ...friend,
-          studyTime: friend.studyTime || 0,
+          studyTime: resolveStudyTime(friend.id, friend.studyTime),
           sessionCount: sessionCountMap[friend.id] || 0,
           position: 0,
         })),
@@ -325,8 +332,8 @@ export default function FriendsScreen() {
           program: studyUser?.program || '',
           level: (studyUser?.studyLevel || 'gymnasie') as 'gymnasie' | 'högskola',
           avatar: studyUser?.avatar,
-          studyTime: fetchedUserProgress?.total_study_time || 0,
-          sessionCount: currentUserSessions?.length || 0,
+          studyTime: currentUserStudyTime,
+          sessionCount: sessionCountMap[user.id] || 0,
           position: 0,
         },
       ];

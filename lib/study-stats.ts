@@ -16,7 +16,6 @@ export interface UserTotalStudy {
 }
 
 export async function fetchTotalStudyMinutesForUser(userId: string): Promise<number> {
-  // First try user_progress (fastest, pre-aggregated)
   const { data: progress, error: progressError } = await supabase
     .from('user_progress')
     .select('total_study_time')
@@ -30,7 +29,6 @@ export async function fetchTotalStudyMinutesForUser(userId: string): Promise<num
     }
   }
 
-  // Fallback: Calculate from pomodoro_sessions (this is where sessions are actually stored)
   const { data: sessions, error: sessionsError } = await supabase
     .from('pomodoro_sessions')
     .select('duration')
@@ -46,7 +44,6 @@ export async function fetchTotalStudyMinutesForUser(userId: string): Promise<num
     return acc + (Number.isFinite(v) ? v : 0);
   }, 0);
 
-  console.log(`Calculated total study time for user ${userId}: ${total} minutes from ${sessions?.length || 0} sessions`);
   return total;
 }
 
@@ -63,9 +60,10 @@ export interface GlobalLeaderboardEntry {
 }
 
 export async function fetchGlobalLeaderboardTop15(): Promise<GlobalLeaderboardEntry[]> {
-  console.log('Fetching global leaderboard from user_progress...');
-  
+  console.log('Fetching global leaderboard...');
+
   try {
+    // Primary: try user_progress with profiles join
     const { data, error } = await supabase
       .from('user_progress')
       .select(
@@ -76,54 +74,127 @@ export async function fetchGlobalLeaderboardTop15(): Promise<GlobalLeaderboardEn
       .order('total_study_time', { ascending: false })
       .limit(15);
 
-    if (error) {
-      console.error('Error fetching global leaderboard:', error);
-      throw new Error(`Failed to fetch global leaderboard: ${error.message}`);
+    if (!error && data && data.length > 0) {
+      console.log('Leaderboard from user_progress:', data.length, 'rows');
+
+      const rows = data as unknown as {
+        user_id: string;
+        total_study_time: number | null;
+        total_sessions: number | null;
+        profiles: {
+          id: string;
+          username: string;
+          display_name: string;
+          program: string;
+          level: string;
+          avatar_url: string | null;
+        } | null;
+      }[];
+
+      const mapped = rows
+        .filter(r => r.profiles !== null)
+        .map((r, idx) => {
+          const total = Number(r.total_study_time ?? 0);
+          const p = r.profiles!;
+          return {
+            userId: r.user_id,
+            rank: idx + 1,
+            username: p.username ?? 'unknown',
+            displayName: p.display_name ?? 'Okänd användare',
+            program: p.program ?? '',
+            level: p.level ?? '',
+            avatarUrl: p.avatar_url ?? null,
+            totalMinutes: Number.isFinite(total) ? total : 0,
+            totalSessions: Number(r.total_sessions ?? 0),
+          };
+        });
+
+      if (mapped.length > 0) {
+        return mapped;
+      }
     }
 
-    if (!data || data.length === 0) {
-      console.log('No data found for global leaderboard');
+    if (error) {
+      console.warn('user_progress query failed, falling back to sessions:', error.message);
+    } else {
+      console.log('user_progress empty, falling back to pomodoro_sessions aggregation');
+    }
+
+    // Fallback: aggregate directly from pomodoro_sessions
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('pomodoro_sessions')
+      .select('user_id, duration');
+
+    if (sessionsError) {
+      console.error('Error fetching sessions for leaderboard:', sessionsError);
       return [];
     }
 
-    console.log('Raw data from user_progress:', data.length, 'rows');
+    if (!sessions || sessions.length === 0) {
+      console.log('No sessions found for leaderboard');
+      return [];
+    }
 
-    const rows = (data ?? []) as unknown as {
-      user_id: string;
-      total_study_time: number | null;
-      total_sessions: number | null;
-      profiles: {
-        id: string;
-        username: string;
-        display_name: string;
-        program: string;
-        level: string;
-        avatar_url: string | null;
-      } | null;
-    }[];
+    // Aggregate by user
+    const userTotals: Record<string, { minutes: number; sessions: number }> = {};
+    (sessions as { user_id: string; duration: number | null }[]).forEach(s => {
+      if (!s.user_id) return;
+      const dur = Number(s.duration) || 0;
+      if (!userTotals[s.user_id]) {
+        userTotals[s.user_id] = { minutes: 0, sessions: 0 };
+      }
+      userTotals[s.user_id].minutes += dur;
+      userTotals[s.user_id].sessions += 1;
+    });
 
-    const mapped = rows
-      .filter(r => r.profiles !== null)
-      .map((r, idx) => {
-        const total = Number(r.total_study_time ?? 0);
-        const safeTotal = Number.isFinite(total) ? total : 0;
-        const p = r.profiles;
+    const top15 = Object.entries(userTotals)
+      .filter(([, v]) => v.minutes > 0)
+      .sort((a, b) => b[1].minutes - a[1].minutes)
+      .slice(0, 15);
 
+    if (top15.length === 0) return [];
+
+    const userIds = top15.map(([id]) => id);
+
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, program, level, avatar_url')
+      .in('id', userIds);
+
+    if (profilesError || !profiles) {
+      console.error('Error fetching profiles for leaderboard:', profilesError);
+      return [];
+    }
+
+    const profileMap: Record<string, {
+      username: string;
+      display_name: string;
+      program: string;
+      level: string;
+      avatar_url: string | null;
+    }> = {};
+    (profiles as any[]).forEach(p => { profileMap[p.id] = p; });
+
+    const result: GlobalLeaderboardEntry[] = top15
+      .map(([userId, stats], idx) => {
+        const p = profileMap[userId];
+        if (!p) return null;
         return {
-          userId: r.user_id,
+          userId,
           rank: idx + 1,
-          username: p?.username ?? 'unknown',
-          displayName: p?.display_name ?? 'Okänd användare',
-          program: p?.program ?? '',
-          level: p?.level ?? '',
-          avatarUrl: p?.avatar_url ?? null,
-          totalMinutes: safeTotal,
-          totalSessions: Number(r.total_sessions ?? 0),
+          username: p.username ?? 'unknown',
+          displayName: p.display_name ?? 'Okänd användare',
+          program: p.program ?? '',
+          level: p.level ?? '',
+          avatarUrl: p.avatar_url ?? null,
+          totalMinutes: stats.minutes,
+          totalSessions: stats.sessions,
         };
-      });
+      })
+      .filter(Boolean) as GlobalLeaderboardEntry[];
 
-    console.log('Mapped global leaderboard:', mapped.length, 'entries');
-    return mapped;
+    console.log('Leaderboard from sessions fallback:', result.length, 'entries');
+    return result;
   } catch (error) {
     console.error('Exception in fetchGlobalLeaderboardTop15:', error);
     throw error;

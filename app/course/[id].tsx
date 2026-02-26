@@ -137,6 +137,10 @@ export default function CourseDetailScreen() {
   const [editTargetGrade, setEditTargetGrade] = useState<string>('');
   const [userCourseData, setUserCourseData] = useState<any>(null);
   const [showContent, setShowContent] = useState(false);
+  const [editCurrentGrade, setEditCurrentGrade] = useState<string>('');
+  const [editSelfEvaluation, setEditSelfEvaluation] = useState<number>(0);
+  const [editNotes, setEditNotes] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'progress' | 'grades' | 'eval' | 'notes'>('progress');
 
   const isFirstMount = useRef(true);
   const previousId = useRef<string | undefined>(undefined);
@@ -321,6 +325,9 @@ export default function CourseDetailScreen() {
           setUserCourseData(userCourse);
           setEditProgress(userCourse?.progress?.toString() || '0');
           setEditTargetGrade(userCourse?.target_grade || '');
+          setEditCurrentGrade((userCourse as any)?.current_grade || '');
+          setEditSelfEvaluation((userCourse as any)?.self_evaluation || 0);
+          setEditNotes((userCourse as any)?.notes || '');
         } else {
           console.log('ℹ️ No enrollment found for gymnasium course');
         }
@@ -499,26 +506,48 @@ export default function CourseDetailScreen() {
     try {
       const progressValue = parseInt(editProgress, 10);
       if (isNaN(progressValue) || progressValue < 0 || progressValue > 100) {
-        Alert.alert('Fel', 'Progress måste vara ett tal mellan 0 och 100');
+        Alert.alert('Fel', 'Framsteg måste vara ett tal mellan 0 och 100');
         return;
       }
 
-      const { error } = await supabase
-        .from('user_courses')
-        .update({
-          progress: progressValue,
-          target_grade: editTargetGrade || null
-        })
-        .eq('user_id', user!.id)
-        .eq('course_id', id || '');
+      const isUniversityCourse = course?.level === 'högskola';
 
-      if (error) {
-        console.error('Error updating course:', error);
-        Alert.alert('Fel', 'Kunde inte uppdatera kursen');
-        return;
+      if (isUniversityCourse) {
+        const { error } = await supabase
+          .from('user_university_courses')
+          .update({
+            progress: progressValue,
+            current_grade: editCurrentGrade || null,
+            self_evaluation: editSelfEvaluation || null,
+            notes: editNotes || null
+          } as any)
+          .eq('user_id', user!.id)
+          .eq('course_id', id || '');
+        if (error) {
+          console.error('Error updating university course:', error);
+          Alert.alert('Fel', 'Kunde inte uppdatera kursen');
+          return;
+        }
+      } else {
+        const { error } = await supabase
+          .from('user_courses')
+          .update({
+            progress: progressValue,
+            target_grade: editTargetGrade || null,
+            current_grade: editCurrentGrade || null,
+            self_evaluation: editSelfEvaluation || null,
+            notes: editNotes || null
+          } as any)
+          .eq('user_id', user!.id)
+          .eq('course_id', id || '');
+        if (error) {
+          console.error('Error updating course:', error);
+          Alert.alert('Fel', 'Kunde inte uppdatera kursen');
+          return;
+        }
       }
 
-      Alert.alert('Framgång! ✅', 'Kursinformation har uppdaterats');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowEditModal(false);
       await loadCourseData();
     } catch (error) {
@@ -711,6 +740,60 @@ export default function CourseDetailScreen() {
         </Animated.View>
 
 
+
+        {/* Status Card */}
+        {userCourseData && (
+          <TouchableOpacity
+            style={styles.statusCard}
+            onPress={() => { setActiveTab('progress'); setShowEditModal(true); }}
+            activeOpacity={0.85}
+          >
+            <View style={styles.statusCardHeader}>
+              <Text style={[styles.statusCardTitle, { color: theme.colors.text }]}>Mina mål & anteckningar</Text>
+              <View style={[styles.statusEditBtn, { backgroundColor: courseStyle.primaryColor + '18' }]}>
+                <Edit3 size={14} color={courseStyle.primaryColor} />
+                <Text style={[styles.statusEditBtnText, { color: courseStyle.primaryColor }]}>Redigera</Text>
+              </View>
+            </View>
+            <View style={styles.statusRow}>
+              <View style={styles.statusItem}>
+                <Text style={[styles.statusLabel, { color: theme.colors.textMuted }]}>Nuv. betyg</Text>
+                <View style={[styles.gradePill, { backgroundColor: (userCourseData as any)?.current_grade ? courseStyle.primaryColor : theme.colors.borderLight }]}>
+                  <Text style={[styles.gradePillText, { color: (userCourseData as any)?.current_grade ? 'white' : theme.colors.textMuted }]}>
+                    {(userCourseData as any)?.current_grade || '–'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.statusDivider} />
+              <View style={styles.statusItem}>
+                <Text style={[styles.statusLabel, { color: theme.colors.textMuted }]}>Målbetyg</Text>
+                <View style={[styles.gradePill, { backgroundColor: userCourseData?.target_grade ? courseStyle.primaryColor + '20' : theme.colors.borderLight }]}>
+                  <Text style={[styles.gradePillText, { color: userCourseData?.target_grade ? courseStyle.primaryColor : theme.colors.textMuted }]}>
+                    {userCourseData?.target_grade || '–'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.statusDivider} />
+              <View style={styles.statusItem}>
+                <Text style={[styles.statusLabel, { color: theme.colors.textMuted }]}>Självvärdering</Text>
+                <View style={styles.starsRow}>
+                  {[1,2,3,4,5].map(s => (
+                    <Text key={s} style={[styles.starSmall, { opacity: s <= ((userCourseData as any)?.self_evaluation || 0) ? 1 : 0.25 }]}>★</Text>
+                  ))}
+                </View>
+              </View>
+            </View>
+            {(userCourseData as any)?.notes ? (
+              <View style={[styles.notesPreview, { backgroundColor: theme.colors.surface }]}>
+                <Text style={[styles.notesPreviewText, { color: theme.colors.textSecondary }]} numberOfLines={2}>
+                  {(userCourseData as any).notes}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.notesEmpty, { color: theme.colors.textMuted }]}>Tryck för att lägga till anteckningar...</Text>
+            )}
+          </TouchableOpacity>
+        )}
 
         <View style={styles.heroSection}>
           <TouchableOpacity
@@ -1016,80 +1099,237 @@ export default function CourseDetailScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalContainer}>
-            <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Redigera kursinformation</Text>
-                <TouchableOpacity
-                  style={[styles.modalCloseButton, { backgroundColor: theme.colors.borderLight }]}
-                  onPress={() => setShowEditModal(false)}
-                >
-                  <CloseIcon size={20} color={theme.colors.textMuted} />
-                </TouchableOpacity>
+          <View style={[styles.modalSheet, { backgroundColor: theme.colors.card }]}>
+            {/* Drag Handle */}
+            <View style={styles.sheetHandle} />
+
+            {/* Header */}
+            <View style={styles.sheetHeader}>
+              <View style={[styles.sheetIconBg, { backgroundColor: courseStyle.primaryColor + '18' }]}>
+                <Text style={styles.sheetHeaderEmoji}>{courseStyle.emoji}</Text>
               </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>Redigera kurs</Text>
+                <Text style={[styles.sheetSubtitle, { color: theme.colors.textMuted }]}>{course?.title}</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.sheetCloseBtn, { backgroundColor: theme.colors.surface }]}
+                onPress={() => setShowEditModal(false)}
+              >
+                <CloseIcon size={18} color={theme.colors.textMuted} />
+              </TouchableOpacity>
+            </View>
 
-              <View style={styles.modalBody}>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Framståg (%)</Text>
-                  <TextInput
-                    style={[styles.input, { 
-                      backgroundColor: theme.colors.surface, 
-                      color: theme.colors.text,
-                      borderColor: theme.colors.border
-                    }]}
-                    value={editProgress}
-                    onChangeText={setEditProgress}
-                    keyboardType="numeric"
-                    placeholder="0-100"
-                    placeholderTextColor={theme.colors.textMuted}
-                  />
-                </View>
+            {/* Tab Bar */}
+            <View style={[styles.tabBar, { backgroundColor: theme.colors.surface }]}>
+              {[
+                { key: 'progress', label: 'Framsteg', emoji: '📊' },
+                { key: 'grades', label: 'Betyg', emoji: '🎯' },
+                { key: 'eval', label: 'Värdering', emoji: '⭐' },
+                { key: 'notes', label: 'Anteckningar', emoji: '📝' },
+              ].map((tab) => (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[
+                    styles.tabItem,
+                    activeTab === tab.key && { backgroundColor: courseStyle.primaryColor }
+                  ]}
+                  onPress={() => { setActiveTab(tab.key as any); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                >
+                  <Text style={styles.tabEmoji}>{tab.emoji}</Text>
+                  <Text style={[styles.tabLabel, { color: activeTab === tab.key ? 'white' : theme.colors.textSecondary }]}>{tab.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Målbetyg</Text>
-                  <View style={styles.gradeButtons}>
-                    {['A', 'B', 'C', 'D', 'E', 'F'].map((grade) => (
+            {/* Tab Content */}
+            <ScrollView style={styles.sheetBody} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+
+              {activeTab === 'progress' && (
+                <View style={styles.tabContent}>
+                  <Text style={[styles.tabSectionTitle, { color: theme.colors.text }]}>Hur långt har du kommit?</Text>
+                  <View style={[styles.progressDisplayBox, { backgroundColor: courseStyle.primaryColor + '12', borderColor: courseStyle.primaryColor + '30' }]}>
+                    <Text style={[styles.progressBigNumber, { color: courseStyle.primaryColor }]}>{editProgress}%</Text>
+                    <Text style={[styles.progressBigLabel, { color: theme.colors.textMuted }]}>slutfört</Text>
+                  </View>
+                  <View style={[styles.progressBarEdit, { backgroundColor: theme.colors.surface }]}>
+                    <View style={[styles.progressBarFillEdit, { width: `${Math.max(0, Math.min(100, parseInt(editProgress) || 0))}%`, backgroundColor: courseStyle.primaryColor }]} />
+                  </View>
+                  <View style={styles.progressControls}>
+                    {[0, 10, 25, 50, 75, 90, 100].map((val) => (
                       <TouchableOpacity
-                        key={grade}
+                        key={val}
                         style={[
-                          styles.gradeButton,
+                          styles.progressChip,
                           { borderColor: theme.colors.border },
-                          editTargetGrade === grade && {
-                            backgroundColor: courseStyle.primaryColor,
-                            borderColor: courseStyle.primaryColor
-                          }
+                          editProgress === String(val) && { backgroundColor: courseStyle.primaryColor, borderColor: courseStyle.primaryColor }
                         ]}
-                        onPress={() => setEditTargetGrade(grade === editTargetGrade ? '' : grade)}
+                        onPress={() => { setEditProgress(String(val)); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                       >
-                        <Text
+                        <Text style={[styles.progressChipText, { color: editProgress === String(val) ? 'white' : theme.colors.text }]}>{val}%</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <View style={styles.progressManualRow}>
+                    <TouchableOpacity
+                      style={[styles.progressStepBtn, { backgroundColor: theme.colors.surface }]}
+                      onPress={() => { const v = Math.max(0, (parseInt(editProgress) || 0) - 1); setEditProgress(String(v)); }}
+                    >
+                      <Text style={[styles.progressStepBtnText, { color: theme.colors.text }]}>−</Text>
+                    </TouchableOpacity>
+                    <TextInput
+                      style={[styles.progressManualInput, { backgroundColor: theme.colors.surface, color: theme.colors.text, borderColor: theme.colors.border }]}
+                      value={editProgress}
+                      onChangeText={setEditProgress}
+                      keyboardType="numeric"
+                      textAlign="center"
+                    />
+                    <TouchableOpacity
+                      style={[styles.progressStepBtn, { backgroundColor: theme.colors.surface }]}
+                      onPress={() => { const v = Math.min(100, (parseInt(editProgress) || 0) + 1); setEditProgress(String(v)); }}
+                    >
+                      <Text style={[styles.progressStepBtnText, { color: theme.colors.text }]}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {activeTab === 'grades' && (
+                <View style={styles.tabContent}>
+                  <Text style={[styles.tabSectionTitle, { color: theme.colors.text }]}>Betygsättning</Text>
+                  <View style={styles.gradeSection}>
+                    <Text style={[styles.gradeSectionLabel, { color: theme.colors.textSecondary }]}>Nuvarande betyg</Text>
+                    <Text style={[styles.gradeSectionHint, { color: theme.colors.textMuted }]}>Vilket betyg har du fått hittills?</Text>
+                    <View style={styles.gradeRow}>
+                      {['A', 'B', 'C', 'D', 'E', 'F'].map((grade) => (
+                        <TouchableOpacity
+                          key={grade}
                           style={[
-                            styles.gradeButtonText,
-                            { color: theme.colors.text },
-                            editTargetGrade === grade && { color: 'white' }
+                            styles.gradePillBtn,
+                            { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
+                            editCurrentGrade === grade && { backgroundColor: courseStyle.primaryColor, borderColor: courseStyle.primaryColor }
                           ]}
+                          onPress={() => { setEditCurrentGrade(grade === editCurrentGrade ? '' : grade); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                         >
-                          {grade}
-                        </Text>
+                          <Text style={[styles.gradePillBtnText, { color: editCurrentGrade === grade ? 'white' : theme.colors.text }]}>{grade}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                  <View style={[styles.gradeDivider, { backgroundColor: theme.colors.border }]} />
+                  <View style={styles.gradeSection}>
+                    <Text style={[styles.gradeSectionLabel, { color: theme.colors.textSecondary }]}>Målbetyg</Text>
+                    <Text style={[styles.gradeSectionHint, { color: theme.colors.textMuted }]}>Vilket betyg siktar du på?</Text>
+                    <View style={styles.gradeRow}>
+                      {['A', 'B', 'C', 'D', 'E', 'F'].map((grade) => (
+                        <TouchableOpacity
+                          key={grade}
+                          style={[
+                            styles.gradePillBtn,
+                            { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
+                            editTargetGrade === grade && { backgroundColor: courseStyle.primaryColor + '25', borderColor: courseStyle.primaryColor }
+                          ]}
+                          onPress={() => { setEditTargetGrade(grade === editTargetGrade ? '' : grade); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                        >
+                          <Text style={[styles.gradePillBtnText, { color: editTargetGrade === grade ? courseStyle.primaryColor : theme.colors.text }]}>{grade}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {activeTab === 'eval' && (
+                <View style={styles.tabContent}>
+                  <Text style={[styles.tabSectionTitle, { color: theme.colors.text }]}>Självvärdering</Text>
+                  <Text style={[styles.evalSubtitle, { color: theme.colors.textSecondary }]}>Hur väl behärskar du kursen?</Text>
+                  <View style={styles.starsContainer}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <TouchableOpacity
+                        key={star}
+                        onPress={() => { setEditSelfEvaluation(star === editSelfEvaluation ? 0 : star); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+                        style={styles.starButton}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.starLarge,
+                          { color: star <= editSelfEvaluation ? '#F59E0B' : theme.colors.border }
+                        ]}>★</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <Text style={[styles.evalLabel, { color: courseStyle.primaryColor }]}>
+                    {editSelfEvaluation === 0 ? 'Ej värderad' :
+                     editSelfEvaluation === 1 ? 'Nybörjare – Behöver mycket hjälp' :
+                     editSelfEvaluation === 2 ? 'Grundläggande – Förstår det mesta' :
+                     editSelfEvaluation === 3 ? 'Medel – Klarar de flesta uppgifter' :
+                     editSelfEvaluation === 4 ? 'Bra – Behärskar kursen väl' :
+                     'Utmärkt – Fullständig behärskning'}
+                  </Text>
+                  <View style={styles.evalCardsRow}>
+                    {[
+                      { val: 1, label: 'Nybörjare', emoji: '🌱' },
+                      { val: 2, label: 'Grundläggande', emoji: '📖' },
+                      { val: 3, label: 'Medel', emoji: '💡' },
+                      { val: 4, label: 'Bra', emoji: '🚀' },
+                      { val: 5, label: 'Utmärkt', emoji: '🏆' },
+                    ].map(item => (
+                      <TouchableOpacity
+                        key={item.val}
+                        style={[
+                          styles.evalCard,
+                          { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
+                          editSelfEvaluation === item.val && { borderColor: courseStyle.primaryColor, backgroundColor: courseStyle.primaryColor + '12' }
+                        ]}
+                        onPress={() => { setEditSelfEvaluation(item.val === editSelfEvaluation ? 0 : item.val); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                      >
+                        <Text style={styles.evalCardEmoji}>{item.emoji}</Text>
+                        <Text style={[styles.evalCardLabel, { color: editSelfEvaluation === item.val ? courseStyle.primaryColor : theme.colors.text }]}>{item.label}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 </View>
-              </View>
+              )}
 
-              <View style={styles.modalFooter}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.colors.border }]}
-                  onPress={() => setShowEditModal(false)}
-                >
-                  <Text style={[styles.modalButtonText, { color: theme.colors.text }]}>Avbryt</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalSaveButton, { backgroundColor: courseStyle.primaryColor }]}
-                  onPress={handleSaveProgress}
-                >
-                  <Text style={[styles.modalButtonText, { color: 'white' }]}>Spara</Text>
-                </TouchableOpacity>
-              </View>
+              {activeTab === 'notes' && (
+                <View style={styles.tabContent}>
+                  <Text style={[styles.tabSectionTitle, { color: theme.colors.text }]}>Anteckningar</Text>
+                  <Text style={[styles.evalSubtitle, { color: theme.colors.textSecondary }]}>Skriv dina egna tankar, mål eller påminnelser</Text>
+                  <TextInput
+                    style={[
+                      styles.notesInput,
+                      { backgroundColor: theme.colors.surface, color: theme.colors.text, borderColor: theme.colors.border }
+                    ]}
+                    value={editNotes}
+                    onChangeText={setEditNotes}
+                    multiline
+                    numberOfLines={10}
+                    placeholder="T.ex. 'Behöver repetera kapitel 3', 'Fråga läraren om derivatan', 'Plugga inför provet den 15e'..."
+                    placeholderTextColor={theme.colors.textMuted}
+                    textAlignVertical="top"
+                  />
+                  <Text style={[styles.charCount, { color: theme.colors.textMuted }]}>{editNotes.length} tecken</Text>
+                </View>
+              )}
+
+              <View style={{ height: 20 }} />
+            </ScrollView>
+
+            {/* Save Button */}
+            <View style={[styles.sheetFooter, { borderTopColor: theme.colors.border }]}>
+              <TouchableOpacity
+                style={[styles.sheetCancelBtn, { borderColor: theme.colors.border }]}
+                onPress={() => setShowEditModal(false)}
+              >
+                <Text style={[styles.sheetCancelBtnText, { color: theme.colors.text }]}>Avbryt</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sheetSaveBtn, { backgroundColor: courseStyle.primaryColor }]}
+                onPress={handleSaveProgress}
+              >
+                <CheckCircle size={18} color="white" />
+                <Text style={styles.sheetSaveBtnText}>Spara ändringar</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -1632,6 +1872,387 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  statusCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    backgroundColor: 'white',
+  },
+  statusCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  statusCardTitle: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    letterSpacing: -0.2,
+  },
+  statusEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  statusEditBtnText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  statusItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusLabel: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  statusDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+  },
+  gradePill: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gradePillText: {
+    fontSize: 15,
+    fontWeight: '800' as const,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  starSmall: {
+    fontSize: 13,
+    color: '#F59E0B',
+  },
+  notesPreview: {
+    borderRadius: 10,
+    padding: 12,
+  },
+  notesPreviewText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontStyle: 'italic' as const,
+  },
+  notesEmpty: {
+    fontSize: 13,
+    fontStyle: 'italic' as const,
+  },
+  modalSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '88%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 20,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  sheetIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sheetHeaderEmoji: {
+    fontSize: 22,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    letterSpacing: -0.3,
+  },
+  sheetSubtitle: {
+    fontSize: 13,
+    marginTop: 1,
+  },
+  sheetCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 8,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 2,
+  },
+  tabEmoji: {
+    fontSize: 14,
+  },
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    letterSpacing: 0.1,
+  },
+  sheetBody: {
+    flex: 1,
+  },
+  tabContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  tabSectionTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    letterSpacing: -0.4,
+    marginBottom: 6,
+  },
+  progressDisplayBox: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  progressBigNumber: {
+    fontSize: 56,
+    fontWeight: '900' as const,
+    letterSpacing: -2,
+  },
+  progressBigLabel: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    marginTop: -4,
+  },
+  progressBarEdit: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  progressBarFillEdit: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressControls: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  progressChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  progressChipText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  progressManualRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  progressStepBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressStepBtnText: {
+    fontSize: 22,
+    fontWeight: '300' as const,
+  },
+  progressManualInput: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  gradeSection: {
+    marginBottom: 8,
+  },
+  gradeSectionLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+    marginTop: 16,
+  },
+  gradeSectionHint: {
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  gradeRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  gradePillBtn: {
+    flex: 1,
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gradePillBtnText: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+  },
+  gradeDivider: {
+    height: 1,
+    marginVertical: 4,
+  },
+  evalSubtitle: {
+    fontSize: 14,
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  starButton: {
+    padding: 4,
+  },
+  starLarge: {
+    fontSize: 44,
+  },
+  evalLabel: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    textAlign: 'center',
+    marginBottom: 24,
+    letterSpacing: -0.2,
+  },
+  evalCardsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  evalCard: {
+    width: '30%',
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    gap: 6,
+  },
+  evalCardEmoji: {
+    fontSize: 22,
+  },
+  evalCardLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    textAlign: 'center',
+  },
+  notesInput: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    fontSize: 15,
+    lineHeight: 22,
+    minHeight: 200,
+    marginBottom: 8,
+  },
+  charCount: {
+    fontSize: 12,
+    textAlign: 'right',
+  },
+  sheetFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    gap: 12,
+  },
+  sheetCancelBtn: {
+    flex: 1,
+    height: 52,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sheetCancelBtnText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  sheetSaveBtn: {
+    flex: 2,
+    height: 52,
+    borderRadius: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  sheetSaveBtnText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: 'white',
   },
   actionCard: {
     flexDirection: 'row',

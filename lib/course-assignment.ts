@@ -361,17 +361,19 @@ export async function assignUniversityCoursesToUser(
         console.log(`📚 Creating university course in database: ${course.courseId}`);
         const { error: insertError } = await supabase.from('university_courses').insert({
           id: course.courseId,
-          course_code: course.courseId.toUpperCase(),
-          title: course.title,
+          code: course.courseId.toUpperCase(),
+          name: course.title,
           description: course.description,
           credits: course.credits || 7.5,
-          level: 'grundnivå',
-          subject_area: course.subject,
+          year: year,
+          mandatory: true,
+          category: 'grundkurs',
+          field: course.subject || 'Allmänt',
+          program_id: programId,
         });
         
         if (insertError) {
-          console.error(`❌ Could not create university course ${course.title}:`, insertError);
-          // Don't continue to enrollment if course creation failed
+          console.error(`❌ Could not create university course ${course.title}:`, insertError.message, insertError.code);
           continue;
         } else {
           console.log(`✅ Created university course: ${course.title}`);

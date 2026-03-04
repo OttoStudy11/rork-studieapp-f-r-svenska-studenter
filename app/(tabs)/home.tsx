@@ -18,7 +18,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain, GraduationCap, Mic } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
@@ -612,62 +612,6 @@ export default function HomeScreen() {
               </View>
             </LinearGradient>
           </TouchableOpacity>
-        </SlideInView>
-
-        {/* AI Tools Section */}
-        <SlideInView direction="up" delay={250} duration={300}>
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <Sparkles size={20} color={theme.colors.primary} />
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>AI-verktyg</Text>
-              </View>
-            </View>
-            <View style={styles.aiToolsGrid}>
-              <TouchableOpacity
-                style={[styles.aiToolCard, { backgroundColor: theme.colors.card }]}
-                onPress={() => router.push('/study-coach' as any)}
-                activeOpacity={0.7}
-              >
-                <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
-                  style={styles.aiToolIcon}
-                >
-                  <GraduationCap size={20} color="white" />
-                </LinearGradient>
-                <Text style={[styles.aiToolTitle, { color: theme.colors.text }]}>Studiecoach</Text>
-                <Text style={[styles.aiToolDesc, { color: theme.colors.textSecondary }]}>AI-handledare</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.aiToolCard, { backgroundColor: theme.colors.card }]}
-                onPress={() => router.push('/smart-flashcards' as any)}
-                activeOpacity={0.7}
-              >
-                <LinearGradient
-                  colors={['#F59E0B', '#D97706']}
-                  style={styles.aiToolIcon}
-                >
-                  <Zap size={20} color="white" />
-                </LinearGradient>
-                <Text style={[styles.aiToolTitle, { color: theme.colors.text }]}>Smart Flashcards</Text>
-                <Text style={[styles.aiToolDesc, { color: theme.colors.textSecondary }]}>Text → Kort</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.aiToolCard, { backgroundColor: theme.colors.card }]}
-                onPress={() => router.push('/speech-practice' as any)}
-                activeOpacity={0.7}
-              >
-                <LinearGradient
-                  colors={['#10B981', '#059669']}
-                  style={styles.aiToolIcon}
-                >
-                  <Mic size={20} color="white" />
-                </LinearGradient>
-                <Text style={[styles.aiToolTitle, { color: theme.colors.text }]}>Talpraktik</Text>
-                <Text style={[styles.aiToolDesc, { color: theme.colors.textSecondary }]}>Muntlig övning</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </SlideInView>
 
         {/* Compact XP Card */}

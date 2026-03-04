@@ -198,9 +198,7 @@ export class NotificationManager {
       const courseName = courseTitle || 'dina kurser';
 
       const reminderTimes = [
-        { hour: 9, minute: 0, title: '☀️ God morgon!', body: `Dags att sätta igång med ${courseName}. Varje minut räknas!` },
-        { hour: 14, minute: 0, title: '🎯 Eftermiddagssession', body: `Perfekt tid för en fokuserad studiesession med ${courseName}.` },
-        { hour: 18, minute: 0, title: '🌙 Kvällspass', body: `Avsluta dagen med lite plugg på ${courseName}.` },
+        { hour: 17, minute: 0, title: '📚 Studiepåminnelse', body: `Perfekt tid för en fokuserad studiesession med ${courseName}.` },
       ];
 
       for (const time of reminderTimes) {

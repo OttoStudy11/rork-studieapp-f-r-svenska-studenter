@@ -29,6 +29,8 @@ import {
   BookOpen,
   PenLine,
   Calculator,
+  ArrowRight,
+  CheckCheck,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
@@ -256,6 +258,15 @@ export default function HPStudyPlanScreen() {
             todayPct={todayPct}
             progressAnims={progressAnims}
             onCheckTask={handleCheckTask}
+            onMarkAllDone={async () => {
+              if (Platform.OS !== 'web') await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              const remOrd = Math.max(0, ordTarget - todayOrd);
+              const remMek = Math.max(0, mekTarget - todayMek);
+              const remQuant = Math.max(0, quantTarget - todayQuant);
+              for (let i = 0; i < remOrd; i++) await updateDailyProgress('ord', 1);
+              for (let i = 0; i < remMek; i++) await updateDailyProgress('mek', 1);
+              for (let i = 0; i < remQuant; i++) await updateDailyProgress('quant', 1);
+            }}
             theme={theme}
             isDark={isDark}
             currentDay={currentDay}
@@ -449,12 +460,13 @@ function TaskChip({ emoji, label, color }: { emoji: string; label: string; color
 
 function TodayView({
   planConfig, todayOrd, todayMek, todayQuant, ordTarget, mekTarget, quantTarget,
-  todayPct, progressAnims, onCheckTask, theme, isDark, currentDay, totalDays,
+  todayPct, progressAnims, onCheckTask, onMarkAllDone, theme, isDark, currentDay, totalDays,
 }: {
   planConfig: PlanConfig; todayOrd: number; todayMek: number; todayQuant: number;
   ordTarget: number; mekTarget: number; quantTarget: number;
   todayPct: number; progressAnims: { ord: Animated.Value; mek: Animated.Value; quant: Animated.Value };
   onCheckTask: (type: 'ord' | 'mek' | 'quant') => void;
+  onMarkAllDone: () => void;
   theme: any; isDark: boolean; currentDay: number; totalDays: number;
 }) {
   const now = new Date();
@@ -476,6 +488,7 @@ function TodayView({
       color: '#10B981',
       animVal: progressAnims.ord,
       duration: 10,
+      sectionCode: 'ORD',
     },
     {
       type: 'mek' as const,
@@ -489,6 +502,7 @@ function TodayView({
       color: '#6366F1',
       animVal: progressAnims.mek,
       duration: 15,
+      sectionCode: 'MEK',
     },
     {
       type: 'quant' as const,
@@ -502,6 +516,7 @@ function TodayView({
       color: '#F97316',
       animVal: progressAnims.quant,
       duration: 10,
+      sectionCode: 'KVA',
     },
   ];
 
@@ -560,69 +575,94 @@ function TodayView({
         </View>
       </View>
 
-      <Text style={[styles.sectionLabel, { color: theme.colors.text }]}>Dagens uppgifter</Text>
+      <View style={todayStyles.sectionHeaderRow}>
+        <Text style={[styles.sectionLabel, { color: theme.colors.text }]}>Dagens uppgifter</Text>
+        {!allDone && (
+          <TouchableOpacity
+            style={[todayStyles.markAllBtn, { backgroundColor: planConfig.color + '15', borderColor: planConfig.color + '35' }]}
+            onPress={onMarkAllDone}
+            activeOpacity={0.7}
+          >
+            <CheckCheck size={14} color={planConfig.color} />
+            <Text style={[todayStyles.markAllText, { color: planConfig.color }]}>Alla klara</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {tasks.map(task => {
         const done = task.completed >= task.target;
         return (
-          <TouchableOpacity
+          <View
             key={task.type}
-            onPress={() => onCheckTask(task.type)}
-            activeOpacity={0.75}
-          >
-            <View style={[taskStyles.card, {
+            style={[taskStyles.card, {
               backgroundColor: theme.colors.surface,
               borderColor: done ? task.color + '60' : theme.colors.border,
               borderWidth: done ? 1.5 : 1,
-              opacity: done ? 1 : 1,
-            }]}>
-              <LinearGradient
-                colors={[task.color + '22', task.color + '08']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[taskStyles.iconArea]}
-              >
-                <Text style={{ fontSize: 26 }}>{task.emoji}</Text>
-                <View style={[taskStyles.codeChip, { backgroundColor: task.color + '25' }]}>
-                  <Text style={[taskStyles.codeText, { color: task.color }]}>{task.code}</Text>
-                </View>
-              </LinearGradient>
+            }]}
+          >
+            <LinearGradient
+              colors={[task.color + '22', task.color + '08']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[taskStyles.iconArea]}
+            >
+              <Text style={{ fontSize: 26 }}>{task.emoji}</Text>
+              <View style={[taskStyles.codeChip, { backgroundColor: task.color + '25' }]}>
+                <Text style={[taskStyles.codeText, { color: task.color }]}>{task.code}</Text>
+              </View>
+            </LinearGradient>
 
-              <View style={taskStyles.body}>
-                <View style={taskStyles.topRow}>
-                  <Text style={[taskStyles.name, { color: theme.colors.text }]}>{task.label}</Text>
-                  {done
-                    ? <CheckCircle2 size={22} color={task.color} fill={task.color} />
-                    : (
-                      <View style={[taskStyles.countBadge, { backgroundColor: task.color + '18' }]}>
-                        <Text style={[taskStyles.countText, { color: task.color }]}>{task.completed}/{task.target}</Text>
-                      </View>
-                    )}
-                </View>
-                <Text style={[taskStyles.desc, { color: theme.colors.textSecondary }]}>{task.desc}</Text>
+            <View style={taskStyles.body}>
+              <View style={taskStyles.topRow}>
+                <Text style={[taskStyles.name, { color: theme.colors.text }]}>{task.label}</Text>
+                {done
+                  ? <CheckCircle2 size={20} color={task.color} fill={task.color} />
+                  : (
+                    <View style={[taskStyles.countBadge, { backgroundColor: task.color + '18' }]}>
+                      <Text style={[taskStyles.countText, { color: task.color }]}>{task.completed}/{task.target}</Text>
+                    </View>
+                  )}
+              </View>
+              <Text style={[taskStyles.desc, { color: theme.colors.textSecondary }]}>{task.desc}</Text>
 
-                <View style={taskStyles.barRow}>
-                  <View style={[taskStyles.barBg, { backgroundColor: theme.colors.border }]}>
-                    <Animated.View style={[taskStyles.barFill, {
-                      width: task.animVal.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-                      backgroundColor: done ? task.color : task.color,
-                    }]} />
-                  </View>
+              <View style={taskStyles.barRow}>
+                <View style={[taskStyles.barBg, { backgroundColor: theme.colors.border }]}>
+                  <Animated.View style={[taskStyles.barFill, {
+                    width: task.animVal.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+                    backgroundColor: task.color,
+                  }]} />
                 </View>
+              </View>
 
+              <View style={taskStyles.bottomRow}>
                 <View style={taskStyles.metaRow}>
                   <Clock size={11} color={theme.colors.textSecondary} />
                   <Text style={[taskStyles.metaText, { color: theme.colors.textSecondary }]}>~{task.duration} min</Text>
+                  {done && <Text style={[taskStyles.tapHint, { color: task.color }]}>• Klart 🎉</Text>}
+                </View>
+                <View style={taskStyles.actionRow}>
                   {!done && (
-                    <Text style={[taskStyles.tapHint, { color: task.color }]}>• Tryck för att markera</Text>
+                    <TouchableOpacity
+                      style={[taskStyles.checkBtn, { backgroundColor: task.color + '15', borderColor: task.color + '40' }]}
+                      onPress={() => onCheckTask(task.type)}
+                      activeOpacity={0.7}
+                    >
+                      <CheckCircle2 size={12} color={task.color} />
+                      <Text style={[taskStyles.checkBtnText, { color: task.color }]}>+1</Text>
+                    </TouchableOpacity>
                   )}
-                  {done && (
-                    <Text style={[taskStyles.tapHint, { color: task.color }]}>• Klart! 🎉</Text>
-                  )}
+                  <TouchableOpacity
+                    style={[taskStyles.goBtn, { backgroundColor: task.color, shadowColor: task.color }]}
+                    onPress={() => router.push({ pathname: '/hp-select-version' as any, params: { sectionCode: task.sectionCode } })}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={taskStyles.goBtnText}>Träna</Text>
+                    <ArrowRight size={11} color="#FFF" />
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
-          </TouchableOpacity>
+          </View>
         );
       })}
     </View>
@@ -964,8 +1004,8 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 17,
     fontWeight: '700' as const,
-    marginBottom: 12,
-    marginTop: 6,
+    marginBottom: 0,
+    marginTop: 0,
     letterSpacing: -0.3,
   },
 });
@@ -1176,6 +1216,26 @@ const chipStyles = StyleSheet.create({
 });
 
 const todayStyles = StyleSheet.create({
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    marginTop: 6,
+  },
+  markAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  markAllText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1324,6 +1384,47 @@ const taskStyles = StyleSheet.create({
   tapHint: {
     fontSize: 11,
     fontWeight: '600' as const,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  checkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 9,
+    borderWidth: 1,
+  },
+  checkBtnText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
+  goBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.28,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  goBtnText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#FFF',
   },
   countBadge: {
     paddingHorizontal: 10,

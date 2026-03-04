@@ -29,7 +29,7 @@ import { TimerPersistence } from '@/lib/timer-persistence';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
 import { PremiumGate } from '@/components/PremiumGate';
-import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, BookOpen, FileText, CheckCircle, TrendingUp, TrendingDown, Award, BarChart3, PieChart, Sunrise, Sun, Moon, Lightbulb, Trophy, Activity, BellOff } from 'lucide-react-native';
+import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, ChevronRight, BookOpen, FileText, CheckCircle, TrendingUp, TrendingDown, Award, BarChart3, PieChart, Sunrise, Sun, Moon, Lightbulb, Trophy, Activity, BellOff } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import AddExamModal from '@/components/AddExamModal';
 
@@ -1752,23 +1752,76 @@ export default function TimerScreen() {
             <Text style={[styles.statsSectionSubtitle, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#64748B' }]}>Din studieprestanda</Text>
           </View>
           {!isPremium && (
-            <View style={[styles.premiumGateInline, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.06)' : '#FFFFFF' }]}>
-              <View style={styles.premiumGateIconRow}>
-                <View style={styles.premiumGateCrown}>
-                  <Text style={{ fontSize: 26 }}>{'\uD83D\uDC51'}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.premiumGateTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Avancerad Statistik</Text>
-                  <Text style={[styles.premiumGateDesc, { color: isDarkBg ? 'rgba(255,255,255,0.5)' : '#64748B' }]}>{'L\u00e5s upp detaljerade insikter om ditt studiebeteende'}</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.premiumGateBtn}
-                onPress={() => { require('expo-router').router.push('/premium'); }}
-                activeOpacity={0.85}
+            <View style={styles.luxGateWrap}>
+              <LinearGradient
+                colors={isDarkBg ? ['rgba(255,215,0,0.12)', 'rgba(255,165,0,0.08)', 'rgba(255,140,0,0.06)'] : ['#FFFCEC', '#FFF8D6', '#FFFCF0']}
+                style={styles.luxGateOuter}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
               >
-                <Text style={styles.premiumGateBtnText}>{'\u2B50 Uppgradera till Premium'}</Text>
-              </TouchableOpacity>
+                <View style={styles.luxGateAccentBar} />
+                <View style={styles.luxGateContent}>
+                  <View style={styles.luxGateHeaderRow}>
+                    <LinearGradient
+                      colors={['#FFD700', '#FFA500', '#FF8C00']}
+                      style={styles.luxGateCrownCircle}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <Star size={22} color="#FFF" fill="#FFF" />
+                    </LinearGradient>
+                    <View style={{ flex: 1 }}>
+                      <LinearGradient
+                        colors={['#FFD700', '#FFA500']}
+                        style={styles.luxGatePill}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      >
+                        <Text style={styles.luxGatePillText}>PREMIUM</Text>
+                      </LinearGradient>
+                      <Text style={[styles.luxGateTitle, { color: isDarkBg ? '#FFFFFF' : '#0A0A1A' }]}>Avancerad Statistik</Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.luxGateDesc, { color: isDarkBg ? 'rgba(255,255,255,0.6)' : '#475569' }]}>
+                    {'Fokuspoäng, värmekarta, kursfördelning och djupgående produktivitetsinsikter.'}
+                  </Text>
+
+                  <View style={styles.luxGateGrid}>
+                    {[
+                      { emoji: '🔥', label: 'Streak & fokus' },
+                      { emoji: '📊', label: 'Veckotrender' },
+                      { emoji: '🗓', label: 'Aktivitetskarta' },
+                      { emoji: '🏆', label: 'Kursranking' },
+                    ].map((f, i) => (
+                      <View key={i} style={[styles.luxGateChip, {
+                        backgroundColor: isDarkBg ? 'rgba(255,215,0,0.1)' : 'rgba(255,180,0,0.08)',
+                        borderColor: isDarkBg ? 'rgba(255,215,0,0.22)' : 'rgba(255,180,0,0.28)',
+                      }]}>
+                        <Text style={{ fontSize: 14 }}>{f.emoji}</Text>
+                        <Text style={[styles.luxGateChipText, { color: isDarkBg ? 'rgba(255,255,255,0.82)' : '#334155' }]}>{f.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.luxGateBtn}
+                    onPress={() => { require('expo-router').router.push('/premium'); }}
+                    activeOpacity={0.88}
+                  >
+                    <LinearGradient
+                      colors={['#FFD700', '#FFAA00', '#FF8C00']}
+                      style={styles.luxGateBtnGradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                    >
+                      <Star size={15} color="#FFF" fill="#FFF" />
+                      <Text style={styles.luxGateBtnText}>{'Lås upp Premium'}</Text>
+                      <ChevronRight size={15} color="rgba(255,255,255,0.85)" />
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </LinearGradient>
             </View>
           )}
 
@@ -2403,54 +2456,113 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginTop: 3,
   },
-  premiumGateInline: {
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.25)',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+  luxGateWrap: {
+    marginBottom: 24,
+    borderRadius: 22,
+    overflow: 'hidden',
+    shadowColor: '#FFB800',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    elevation: 10,
   },
-  premiumGateIconRow: {
+  luxGateOuter: {
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,215,0,0.35)',
+  },
+  luxGateAccentBar: {
+    height: 3,
+    backgroundColor: '#FFD700',
+    marginHorizontal: 20,
+    borderRadius: 2,
+  },
+  luxGateContent: {
+    padding: 20,
+    paddingTop: 14,
+  },
+  luxGateHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  premiumGateCrown: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,215,0,0.12)',
-    alignItems: 'center',
+  luxGateCrownCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 15,
     justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  premiumGateTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+  luxGatePill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
     marginBottom: 4,
   },
-  premiumGateDesc: {
+  luxGatePillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: 1.5,
+  },
+  luxGateTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  luxGateDesc: {
     fontSize: 13,
-    fontWeight: '400',
-    lineHeight: 18,
+    lineHeight: 19,
+    marginBottom: 14,
   },
-  premiumGateBtn: {
-    borderRadius: 12,
-    paddingVertical: 14,
+  luxGateGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 18,
+  },
+  luxGateChip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F59E0B',
+    gap: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
   },
-  premiumGateBtnText: {
+  luxGateChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  luxGateBtn: {
+    borderRadius: 13,
+    overflow: 'hidden',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.38,
+    shadowRadius: 10,
+    elevation: 7,
+  },
+  luxGateBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  luxGateBtnText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.1,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: 0.2,
   },
   scrollView: {
     flex: 1,

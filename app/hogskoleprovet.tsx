@@ -38,9 +38,102 @@ import { HPPaywallModal } from '@/components/hogskoleprovet/HPPaywallModal';
 import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HP_FULL_TEST_VERSIONS } from '@/constants/hogskoleprovet';
 import { getRandomTips } from '@/constants/hogskoleprovet-study-tips';
 import { COLORS } from '@/constants/design-system';
+import { useHPStudyPlan, HP_DATE_LABELS, PLAN_CONFIGS } from '@/contexts/HPStudyPlanContext';
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+function HPCountdownCard({
+  daysUntil,
+  countdownMsg,
+  plan,
+  todayProgress,
+  isDark,
+  theme,
+}: {
+  daysUntil: number;
+  countdownMsg: string;
+  plan: any;
+  todayProgress: any;
+  isDark: boolean;
+  theme: any;
+}) {
+  const planConfig = plan ? PLAN_CONFIGS.find((c: any) => c.type === plan.planType) : null;
+  const nextHP = daysUntil <= 0
+    ? { label: HP_DATE_LABELS.spring2026, icon: '🌸' }
+    : daysUntil <= 230
+      ? { label: HP_DATE_LABELS.spring2026, icon: '🌸' }
+      : { label: HP_DATE_LABELS.fall2026, icon: '🍂' };
+
+  const urgencyColor = daysUntil >= 60 ? '#10B981' : daysUntil >= 30 ? '#F59E0B' : '#EF4444';
+
+  return (
+    <TouchableOpacity
+      style={[countdownStyles.card, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC' }]}
+      onPress={() => router.push('/hp-study-plan' as any)}
+      activeOpacity={0.8}
+    >
+      <LinearGradient
+        colors={isDark
+          ? ['rgba(99,102,241,0.2)', 'rgba(124,58,237,0.1)']
+          : ['rgba(99,102,241,0.08)', 'rgba(236,72,153,0.06)']
+        }
+        style={countdownStyles.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={countdownStyles.topRow}>
+          <View style={countdownStyles.daysBlock}>
+            <Text style={[countdownStyles.daysNum, { color: urgencyColor }]}>{daysUntil}</Text>
+            <Text style={[countdownStyles.daysSub, { color: theme.colors.textSecondary }]}>dagar till HP</Text>
+          </View>
+          <View style={countdownStyles.infoBlock}>
+            <View style={countdownStyles.examRow}>
+              <Text style={{ fontSize: 14 }}>{nextHP.icon}</Text>
+              <Text style={[countdownStyles.examLabel, { color: theme.colors.textSecondary }]}>{nextHP.label}</Text>
+            </View>
+            <Text style={[countdownStyles.msg, { color: theme.colors.text }]}>{countdownMsg}</Text>
+            {planConfig && (
+              <View style={[countdownStyles.planBadge, { backgroundColor: `${planConfig.color}20` }]}>
+                <Text style={[countdownStyles.planBadgeText, { color: planConfig.color }]}>
+                  {planConfig.emoji} {planConfig.name}
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={[countdownStyles.arrowBtn, { backgroundColor: `${COLORS.primary}15` }]}>
+            <ChevronRight size={16} color={COLORS.primary} />
+          </View>
+        </View>
+        {plan && todayProgress && (
+          <View style={countdownStyles.progressRow}>
+            <View style={[countdownStyles.progressBg, { backgroundColor: theme.colors.border }]}>
+              <View
+                style={[
+                  countdownStyles.progressFill,
+                  {
+                    width: `${Math.round(
+                      (((todayProgress.ordCompleted / (planConfig?.wordsPerDay ?? 30)) +
+                        (todayProgress.mekCompleted / (planConfig?.mekPerDay ?? 3)) +
+                        (todayProgress.quantCompleted / (planConfig?.quantPerDay ?? 12))) / 3) * 100
+                    )}%`,
+                    backgroundColor: urgencyColor,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={[countdownStyles.progressLabel, { color: theme.colors.textSecondary }]}>Idag</Text>
+          </View>
+        )}
+        {!plan && (
+          <View style={countdownStyles.ctaRow}>
+            <Text style={[countdownStyles.ctaText, { color: COLORS.primary }]}>Starta din studieplan →</Text>
+          </View>
+        )}
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
 
 interface FullTestVersionModalProps {
   visible: boolean;
@@ -315,6 +408,10 @@ export default function HogskoleprovetScreen() {
   const [trialSelectionVisible, setTrialSelectionVisible] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [paywallType, setPaywallType] = useState<'before_trial' | 'after_trial'>('before_trial');
+  const { plan, getDaysUntilHP, getCountdownMessage, getTodayProgress } = useHPStudyPlan();
+  const daysUntilHP = getDaysUntilHP();
+  const countdownMsg = getCountdownMessage(daysUntilHP);
+  const todayHPProgress = getTodayProgress();
   
   const stats = getUserStats();
   const estimatedScore = getEstimatedHPScore();
@@ -457,6 +554,14 @@ export default function HogskoleprovetScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <HPCountdownCard
+          daysUntil={daysUntilHP}
+          countdownMsg={countdownMsg}
+          plan={plan}
+          todayProgress={todayHPProgress}
+          isDark={isDark}
+          theme={theme}
+        />
         {!isPremium && (
           <FreemiumBanner
             feature="hp_section"
@@ -1268,5 +1373,106 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: 'rgba(255,255,255,0.85)',
     lineHeight: 18,
+  },
+});
+
+const countdownStyles = StyleSheet.create({
+  card: {
+    borderRadius: 20,
+    marginBottom: 20,
+    overflow: 'hidden',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  gradient: {
+    padding: 18,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  daysBlock: {
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  daysNum: {
+    fontSize: 36,
+    fontWeight: '800' as const,
+    lineHeight: 40,
+  },
+  daysSub: {
+    fontSize: 10,
+    fontWeight: '500' as const,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  infoBlock: {
+    flex: 1,
+  },
+  examRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 3,
+  },
+  examLabel: {
+    fontSize: 11,
+  },
+  msg: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    marginBottom: 6,
+    lineHeight: 19,
+  },
+  planBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  planBadgeText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
+  arrowBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 14,
+  },
+  progressBg: {
+    flex: 1,
+    height: 5,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  progressLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    minWidth: 28,
+    textAlign: 'right',
+  },
+  ctaRow: {
+    marginTop: 12,
+    alignItems: 'flex-end',
+  },
+  ctaText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
   },
 });

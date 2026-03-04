@@ -24,6 +24,7 @@ import { GamificationProvider } from "@/contexts/GamificationContext";
 import { HogskoleprovetProvider } from "@/contexts/HogskoleprovetContext";
 import { HPTrialProvider } from "@/contexts/HPTrialContext";
 import { CommunityProvider } from "@/contexts/CommunityContext";
+import { HPStudyPlanProvider } from "@/contexts/HPStudyPlanContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -107,6 +108,7 @@ function AppContent() {
         <Stack.Screen name="hp-practice/[sectionCode]" options={{ headerShown: false }} />
         <Stack.Screen name="hp-results" options={{ headerShown: false }} />
         <Stack.Screen name="hp-stats" options={{ headerShown: false }} />
+        <Stack.Screen name="hp-study-plan" options={{ headerShown: false }} />
         <Stack.Screen name="community/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="study-insights" options={{ headerShown: false }} />
         <Stack.Screen name="advanced-analytics" options={{ headerShown: false }} />
@@ -160,9 +162,11 @@ export default function RootLayout() {
                                   <ChallengesProvider>
                                     <HPTrialProvider>
                                       <HogskoleprovetProvider>
-                                        <CommunityProvider>
-                                          <RootLayoutNav />
-                                        </CommunityProvider>
+                                        <HPStudyPlanProvider>
+                                          <CommunityProvider>
+                                            <RootLayoutNav />
+                                          </CommunityProvider>
+                                        </HPStudyPlanProvider>
                                       </HogskoleprovetProvider>
                                     </HPTrialProvider>
                                   </ChallengesProvider>

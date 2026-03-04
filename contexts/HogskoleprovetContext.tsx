@@ -674,7 +674,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
       currentMilestones.push('perfect_section');
     }
 
-    if (sectionsCount >= 6 && !currentMilestones.includes('all_sections')) {
+    if (sectionsCount >= 8 && !currentMilestones.includes('all_sections')) {
       newlyUnlocked.push('all_sections');
       currentMilestones.push('all_sections');
     }

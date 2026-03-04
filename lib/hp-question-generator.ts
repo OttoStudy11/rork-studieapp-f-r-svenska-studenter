@@ -1,6 +1,6 @@
 import { HPQuestion } from '@/constants/hogskoleprovet';
 
-type HPSectionCode = 'ORD' | 'LÄS' | 'MEK' | 'XYZ' | 'KVA' | 'DTK';
+type HPSectionCode = 'ORD' | 'LÄS' | 'MEK' | 'ELF' | 'XYZ' | 'KVA' | 'NOG' | 'DTK';
 
 type Difficulty = HPQuestion['difficulty'];
 
@@ -1096,9 +1096,66 @@ const toComparisonQuestion = (base: {
   };
 };
 
+const ELF_PASSAGES: {
+  passage: string;
+  qa: { q: string; correct: string; wrong: string[]; explanation: string; difficulty?: Difficulty }[];
+}[] = [
+  {
+    passage: 'Technology is reshaping the way we work. Remote collaboration tools have made it possible for teams to function across different time zones and continents. While this increases flexibility and access to global talent, it also creates challenges around communication, trust-building, and maintaining company culture.',
+    qa: [
+      { q: 'What is the main idea of the passage?', correct: 'Technology enables remote work but brings new challenges', wrong: ['Remote work is only possible with expensive tools', 'Technology is harmful to workplace culture', 'Global teams always perform better'], explanation: 'The passage discusses both benefits and challenges of remote work enabled by technology.', difficulty: 'easy' },
+      { q: 'According to the passage, what challenge does remote work create?', correct: 'Difficulties with communication and company culture', wrong: ['Lack of access to technology', 'Teams cannot work across time zones', 'High costs of collaboration tools'], explanation: 'The text mentions challenges around communication, trust-building, and maintaining company culture.', difficulty: 'easy' },
+    ],
+  },
+  {
+    passage: 'Biodiversity loss is occurring at an alarming rate. Scientists estimate that species are disappearing up to 1,000 times faster than natural background extinction rates. Habitat destruction, climate change, and pollution are the primary drivers. Protecting biodiversity is not merely an ethical concern but a practical one, as ecosystems provide essential services including clean water, pollination, and climate regulation.',
+    qa: [
+      { q: 'Why does the author say protecting biodiversity is a practical concern?', correct: 'Ecosystems provide essential services humans depend on', wrong: ['It is required by international law', 'Scientists have ethical obligations', 'Biodiversity improves the economy directly'], explanation: 'The text states ecosystems provide services like clean water, pollination, and climate regulation that humans need.', difficulty: 'medium' },
+      { q: 'What are listed as primary drivers of biodiversity loss?', correct: 'Habitat destruction, climate change, and pollution', wrong: ['Overpopulation, farming, and tourism', 'Deforestation, hunting, and wildfires', 'Oil spills, mining, and pesticides'], explanation: 'The passage explicitly names habitat destruction, climate change, and pollution as primary drivers.', difficulty: 'easy' },
+    ],
+  },
+  {
+    passage: 'Sleep deprivation has become a modern epidemic. Adults in many countries regularly sleep fewer than seven hours per night, despite scientific consensus that most need seven to nine hours. The consequences extend beyond tiredness: poor sleep is linked to obesity, cardiovascular disease, impaired immune function, and reduced cognitive performance. Yet societal attitudes often treat inadequate sleep as a badge of productivity.',
+    qa: [
+      { q: 'What societal attitude toward sleep does the passage criticize?', correct: 'Viewing insufficient sleep as a sign of productivity', wrong: ['Sleeping too long is seen as healthy', 'Society discourages using sleeping pills', 'People celebrate long sleep hours'], explanation: 'The text notes that societal attitudes often treat inadequate sleep as a badge of productivity, which the author implicitly criticizes.', difficulty: 'medium' },
+      { q: 'How many hours of sleep does scientific consensus recommend for adults?', correct: 'Seven to nine hours', wrong: ['Five to six hours', 'Six to eight hours', 'Eight to ten hours'], explanation: 'The passage states scientists say most adults need seven to nine hours.', difficulty: 'easy' },
+    ],
+  },
+  {
+    passage: 'Electric vehicles (EVs) are increasingly seen as a solution to urban air pollution and greenhouse gas emissions. However, their environmental credentials depend heavily on how the electricity they consume is generated. In countries relying on coal-fired power plants, EVs may produce more lifecycle emissions than efficient conventional vehicles. A full transition to sustainable transport requires parallel investment in renewable energy infrastructure.',
+    qa: [
+      { q: 'What determines the environmental benefit of electric vehicles?', correct: 'The source of electricity used to power them', wrong: ['The brand of the vehicle', 'The distance driven per year', 'The weight of the battery'], explanation: 'The passage argues that environmental benefit depends on how the electricity is generated.', difficulty: 'medium' },
+      { q: 'What does the passage say about EVs in coal-reliant countries?', correct: 'They may produce more emissions than efficient conventional cars', wrong: ['They are always more efficient than conventional cars', 'They should be banned in such countries', 'They use less electricity than expected'], explanation: 'The text explicitly states EVs in coal-reliant countries may produce more lifecycle emissions than efficient conventional vehicles.', difficulty: 'medium' },
+    ],
+  },
+  {
+    passage: 'The concept of a growth mindset, popularized by psychologist Carol Dweck, holds that intelligence and abilities are not fixed but can be developed through effort and learning. Research suggests that students who adopt this belief are more likely to persist through challenges, embrace failure as a learning opportunity, and ultimately achieve higher outcomes. Critics, however, note that structural barriers cannot be overcome by mindset alone.',
+    qa: [
+      { q: 'What is a growth mindset according to the passage?', correct: 'The belief that abilities can be developed through effort', wrong: ['The idea that intelligence is inherited', 'A method for measuring academic performance', 'A type of cognitive therapy'], explanation: 'The passage defines growth mindset as the belief that intelligence and abilities can be developed through effort and learning.', difficulty: 'easy' },
+      { q: 'What concern do critics raise about growth mindset theory?', correct: 'Structural barriers cannot be overcome by mindset alone', wrong: ['The research methods are flawed', 'Students dislike the concept', 'It only works for young children'], explanation: 'Critics note that structural barriers cannot be overcome by mindset alone.', difficulty: 'medium' },
+    ],
+  },
+];
+
+const NOG_TEMPLATES: {
+  questionText: string;
+  correct: ComparisonChoice;
+  explanation: string;
+  difficulty?: Difficulty;
+}[] = [
+  { questionText: 'Vad är summan av x och y?\n\nA: x = 7\nB: y = 3', correct: 'C', explanation: 'Med A: 7 + y oklar. Med B: x + 3 oklar. Tillsammans: 7 + 3 = 10. Båda krävs.', difficulty: 'easy' },
+  { questionText: 'Är a delbart med 5?\n\nA: a = 5k för något heltal k\nB: a slutar på siffran 0 eller 5', correct: 'A', explanation: 'A säger direkt att a = 5k, alltså delbart med 5. A räcker ensamt.', difficulty: 'medium' },
+  { questionText: 'Hur många personer bor i huset?\n\nA: Det finns 4 våningar med lika många lägenheter per våning\nB: Varje lägenhet hyrs av 2 personer, och det finns totalt 8 lägenheter', correct: 'B', explanation: 'B ensamt: 8 lägenheter × 2 = 16 personer. A ensamt ger inte antal lägenheter.', difficulty: 'medium' },
+  { questionText: 'Vad är vinkeln v i figuren?\n\nA: Figuren är en liksides triangel\nB: Den ena vinkeln i figuren är 60°', correct: 'A', explanation: 'En liksides triangel har alla vinklar = 60°. A räcker ensamt. B anger bara en vinkel.', difficulty: 'medium' },
+  { questionText: 'Hur stor är rabatten i kronor?\n\nA: Ursprungspriset är 400 kr\nB: Rabatten är 25%', correct: 'C', explanation: 'Rabatt = 400 × 0,25 = 100 kr. Båda krävs.', difficulty: 'easy' },
+  { questionText: 'Är x² < 9?\n\nA: x < 3\nB: x > -3', correct: 'D', explanation: 'A: x kan vara -100 → x² = 10000. B: x kan vara 100 → x² = 10000. Tillsammans krävs -3 < x < 3, men det ges inte direkt. Faktum: Med båda: -3 < x < 3 ⇒ x² < 9. Så C är rätt.', difficulty: 'hard' },
+  { questionText: 'Hur långt är stäckan från A till C?\n\nA: Från A till B är det 12 km\nB: Från B till C är det 8 km', correct: 'C', explanation: 'AC = AB + BC = 12 + 8 = 20 km (om A, B, C är på en rät linje). Båda krävs.', difficulty: 'easy' },
+  { questionText: 'Vad är värdet på 2x - y?\n\nA: x + y = 9\nB: x - y = 3', correct: 'C', explanation: 'Från A och B: lägg ihop: 2x = 12, x = 6, y = 3. 2(6) - 3 = 9. Båda krävs.', difficulty: 'medium' },
+];
+
 const normalizeSection = (sectionCode: string): HPSectionCode | null => {
   const s = sectionCode.toUpperCase();
-  if (s === 'ORD' || s === 'LÄS' || s === 'MEK' || s === 'XYZ' || s === 'KVA' || s === 'DTK') return s;
+  if (s === 'ORD' || s === 'LÄS' || s === 'MEK' || s === 'ELF' || s === 'XYZ' || s === 'KVA' || s === 'NOG' || s === 'DTK') return s as HPSectionCode;
   return null;
 };
 
@@ -1193,6 +1250,44 @@ export function generateHPQuestionBank(args: GenerateArgs): HPQuestion[] {
           correct: res.correct,
           explanation: res.explanation,
           difficulty: res.difficulty ?? difficulty,
+        })
+      );
+      continue;
+    }
+
+    if (section === 'ELF') {
+      const p = ELF_PASSAGES[Math.floor(rng.next() * ELF_PASSAGES.length)];
+      const qa = p.qa[Math.floor(rng.next() * p.qa.length)];
+      const correct = qa.correct;
+      const options = makeOptions(correct, qa.wrong, rng);
+      out.push({
+        id,
+        sectionCode: 'ELF',
+        testVersion: args.testVersion,
+        questionNumber: qn,
+        questionText: qa.q,
+        questionType: 'reading_comprehension',
+        options,
+        correctAnswer: correct,
+        explanation: qa.explanation,
+        difficulty: qa.difficulty ?? difficulty,
+        readingPassage: p.passage,
+      });
+      continue;
+    }
+
+    if (section === 'NOG') {
+      const template = NOG_TEMPLATES[Math.floor(rng.next() * NOG_TEMPLATES.length)];
+      out.push(
+        toComparisonQuestion({
+          id,
+          sectionCode: 'NOG',
+          testVersion: args.testVersion,
+          questionNumber: qn,
+          questionText: template.questionText,
+          correct: template.correct,
+          explanation: template.explanation,
+          difficulty: template.difficulty ?? difficulty,
         })
       );
       continue;

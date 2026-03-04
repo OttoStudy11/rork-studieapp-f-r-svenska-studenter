@@ -553,7 +553,7 @@ export default function HogskoleprovetScreen() {
               <View style={styles.fullTestInfo}>
                 <Text style={styles.fullTestTitle}>Komplett Högskoleprov</Text>
                 <Text style={styles.fullTestSubtitle}>
-                  Alla 6 delprov • 3h 55min • Realistisk provupplevelse
+                  Alla 8 delprov • 4h 20min • Realistisk provupplevelse
                 </Text>
               </View>
               <ChevronRight size={24} color="rgba(255,255,255,0.7)" />
@@ -562,11 +562,11 @@ export default function HogskoleprovetScreen() {
             <View style={styles.fullTestStats}>
               <View style={styles.fullTestStat}>
                 <Clock size={14} color="rgba(255,255,255,0.7)" />
-                <Text style={styles.fullTestStatText}>235 min</Text>
+                <Text style={styles.fullTestStatText}>260 min</Text>
               </View>
               <View style={styles.fullTestStat}>
                 <Target size={14} color="rgba(255,255,255,0.7)" />
-                <Text style={styles.fullTestStatText}>120 frågor</Text>
+                <Text style={styles.fullTestStatText}>160 frågor</Text>
               </View>
               <View style={styles.fullTestStat}>
                 <Trophy size={14} color="rgba(255,255,255,0.7)" />

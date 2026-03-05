@@ -20,6 +20,7 @@ import {
   Play,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import { usePremium } from '@/contexts/PremiumContext';
 import { HP_SECTIONS, HP_TEST_VERSIONS, HPTestVersion, HPSectionConfig } from '@/constants/hogskoleprovet';
 import { COLORS } from '@/constants/design-system';
 
@@ -29,6 +30,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function HPSelectVersionScreen() {
   const { theme, isDark } = useTheme();
+  const { isPremium } = usePremium();
   const params = useLocalSearchParams<{ sectionCode: string }>();
   const [isReady, setIsReady] = useState(false);
   
@@ -62,6 +64,12 @@ export default function HPSelectVersionScreen() {
     const timer = setTimeout(() => setIsReady(true), 100);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (isReady && !isPremium) {
+      router.replace('/premium' as any);
+    }
+  }, [isReady, isPremium]);
 
   useEffect(() => {
     console.log('[HP Select Version] State:', {

@@ -124,7 +124,7 @@ export function HPTrialSelectionModal({
                   Komplett Högskoleprov
                 </Text>
                 <Text style={[styles.optionDesc, { color: theme.colors.textSecondary }]}>
-                  Alla 6 delprov • 235 min • Realistisk provupplevelse
+                  Alla 8 delprov • 235 min • Realistisk provupplevelse
                 </Text>
                 <View style={styles.benefitsList}>
                   <View style={styles.benefit}>

@@ -558,7 +558,7 @@ export default function HomeScreen() {
               </View>
               <View style={styles.hpCardMeta}>
                 <View style={styles.hpMetaItem}>
-                  <Text style={styles.hpMetaText}>6 delprov</Text>
+                  <Text style={styles.hpMetaText}>8 delprov</Text>
                 </View>
                 <View style={styles.hpMetaDot} />
                 <View style={styles.hpMetaItem}>

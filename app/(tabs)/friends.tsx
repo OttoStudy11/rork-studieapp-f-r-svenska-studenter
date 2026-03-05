@@ -84,7 +84,7 @@ export default function FriendsScreen() {
   const [globalLeaderboardLoading, setGlobalLeaderboardLoading] = useState(false);
   const [globalLeaderboardError, setGlobalLeaderboardError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [leaderboardView, setLeaderboardView] = useState<'friends' | 'global'>('friends');
+  const [leaderboardView, setLeaderboardView] = useState<'friends' | 'global'>('global');
   const [showCreateCommunityModal, setShowCreateCommunityModal] = useState(false);
   const [communityForm, setCommunityForm] = useState<{
     name: string;
@@ -280,26 +280,6 @@ export default function FriendsScreen() {
       setFriends(mappedFriends);
       setFriendRequests(mappedRequests);
       
-      // Fetch session data (count + duration) for friends AND current user
-      const allUserIds = [...friendIds, user.id];
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('pomodoro_sessions')
-        .select('user_id, duration')
-        .in('user_id', allUserIds);
-
-      if (sessionError) {
-        console.warn('Could not load session data:', sessionError);
-      }
-
-      // Aggregate sessions per user (count + total duration)
-      const sessionCountMap: Record<string, number> = {};
-      const sessionStudyTimeMap: Record<string, number> = {};
-      (sessionData ?? []).forEach((s: any) => {
-        if (!s.user_id) return;
-        sessionCountMap[s.user_id] = (sessionCountMap[s.user_id] || 0) + 1;
-        sessionStudyTimeMap[s.user_id] = (sessionStudyTimeMap[s.user_id] || 0) + (Number(s.duration) || 0);
-      });
-
       // Get current user progress
       const { data: fetchedUserProgress } = await supabase
         .from('user_progress')
@@ -309,20 +289,13 @@ export default function FriendsScreen() {
 
       setCurrentUserProgress(fetchedUserProgress);
 
-      // Resolve study time: prefer user_progress if > 0, else use session aggregation
-      const resolveStudyTime = (userId: string, progressTime: number | undefined): number => {
-        const pt = progressTime || 0;
-        const st = sessionStudyTimeMap[userId] || 0;
-        return Math.max(pt, st);
-      };
-
-      const currentUserStudyTime = resolveStudyTime(user.id, fetchedUserProgress?.total_study_time ?? 0);
+      const currentUserStudyTime = fetchedUserProgress?.total_study_time ?? 0;
 
       const allUsersForLeaderboard = [
         ...mappedFriends.map((friend) => ({
           ...friend,
-          studyTime: resolveStudyTime(friend.id, friend.studyTime),
-          sessionCount: sessionCountMap[friend.id] || 0,
+          studyTime: friend.studyTime ?? 0,
+          sessionCount: 0,
           position: 0,
         })),
         {
@@ -333,7 +306,7 @@ export default function FriendsScreen() {
           level: (studyUser?.studyLevel || 'gymnasie') as 'gymnasie' | 'högskola',
           avatar: studyUser?.avatar,
           studyTime: currentUserStudyTime,
-          sessionCount: sessionCountMap[user.id] || 0,
+          sessionCount: 0,
           position: 0,
         },
       ];
@@ -410,6 +383,12 @@ export default function FriendsScreen() {
       loadPendingInvites();
     }
   }, [activeTab, loadMyCommunities, loadSuggestedCommunities, loadPendingInvites]);
+
+  useEffect(() => {
+    if (showLeaderboard) {
+      void loadGlobalLeaderboard();
+    }
+  }, [showLeaderboard, loadGlobalLeaderboard]);
 
   useEffect(() => {
     if (showLeaderboard && leaderboardView === 'global') {

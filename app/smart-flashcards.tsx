@@ -129,7 +129,7 @@ ${inputText}`,
       setGeneratedCards(data);
       setSavedCards(new Set());
       if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       setTimeout(() => {
         scrollRef.current?.scrollTo({ y: 400, animated: true });
@@ -166,7 +166,7 @@ ${inputText}`,
     onSuccess: (cardIndex) => {
       setSavedCards(prev => new Set([...prev, cardIndex]));
       if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
     },
     onError: (err: Error) => {
@@ -204,11 +204,11 @@ ${inputText}`,
       const allIndices = new Set(generatedCards.map((_, i) => i));
       setSavedCards(allIndices);
       if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       Alert.alert('Sparat!', `${count} flashcards sparade till din samling.`);
     },
-    onError: (err: Error) => {
+    onError: (_err: Error) => {
       Alert.alert('Fel', 'Kunde inte spara flashcards.');
     },
   });
@@ -230,18 +230,26 @@ ${inputText}`,
         const uri = result.assets[0].uri;
         let base64: string;
         if (Platform.OS === 'web') {
-          base64 = uri;
+          const response = await fetch(uri);
+          const blob = await response.blob();
+          base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
         } else {
           const fileBase64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
           base64 = `data:image/jpeg;base64,${fileBase64}`;
         }
 
+        console.log('[SmartFlashcards] Extracting text from image...');
         const textResult = await generateObject({
           messages: [
             {
               role: 'user',
               content: [
-                { type: 'text', text: 'Extrahera ALL text och nyckelinnehåll från denna bild. Returnera det som en ren text på svenska.' },
+                { type: 'text', text: 'Extrahera ALL text och nyckelinnehåll från denna bild exakt som det står. Returnera det som ren text på originalspråket utan formattering.' },
                 { type: 'image', image: base64 },
               ],
             },
@@ -249,14 +257,15 @@ ${inputText}`,
           schema: z.object({ extractedText: z.string() }),
         });
 
+        console.log('[SmartFlashcards] Extracted text length:', textResult.extractedText.length);
         setInputText(prev => prev + (prev ? '\n\n' : '') + textResult.extractedText);
 
         if (Platform.OS !== 'web') {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       } catch (err) {
         console.error('[SmartFlashcards] Image extraction error:', err);
-        Alert.alert('Fel', 'Kunde inte extrahera text från bilden.');
+        Alert.alert('Fel', 'Kunde inte extrahera text från bilden. Försök igen.');
       }
     }
   }, []);

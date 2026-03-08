@@ -1,17 +1,51 @@
-# Add More ELF Questions to Högskoleprovet
+# Polera HP Studieplan – Bättre layout, spacing & visuell finish
 
+## Vad som förbättras
 
-## What's being added
+Hela HP-studieplanen poleras med bättre spacing, tydligare visuell hierarki och mer andningsrum. Stilen behålls men förfinas.
 
-Currently there are **5 ELF test sets** (elf-a, elf-b, elf-c, elf-d, elf-2024-spring) with 20 questions each = 100 questions total.
+---
 
-This will add **4 new complete ELF test sets** (elf-e, elf-f, elf-g, elf-h) with 20 questions each = **80 new questions**, bringing the total to 180 ELF questions.
+### **Planväljaren (välj provtillfälle & intensitet)**
 
-## Features
+- [x] **Bättre hero-sektion** – Mer luft runt nedräknaren, tydligare typografi med bättre kontrast
+- [x] **Provtillfälle-knappar** – Större touchområden, mjukare animationer vid val, tydligare aktiv-markering med subtil glow
+- [x] **Intensitetskortten** – Mer padding och luft mellan korten, förbättrad chip-layout för ORD/MEK/KVA så de inte klumpas ihop
+- [x] **Rekommenderad-badge** – Mer framträdande med pulsanimation för att dra ögat
 
-- **4 new test sets** (elf-e through elf-h), each with 20 reading comprehension questions
-- **New passage topics** covering: psychology & behavior, environment & sustainability, technology & society, health & medicine, economics & globalization, history & culture, science & discovery, language & communication
-- **Mix of question types**: main idea, vocabulary in context, author's tone, inference, detail recall — all matching the real HP ELF format
-- **Varied difficulty levels** across easy, medium, and hard within each set
-- Each passage is 3–5 sentences long, realistic and academic in style — matching actual HP English passages
-- All questions are fully unique with no repeats from existing sets
+---
+
+### **Dagens uppgifter-vy (Today)**
+
+- [x] **Framstegskortet** – Större och tydligare procent-cirkel, bättre färgkontrast på progress-baren
+- [x] **Uppgiftskorten** – Mer generöst spacing internt, ikon-arean breddas lite, progress-baren blir tjockare och tydligare
+- [x] **Knappar** – "Träna" och "+1"-knapparna får mer padding och tydligare tryckanimation (scale-effekt)
+- [x] **"Alla klara"-knappen** – Mer framträdande placering och design
+- [x] **Komplett-state** – Snyggt konfetti/celebration-meddelande vid 100%
+
+---
+
+### **Progress-vyn**
+
+- [x] **Statistikkorten** – Bättre grid-layout med jämnare storlek och mer luft
+- [x] **Streak-kortet** – Mer luft, tydligare ikon, bättre typografi
+- [x] **Veckoaktivitet** – Bredare staplar, bättre höjdproportioner, tydligare "idag"-markering
+- [x] **Planens framsteg** – Mer visuell vikt på progress-baren, tydligare slutpunkt
+
+---
+
+### **Inställningar-vyn**
+
+- [x] **Sektionsrubriker** – Bättre marginaler ovanför
+- [x] **Tidväljaren** – Scrollbar rad istället för wrap, bättre knappstorlek
+- [x] **Ta bort-knappen** – Mer luft runt, tydligare varnings-design
+
+---
+
+### **Generella förbättringar**
+
+- [x] **Mer luft** – Ökad padding och marginal genomgående (cards, sektioner, header)
+- [x] **Tab-bar** – Tydligare aktiv-indikator med mjuk animation
+- [x] **Header** – Mer andningsrum i stats-stripen
+- [x] **Micro-interactions** – Subtila scale-animationer på knappar och kort vid tryck
+- [x] **Typografi** – Tydligare storlekshierarki mellan rubriker, brödtext och etiketter

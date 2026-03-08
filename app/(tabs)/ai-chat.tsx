@@ -8,14 +8,13 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Image,
   Alert,
   Clipboard,
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Send, Sparkles, BookOpen, Lightbulb, Brain, Flame, TrendingUp, ImageIcon, X, Copy, ArrowUp } from 'lucide-react-native';
+import { Sparkles, BookOpen, Lightbulb, Brain, Flame, TrendingUp, ImageIcon, X, Copy, ArrowUp } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PremiumGate } from '@/components/PremiumGate';
@@ -77,32 +76,39 @@ export default function AIChatScreen() {
     try {
       if (imagesToSend.length > 0) {
         const files = await Promise.all(
-          imagesToSend.map(async (uri) => {
+          imagesToSend.map(async (imageUri) => {
             let base64: string;
-            if (uri.startsWith('data:')) {
-              base64 = uri;
-            } else if (uri.startsWith('file://')) {
-              const fileBase64 = await FileSystem.readAsStringAsync(uri, {
+            if (imageUri.startsWith('data:')) {
+              base64 = imageUri;
+            } else if (Platform.OS === 'web') {
+              const response = await fetch(imageUri);
+              const blob = await response.blob();
+              base64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+            } else {
+              const fileBase64 = await FileSystem.readAsStringAsync(imageUri, {
                 encoding: 'base64' as any,
               });
               base64 = `data:image/jpeg;base64,${fileBase64}`;
-            } else {
-              base64 = uri;
             }
             return {
               type: 'file' as const,
-              mediaType: 'image/jpeg' as const,
-              url: base64,
+              mimeType: 'image/jpeg' as const,
+              data: base64,
             };
           })
         );
 
-        await sendMessage({
+        sendMessage({
           text: userMessage || 'Vad finns på denna bild?',
-          files,
+          files: files as any,
         });
       } else {
-        await sendMessage(userMessage);
+        sendMessage(userMessage);
       }
       console.log('[AI Chat] Message sent successfully');
     } catch (err) {

@@ -48,9 +48,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import type { Database } from '@/lib/database.types';
 import { AIStudyInsights, AIQuickHelp } from '@/components/AIStudyInsights';
-import { FreemiumBanner } from '@/components/FreemiumBanner';
 import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
 import { Crown } from 'lucide-react-native';
+import CourseExamsSection from '@/components/CourseExamsSection';
 
 type Course = Database['public']['Tables']['courses']['Row'];
 type CourseLesson = Database['public']['Tables']['course_lessons']['Row'];
@@ -864,6 +864,12 @@ export default function CourseDetailScreen() {
             </LinearGradient>
           </TouchableOpacity>
         </View>
+
+        <CourseExamsSection
+          courseId={id || ''}
+          courseTitle={course.title}
+          accentColor={courseStyle.primaryColor}
+        />
 
         <View style={styles.aiSection}>
           <View style={styles.aiSectionHeader}>

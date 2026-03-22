@@ -15,11 +15,8 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { Image } from 'expo-image';
-import { Mail, Lock, Eye, EyeOff, Check, ArrowRight, Sparkles, BookOpen, Target, Trophy, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, Check, ArrowRight, RefreshCw, CheckCircle, AlertCircle, GraduationCap, Brain, Zap } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-
-
 
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -40,61 +37,79 @@ export default function AuthScreen() {
   const { showError, showSuccess } = useToast();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const logoScale = useRef(new Animated.Value(0.8)).current;
+  const slideAnim = useRef(new Animated.Value(40)).current;
+  const logoScale = useRef(new Animated.Value(0.5)).current;
+  const logoRotate = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
-  const orb1Anim = useRef(new Animated.Value(0)).current;
-  const orb2Anim = useRef(new Animated.Value(0)).current;
+  const formSlide = useRef(new Animated.Value(60)).current;
+  const formFade = useRef(new Animated.Value(0)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const floatAnim1 = useRef(new Animated.Value(0)).current;
+  const floatAnim2 = useRef(new Animated.Value(0)).current;
+  const floatAnim3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(logoScale, {
-        toValue: 1,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }),
+    Animated.sequence([
+      Animated.parallel([
+        Animated.spring(logoScale, {
+          toValue: 1,
+          friction: 6,
+          tension: 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoRotate, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(formFade, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(formSlide, {
+          toValue: 0,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]),
     ]).start();
 
     Animated.loop(
-      Animated.sequence([
-        Animated.timing(orb1Anim, {
-          toValue: 1,
-          duration: 4000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(orb1Anim, {
-          toValue: 0,
-          duration: 4000,
-          useNativeDriver: true,
-        }),
-      ])
+      Animated.timing(shimmerAnim, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: true,
+      })
     ).start();
 
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(orb2Anim, {
-          toValue: 1,
-          duration: 5000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(orb2Anim, {
-          toValue: 0,
-          duration: 5000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
+    const createFloat = (anim: Animated.Value, duration: number) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, { toValue: 1, duration, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration, useNativeDriver: true }),
+        ])
+      ).start();
+    };
+    createFloat(floatAnim1, 3500);
+    createFloat(floatAnim2, 4500);
+    createFloat(floatAnim3, 5500);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -111,7 +126,7 @@ export default function AuthScreen() {
 
   const handleButtonPressIn = () => {
     Animated.spring(buttonScale, {
-      toValue: 0.96,
+      toValue: 0.95,
       useNativeDriver: true,
     }).start();
   };
@@ -286,379 +301,314 @@ export default function AuthScreen() {
     }
   }, [resendCooldown]);
 
-  const orb1TranslateY = orb1Anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -30],
-  });
+  const float1Y = floatAnim1.interpolate({ inputRange: [0, 1], outputRange: [0, -20] });
+  const float2Y = floatAnim2.interpolate({ inputRange: [0, 1], outputRange: [0, 15] });
+  const float3Y = floatAnim3.interpolate({ inputRange: [0, 1], outputRange: [0, -12] });
+  const float1Opacity = floatAnim1.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.3, 0.7, 0.3] });
+  const float2Opacity = floatAnim2.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.2, 0.5, 0.2] });
+  const float3Opacity = floatAnim3.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.25, 0.6, 0.25] });
 
-  const orb2TranslateY = orb2Anim.interpolate({
+  const logoSpin = logoRotate.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 20],
+    outputRange: ['-10deg', '0deg'],
   });
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#059669', '#10B981', '#34D399']}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View style={styles.bgBase}>
+        <Animated.View style={[styles.floatingOrb, styles.orb1, { transform: [{ translateY: float1Y }], opacity: float1Opacity }]} />
+        <Animated.View style={[styles.floatingOrb, styles.orb2, { transform: [{ translateY: float2Y }], opacity: float2Opacity }]} />
+        <Animated.View style={[styles.floatingOrb, styles.orb3, { transform: [{ translateY: float3Y }], opacity: float3Opacity }]} />
+        <View style={styles.gridOverlay} />
+      </View>
+
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
       >
-        <Animated.View 
-          style={[
-            styles.orb,
-            styles.orb1,
-            { transform: [{ translateY: orb1TranslateY }] }
-          ]} 
-        />
-        <Animated.View 
-          style={[
-            styles.orb,
-            styles.orb2,
-            { transform: [{ translateY: orb2TranslateY }] }
-          ]} 
-        />
-        <View style={styles.orb3} />
-
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
+        <ScrollView 
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView 
-            contentContainerStyle={[
-              styles.scrollContent,
-              { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }
-            ]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <Animated.View 
-              style={[
-                styles.content,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ translateY: slideAnim }]
-                }
-              ]}
-            >
-              <View style={styles.header}>
-                <Animated.View 
-                  style={[
-                    styles.logoContainer,
-                    { transform: [{ scale: logoScale }] }
-                  ]}
-                >
-                  <View style={styles.logoGlow} />
-                  <Image
-                    source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
-                    style={styles.logo}
-                    contentFit="contain"
-                  />
-                </Animated.View>
-                
-                <Text style={styles.title}>StudieStugan</Text>
-                
-                <View style={styles.subtitleContainer}>
-                  <Sparkles size={14} color="#FFFFFF" style={styles.sparkleIcon} />
-                  <Text style={styles.subtitle}>
-                    {showEmailConfirmation
-                      ? 'Bekräfta din e-post'
-                      : showForgotPassword 
-                        ? 'Återställ ditt lösenord'
-                        : isSignUp 
-                          ? 'Skapa ditt konto'
-                          : 'Välkommen tillbaka'
-                    }
-                  </Text>
-                  <Sparkles size={14} color="#FFFFFF" style={styles.sparkleIcon} />
-                </View>
-
-                {!showEmailConfirmation && !showForgotPassword && (
-                  <Text style={styles.description}>
-                    {isSignUp 
-                      ? 'Börja din studieresa idag'
-                      : 'Fortsätt där du slutade'
-                    }
-                  </Text>
-                )}
+          <Animated.View style={[styles.logoSection, { transform: [{ scale: logoScale }, { rotate: logoSpin }] }]}>
+            <View style={styles.logoRing}>
+              <View style={styles.logoRingInner}>
+                <Image
+                  source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
+                  style={styles.logo}
+                  contentFit="contain"
+                />
               </View>
+            </View>
+          </Animated.View>
 
-              {!showEmailConfirmation && !showForgotPassword && !isSignUp && (
-                <View style={styles.featuresRow}>
-                  <View style={styles.featureChip}>
-                    <BookOpen size={14} color="#059669" />
-                    <Text style={styles.featureChipText}>Kurser</Text>
-                  </View>
-                  <View style={styles.featureChip}>
-                    <Target size={14} color="#059669" />
-                    <Text style={styles.featureChipText}>Framsteg</Text>
-                  </View>
-                  <View style={styles.featureChip}>
-                    <Trophy size={14} color="#059669" />
-                    <Text style={styles.featureChipText}>Prestationer</Text>
-                  </View>
-                </View>
-              )}
+          <Animated.View style={[styles.headerSection, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            <Text style={styles.appName}>StudieStugan</Text>
+            <Text style={styles.tagline}>
+              {showEmailConfirmation
+                ? 'Bekräfta din e-post'
+                : showForgotPassword 
+                  ? 'Återställ ditt lösenord'
+                  : isSignUp 
+                    ? 'Börja din studieresa'
+                    : 'Välkommen tillbaka'
+              }
+            </Text>
+          </Animated.View>
 
-              <View style={styles.formCard}>
-                <View style={styles.formCardInner}>
-                  {showEmailConfirmation ? (
-                    <View style={styles.confirmationContainer}>
-                      <View style={styles.confirmationIconContainer}>
-                        {verificationSent ? (
-                          <CheckCircle size={36} color="#059669" />
-                        ) : (
-                          <Mail size={36} color="#059669" />
-                        )}
-                      </View>
-                      
-                      <Text style={styles.confirmationTitle}>
-                        {verificationSent ? 'E-post skickad!' : 'Bekräfta din e-post'}
-                      </Text>
-                      
-                      <Text style={styles.confirmationText}>
-                        {verificationSent 
-                          ? 'Vi har skickat en ny bekräftelselänk till:'
-                          : 'Vi har skickat en bekräftelselänk till:'
-                        }
-                      </Text>
-                      <Text style={styles.confirmationEmail}>{pendingEmail}</Text>
-                      
-                      <View style={styles.instructionsBox}>
-                        <AlertCircle size={16} color="#F59E0B" style={styles.instructionsIcon} />
-                        <Text style={styles.confirmationInstructions}>
-                          Kolla din inkorg och spam-mapp. Klicka på länken i mailet för att aktivera ditt konto.
-                        </Text>
-                      </View>
+          {!showEmailConfirmation && !showForgotPassword && !isSignUp && (
+            <Animated.View style={[styles.trustBadges, { opacity: fadeAnim }]}>
+              <View style={styles.badge}>
+                <GraduationCap size={15} color="#10B981" />
+                <Text style={styles.badgeText}>Kurser</Text>
+              </View>
+              <View style={styles.badgeDot} />
+              <View style={styles.badge}>
+                <Brain size={15} color="#10B981" />
+                <Text style={styles.badgeText}>AI-stöd</Text>
+              </View>
+              <View style={styles.badgeDot} />
+              <View style={styles.badge}>
+                <Zap size={15} color="#10B981" />
+                <Text style={styles.badgeText}>Framsteg</Text>
+              </View>
+            </Animated.View>
+          )}
 
-                      <View style={styles.stepsContainer}>
-                        <View style={styles.stepItem}>
-                          <View style={styles.stepNumber}><Text style={styles.stepNumberText}>1</Text></View>
-                          <Text style={styles.stepText}>Öppna din e-post</Text>
-                        </View>
-                        <View style={styles.stepItem}>
-                          <View style={styles.stepNumber}><Text style={styles.stepNumberText}>2</Text></View>
-                          <Text style={styles.stepText}>Hitta mailet från StudieStugan</Text>
-                        </View>
-                        <View style={styles.stepItem}>
-                          <View style={styles.stepNumber}><Text style={styles.stepNumberText}>3</Text></View>
-                          <Text style={styles.stepText}>Klicka på bekräftelselänken</Text>
-                        </View>
-                      </View>
-                    </View>
+          <Animated.View style={[styles.formSection, { opacity: formFade, transform: [{ translateY: formSlide }] }]}>
+            {showEmailConfirmation ? (
+              <View style={styles.confirmationCard}>
+                <View style={styles.confirmationIconWrap}>
+                  {verificationSent ? (
+                    <CheckCircle size={32} color="#10B981" />
                   ) : (
-                    <>
-                      <View style={[
-                        styles.inputContainer,
-                        focusedInput === 'email' && styles.inputContainerFocused
-                      ]}>
-                        <View style={styles.inputIconContainer}>
-                          <Mail size={20} color={focusedInput === 'email' ? '#059669' : '#6B7280'} />
-                        </View>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="E-postadress"
-                          placeholderTextColor="#94A3B8"
-                          value={email}
-                          onChangeText={setEmail}
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                          autoComplete="email"
-                          onFocus={() => setFocusedInput('email')}
-                          onBlur={() => setFocusedInput(null)}
-                        />
+                    <Mail size={32} color="#10B981" />
+                  )}
+                </View>
+                
+                <Text style={styles.confirmationTitle}>
+                  {verificationSent ? 'E-post skickad!' : 'Bekräfta din e-post'}
+                </Text>
+                
+                <Text style={styles.confirmationText}>
+                  {verificationSent 
+                    ? 'Vi har skickat en ny bekräftelselänk till:'
+                    : 'Vi har skickat en bekräftelselänk till:'
+                  }
+                </Text>
+                <Text style={styles.confirmationEmail}>{pendingEmail}</Text>
+                
+                <View style={styles.instructionsBox}>
+                  <AlertCircle size={15} color="#F59E0B" style={{ marginRight: 10, marginTop: 2 }} />
+                  <Text style={styles.confirmationInstructions}>
+                    Kolla din inkorg och spam-mapp. Klicka på länken i mailet för att aktivera ditt konto.
+                  </Text>
+                </View>
+
+                <View style={styles.stepsContainer}>
+                  {['Öppna din e-post', 'Hitta mailet från StudieStugan', 'Klicka på bekräftelselänken'].map((step, i) => (
+                    <View key={i} style={styles.stepItem}>
+                      <View style={styles.stepBullet}>
+                        <Text style={styles.stepBulletText}>{i + 1}</Text>
                       </View>
-
-                      {!showForgotPassword && (
-                        <View style={[
-                          styles.inputContainer,
-                          focusedInput === 'password' && styles.inputContainerFocused
-                        ]}>
-                          <View style={styles.inputIconContainer}>
-                            <Lock size={20} color={focusedInput === 'password' ? '#059669' : '#6B7280'} />
-                          </View>
-                          <TextInput
-                            style={styles.input}
-                            placeholder="Lösenord"
-                            placeholderTextColor="#94A3B8"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry={!showPassword}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            autoComplete="password"
-                            onFocus={() => setFocusedInput('password')}
-                            onBlur={() => setFocusedInput(null)}
-                          />
-                          <TouchableOpacity
-                            onPress={() => setShowPassword(!showPassword)}
-                            style={styles.eyeButton}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                          >
-                            {showPassword ? (
-                              <EyeOff size={20} color="#6B7280" />
-                            ) : (
-                              <Eye size={20} color="#6B7280" />
-                            )}
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </>
-                  )}
-
-                  <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.authButton, 
-                        (isLoading || (showEmailConfirmation && resendCooldown > 0)) && styles.disabledButton
-                      ]}
-                      onPress={
-                        showEmailConfirmation 
-                          ? handleResendConfirmation 
-                          : showForgotPassword 
-                            ? handleForgotPassword 
-                            : handleAuth
-                      }
-                      onPressIn={handleButtonPressIn}
-                      onPressOut={handleButtonPressOut}
-                      disabled={isLoading || (showEmailConfirmation && resendCooldown > 0)}
-                      activeOpacity={0.9}
-                    >
-                      <LinearGradient
-                        colors={
-                          (isLoading || (showEmailConfirmation && resendCooldown > 0)) 
-                            ? ['#94A3B8', '#CBD5E1'] 
-                            : ['#059669', '#10B981']
-                        }
-                        style={styles.authButtonGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                      >
-                        {showEmailConfirmation && !isLoading && (
-                          <RefreshCw size={18} color="#FFFFFF" style={styles.buttonIconLeft} />
-                        )}
-                        <Text style={styles.authButtonText}>
-                          {isLoading 
-                            ? (showEmailConfirmation 
-                                ? 'Skickar...' 
-                                : showForgotPassword 
-                                  ? 'Skickar...' 
-                                  : isSignUp 
-                                    ? 'Skapar konto...' 
-                                    : 'Loggar in...'
-                              )
-                            : (showEmailConfirmation 
-                                ? (resendCooldown > 0 
-                                    ? `Skicka igen om ${resendCooldown}s`
-                                    : 'Skicka bekräftelselänk igen'
-                                  )
-                                : showForgotPassword 
-                                  ? 'Skicka återställningslänk' 
-                                  : isSignUp 
-                                    ? 'Skapa konto' 
-                                    : 'Logga in'
-                              )
-                          }
-                        </Text>
-                        {!isLoading && !showEmailConfirmation && (
-                          <ArrowRight size={20} color="#FFFFFF" style={styles.buttonIcon} />
-                        )}
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </Animated.View>
-
-                  {!showForgotPassword && !showEmailConfirmation && (
-                    <>
-                      {!isSignUp && (
-                        <View style={styles.optionsRow}>
-                          <TouchableOpacity
-                            style={styles.rememberMeContainer}
-                            onPress={() => setRememberMe(!rememberMe)}
-                            activeOpacity={0.7}
-                          >
-                            <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                              {rememberMe && <Check size={12} color="#FFFFFF" />}
-                            </View>
-                            <Text style={styles.rememberMeText}>Kom ihåg mig</Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            onPress={() => setShowForgotPassword(true)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.forgotText}>Glömt lösenord?</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </>
-                  )}
-
-                  {(showForgotPassword || showEmailConfirmation) && (
-                    <TouchableOpacity
-                      style={styles.backToLoginButton}
-                      onPress={() => {
-                        setShowForgotPassword(false);
-                        setShowEmailConfirmation(false);
-                        setPendingEmail('');
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.backToLoginText}>← Tillbaka till inloggning</Text>
-                    </TouchableOpacity>
-                  )}
+                      <Text style={styles.stepText}>{step}</Text>
+                    </View>
+                  ))}
                 </View>
               </View>
-
-              {!showForgotPassword && !showEmailConfirmation && (
-                <View style={styles.switchContainer}>
-                  <View style={styles.dividerContainer}>
-                    <View style={styles.divider} />
-                    <Text style={styles.dividerText}>eller</Text>
-                    <View style={styles.divider} />
-                  </View>
-
-                  {Platform.OS === 'ios' && (
-                    <TouchableOpacity
-                      style={styles.appleButton}
-                      onPress={handleAppleSignIn}
-                      disabled={isAppleLoading}
-                      activeOpacity={0.85}
-                      testID="apple-sign-in-button"
-                    >
-                      <View style={styles.appleButtonInner}>
-                        <Text style={styles.appleIcon}></Text>
-                        <Text style={styles.appleButtonText}>
-                          {isAppleLoading ? 'Loggar in...' : 'Fortsätt med Apple'}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
-
-                  <TouchableOpacity
-                    onPress={() => setIsSignUp(!isSignUp)}
-                    style={styles.switchButton}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.switchButtonInner}>
-                      <Text style={styles.switchText}>
-                        {isSignUp ? 'Har du redan ett konto?' : 'Ny här?'}
-                      </Text>
-                      <Text style={styles.switchButtonText}>
-                        {isSignUp ? 'Logga in' : 'Skapa konto'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
+            ) : (
+              <>
+                <View style={[styles.inputWrap, focusedInput === 'email' && styles.inputWrapFocused]}>
+                  <Mail size={18} color={focusedInput === 'email' ? '#10B981' : '#6B7280'} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="E-postadress"
+                    placeholderTextColor="#6B7280"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="email"
+                    onFocus={() => setFocusedInput('email')}
+                    onBlur={() => setFocusedInput(null)}
+                  />
                 </View>
+
+                {!showForgotPassword && (
+                  <View style={[styles.inputWrap, focusedInput === 'password' && styles.inputWrapFocused]}>
+                    <Lock size={18} color={focusedInput === 'password' ? '#10B981' : '#6B7280'} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Lösenord"
+                      placeholderTextColor="#6B7280"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoComplete="password"
+                      onFocus={() => setFocusedInput('password')}
+                      onBlur={() => setFocusedInput(null)}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      style={styles.eyeBtn}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      {showPassword ? (
+                        <EyeOff size={18} color="#6B7280" />
+                      ) : (
+                        <Eye size={18} color="#6B7280" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </>
+            )}
+
+            {!showForgotPassword && !showEmailConfirmation && !isSignUp && (
+              <View style={styles.optionsRow}>
+                <TouchableOpacity
+                  style={styles.rememberRow}
+                  onPress={() => setRememberMe(!rememberMe)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.checkBox, rememberMe && styles.checkBoxActive]}>
+                    {rememberMe && <Check size={11} color="#FFFFFF" />}
+                  </View>
+                  <Text style={styles.rememberText}>Kom ihåg mig</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setShowForgotPassword(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.forgotText}>Glömt lösenord?</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <Animated.View style={{ transform: [{ scale: buttonScale }], marginTop: 8 }}>
+              <TouchableOpacity
+                style={[styles.mainBtn, (isLoading || (showEmailConfirmation && resendCooldown > 0)) && styles.mainBtnDisabled]}
+                onPress={
+                  showEmailConfirmation 
+                    ? handleResendConfirmation 
+                    : showForgotPassword 
+                      ? handleForgotPassword 
+                      : handleAuth
+                }
+                onPressIn={handleButtonPressIn}
+                onPressOut={handleButtonPressOut}
+                disabled={isLoading || (showEmailConfirmation && resendCooldown > 0)}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={
+                    (isLoading || (showEmailConfirmation && resendCooldown > 0)) 
+                      ? ['#374151', '#4B5563'] 
+                      : ['#059669', '#10B981']
+                  }
+                  style={styles.mainBtnGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  {showEmailConfirmation && !isLoading && (
+                    <RefreshCw size={17} color="#FFFFFF" style={{ marginRight: 8 }} />
+                  )}
+                  <Text style={styles.mainBtnText}>
+                    {isLoading 
+                      ? (showEmailConfirmation 
+                          ? 'Skickar...' 
+                          : showForgotPassword 
+                            ? 'Skickar...' 
+                            : isSignUp 
+                              ? 'Skapar konto...' 
+                              : 'Loggar in...'
+                        )
+                      : (showEmailConfirmation 
+                          ? (resendCooldown > 0 
+                              ? `Skicka igen om ${resendCooldown}s`
+                              : 'Skicka bekräftelselänk igen'
+                            )
+                          : showForgotPassword 
+                            ? 'Skicka återställningslänk' 
+                            : isSignUp 
+                              ? 'Skapa konto' 
+                              : 'Logga in'
+                        )
+                    }
+                  </Text>
+                  {!isLoading && !showEmailConfirmation && (
+                    <ArrowRight size={18} color="#FFFFFF" style={{ marginLeft: 8 }} />
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
+
+            {(showForgotPassword || showEmailConfirmation) && (
+              <TouchableOpacity
+                style={styles.backBtn}
+                onPress={() => {
+                  setShowForgotPassword(false);
+                  setShowEmailConfirmation(false);
+                  setPendingEmail('');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.backBtnText}>← Tillbaka till inloggning</Text>
+              </TouchableOpacity>
+            )}
+          </Animated.View>
+
+          {!showForgotPassword && !showEmailConfirmation && (
+            <Animated.View style={[styles.bottomSection, { opacity: formFade }]}>
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerLabel}>eller</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  style={styles.appleBtn}
+                  onPress={handleAppleSignIn}
+                  disabled={isAppleLoading}
+                  activeOpacity={0.85}
+                  testID="apple-sign-in-button"
+                >
+                  <Text style={styles.appleIcon}></Text>
+                  <Text style={styles.appleBtnText}>
+                    {isAppleLoading ? 'Loggar in...' : 'Fortsätt med Apple'}
+                  </Text>
+                </TouchableOpacity>
               )}
 
-              <Text style={styles.footerText}>
+              <TouchableOpacity
+                onPress={() => setIsSignUp(!isSignUp)}
+                style={styles.switchBtn}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.switchLabel}>
+                  {isSignUp ? 'Har du redan ett konto?' : 'Ny här?'}
+                </Text>
+                <Text style={styles.switchAction}>
+                  {isSignUp ? 'Logga in' : 'Skapa konto'}
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.termsText}>
                 Genom att fortsätta godkänner du våra villkor
               </Text>
             </Animated.View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </LinearGradient>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -666,333 +616,319 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#059669',
+    backgroundColor: '#0A0F1C',
   },
-  gradient: {
-    flex: 1,
+  bgBase: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
   },
-  orb: {
+  gridOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.03,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+  },
+  floatingOrb: {
     position: 'absolute',
     borderRadius: 999,
   },
   orb1: {
-    width: 300,
-    height: 300,
-    top: -100,
-    right: -100,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    width: 280,
+    height: 280,
+    top: -80,
+    right: -60,
+    backgroundColor: '#10B981',
+    opacity: 0.08,
   },
   orb2: {
-    width: 250,
-    height: 250,
-    bottom: 100,
+    width: 220,
+    height: 220,
+    bottom: 120,
     left: -80,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#059669',
+    opacity: 0.06,
   },
   orb3: {
-    width: 180,
-    height: 180,
-    bottom: -50,
-    right: 50,
-    backgroundColor: 'rgba(6, 95, 70, 0.25)',
-    position: 'absolute',
-    borderRadius: 999,
+    width: 160,
+    height: 160,
+    top: '45%' as any,
+    right: -40,
+    backgroundColor: '#34D399',
+    opacity: 0.05,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 28,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  header: {
+  logoSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+    marginTop: 16,
   },
-  logoContainer: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
+  logoRing: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 2,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 28,
-    position: 'relative',
+    backgroundColor: 'rgba(16, 185, 129, 0.06)',
   },
-  logoGlow: {
-    position: 'absolute',
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+  logoRingInner: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logo: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
   },
-  title: {
-    fontSize: 34,
-    fontWeight: '800' as const,
-    color: '#FFFFFF',
-    marginBottom: 12,
-    letterSpacing: -0.5,
-  },
-  subtitleContainer: {
-    flexDirection: 'row',
+  headerSection: {
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  sparkleIcon: {
-    marginHorizontal: 8,
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: '#FFFFFF',
-  },
-  description: {
-    fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.85)',
-    marginTop: 4,
-  },
-  featuresRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 10,
     marginBottom: 24,
   },
-  featureChip: {
+  appName: {
+    fontSize: 32,
+    fontWeight: '800' as const,
+    color: '#FFFFFF',
+    letterSpacing: -0.8,
+    marginBottom: 8,
+  },
+  tagline: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    color: 'rgba(255, 255, 255, 0.55)',
+    letterSpacing: 0.2,
+  },
+  trustBadges: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 32,
+    gap: 12,
+  },
+  badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
     gap: 6,
   },
-  featureChipText: {
-    fontSize: 12,
+  badgeText: {
+    fontSize: 13,
     fontWeight: '600' as const,
-    color: '#059669',
+    color: 'rgba(255, 255, 255, 0.5)',
   },
-  formCard: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
+  badgeDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
-  formCardInner: {
-    padding: 24,
+  formSection: {
+    marginBottom: 24,
   },
-  inputContainer: {
+  inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 16,
-    marginBottom: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 14,
+    marginBottom: 14,
     paddingHorizontal: 16,
-    height: 58,
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
+    height: 56,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    gap: 12,
   },
-  inputContainerFocused: {
-    borderColor: '#10B981',
-    backgroundColor: 'rgba(16, 185, 129, 0.08)',
-  },
-  inputIconContainer: {
-    width: 32,
-    alignItems: 'center',
+  inputWrapFocused: {
+    borderColor: 'rgba(16, 185, 129, 0.5)',
+    backgroundColor: 'rgba(16, 185, 129, 0.06)',
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#1E293B',
+    color: '#FFFFFF',
     paddingVertical: 0,
   },
-  eyeButton: {
-    padding: 8,
-  },
-  authButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginTop: 8,
-  },
-  authButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 58,
-    paddingHorizontal: 24,
-  },
-  disabledButton: {
-    opacity: 0.7,
-  },
-  authButtonText: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    color: '#FFFFFF',
-  },
-  buttonIcon: {
-    marginLeft: 8,
+  eyeBtn: {
+    padding: 6,
   },
   optionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 4,
+    marginBottom: 4,
   },
-  rememberMeContainer: {
+  rememberRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#CBD5E1',
-    marginRight: 10,
+  checkBox: {
+    width: 18,
+    height: 18,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    marginRight: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checkboxChecked: {
+  checkBoxActive: {
     backgroundColor: '#10B981',
     borderColor: '#10B981',
   },
-  rememberMeText: {
-    color: '#64748B',
-    fontSize: 14,
+  rememberText: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 13,
+    fontWeight: '500' as const,
   },
   forgotText: {
-    color: '#059669',
-    fontSize: 14,
+    color: '#10B981',
+    fontSize: 13,
     fontWeight: '600' as const,
   },
-  backToLoginButton: {
+  mainBtn: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  mainBtnDisabled: {
+    opacity: 0.6,
+  },
+  mainBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 54,
+    paddingHorizontal: 24,
+  },
+  mainBtnText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  backBtn: {
     alignItems: 'center',
     marginTop: 20,
     paddingVertical: 8,
   },
-  backToLoginText: {
-    color: '#059669',
-    fontSize: 15,
+  backBtnText: {
+    color: '#10B981',
+    fontSize: 14,
     fontWeight: '600' as const,
   },
-  switchContainer: {
-    marginTop: 32,
+  bottomSection: {
     alignItems: 'center',
   },
-  dividerContainer: {
+  dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  divider: {
+  dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
-  dividerText: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 13,
+  dividerLabel: {
+    color: 'rgba(255, 255, 255, 0.3)',
+    fontSize: 12,
     marginHorizontal: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1.5,
     fontWeight: '600' as const,
   },
-  appleButton: {
-    backgroundColor: '#000000',
-    borderRadius: 16,
-    height: 58,
+  appleBtn: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    height: 54,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  appleButtonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
   },
   appleIcon: {
-    fontSize: 20,
-    color: '#FFFFFF',
+    fontSize: 19,
+    color: '#000000',
     marginRight: 10,
     fontWeight: '500' as const,
   },
-  appleButtonText: {
-    fontSize: 17,
+  appleBtnText: {
+    fontSize: 16,
     fontWeight: '600' as const,
-    color: '#FFFFFF',
+    color: '#000000',
   },
-  switchButton: {
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  switchButtonInner: {
+  switchBtn: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 16,
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    gap: 6,
   },
-  switchText: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 15,
-    marginRight: 6,
+  switchLabel: {
+    color: 'rgba(255, 255, 255, 0.45)',
+    fontSize: 14,
   },
-  switchButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
+  switchAction: {
+    color: '#10B981',
+    fontSize: 14,
     fontWeight: '700' as const,
-    textDecorationLine: 'underline',
   },
-  confirmationContainer: {
+  termsText: {
+    color: 'rgba(255, 255, 255, 0.2)',
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 24,
+  },
+  confirmationCard: {
     alignItems: 'center',
-    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: 8,
   },
-  confirmationIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  confirmationIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   confirmationTitle: {
-    color: '#1E293B',
-    fontSize: 22,
+    color: '#FFFFFF',
+    fontSize: 20,
     fontWeight: '700' as const,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   confirmationText: {
-    color: '#475569',
-    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.55)',
+    fontSize: 14,
     textAlign: 'center',
     marginBottom: 4,
   },
   confirmationEmail: {
-    color: '#059669',
-    fontSize: 16,
+    color: '#10B981',
+    fontSize: 15,
     fontWeight: '700' as const,
     textAlign: 'center',
     marginBottom: 20,
@@ -1000,19 +936,15 @@ const styles = StyleSheet.create({
   instructionsBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    backgroundColor: 'rgba(245, 158, 11, 0.08)',
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.2)',
-  },
-  instructionsIcon: {
-    marginRight: 10,
-    marginTop: 2,
+    borderColor: 'rgba(245, 158, 11, 0.15)',
   },
   confirmationInstructions: {
-    color: '#92400E',
+    color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 13,
     flex: 1,
     lineHeight: 20,
@@ -1020,38 +952,28 @@ const styles = StyleSheet.create({
   stepsContainer: {
     width: '100%',
     gap: 12,
-    marginBottom: 8,
   },
   stepItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E0F2F1',
+  stepBullet: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  stepNumberText: {
-    color: '#059669',
-    fontSize: 14,
+  stepBulletText: {
+    color: '#10B981',
+    fontSize: 13,
     fontWeight: '700' as const,
   },
   stepText: {
-    color: '#475569',
+    color: 'rgba(255, 255, 255, 0.55)',
     fontSize: 14,
     flex: 1,
-  },
-  buttonIconLeft: {
-    marginRight: 8,
-  },
-  footerText: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 32,
   },
 });

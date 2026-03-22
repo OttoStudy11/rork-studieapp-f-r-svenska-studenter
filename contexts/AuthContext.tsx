@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, createRememberMeSession, validateRememberMeSession, clearRememberMeSession, cleanupExpiredSessions, testDatabaseConnection, checkDatabaseConnectionAsync } from '@/lib/supabase';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 export interface AuthUser {
   id: string;
@@ -18,6 +19,7 @@ export interface AuthContextType {
   authInitialized: boolean;
   signUp: (email: string, password: string) => Promise<{ error?: any; needsEmailConfirmation?: boolean }>;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error?: any }>;
+  signInWithApple: () => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<{ error?: any }>;
   setOnboardingCompleted: () => Promise<void>;
@@ -178,7 +180,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
     };
     
-    initialize();
+    void initialize();
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -238,9 +240,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     };
     
     if (Platform.OS !== 'web') {
-      Linking.getInitialURL().then(url => {
+      void Linking.getInitialURL().then(url => {
         if (url && mounted) {
-          handleDeepLink({ url });
+          void handleDeepLink({ url });
         }
       }).catch(err => {
         console.error('Error getting initial URL:', err);
@@ -575,6 +577,99 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   }, []);
 
+  const handleSignInWithApple = useCallback(async () => {
+    try {
+      if (Platform.OS === 'web') {
+        return { error: { message: 'Apple-inloggning stöds inte på webben' } };
+      }
+
+      console.log('Starting Apple Sign In...');
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        console.error('No identity token received from Apple');
+        return { error: { message: 'Ingen identitetstoken från Apple. Försök igen.' } };
+      }
+
+      console.log('Apple credential received, signing in with Supabase...');
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+
+      if (error) {
+        console.error('Supabase Apple sign in error:', error);
+        return { error: { message: error.message || 'Ett fel uppstod vid Apple-inloggning' } };
+      }
+
+      if (data.user) {
+        console.log('Apple Sign In successful:', data.user.id);
+        const authUser: AuthUser = {
+          id: data.user.id,
+          email: data.user.email || '',
+          createdAt: data.user.created_at,
+        };
+        setUser(authUser);
+        await checkOnboardingStatus(data.user.id);
+
+        try {
+          const dbConnected = await testDatabaseConnection();
+          if (dbConnected) {
+            const { error: profileCheckError } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', data.user.id)
+              .single();
+
+            if (profileCheckError && profileCheckError.code === 'PGRST116') {
+              console.log('Creating profile for Apple user');
+              const fullName = credential.fullName;
+              const displayName = fullName
+                ? [fullName.givenName, fullName.familyName].filter(Boolean).join(' ')
+                : '';
+              const emailPrefix = (data.user.email || 'apple_user').split('@')[0];
+              const defaultUsername = emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+              const { error: profileError } = await supabase.from('profiles').insert({
+                id: data.user.id,
+                name: displayName || emailPrefix,
+                username: defaultUsername,
+                display_name: displayName || emailPrefix,
+                email: data.user.email || '',
+                level: 'gymnasie',
+                program: '',
+                purpose: '',
+                subscription_type: 'free',
+              });
+
+              if (profileError) {
+                console.warn('Could not create profile for Apple user:', profileError.message);
+              } else {
+                console.log('Profile created for Apple user');
+              }
+            }
+          }
+        } catch (profileError) {
+          console.warn('Profile check/creation failed for Apple user:', profileError);
+        }
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      if (error?.code === 'ERR_REQUEST_CANCELED') {
+        console.log('Apple Sign In cancelled by user');
+        return { error: null };
+      }
+      console.error('Apple Sign In exception:', error);
+      return { error: { message: 'Ett fel uppstod vid Apple-inloggning. Försök igen.' } };
+    }
+  }, [checkOnboardingStatus]);
+
   const handleDeleteAccount = useCallback(async () => {
     try {
       if (!user) {
@@ -658,6 +753,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     authInitialized,
     signUp: handleSignUp,
     signIn: handleSignIn,
+    signInWithApple: handleSignInWithApple,
     signOut: handleSignOut,
     deleteAccount: handleDeleteAccount,
     setOnboardingCompleted,
@@ -669,6 +765,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     authInitialized,
     handleSignUp,
     handleSignIn,
+    handleSignInWithApple,
     handleSignOut,
     handleDeleteAccount,
     setOnboardingCompleted,

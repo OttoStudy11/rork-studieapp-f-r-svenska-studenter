@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 
+
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +36,7 @@ export default function AuthScreen() {
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   
   const insets = useSafeAreaInsets();
-  const { signIn, signUp, resetPassword, resendConfirmation, isAuthenticated, hasCompletedOnboarding } = useAuth();
+  const { signIn, signUp, signInWithApple, resetPassword, resendConfirmation, isAuthenticated, hasCompletedOnboarding } = useAuth();
   const { showError, showSuccess } = useToast();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -256,6 +257,23 @@ export default function AuthScreen() {
       showError('Ett fel uppstod');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
+
+  const handleAppleSignIn = async () => {
+    setIsAppleLoading(true);
+    try {
+      const result = await signInWithApple();
+      if (result.error) {
+        showError(result.error.message || 'Ett fel uppstod vid Apple-inloggning');
+      }
+    } catch (error) {
+      console.error('Apple sign in error:', error);
+      showError('Ett fel uppstod vid Apple-inloggning');
+    } finally {
+      setIsAppleLoading(false);
     }
   };
 
@@ -599,7 +617,24 @@ export default function AuthScreen() {
                     <Text style={styles.dividerText}>eller</Text>
                     <View style={styles.divider} />
                   </View>
-                  
+
+                  {Platform.OS === 'ios' && (
+                    <TouchableOpacity
+                      style={styles.appleButton}
+                      onPress={handleAppleSignIn}
+                      disabled={isAppleLoading}
+                      activeOpacity={0.85}
+                      testID="apple-sign-in-button"
+                    >
+                      <View style={styles.appleButtonInner}>
+                        <Text style={styles.appleIcon}></Text>
+                        <Text style={styles.appleButtonText}>
+                          {isAppleLoading ? 'Loggar in...' : 'Fortsätt med Apple'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
                   <TouchableOpacity
                     onPress={() => setIsSignUp(!isSignUp)}
                     style={styles.switchButton}
@@ -874,6 +909,35 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
     fontWeight: '600' as const,
+  },
+  appleButton: {
+    backgroundColor: '#000000',
+    borderRadius: 16,
+    height: 58,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  appleButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appleIcon: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    marginRight: 10,
+    fontWeight: '500' as const,
+  },
+  appleButtonText: {
+    fontSize: 17,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
   switchButton: {
     borderWidth: 2,

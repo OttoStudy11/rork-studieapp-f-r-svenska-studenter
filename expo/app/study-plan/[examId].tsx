@@ -260,11 +260,11 @@ Returnera ENBART ett JSON-objekt utan markdown eller förklaringar:
       setPlan(parsed);
       await AsyncStorage.setItem(storageKey, JSON.stringify(parsed));
       console.log('Study plan generated and saved');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
       console.error('Error generating study plan:', err);
       setError('Kunde inte generera studieplanen. Försök igen.');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsGenerating(false);
     }
@@ -272,14 +272,14 @@ Returnera ENBART ett JSON-objekt utan markdown eller förklaringar:
 
   useEffect(() => {
     if (exam) {
-      generatePlan(false);
+      void generatePlan(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exam]);
 
   const handleRegenerate = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    generatePlan(true);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void generatePlan(true);
   };
 
   const todayStr = new Date().toISOString().split('T')[0];

@@ -25,7 +25,7 @@ import CharacterAvatar from '@/components/CharacterAvatar';
 
 const { width } = Dimensions.get('window');
 
-const SkeletonBox = ({ width: w, height: h, style, borderRadius = 12 }: { width: number | string; height: number; style?: any; borderRadius?: number }) => {
+const SkeletonBox = ({ width: w, height: h, style, borderRadius = 12, color }: { width: number | string; height: number; style?: any; borderRadius?: number; color?: string }) => {
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
@@ -54,7 +54,7 @@ const SkeletonBox = ({ width: w, height: h, style, borderRadius = 12 }: { width:
           width: w as any,
           height: h,
           borderRadius,
-          backgroundColor: '#E5E7EB',
+          backgroundColor: color || '#E5E7EB',
           opacity: pulseAnim,
         },
         style,
@@ -63,10 +63,12 @@ const SkeletonBox = ({ width: w, height: h, style, borderRadius = 12 }: { width:
   );
 };
 
-const HomeScreenSkeleton = ({ theme, isDark }: { theme: any; isDark: boolean }) => (
+const HomeScreenSkeleton = ({ theme }: { theme: any; isDark: boolean }) => {
+const skeletonColor = theme.colors.border;
+return (
   <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
     <StatusBar 
-      barStyle={isDark ? 'light-content' : 'dark-content'} 
+      barStyle="default" 
       backgroundColor={theme.colors.background}
     />
     <ScrollView 
@@ -76,14 +78,14 @@ const HomeScreenSkeleton = ({ theme, isDark }: { theme: any; isDark: boolean }) 
       {/* Header Skeleton */}
       <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
         <View style={styles.headerLogo}>
-          <SkeletonBox width={100} height={100} borderRadius={50} />
+          <SkeletonBox width={100} height={100} borderRadius={50} color={skeletonColor} />
         </View>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
-            <SkeletonBox width={180} height={28} style={{ marginBottom: 8 }} />
-            <SkeletonBox width={140} height={18} />
+            <SkeletonBox width={180} height={28} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={140} height={18} color={skeletonColor} />
           </View>
-          <SkeletonBox width={44} height={44} borderRadius={22} />
+          <SkeletonBox width={44} height={44} borderRadius={22} color={skeletonColor} />
         </View>
       </View>
 
@@ -91,50 +93,51 @@ const HomeScreenSkeleton = ({ theme, isDark }: { theme: any; isDark: boolean }) 
       <View style={[styles.heroCard, { backgroundColor: theme.colors.card, marginHorizontal: 24, marginBottom: 24 }]}>
         <View style={styles.heroStats}>
           <View style={styles.heroStatItem}>
-            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} />
-            <SkeletonBox width={30} height={24} style={{ marginBottom: 4 }} />
-            <SkeletonBox width={60} height={14} />
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={30} height={24} style={{ marginBottom: 4 }} color={skeletonColor} />
+            <SkeletonBox width={60} height={14} color={skeletonColor} />
           </View>
           <View style={styles.heroStatDivider} />
           <View style={styles.heroStatItem}>
-            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} />
-            <SkeletonBox width={30} height={24} style={{ marginBottom: 4 }} />
-            <SkeletonBox width={40} height={14} />
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={30} height={24} style={{ marginBottom: 4 }} color={skeletonColor} />
+            <SkeletonBox width={40} height={14} color={skeletonColor} />
           </View>
           <View style={styles.heroStatDivider} />
           <View style={styles.heroStatItem}>
-            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} />
-            <SkeletonBox width={40} height={24} style={{ marginBottom: 4 }} />
-            <SkeletonBox width={50} height={14} />
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={40} height={24} style={{ marginBottom: 4 }} color={skeletonColor} />
+            <SkeletonBox width={50} height={14} color={skeletonColor} />
           </View>
         </View>
       </View>
 
       {/* Quick Action Skeleton */}
       <View style={styles.quickActions}>
-        <SkeletonBox width="100%" height={56} borderRadius={16} />
+        <SkeletonBox width="100%" height={56} borderRadius={16} color={skeletonColor} />
       </View>
 
       {/* Mini Stats Skeleton */}
       <View style={styles.miniStatsGrid}>
-        <SkeletonBox width={(width - 72) / 3} height={90} />
-        <SkeletonBox width={(width - 72) / 3} height={90} />
-        <SkeletonBox width={(width - 72) / 3} height={90} />
+        <SkeletonBox width={(width - 72) / 3} height={90} color={skeletonColor} />
+        <SkeletonBox width={(width - 72) / 3} height={90} color={skeletonColor} />
+        <SkeletonBox width={(width - 72) / 3} height={90} color={skeletonColor} />
       </View>
 
       {/* Section Skeleton */}
       <View style={[styles.section, { marginBottom: 16 }]}>
-        <SkeletonBox width={160} height={24} style={{ marginBottom: 16 }} />
-        <SkeletonBox width="100%" height={80} style={{ marginBottom: 12 }} />
+        <SkeletonBox width={160} height={24} style={{ marginBottom: 16 }} color={skeletonColor} />
+        <SkeletonBox width="100%" height={80} style={{ marginBottom: 12 }} color={skeletonColor} />
       </View>
 
       {/* Card Skeleton */}
       <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
-        <SkeletonBox width="100%" height={100} borderRadius={20} />
+        <SkeletonBox width="100%" height={100} borderRadius={20} color={skeletonColor} />
       </View>
     </ScrollView>
   </View>
 );
+};
 
 export default function HomeScreen() {
   const { user, courses, pomodoroSessions, isLoading } = useStudy();
@@ -507,6 +510,15 @@ export default function HomeScreen() {
                               </Text>
                             </View>
                           )}
+                          <TouchableOpacity
+                            style={[styles.examStudyPlanBtn, { backgroundColor: theme.colors.primary + '12' }]}
+                            onPress={() => {
+                              router.push(`/study-plan/${exam.id}?courseTitle=${encodeURIComponent(exam.title)}` as never);
+                            }}
+                          >
+                            <FileText size={13} color={theme.colors.primary} />
+                            <Text style={[styles.examStudyPlanBtnText, { color: theme.colors.primary }]}>Visa studieplan</Text>
+                          </TouchableOpacity>
                         </View>
                       </View>
                     </View>
@@ -689,7 +701,7 @@ export default function HomeScreen() {
 
             {/* Study Techniques Row */}
             <View style={[styles.techniquesGrid, { paddingHorizontal: 0, marginTop: 12 }]}>
-              {studyTechniques.slice(0, 1).map((technique, index) => (
+              {studyTechniques.slice(0, 1).map((technique) => (
                 <FadeInView key={technique.id} delay={400} duration={250}>
                   <TouchableOpacity 
                     style={[styles.compactTechniqueCard, { backgroundColor: theme.colors.card }]}
@@ -1911,5 +1923,18 @@ const styles = StyleSheet.create({
   aiToolDesc: {
     fontSize: 11,
     textAlign: 'center',
+  },
+  examStudyPlanBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  examStudyPlanBtnText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
 });

@@ -236,9 +236,9 @@ export default function AdvancedAnalyticsScreen() {
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Avancerad Analys</Text>
-            <View style={styles.headerBadge}>
-              <Crown size={12} color="#FFD700" />
-              <Text style={styles.headerBadgeText}>Premium</Text>
+            <View style={[styles.headerBadge, { backgroundColor: theme.colors.warning + '15' }]}>
+              <Crown size={12} color={theme.colors.warning} />
+              <Text style={[styles.headerBadgeText, { color: theme.colors.warning }]}>Premium</Text>
             </View>
           </View>
           <View style={{ width: 40 }} />
@@ -264,49 +264,35 @@ export default function AdvancedAnalyticsScreen() {
           </View>
         ) : stats ? (
           <View style={styles.content}>
-            <View style={[styles.overviewGrid]}>
-              <View style={[styles.overviewCard, { backgroundColor: theme.colors.card }]}>
-                <View style={[styles.overviewIcon, { backgroundColor: '#6366F1' + '15' }]}>
-                  <Clock size={20} color="#6366F1" />
+            <View style={styles.overviewGrid}>
+              {[
+                { icon: Clock, value: formatMinutes(stats.totalMinutes), label: 'Total tid', color: '#6366F1' },
+                { icon: Flame, value: `${stats.currentStreak}`, label: 'Dagars streak', color: '#10B981' },
+                { icon: BarChart3, value: `${stats.totalSessions}`, label: 'Sessioner', color: '#F59E0B' },
+                { icon: Target, value: `${stats.avgSessionMinutes}m`, label: 'Snitt/session', color: '#8B5CF6' },
+              ].map((item, index) => (
+                <View key={index} style={[styles.overviewCard, { backgroundColor: theme.colors.card }]}>
+                  <View style={[styles.overviewIcon, { backgroundColor: item.color + '12' }]}>
+                    <item.icon size={20} color={item.color} />
+                  </View>
+                  <Text style={[styles.overviewValue, { color: theme.colors.text }]}>{item.value}</Text>
+                  <Text style={[styles.overviewLabel, { color: theme.colors.textSecondary }]}>{item.label}</Text>
                 </View>
-                <Text style={[styles.overviewValue, { color: theme.colors.text }]}>{formatMinutes(stats.totalMinutes)}</Text>
-                <Text style={[styles.overviewLabel, { color: theme.colors.textMuted }]}>Total tid</Text>
-              </View>
-              <View style={[styles.overviewCard, { backgroundColor: theme.colors.card }]}>
-                <View style={[styles.overviewIcon, { backgroundColor: '#10B981' + '15' }]}>
-                  <Flame size={20} color="#10B981" />
-                </View>
-                <Text style={[styles.overviewValue, { color: theme.colors.text }]}>{stats.currentStreak}</Text>
-                <Text style={[styles.overviewLabel, { color: theme.colors.textMuted }]}>Dagars streak</Text>
-              </View>
-              <View style={[styles.overviewCard, { backgroundColor: theme.colors.card }]}>
-                <View style={[styles.overviewIcon, { backgroundColor: '#F59E0B' + '15' }]}>
-                  <BarChart3 size={20} color="#F59E0B" />
-                </View>
-                <Text style={[styles.overviewValue, { color: theme.colors.text }]}>{stats.totalSessions}</Text>
-                <Text style={[styles.overviewLabel, { color: theme.colors.textMuted }]}>Sessioner</Text>
-              </View>
-              <View style={[styles.overviewCard, { backgroundColor: theme.colors.card }]}>
-                <View style={[styles.overviewIcon, { backgroundColor: '#8B5CF6' + '15' }]}>
-                  <Target size={20} color="#8B5CF6" />
-                </View>
-                <Text style={[styles.overviewValue, { color: theme.colors.text }]}>{stats.avgSessionMinutes}m</Text>
-                <Text style={[styles.overviewLabel, { color: theme.colors.textMuted }]}>Snitt/session</Text>
-              </View>
+              ))}
             </View>
 
-            <View style={[styles.trendCard, { backgroundColor: theme.colors.card }]}>
-              <View style={styles.trendHeader}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Veckoutveckling</Text>
+            <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.cardHeader}>
+                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Veckoutveckling</Text>
                 <View style={[
                   styles.trendBadge,
-                  { backgroundColor: stats.weeklyTrend >= 0 ? '#10B981' + '15' : '#EF4444' + '15' }
+                  { backgroundColor: (stats.weeklyTrend >= 0 ? theme.colors.success : theme.colors.error) + '12' }
                 ]}>
                   {stats.weeklyTrend >= 0
-                    ? <TrendingUp size={14} color="#10B981" />
-                    : <TrendingDown size={14} color="#EF4444" />
+                    ? <TrendingUp size={14} color={theme.colors.success} />
+                    : <TrendingDown size={14} color={theme.colors.error} />
                   }
-                  <Text style={{ color: stats.weeklyTrend >= 0 ? '#10B981' : '#EF4444', fontSize: 13, fontWeight: '700' as const }}>
+                  <Text style={[styles.trendText, { color: stats.weeklyTrend >= 0 ? theme.colors.success : theme.colors.error }]}>
                     {stats.weeklyTrend > 0 ? '+' : ''}{stats.weeklyTrend}%
                   </Text>
                 </View>
@@ -315,14 +301,18 @@ export default function AdvancedAnalyticsScreen() {
                 {stats.weeklyData.map((week, i) => {
                   const maxMin = Math.max(...stats.weeklyData.map(w => w.minutes), 1);
                   const barHeight = Math.max(8, (week.minutes / maxMin) * 80);
+                  const isCurrentWeek = i === stats.weeklyData.length - 1;
                   return (
                     <View key={week.week} style={styles.weeklyBarItem}>
-                      <Text style={[styles.weeklyBarValue, { color: theme.colors.text }]}>
+                      <Text style={[styles.weeklyBarValue, { color: theme.colors.textSecondary }]}>
                         {formatMinutes(week.minutes)}
                       </Text>
-                      <View style={[styles.weeklyBarBg, { backgroundColor: theme.colors.border }]}>
+                      <View style={[styles.weeklyBarBg, { backgroundColor: theme.colors.border + '40' }]}>
                         <LinearGradient
-                          colors={i === stats.weeklyData.length - 1 ? ['#6366F1', '#8B5CF6'] : [theme.colors.primary + '40', theme.colors.primary + '60']}
+                          colors={isCurrentWeek
+                            ? [theme.colors.primary, '#8B5CF6']
+                            : [theme.colors.primary + '50', theme.colors.primary + '70']
+                          }
                           style={[styles.weeklyBarFill, { height: barHeight }]}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 0, y: 1 }}
@@ -336,10 +326,10 @@ export default function AdvancedAnalyticsScreen() {
             </View>
 
             {stats.courseBreakdown.length > 0 && (
-              <View style={[styles.sectionCard, { backgroundColor: theme.colors.card }]}>
-                <View style={styles.sectionHeader}>
+              <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+                <View style={styles.cardHeaderWithIcon}>
                   <BookOpen size={18} color={theme.colors.primary} />
-                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Tid per kurs</Text>
+                  <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Tid per kurs</Text>
                 </View>
                 {stats.courseBreakdown.map((course, i) => (
                   <View key={course.courseId} style={styles.courseRow}>
@@ -349,16 +339,16 @@ export default function AdvancedAnalyticsScreen() {
                         {course.courseTitle}
                       </Text>
                       <View style={styles.courseStats}>
-                        <Text style={[styles.courseStatText, { color: theme.colors.textMuted }]}>
+                        <Text style={[styles.courseStatText, { color: theme.colors.textSecondary }]}>
                           {formatMinutes(course.totalMinutes)}
                         </Text>
-                        <Text style={[styles.courseStatText, { color: theme.colors.textMuted }]}>•</Text>
-                        <Text style={[styles.courseStatText, { color: theme.colors.textMuted }]}>
+                        <Text style={[styles.courseStatDot, { color: theme.colors.textMuted }]}>·</Text>
+                        <Text style={[styles.courseStatText, { color: theme.colors.textSecondary }]}>
                           {course.sessions} sessioner
                         </Text>
                       </View>
                     </View>
-                    <View style={[styles.coursePercent, { backgroundColor: COURSE_COLORS[i % COURSE_COLORS.length] + '15' }]}>
+                    <View style={[styles.coursePercent, { backgroundColor: COURSE_COLORS[i % COURSE_COLORS.length] + '12' }]}>
                       <Text style={[styles.coursePercentText, { color: COURSE_COLORS[i % COURSE_COLORS.length] }]}>
                         {course.percentage}%
                       </Text>
@@ -368,10 +358,10 @@ export default function AdvancedAnalyticsScreen() {
               </View>
             )}
 
-            <View style={[styles.sectionCard, { backgroundColor: theme.colors.card }]}>
-              <View style={styles.sectionHeader}>
+            <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.cardHeaderWithIcon}>
                 <Calendar size={18} color={theme.colors.primary} />
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studiemönster per timme</Text>
+                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Studiemönster per timme</Text>
               </View>
               <View style={styles.hourlyChart}>
                 {stats.dailyPattern.map((dp) => {
@@ -380,13 +370,13 @@ export default function AdvancedAnalyticsScreen() {
                   const isPeak = dp.label === stats.peakHour;
                   return (
                     <View key={dp.hour} style={styles.hourlyBarItem}>
-                      <View style={[styles.hourlyBarBg, { backgroundColor: theme.colors.border }]}>
+                      <View style={[styles.hourlyBarBg, { backgroundColor: theme.colors.border + '40' }]}>
                         <View
                           style={[
                             styles.hourlyBarFill,
                             {
                               height: barHeight,
-                              backgroundColor: isPeak ? '#F59E0B' : theme.colors.primary + '60',
+                              backgroundColor: isPeak ? theme.colors.warning : theme.colors.primary + '50',
                             },
                           ]}
                         />
@@ -399,24 +389,24 @@ export default function AdvancedAnalyticsScreen() {
                 })}
               </View>
               <View style={styles.peakInfo}>
-                <Zap size={14} color="#F59E0B" />
+                <Zap size={14} color={theme.colors.warning} />
                 <Text style={[styles.peakText, { color: theme.colors.textSecondary }]}>
                   Mest produktiv kl. {stats.peakHour}
                 </Text>
               </View>
             </View>
 
-            <View style={[styles.predictionsCard, { backgroundColor: theme.colors.card }]}>
-              <View style={styles.sectionHeader}>
+            <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.cardHeaderWithIcon}>
                 <Brain size={18} color="#8B5CF6" />
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Prediktioner</Text>
+                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Prediktioner</Text>
               </View>
               <View style={styles.predictionGrid}>
                 <View style={styles.predictionItem}>
                   <Text style={[styles.predictionValue, { color: theme.colors.text }]}>
                     {formatMinutes(stats.predictedMonthlyMinutes)}
                   </Text>
-                  <Text style={[styles.predictionLabel, { color: theme.colors.textMuted }]}>
+                  <Text style={[styles.predictionLabel, { color: theme.colors.textSecondary }]}>
                     Beräknad månadstid
                   </Text>
                 </View>
@@ -425,7 +415,7 @@ export default function AdvancedAnalyticsScreen() {
                   <Text style={[styles.predictionValue, { color: theme.colors.text }]}>
                     {stats.activeDays}/30
                   </Text>
-                  <Text style={[styles.predictionLabel, { color: theme.colors.textMuted }]}>
+                  <Text style={[styles.predictionLabel, { color: theme.colors.textSecondary }]}>
                     Aktiva dagar
                   </Text>
                 </View>
@@ -434,7 +424,7 @@ export default function AdvancedAnalyticsScreen() {
                   <Text style={[styles.predictionValue, { color: theme.colors.text }]}>
                     {stats.goalProgress}%
                   </Text>
-                  <Text style={[styles.predictionLabel, { color: theme.colors.textMuted }]}>
+                  <Text style={[styles.predictionLabel, { color: theme.colors.textSecondary }]}>
                     Måluppfyllnad
                   </Text>
                 </View>
@@ -448,12 +438,12 @@ export default function AdvancedAnalyticsScreen() {
                 router.push('/study-insights' as any);
               }}
             >
-              <View style={[styles.insightsLinkIcon, { backgroundColor: '#6366F1' + '15' }]}>
-                <Brain size={20} color="#6366F1" />
+              <View style={[styles.insightsLinkIcon, { backgroundColor: theme.colors.primary + '12' }]}>
+                <Brain size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.insightsLinkContent}>
                 <Text style={[styles.insightsLinkTitle, { color: theme.colors.text }]}>Studieinsikter</Text>
-                <Text style={[styles.insightsLinkSub, { color: theme.colors.textMuted }]}>SRS, Smart Study & Analys</Text>
+                <Text style={[styles.insightsLinkSub, { color: theme.colors.textSecondary }]}>SRS, Smart Study & Analys</Text>
               </View>
               <ChevronRight size={20} color={theme.colors.textMuted} />
             </TouchableOpacity>
@@ -503,14 +493,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700' as const,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   headerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFD700' + '20',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -518,19 +507,18 @@ const styles = StyleSheet.create({
   },
   headerBadgeText: {
     fontSize: 11,
-    fontWeight: '700' as const,
-    color: '#FFD700',
+    fontWeight: '600' as const,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 100,
   },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    gap: 16,
+    paddingTop: 8,
+    gap: 14,
   },
   loadingSection: {
     paddingTop: 60,
@@ -547,8 +535,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   overviewCard: {
-    width: (SCREEN_WIDTH - 40 - 10) / 2 - 0.5,
-    borderRadius: 16,
+    width: (SCREEN_WIDTH - 50) / 2,
+    borderRadius: 14,
     padding: 16,
     alignItems: 'center',
     gap: 8,
@@ -561,22 +549,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   overviewValue: {
-    fontSize: 22,
-    fontWeight: '800' as const,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    letterSpacing: -0.3,
   },
   overviewLabel: {
     fontSize: 12,
     fontWeight: '500' as const,
   },
-  trendCard: {
+  card: {
     borderRadius: 16,
     padding: 18,
   },
-  trendHeader: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  cardHeaderWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 14,
+  },
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    letterSpacing: -0.3,
   },
   trendBadge: {
     flexDirection: 'row',
@@ -585,6 +585,10 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 10,
     gap: 4,
+  },
+  trendText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   weeklyBars: {
     flexDirection: 'row',
@@ -598,7 +602,7 @@ const styles = StyleSheet.create({
   },
   weeklyBarValue: {
     fontSize: 11,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
   },
   weeklyBarBg: {
     width: 32,
@@ -613,21 +617,7 @@ const styles = StyleSheet.create({
   },
   weeklyBarLabel: {
     fontSize: 12,
-    fontWeight: '600' as const,
-  },
-  sectionCard: {
-    borderRadius: 16,
-    padding: 18,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
+    fontWeight: '500' as const,
   },
   courseRow: {
     flexDirection: 'row',
@@ -655,6 +645,10 @@ const styles = StyleSheet.create({
   },
   courseStatText: {
     fontSize: 12,
+    fontWeight: '400' as const,
+  },
+  courseStatDot: {
+    fontSize: 12,
   },
   coursePercent: {
     paddingHorizontal: 10,
@@ -663,7 +657,7 @@ const styles = StyleSheet.create({
   },
   coursePercentText: {
     fontSize: 13,
-    fontWeight: '700' as const,
+    fontWeight: '600' as const,
   },
   hourlyChart: {
     flexDirection: 'row',
@@ -700,10 +694,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500' as const,
   },
-  predictionsCard: {
-    borderRadius: 16,
-    padding: 18,
-  },
   predictionGrid: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -715,7 +705,8 @@ const styles = StyleSheet.create({
   },
   predictionValue: {
     fontSize: 18,
-    fontWeight: '800' as const,
+    fontWeight: '700' as const,
+    letterSpacing: -0.3,
   },
   predictionLabel: {
     fontSize: 11,
@@ -730,7 +721,7 @@ const styles = StyleSheet.create({
   insightsLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
     gap: 14,
   },
@@ -751,6 +742,7 @@ const styles = StyleSheet.create({
   },
   insightsLinkSub: {
     fontSize: 12,
+    fontWeight: '400' as const,
   },
   emptyState: {
     margin: 20,
@@ -765,6 +757,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
+    fontWeight: '400' as const,
     textAlign: 'center',
     lineHeight: 20,
   },

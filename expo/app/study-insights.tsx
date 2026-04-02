@@ -14,7 +14,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import {
   ArrowLeft,
@@ -43,15 +42,12 @@ import {
   formatNextReview,
   scheduleSRSNotifications,
 } from '@/lib/spaced-repetition';
-
 import {
   analyzeStudyPatterns,
   generateRecommendations,
   generateWarmupQuestions,
 } from '@/lib/smart-study';
-
 import { getWeakPoints, getMasteryHeatmap, getMasteryColor } from '@/lib/weak-points';
-
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -176,46 +172,27 @@ export default function StudyInsightsScreen() {
     return (
       <View style={styles.tabContent}>
         <View style={[styles.statsRow, { backgroundColor: theme.colors.card }]}>
-          <View style={styles.statBox}>
-            <View style={[styles.statIconBg, { backgroundColor: '#6366F1' + '20' }]}>
-              <BookOpen size={18} color="#6366F1" />
-            </View>
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{srsStats?.cardsLearned || 0}</Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>Inlärda</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
-          <View style={styles.statBox}>
-            <View style={[styles.statIconBg, { backgroundColor: '#10B981' + '20' }]}>
-              <CheckCircle size={18} color="#10B981" />
-            </View>
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{srsStats?.cardsMastered || 0}</Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>Behärskade</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
-          <View style={styles.statBox}>
-            <View style={[styles.statIconBg, { backgroundColor: getRetentionColor(srsStats?.averageRetention || 0) + '20' }]}>
-              <Target size={18} color={getRetentionColor(srsStats?.averageRetention || 0)} />
-            </View>
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{srsStats?.averageRetention || 0}%</Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>Retention</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
-          <View style={styles.statBox}>
-            <View style={[styles.statIconBg, { backgroundColor: '#F59E0B' + '20' }]}>
-              <Flame size={18} color="#F59E0B" />
-            </View>
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{srsStats?.streakDays || 0}</Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>Streak</Text>
-          </View>
+          {[
+            { icon: BookOpen, value: srsStats?.cardsLearned || 0, label: 'Inlärda', color: '#6366F1' },
+            { icon: CheckCircle, value: srsStats?.cardsMastered || 0, label: 'Behärskade', color: '#10B981' },
+            { icon: Target, value: `${srsStats?.averageRetention || 0}%`, label: 'Retention', color: getRetentionColor(srsStats?.averageRetention || 0) },
+            { icon: Flame, value: srsStats?.streakDays || 0, label: 'Streak', color: '#F59E0B' },
+          ].map((item, index) => (
+            <React.Fragment key={index}>
+              {index > 0 && <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />}
+              <View style={styles.statBox}>
+                <View style={[styles.statIconBg, { backgroundColor: item.color + '12' }]}>
+                  <item.icon size={18} color={item.color} />
+                </View>
+                <Text style={[styles.statNumber, { color: theme.colors.text }]}>{item.value}</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>{item.label}</Text>
+              </View>
+            </React.Fragment>
+          ))}
         </View>
 
         {totalDueCards > 0 && (
-          <LinearGradient
-            colors={isDark ? ['#4F46E5', '#7C3AED'] : ['#6366F1', '#8B5CF6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.dueCardsBanner}
-          >
+          <View style={[styles.dueCardsBanner, { backgroundColor: theme.colors.primary }]}>
             <View style={styles.dueBannerContent}>
               <View style={styles.dueBannerLeft}>
                 <View style={styles.dueBadge}>
@@ -227,7 +204,7 @@ export default function StudyInsightsScreen() {
                 </View>
               </View>
               <TouchableOpacity
-                style={styles.dueBannerButton}
+                style={[styles.dueBannerButton, { backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.95)' }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
                   if (dueCards.length > 0) {
@@ -235,18 +212,18 @@ export default function StudyInsightsScreen() {
                   }
                 }}
               >
-                <Text style={styles.dueBannerButtonText}>Starta</Text>
-                <ChevronRight size={16} color="#6366F1" />
+                <Text style={[styles.dueBannerButtonText, { color: isDark ? '#fff' : theme.colors.primary }]}>Starta</Text>
+                <ChevronRight size={16} color={isDark ? '#fff' : theme.colors.primary} />
               </TouchableOpacity>
             </View>
-          </LinearGradient>
+          </View>
         )}
 
         {forecast.length > 0 && (
-          <View style={[styles.sectionCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.sectionHeader}>
+          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.cardHeaderWithIcon}>
               <Calendar size={18} color={theme.colors.primary} />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Repetitionsprognos</Text>
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Repetitionsprognos</Text>
             </View>
             <View style={styles.forecastRow}>
               {forecast.map((day, i) => {
@@ -260,13 +237,13 @@ export default function StudyInsightsScreen() {
                     <Text style={[styles.forecastCount, { color: day.count > 0 ? theme.colors.text : theme.colors.textMuted }]}>
                       {day.count}
                     </Text>
-                    <View style={[styles.forecastBar, { backgroundColor: theme.colors.border }]}>
+                    <View style={[styles.forecastBar, { backgroundColor: theme.colors.border + '40' }]}>
                       <View
                         style={[
                           styles.forecastBarFill,
                           {
                             height: barHeight,
-                            backgroundColor: i === 0 ? '#6366F1' : day.count > 10 ? '#F59E0B' : '#10B981',
+                            backgroundColor: i === 0 ? theme.colors.primary : day.count > 10 ? theme.colors.warning : theme.colors.success,
                           },
                         ]}
                       />
@@ -280,15 +257,18 @@ export default function StudyInsightsScreen() {
         )}
 
         {dueCards.length > 0 && (
-          <View style={[styles.sectionCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.sectionHeader}>
+          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.cardHeaderWithIcon}>
               <BookOpen size={18} color={theme.colors.primary} />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Per kurs</Text>
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Per kurs</Text>
             </View>
-            {dueCards.map((course) => (
+            {dueCards.map((course, i) => (
               <TouchableOpacity
                 key={course.courseId}
-                style={[styles.courseRow, { borderBottomColor: theme.colors.border }]}
+                style={[
+                  styles.courseRow,
+                  i < dueCards.length - 1 && { borderBottomColor: theme.colors.border + '40', borderBottomWidth: 1 },
+                ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                   router.push(`/flashcards/${course.courseId}` as any);
@@ -299,19 +279,19 @@ export default function StudyInsightsScreen() {
                     {course.courseTitle}
                   </Text>
                   <View style={styles.courseRowMeta}>
-                    <Text style={[styles.courseRowMetaText, { color: theme.colors.textMuted }]}>
+                    <Text style={[styles.courseRowMetaText, { color: theme.colors.textSecondary }]}>
                       {course.masteredCards}/{course.totalCards} behärskade
                     </Text>
-                    <Text style={[styles.courseRowMetaText, { color: theme.colors.textMuted }]}>•</Text>
-                    <Text style={[styles.courseRowMetaText, { color: theme.colors.textMuted }]}>
+                    <Text style={[styles.courseRowMetaDot, { color: theme.colors.textMuted }]}>·</Text>
+                    <Text style={[styles.courseRowMetaText, { color: theme.colors.textSecondary }]}>
                       {formatNextReview(course.nextReviewDate)}
                     </Text>
                   </View>
                 </View>
                 <View style={styles.courseRowRight}>
                   {course.dueCount > 0 && (
-                    <View style={[styles.duePill, { backgroundColor: '#6366F1' + '20' }]}>
-                      <Text style={[styles.duePillText, { color: '#6366F1' }]}>{course.dueCount} att göra</Text>
+                    <View style={[styles.duePill, { backgroundColor: theme.colors.primary + '12' }]}>
+                      <Text style={[styles.duePillText, { color: theme.colors.primary }]}>{course.dueCount} att göra</Text>
                     </View>
                   )}
                   <ChevronRight size={18} color={theme.colors.textMuted} />
@@ -323,7 +303,7 @@ export default function StudyInsightsScreen() {
 
         {dueCards.length === 0 && !loadingDue && (
           <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
-            <CheckCircle size={48} color="#10B981" />
+            <CheckCircle size={48} color={theme.colors.success} />
             <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Allt klart!</Text>
             <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
               Du har inga flashcards att repetera just nu. Skapa flashcards i dina kurser för att börja!
@@ -347,47 +327,36 @@ export default function StudyInsightsScreen() {
     return (
       <View style={styles.tabContent}>
         {patterns && (
-          <View style={[styles.patternCard, { backgroundColor: theme.colors.card }]}>
+          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
             <View style={styles.patternGrid}>
-              <View style={styles.patternItem}>
-                <View style={[styles.patternIconBg, { backgroundColor: '#6366F1' + '15' }]}>
-                  <Clock size={20} color="#6366F1" />
+              {[
+                { icon: Clock, value: `${patterns.optimalSessionMinutes} min`, label: 'Optimal tid', color: '#6366F1' },
+                { icon: TrendingUp, value: patterns.bestTimeOfDay, label: 'Bästa tid', color: '#10B981' },
+                { icon: BarChart3, value: `${patterns.consistencyScore}%`, label: 'Konsistens', color: '#F59E0B' },
+                {
+                  icon: AlertTriangle,
+                  value: patterns.fatigueRisk === 'high' ? 'Hög' : patterns.fatigueRisk === 'medium' ? 'Medel' : 'Låg',
+                  label: 'Trötthetsrisk',
+                  color: patterns.fatigueRisk === 'high' ? '#EF4444' : patterns.fatigueRisk === 'medium' ? '#F59E0B' : '#10B981',
+                },
+              ].map((item, index) => (
+                <View key={index} style={styles.patternItem}>
+                  <View style={[styles.patternIconBg, { backgroundColor: item.color + '12' }]}>
+                    <item.icon size={20} color={item.color} />
+                  </View>
+                  <Text style={[styles.patternValue, { color: theme.colors.text }]}>{item.value}</Text>
+                  <Text style={[styles.patternLabel, { color: theme.colors.textSecondary }]}>{item.label}</Text>
                 </View>
-                <Text style={[styles.patternValue, { color: theme.colors.text }]}>{patterns.optimalSessionMinutes} min</Text>
-                <Text style={[styles.patternLabel, { color: theme.colors.textMuted }]}>Optimal tid</Text>
-              </View>
-              <View style={styles.patternItem}>
-                <View style={[styles.patternIconBg, { backgroundColor: '#10B981' + '15' }]}>
-                  <TrendingUp size={20} color="#10B981" />
-                </View>
-                <Text style={[styles.patternValue, { color: theme.colors.text }]}>{patterns.bestTimeOfDay}</Text>
-                <Text style={[styles.patternLabel, { color: theme.colors.textMuted }]}>Bästa tid</Text>
-              </View>
-              <View style={styles.patternItem}>
-                <View style={[styles.patternIconBg, { backgroundColor: '#F59E0B' + '15' }]}>
-                  <BarChart3 size={20} color="#F59E0B" />
-                </View>
-                <Text style={[styles.patternValue, { color: theme.colors.text }]}>{patterns.consistencyScore}%</Text>
-                <Text style={[styles.patternLabel, { color: theme.colors.textMuted }]}>Konsistens</Text>
-              </View>
-              <View style={styles.patternItem}>
-                <View style={[styles.patternIconBg, { backgroundColor: patterns.fatigueRisk === 'high' ? '#EF4444' + '15' : patterns.fatigueRisk === 'medium' ? '#F59E0B' + '15' : '#10B981' + '15' }]}>
-                  <AlertTriangle size={20} color={patterns.fatigueRisk === 'high' ? '#EF4444' : patterns.fatigueRisk === 'medium' ? '#F59E0B' : '#10B981'} />
-                </View>
-                <Text style={[styles.patternValue, { color: theme.colors.text }]}>
-                  {patterns.fatigueRisk === 'high' ? 'Hög' : patterns.fatigueRisk === 'medium' ? 'Medel' : 'Låg'}
-                </Text>
-                <Text style={[styles.patternLabel, { color: theme.colors.textMuted }]}>Trötthetsrisk</Text>
-              </View>
+              ))}
             </View>
           </View>
         )}
 
         {recommendations.length > 0 && (
           <View style={styles.recsSection}>
-            <View style={styles.sectionHeaderRow}>
+            <View style={styles.cardHeaderWithIcon}>
               <Sparkles size={18} color={theme.colors.primary} />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Rekommendationer</Text>
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Rekommendationer</Text>
             </View>
             {recommendations.map((rec, i) => (
               <TouchableOpacity
@@ -401,7 +370,16 @@ export default function StudyInsightsScreen() {
                 }}
                 activeOpacity={rec.actionRoute ? 0.7 : 1}
               >
-                <View style={[styles.recEmoji, { backgroundColor: rec.priority === 'high' ? '#EF4444' + '15' : rec.priority === 'medium' ? '#F59E0B' + '15' : '#10B981' + '15' }]}>
+                <View style={[
+                  styles.recEmoji,
+                  {
+                    backgroundColor: rec.priority === 'high'
+                      ? theme.colors.error + '12'
+                      : rec.priority === 'medium'
+                        ? theme.colors.warning + '12'
+                        : theme.colors.success + '12',
+                  },
+                ]}>
                   <Text style={styles.recEmojiText}>{rec.emoji}</Text>
                 </View>
                 <View style={styles.recContent}>
@@ -417,10 +395,10 @@ export default function StudyInsightsScreen() {
         )}
 
         {warmupQuestions.length > 0 && (
-          <View style={[styles.sectionCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.sectionHeader}>
+          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.cardHeaderWithIcon}>
               <Brain size={18} color="#8B5CF6" />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Uppvärmningsfrågor</Text>
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Uppvärmningsfrågor</Text>
             </View>
             <Text style={[styles.warmupSubtitle, { color: theme.colors.textSecondary }]}>
               Testa din kunskap snabbt innan du börjar studera
@@ -428,14 +406,14 @@ export default function StudyInsightsScreen() {
             {warmupQuestions.map((q, i) => (
               <TouchableOpacity
                 key={`warmup-${i}`}
-                style={[styles.warmupCard, { borderColor: theme.colors.border }]}
+                style={[styles.warmupCard, { borderColor: theme.colors.border + '60' }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                   setExpandedWarmup(expandedWarmup === i ? null : i);
                 }}
               >
                 <View style={styles.warmupHeader}>
-                  <View style={[styles.warmupNumber, { backgroundColor: '#8B5CF6' + '20' }]}>
+                  <View style={[styles.warmupNumber, { backgroundColor: '#8B5CF6' + '12' }]}>
                     <Text style={[styles.warmupNumberText, { color: '#8B5CF6' }]}>{i + 1}</Text>
                   </View>
                   <Text style={[styles.warmupQuestion, { color: theme.colors.text }]} numberOfLines={expandedWarmup === i ? undefined : 2}>
@@ -443,8 +421,8 @@ export default function StudyInsightsScreen() {
                   </Text>
                 </View>
                 {expandedWarmup === i && (
-                  <View style={[styles.warmupAnswer, { backgroundColor: isDark ? '#1A2332' : '#F0FDF4' }]}>
-                    <Text style={[styles.warmupAnswerLabel, { color: '#10B981' }]}>Svar:</Text>
+                  <View style={[styles.warmupAnswer, { backgroundColor: isDark ? theme.colors.success + '10' : theme.colors.success + '08' }]}>
+                    <Text style={[styles.warmupAnswerLabel, { color: theme.colors.success }]}>Svar:</Text>
                     <Text style={[styles.warmupAnswerText, { color: theme.colors.text }]}>{q.answer}</Text>
                   </View>
                 )}
@@ -472,22 +450,22 @@ export default function StudyInsightsScreen() {
     return (
       <View style={styles.tabContent}>
         {heatmap && (
-          <View style={[styles.overviewCard, { backgroundColor: theme.colors.card }]}>
+          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
             <View style={styles.overviewRow}>
               <View style={styles.overviewStat}>
                 <View style={[styles.masteryCircle, { borderColor: getMasteryColor(heatmap.overallMastery) }]}>
                   <Text style={[styles.masteryCircleText, { color: theme.colors.text }]}>{heatmap.overallMastery}%</Text>
                 </View>
-                <Text style={[styles.overviewLabel, { color: theme.colors.textMuted }]}>Total behärskning</Text>
+                <Text style={[styles.overviewStatLabel, { color: theme.colors.textSecondary }]}>Total behärskning</Text>
               </View>
               <View style={styles.overviewDetails}>
                 <View style={styles.overviewDetailRow}>
-                  <View style={[styles.overviewDot, { backgroundColor: '#10B981' }]} />
+                  <View style={[styles.overviewDot, { backgroundColor: theme.colors.success }]} />
                   <Text style={[styles.overviewDetailLabel, { color: theme.colors.textSecondary }]}>Starkast:</Text>
                   <Text style={[styles.overviewDetailValue, { color: theme.colors.text }]} numberOfLines={1}>{heatmap.strongestArea}</Text>
                 </View>
                 <View style={styles.overviewDetailRow}>
-                  <View style={[styles.overviewDot, { backgroundColor: '#EF4444' }]} />
+                  <View style={[styles.overviewDot, { backgroundColor: theme.colors.error }]} />
                   <Text style={[styles.overviewDetailLabel, { color: theme.colors.textSecondary }]}>Svagast:</Text>
                   <Text style={[styles.overviewDetailValue, { color: theme.colors.text }]} numberOfLines={1}>{heatmap.weakestArea}</Text>
                 </View>
@@ -497,10 +475,10 @@ export default function StudyInsightsScreen() {
         )}
 
         {heatmap && heatmap.courses.length > 0 && (
-          <View style={[styles.sectionCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.sectionHeader}>
+          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.cardHeaderWithIcon}>
               <BarChart3 size={18} color={theme.colors.primary} />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kunskapskarta</Text>
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Kunskapskarta</Text>
             </View>
             {heatmap.courses.map((course) => (
               <View key={course.courseId} style={styles.heatmapCourse}>
@@ -516,7 +494,7 @@ export default function StudyInsightsScreen() {
                   {course.topics.slice(0, 8).map((topic, i) => (
                     <View
                       key={`${course.courseId}-${i}`}
-                      style={[styles.heatmapCell, { backgroundColor: topic.color + '30', borderColor: topic.color + '60' }]}
+                      style={[styles.heatmapCell, { backgroundColor: topic.color + '12', borderColor: topic.color + '30' }]}
                     >
                       <Text style={[styles.heatmapCellText, { color: theme.colors.text }]} numberOfLines={1}>
                         {topic.topic}
@@ -533,15 +511,15 @@ export default function StudyInsightsScreen() {
         )}
 
         {weakPoints.length > 0 && (
-          <View style={[styles.sectionCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.sectionHeader}>
-              <AlertTriangle size={18} color="#F59E0B" />
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kunskapsluckor</Text>
+          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.cardHeaderWithIcon}>
+              <AlertTriangle size={18} color={theme.colors.warning} />
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Kunskapsluckor</Text>
             </View>
             {weakPoints.map((wp, i) => (
               <TouchableOpacity
                 key={`wp-${i}`}
-                style={[styles.weakPointCard, { borderColor: theme.colors.border }]}
+                style={[styles.weakPointCard, { borderColor: theme.colors.border + '40' }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                   router.push(`/flashcards/${wp.courseId}` as any);
@@ -550,10 +528,10 @@ export default function StudyInsightsScreen() {
                 <View style={styles.weakPointTop}>
                   <View style={styles.weakPointInfo}>
                     <Text style={[styles.weakPointTopic, { color: theme.colors.text }]}>{wp.topic}</Text>
-                    <Text style={[styles.weakPointCourse, { color: theme.colors.textMuted }]}>{wp.courseTitle}</Text>
+                    <Text style={[styles.weakPointCourse, { color: theme.colors.textSecondary }]}>{wp.courseTitle}</Text>
                   </View>
                   <View style={styles.weakPointMeter}>
-                    <View style={[styles.weakPointMeterBg, { backgroundColor: theme.colors.border }]}>
+                    <View style={[styles.weakPointMeterBg, { backgroundColor: theme.colors.border + '40' }]}>
                       <View
                         style={[
                           styles.weakPointMeterFill,
@@ -566,7 +544,7 @@ export default function StudyInsightsScreen() {
                     </Text>
                   </View>
                 </View>
-                <View style={styles.weakPointBottom}>
+                <View style={[styles.weakPointBottom, { borderTopColor: theme.colors.border + '30' }]}>
                   <Sparkles size={12} color={theme.colors.primary} />
                   <Text style={[styles.weakPointSuggestion, { color: theme.colors.textSecondary }]}>{wp.suggestion}</Text>
                 </View>
@@ -577,7 +555,7 @@ export default function StudyInsightsScreen() {
 
         {weakPoints.length === 0 && (!heatmap || heatmap.courses.length === 0) && (
           <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
-            <Target size={48} color={theme.colors.primary} />
+            <Target size={48} color={theme.colors.textMuted} />
             <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Ingen data ännu</Text>
             <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
               Öva med flashcards och quiz för att se din kunskapsanalys här.
@@ -624,27 +602,20 @@ export default function StudyInsightsScreen() {
               },
             ]}
           />
-          <TouchableOpacity
-            style={[styles.tab, { width: tabWidth }]}
-            onPress={() => handleTabChange('srs')}
-          >
-            <Zap size={16} color={activeTab === 'srs' ? '#fff' : theme.colors.textMuted} />
-            <Text style={[styles.tabText, { color: activeTab === 'srs' ? '#fff' : theme.colors.textMuted }]}>Repetition</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, { width: tabWidth }]}
-            onPress={() => handleTabChange('smart')}
-          >
-            <Brain size={16} color={activeTab === 'smart' ? '#fff' : theme.colors.textMuted} />
-            <Text style={[styles.tabText, { color: activeTab === 'smart' ? '#fff' : theme.colors.textMuted }]}>Smart</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, { width: tabWidth }]}
-            onPress={() => handleTabChange('weak')}
-          >
-            <Target size={16} color={activeTab === 'weak' ? '#fff' : theme.colors.textMuted} />
-            <Text style={[styles.tabText, { color: activeTab === 'weak' ? '#fff' : theme.colors.textMuted }]}>Analys</Text>
-          </TouchableOpacity>
+          {[
+            { key: 'srs' as TabKey, icon: Zap, label: 'Repetition' },
+            { key: 'smart' as TabKey, icon: Brain, label: 'Smart' },
+            { key: 'weak' as TabKey, icon: Target, label: 'Analys' },
+          ].map((tab) => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tab, { width: tabWidth }]}
+              onPress={() => handleTabChange(tab.key)}
+            >
+              <tab.icon size={16} color={activeTab === tab.key ? '#fff' : theme.colors.textMuted} />
+              <Text style={[styles.tabText, { color: activeTab === tab.key ? '#fff' : theme.colors.textMuted }]}>{tab.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </SafeAreaView>
 
@@ -690,9 +661,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700' as const,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   headerSubtitle: {
     fontSize: 13,
@@ -738,12 +709,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 100,
   },
   tabContent: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    gap: 16,
+    paddingTop: 16,
+    gap: 14,
   },
   loadingSection: {
     paddingTop: 60,
@@ -773,7 +744,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700' as const,
   },
   statLabel: {
@@ -783,8 +754,8 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    height: 40,
-    marginHorizontal: 4,
+    height: 36,
+    marginHorizontal: 2,
   },
   dueCardsBanner: {
     borderRadius: 16,
@@ -815,19 +786,19 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   dueBannerTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700' as const,
     color: 'white',
   },
   dueBannerSubtitle: {
     fontSize: 12,
+    fontWeight: '400' as const,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
   },
   dueBannerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
@@ -836,27 +807,21 @@ const styles = StyleSheet.create({
   dueBannerButtonText: {
     fontSize: 14,
     fontWeight: '700' as const,
-    color: '#6366F1',
   },
-  sectionCard: {
+  card: {
     borderRadius: 16,
     padding: 18,
   },
-  sectionHeader: {
+  cardHeaderWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 14,
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  sectionTitle: {
+  cardTitle: {
     fontSize: 17,
     fontWeight: '700' as const,
+    letterSpacing: -0.3,
   },
   forecastRow: {
     flexDirection: 'row',
@@ -870,7 +835,7 @@ const styles = StyleSheet.create({
   },
   forecastCount: {
     fontSize: 13,
-    fontWeight: '700' as const,
+    fontWeight: '600' as const,
   },
   forecastBar: {
     width: 24,
@@ -892,7 +857,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
-    borderBottomWidth: 1,
   },
   courseRowLeft: {
     flex: 1,
@@ -911,6 +875,9 @@ const styles = StyleSheet.create({
   courseRowMetaText: {
     fontSize: 12,
     fontWeight: '400' as const,
+  },
+  courseRowMetaDot: {
+    fontSize: 12,
   },
   courseRowRight: {
     flexDirection: 'row',
@@ -938,12 +905,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
+    fontWeight: '400' as const,
     textAlign: 'center' as const,
     lineHeight: 20,
-  },
-  patternCard: {
-    borderRadius: 16,
-    padding: 18,
   },
   patternGrid: {
     flexDirection: 'row',
@@ -1001,10 +965,12 @@ const styles = StyleSheet.create({
   },
   recDescription: {
     fontSize: 13,
+    fontWeight: '400' as const,
     lineHeight: 18,
   },
   warmupSubtitle: {
     fontSize: 13,
+    fontWeight: '400' as const,
     marginBottom: 12,
     marginTop: -6,
   },
@@ -1048,17 +1014,15 @@ const styles = StyleSheet.create({
   },
   warmupAnswerText: {
     fontSize: 13,
+    fontWeight: '400' as const,
     lineHeight: 19,
   },
   warmupHint: {
     fontSize: 11,
+    fontWeight: '400' as const,
     marginTop: 8,
     marginLeft: 38,
     fontStyle: 'italic' as const,
-  },
-  overviewCard: {
-    borderRadius: 16,
-    padding: 20,
   },
   overviewRow: {
     flexDirection: 'row',
@@ -1068,6 +1032,10 @@ const styles = StyleSheet.create({
   overviewStat: {
     alignItems: 'center',
     gap: 8,
+  },
+  overviewStatLabel: {
+    fontSize: 11,
+    fontWeight: '500' as const,
   },
   masteryCircle: {
     width: 72,
@@ -1080,10 +1048,6 @@ const styles = StyleSheet.create({
   masteryCircleText: {
     fontSize: 20,
     fontWeight: '800' as const,
-  },
-  overviewLabel: {
-    fontSize: 11,
-    fontWeight: '500' as const,
   },
   overviewDetails: {
     flex: 1,
@@ -1168,6 +1132,7 @@ const styles = StyleSheet.create({
   },
   weakPointCourse: {
     fontSize: 12,
+    fontWeight: '400' as const,
     marginTop: 2,
   },
   weakPointMeter: {
@@ -1195,10 +1160,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 0.5,
-    borderTopColor: 'rgba(0,0,0,0.1)',
   },
   weakPointSuggestion: {
     fontSize: 12,
+    fontWeight: '400' as const,
     flex: 1,
     lineHeight: 17,
   },

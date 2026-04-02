@@ -115,6 +115,7 @@ function AppContent() {
         <Stack.Screen name="study-coach" options={{ headerShown: false }} />
         <Stack.Screen name="smart-flashcards" options={{ headerShown: false }} />
         <Stack.Screen name="speech-practice" options={{ headerShown: false }} />
+        <Stack.Screen name="study-plan/[examId]" options={{ headerShown: false }} />
       </Stack>
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>

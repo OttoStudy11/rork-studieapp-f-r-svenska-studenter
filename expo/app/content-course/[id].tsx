@@ -480,6 +480,17 @@ export default function ContentCourseDetailScreen() {
                             </Text>
                           </View>
                         )}
+                        <TouchableOpacity
+                          style={[styles.studyPlanBtn, { backgroundColor: courseStyle.primaryColor + '12' }]}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            router.push(`/study-plan/${exam.id}?courseTitle=${encodeURIComponent(course?.title || '')}` as never);
+                          }}
+                          testID={`study-plan-btn-${exam.id}`}
+                        >
+                          <FileText size={14} color={courseStyle.primaryColor} />
+                          <Text style={[styles.studyPlanBtnText, { color: courseStyle.primaryColor }]}>Visa studieplan</Text>
+                        </TouchableOpacity>
                       </View>
                     );
                   })}
@@ -731,6 +742,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   examWarningText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  studyPlanBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  studyPlanBtnText: {
     fontSize: 13,
     fontWeight: '600' as const,
   },

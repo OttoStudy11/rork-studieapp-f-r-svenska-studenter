@@ -29,11 +29,13 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.rorkapp.mobile",
+      "versionCode": 1,
       "permissions": [
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.SCHEDULE_EXACT_ALARM",
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "com.android.vending.BILLING"
       ]
     },
     "web": {

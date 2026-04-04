@@ -29,7 +29,6 @@ import {
   TrendingUp,
   Award,
   Unlock,
-  Infinity,
   Users,
   AlertCircle,
   RefreshCw,
@@ -203,7 +202,7 @@ export default function PremiumScreen() {
   }, [getOfferings]);
 
   useEffect(() => {
-    loadOfferings(0);
+    void loadOfferings(0);
   }, [loadOfferings]);
 
   // Get pricing plans from offerings
@@ -292,7 +291,7 @@ export default function PremiumScreen() {
     return plans;
   }, [offerings]);
 
-  const features = [
+  const features: { icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>; title: string; description: string; gradient: readonly [string, string]; badge?: string }[] = [
     {
       icon: Sparkles,
       title: 'Obegränsade AI-genereringar',
@@ -315,7 +314,7 @@ export default function PremiumScreen() {
       badge: 'Nytt'
     },
     {
-      icon: Infinity,
+      icon: Unlock,
       title: 'Obegränsade Kurser',
       description: 'Lägg till hur många kurser du vill utan begränsningar',
       gradient: ['#7C3AED', '#6D28D9'] as const,
@@ -435,7 +434,7 @@ export default function PremiumScreen() {
   };
 
   const handleRetry = () => {
-    loadOfferings(0);
+    void loadOfferings(0);
   };
 
   const openExternalLink = async (url: string) => {
@@ -811,11 +810,11 @@ export default function PremiumScreen() {
                 <Text style={{ fontWeight: '600' }}>Längd:</Text> Månadsvis eller årsvis prenumeration{'\n'}
                 <Text style={{ fontWeight: '600' }}>Pris:</Text> Visas ovan för varje plan{'\n\n'}
                 • Abonnemanget förnyas automatiskt tills det avslutas.{'\n'}
-                • Debitering sker via ditt Apple ID-konto vid köpbekräftelse.{'\n'}
+                • Debitering sker via ditt Apple ID- eller Google Play-konto vid köpbekräftelse.{'\n'}
                 • Abonnemanget förnyas automatiskt om det inte avbryts minst 24 timmar före utgången av innevarande period.{'\n'}
                 • Ditt konto debiteras för förnyelse inom 24 timmar före utgången av innevarande period.{'\n'}
-                • Avsluta när som helst via App Store → Konto → Prenumerationer.{'\n'}
-                • Återbetalningar hanteras av Apple enligt deras villkor.
+                • Avsluta när som helst via App Store → Konto → Prenumerationer (iOS) eller Google Play → Prenumerationer (Android).{'\n'}
+                • Återbetalningar hanteras av Apple/Google enligt deras villkor.
               </Text>
             </View>
           </FadeInView>

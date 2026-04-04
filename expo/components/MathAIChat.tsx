@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { cleanMarkdown } from '@/utils/cleanMarkdown';
 
 interface MathAIChatProps {
   onBack: () => void;
@@ -28,6 +29,27 @@ interface AttachedImage {
   base64: string;
   mimeType: string;
 }
+
+const MATH_SYSTEM = `Du är en expert matematiklärare och problemlösare, liknande Photomath.
+Du ska:
+- Lösa matematiska problem steg för steg
+- Förklara varje steg tydligt på svenska
+- Om du får en bild, analysera den och identifiera matematiska problem/ekvationer/grafer
+- Formatera lösningar med tydliga numrerade steg (Steg 1:, Steg 2:, etc.)
+- Ge slutsvaret tydligt markerat med "Svar:" på en egen rad
+- Om det är en graf, beskriv vad grafen visar och analysera den
+- Var uppmuntrande och pedagogisk
+- Svara ALLTID på svenska
+
+VIKTIGA FORMATERINGSREGLER (följ dessa STRIKT):
+- Skriv ALDRIG ###, ##, #, **, ***, *, __ eller någon annan markdown-syntax
+- Skriv ALDRIG rubriker med # tecken
+- Använd ALDRIG asterisker för fetstil eller kursiv
+- Skriv ren, vanlig text utan någon formatering
+- Använd radbrytningar mellan stycken för läsbarhet
+- Använd "Steg 1:", "Steg 2:" etc. för att strukturera lösningar
+- Håll mellanrummen lagom, max en tom rad mellan stycken
+- Skriv koncist och tydligt`;
 
 export default function MathAIChat({ onBack }: MathAIChatProps) {
   const [input, setInput] = useState('');
@@ -40,8 +62,9 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
   const insets = useSafeAreaInsets();
 
   const { messages, error, sendMessage } = useRorkAgent({
+    system: MATH_SYSTEM,
     tools: {},
-  });
+  } as any);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -82,8 +105,8 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
           base64Data = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => {
-              const result = reader.result as string;
-              resolve(result.split(',')[1] || '');
+              const r = reader.result as string;
+              resolve(r.split(',')[1] || '');
             };
             reader.onerror = reject;
             reader.readAsDataURL(blob);
@@ -175,11 +198,25 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
   }, [input, attachedImage, isSending, sendMessage]);
 
   const renderStepText = useCallback((text: string, messageId: string) => {
-    const lines = text.split('\n');
+    const cleaned = cleanMarkdown(text);
+    const lines = cleaned.split('\n');
     const elements: React.ReactNode[] = [];
+    let consecutiveEmpty = 0;
 
     lines.forEach((line, idx) => {
       const trimmed = line.trim();
+
+      if (trimmed.length === 0) {
+        consecutiveEmpty++;
+        if (consecutiveEmpty <= 1 && idx > 0 && idx < lines.length - 1) {
+          elements.push(
+            <View key={`${messageId}-spacer-${idx}`} style={styles.textSpacer} />
+          );
+        }
+        return;
+      }
+      consecutiveEmpty = 0;
+
       const stepMatch = trimmed.match(/^(?:Steg|Step)\s*(\d+)\s*[:.]/i);
 
       if (stepMatch) {
@@ -202,15 +239,18 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
             <Text style={styles.answerText}>{answerContent}</Text>
           </View>
         );
-      } else if (trimmed.length > 0) {
+      } else if (trimmed.startsWith('• ')) {
+        elements.push(
+          <View key={`${messageId}-bullet-${idx}`} style={styles.bulletContainer}>
+            <Text style={styles.bulletDot}>•</Text>
+            <Text style={styles.bulletText}>{trimmed.slice(2)}</Text>
+          </View>
+        );
+      } else {
         elements.push(
           <Text key={`${messageId}-line-${idx}`} style={styles.assistantMessageText}>
             {trimmed}
           </Text>
-        );
-      } else if (idx > 0 && idx < lines.length - 1) {
-        elements.push(
-          <View key={`${messageId}-spacer-${idx}`} style={styles.textSpacer} />
         );
       }
     });
@@ -539,7 +579,7 @@ const styles = StyleSheet.create({
   },
   messageRow: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 12,
     alignItems: 'flex-start',
   },
   userMessageRow: {
@@ -590,7 +630,7 @@ const styles = StyleSheet.create({
   stepContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginVertical: 6,
+    marginVertical: 5,
     gap: 10,
   },
   stepNumberCircle: {
@@ -617,7 +657,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(37,99,235,0.15)',
     borderRadius: 12,
     padding: 12,
-    marginTop: 10,
+    marginTop: 8,
     borderLeftWidth: 3,
     borderLeftColor: '#2563eb',
   },
@@ -635,8 +675,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     lineHeight: 24,
   },
+  bulletContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 2,
+    paddingLeft: 2,
+  },
+  bulletDot: {
+    width: 16,
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#5eb8ff',
+    fontWeight: '600' as const,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#c8ddf0',
+  },
   textSpacer: {
-    height: 6,
+    height: 4,
   },
   messageImage: {
     width: 200,
@@ -647,7 +706,7 @@ const styles = StyleSheet.create({
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   loadingBubble: {
     backgroundColor: 'rgba(30,58,95,0.6)',
@@ -668,7 +727,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,107,107,0.1)',
     padding: 12,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,107,107,0.2)',
   },

@@ -16,6 +16,7 @@ import { Send, ArrowLeft, Camera, ImageIcon, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
+import { cleanMarkdown } from '@/utils/cleanMarkdown';
 
 interface MathAIChatProps {
   onBack: () => void;
@@ -27,6 +28,27 @@ interface AttachedImage {
   mimeType: string;
 }
 
+const MATH_SYSTEM = `Du är en expert matematiklärare och problemlösare, liknande Photomath.
+Du ska:
+- Lösa matematiska problem steg för steg
+- Förklara varje steg tydligt på svenska
+- Om du får en bild, analysera den och identifiera matematiska problem/ekvationer/grafer
+- Formatera lösningar med tydliga numrerade steg (Steg 1:, Steg 2:, etc.)
+- Ge slutsvaret tydligt markerat med "Svar:" på en egen rad
+- Om det är en graf, beskriv vad grafen visar och analysera den
+- Var uppmuntrande och pedagogisk
+- Svara ALLTID på svenska
+
+VIKTIGA FORMATERINGSREGLER (följ dessa STRIKT):
+- Skriv ALDRIG ###, ##, #, **, ***, *, __ eller någon annan markdown-syntax
+- Skriv ALDRIG rubriker med # tecken
+- Använd ALDRIG asterisker för fetstil eller kursiv
+- Skriv ren, vanlig text utan någon formatering
+- Använd radbrytningar mellan stycken för läsbarhet
+- Använd "Steg 1:", "Steg 2:" etc. för att strukturera lösningar
+- Håll mellanrummen lagom, max en tom rad mellan stycken
+- Skriv koncist och tydligt`;
+
 export default function MathAIChat({ onBack }: MathAIChatProps) {
   const [input, setInput] = useState('');
   const [attachedImage, setAttachedImage] = useState<AttachedImage | null>(null);
@@ -37,20 +59,9 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const { messages, error, sendMessage } = useRorkAgent({
-    system: `Du är en expert matematiklärare och problemlösare, liknande Photomath. 
-Du ska:
-- Lösa matematiska problem steg för steg
-- Förklara varje steg tydligt på svenska
-- Om du får en bild, analysera den och identifiera matematiska problem/ekvationer/grafer
-- Formatera lösningar med tydliga numrerade steg (Steg 1:, Steg 2:, etc.)
-- Ge slutsvaret tydligt markerat
-- Om det är en graf, beskriv vad grafen visar och analysera den
-- Var uppmuntrande och pedagogisk
-- Svara ALLTID på svenska
-- Använd ALDRIG markdown-formatering som **, ##, ***, etc. Skriv ren text.
-- Separera steg med tomma rader för läsbarhet`,
+    system: MATH_SYSTEM,
     tools: {},
-  });
+  } as any);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -147,16 +158,16 @@ Du ska:
           text: userText,
           files: [{
             type: 'file' as const,
-            mimeType: attachedImage.mimeType,
-            uri: `data:${attachedImage.mimeType};base64,${attachedImage.base64}`,
+            mediaType: attachedImage.mimeType,
+            url: `data:${attachedImage.mimeType};base64,${attachedImage.base64}`,
           }],
         };
         console.log('[MathAI] Sending message with image');
         setAttachedImage(null);
-        await sendMessage(messagePayload);
+        sendMessage(messagePayload);
       } else {
         console.log('[MathAI] Sending text message:', userText);
-        await sendMessage(userText);
+        sendMessage(userText);
       }
       console.log('[MathAI] Message sent successfully');
     } catch (err) {
@@ -168,16 +179,29 @@ Du ska:
   }, [input, attachedImage, isSending, sendMessage]);
 
   const renderStepText = useCallback((text: string, messageId: string) => {
-    const lines = text.split('\n');
+    const cleaned = cleanMarkdown(text);
+    const lines = cleaned.split('\n');
     const elements: React.ReactNode[] = [];
-    let currentStep = 0;
+    let consecutiveEmpty = 0;
 
     lines.forEach((line, idx) => {
       const trimmed = line.trim();
+
+      if (trimmed.length === 0) {
+        consecutiveEmpty++;
+        if (consecutiveEmpty <= 1 && idx > 0 && idx < lines.length - 1) {
+          elements.push(
+            <View key={`${messageId}-spacer-${idx}`} style={styles.textSpacer} />
+          );
+        }
+        return;
+      }
+      consecutiveEmpty = 0;
+
       const stepMatch = trimmed.match(/^(?:Steg|Step)\s*(\d+)\s*[:.]/i);
 
       if (stepMatch) {
-        currentStep = parseInt(stepMatch[1], 10);
+        const currentStep = parseInt(stepMatch[1], 10);
         const stepContent = trimmed.replace(/^(?:Steg|Step)\s*\d+\s*[:.]\s*/i, '');
 
         elements.push(
@@ -196,15 +220,18 @@ Du ska:
             <Text style={styles.answerText}>{answerContent}</Text>
           </View>
         );
-      } else if (trimmed.length > 0) {
+      } else if (trimmed.startsWith('• ')) {
+        elements.push(
+          <View key={`${messageId}-bullet-${idx}`} style={styles.bulletContainer}>
+            <Text style={styles.bulletDot}>•</Text>
+            <Text style={styles.bulletText}>{trimmed.slice(2)}</Text>
+          </View>
+        );
+      } else {
         elements.push(
           <Text key={`${messageId}-line-${idx}`} style={styles.assistantMessageText}>
             {trimmed}
           </Text>
-        );
-      } else if (idx > 0 && idx < lines.length - 1) {
-        elements.push(
-          <View key={`${messageId}-spacer-${idx}`} style={styles.textSpacer} />
         );
       }
     });
@@ -320,31 +347,19 @@ Du ska:
                 </Text>
 
                 <View style={styles.suggestionsGrid}>
-                  <TouchableOpacity
-                    style={styles.suggestionCard}
-                    onPress={takePhoto}
-                  >
+                  <TouchableOpacity style={styles.suggestionCard} onPress={takePhoto}>
                     <Camera size={20} color="#5eb8ff" />
                     <Text style={styles.suggestionCardText}>Fota en uppgift</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.suggestionCard}
-                    onPress={() => setInput('Lös ekvationen: 2x + 5 = 15')}
-                  >
+                  <TouchableOpacity style={styles.suggestionCard} onPress={() => setInput('Lös ekvationen: 2x + 5 = 15')}>
                     <Text style={styles.suggestionIcon}>x²</Text>
                     <Text style={styles.suggestionCardText}>Skriv en ekvation</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.suggestionCard}
-                    onPress={() => setInput('Förklara Pythagoras sats')}
-                  >
+                  <TouchableOpacity style={styles.suggestionCard} onPress={() => setInput('Förklara Pythagoras sats')}>
                     <Text style={styles.suggestionIcon}>△</Text>
                     <Text style={styles.suggestionCardText}>Geometri</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.suggestionCard}
-                    onPress={() => setInput('Hur beräknar jag derivatan av x³ + 2x?')}
-                  >
+                  <TouchableOpacity style={styles.suggestionCard} onPress={() => setInput('Hur beräknar jag derivatan av x³ + 2x?')}>
                     <Text style={styles.suggestionIcon}>∫</Text>
                     <Text style={styles.suggestionCardText}>Derivata & Integral</Text>
                   </TouchableOpacity>
@@ -356,10 +371,7 @@ Du ska:
 
             {isSending && (
               <View style={styles.loadingRow}>
-                <LinearGradient
-                  colors={['#2563eb', '#1d4ed8']}
-                  style={styles.aiAvatar}
-                >
+                <LinearGradient colors={['#2563eb', '#1d4ed8']} style={styles.aiAvatar}>
                   <Text style={styles.aiAvatarText}>M</Text>
                 </LinearGradient>
                 <View style={styles.loadingBubble}>
@@ -389,18 +401,10 @@ Du ska:
           )}
 
           <View style={styles.inputContainer}>
-            <TouchableOpacity
-              style={styles.mediaButton}
-              onPress={takePhoto}
-              testID="math-ai-camera"
-            >
+            <TouchableOpacity style={styles.mediaButton} onPress={takePhoto} testID="math-ai-camera">
               <Camera size={20} color="#5eb8ff" />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.mediaButton}
-              onPress={pickImageFromLibrary}
-              testID="math-ai-gallery"
-            >
+            <TouchableOpacity style={styles.mediaButton} onPress={pickImageFromLibrary} testID="math-ai-gallery">
               <ImageIcon size={20} color="#5eb8ff" />
             </TouchableOpacity>
             <TextInput
@@ -556,7 +560,7 @@ const styles = StyleSheet.create({
   },
   messageRow: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 12,
     alignItems: 'flex-start',
   },
   userMessageRow: {
@@ -607,7 +611,7 @@ const styles = StyleSheet.create({
   stepContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginVertical: 6,
+    marginVertical: 5,
     gap: 10,
   },
   stepNumberCircle: {
@@ -634,7 +638,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(37,99,235,0.15)',
     borderRadius: 12,
     padding: 12,
-    marginTop: 10,
+    marginTop: 8,
     borderLeftWidth: 3,
     borderLeftColor: '#2563eb',
   },
@@ -652,8 +656,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     lineHeight: 24,
   },
+  bulletContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 2,
+    paddingLeft: 2,
+  },
+  bulletDot: {
+    width: 16,
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#5eb8ff',
+    fontWeight: '600' as const,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#c8ddf0',
+  },
   textSpacer: {
-    height: 6,
+    height: 4,
   },
   messageImage: {
     width: 200,
@@ -664,7 +687,7 @@ const styles = StyleSheet.create({
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   loadingBubble: {
     backgroundColor: 'rgba(30,58,95,0.6)',
@@ -685,7 +708,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,107,107,0.1)',
     padding: 12,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,107,107,0.2)',
   },

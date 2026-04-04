@@ -14,11 +14,29 @@ import {
 import { Send, ArrowLeft, Sparkles } from 'lucide-react-native';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MarkdownText } from '@/components/MarkdownText';
+import { cleanMarkdown } from '@/utils/cleanMarkdown';
 
 interface GeneralAIChatProps {
   onBack: () => void;
 }
+
+const GENERAL_SYSTEM = `Du är en hjälpsam AI-assistent för studenter.
+Du ska:
+- Svara på alla frågor tydligt och pedagogiskt på svenska
+- Ge studietips, sammanfattningar och förklaringar
+- Var uppmuntrande och stöttande
+- Svara ALLTID på svenska
+- Var koncis men informativ
+
+VIKTIGA FORMATERINGSREGLER (följ dessa STRIKT):
+- Skriv ALDRIG ###, ##, #, **, ***, *, __ eller någon annan markdown-syntax
+- Skriv ALDRIG rubriker med # tecken
+- Använd ALDRIG asterisker för fetstil eller kursiv
+- Skriv ren, vanlig text utan någon formatering
+- Separera stycken med en tom rad för läsbarhet
+- Använd bindestreck (-) för punktlistor om det behövs
+- Håll mellanrummen lagom, max en tom rad mellan stycken
+- Skriv koncist och tydligt utan onödiga tomrader`;
 
 export default function GeneralAIChat({ onBack }: GeneralAIChatProps) {
   const [input, setInput] = useState('');
@@ -29,8 +47,9 @@ export default function GeneralAIChat({ onBack }: GeneralAIChatProps) {
   const insets = useSafeAreaInsets();
 
   const { messages, error, sendMessage } = useRorkAgent({
+    system: GENERAL_SYSTEM,
     tools: {},
-  });
+  } as any);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -73,6 +92,55 @@ export default function GeneralAIChat({ onBack }: GeneralAIChatProps) {
     }
   }, [input, isSending, sendMessage]);
 
+  const renderCleanText = useCallback((text: string, messageId: string) => {
+    const cleaned = cleanMarkdown(text);
+    const lines = cleaned.split('\n');
+    const elements: React.ReactNode[] = [];
+    let consecutiveEmpty = 0;
+
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim();
+
+      if (trimmed.length === 0) {
+        consecutiveEmpty++;
+        if (consecutiveEmpty <= 1 && idx > 0 && idx < lines.length - 1) {
+          elements.push(
+            <View key={`${messageId}-spacer-${idx}`} style={styles.textSpacer} />
+          );
+        }
+        return;
+      }
+      consecutiveEmpty = 0;
+
+      if (trimmed.startsWith('• ')) {
+        elements.push(
+          <View key={`${messageId}-bullet-${idx}`} style={styles.bulletContainer}>
+            <Text style={styles.bulletDot}>•</Text>
+            <Text style={styles.bulletText}>{trimmed.slice(2)}</Text>
+          </View>
+        );
+      } else {
+        const numMatch = trimmed.match(/^(\d+)[.)]\s+(.+)$/);
+        if (numMatch) {
+          elements.push(
+            <View key={`${messageId}-num-${idx}`} style={styles.bulletContainer}>
+              <Text style={styles.numLabel}>{numMatch[1]}.</Text>
+              <Text style={styles.bulletText}>{numMatch[2]}</Text>
+            </View>
+          );
+        } else {
+          elements.push(
+            <Text key={`${messageId}-line-${idx}`} style={styles.assistantMessageText}>
+              {trimmed}
+            </Text>
+          );
+        }
+      }
+    });
+
+    return elements;
+  }, []);
+
   const renderMessage = useCallback((message: any) => {
     const isUser = message.role === 'user';
 
@@ -105,9 +173,9 @@ export default function GeneralAIChat({ onBack }: GeneralAIChatProps) {
                 );
               }
               return (
-                <MarkdownText key={`${message.id}-${index}`} style={styles.assistantMessageText}>
-                  {part.text}
-                </MarkdownText>
+                <View key={`${message.id}-${index}`}>
+                  {renderCleanText(part.text, `${message.id}-${index}`)}
+                </View>
               );
             }
             return null;
@@ -115,7 +183,7 @@ export default function GeneralAIChat({ onBack }: GeneralAIChatProps) {
         </View>
       </View>
     );
-  }, []);
+  }, [renderCleanText]);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
@@ -329,7 +397,7 @@ const styles = StyleSheet.create({
   },
   messageRow: {
     flexDirection: 'row',
-    marginBottom: 14,
+    marginBottom: 12,
     alignItems: 'flex-start',
   },
   userMessageRow: {
@@ -373,10 +441,39 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#c8ece8',
   },
+  bulletContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 2,
+    paddingLeft: 2,
+  },
+  bulletDot: {
+    width: 16,
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#4ECDC4',
+    fontWeight: '600' as const,
+  },
+  numLabel: {
+    width: 22,
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#4ECDC4',
+    fontWeight: '600' as const,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#c8ece8',
+  },
+  textSpacer: {
+    height: 4,
+  },
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   loadingBubble: {
     backgroundColor: 'rgba(30,60,50,0.6)',
@@ -390,7 +487,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,107,107,0.1)',
     padding: 12,
     borderRadius: 12,
-    marginBottom: 14,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,107,107,0.2)',
   },

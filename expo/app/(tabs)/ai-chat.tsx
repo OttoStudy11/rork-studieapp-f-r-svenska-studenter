@@ -23,6 +23,34 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { MarkdownText } from '@/components/MarkdownText';
 
+function FadeInView({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(6)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 280,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 280,
+        delay,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [opacity, translateY, delay]);
+
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
 export default function AIChatScreen() {
   const [input, setInput] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
@@ -30,6 +58,7 @@ export default function AIChatScreen() {
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
   const inputFadeAnim = useRef(new Animated.Value(0)).current;
+  const prevMessageCountRef = useRef(0);
 
   useEffect(() => {
     Animated.timing(inputFadeAnim, {
@@ -47,6 +76,10 @@ export default function AIChatScreen() {
   const [isSending, setIsSending] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    prevMessageCountRef.current = messages.length;
+  }, [messages.length]);
 
   const handleSend = useCallback(async () => {
     if ((!input.trim() && selectedImages.length === 0) || isSending) return;
@@ -75,36 +108,55 @@ export default function AIChatScreen() {
 
     try {
       if (imagesToSend.length > 0) {
+        const imagePrompt = userMessage || 'Analysera bilden och beskriv vad du ser. Om det finns text i bilden, extrahera och skriv ut all text.';
+        
         const files = await Promise.all(
           imagesToSend.map(async (imageUri) => {
-            let base64: string;
+            let base64Data: string;
+            let detectedMime = 'image/jpeg';
+
             if (imageUri.startsWith('data:')) {
-              base64 = imageUri;
+              const mimeMatch = imageUri.match(/^data:(image\/\w+);base64,/);
+              if (mimeMatch) {
+                detectedMime = mimeMatch[1];
+              }
+              base64Data = imageUri;
             } else if (Platform.OS === 'web') {
               const response = await fetch(imageUri);
               const blob = await response.blob();
-              base64 = await new Promise<string>((resolve, reject) => {
+              detectedMime = blob.type || 'image/jpeg';
+              base64Data = await new Promise<string>((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result as string);
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
               });
             } else {
+              const ext = imageUri.split('.').pop()?.toLowerCase() || 'jpeg';
+              if (ext === 'png') detectedMime = 'image/png';
+              else if (ext === 'webp') detectedMime = 'image/webp';
+              else if (ext === 'gif') detectedMime = 'image/gif';
+              else detectedMime = 'image/jpeg';
+
               const fileBase64 = await FileSystem.readAsStringAsync(imageUri, {
-                encoding: 'base64' as any,
+                encoding: FileSystem.EncodingType.Base64,
               });
-              base64 = `data:image/jpeg;base64,${fileBase64}`;
+              base64Data = `data:${detectedMime};base64,${fileBase64}`;
             }
+
+            console.log('[AI Chat] Image prepared, mime:', detectedMime, 'data length:', base64Data.length);
+
             return {
               type: 'file' as const,
-              mimeType: 'image/jpeg' as const,
-              data: base64,
+              mimeType: detectedMime,
+              data: base64Data,
             };
           })
         );
 
+        console.log('[AI Chat] Sending with', files.length, 'images');
         sendMessage({
-          text: userMessage || 'Vad finns på denna bild?',
+          text: imagePrompt,
           files: files as any,
         });
       } else {
@@ -143,8 +195,15 @@ export default function AIChatScreen() {
     }
   }, [error]);
 
+  const scrollDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
+    if (scrollDebounce.current) clearTimeout(scrollDebounce.current);
+    scrollDebounce.current = setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 80);
+    return () => {
+      if (scrollDebounce.current) clearTimeout(scrollDebounce.current);
+    };
   }, [messages]);
 
   const handleCopyMessage = useCallback((text: string) => {
@@ -167,10 +226,12 @@ export default function AIChatScreen() {
             }
             const result = await ImagePicker.launchCameraAsync({
               mediaTypes: 'images' as any,
-              quality: 0.7,
-              allowsEditing: true,
+              quality: 0.8,
+              allowsEditing: false,
+              base64: false,
             });
             if (!result.canceled && result.assets[0]) {
+              console.log('[AI Chat] Camera image selected:', result.assets[0].uri.substring(0, 60));
               setSelectedImages(prev => [...prev, result.assets[0].uri]);
             }
           },
@@ -185,11 +246,13 @@ export default function AIChatScreen() {
             }
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: 'images' as any,
-              quality: 0.7,
-              allowsEditing: true,
+              quality: 0.8,
+              allowsEditing: false,
               allowsMultipleSelection: false,
+              base64: false,
             });
             if (!result.canceled && result.assets[0]) {
+              console.log('[AI Chat] Gallery image selected:', result.assets[0].uri.substring(0, 60));
               setSelectedImages(prev => [...prev, result.assets[0].uri]);
             }
           },
@@ -199,10 +262,11 @@ export default function AIChatScreen() {
     );
   }, []);
 
-  const renderMessage = useCallback((message: any) => {
+  const renderMessage = useCallback((message: any, index: number) => {
     const isUser = message.role === 'user';
+    const isNew = index >= prevMessageCountRef.current - 1;
 
-    return (
+    const content = (
       <View
         key={message.id}
         style={[
@@ -224,10 +288,10 @@ export default function AIChatScreen() {
                 : [styles.aiBubble, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }],
             ]}
           >
-            {message.parts.map((part: any, index: number) => {
+            {message.parts.map((part: any, partIdx: number) => {
               if (part.type === 'text') {
                 return (
-                  <View key={`${message.id}-${index}`}>
+                  <View key={`${message.id}-${partIdx}`}>
                     {isUser ? (
                       <Text style={styles.userText} selectable>
                         {part.text}
@@ -239,6 +303,19 @@ export default function AIChatScreen() {
                     )}
                   </View>
                 );
+              }
+              if (part.type === 'file' || part.type === 'image') {
+                const uri = part.data || part.url || part.image;
+                if (uri) {
+                  return (
+                    <Image
+                      key={`${message.id}-img-${partIdx}`}
+                      source={{ uri }}
+                      style={styles.messageImage}
+                      resizeMode="cover"
+                    />
+                  );
+                }
               }
               return null;
             })}
@@ -262,6 +339,11 @@ export default function AIChatScreen() {
         </View>
       </View>
     );
+
+    if (isNew) {
+      return <FadeInView key={message.id}>{content}</FadeInView>;
+    }
+    return content;
   }, [isDark, theme.colors, handleCopyMessage]);
 
   const suggestions = [
@@ -297,7 +379,11 @@ export default function AIChatScreen() {
             ref={scrollViewRef}
             style={styles.messagesArea}
             contentContainerStyle={styles.messagesContent}
-            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            onContentSizeChange={() => {
+              setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+              }, 50);
+            }}
             showsVerticalScrollIndicator={false}
           >
             {messages.length === 0 ? (
@@ -330,22 +416,24 @@ export default function AIChatScreen() {
                 </View>
               </Animated.View>
             ) : (
-              messages.map((message) => renderMessage(message))
+              messages.map((message, index) => renderMessage(message, index))
             )}
 
             {isSending && (
-              <View style={styles.typingRow}>
-                <View style={[styles.aiAvatar, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}>
-                  <Sparkles size={14} color={theme.colors.primary} />
-                </View>
-                <View style={[styles.typingBubble, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
-                  <View style={styles.typingDots}>
-                    <TypingDot delay={0} color={theme.colors.textMuted} />
-                    <TypingDot delay={200} color={theme.colors.textMuted} />
-                    <TypingDot delay={400} color={theme.colors.textMuted} />
+              <FadeInView>
+                <View style={styles.typingRow}>
+                  <View style={[styles.aiAvatar, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}>
+                    <Sparkles size={14} color={theme.colors.primary} />
+                  </View>
+                  <View style={[styles.typingBubble, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
+                    <View style={styles.typingDots}>
+                      <TypingDot delay={0} color={theme.colors.textMuted} />
+                      <TypingDot delay={200} color={theme.colors.textMuted} />
+                      <TypingDot delay={400} color={theme.colors.textMuted} />
+                    </View>
                   </View>
                 </View>
-              </View>
+              </FadeInView>
             )}
 
             {(error || localError) && (
@@ -536,7 +624,7 @@ const styles = StyleSheet.create({
   },
   messageRow: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 12,
     alignItems: 'flex-start',
   },
   userMessageRow: {
@@ -555,7 +643,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   bubble: {
-    padding: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 18,
   },
   userBubble: {
@@ -567,13 +656,19 @@ const styles = StyleSheet.create({
   },
   userText: {
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 21,
     color: '#FFFFFF',
     fontWeight: '400',
   },
   aiText: {
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 21,
+  },
+  messageImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 12,
+    marginTop: 6,
   },
   copyAction: {
     flexDirection: 'row',
@@ -592,7 +687,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   typingBubble: {
     paddingHorizontal: 16,

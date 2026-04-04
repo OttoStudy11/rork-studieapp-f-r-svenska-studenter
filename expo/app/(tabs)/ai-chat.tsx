@@ -17,7 +17,11 @@ export default function AIChatScreen() {
     if (parent) {
       if (mode !== 'selector') {
         parent.setOptions({
-          tabBarStyle: { display: 'none' as const },
+          tabBarStyle: {
+            display: 'none' as const,
+            bottom: -200,
+            opacity: 0,
+          },
         });
       } else {
         parent.setOptions({

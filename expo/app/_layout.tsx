@@ -3,6 +3,8 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { useOTAUpdates } from "@/hooks/useOTAUpdates";
+import { UpdateScreen } from "@/components/UpdateScreen";
 import * as Notifications from 'expo-notifications';
 import { NotificationManager } from '@/lib/notification-manager';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -26,7 +28,7 @@ import { HPTrialProvider } from "@/contexts/HPTrialContext";
 import { CommunityProvider } from "@/contexts/CommunityContext";
 import { HPStudyPlanProvider } from "@/contexts/HPStudyPlanContext";
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,7 +72,7 @@ function AppContent() {
     
     if (authInitialized) {
       setIsReady(true);
-      hideSplash();
+      void hideSplash();
     }
   }, [authInitialized, hideSplash]);
 
@@ -79,7 +81,7 @@ function AppContent() {
       if (!isReady) {
         console.log('⏰ Force showing app after timeout');
         setIsReady(true);
-        hideSplash();
+        void hideSplash();
       }
     }, 3000);
 
@@ -127,8 +129,10 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const { isBlocking, statusMessage } = useOTAUpdates();
+
   useEffect(() => {
-    NotificationManager.initialize();
+    void NotificationManager.initialize();
     
     const notificationListener = Notifications.addNotificationReceivedListener(notification => {
       console.log('📬 Notification received:', notification);
@@ -143,6 +147,10 @@ export default function RootLayout() {
       responseListener.remove();
     };
   }, []);
+
+  if (isBlocking) {
+    return <UpdateScreen statusMessage={statusMessage} />;
+  }
 
   return (
     <ErrorBoundary>

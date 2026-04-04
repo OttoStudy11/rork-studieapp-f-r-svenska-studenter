@@ -511,13 +511,22 @@ export default function HomeScreen() {
                             </View>
                           )}
                           <TouchableOpacity
-                            style={[styles.examStudyPlanBtn, { backgroundColor: theme.colors.primary + '12' }]}
+                            style={styles.examStudyPlanBtn}
                             onPress={() => {
                               router.push(`/study-plan/${exam.id}?courseTitle=${encodeURIComponent(exam.title)}` as never);
                             }}
+                            activeOpacity={0.8}
                           >
-                            <FileText size={13} color={theme.colors.primary} />
-                            <Text style={[styles.examStudyPlanBtnText, { color: theme.colors.primary }]}>Visa studieplan</Text>
+                            <LinearGradient
+                              colors={isDark ? ['#4F46E5', '#7C3AED'] : ['#6366F1', '#818CF8']}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 0 }}
+                              style={styles.examStudyPlanBtnGradient}
+                            >
+                              <FileText size={14} color="white" />
+                              <Text style={styles.examStudyPlanBtnText}>Visa studieplan</Text>
+                              <ChevronRight size={15} color="rgba(255,255,255,0.6)" />
+                            </LinearGradient>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -1925,16 +1934,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   examStudyPlanBtn: {
+    marginTop: 10,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  examStudyPlanBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    marginTop: 10,
+    gap: 7,
     paddingVertical: 9,
+    paddingHorizontal: 14,
     borderRadius: 10,
   },
   examStudyPlanBtnText: {
     fontSize: 13,
     fontWeight: '600' as const,
+    color: 'white',
+    letterSpacing: 0.2,
   },
 });

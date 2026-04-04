@@ -16,7 +16,9 @@ import {
   Trash2,
   CheckCircle,
   ChevronRight,
+  FileText,
 } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams, Exam } from '@/contexts/ExamContext';
@@ -241,6 +243,28 @@ export default function CourseExamsSection({
               <MoreVertical size={18} color={theme.colors.textMuted} />
             </TouchableOpacity>
           </View>
+
+          {!isCompleted && (
+            <TouchableOpacity
+              style={styles.studyPlanBtn}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push(`/study-plan/${exam.id}?courseTitle=${encodeURIComponent(courseTitle)}` as never);
+              }}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={[accentColor, accentColor + 'CC']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.studyPlanBtnGradient}
+              >
+                <FileText size={15} color="white" />
+                <Text style={styles.studyPlanBtnText}>Visa studieplan</Text>
+                <ChevronRight size={16} color="rgba(255,255,255,0.7)" />
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
 
           {isExpanded && (
             <View style={[styles.expandedActions, { borderTopColor: theme.colors.border }]}>
@@ -661,5 +685,25 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  studyPlanBtn: {
+    marginHorizontal: 12,
+    marginBottom: 12,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  studyPlanBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    gap: 8,
+  },
+  studyPlanBtnText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '600' as const,
+    letterSpacing: 0.2,
   },
 });

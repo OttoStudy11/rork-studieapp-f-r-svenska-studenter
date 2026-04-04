@@ -1,22 +1,35 @@
-# Snyggare AI-svar, smooth text & bildtextextraktion
+# AI-chatt med val mellan Matematik AI och Generell AI
 
-## Vad ändras
+## Funktioner
 
-### 1. Snyggare textformatering
-- AI-svaren renderas rent utan synliga `***`, `###` eller andra markdown-symboler
-- Rubriker visas som fetstil med lite större text istället för fula `###`-tecken
-- Fetstil (`**text**`) visas som fetstil utan att asteriskerna syns
-- Bättre mellanrum — mindre "luft" mellan stycken så texten känns tätare och mer läsbar
-- Tomma rader filtreras bort så det inte blir stora gap i svaren
-- Punktlistor visas snyggt med runda prickar istället för `- ` tecken
+- **Väljarskärm med två kort** — När man trycker på AI-fliken visas två snygga kort: "Matematik AI" och "Generell AI", med ikoner och kort beskrivning
+- **Matematik AI (Photomath-stil)** — En dedikerad mattechatt med blått tema, steg-för-steg-lösningar, och bildanalys
+- **Generell AI** — En allmän chatt som svarar på allt (behåller nuvarande funktionalitet)
+- **Bildstöd i Matematik AI** — Kamera och bildbibliotek för att fotografera/välja matteproblem, grafer och ekvationer
+- **Bildextrahering** — AI:n kan läsa och lösa uppgifter från bilder (foton av läroböcker, handskrivna problem, grafer)
+- **Steg-för-steg-lösningar** — Mattechatten presenterar lösningar i tydliga numrerade steg med snygg formatering
 
-### 2. Smooth textrendering
-- Texten som skrivs ut av AI:n animeras mjukt med en fade-in istället för att "hoppa" fram
-- ScrollView rullar smidigt nedåt när nytt innehåll dyker upp
-- Övergången från "skriver..."-indikator till faktisk text blir sömlös
+## Design
 
-### 3. Bildtextextraktion (OCR)
-- Fixar bilduppladdningen så att AI:n faktiskt kan läsa och extrahera text från bilder
-- Bilderna skickas i rätt format (base64 med korrekt MIME-typ) till AI-agenten
-- Meddelandet anpassas automatiskt: "Vad står det på bilden?" om ingen text skrivs
-- Fungerar med både kamera och galleri-bilder
+### Väljarskärm
+- Mörk/ljusgrå bakgrund med två stora kort sida vid sida eller staplade
+- **Matematik AI-kort**: Blå gradient med kalkylator/formel-ikon, titel "Matematik AI", beskrivning "Fota uppgifter & få steg-för-steg-lösningar"
+- **Generell AI-kort**: Grön gradient med sparkles-ikon, titel "Generell AI", beskrivning "Fråga om vad som helst"
+- Tillbaka-knapp för att komma tillbaka till valet från chatten
+
+### Matematik AI-chatt (blått tema)
+- Mörkt marinblått/djupblått färgschema, inspirerat av Photomath
+- Kamera-knapp och bild-knapp bredvid textfältet
+- AI-svar med tydliga steg markerade med numrerade cirklar
+- Snygg bildförhandsvisning när man skickat en bild
+- Förslag som "Fota en uppgift" och "Skriv en ekvation"
+
+### Generell AI-chatt
+- Behåller nuvarande gröna tema och funktionalitet
+- Samma design som idag men polerad
+
+## Skärmar
+
+1. **AI-väljarskärm** — Två kort att välja mellan, visas som startsida för AI-fliken
+2. **Matematik AI-chatt** — Blå chatt med bildstöd och steg-för-steg-formatering
+3. **Generell AI-chatt** — Grön chatt för allmänna frågor (befintlig, polerad)

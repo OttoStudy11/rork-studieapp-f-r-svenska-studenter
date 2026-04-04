@@ -68,6 +68,7 @@ export default function TabLayout() {
         name="ai-chat"
         options={{
           title: 'AI Assistent',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
         }}
       />

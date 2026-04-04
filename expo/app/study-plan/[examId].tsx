@@ -56,6 +56,12 @@ interface StudyPlanData {
   examDayTips: string[];
 }
 
+interface StoredPlan {
+  plan: StudyPlanData;
+  generatedAt: string;
+  examId: string;
+}
+
 const LOADING_MESSAGES = [
   'Analyserar kursens innehåll...',
   'Hämtar Skolverkets kunskapskrav...',
@@ -160,27 +166,65 @@ export default function StudyPlanScreen() {
     }
   }, [plan, fadeAnim]);
 
-  const loadSavedPlan = useCallback(async () => {
+  const loadSavedPlan = useCallback(async (): Promise<'loaded' | 'stale' | 'none'> => {
     try {
       const saved = await AsyncStorage.getItem(storageKey);
       if (saved) {
-        const parsed = JSON.parse(saved) as StudyPlanData;
-        setPlan(parsed);
-        console.log('Loaded saved study plan for key:', storageKey);
-        return true;
+        const stored = JSON.parse(saved) as StoredPlan | StudyPlanData;
+
+        let planData: StudyPlanData;
+        let generatedAt: string | null = null;
+
+        if ('plan' in stored && 'generatedAt' in stored) {
+          planData = stored.plan;
+          generatedAt = stored.generatedAt;
+        } else {
+          planData = stored as StudyPlanData;
+        }
+
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        const futureDays = planData.dailyPlan.filter((day) => day.date >= todayStr);
+
+        if (futureDays.length === 0) {
+          console.log('All plan days have passed, need regeneration');
+          return 'stale';
+        }
+
+        const generatedDate = generatedAt ? generatedAt.split('T')[0] : null;
+        const daysSinceGenerated = generatedDate
+          ? Math.floor((Date.now() - new Date(generatedDate + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24))
+          : 999;
+
+        if (daysSinceGenerated >= 3 && daysUntilExam > 2) {
+          console.log(`Plan is ${daysSinceGenerated} days old with ${daysUntilExam} days until exam, regenerating`);
+          return 'stale';
+        }
+
+        const updatedPlan: StudyPlanData = {
+          ...planData,
+          dailyPlan: futureDays.map((day, index) => ({ ...day, day: index + 1 })),
+        };
+
+        setPlan(updatedPlan);
+        console.log(`Loaded study plan: ${futureDays.length}/${planData.dailyPlan.length} days remaining`);
+        return 'loaded';
       }
     } catch (err) {
       console.error('Error loading saved plan:', err);
     }
-    return false;
-  }, [storageKey]);
+    return 'none';
+  }, [storageKey, daysUntilExam]);
 
   const generatePlan = useCallback(async (forceRegenerate = false) => {
     if (!exam) return;
 
     if (!forceRegenerate) {
-      const hasSaved = await loadSavedPlan();
-      if (hasSaved) return;
+      const result = await loadSavedPlan();
+      if (result === 'loaded') return;
+      if (result === 'stale') {
+        console.log('Saved plan is stale, auto-regenerating...');
+      }
     }
 
     setIsGenerating(true);
@@ -258,7 +302,12 @@ Returnera ENBART ett JSON-objekt utan markdown eller förklaringar:
       }
 
       setPlan(parsed);
-      await AsyncStorage.setItem(storageKey, JSON.stringify(parsed));
+      const storedPlan: StoredPlan = {
+        plan: parsed,
+        generatedAt: new Date().toISOString(),
+        examId: examId || '',
+      };
+      await AsyncStorage.setItem(storageKey, JSON.stringify(storedPlan));
       console.log('Study plan generated and saved');
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
@@ -268,7 +317,7 @@ Returnera ENBART ett JSON-objekt utan markdown eller förklaringar:
     } finally {
       setIsGenerating(false);
     }
-  }, [exam, daysUntilExam, paramCourseTitle, loadSavedPlan, storageKey, fadeAnim]);
+  }, [exam, daysUntilExam, paramCourseTitle, loadSavedPlan, storageKey, fadeAnim, examId]);
 
   useEffect(() => {
     if (exam) {

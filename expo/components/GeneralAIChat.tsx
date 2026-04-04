@@ -206,7 +206,7 @@ export default function GeneralAIChat({ onBack }: GeneralAIChatProps) {
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <ScrollView
           ref={scrollViewRef}
@@ -267,7 +267,7 @@ export default function GeneralAIChat({ onBack }: GeneralAIChatProps) {
           )}
         </ScrollView>
 
-        <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom + 60, 76) }]}>
+        <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
           <TextInput
             style={styles.input}
             value={input}

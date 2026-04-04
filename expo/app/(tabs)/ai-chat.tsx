@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useNavigation } from 'expo-router';
 import { PremiumGate } from '@/components/PremiumGate';
 import AISelectorScreen from '@/components/AISelectorScreen';
 import MathAIChat from '@/components/MathAIChat';
@@ -9,6 +10,29 @@ type ChatMode = 'selector' | 'math' | 'general';
 
 export default function AIChatScreen() {
   const [mode, setMode] = useState<ChatMode>('selector');
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const parent = navigation.getParent();
+    if (parent) {
+      if (mode !== 'selector') {
+        parent.setOptions({
+          tabBarStyle: { display: 'none' as const },
+        });
+      } else {
+        parent.setOptions({
+          tabBarStyle: undefined,
+        });
+      }
+    }
+    return () => {
+      if (parent) {
+        parent.setOptions({
+          tabBarStyle: undefined,
+        });
+      }
+    };
+  }, [mode, navigation]);
 
   const handleSelectMath = useCallback(() => {
     console.log('[AI Chat] Selected Math AI');

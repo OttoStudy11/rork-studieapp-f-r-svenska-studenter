@@ -49,7 +49,8 @@ VIKTIGA FORMATERINGSREGLER (följ dessa STRIKT):
 - Använd radbrytningar mellan stycken för läsbarhet
 - Använd "Steg 1:", "Steg 2:" etc. för att strukturera lösningar
 - Håll mellanrummen lagom, max en tom rad mellan stycken
-- Skriv koncist och tydligt`;
+- Skriv koncist och tydligt
+- Du FÅR använda LaTeX-notation för matematik (t.ex. \\frac{a}{b}, x^2, \\sqrt{x}, \\theta) — det konverteras automatiskt till snygga tecken`;
 
 export default function MathAIChat({ onBack }: MathAIChatProps) {
   const [input, setInput] = useState('');
@@ -197,65 +198,80 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
     }
   }, [input, attachedImage, isSending, sendMessage]);
 
-  const renderStepText = useCallback((text: string, messageId: string) => {
+  const parseSteps = useCallback((text: string, messageId: string) => {
     const cleaned = cleanMarkdown(text);
     const lines = cleaned.split('\n');
-    const elements: React.ReactNode[] = [];
-    let consecutiveEmpty = 0;
+    const cards: React.ReactNode[] = [];
+    let currentCardLines: string[] = [];
+    let currentStepNum: number | null = null;
+    let cardIndex = 0;
 
-    lines.forEach((line, idx) => {
-      const trimmed = line.trim();
+    const flushCard = () => {
+      if (currentCardLines.length === 0) return;
+      const content = currentCardLines.join('\n').trim();
+      if (!content) return;
 
-      if (trimmed.length === 0) {
-        consecutiveEmpty++;
-        if (consecutiveEmpty <= 1 && idx > 0 && idx < lines.length - 1) {
-          elements.push(
-            <View key={`${messageId}-spacer-${idx}`} style={styles.textSpacer} />
-          );
-        }
-        return;
-      }
-      consecutiveEmpty = 0;
-
-      const stepMatch = trimmed.match(/^(?:Steg|Step)\s*(\d+)\s*[:.]/i);
-
-      if (stepMatch) {
-        const currentStep = parseInt(stepMatch[1], 10);
-        const stepContent = trimmed.replace(/^(?:Steg|Step)\s*\d+\s*[:.]\s*/i, '');
-
-        elements.push(
-          <View key={`${messageId}-step-${idx}`} style={styles.stepContainer}>
-            <View style={styles.stepNumberCircle}>
-              <Text style={styles.stepNumberText}>{currentStep}</Text>
+      if (currentStepNum !== null) {
+        cards.push(
+          <View key={`${messageId}-card-${cardIndex}`} style={styles.stepCard}>
+            <View style={styles.stepCardHeader}>
+              <LinearGradient
+                colors={['#2563eb', '#1d4ed8']}
+                style={styles.stepBadge}
+              >
+                <Text style={styles.stepBadgeText}>{currentStepNum}</Text>
+              </LinearGradient>
+              <Text style={styles.stepLabel}>Steg {currentStepNum}</Text>
             </View>
-            <Text style={styles.stepText}>{stepContent}</Text>
-          </View>
-        );
-      } else if (trimmed.match(/^(?:Svar|Resultat|Slutsvar)\s*[:.]/i)) {
-        const answerContent = trimmed.replace(/^(?:Svar|Resultat|Slutsvar)\s*[:.]\s*/i, '');
-        elements.push(
-          <View key={`${messageId}-answer-${idx}`} style={styles.answerContainer}>
-            <Text style={styles.answerLabel}>Svar</Text>
-            <Text style={styles.answerText}>{answerContent}</Text>
-          </View>
-        );
-      } else if (trimmed.startsWith('• ')) {
-        elements.push(
-          <View key={`${messageId}-bullet-${idx}`} style={styles.bulletContainer}>
-            <Text style={styles.bulletDot}>•</Text>
-            <Text style={styles.bulletText}>{trimmed.slice(2)}</Text>
+            <Text style={styles.stepCardContent}>{content}</Text>
           </View>
         );
       } else {
-        elements.push(
-          <Text key={`${messageId}-line-${idx}`} style={styles.assistantMessageText}>
-            {trimmed}
-          </Text>
+        cards.push(
+          <Text key={`${messageId}-text-${cardIndex}`} style={styles.plainText}>{content}</Text>
         );
       }
-    });
+      cardIndex++;
+      currentCardLines = [];
+      currentStepNum = null;
+    };
 
-    return elements;
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (!trimmed) {
+        if (currentCardLines.length > 0) {
+          currentCardLines.push('');
+        }
+        continue;
+      }
+
+      const stepMatch = trimmed.match(/^(?:Steg|Step)\s*(\d+)\s*[:.]/i);
+      const answerMatch = trimmed.match(/^(?:Svar|Resultat|Slutsvar)\s*[:.]/i);
+
+      if (stepMatch) {
+        flushCard();
+        currentStepNum = parseInt(stepMatch[1], 10);
+        const stepContent = trimmed.replace(/^(?:Steg|Step)\s*\d+\s*[:.]\s*/i, '');
+        if (stepContent) currentCardLines.push(stepContent);
+      } else if (answerMatch) {
+        flushCard();
+        const answerContent = trimmed.replace(/^(?:Svar|Resultat|Slutsvar)\s*[:.]\s*/i, '');
+        cards.push(
+          <View key={`${messageId}-answer-${cardIndex}`} style={styles.answerCard}>
+            <View style={styles.answerCardHeader}>
+              <Text style={styles.answerBadgeText}>SVAR</Text>
+            </View>
+            <Text style={styles.answerCardContent}>{answerContent}</Text>
+          </View>
+        );
+        cardIndex++;
+      } else {
+        currentCardLines.push(trimmed);
+      }
+    }
+
+    flushCard();
+    return cards;
   }, []);
 
   const renderMessage = useCallback((message: any) => {
@@ -269,61 +285,63 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
           isUser ? styles.userMessageRow : styles.assistantMessageRow,
         ]}
       >
-        {!isUser && (
-          <LinearGradient
-            colors={['#2563eb', '#1d4ed8']}
-            style={styles.aiAvatar}
-          >
-            <Text style={styles.aiAvatarText}>M</Text>
-          </LinearGradient>
-        )}
-        <View
-          style={[
-            styles.messageBubble,
-            isUser ? styles.userBubble : styles.assistantBubble,
-          ]}
-        >
-          {message.parts.map((part: any, index: number) => {
-            if (part.type === 'text') {
-              if (isUser) {
+        {isUser ? (
+          <View style={styles.userBubble}>
+            {message.parts.map((part: any, index: number) => {
+              if (part.type === 'text') {
                 return (
                   <Text key={`${message.id}-${index}`} style={styles.userMessageText}>
                     {part.text}
                   </Text>
                 );
               }
-              return (
-                <View key={`${message.id}-${index}`}>
-                  {renderStepText(part.text, `${message.id}-${index}`)}
-                </View>
-              );
-            }
-            if (part.type === 'file' || (part.type === 'image' && part.image)) {
-              return (
-                <Image
-                  key={`${message.id}-img-${index}`}
-                  source={{ uri: part.data || part.image || part.uri }}
-                  style={styles.messageImage}
-                  resizeMode="contain"
-                />
-              );
-            }
-            return null;
-          })}
-        </View>
+              if (part.type === 'file' || (part.type === 'image' && part.image)) {
+                return (
+                  <Image
+                    key={`${message.id}-img-${index}`}
+                    source={{ uri: part.data || part.image || part.uri }}
+                    style={styles.messageImage}
+                    resizeMode="contain"
+                  />
+                );
+              }
+              return null;
+            })}
+          </View>
+        ) : (
+          <View style={styles.assistantContainer}>
+            {message.parts.map((part: any, index: number) => {
+              if (part.type === 'text') {
+                return (
+                  <View key={`${message.id}-${index}`} style={styles.stepsContainer}>
+                    {parseSteps(part.text, `${message.id}-${index}`)}
+                  </View>
+                );
+              }
+              if (part.type === 'file' || (part.type === 'image' && part.image)) {
+                return (
+                  <Image
+                    key={`${message.id}-img-${index}`}
+                    source={{ uri: part.data || part.image || part.uri }}
+                    style={styles.messageImage}
+                    resizeMode="contain"
+                  />
+                );
+              }
+              return null;
+            })}
+          </View>
+        )}
       </View>
     );
-  }, [renderStepText]);
+  }, [parseSteps]);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <LinearGradient
-        colors={['#0f1a2e', '#0a1220', '#060d18']}
-        style={styles.background}
-      >
+      <View style={styles.background}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity onPress={onBack} style={styles.backButton} testID="math-ai-back">
-            <ArrowLeft size={22} color="#5eb8ff" />
+            <ArrowLeft size={22} color="#2563eb" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <LinearGradient
@@ -343,7 +361,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
         <KeyboardAvoidingView
           style={styles.keyboardView}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           <ScrollView
             ref={scrollViewRef}
@@ -355,7 +373,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
             {messages.length === 0 ? (
               <View style={styles.emptyState}>
                 <LinearGradient
-                  colors={['#1e3a5f', '#152d4a']}
+                  colors={['#eff6ff', '#dbeafe']}
                   style={styles.emptyIconContainer}
                 >
                   <Text style={styles.emptyIconText}>f(x)</Text>
@@ -367,7 +385,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
 
                 <View style={styles.suggestionsGrid}>
                   <TouchableOpacity style={styles.suggestionCard} onPress={takePhoto}>
-                    <Camera size={20} color="#5eb8ff" />
+                    <Camera size={20} color="#2563eb" />
                     <Text style={styles.suggestionCardText}>Fota en uppgift</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.suggestionCard} onPress={() => setInput('Lös ekvationen: 2x + 5 = 15')}>
@@ -390,11 +408,8 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
 
             {isSending && (
               <View style={styles.loadingRow}>
-                <LinearGradient colors={['#2563eb', '#1d4ed8']} style={styles.aiAvatar}>
-                  <Text style={styles.aiAvatarText}>M</Text>
-                </LinearGradient>
-                <View style={styles.loadingBubble}>
-                  <ActivityIndicator size="small" color="#5eb8ff" />
+                <View style={styles.loadingCard}>
+                  <ActivityIndicator size="small" color="#2563eb" />
                   <Text style={styles.loadingText}>Löser uppgiften...</Text>
                 </View>
               </View>
@@ -414,17 +429,17 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
               <Image source={{ uri: attachedImage.uri }} style={styles.previewThumbnail} />
               <Text style={styles.previewText}>Bild bifogad</Text>
               <TouchableOpacity onPress={removeAttachedImage} style={styles.removeImageButton}>
-                <X size={16} color="#ff6b6b" />
+                <X size={16} color="#ef4444" />
               </TouchableOpacity>
             </View>
           )}
 
-          <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom + 60, 76) }]}>
+          <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
             <TouchableOpacity style={styles.mediaButton} onPress={takePhoto} testID="math-ai-camera">
-              <Camera size={20} color="#5eb8ff" />
+              <Camera size={20} color="#2563eb" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.mediaButton} onPress={pickImageFromLibrary} testID="math-ai-gallery">
-              <ImageIcon size={20} color="#5eb8ff" />
+              <ImageIcon size={20} color="#2563eb" />
             </TouchableOpacity>
             <TextInput
               ref={inputRef}
@@ -432,7 +447,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
               value={input}
               onChangeText={setInput}
               placeholder="Skriv en ekvation eller fråga..."
-              placeholderTextColor="#4a6a8a"
+              placeholderTextColor="#9ca3af"
               multiline
               maxLength={2000}
               editable={!isSending}
@@ -450,7 +465,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
-      </LinearGradient>
+      </View>
     </Animated.View>
   );
 }
@@ -461,20 +476,22 @@ const styles = StyleSheet.create({
   },
   background: {
     flex: 1,
+    backgroundColor: '#f0f4f8',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 12,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(94,184,255,0.08)',
+    borderBottomColor: '#e5e7eb',
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(94,184,255,0.08)',
+    backgroundColor: '#eff6ff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -500,11 +517,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '700' as const,
-    color: '#fff',
+    color: '#1f2937',
   },
   headerSubtitle: {
     fontSize: 11,
-    color: '#5eb8ff',
+    color: '#6b7280',
   },
   headerSpacer: {
     width: 40,
@@ -535,17 +552,17 @@ const styles = StyleSheet.create({
   emptyIconText: {
     fontSize: 22,
     fontWeight: '700' as const,
-    color: '#5eb8ff',
+    color: '#2563eb',
   },
   emptyTitle: {
     fontSize: 24,
     fontWeight: '800' as const,
-    color: '#fff',
+    color: '#1f2937',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 15,
-    color: '#6a8aaa',
+    color: '#6b7280',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 32,
@@ -558,144 +575,133 @@ const styles = StyleSheet.create({
   },
   suggestionCard: {
     width: '47%',
-    backgroundColor: 'rgba(94,184,255,0.06)',
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: 'rgba(94,184,255,0.12)',
+    borderColor: '#e5e7eb',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   suggestionIcon: {
     fontSize: 20,
-    color: '#5eb8ff',
+    color: '#2563eb',
     fontWeight: '700' as const,
   },
   suggestionCardText: {
     fontSize: 13,
-    color: '#5eb8ff',
+    color: '#374151',
     fontWeight: '500' as const,
     textAlign: 'center',
   },
   messageRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'flex-start',
+    marginBottom: 16,
   },
   userMessageRow: {
-    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
   },
   assistantMessageRow: {
-    justifyContent: 'flex-start',
-  },
-  aiAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-    marginTop: 2,
-  },
-  aiAvatarText: {
-    fontSize: 14,
-    fontWeight: '800' as const,
-    color: '#fff',
-  },
-  messageBubble: {
-    maxWidth: '78%',
-    padding: 14,
-    borderRadius: 18,
+    alignItems: 'flex-start',
   },
   userBubble: {
+    maxWidth: '80%',
     backgroundColor: '#2563eb',
+    padding: 14,
+    borderRadius: 18,
     borderBottomRightRadius: 4,
-  },
-  assistantBubble: {
-    backgroundColor: 'rgba(30,58,95,0.6)',
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(94,184,255,0.1)',
   },
   userMessageText: {
     fontSize: 15,
     lineHeight: 22,
     color: '#fff',
   },
-  assistantMessageText: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#c8ddf0',
+  assistantContainer: {
+    width: '100%',
   },
-  stepContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginVertical: 5,
+  stepsContainer: {
     gap: 10,
   },
-  stepNumberCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#2563eb',
+  stepCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  stepCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  stepBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 1,
   },
-  stepNumberText: {
-    fontSize: 13,
+  stepBadgeText: {
+    fontSize: 14,
     fontWeight: '700' as const,
     color: '#fff',
   },
-  stepText: {
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#c8ddf0',
+  stepLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#6b7280',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
   },
-  answerContainer: {
-    backgroundColor: 'rgba(37,99,235,0.15)',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 8,
-    borderLeftWidth: 3,
+  stepCardContent: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#1f2937',
+  },
+  answerCard: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 16,
+    padding: 16,
+    borderLeftWidth: 4,
     borderLeftColor: '#2563eb',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
   },
-  answerLabel: {
+  answerCardHeader: {
+    marginBottom: 8,
+  },
+  answerBadgeText: {
     fontSize: 12,
     fontWeight: '700' as const,
-    color: '#5eb8ff',
-    textTransform: 'uppercase' as const,
+    color: '#2563eb',
     letterSpacing: 1,
-    marginBottom: 4,
   },
-  answerText: {
-    fontSize: 17,
+  answerCardContent: {
+    fontSize: 20,
     fontWeight: '600' as const,
-    color: '#fff',
-    lineHeight: 24,
+    color: '#1e40af',
+    lineHeight: 28,
   },
-  bulletContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginVertical: 2,
-    paddingLeft: 2,
-  },
-  bulletDot: {
-    width: 16,
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#5eb8ff',
-    fontWeight: '600' as const,
-  },
-  bulletText: {
-    flex: 1,
+  plainText: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#c8ddf0',
-  },
-  textSpacer: {
-    height: 4,
+    color: '#374151',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
   },
   messageImage: {
     width: 200,
@@ -704,35 +710,38 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     marginBottom: 12,
   },
-  loadingBubble: {
-    backgroundColor: 'rgba(30,58,95,0.6)',
-    padding: 14,
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
+  loadingCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(94,184,255,0.1)',
+    borderColor: '#e5e7eb',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   loadingText: {
     fontSize: 14,
-    color: '#5eb8ff',
+    color: '#6b7280',
+    fontWeight: '500' as const,
   },
   errorContainer: {
-    backgroundColor: 'rgba(255,107,107,0.1)',
+    backgroundColor: '#fef2f2',
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,107,107,0.2)',
+    borderColor: '#fecaca',
   },
   errorText: {
-    color: '#ff6b6b',
+    color: '#dc2626',
     fontSize: 14,
     textAlign: 'center',
   },
@@ -741,9 +750,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: 'rgba(30,58,95,0.4)',
+    backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(94,184,255,0.08)',
+    borderTopColor: '#e5e7eb',
     gap: 10,
   },
   previewThumbnail: {
@@ -754,13 +763,13 @@ const styles = StyleSheet.create({
   previewText: {
     flex: 1,
     fontSize: 13,
-    color: '#8ab4d4',
+    color: '#6b7280',
   },
   removeImageButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,107,107,0.1)',
+    backgroundColor: '#fef2f2',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -768,9 +777,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 12,
     paddingHorizontal: 10,
-    backgroundColor: 'rgba(10,18,32,0.9)',
+    backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(94,184,255,0.08)',
+    borderTopColor: '#e5e7eb',
     alignItems: 'flex-end',
     gap: 6,
   },
@@ -778,21 +787,21 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(94,184,255,0.08)',
+    backgroundColor: '#eff6ff',
     justifyContent: 'center',
     alignItems: 'center',
   },
   input: {
     flex: 1,
-    backgroundColor: 'rgba(94,184,255,0.06)',
+    backgroundColor: '#f3f4f6',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 15,
     maxHeight: 100,
-    color: '#e0ecf5',
+    color: '#1f2937',
     borderWidth: 1,
-    borderColor: 'rgba(94,184,255,0.1)',
+    borderColor: '#e5e7eb',
   },
   sendButton: {
     width: 40,
@@ -803,6 +812,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: 'rgba(37,99,235,0.3)',
+    backgroundColor: '#93c5fd',
   },
 });

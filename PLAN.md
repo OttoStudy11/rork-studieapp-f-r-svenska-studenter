@@ -1,35 +1,25 @@
-# AI-chatt med val mellan Matematik AI och Generell AI
+# Snygga upp AI-matematiksvaren & göm tab-baren i chatten
 
-## Funktioner
+## Ändringar
 
-- **Väljarskärm med två kort** — När man trycker på AI-fliken visas två snygga kort: "Matematik AI" och "Generell AI", med ikoner och kort beskrivning
-- **Matematik AI (Photomath-stil)** — En dedikerad mattechatt med blått tema, steg-för-steg-lösningar, och bildanalys
-- **Generell AI** — En allmän chatt som svarar på allt (behåller nuvarande funktionalitet)
-- **Bildstöd i Matematik AI** — Kamera och bildbibliotek för att fotografera/välja matteproblem, grafer och ekvationer
-- **Bildextrahering** — AI:n kan läsa och lösa uppgifter från bilder (foton av läroböcker, handskrivna problem, grafer)
-- **Steg-för-steg-lösningar** — Mattechatten presenterar lösningar i tydliga numrerade steg med snygg formatering
+### 1. Konvertera LaTeX till läsbara matematiska tecken
+- All rå LaTeX-kod som `\frac{a}{b}`, `$$`, `x^2`, `\sqrt`, `\theta` osv. omvandlas automatiskt till snygga Unicode-tecken (t.ex. `x²`, `√x`, `θ`, `a/b`)
+- Inga `$$`, `\frac`, `\\` eller andra kodtecken visas i chatten längre
+- Matematiska uttryck blir rena och lättlästa
 
-## Design
+### 2. Photomath-liknande steg-kort
+- Varje lösningssteg visas i ett eget snyggt kort med vit/ljus bakgrund, rundade hörn och skugga
+- Stegnummer visas i en färgad cirkel till vänster
+- Slutsvaret visas i ett markerat kort med tydlig ram
+- Hela layouten liknar Photomath med separerade sektioner
 
-### Väljarskärm
-- Mörk/ljusgrå bakgrund med två stora kort sida vid sida eller staplade
-- **Matematik AI-kort**: Blå gradient med kalkylator/formel-ikon, titel "Matematik AI", beskrivning "Fota uppgifter & få steg-för-steg-lösningar"
-- **Generell AI-kort**: Grön gradient med sparkles-ikon, titel "Generell AI", beskrivning "Fråga om vad som helst"
-- Tillbaka-knapp för att komma tillbaka till valet från chatten
+### 3. Göm tab-baren i AI-chattar
+- När man öppnar Matematik AI eller Generell AI försvinner navigeringsraden längst ner
+- Tab-baren syns igen direkt när man går tillbaka till väljskärmen
+- Input-fältet hamnar längst ner utan att överlappa med tab-baren
 
-### Matematik AI-chatt (blått tema)
-- Mörkt marinblått/djupblått färgschema, inspirerat av Photomath
-- Kamera-knapp och bild-knapp bredvid textfältet
-- AI-svar med tydliga steg markerade med numrerade cirklar
-- Snygg bildförhandsvisning när man skickat en bild
-- Förslag som "Fota en uppgift" och "Skriv en ekvation"
-
-### Generell AI-chatt
-- Behåller nuvarande gröna tema och funktionalitet
-- Samma design som idag men polerad
-
-## Skärmar
-
-1. **AI-väljarskärm** — Två kort att välja mellan, visas som startsida för AI-fliken
-2. **Matematik AI-chatt** — Blå chatt med bildstöd och steg-för-steg-formatering
-3. **Generell AI-chatt** — Grön chatt för allmänna frågor (befintlig, polerad)
+### Design
+- Steg-korten har ljus bakgrund (`rgba`) med subtil kant, precis som Photomath
+- Matematiska uttryck visas i en lite större, tydligare font
+- Bättre spacing mellan kort — renare, luftigare layout
+- Svar-kortet sticker ut med accentfärg på vänster kant

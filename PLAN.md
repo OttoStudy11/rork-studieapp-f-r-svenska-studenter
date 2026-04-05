@@ -1,29 +1,22 @@
-# Premium Math AI med bildkort, dold tab-bar & haptics
+# Fixa AI-chattens layout, dölj tabbar, ta bort Planering & Prov, flytta premium-gate
 
-## Vad ändras
+## Ändringar
 
-### 1. Steg-för-steg-kort fungerar även för bilder
-- AI:ns instruktioner uppdateras så att den **alltid** svarar med numrerade steg (Steg 1, Steg 2…) oavsett om frågan kommer från text eller bild
-- Samma snygga kort-layout som vid textfrågor visas även när en bild skickas
-- Systemprompten förtydligas: "Även om du analyserar en bild, svara med steg-för-steg-format"
+### 1. Matematik AI — förslagskorten i 2x2 rutnät
+- Säkerställa att de fyra förslagskorten (Fota en uppgift, Skriv en ekvation, Geometri, Derivata & Integral) visas **två och två per rad** istället för alla på en rad
+- Justera bredden och layouten så det ser snyggt ut på alla skärmstorlekar
 
-### 2. Tab-baren försvinner helt i chatten
-- När man öppnar Matematik AI eller Generell AI döljs navigeringsbaren helt (inga ikoner i botten)
-- Baren kommer tillbaka direkt när man trycker "tillbaka" till AI-väljaren
-- Fixar nuvarande bugg där `position: absolute` på tab-baren gör att den syns trots försök att dölja den
+### 2. Dölj tabbaren när man är inne i Matematik AI eller Generell AI-chatten
+- När man öppnar en av AI-chattarna försvinner navigeringsbaren längst ner
+- Tabbaren syns igen när man trycker tillbaka till AI-väljaren
+- Inputfältet och skicka-knappen hamnar längst ner utan att blockeras
 
-### 3. Premium UI/UX-uppgradering av Math AI-chatten
-- **Header**: Glasig, elegant header med subtil gradient – liknande studieplans-designen
-- **Bakgrund**: Mjuk tonad bakgrund istället för platt grå
-- **Steg-kort**: Mer polish – djupare skuggor, subtil vänster-rand med accentfärg, smidigare layout
-- **Svar-kort**: Tydligare "SVAR"-badge med gradient-accent
-- **Tom-vy**: Mer visuellt imponerande startskärm med finare ikoner och mjukare animationer
-- **Inputfält**: Renare design med mjukare kanter och premium-känsla
-- **Animationer**: Meddelanden glider in smidigt (fade + slide) istället för att bara dyka upp
+### 3. Ta bort "Planering & Prov" från fokus/timer-sidan
+- Hela sektionen med "Planering & Prov" (prov, kommande sessioner, historik) tas bort från timer-sidan
+- Timer, statistik och allt annat behålls som det är
 
-### 4. Haptic feedback
-- Lätt vibration när man trycker på "Skicka"
-- Lätt vibration vid kameraknapp och bildval
-- Vibration vid "tillbaka"-knapp
-- Mjuk vibration när AI:ns svar har laddats klart
-- Vibration på förslagskorten i tomma vyn
+### 4. Flytta premium-gate till när man öppnar Matematik AI eller Generell AI
+- Ingen premium-spärr visas direkt på AI-väljarsidan
+- Premium-spärren visas istället när eleven trycker på "Matematik AI" eller "Generell AI"
+- Om eleven inte har premium skickas de till premium-sidan
+- Om eleven har premium öppnas chatten som vanligt

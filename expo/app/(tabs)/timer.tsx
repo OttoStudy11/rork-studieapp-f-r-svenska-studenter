@@ -28,8 +28,8 @@ import { useExams } from '@/contexts/ExamContext';
 import { TimerPersistence } from '@/lib/timer-persistence';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
-import { PremiumGate } from '@/components/PremiumGate';
-import { Play, Pause, Square, Settings, Flame, Target, Coffee, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, Plus, ChevronDown, ChevronUp, ChevronRight, BookOpen, FileText, CheckCircle, TrendingUp, TrendingDown, Award, BarChart3, PieChart, Sunrise, Sun, Moon, Lightbulb, Trophy, Activity, BellOff } from 'lucide-react-native';
+
+import { Play, Pause, Square, Settings, Flame, Target, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, ChevronRight, CheckCircle, TrendingUp, TrendingDown, Award, BarChart3, PieChart, Sunrise, Sun, Moon, Lightbulb, Trophy, Activity } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import AddExamModal from '@/components/AddExamModal';
 
@@ -255,7 +255,7 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
 export default function TimerScreen() {
   const { courses, addPomodoroSession, pomodoroSessions } = useStudy();
   const { showSuccess, showAchievement } = useToast();
-  const { upcomingExams, completedExams } = useExams();
+  const _exams = useExams();
   const { theme, isDark } = useTheme();
   const { currentStreak, checkAchievements, refreshAchievements } = useAchievements();
   const { awardStudySession } = useGamification();
@@ -269,7 +269,7 @@ export default function TimerScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [focusTime, setFocusTime] = useState(25);
   const [breakTime, setBreakTime] = useState(5);
-  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [_sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [isDndActive, setIsDndActive] = useState(false);
   const [dndPermissionGranted, setDndPermissionGranted] = useState(false);
   const [selectedStatView, setSelectedStatView] = useState<'day' | 'week'>('day');
@@ -280,14 +280,13 @@ export default function TimerScreen() {
   const [totalFocusToday, setTotalFocusToday] = useState(0);
   const [weeklyAverage, setWeeklyAverage] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
-  const [showPlanner, setShowPlanner] = useState(false);
-  const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([]);
+
   const [showAddSession, setShowAddSession] = useState(false);
   const [newSessionDate, setNewSessionDate] = useState(new Date());
   const [newSessionDuration, setNewSessionDuration] = useState(25);
   const [newSessionCourse, setNewSessionCourse] = useState('');
   const [newSessionNotes, setNewSessionNotes] = useState('');
-  const [expandedSectionPlanner, setExpandedSectionPlanner] = useState<'upcoming' | 'history' | 'exams' | null>('upcoming');
+
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
@@ -1543,208 +1542,7 @@ export default function TimerScreen() {
         </View>
         </LinearGradient>
 
-        <View style={[styles.sectionContainer, { backgroundColor: theme.colors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 24, marginTop: 4 }]}>
-          <TouchableOpacity 
-            style={[styles.expandableCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}
-            onPress={() => setShowPlanner(!showPlanner)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.expandableCardInner}>
-              <View style={[styles.expandableIcon, { backgroundColor: theme.colors.primary + '14' }]}>
-                <Calendar size={18} color={theme.colors.primary} />
-              </View>
-              <View style={styles.expandableInfo}>
-                <Text style={[styles.expandableTitle, { color: theme.colors.text }]}>Planering & Prov</Text>
-                <Text style={[styles.expandableSubtitle, { color: theme.colors.textMuted }]}>
-                  {upcomingExams.length > 0 ? `${upcomingExams.length} kommande prov` : 'Planera dina sessioner'}
-                </Text>
-              </View>
-              {showPlanner ? (
-                <ChevronUp size={18} color={theme.colors.textMuted} />
-              ) : (
-                <ChevronDown size={18} color={theme.colors.textMuted} />
-              )}
-            </View>
-          </TouchableOpacity>
-
-          {showPlanner && (
-            <View style={styles.plannerBody}>
-              <TouchableOpacity 
-                style={[styles.plannerSectionHeader, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)' }]}
-                onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'exams' ? null : 'exams')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.plannerSectionLeft}>
-                  <FileText size={16} color={theme.colors.warning} />
-                  <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Prov</Text>
-                </View>
-                <View style={styles.plannerSectionRight}>
-                  <TouchableOpacity
-                    style={[styles.addButton, { backgroundColor: theme.colors.warning + '18' }]}
-                    onPress={(e) => { e.stopPropagation(); setShowAddExam(true); }}
-                    activeOpacity={0.8}
-                  >
-                    <Plus size={14} color={theme.colors.warning} />
-                  </TouchableOpacity>
-                  {expandedSectionPlanner === 'exams' ? (
-                    <ChevronUp size={16} color={theme.colors.textMuted} />
-                  ) : (
-                    <ChevronDown size={16} color={theme.colors.textMuted} />
-                  )}
-                </View>
-              </TouchableOpacity>
-
-              {expandedSectionPlanner === 'exams' && (
-                <View style={styles.listBody}>
-                  {upcomingExams.length === 0 && completedExams.length === 0 ? (
-                    <View style={styles.emptyState}>
-                      <FileText size={36} color={theme.colors.textMuted} opacity={0.3} />
-                      <Text style={[styles.emptyStateText, { color: theme.colors.textMuted }]}>Inga prov schemalagda</Text>
-                    </View>
-                  ) : (
-                    <>
-                      {upcomingExams.map((exam) => {
-                        const courseName = exam.courseId 
-                          ? courses.find((c) => c.id === exam.courseId)?.title || 'Allmän kurs'
-                          : 'Allmänt prov';
-                        return (
-                          <View key={exam.id} style={[styles.listCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)', borderLeftColor: theme.colors.warning, borderLeftWidth: 3 }]}>
-                            <Text style={[styles.listCardTitle, { color: theme.colors.text }]}>{exam.title}</Text>
-                            <Text style={[styles.listCardSubtitle, { color: theme.colors.textMuted }]}>{courseName}</Text>
-                            <View style={styles.listCardMeta}>
-                              <Calendar size={12} color={theme.colors.textMuted} />
-                              <Text style={[styles.listCardMetaText, { color: theme.colors.textMuted }]}>
-                                {new Date(exam.examDate).toLocaleDateString('sv-SE', { weekday: 'short', month: 'short', day: 'numeric' })}
-                              </Text>
-                            </View>
-                          </View>
-                        );
-                      })}
-                      {completedExams.slice(0, 3).map((exam) => (
-                        <View key={exam.id} style={[styles.listCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', borderLeftColor: theme.colors.success, borderLeftWidth: 3, opacity: 0.6 }]}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <CheckCircle size={14} color={theme.colors.success} />
-                            <Text style={[styles.listCardTitle, { color: theme.colors.text }]}>{exam.title}</Text>
-                          </View>
-                          {exam.grade && (
-                            <Text style={[styles.listCardSubtitle, { color: theme.colors.success }]}>Betyg: {exam.grade}</Text>
-                          )}
-                        </View>
-                      ))}
-                    </>
-                  )}
-                </View>
-              )}
-
-              <TouchableOpacity 
-                style={[styles.plannerSectionHeader, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)', marginTop: 8 }]}
-                onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'upcoming' ? null : 'upcoming')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.plannerSectionLeft}>
-                  <Clock size={16} color={theme.colors.primary} />
-                  <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Kommande</Text>
-                </View>
-                <View style={styles.plannerSectionRight}>
-                  <TouchableOpacity
-                    style={[styles.addButton, { backgroundColor: theme.colors.primary + '18' }]}
-                    onPress={(e) => { e.stopPropagation(); setShowAddSession(true); }}
-                    activeOpacity={0.8}
-                  >
-                    <Plus size={14} color={theme.colors.primary} />
-                  </TouchableOpacity>
-                  {expandedSectionPlanner === 'upcoming' ? (
-                    <ChevronUp size={16} color={theme.colors.textMuted} />
-                  ) : (
-                    <ChevronDown size={16} color={theme.colors.textMuted} />
-                  )}
-                </View>
-              </TouchableOpacity>
-
-              {expandedSectionPlanner === 'upcoming' && (
-                <View style={styles.listBody}>
-                  {plannedSessions.filter(s => !s.completed && new Date(s.date) >= new Date()).length === 0 ? (
-                    <View style={styles.emptyState}>
-                      <Calendar size={36} color={theme.colors.textMuted} opacity={0.3} />
-                      <Text style={[styles.emptyStateText, { color: theme.colors.textMuted }]}>Inga planerade sessioner</Text>
-                    </View>
-                  ) : (
-                    plannedSessions
-                      .filter(s => !s.completed && new Date(s.date) >= new Date())
-                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                      .map((session) => (
-                        <View key={session.id} style={[styles.listCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)' }]}>
-                          <Text style={[styles.listCardTitle, { color: theme.colors.text }]}>{session.courseName}</Text>
-                          <View style={styles.listCardMeta}>
-                            <Clock size={12} color={theme.colors.textMuted} />
-                            <Text style={[styles.listCardMetaText, { color: theme.colors.textMuted }]}>{session.duration} min</Text>
-                          </View>
-                          <TouchableOpacity
-                            style={[styles.completeButton, { backgroundColor: theme.colors.primary + '12' }]}
-                            onPress={() => {
-                              setPlannedSessions(prev => prev.map(s => s.id === session.id ? { ...s, completed: true } : s));
-                              showSuccess('Session markerad', 'Sessionen har markerats som slutförd');
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.completeButtonText, { color: theme.colors.primary }]}>Markera slutförd</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ))
-                  )}
-                </View>
-              )}
-
-              <TouchableOpacity 
-                style={[styles.plannerSectionHeader, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)', marginTop: 8 }]}
-                onPress={() => setExpandedSectionPlanner(expandedSectionPlanner === 'history' ? null : 'history')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.plannerSectionLeft}>
-                  <BookOpen size={16} color={theme.colors.secondary} />
-                  <Text style={[styles.plannerSectionTitle, { color: theme.colors.text }]}>Historik</Text>
-                </View>
-                {expandedSectionPlanner === 'history' ? (
-                  <ChevronUp size={16} color={theme.colors.textMuted} />
-                ) : (
-                  <ChevronDown size={16} color={theme.colors.textMuted} />
-                )}
-              </TouchableOpacity>
-
-              {expandedSectionPlanner === 'history' && (
-                <View style={styles.listBody}>
-                  {pomodoroSessions.length === 0 ? (
-                    <View style={styles.emptyState}>
-                      <BookOpen size={36} color={theme.colors.textMuted} opacity={0.3} />
-                      <Text style={[styles.emptyStateText, { color: theme.colors.textMuted }]}>Ingen historik än</Text>
-                    </View>
-                  ) : (
-                    pomodoroSessions.slice(0, 10).map((session) => {
-                      const courseName = session.courseId 
-                        ? courses.find((c) => c.id === session.courseId)?.title || 'Okänd kurs'
-                        : 'Allmän session';
-                      return (
-                        <View key={session.id} style={[styles.historyItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)' }]}>
-                          <View style={styles.historyItemLeft}>
-                            <Text style={[styles.historyItemTitle, { color: theme.colors.text }]}>{courseName}</Text>
-                            <Text style={[styles.historyItemDate, { color: theme.colors.textMuted }]}>
-                              {new Date(session.endTime).toLocaleDateString('sv-SE', { weekday: 'short', month: 'short', day: 'numeric' })}
-                            </Text>
-                          </View>
-                          <View style={[styles.historyItemBadge, { backgroundColor: theme.colors.secondary + '14' }]}>
-                            <Text style={[styles.historyItemBadgeText, { color: theme.colors.secondary }]}>{session.duration}m</Text>
-                          </View>
-                        </View>
-                      );
-                    })
-                  )}
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-
-        <View style={[styles.sectionContainer, { backgroundColor: STATS_BG[bgIndex], paddingTop: 28 }]}>
+        <View style={[styles.sectionContainer, { backgroundColor: STATS_BG[bgIndex], paddingTop: 28, borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: 4 }]}>
           <View style={styles.statsSectionHeader}>
             <View style={styles.statsSectionTitleRow}>
               <Text style={[styles.sectionTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Statistik</Text>

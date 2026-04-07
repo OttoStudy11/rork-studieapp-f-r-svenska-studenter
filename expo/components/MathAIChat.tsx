@@ -16,6 +16,7 @@ import { Send, ArrowLeft, Camera, ImageIcon, X, Zap, BookOpen, TriangleRight, Si
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
+import { compressImage } from '@/utils/compressImage';
 
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -126,7 +127,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
         }
 
         if (msg.role === 'assistant') {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       });
       prevMessageCount.current = messages.length;
@@ -139,11 +140,11 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
 
   const triggerHaptic = useCallback((type: 'light' | 'medium' | 'success') => {
     if (type === 'success') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else if (type === 'medium') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } else {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   }, []);
 
@@ -153,35 +154,21 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.8,
-        base64: true,
       });
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        let base64Data = asset.base64 || '';
+        console.log('[MathAI] Compressing picked image...');
+        const compressed = await compressImage(asset.uri);
 
-        if (!base64Data && Platform.OS === 'web') {
-          const response = await fetch(asset.uri);
-          const blob = await response.blob();
-          base64Data = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const r = reader.result as string;
-              resolve(r.split(',')[1] || '');
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        }
-
-        if (base64Data) {
+        if (compressed.base64) {
           setAttachedImage({
-            uri: asset.uri,
-            base64: base64Data,
-            mimeType: asset.mimeType || 'image/jpeg',
+            uri: compressed.uri,
+            base64: compressed.base64,
+            mimeType: compressed.mimeType,
           });
           triggerHaptic('medium');
-          console.log('[MathAI] Image picked from library');
+          console.log('[MathAI] Image picked and compressed from library');
         }
       }
     } catch (err) {
@@ -202,19 +189,21 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         quality: 0.8,
-        base64: true,
       });
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        if (asset.base64) {
+        console.log('[MathAI] Compressing camera photo...');
+        const compressed = await compressImage(asset.uri);
+
+        if (compressed.base64) {
           setAttachedImage({
-            uri: asset.uri,
-            base64: asset.base64,
-            mimeType: asset.mimeType || 'image/jpeg',
+            uri: compressed.uri,
+            base64: compressed.base64,
+            mimeType: compressed.mimeType,
           });
           triggerHaptic('medium');
-          console.log('[MathAI] Photo taken with camera');
+          console.log('[MathAI] Photo taken and compressed');
         }
       }
     } catch (err) {
@@ -275,7 +264,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
 
   const handleSuggestionPhoto = useCallback(() => {
     triggerHaptic('light');
-    takePhoto();
+    void takePhoto();
   }, [takePhoto, triggerHaptic]);
 
   const parseSteps = useCallback((text: string, messageId: string) => {

@@ -224,24 +224,30 @@ export default function GeneralAIChat({ onBack }: GeneralAIChatProps) {
               <Text style={styles.emptySubtitle}>
                 Jag är din AI-assistent. Ställ mig frågor om dina studier, kurser, eller vad som helst!
               </Text>
-              <View style={styles.suggestionsContainer}>
+              <View style={styles.suggestionsGrid}>
                 <TouchableOpacity
                   style={styles.suggestionButton}
                   onPress={() => setInput('Hur kan jag plugga mer effektivt?')}
                 >
-                  <Text style={styles.suggestionText}>Hur kan jag plugga mer effektivt?</Text>
+                  <Text style={styles.suggestionText}>Plugga effektivt</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.suggestionButton}
                   onPress={() => setInput('Ge mig tips för att komma ihåg saker bättre')}
                 >
-                  <Text style={styles.suggestionText}>Ge mig tips för att komma ihåg saker bättre</Text>
+                  <Text style={styles.suggestionText}>Minnas bättre</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.suggestionButton}
                   onPress={() => setInput('Vad är Pomodoro-tekniken?')}
                 >
-                  <Text style={styles.suggestionText}>Vad är Pomodoro-tekniken?</Text>
+                  <Text style={styles.suggestionText}>Pomodoro-tekniken</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.suggestionButton}
+                  onPress={() => setInput('Hur skriver jag en bra sammanfattning?')}
+                >
+                  <Text style={styles.suggestionText}>Sammanfattning</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -378,11 +384,15 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 32,
   },
-  suggestionsContainer: {
+  suggestionsGrid: {
     width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: 10,
   },
   suggestionButton: {
+    width: '48%',
     backgroundColor: 'rgba(78,205,196,0.06)',
     padding: 14,
     borderRadius: 14,

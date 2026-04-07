@@ -19,11 +19,11 @@ import { FlashcardSwipe } from '@/components/FlashcardSwipe';
 import { generateFlashcardsWithAI } from '@/lib/flashcard-ai-v2';
 import * as ImagePicker from 'expo-image-picker';
 import { extractTextFromImage } from '@/lib/vision-ai';
+import { compressImage } from '@/utils/compressImage';
 import { ArrowLeft, Sparkles, BookOpen, RefreshCw, AlertCircle, Plus, Camera, ImageIcon, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
-import { PremiumGate } from '@/components/PremiumGate';
-import { FreemiumBanner, FreemiumLimitReached } from '@/components/FreemiumBanner';
+import { FreemiumLimitReached } from '@/components/FreemiumBanner';
 import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
 
 // Local flashcard type for session-only storage (compatible with FlashcardSwipe)
@@ -470,11 +470,12 @@ export default function FlashcardsScreenV2() {
                     });
                     
                     if (!result.canceled && result.assets[0]) {
-                      setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                      const compressed = await compressImage(result.assets[0].uri);
+                      setSelectedImages(prev => [...prev, compressed.uri]);
                       
                       setExtractingText(true);
                       try {
-                        const extractedText = await extractTextFromImage(result.assets[0].uri);
+                        const extractedText = await extractTextFromImage(compressed.uri);
                         if (extractedText) {
                           setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
                         }
@@ -508,11 +509,12 @@ export default function FlashcardsScreenV2() {
                     });
                     
                     if (!result.canceled && result.assets[0]) {
-                      setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                      const compressed = await compressImage(result.assets[0].uri);
+                      setSelectedImages(prev => [...prev, compressed.uri]);
                       
                       setExtractingText(true);
                       try {
-                        const extractedText = await extractTextFromImage(result.assets[0].uri);
+                        const extractedText = await extractTextFromImage(compressed.uri);
                         if (extractedText) {
                           setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
                         }
@@ -897,11 +899,12 @@ export default function FlashcardsScreenV2() {
                   });
                   
                   if (!result.canceled && result.assets[0]) {
-                    setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                    const compressed = await compressImage(result.assets[0].uri);
+                    setSelectedImages(prev => [...prev, compressed.uri]);
                     
                     setExtractingText(true);
                     try {
-                      const extractedText = await extractTextFromImage(result.assets[0].uri);
+                      const extractedText = await extractTextFromImage(compressed.uri);
                       if (extractedText) {
                         setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
                       }
@@ -935,11 +938,12 @@ export default function FlashcardsScreenV2() {
                   });
                   
                   if (!result.canceled && result.assets[0]) {
-                    setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                    const compressed = await compressImage(result.assets[0].uri);
+                    setSelectedImages(prev => [...prev, compressed.uri]);
                     
                     setExtractingText(true);
                     try {
-                      const extractedText = await extractTextFromImage(result.assets[0].uri);
+                      const extractedText = await extractTextFromImage(compressed.uri);
                       if (extractedText) {
                         setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
                       }

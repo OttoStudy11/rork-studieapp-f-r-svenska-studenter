@@ -10,7 +10,6 @@ import {
   Platform,
   Image,
   Animated,
-  Dimensions,
 } from 'react-native';
 import { Send, ArrowLeft, Camera, ImageIcon, X, Zap, BookOpen, TriangleRight, Sigma } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -32,7 +31,6 @@ interface AttachedImage {
   mimeType: string;
 }
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const MATH_SYSTEM = `Du är en expert matematiklärare och problemlösare, liknande Photomath.
 
@@ -726,11 +724,12 @@ const styles = StyleSheet.create({
   suggestionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
     width: '100%',
+    rowGap: 10,
   },
   suggestionCard: {
-    width: (SCREEN_WIDTH - 52) / 2 - 5,
+    width: '48%',
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#e2e8f0',

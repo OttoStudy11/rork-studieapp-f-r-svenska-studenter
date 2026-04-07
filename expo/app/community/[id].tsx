@@ -40,17 +40,34 @@ import {
   MoreHorizontal,
   Trash2,
   Shield,
+  HelpCircle,
+  MessagesSquare,
+  Info,
+  Lightbulb,
+  BookOpen,
 } from 'lucide-react-native';
 import type { AvatarConfig } from '@/constants/avatar-config';
 import { compressImage } from '@/utils/compressImage';
+import { uploadCommunityImage } from '@/utils/uploadImage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+type PostType = 'discussion' | 'question' | 'info' | 'tip' | 'resource';
+
+const POST_TYPES: { key: PostType; label: string; icon: typeof HelpCircle; color: string }[] = [
+  { key: 'discussion', label: 'Diskussion', icon: MessagesSquare, color: '#3B82F6' },
+  { key: 'question', label: 'Fråga', icon: HelpCircle, color: '#F59E0B' },
+  { key: 'info', label: 'Information', icon: Info, color: '#8B5CF6' },
+  { key: 'tip', label: 'Tips', icon: Lightbulb, color: '#10B981' },
+  { key: 'resource', label: 'Resurs', icon: BookOpen, color: '#EC4899' },
+];
 
 interface CommunityPost {
   id: string;
   userId: string;
   message: string;
   imageUrl?: string;
+  postType?: PostType;
   createdAt: string;
   user?: {
     username: string;
@@ -84,9 +101,12 @@ export default function CommunityDetailScreen() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [postInput, setPostInput] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageBase64, setSelectedImageBase64] = useState<string | null>(null);
+  const [selectedPostType, setSelectedPostType] = useState<PostType>('discussion');
   const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'leaderboard'>('feed');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
 
@@ -177,10 +197,6 @@ export default function CommunityDetailScreen() {
         }));
 
         console.log('[Community] Members with stats:', membersWithStats.length);
-        membersWithStats.forEach((m) => {
-          console.log('[Community] Member:', m.user?.displayName, '(@' + m.user?.username + ')', 'role:', m.role);
-        });
-
         setMembers(membersWithStats);
       } else {
         console.log('[Community] No members returned');
@@ -219,17 +235,19 @@ export default function CommunityDetailScreen() {
         }
       }
 
-      if (userIds.length === 0) {
+      if (userIds.length === 0 && (!data || data.length === 0)) {
         setPosts([]);
         return;
       }
 
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url')
-        .in('id', userIds);
-
-      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      let profileMap = new Map<string, any>();
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', userIds);
+        profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      }
 
       const mapped: CommunityPost[] = (data || []).map((m: any) => {
         const profile = profileMap.get(m.user_id);
@@ -238,6 +256,7 @@ export default function CommunityDetailScreen() {
           userId: m.user_id,
           message: m.message,
           imageUrl: m.image_url || undefined,
+          postType: m.post_type || 'discussion',
           createdAt: m.created_at,
           user: profile
             ? {
@@ -275,14 +294,37 @@ export default function CommunityDetailScreen() {
         return;
       }
 
-      const insertData: any = {
+      let imageUrl: string | null = null;
+
+      if (selectedImageBase64 && selectedImage) {
+        setIsUploading(true);
+        console.log('[Community] Uploading image to storage...');
+        const { url, error: uploadError } = await uploadCommunityImage(
+          selectedImageBase64,
+          id,
+          user.id
+        );
+        setIsUploading(false);
+
+        if (uploadError || !url) {
+          console.error('[Community] Image upload failed:', uploadError);
+          showError('Kunde inte ladda upp bilden. Försök igen.');
+          setIsSending(false);
+          return;
+        }
+        imageUrl = url;
+        console.log('[Community] Image uploaded successfully:', url);
+      }
+
+      const insertData: Record<string, unknown> = {
         community_id: id,
         user_id: user.id,
         message: messageToSend,
+        post_type: selectedPostType,
       };
 
-      if (selectedImage) {
-        insertData.image_url = selectedImage;
+      if (imageUrl) {
+        insertData.image_url = imageUrl;
       }
 
       const { error } = await (supabase as any)
@@ -304,6 +346,8 @@ export default function CommunityDetailScreen() {
 
       setPostInput('');
       setSelectedImage(null);
+      setSelectedImageBase64(null);
+      setSelectedPostType('discussion');
       toggleComposer(false);
       await loadPosts();
     } catch (error: any) {
@@ -311,6 +355,7 @@ export default function CommunityDetailScreen() {
       showError('Kunde inte skicka inlägg');
     } finally {
       setIsSending(false);
+      setIsUploading(false);
     }
   };
 
@@ -329,9 +374,9 @@ export default function CommunityDetailScreen() {
         try {
           const compressed = await compressImage(pickedUri);
           if (compressed.base64) {
-            const dataUri = `data:${compressed.mimeType};base64,${compressed.base64}`;
             console.log('[Community] Image compressed, base64 length:', compressed.base64.length);
-            setSelectedImage(dataUri);
+            setSelectedImage(compressed.uri);
+            setSelectedImageBase64(compressed.base64);
           } else {
             showError('Kunde inte bearbeta bilden');
           }
@@ -486,6 +531,10 @@ export default function CommunityDetailScreen() {
     return date.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
   };
 
+  const getPostTypeConfig = (type: PostType | undefined) => {
+    return POST_TYPES.find((pt) => pt.key === type) || POST_TYPES[0];
+  };
+
   const sortedLeaderboard = [...members].sort(
     (a, b) => (b.totalStudyTime || 0) - (a.totalStudyTime || 0)
   );
@@ -524,6 +573,17 @@ export default function CommunityDetailScreen() {
         <Text style={[styles.avatarFallbackText, { color: theme.colors.primary, fontSize: size * 0.4 }]}>
           {displayName?.[0]?.toUpperCase() || '?'}
         </Text>
+      </View>
+    );
+  };
+
+  const renderPostTypeBadge = (postType: PostType | undefined) => {
+    const config = getPostTypeConfig(postType);
+    const IconComp = config.icon;
+    return (
+      <View style={[styles.postTypeBadge, { backgroundColor: config.color + '14' }]}>
+        <IconComp size={12} color={config.color} />
+        <Text style={[styles.postTypeBadgeText, { color: config.color }]}>{config.label}</Text>
       </View>
     );
   };
@@ -657,46 +717,53 @@ export default function CommunityDetailScreen() {
               ) : (
                 posts.map((post) => {
                   const isOwn = post.userId === user?.id;
+                  const typeConfig = getPostTypeConfig(post.postType);
                   return (
                     <View key={post.id} style={[styles.postCard, { backgroundColor: theme.colors.card }]}>
-                      <View style={styles.postHeader}>
-                        <View style={styles.postAuthor}>
-                          <View style={styles.postAvatarWrap}>
-                            {renderMemberAvatar(post.user?.avatarUrl, post.user?.displayName, 40)}
+                      <View style={[styles.postTypeStripe, { backgroundColor: typeConfig.color }]} />
+                      <View style={styles.postInner}>
+                        <View style={styles.postHeader}>
+                          <View style={styles.postAuthor}>
+                            <View style={styles.postAvatarWrap}>
+                              {renderMemberAvatar(post.user?.avatarUrl, post.user?.displayName, 40)}
+                            </View>
+                            <View style={styles.postAuthorInfo}>
+                              <View style={styles.postAuthorNameRow}>
+                                <Text style={[styles.postAuthorName, { color: theme.colors.text }]}>
+                                  {post.user?.displayName || 'Okänd'}
+                                </Text>
+                                {renderPostTypeBadge(post.postType)}
+                              </View>
+                              <Text style={[styles.postTimestamp, { color: theme.colors.textMuted }]}>
+                                @{post.user?.username || 'okänd'} · {formatPostDate(post.createdAt)}
+                              </Text>
+                            </View>
                           </View>
-                          <View style={styles.postAuthorInfo}>
-                            <Text style={[styles.postAuthorName, { color: theme.colors.text }]}>
-                              {post.user?.displayName || 'Okänd'}
-                            </Text>
-                            <Text style={[styles.postTimestamp, { color: theme.colors.textMuted }]}>
-                              @{post.user?.username || 'okänd'} · {formatPostDate(post.createdAt)}
-                            </Text>
-                          </View>
+                          {(isOwn || community.isAdmin) && (
+                            <TouchableOpacity
+                              style={styles.postMenuBtn}
+                              onPress={() => handleDeletePost(post.id)}
+                              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                              <Trash2 size={16} color={theme.colors.textMuted} />
+                            </TouchableOpacity>
+                          )}
                         </View>
-                        {(isOwn || community.isAdmin) && (
-                          <TouchableOpacity
-                            style={styles.postMenuBtn}
-                            onPress={() => handleDeletePost(post.id)}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                          >
-                            <Trash2 size={16} color={theme.colors.textMuted} />
-                          </TouchableOpacity>
-                        )}
+
+                        <Text style={[styles.postBody, { color: theme.colors.text }]}>
+                          {post.message}
+                        </Text>
+
+                        {post.imageUrl ? (
+                          <View style={[styles.postImageContainer, { backgroundColor: theme.colors.border + '30' }]}>
+                            <Image
+                              source={{ uri: post.imageUrl }}
+                              style={styles.postImage}
+                              resizeMode="cover"
+                            />
+                          </View>
+                        ) : null}
                       </View>
-
-                      <Text style={[styles.postBody, { color: theme.colors.text }]}>
-                        {post.message}
-                      </Text>
-
-                      {post.imageUrl ? (
-                        <View style={[styles.postImageContainer, { backgroundColor: theme.colors.border + '30' }]}>
-                          <Image
-                            source={{ uri: post.imageUrl }}
-                            style={styles.postImage}
-                            resizeMode="cover"
-                          />
-                        </View>
-                      ) : null}
                     </View>
                   );
                 })
@@ -727,7 +794,7 @@ export default function CommunityDetailScreen() {
                   transform: [{
                     translateY: composerAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [200, 0],
+                      outputRange: [400, 0],
                     }),
                   }],
                 },
@@ -741,12 +808,51 @@ export default function CommunityDetailScreen() {
                 </TouchableOpacity>
               </View>
 
+              <Text style={[styles.composerSectionLabel, { color: theme.colors.textSecondary }]}>
+                Typ av inlägg
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.postTypeScroll}
+                contentContainerStyle={styles.postTypeScrollContent}
+              >
+                {POST_TYPES.map((pt) => {
+                  const isSelected = selectedPostType === pt.key;
+                  const IconComp = pt.icon;
+                  return (
+                    <TouchableOpacity
+                      key={pt.key}
+                      style={[
+                        styles.postTypeChip,
+                        { borderColor: isSelected ? pt.color : theme.colors.border },
+                        isSelected && { backgroundColor: pt.color + '14' },
+                      ]}
+                      onPress={() => {
+                        setSelectedPostType(pt.key);
+                        if (Platform.OS !== 'web') void Haptics.selectionAsync();
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <IconComp size={14} color={isSelected ? pt.color : theme.colors.textMuted} />
+                      <Text style={[
+                        styles.postTypeChipText,
+                        { color: isSelected ? pt.color : theme.colors.textSecondary },
+                        isSelected && { fontWeight: '600' as const },
+                      ]}>
+                        {pt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
               {selectedImage && (
                 <View style={styles.composerImagePreview}>
                   <Image source={{ uri: selectedImage }} style={styles.previewImage} resizeMode="cover" />
                   <TouchableOpacity
                     style={[styles.removeImageBtn, { backgroundColor: theme.colors.error }]}
-                    onPress={() => setSelectedImage(null)}
+                    onPress={() => { setSelectedImage(null); setSelectedImageBase64(null); }}
                   >
                     <X size={14} color="white" />
                   </TouchableOpacity>
@@ -760,7 +866,7 @@ export default function CommunityDetailScreen() {
                 value={postInput}
                 onChangeText={setPostInput}
                 multiline
-                maxLength={1000}
+                maxLength={2000}
                 textAlignVertical="top"
               />
 
@@ -780,7 +886,12 @@ export default function CommunityDetailScreen() {
                   disabled={!postInput.trim() || isSending}
                 >
                   {isSending ? (
-                    <ActivityIndicator size="small" color="white" />
+                    <View style={styles.sendingRow}>
+                      <ActivityIndicator size="small" color="white" />
+                      {isUploading && (
+                        <Text style={styles.composerSendText}>Laddar upp...</Text>
+                      )}
+                    </View>
                   ) : (
                     <>
                       <Send size={16} color="white" />
@@ -1160,12 +1271,20 @@ const styles = StyleSheet.create({
   },
   postCard: {
     borderRadius: 16,
-    padding: 16,
+    overflow: 'hidden',
+    flexDirection: 'row',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 1,
+  },
+  postTypeStripe: {
+    width: 4,
+  },
+  postInner: {
+    flex: 1,
+    padding: 16,
   },
   postHeader: {
     flexDirection: 'row',
@@ -1188,10 +1307,28 @@ const styles = StyleSheet.create({
   postAuthorInfo: {
     flex: 1,
   },
+  postAuthorNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
   postAuthorName: {
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: -0.2,
+  },
+  postTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  postTypeBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   postTimestamp: {
     fontSize: 12,
@@ -1249,6 +1386,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  composerSectionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  postTypeScroll: {
+    marginBottom: 12,
+    maxHeight: 38,
+  },
+  postTypeScrollContent: {
+    gap: 8,
+    paddingRight: 8,
+  },
+  postTypeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1.5,
+  },
+  postTypeChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
   composerImagePreview: {
     position: 'relative',
     marginBottom: 10,
@@ -1305,6 +1470,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  sendingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   fab: {
     position: 'absolute',

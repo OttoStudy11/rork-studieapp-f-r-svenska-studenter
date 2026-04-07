@@ -185,7 +185,7 @@ export default function AISelectorScreen({ onSelectMath, onSelectGeneral }: AISe
         </Animated.View>
       </View>
 
-      <Animated.View style={[styles.footer, { opacity: fadeAnim, paddingBottom: insets.bottom + 70 }]}>
+      <Animated.View style={[styles.footer, { opacity: fadeAnim, paddingBottom: insets.bottom + 90 }]}>
         <MessageSquare size={14} color={theme.colors.textMuted} />
         <Text style={[styles.footerText, { color: theme.colors.textMuted }]}>Dina chattar sparas under sessionen</Text>
       </Animated.View>

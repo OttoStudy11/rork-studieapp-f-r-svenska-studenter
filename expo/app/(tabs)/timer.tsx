@@ -58,16 +58,6 @@ const STATS_BG: string[] = [
 type TimerState = 'idle' | 'running' | 'paused';
 type SessionType = 'focus' | 'break';
 
-interface PlannedSession {
-  id: string;
-  courseId?: string;
-  courseName: string;
-  date: Date;
-  duration: number;
-  notes?: string;
-  completed: boolean;
-}
-
 interface CompletionScreenProps {
   data: {
     duration: number;
@@ -509,7 +499,7 @@ export default function TimerScreen() {
       calculateStats();
     };
     
-    initializeTimer();
+    void initializeTimer();
     
     Animated.loop(
       Animated.sequence([
@@ -569,7 +559,7 @@ export default function TimerScreen() {
     }
 
     try {
-      await Notifications.setNotificationHandler({
+      Notifications.setNotificationHandler({
         handleNotification: async () => ({
           shouldShowAlert: false,
           shouldPlaySound: false,
@@ -593,7 +583,7 @@ export default function TimerScreen() {
     }
 
     try {
-      await Notifications.setNotificationHandler({
+      Notifications.setNotificationHandler({
         handleNotification: async () => ({
           shouldShowAlert: true,
           shouldPlaySound: true,
@@ -849,7 +839,7 @@ export default function TimerScreen() {
             intervalRef.current = null;
           }
           setTimeLeft(0);
-          handleTimerCompleteRef.current?.();
+          void handleTimerCompleteRef.current?.();
         } else if (remainingSeconds > 0) {
           setTimeLeft(remainingSeconds);
         }
@@ -2184,17 +2174,6 @@ export default function TimerScreen() {
                   ? courses.find((c) => c.id === newSessionCourse)?.title || 'Okänd kurs'
                   : 'Allmän session';
                 
-                const newSession: PlannedSession = {
-                  id: `planned-${Date.now()}`,
-                  courseId: newSessionCourse || undefined,
-                  courseName,
-                  date: newSessionDate,
-                  duration: newSessionDuration,
-                  notes: newSessionNotes || undefined,
-                  completed: false
-                };
-                
-                setPlannedSessions(prev => [...prev, newSession]);
                 setShowAddSession(false);
                 setNewSessionCourse('');
                 setNewSessionNotes('');

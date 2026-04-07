@@ -20,10 +20,12 @@ import {
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { generateText } from '@rork-ai/toolkit-sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fetchStudyPlan, upsertStudyPlan } from '@/lib/study-plan-service';
 
 interface StudyTask {
   title: string;
@@ -114,6 +116,7 @@ export default function StudyPlanScreen() {
   const { examId, courseTitle: paramCourseTitle } = useLocalSearchParams<{ examId: string; courseTitle?: string }>();
   const { theme, isDark } = useTheme();
   const { getExamById } = useExams();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [plan, setPlan] = useState<StudyPlanData | null>(null);
@@ -166,7 +169,56 @@ export default function StudyPlanScreen() {
     }
   }, [plan, fadeAnim]);
 
+  const courseKey = examId || '';
+
+  const processPlanData = useCallback((planData: StudyPlanData, generatedAt: string | null): 'loaded' | 'stale' => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const futureDays = planData.dailyPlan.filter((day) => day.date >= todayStr);
+
+    if (futureDays.length === 0) {
+      console.log('All plan days have passed, need regeneration');
+      return 'stale';
+    }
+
+    const generatedDate = generatedAt ? generatedAt.split('T')[0] : null;
+    const daysSinceGenerated = generatedDate
+      ? Math.floor((Date.now() - new Date(generatedDate + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24))
+      : 999;
+
+    if (daysSinceGenerated >= 3 && daysUntilExam > 2) {
+      console.log(`Plan is ${daysSinceGenerated} days old with ${daysUntilExam} days until exam, regenerating`);
+      return 'stale';
+    }
+
+    const updatedPlan: StudyPlanData = {
+      ...planData,
+      dailyPlan: futureDays.map((day, index) => ({ ...day, day: index + 1 })),
+    };
+
+    setPlan(updatedPlan);
+    console.log(`Loaded study plan: ${futureDays.length}/${planData.dailyPlan.length} days remaining`);
+    return 'loaded';
+  }, [daysUntilExam]);
+
   const loadSavedPlan = useCallback(async (): Promise<'loaded' | 'stale' | 'none'> => {
+    if (user?.id && courseKey) {
+      try {
+        console.log('[StudyPlan] Trying Supabase for user:', user.id, 'course:', courseKey);
+        const row = await fetchStudyPlan(user.id, courseKey);
+        if (row) {
+          const content = row.content as { plan?: StudyPlanData; generatedAt?: string };
+          const planData = content.plan;
+          const generatedAt = content.generatedAt || row.updated_at;
+          if (planData && planData.dailyPlan && Array.isArray(planData.dailyPlan)) {
+            const result = processPlanData(planData, generatedAt);
+            return result;
+          }
+        }
+      } catch (err) {
+        console.warn('[StudyPlan] Supabase fetch failed, falling back to local:', err);
+      }
+    }
+
     try {
       const saved = await AsyncStorage.getItem(storageKey);
       if (saved) {
@@ -182,39 +234,14 @@ export default function StudyPlanScreen() {
           planData = stored as StudyPlanData;
         }
 
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        const futureDays = planData.dailyPlan.filter((day) => day.date >= todayStr);
-
-        if (futureDays.length === 0) {
-          console.log('All plan days have passed, need regeneration');
-          return 'stale';
-        }
-
-        const generatedDate = generatedAt ? generatedAt.split('T')[0] : null;
-        const daysSinceGenerated = generatedDate
-          ? Math.floor((Date.now() - new Date(generatedDate + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24))
-          : 999;
-
-        if (daysSinceGenerated >= 3 && daysUntilExam > 2) {
-          console.log(`Plan is ${daysSinceGenerated} days old with ${daysUntilExam} days until exam, regenerating`);
-          return 'stale';
-        }
-
-        const updatedPlan: StudyPlanData = {
-          ...planData,
-          dailyPlan: futureDays.map((day, index) => ({ ...day, day: index + 1 })),
-        };
-
-        setPlan(updatedPlan);
-        console.log(`Loaded study plan: ${futureDays.length}/${planData.dailyPlan.length} days remaining`);
-        return 'loaded';
+        const result = processPlanData(planData, generatedAt);
+        return result;
       }
     } catch (err) {
-      console.error('Error loading saved plan:', err);
+      console.error('Error loading saved plan from AsyncStorage:', err);
     }
     return 'none';
-  }, [storageKey, daysUntilExam]);
+  }, [storageKey, user?.id, courseKey, processPlanData]);
 
   const generatePlan = useCallback(async (forceRegenerate = false) => {
     if (!exam) return;
@@ -302,13 +329,25 @@ Returnera ENBART ett JSON-objekt utan markdown eller förklaringar:
       }
 
       setPlan(parsed);
+      const generatedAt = new Date().toISOString();
       const storedPlan: StoredPlan = {
         plan: parsed,
-        generatedAt: new Date().toISOString(),
+        generatedAt,
         examId: examId || '',
       };
       await AsyncStorage.setItem(storageKey, JSON.stringify(storedPlan));
-      console.log('Study plan generated and saved');
+      console.log('Study plan generated and saved locally');
+
+      if (user?.id && courseKey) {
+        const courseTitle = paramCourseTitle || exam.title;
+        upsertStudyPlan(user.id, courseKey, courseTitle, { plan: parsed, generatedAt })
+          .then((row) => {
+            if (row) {
+              console.log('[StudyPlan] Saved to Supabase, id:', row.id);
+            }
+          })
+          .catch((err) => console.warn('[StudyPlan] Supabase upsert failed:', err));
+      }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
       console.error('Error generating study plan:', err);
@@ -317,7 +356,7 @@ Returnera ENBART ett JSON-objekt utan markdown eller förklaringar:
     } finally {
       setIsGenerating(false);
     }
-  }, [exam, daysUntilExam, paramCourseTitle, loadSavedPlan, storageKey, fadeAnim, examId]);
+  }, [exam, daysUntilExam, paramCourseTitle, loadSavedPlan, storageKey, fadeAnim, examId, user?.id, courseKey]);
 
   useEffect(() => {
     if (exam) {

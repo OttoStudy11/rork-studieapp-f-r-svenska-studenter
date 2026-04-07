@@ -6,10 +6,11 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
-import { Calculator, Sparkles, ChevronRight, Camera, MessageSquare } from 'lucide-react-native';
+import { Calculator, Sparkles, ChevronRight, MessageSquare, Brain } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 
 interface AISelectorScreenProps {
   onSelectMath: () => void;
@@ -17,39 +18,54 @@ interface AISelectorScreenProps {
 }
 
 export default function AISelectorScreen({ onSelectMath, onSelectGeneral }: AISelectorScreenProps) {
-  const { theme, isDark } = useTheme();
+  const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim1 = useRef(new Animated.Value(40)).current;
-  const slideAnim2 = useRef(new Animated.Value(40)).current;
+  const slideAnim1 = useRef(new Animated.Value(50)).current;
+  const slideAnim2 = useRef(new Animated.Value(50)).current;
   const scaleAnim1 = useRef(new Animated.Value(1)).current;
   const scaleAnim2 = useRef(new Animated.Value(1)).current;
+  const headerFade = useRef(new Animated.Value(0)).current;
+  const headerSlide = useRef(new Animated.Value(-15)).current;
 
   useEffect(() => {
     Animated.parallel([
+      Animated.timing(headerFade, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerSlide, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 400,
         useNativeDriver: true,
       }),
-      Animated.timing(slideAnim1, {
+      Animated.spring(slideAnim1, {
         toValue: 0,
-        duration: 500,
-        delay: 100,
+        tension: 50,
+        friction: 9,
+        delay: 150,
         useNativeDriver: true,
       }),
-      Animated.timing(slideAnim2, {
+      Animated.spring(slideAnim2, {
         toValue: 0,
-        duration: 500,
-        delay: 220,
+        tension: 50,
+        friction: 9,
+        delay: 300,
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fadeAnim, slideAnim1, slideAnim2]);
+  }, [fadeAnim, slideAnim1, slideAnim2, headerFade, headerSlide]);
 
   const handlePressIn = (anim: Animated.Value) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Animated.spring(anim, {
-      toValue: 0.96,
+      toValue: 0.95,
       useNativeDriver: true,
     }).start();
   };
@@ -63,13 +79,18 @@ export default function AISelectorScreen({ onSelectMath, onSelectGeneral }: AISe
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.headerArea, { paddingTop: insets.top + 12 }]}>
-        <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>AI Assistent</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>Välj vilken AI du vill använda</Text>
-        </Animated.View>
-      </View>
+    <View style={[styles.container, { backgroundColor: isDark ? '#0A0F1C' : '#F5F7FA' }]}>
+      <Animated.View style={[styles.headerArea, { paddingTop: insets.top + 16, opacity: headerFade, transform: [{ translateY: headerSlide }] }]}>
+        <View style={styles.headerRow}>
+          <View style={[styles.headerBadge, { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.08)' }]}>
+            <Brain size={16} color="#6366F1" />
+          </View>
+          <View style={styles.headerTextWrap}>
+            <Text style={[styles.title, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>AI Assistent ✨</Text>
+            <Text style={[styles.subtitle, { color: isDark ? '#64748B' : '#94A3B8' }]}>Välj din smarta studiekompis</Text>
+          </View>
+        </View>
+      </Animated.View>
 
       <View style={styles.cardsContainer}>
         <Animated.View style={[
@@ -89,44 +110,50 @@ export default function AISelectorScreen({ onSelectMath, onSelectGeneral }: AISe
             onPress={onSelectMath}
             testID="math-ai-card"
           >
-            <LinearGradient
-              colors={isDark ? ['#1a3a5c', '#0d2137', '#091a2e'] : ['#e8f4fd', '#d1eaf8', '#bde0f5']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.card, { borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(37,99,235,0.12)' }]}
-            >
-              <View style={styles.cardIconRow}>
-                <View style={[styles.mathIconContainer, { backgroundColor: isDark ? 'rgba(94,184,255,0.12)' : 'rgba(37,99,235,0.12)' }]}>
-                  <Calculator size={28} color={isDark ? '#5eb8ff' : '#2563eb'} />
-                </View>
-                <View style={[styles.cameraTag, { backgroundColor: isDark ? 'rgba(94,184,255,0.1)' : 'rgba(37,99,235,0.08)' }]}>
-                  <Camera size={12} color={isDark ? '#5eb8ff' : '#2563eb'} />
-                  <Text style={[styles.cameraTagText, { color: isDark ? '#5eb8ff' : '#2563eb' }]}>Kamera</Text>
+            <View style={[styles.card, {
+              backgroundColor: isDark ? '#111827' : '#FFFFFF',
+              borderColor: isDark ? 'rgba(56,189,248,0.12)' : 'rgba(14,165,233,0.1)',
+              shadowColor: '#0EA5E9',
+              shadowOpacity: isDark ? 0.15 : 0.08,
+            }]}>
+              <View style={styles.cardTopRow}>
+                <LinearGradient
+                  colors={['#0EA5E9', '#0284C7', '#0369A1']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.iconCircle}
+                >
+                  <Calculator size={24} color="#fff" />
+                </LinearGradient>
+                <View style={[styles.liveTag, { backgroundColor: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.08)' }]}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveTagText}>Online</Text>
                 </View>
               </View>
 
-              <Text style={[styles.cardTitle, { color: isDark ? '#fff' : '#1a1a2e' }]}>Matematik AI</Text>
-              <Text style={[styles.cardDescription, { color: isDark ? '#8ab4d4' : '#4a7a9b' }]}>
-                Fota uppgifter & få steg-för-steg-lösningar. Analyserar bilder, grafer och ekvationer.
+              <Text style={[styles.cardTitle, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>📐 Matematik AI</Text>
+              <Text style={[styles.cardDescription, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+                Fota uppgifter, skriv ekvationer & få steg-för-steg-lösningar direkt
               </Text>
 
               <View style={styles.featuresRow}>
-                <View style={[styles.featureChip, { backgroundColor: isDark ? 'rgba(94,184,255,0.08)' : 'rgba(37,99,235,0.06)', borderColor: isDark ? 'rgba(94,184,255,0.15)' : 'rgba(37,99,235,0.12)' }]}>
-                  <Text style={[styles.featureChipText, { color: isDark ? '#5eb8ff' : '#2563eb' }]}>Steg-för-steg</Text>
-                </View>
-                <View style={[styles.featureChip, { backgroundColor: isDark ? 'rgba(94,184,255,0.08)' : 'rgba(37,99,235,0.06)', borderColor: isDark ? 'rgba(94,184,255,0.15)' : 'rgba(37,99,235,0.12)' }]}>
-                  <Text style={[styles.featureChipText, { color: isDark ? '#5eb8ff' : '#2563eb' }]}>Bildanalys</Text>
-                </View>
-                <View style={[styles.featureChip, { backgroundColor: isDark ? 'rgba(94,184,255,0.08)' : 'rgba(37,99,235,0.06)', borderColor: isDark ? 'rgba(94,184,255,0.15)' : 'rgba(37,99,235,0.12)' }]}>
-                  <Text style={[styles.featureChipText, { color: isDark ? '#5eb8ff' : '#2563eb' }]}>Grafer</Text>
-                </View>
+                {['📸 Fotolösning', '📊 Grafanalys', '🧮 Steg-för-steg'].map((feat, i) => (
+                  <View key={i} style={[styles.featureChip, {
+                    backgroundColor: isDark ? 'rgba(56,189,248,0.08)' : 'rgba(14,165,233,0.05)',
+                    borderColor: isDark ? 'rgba(56,189,248,0.15)' : 'rgba(14,165,233,0.1)',
+                  }]}>
+                    <Text style={[styles.featureChipText, { color: isDark ? '#38BDF8' : '#0284C7' }]}>{feat}</Text>
+                  </View>
+                ))}
               </View>
 
               <View style={styles.cardAction}>
-                <Text style={[styles.cardActionText, { color: isDark ? '#5eb8ff' : '#2563eb' }]}>Öppna Mattechatten</Text>
-                <ChevronRight size={18} color={isDark ? '#5eb8ff' : '#2563eb'} />
+                <Text style={[styles.cardActionText, { color: '#0EA5E9' }]}>Öppna Mattechatten</Text>
+                <View style={[styles.arrowCircle, { backgroundColor: 'rgba(14,165,233,0.1)' }]}>
+                  <ChevronRight size={16} color="#0EA5E9" />
+                </View>
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </Animated.View>
 
@@ -147,47 +174,59 @@ export default function AISelectorScreen({ onSelectMath, onSelectGeneral }: AISe
             onPress={onSelectGeneral}
             testID="general-ai-card"
           >
-            <LinearGradient
-              colors={isDark ? ['#1a4a3a', '#0d2e22', '#091f18'] : ['#e8f8f5', '#d1f0eb', '#bde8e2']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.card, { borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(78,205,196,0.12)' }]}
-            >
-              <View style={styles.cardIconRow}>
-                <View style={[styles.generalIconContainer, { backgroundColor: isDark ? 'rgba(78,205,196,0.12)' : 'rgba(78,205,196,0.12)' }]}>
-                  <Sparkles size={28} color="#4ECDC4" />
+            <View style={[styles.card, {
+              backgroundColor: isDark ? '#111827' : '#FFFFFF',
+              borderColor: isDark ? 'rgba(78,205,196,0.12)' : 'rgba(16,185,129,0.1)',
+              shadowColor: '#10B981',
+              shadowOpacity: isDark ? 0.15 : 0.08,
+            }]}>
+              <View style={styles.cardTopRow}>
+                <LinearGradient
+                  colors={['#10B981', '#059669', '#047857']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.iconCircle}
+                >
+                  <Sparkles size={24} color="#fff" />
+                </LinearGradient>
+                <View style={[styles.liveTag, { backgroundColor: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.08)' }]}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveTagText}>Online</Text>
                 </View>
               </View>
 
-              <Text style={[styles.cardTitle, { color: isDark ? '#fff' : '#1a2e28' }]}>Generell AI</Text>
-              <Text style={[styles.cardDescription, { color: isDark ? '#7fbfb8' : '#4a8a80' }]}>
-                Fråga om vad som helst. Studietips, sammanfattningar, förklaringar och mer.
+              <Text style={[styles.cardTitle, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>💬 Generell AI</Text>
+              <Text style={[styles.cardDescription, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+                Studietips, sammanfattningar, förklaringar & allt du behöver hjälp med
               </Text>
 
               <View style={styles.featuresRow}>
-                <View style={[styles.featureChip, { backgroundColor: isDark ? 'rgba(78,205,196,0.08)' : 'rgba(78,205,196,0.06)', borderColor: isDark ? 'rgba(78,205,196,0.15)' : 'rgba(78,205,196,0.12)' }]}>
-                  <Text style={[styles.featureChipText, { color: '#4ECDC4' }]}>Studietips</Text>
-                </View>
-                <View style={[styles.featureChip, { backgroundColor: isDark ? 'rgba(78,205,196,0.08)' : 'rgba(78,205,196,0.06)', borderColor: isDark ? 'rgba(78,205,196,0.15)' : 'rgba(78,205,196,0.12)' }]}>
-                  <Text style={[styles.featureChipText, { color: '#4ECDC4' }]}>Förklaringar</Text>
-                </View>
-                <View style={[styles.featureChip, { backgroundColor: isDark ? 'rgba(78,205,196,0.08)' : 'rgba(78,205,196,0.06)', borderColor: isDark ? 'rgba(78,205,196,0.15)' : 'rgba(78,205,196,0.12)' }]}>
-                  <Text style={[styles.featureChipText, { color: '#4ECDC4' }]}>Allt</Text>
-                </View>
+                {['💡 Studietips', '📝 Förklaringar', '🎯 Allt möjligt'].map((feat, i) => (
+                  <View key={i} style={[styles.featureChip, {
+                    backgroundColor: isDark ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.05)',
+                    borderColor: isDark ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.1)',
+                  }]}>
+                    <Text style={[styles.featureChipText, { color: isDark ? '#34D399' : '#059669' }]}>{feat}</Text>
+                  </View>
+                ))}
               </View>
 
               <View style={styles.cardAction}>
-                <Text style={[styles.cardActionText, { color: '#4ECDC4' }]}>Öppna Chatten</Text>
-                <ChevronRight size={18} color="#4ECDC4" />
+                <Text style={[styles.cardActionText, { color: '#10B981' }]}>Öppna Chatten</Text>
+                <View style={[styles.arrowCircle, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
+                  <ChevronRight size={16} color="#10B981" />
+                </View>
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </Animated.View>
       </View>
 
       <Animated.View style={[styles.footer, { opacity: fadeAnim, paddingBottom: insets.bottom + 90 }]}>
-        <MessageSquare size={14} color={theme.colors.textMuted} />
-        <Text style={[styles.footerText, { color: theme.colors.textMuted }]}>Dina chattar sparas under sessionen</Text>
+        <View style={[styles.footerPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
+          <MessageSquare size={12} color={isDark ? '#64748B' : '#94A3B8'} />
+          <Text style={[styles.footerText, { color: isDark ? '#64748B' : '#94A3B8' }]}>Dina chattar sparas under sessionen</Text>
+        </View>
       </Animated.View>
     </View>
   );
@@ -201,104 +240,136 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 8,
   },
-  header: {},
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  headerBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrap: {
+    flex: 1,
+  },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800' as const,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 15,
-    marginTop: 4,
+    fontSize: 14,
+    marginTop: 2,
+    fontWeight: '400' as const,
   },
   cardsContainer: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 24,
     gap: 16,
   },
   cardWrapper: {},
   card: {
-    borderRadius: 20,
-    padding: 24,
-    minHeight: 190,
+    borderRadius: 22,
+    padding: 22,
     borderWidth: 1,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 24,
+    elevation: 6,
   },
-  cardIconRow: {
+  cardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  mathIconContainer: {
+  iconCircle: {
     width: 52,
     height: 52,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  generalIconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cameraTag: {
+  liveTag: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
-    gap: 4,
+    gap: 5,
   },
-  cameraTagText: {
-    fontSize: 12,
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#22C55E',
+  },
+  liveTagText: {
+    fontSize: 11,
     fontWeight: '600' as const,
+    color: '#22C55E',
   },
   cardTitle: {
     fontSize: 22,
     fontWeight: '700' as const,
-    marginBottom: 8,
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   cardDescription: {
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
     marginBottom: 16,
+    fontWeight: '400' as const,
   },
   featuresRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
+    gap: 6,
+    marginBottom: 18,
     flexWrap: 'wrap',
   },
   featureChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
     borderWidth: 1,
   },
   featureChipText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
+    fontSize: 11,
+    fontWeight: '600' as const,
   },
   cardAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-between',
   },
   cardActionText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
+    fontSize: 15,
+    fontWeight: '700' as const,
+  },
+  arrowCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   footer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
     paddingTop: 8,
   },
+  footerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
   footerText: {
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '500' as const,
   },
 });

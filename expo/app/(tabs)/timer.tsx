@@ -1269,36 +1269,43 @@ export default function TimerScreen() {
     const size = timerCircleSize;
     const center = size / 2;
     const totalTicks = 60;
-    const outerR = size / 2 - 6;
+    const outerR = size / 2 - 8;
     const elements = [];
     for (let i = 0; i < totalTicks; i++) {
       const angle = (i / totalTicks) * 2 * Math.PI - Math.PI / 2;
       const isMajor = i % 5 === 0;
-      const tickLen = isMajor ? 11 : 6;
       const r1 = outerR;
-      const r2 = outerR - tickLen;
-      const x1 = center + r1 * Math.cos(angle);
-      const y1 = center + r1 * Math.sin(angle);
-      const x2 = center + r2 * Math.cos(angle);
-      const y2 = center + r2 * Math.sin(angle);
       const elapsed = 1 - progress;
       const isActive = (i / totalTicks) <= elapsed;
+      const x1 = center + r1 * Math.cos(angle);
+      const y1 = center + r1 * Math.sin(angle);
+      const activeColor = sessionType === 'focus'
+        ? (isDarkBg ? '#60A5FA' : '#2563EB')
+        : (isDarkBg ? '#34D399' : '#059669');
       elements.push(
         <React.Fragment key={`tick-${i}`}>
-          <Circle cx={x1} cy={y1} r={isMajor ? 1.5 : 1.0} fill={isActive ? (isDarkBg ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)') : (isDarkBg ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.13)')} />
-          <Circle cx={x2} cy={y2} r={0.1} fill="transparent" />
+          <Circle
+            cx={x1}
+            cy={y1}
+            r={isMajor ? 2.5 : 1.2}
+            fill={isActive ? activeColor : (isDarkBg ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)')}
+          />
         </React.Fragment>
       );
-      void x2; void y2;
     }
     const needleAngle = ((1 - progress) * 2 * Math.PI) - Math.PI / 2;
-    const nLen = timerRadius - 16;
+    const nLen = timerRadius - 14;
     const nx = center + nLen * Math.cos(needleAngle);
     const ny = center + nLen * Math.sin(needleAngle);
+    const activeColor = sessionType === 'focus'
+      ? (isDarkBg ? '#60A5FA' : '#2563EB')
+      : (isDarkBg ? '#34D399' : '#059669');
     elements.push(
       <React.Fragment key="needle">
-        <Circle cx={nx} cy={ny} r={4} fill={isDarkBg ? '#FFFFFF' : '#111827'} />
-        <Circle cx={center} cy={center} r={4} fill={isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'} />
+        <Circle cx={nx} cy={ny} r={5} fill={activeColor} opacity={0.9} />
+        <Circle cx={nx} cy={ny} r={2.5} fill="#FFFFFF" />
+        <Circle cx={center} cy={center} r={5} fill={isDarkBg ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'} />
+        <Circle cx={center} cy={center} r={2.5} fill={activeColor} />
       </React.Fragment>
     );
     return elements;
@@ -1317,7 +1324,7 @@ export default function TimerScreen() {
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
-              <Text style={[styles.headerTitle, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>Timer</Text>
+              <Text style={[styles.headerTitle, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>⏱️ Timer</Text>
             </View>
             <View style={styles.headerRight}>
               <TouchableOpacity
@@ -1358,45 +1365,67 @@ export default function TimerScreen() {
 
         <View style={styles.timerSection}>
           <Text style={[styles.timerSessionName, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>
-            {sessionType === 'focus' ? 'Fokus' : 'Paus'}
+            {sessionType === 'focus' ? '🎯 Fokus' : '☕ Paus'}
           </Text>
           <Text style={[styles.timerSessionSub, { color: isDarkBg ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)' }]}>{getSelectedCourseTitle()}</Text>
 
           <Animated.View style={[styles.timerWrapper, { transform: [{ scale: timerState === 'running' ? pulseAnim : scaleAnim }] }]}>
-            <View style={[styles.timerDarkCircle, { width: timerCircleSize, height: timerCircleSize }]}>
-              <Svg width={timerCircleSize} height={timerCircleSize}>
-                <Circle
-                  cx={timerCircleSize / 2}
-                  cy={timerCircleSize / 2}
-                  r={timerCircleSize / 2}
-                  fill={isDarkBg ? '#1E2A3A' : '#F8F8F8'}
-                />
-                {renderWatchFace()}
-                <Circle
-                  cx={timerCircleSize / 2}
-                  cy={timerCircleSize / 2}
-                  r={timerRadius}
-                  stroke={isDarkBg ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}
-                  strokeWidth={1}
-                  fill="none"
-                />
-                <Circle
-                  cx={timerCircleSize / 2}
-                  cy={timerCircleSize / 2}
-                  r={timerRadius}
-                  stroke={isDarkBg ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)'}
-                  strokeWidth={1.5}
-                  fill="none"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={circumference * progress}
-                  strokeLinecap="round"
-                  transform={`rotate(-90 ${timerCircleSize / 2} ${timerCircleSize / 2})`}
-                />
-              </Svg>
+            <View style={[styles.timer3DOuterRing, {
+              width: timerCircleSize + 20,
+              height: timerCircleSize + 20,
+              borderRadius: (timerCircleSize + 20) / 2,
+              backgroundColor: isDarkBg ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+              borderWidth: 1,
+              borderColor: isDarkBg ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+            }]}>
+              <View style={[styles.timerDarkCircle, {
+                width: timerCircleSize,
+                height: timerCircleSize,
+                shadowColor: sessionType === 'focus' ? '#2563EB' : '#059669',
+              }]}>
+                <Svg width={timerCircleSize} height={timerCircleSize}>
+                  <Circle
+                    cx={timerCircleSize / 2}
+                    cy={timerCircleSize / 2}
+                    r={timerCircleSize / 2}
+                    fill={isDarkBg ? '#141E2E' : '#F4F6F8'}
+                  />
+                  <Circle
+                    cx={timerCircleSize / 2}
+                    cy={timerCircleSize / 2}
+                    r={timerCircleSize / 2 - 3}
+                    fill={isDarkBg ? '#1A2636' : '#FAFBFC'}
+                  />
+                  {renderWatchFace()}
+                  <Circle
+                    cx={timerCircleSize / 2}
+                    cy={timerCircleSize / 2}
+                    r={timerRadius}
+                    stroke={isDarkBg ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}
+                    strokeWidth={4}
+                    fill="none"
+                  />
+                  <Circle
+                    cx={timerCircleSize / 2}
+                    cy={timerCircleSize / 2}
+                    r={timerRadius}
+                    stroke={sessionType === 'focus' ? (isDarkBg ? '#3B82F6' : '#2563EB') : (isDarkBg ? '#34D399' : '#059669')}
+                    strokeWidth={4}
+                    fill="none"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference * progress}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${timerCircleSize / 2} ${timerCircleSize / 2})`}
+                  />
+                </Svg>
+              </View>
             </View>
           </Animated.View>
 
           <Text style={[styles.timerDigitsBelow, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>{formatTime(timeLeft)}</Text>
+          {timerState === 'running' && (
+            <Text style={[styles.timerRunningHint, { color: isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)' }]}>⏳ pågår...</Text>
+          )}
         </View>
 
         {sessionType === 'focus' && timerState === 'idle' && (
@@ -1515,9 +1544,9 @@ export default function TimerScreen() {
 
         <View style={styles.statsRow}>
           {[
-            { value: currentStreak.toString(), label: 'Streak', icon: Flame, color: '#F59E0B' },
-            { value: `${sessionCount}/${dailyGoal}`, label: 'Dagsmål', icon: Target, color: '#A78BFA' },
-            { value: `${todayStats.minutes}m`, label: 'Idag', icon: Zap, color: '#34D399' },
+            { value: `🔥 ${currentStreak}`, label: 'Streak', icon: Flame, color: '#F59E0B' },
+            { value: `${sessionCount}/${dailyGoal}`, label: '🎯 Dagsmål', icon: Target, color: '#A78BFA' },
+            { value: `${todayStats.minutes}m`, label: '⚡ Idag', icon: Zap, color: '#34D399' },
           ].map((stat, i) => (
             <View key={i} style={[styles.statMiniCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.05)' }]}>
               <View style={[styles.statMiniIcon, { backgroundColor: stat.color + '22' }]}>
@@ -2401,6 +2430,15 @@ const styles = StyleSheet.create({
   timerWrapper: {
     alignItems: 'center',
   },
+  timer3DOuterRing: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
+  },
   timerDarkCircle: {
     borderRadius: 999,
     overflow: 'hidden',
@@ -2422,6 +2460,12 @@ const styles = StyleSheet.create({
       android: 'sans-serif-light',
       default: 'sans-serif',
     }),
+  },
+  timerRunningHint: {
+    fontSize: 13,
+    fontWeight: '400' as const,
+    marginTop: 6,
+    letterSpacing: 0.5,
   },
   timerInnerContent: {
     position: 'absolute',
@@ -2505,10 +2549,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#111827',
     shadowColor: '#111827',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 14,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+    borderLeftColor: 'rgba(255,255,255,0.08)',
+    borderRightColor: 'rgba(0,0,0,0.1)',
+    borderBottomColor: 'rgba(0,0,0,0.15)',
   },
   playButtonGradient: {
     width: 80,
@@ -2537,11 +2586,16 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   controlButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderLeftColor: 'rgba(255,255,255,0.04)',
+    borderRightColor: 'rgba(0,0,0,0.04)',
+    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   mainControlButton: {
     borderRadius: 36,
@@ -2554,10 +2608,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#111827',
     shadowColor: '#111827',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 12,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+    borderLeftColor: 'rgba(255,255,255,0.08)',
+    borderRightColor: 'rgba(0,0,0,0.1)',
+    borderBottomColor: 'rgba(0,0,0,0.15)',
   },
   mainControlGradient: {
     width: 72,
@@ -2578,7 +2637,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderLeftColor: 'rgba(255,255,255,0.04)',
+    borderRightColor: 'rgba(0,0,0,0.02)',
+    borderBottomColor: 'rgba(0,0,0,0.04)',
   },
   statMiniIcon: {
     width: 36,

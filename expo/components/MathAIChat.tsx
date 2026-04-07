@@ -283,7 +283,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
           <View key={`${messageId}-card-${cardIndex}`} style={styles.stepCard}>
             <View style={styles.stepCardHeader}>
               <LinearGradient
-                colors={['#0ea5e9', '#0284c7']}
+                colors={['#0EA5E9', '#0284C7']}
                 style={styles.stepBadge}
               >
                 <Text style={styles.stepBadgeText}>{currentStepNum}</Text>
@@ -329,7 +329,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
         cards.push(
           <View key={`${messageId}-answer-${cardIndex}`} style={styles.answerCard}>
             <LinearGradient
-              colors={['#0ea5e9', '#0284c7']}
+              colors={['#0EA5E9', '#0284C7']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.answerBadge}
@@ -394,6 +394,15 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
           </View>
         ) : (
           <View style={styles.assistantContainer}>
+            <View style={styles.assistantAvatarRow}>
+              <LinearGradient
+                colors={['#0EA5E9', '#0284C7']}
+                style={styles.assistantAvatar}
+              >
+                <Text style={styles.assistantAvatarText}>🧮</Text>
+              </LinearGradient>
+              <Text style={styles.assistantName}>Matematik AI</Text>
+            </View>
             {message.parts.map((part: any, index: number) => {
               if (part.type === 'text') {
                 return (
@@ -448,21 +457,23 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
       <View style={styles.background}>
         <Animated.View style={[styles.header, { paddingTop: insets.top + 8, transform: [{ translateY: headerSlide }] }]}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton} testID="math-ai-back">
-            <ArrowLeft size={20} color="#0ea5e9" strokeWidth={2.5} />
+            <ArrowLeft size={20} color="#0EA5E9" strokeWidth={2.5} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <LinearGradient
-              colors={['#0ea5e9', '#0284c7']}
+              colors={['#0EA5E9', '#0284C7']}
               style={styles.headerIcon}
             >
-              <Text style={styles.headerIconText}>M</Text>
+              <Text style={styles.headerIconEmoji}>🧮</Text>
             </LinearGradient>
             <View>
               <Text style={styles.headerTitle}>Matematik AI</Text>
-              <Text style={styles.headerSubtitle}>Steg-för-steg lösningar</Text>
+              <Text style={styles.headerSubtitle}>Steg-för-steg lösningar ✨</Text>
             </View>
           </View>
-          <View style={styles.onlineDot} />
+          <View style={styles.onlineDotWrap}>
+            <View style={styles.onlineDot} />
+          </View>
         </Animated.View>
 
         <KeyboardAvoidingView
@@ -482,41 +493,45 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
               <View style={styles.emptyState}>
                 <View style={styles.emptyIconOuter}>
                   <LinearGradient
-                    colors={['#0ea5e9', '#0284c7']}
+                    colors={['#0EA5E9', '#0284C7']}
                     style={styles.emptyIconContainer}
                   >
-                    <Text style={styles.emptyIconText}>f(x)</Text>
+                    <Text style={styles.emptyIconEmoji}>📐</Text>
                   </LinearGradient>
                 </View>
-                <Text style={styles.emptyTitle}>Matematik AI</Text>
+                <Text style={styles.emptyTitle}>Hej! Jag är din matte-AI 🎓</Text>
                 <Text style={styles.emptySubtitle}>
-                  Fota en uppgift, skriv en ekvation eller ställ en fråga — jag löser det steg för steg.
+                  Fota en uppgift, skriv en ekvation eller ställ en fråga{'\n'}— jag löser det steg för steg!
                 </Text>
 
                 <View style={styles.suggestionsGrid}>
-                  <TouchableOpacity style={styles.suggestionCard} onPress={handleSuggestionPhoto}>
-                    <View style={styles.suggestionIconWrap}>
-                      <Camera size={18} color="#0ea5e9" />
+                  <TouchableOpacity style={styles.suggestionCard} onPress={handleSuggestionPhoto} activeOpacity={0.7}>
+                    <View style={[styles.suggestionIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                      <Camera size={18} color="#0EA5E9" />
                     </View>
-                    <Text style={styles.suggestionCardText}>Fota uppgift</Text>
+                    <Text style={styles.suggestionCardTitle}>📸 Fota uppgift</Text>
+                    <Text style={styles.suggestionCardDesc}>Ta en bild direkt</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.suggestionCard} onPress={() => handleSuggestion('Lös ekvationen: 2x + 5 = 15')}>
-                    <View style={styles.suggestionIconWrap}>
-                      <BookOpen size={18} color="#0ea5e9" />
+                  <TouchableOpacity style={styles.suggestionCard} onPress={() => handleSuggestion('Lös ekvationen: 2x + 5 = 15')} activeOpacity={0.7}>
+                    <View style={[styles.suggestionIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                      <BookOpen size={18} color="#0EA5E9" />
                     </View>
-                    <Text style={styles.suggestionCardText}>Ekvation</Text>
+                    <Text style={styles.suggestionCardTitle}>✏️ Ekvation</Text>
+                    <Text style={styles.suggestionCardDesc}>Skriv & lös</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.suggestionCard} onPress={() => handleSuggestion('Förklara Pythagoras sats')}>
-                    <View style={styles.suggestionIconWrap}>
-                      <TriangleRight size={18} color="#0ea5e9" />
+                  <TouchableOpacity style={styles.suggestionCard} onPress={() => handleSuggestion('Förklara Pythagoras sats')} activeOpacity={0.7}>
+                    <View style={[styles.suggestionIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                      <TriangleRight size={18} color="#0EA5E9" />
                     </View>
-                    <Text style={styles.suggestionCardText}>Geometri</Text>
+                    <Text style={styles.suggestionCardTitle}>📐 Geometri</Text>
+                    <Text style={styles.suggestionCardDesc}>Former & satser</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.suggestionCard} onPress={() => handleSuggestion('Hur beräknar jag derivatan av x³ + 2x?')}>
-                    <View style={styles.suggestionIconWrap}>
-                      <Sigma size={18} color="#0ea5e9" />
+                  <TouchableOpacity style={styles.suggestionCard} onPress={() => handleSuggestion('Hur beräknar jag derivatan av x³ + 2x?')} activeOpacity={0.7}>
+                    <View style={[styles.suggestionIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                      <Sigma size={18} color="#0EA5E9" />
                     </View>
-                    <Text style={styles.suggestionCardText}>Derivata</Text>
+                    <Text style={styles.suggestionCardTitle}>🧮 Derivata</Text>
+                    <Text style={styles.suggestionCardDesc}>Kalkyl & analys</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -532,7 +547,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
                     <Animated.View style={[styles.loadingDot, { opacity: loadingDotAnim2 }]} />
                     <Animated.View style={[styles.loadingDot, { opacity: loadingDotAnim3 }]} />
                   </View>
-                  <Text style={styles.loadingText}>Löser uppgiften...</Text>
+                  <Text style={styles.loadingText}>🔍 Löser uppgiften...</Text>
                 </View>
               </View>
             )}
@@ -540,7 +555,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
             {(error || localError) && (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>
-                  {localError || 'Ett fel uppstod. Försök igen.'}
+                  ⚠️ {localError || 'Ett fel uppstod. Försök igen.'}
                 </Text>
               </View>
             )}
@@ -549,9 +564,9 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
           {attachedImage && (
             <View style={styles.imagePreviewBar}>
               <Image source={{ uri: attachedImage.uri }} style={styles.previewThumbnail} />
-              <Text style={styles.previewText}>Bild bifogad</Text>
+              <Text style={styles.previewText}>📎 Bild bifogad — redo att analysera</Text>
               <TouchableOpacity onPress={removeAttachedImage} style={styles.removeImageButton}>
-                <X size={14} color="#ef4444" />
+                <X size={14} color="#EF4444" />
               </TouchableOpacity>
             </View>
           )}
@@ -559,11 +574,11 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
           <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) + 4 }]}>
             <View style={styles.inputRow}>
               <View style={styles.mediaButtonsRow}>
-                <TouchableOpacity style={styles.mediaButton} onPress={takePhoto} testID="math-ai-camera">
-                  <Camera size={18} color="#0ea5e9" />
+                <TouchableOpacity style={styles.mediaButton} onPress={takePhoto} testID="math-ai-camera" activeOpacity={0.7}>
+                  <Camera size={18} color="#0EA5E9" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.mediaButton} onPress={pickImageFromLibrary} testID="math-ai-gallery">
-                  <ImageIcon size={18} color="#0ea5e9" />
+                <TouchableOpacity style={styles.mediaButton} onPress={pickImageFromLibrary} testID="math-ai-gallery" activeOpacity={0.7}>
+                  <ImageIcon size={18} color="#0EA5E9" />
                 </TouchableOpacity>
               </View>
               <View style={styles.inputFieldWrap}>
@@ -572,8 +587,8 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
                   style={styles.input}
                   value={input}
                   onChangeText={setInput}
-                  placeholder="Skriv en ekvation eller fråga..."
-                  placeholderTextColor="#94a3b8"
+                  placeholder="Skriv en ekvation eller fråga... ✍️"
+                  placeholderTextColor="#94A3B8"
                   multiline
                   maxLength={2000}
                   editable={!isSending}
@@ -589,7 +604,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
                 testID="math-ai-send"
               >
                 <LinearGradient
-                  colors={((!input.trim() && !attachedImage) || isSending) ? ['#cbd5e1', '#94a3b8'] : ['#0ea5e9', '#0284c7']}
+                  colors={((!input.trim() && !attachedImage) || isSending) ? ['#CBD5E1', '#94A3B8'] : ['#0EA5E9', '#0284C7']}
                   style={styles.sendButtonGradient}
                 >
                   <Send size={16} color="#fff" />
@@ -609,30 +624,30 @@ const styles = StyleSheet.create({
   },
   background: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#F8FAFC',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 14,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 0,
-    shadowColor: '#0ea5e9',
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 4,
   },
   backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: '#f0f9ff',
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: '#F0F9FF',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e0f2fe',
+    borderColor: '#E0F2FE',
   },
   headerCenter: {
     flex: 1,
@@ -642,34 +657,36 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerIconText: {
-    fontSize: 15,
-    fontWeight: '800' as const,
-    color: '#fff',
+  headerIconEmoji: {
+    fontSize: 18,
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '700' as const,
-    color: '#0f172a',
+    color: '#0F172A',
     letterSpacing: -0.3,
   },
   headerSubtitle: {
     fontSize: 11,
-    color: '#64748b',
+    color: '#64748B',
     letterSpacing: 0.1,
+  },
+  onlineDotWrap: {
+    width: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   onlineDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#22c55e',
-    marginRight: 16,
+    backgroundColor: '#22C55E',
   },
   keyboardView: {
     flex: 1,
@@ -684,41 +701,40 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 48,
+    paddingTop: 40,
   },
   emptyIconOuter: {
-    marginBottom: 24,
-    shadowColor: '#0ea5e9',
+    marginBottom: 20,
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 8,
   },
   emptyIconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 22,
+    width: 76,
+    height: 76,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyIconText: {
-    fontSize: 22,
-    fontWeight: '700' as const,
-    color: '#fff',
+  emptyIconEmoji: {
+    fontSize: 32,
   },
   emptyTitle: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800' as const,
-    color: '#0f172a',
+    color: '#0F172A',
     marginBottom: 8,
     letterSpacing: -0.5,
+    textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: 15,
-    color: '#64748b',
+    color: '#64748B',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: 28,
     paddingHorizontal: 8,
   },
   suggestionsGrid: {
@@ -732,34 +748,34 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    shadowColor: '#0f172a',
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 1,
   },
   suggestionIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: '#f0f9ff',
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0f2fe',
+    marginBottom: 10,
   },
-  suggestionCardText: {
-    fontSize: 13,
-    color: '#334155',
-    fontWeight: '600' as const,
-    flex: 1,
+  suggestionCardTitle: {
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  suggestionCardDesc: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '400' as const,
   },
   messageRow: {
     marginBottom: 16,
@@ -772,11 +788,11 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     maxWidth: '82%',
-    backgroundColor: '#0ea5e9',
+    backgroundColor: '#0EA5E9',
     padding: 14,
-    borderRadius: 18,
-    borderBottomRightRadius: 4,
-    shadowColor: '#0ea5e9',
+    borderRadius: 20,
+    borderBottomRightRadius: 6,
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -790,16 +806,37 @@ const styles = StyleSheet.create({
   assistantContainer: {
     width: '100%',
   },
+  assistantAvatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  assistantAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  assistantAvatarText: {
+    fontSize: 14,
+  },
+  assistantName: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#64748B',
+  },
   stepsContainer: {
     gap: 10,
   },
   stepCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
     borderLeftWidth: 3,
-    borderLeftColor: '#0ea5e9',
-    shadowColor: '#0f172a',
+    borderLeftColor: '#0EA5E9',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.07,
     shadowRadius: 12,
@@ -811,9 +848,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   stepBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -825,27 +862,27 @@ const styles = StyleSheet.create({
   stepLabel: {
     fontSize: 12,
     fontWeight: '600' as const,
-    color: '#64748b',
+    color: '#64748B',
     textTransform: 'uppercase' as const,
     letterSpacing: 0.8,
   },
   stepDivider: {
     height: 1,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#F1F5F9',
     marginVertical: 10,
   },
   stepCardContent: {
     fontSize: 15,
     lineHeight: 24,
-    color: '#1e293b',
+    color: '#1E293B',
   },
   answerCard: {
-    backgroundColor: '#f0f9ff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 18,
+    padding: 18,
     borderWidth: 1.5,
-    borderColor: '#bae6fd',
-    shadowColor: '#0ea5e9',
+    borderColor: '#BAE6FD',
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
@@ -856,7 +893,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 8,
     gap: 5,
     marginBottom: 10,
@@ -868,18 +905,18 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   answerCardContent: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700' as const,
-    color: '#0369a1',
-    lineHeight: 28,
+    color: '#0369A1',
+    lineHeight: 30,
   },
   plainTextCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 18,
+    padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#0f172a',
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -887,7 +924,7 @@ const styles = StyleSheet.create({
   },
   plainText: {
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 23,
     color: '#334155',
   },
   messageImage: {
@@ -902,13 +939,13 @@ const styles = StyleSheet.create({
   loadingCard: {
     backgroundColor: '#fff',
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#E2E8F0',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    shadowColor: '#0f172a',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -923,23 +960,23 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#0ea5e9',
+    backgroundColor: '#0EA5E9',
   },
   loadingText: {
     fontSize: 14,
-    color: '#64748b',
+    color: '#64748B',
     fontWeight: '500' as const,
   },
   errorContainer: {
-    backgroundColor: '#fef2f2',
-    padding: 12,
-    borderRadius: 14,
+    backgroundColor: '#FEF2F2',
+    padding: 14,
+    borderRadius: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: '#FECACA',
   },
   errorText: {
-    color: '#dc2626',
+    color: '#DC2626',
     fontSize: 14,
     textAlign: 'center',
   },
@@ -950,38 +987,38 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: '#F1F5F9',
     gap: 10,
   },
   previewThumbnail: {
-    width: 42,
-    height: 42,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#E2E8F0',
   },
   previewText: {
     flex: 1,
     fontSize: 13,
-    color: '#64748b',
+    color: '#64748B',
     fontWeight: '500' as const,
   },
   removeImageButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#fef2f2',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FEF2F2',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: '#FECACA',
   },
   inputContainer: {
     paddingTop: 8,
     paddingHorizontal: 12,
     backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: '#F1F5F9',
   },
   inputRow: {
     flexDirection: 'row',
@@ -993,42 +1030,42 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   mediaButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: '#f0f9ff',
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: '#F0F9FF',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e0f2fe',
+    borderColor: '#E0F2FE',
   },
   inputFieldWrap: {
     flex: 1,
   },
   input: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 18,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 15,
     maxHeight: 100,
-    color: '#0f172a',
+    color: '#0F172A',
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    borderColor: '#E2E8F0',
   },
   sendButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     overflow: 'hidden',
   },
   sendButtonDisabled: {
     opacity: 0.5,
   },
   sendButtonGradient: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },

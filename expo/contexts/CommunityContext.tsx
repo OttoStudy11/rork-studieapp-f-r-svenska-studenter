@@ -193,39 +193,56 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     try {
       console.log('[Communities] Loading my communities...');
       
-      const { data, error: fetchError } = await (supabase as any)
+      const { data: membershipData, error: membershipError } = await (supabase as any)
         .from('community_members')
-        .select(`
-          role,
-          community:communities(*)
-        `)
+        .select('community_id, role')
         .eq('user_id', user.id);
+
+      if (membershipError) {
+        console.error('[Communities] Error loading memberships:', membershipError);
+        return;
+      }
+
+      const communityIds = (membershipData || []).map((m: any) => m.community_id).filter(Boolean);
+
+      if (communityIds.length === 0) {
+        setMyCommunities([]);
+        console.log('[Communities] No community memberships found');
+        return;
+      }
+
+      const roleMap = new Map(
+        (membershipData || []).map((m: any) => [m.community_id, m.role])
+      );
+
+      const { data, error: fetchError } = await (supabase as any)
+        .from('communities')
+        .select('*')
+        .in('id', communityIds);
       
       if (fetchError) {
         console.error('[Communities] Error loading my communities:', fetchError);
         return;
       }
       
-      const mapped: Community[] = (data || [])
-        .filter((d: any) => d.community)
-        .map((d: any) => ({
-          id: d.community.id,
-          name: d.community.name,
-          description: d.community.description || '',
-          type: d.community.type as CommunityType,
-          visibility: d.community.visibility as CommunityVisibility,
-          schoolId: d.community.school_id,
-          schoolName: d.community.school_name,
-          programId: d.community.program_id,
-          programName: d.community.program_name,
-          imageUrl: d.community.image_url,
-          createdBy: d.community.created_by,
-          memberCount: d.community.member_count || 0,
-          createdAt: d.community.created_at,
-          isMember: true,
-          isAdmin: d.role === 'admin',
-          hasPendingRequest: false,
-        }));
+      const mapped: Community[] = (data || []).map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description || '',
+        type: c.type as CommunityType,
+        visibility: c.visibility as CommunityVisibility,
+        schoolId: c.school_id,
+        schoolName: c.school_name,
+        programId: c.program_id,
+        programName: c.program_name,
+        imageUrl: c.image_url,
+        createdBy: c.created_by,
+        memberCount: c.member_count || 0,
+        createdAt: c.created_at,
+        isMember: true,
+        isAdmin: roleMap.get(c.id) === 'admin',
+        hasPendingRequest: false,
+      }));
       
       setMyCommunities(mapped);
       console.log('[Communities] Loaded', mapped.length, 'of my communities');
@@ -509,18 +526,25 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Kunde inte gå med i community' };
       }
       
+      const { count: actualCount } = await (supabase as any)
+        .from('community_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('community_id', communityId);
+
+      const newCount = actualCount ?? (community.member_count || 0) + 1;
+
       await (supabase as any)
         .from('communities')
-        .update({ member_count: (community.member_count || 0) + 1 })
+        .update({ member_count: newCount })
         .eq('id', communityId);
       
       setCommunities(prev => prev.map(c => 
-        c.id === communityId ? { ...c, isMember: true, memberCount: c.memberCount + 1 } : c
+        c.id === communityId ? { ...c, isMember: true, memberCount: newCount } : c
       ));
       
       await loadMyCommunities();
       
-      console.log('[Communities] Joined community successfully');
+      console.log('[Communities] Joined community successfully, member count:', newCount);
       return {};
     } catch (err: any) {
       console.error('[Communities] Exception joining community:', err);
@@ -571,19 +595,24 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         .eq('id', communityId)
         .single();
       
-      if (community) {
-        await (supabase as any)
-          .from('communities')
-          .update({ member_count: Math.max(0, (community.member_count || 1) - 1) })
-          .eq('id', communityId);
-      }
+      const { count: actualCount } = await (supabase as any)
+        .from('community_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('community_id', communityId);
+
+      const newCount = actualCount ?? Math.max(0, (community?.member_count || 1) - 1);
+
+      await (supabase as any)
+        .from('communities')
+        .update({ member_count: newCount })
+        .eq('id', communityId);
       
       setMyCommunities(prev => prev.filter(c => c.id !== communityId));
       setCommunities(prev => prev.map(c => 
-        c.id === communityId ? { ...c, isMember: false, isAdmin: false, memberCount: Math.max(0, c.memberCount - 1) } : c
+        c.id === communityId ? { ...c, isMember: false, isAdmin: false, memberCount: newCount } : c
       ));
       
-      console.log('[Communities] Left community successfully');
+      console.log('[Communities] Left community successfully, member count:', newCount);
       return {};
     } catch (err: any) {
       console.error('[Communities] Exception leaving community:', err);
@@ -607,14 +636,41 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         return { error: 'Community hittades inte' };
       }
       
-      const { data: memberData } = await (supabase as any)
+      const { data: memberData, error: memberError } = await (supabase as any)
         .from('community_members')
         .select(`
-          *,
-          user:profiles(id, username, display_name, avatar_url, program, level)
+          id,
+          community_id,
+          user_id,
+          role,
+          created_at
         `)
         .eq('community_id', communityId)
         .order('role', { ascending: true });
+
+      if (memberError) {
+        console.error('[Communities] Error loading members:', memberError);
+      }
+
+      const memberUserIds = (memberData || []).map((m: any) => m.user_id).filter(Boolean);
+      let memberProfilesMap = new Map<string, any>();
+
+      if (memberUserIds.length > 0) {
+        const { data: memberProfiles, error: profilesError } = await (supabase as any)
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, program, level')
+          .in('id', memberUserIds);
+
+        if (profilesError) {
+          console.error('[Communities] Error loading member profiles:', profilesError);
+        }
+
+        memberProfilesMap = new Map(
+          (memberProfiles || []).map((p: any) => [p.id, p])
+        );
+      }
+
+      console.log('[Communities] Loaded', memberUserIds.length, 'members,', memberProfilesMap.size, 'profiles');
       
       const { data: myMembership } = await (supabase as any)
         .from('community_members')
@@ -627,28 +683,42 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
       if (myMembership?.role === 'admin') {
         const { data: requestData } = await (supabase as any)
           .from('community_requests')
-          .select(`
-            *,
-            user:profiles(id, username, display_name, avatar_url, program)
-          `)
+          .select('id, community_id, user_id, message, status, created_at')
           .eq('community_id', communityId)
           .eq('status', 'pending');
-        
-        requests = (requestData || []).map((r: any) => ({
-          id: r.id,
-          communityId: r.community_id,
-          userId: r.user_id,
-          message: r.message,
-          status: r.status,
-          createdAt: r.created_at,
-          user: r.user ? {
-            id: r.user.id,
-            username: r.user.username,
-            displayName: r.user.display_name,
-            avatarUrl: r.user.avatar_url,
-            program: r.user.program,
-          } : undefined,
-        }));
+
+        const requestUserIds = (requestData || []).map((r: any) => r.user_id).filter(Boolean);
+        let requestProfilesMap = new Map<string, any>();
+
+        if (requestUserIds.length > 0) {
+          const { data: reqProfiles } = await (supabase as any)
+            .from('profiles')
+            .select('id, username, display_name, avatar_url, program')
+            .in('id', requestUserIds);
+
+          requestProfilesMap = new Map(
+            (reqProfiles || []).map((p: any) => [p.id, p])
+          );
+        }
+
+        requests = (requestData || []).map((r: any) => {
+          const rProfile = requestProfilesMap.get(r.user_id);
+          return {
+            id: r.id,
+            communityId: r.community_id,
+            userId: r.user_id,
+            message: r.message,
+            status: r.status,
+            createdAt: r.created_at,
+            user: rProfile ? {
+              id: rProfile.id,
+              username: rProfile.username,
+              displayName: rProfile.display_name,
+              avatarUrl: rProfile.avatar_url,
+              program: rProfile.program,
+            } : undefined,
+          };
+        });
       }
       
       const community: Community = {
@@ -670,21 +740,28 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
         hasPendingRequest: false,
       };
       
-      const members: CommunityMember[] = (memberData || []).map((m: any) => ({
-        id: m.id,
-        communityId: m.community_id,
-        userId: m.user_id,
-        role: m.role as MemberRole,
-        joinedAt: m.joined_at || m.created_at,
-        user: m.user ? {
-          id: m.user.id,
-          username: m.user.username,
-          displayName: m.user.display_name,
-          avatarUrl: m.user.avatar_url,
-          program: m.user.program,
-          level: m.user.level,
-        } : undefined,
-      }));
+      const members: CommunityMember[] = (memberData || []).map((m: any) => {
+        const profile = memberProfilesMap.get(m.user_id);
+        return {
+          id: m.id,
+          communityId: m.community_id,
+          userId: m.user_id,
+          role: m.role as MemberRole,
+          joinedAt: m.created_at,
+          user: profile ? {
+            id: profile.id,
+            username: profile.username,
+            displayName: profile.display_name,
+            avatarUrl: profile.avatar_url,
+            program: profile.program,
+            level: profile.level,
+          } : {
+            id: m.user_id,
+            username: 'okänd',
+            displayName: 'Okänd användare',
+          },
+        };
+      });
       
       return { community, members, requests };
     } catch (err: any) {
@@ -1031,8 +1108,8 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
 
   useEffect(() => {
     if (user) {
-      loadMyCommunities();
-      loadPendingInvites();
+      void loadMyCommunities();
+      void loadPendingInvites();
     }
   }, [user, loadMyCommunities, loadPendingInvites]);
 

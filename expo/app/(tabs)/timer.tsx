@@ -24,14 +24,14 @@ import { useAchievements } from '@/contexts/AchievementContext';
 import { useGamification } from '@/contexts/GamificationContext';
 import { useTimerSettings } from '@/contexts/TimerSettingsContext';
 import { usePremium } from '@/contexts/PremiumContext';
-import { useExams } from '@/contexts/ExamContext';
+
 import { TimerPersistence } from '@/lib/timer-persistence';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
 
 import { Play, Pause, Square, Settings, Flame, Target, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, ChevronRight, CheckCircle, TrendingUp, TrendingDown, Award, BarChart3, PieChart, Sunrise, Sun, Moon, Lightbulb, Trophy, Activity } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
-import AddExamModal from '@/components/AddExamModal';
+
 
 import * as Notifications from 'expo-notifications';
 
@@ -245,7 +245,6 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
 export default function TimerScreen() {
   const { courses, addPomodoroSession, pomodoroSessions } = useStudy();
   const { showSuccess, showAchievement } = useToast();
-  const _exams = useExams();
   const { theme, isDark } = useTheme();
   const { currentStreak, checkAchievements, refreshAchievements } = useAchievements();
   const { awardStudySession } = useGamification();
@@ -280,7 +279,6 @@ export default function TimerScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const [showAddExam, setShowAddExam] = useState(false);
   const [bgIndex, setBgIndex] = useState<number>(0);
   
   void motivationalQuote;
@@ -1998,7 +1996,6 @@ export default function TimerScreen() {
         </View>
       </Modal>
 
-      <AddExamModal visible={showAddExam} onClose={() => setShowAddExam(false)} />
 
       <Modal visible={showAddSession} animationType="slide" presentationStyle="pageSheet">
         <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>

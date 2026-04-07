@@ -119,43 +119,54 @@ export default function CommunityDetailScreen() {
 
     try {
       setIsLoading(true);
+      console.log('[Community] Loading community data for:', id);
       const { community: comm, members: mems, requests: reqs, error } = await getCommunityDetails(id);
 
       if (error) {
+        console.error('[Community] getCommunityDetails error:', error);
         showError(error);
         router.back();
         return;
       }
 
-      setCommunity(comm);
+      console.log('[Community] Got community:', comm?.name, 'members:', mems?.length, 'requests:', reqs?.length);
+
+      if (comm && mems) {
+        setCommunity({ ...comm, memberCount: mems.length });
+      } else {
+        setCommunity(comm);
+      }
       setRequests(reqs || []);
 
-      if (mems) {
-        const memberIds = mems.map((m) => m.userId);
+      if (mems && mems.length > 0) {
+        const memberIds = mems.map((m) => m.userId).filter(Boolean);
+        console.log('[Community] Member IDs:', memberIds);
 
         let progressMap = new Map<string, number>();
         let sessionCountMap: Record<string, number> = {};
 
-        try {
-          const { data: progressData } = await supabase
-            .from('user_progress')
-            .select('user_id, total_study_time')
-            .in('user_id', memberIds);
+        if (memberIds.length > 0) {
+          try {
+            const { data: progressData } = await supabase
+              .from('user_progress')
+              .select('user_id, total_study_time')
+              .in('user_id', memberIds);
 
-          const { data: sessionData } = await supabase
-            .from('pomodoro_sessions')
-            .select('user_id')
-            .in('user_id', memberIds);
+            const { data: sessionData } = await supabase
+              .from('pomodoro_sessions')
+              .select('user_id')
+              .in('user_id', memberIds);
 
-          sessionData?.forEach((s: any) => {
-            sessionCountMap[s.user_id] = (sessionCountMap[s.user_id] || 0) + 1;
-          });
+            sessionData?.forEach((s: any) => {
+              sessionCountMap[s.user_id] = (sessionCountMap[s.user_id] || 0) + 1;
+            });
 
-          progressMap = new Map(
-            progressData?.map((p: any) => [p.user_id, p.total_study_time]) || []
-          );
-        } catch (statsErr) {
-          console.log('[Community] Stats fetch optional, continuing:', statsErr);
+            progressMap = new Map(
+              progressData?.map((p: any) => [p.user_id, p.total_study_time]) || []
+            );
+          } catch (statsErr) {
+            console.log('[Community] Stats fetch optional, continuing:', statsErr);
+          }
         }
 
         const membersWithStats: MemberWithStats[] = mems.map((m) => ({
@@ -164,7 +175,15 @@ export default function CommunityDetailScreen() {
           sessionCount: sessionCountMap[m.userId] || 0,
         }));
 
+        console.log('[Community] Members with stats:', membersWithStats.length);
+        membersWithStats.forEach((m) => {
+          console.log('[Community] Member:', m.user?.displayName, '(@' + m.user?.username + ')', 'role:', m.role);
+        });
+
         setMembers(membersWithStats);
+      } else {
+        console.log('[Community] No members returned');
+        setMembers([]);
       }
     } catch (err: any) {
       console.error('[Community] Error loading:', err);

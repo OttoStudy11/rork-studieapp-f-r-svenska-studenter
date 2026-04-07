@@ -42,6 +42,7 @@ import {
   Shield,
 } from 'lucide-react-native';
 import type { AvatarConfig } from '@/constants/avatar-config';
+import { compressImage } from '@/utils/compressImage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -323,7 +324,21 @@ export default function CommunityDetailScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0].uri);
+        const pickedUri = result.assets[0].uri;
+        console.log('[Community] Image picked, compressing...');
+        try {
+          const compressed = await compressImage(pickedUri);
+          if (compressed.base64) {
+            const dataUri = `data:${compressed.mimeType};base64,${compressed.base64}`;
+            console.log('[Community] Image compressed, base64 length:', compressed.base64.length);
+            setSelectedImage(dataUri);
+          } else {
+            showError('Kunde inte bearbeta bilden');
+          }
+        } catch (compressErr) {
+          console.error('[Community] Image compression error:', compressErr);
+          showError('Kunde inte bearbeta bilden');
+        }
       }
     } catch (err) {
       console.error('[Community] Image picker error:', err);

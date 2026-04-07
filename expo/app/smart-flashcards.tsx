@@ -38,7 +38,9 @@ import { useMutation } from '@tanstack/react-query';
 import { z } from 'zod';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import { compressImage } from '@/utils/compressImage';
+import { extractTextFromImage } from '@/lib/vision-ai';
+import { Camera } from 'lucide-react-native';
 
 
 
@@ -213,6 +215,30 @@ ${inputText}`,
     },
   });
 
+  const [isExtractingImage, setIsExtractingImage] = useState(false);
+
+  const processImageForText = useCallback(async (uri: string) => {
+    setIsExtractingImage(true);
+    try {
+      console.log('[SmartFlashcards] Compressing image...');
+      const compressed = await compressImage(uri);
+      console.log('[SmartFlashcards] Extracting text from compressed image...');
+      const extractedText = await extractTextFromImage(compressed.uri);
+      if (extractedText) {
+        setInputText(prev => prev + (prev ? '\n\n' : '') + extractedText);
+        console.log('[SmartFlashcards] Extracted text length:', extractedText.length);
+      }
+      if (Platform.OS !== 'web') {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (err: any) {
+      console.error('[SmartFlashcards] Image extraction error:', err);
+      Alert.alert('Fel', err?.message || 'Kunde inte extrahera text från bilden. Försök igen.');
+    } finally {
+      setIsExtractingImage(false);
+    }
+  }, []);
+
   const handlePickImage = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -223,52 +249,31 @@ ${inputText}`,
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: 'images' as any,
       quality: 0.8,
+      allowsEditing: true,
     });
 
     if (!result.canceled && result.assets[0]) {
-      try {
-        const uri = result.assets[0].uri;
-        let base64: string;
-        if (Platform.OS === 'web') {
-          const response = await fetch(uri);
-          const blob = await response.blob();
-          base64 = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        } else {
-          const fileBase64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
-          base64 = `data:image/jpeg;base64,${fileBase64}`;
-        }
-
-        console.log('[SmartFlashcards] Extracting text from image...');
-        const textResult = await generateObject({
-          messages: [
-            {
-              role: 'user',
-              content: [
-                { type: 'text', text: 'Extrahera ALL text och nyckelinnehåll från denna bild exakt som det står. Returnera det som ren text på originalspråket utan formattering.' },
-                { type: 'image', image: base64 },
-              ],
-            },
-          ],
-          schema: z.object({ extractedText: z.string() }),
-        });
-
-        console.log('[SmartFlashcards] Extracted text length:', textResult.extractedText.length);
-        setInputText(prev => prev + (prev ? '\n\n' : '') + textResult.extractedText);
-
-        if (Platform.OS !== 'web') {
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-      } catch (err) {
-        console.error('[SmartFlashcards] Image extraction error:', err);
-        Alert.alert('Fel', 'Kunde inte extrahera text från bilden. Försök igen.');
-      }
+      await processImageForText(result.assets[0].uri);
     }
-  }, []);
+  }, [processImageForText]);
+
+  const handleTakePhoto = useCallback(async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till kameran för att ta foton.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: 'images' as any,
+      quality: 0.8,
+      allowsEditing: true,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await processImageForText(result.assets[0].uri);
+    }
+  }, [processImageForText]);
 
   const getDifficultyColor = (diff: string) => {
     switch (diff) {
@@ -340,14 +345,31 @@ ${inputText}`,
                   numberOfLines={8}
                   textAlignVertical="top"
                 />
+                {isExtractingImage && (
+                  <View style={styles.extractingRow}>
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                    <Text style={[styles.extractingLabel, { color: theme.colors.textSecondary }]}>Läser text från bild...</Text>
+                  </View>
+                )}
                 <View style={styles.inputActions}>
-                  <TouchableOpacity
-                    style={[styles.actionChip, { backgroundColor: isDark ? '#0F172A' : '#F1F5F9' }]}
-                    onPress={handlePickImage}
-                  >
-                    <ImageIcon size={16} color={theme.colors.primary} />
-                    <Text style={[styles.actionChipText, { color: theme.colors.primary }]}>Bild → Text</Text>
-                  </TouchableOpacity>
+                  <View style={styles.imageActionsRow}>
+                    <TouchableOpacity
+                      style={[styles.actionChip, { backgroundColor: isDark ? '#0F172A' : '#F1F5F9' }]}
+                      onPress={handleTakePhoto}
+                      disabled={isExtractingImage}
+                    >
+                      <Camera size={16} color={theme.colors.primary} />
+                      <Text style={[styles.actionChipText, { color: theme.colors.primary }]}>Ta foto</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionChip, { backgroundColor: isDark ? '#0F172A' : '#F1F5F9' }]}
+                      onPress={handlePickImage}
+                      disabled={isExtractingImage}
+                    >
+                      <ImageIcon size={16} color={theme.colors.primary} />
+                      <Text style={[styles.actionChipText, { color: theme.colors.primary }]}>Galleri</Text>
+                    </TouchableOpacity>
+                  </View>
                   <Text style={[styles.charCount, { color: theme.colors.textMuted }]}>
                     {inputText.length} tecken
                   </Text>
@@ -588,6 +610,9 @@ const styles = StyleSheet.create({
   inputHint: { fontSize: 13, marginBottom: 12 },
   textArea: { borderRadius: 14, padding: 14, fontSize: 15, lineHeight: 22, minHeight: 160, borderWidth: 1 },
   inputActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
+  imageActionsRow: { flexDirection: 'row', gap: 8 },
+  extractingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, paddingVertical: 8 },
+  extractingLabel: { fontSize: 13, fontWeight: '500' as const },
   actionChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
   actionChipText: { fontSize: 13, fontWeight: '600' as const },
   charCount: { fontSize: 12 },

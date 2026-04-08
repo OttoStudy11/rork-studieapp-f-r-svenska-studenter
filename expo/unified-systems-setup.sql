@@ -648,6 +648,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP FUNCTION IF EXISTS get_weekly_leaderboard(UUID, INTEGER);
+
 -- Weekly leaderboard
 CREATE OR REPLACE FUNCTION get_weekly_leaderboard(
   p_user_id UUID,

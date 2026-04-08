@@ -52,6 +52,7 @@ VIKTIGA FORMATERINGSREGLER (följ dessa STRIKT):
 - Ge slutsvaret som "Svar:" på egen rad
 - Håll mellanrum lagom, max en tom rad mellan stycken
 - Du FÅR använda LaTeX för matematik (t.ex. \\frac{a}{b}, x^2, \\sqrt{x})
+- Använd ALDRIG \\boxed{} — skriv istället svaret efter "Svar:" på en egen rad
 
 VIKTIGT FÖR BILDER:
 - När du får en bild, börja ALLTID med att kort beskriva vad du ser i bilden
@@ -317,6 +318,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
 
       const stepMatch = trimmed.match(/^(?:Steg|Step)\s*(\d+)\s*[:.]/i);
       const answerMatch = trimmed.match(/^(?:Svar|Resultat|Slutsvar)\s*[:.]/i);
+      const boxedMatch = !stepMatch && !answerMatch ? trimmed.match(/\\boxed\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}/) : null;
 
       if (stepMatch) {
         flushCard();
@@ -337,7 +339,25 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
               <Zap size={12} color="#fff" />
               <Text style={styles.answerBadgeText}>SVAR</Text>
             </LinearGradient>
-            <Text style={styles.answerCardContent}>{answerContent}</Text>
+            <Text style={styles.answerCardContent}>{cleanMarkdown(answerContent)}</Text>
+          </View>
+        );
+        cardIndex++;
+      } else if (boxedMatch) {
+        flushCard();
+        const boxedContent = cleanMarkdown(boxedMatch[1]);
+        cards.push(
+          <View key={`${messageId}-answer-${cardIndex}`} style={styles.answerCard}>
+            <LinearGradient
+              colors={['#0EA5E9', '#0284C7']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.answerBadge}
+            >
+              <Zap size={12} color="#fff" />
+              <Text style={styles.answerBadgeText}>SVAR</Text>
+            </LinearGradient>
+            <Text style={styles.answerCardContent}>{boxedContent}</Text>
           </View>
         );
         cardIndex++;
@@ -506,30 +526,18 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
 
                 <View style={styles.suggestionsGrid}>
                   <TouchableOpacity style={styles.suggestionCard} onPress={handleSuggestionPhoto} activeOpacity={0.7}>
-                    <View style={[styles.suggestionIconWrap, { backgroundColor: '#EFF6FF' }]}>
-                      <Camera size={18} color="#0EA5E9" />
-                    </View>
                     <Text style={styles.suggestionCardTitle}>📸 Fota uppgift</Text>
                     <Text style={styles.suggestionCardDesc}>Ta en bild direkt</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.suggestionCard} onPress={() => handleSuggestion('Lös ekvationen: 2x + 5 = 15')} activeOpacity={0.7}>
-                    <View style={[styles.suggestionIconWrap, { backgroundColor: '#EFF6FF' }]}>
-                      <BookOpen size={18} color="#0EA5E9" />
-                    </View>
                     <Text style={styles.suggestionCardTitle}>✏️ Ekvation</Text>
                     <Text style={styles.suggestionCardDesc}>Skriv & lös</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.suggestionCard} onPress={() => handleSuggestion('Förklara Pythagoras sats')} activeOpacity={0.7}>
-                    <View style={[styles.suggestionIconWrap, { backgroundColor: '#EFF6FF' }]}>
-                      <TriangleRight size={18} color="#0EA5E9" />
-                    </View>
                     <Text style={styles.suggestionCardTitle}>📐 Geometri</Text>
                     <Text style={styles.suggestionCardDesc}>Former & satser</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.suggestionCard} onPress={() => handleSuggestion('Hur beräknar jag derivatan av x³ + 2x?')} activeOpacity={0.7}>
-                    <View style={[styles.suggestionIconWrap, { backgroundColor: '#EFF6FF' }]}>
-                      <Sigma size={18} color="#0EA5E9" />
-                    </View>
                     <Text style={styles.suggestionCardTitle}>🧮 Derivata</Text>
                     <Text style={styles.suggestionCardDesc}>Kalkyl & analys</Text>
                   </TouchableOpacity>

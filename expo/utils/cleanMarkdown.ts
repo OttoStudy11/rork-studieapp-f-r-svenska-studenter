@@ -123,6 +123,10 @@ function convertLatexExpression(tex: string): string {
     return toSubscript(clean);
   });
 
+  result = result.replace(/\\boxed\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}/g, (_, content) => {
+    return convertLatexExpression(content.trim());
+  });
+
   result = result.replace(/\\text\s*\{([^{}]*)\}/g, '$1');
   result = result.replace(/\\textbf\s*\{([^{}]*)\}/g, '$1');
   result = result.replace(/\\textit\s*\{([^{}]*)\}/g, '$1');

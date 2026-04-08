@@ -564,7 +564,7 @@ export default function HomeScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.hpCardGradient}
             >
-              <View style={styles.hpCardInnerShadow} />
+
               <View style={styles.hpCardDecoCircle1} />
               <View style={styles.hpCardDecoCircle2} />
 
@@ -598,7 +598,7 @@ export default function HomeScreen() {
                 <Text style={styles.hpFooterText}>Börja träna →</Text>
               </View>
             </LinearGradient>
-            <View style={styles.hpCard3dBottom} />
+
           </TouchableOpacity>
         </SlideInView>
 
@@ -1062,12 +1062,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     marginBottom: 28,
     borderRadius: 24,
-    overflow: 'visible' as const,
+    overflow: 'hidden' as const,
     shadowColor: '#4338CA',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
   },
   hpCardGradient: {
     padding: 24,
@@ -1078,14 +1078,7 @@ const styles = StyleSheet.create({
     minHeight: 220,
   },
   hpCardInnerShadow: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 60,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    display: 'none' as const,
   },
   hpCardDecoCircle1: {
     position: 'absolute' as const,
@@ -1106,15 +1099,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
   hpCard3dBottom: {
-    position: 'absolute' as const,
-    bottom: -5,
-    left: 6,
-    right: 6,
-    height: 14,
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22,
-    backgroundColor: '#3730A3',
-    zIndex: -1,
+    display: 'none' as const,
   },
   hpCardTopRow: {
     flexDirection: 'row',

@@ -222,61 +222,8 @@ export async function getReviewForecast(userId: string, days: number = 7): Promi
   }
 }
 
-export async function scheduleSRSNotifications(userId: string): Promise<void> {
-  if (Platform.OS === 'web') return;
-
-  try {
-    await cancelSRSNotifications();
-
-    const dueCards = await getDueCardsByCourse(userId);
-    const totalDue = dueCards.reduce((sum, c) => sum + c.dueCount, 0);
-
-    if (totalDue === 0) {
-      console.log('📚 No due cards, skipping notification scheduling');
-      return;
-    }
-
-    const notificationIds: string[] = [];
-
-    const morningId = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '📚 Dags att repetera!',
-        body: `Du har ${totalDue} flashcards att gå igenom idag. Spaced repetition ger bäst resultat på morgonen!`,
-        sound: true,
-        priority: Notifications.AndroidNotificationPriority.DEFAULT,
-        data: { type: 'srs-reminder' },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: 9,
-        minute: 0,
-        channelId: 'study-reminders',
-      } as Notifications.DailyTriggerInput,
-    });
-    notificationIds.push(morningId);
-
-    const eveningId = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🌙 Kvällsrepetition',
-        body: `Missa inte dina flashcards! ${totalDue} kort väntar på dig.`,
-        sound: true,
-        priority: Notifications.AndroidNotificationPriority.DEFAULT,
-        data: { type: 'srs-reminder' },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: 19,
-        minute: 0,
-        channelId: 'study-reminders',
-      } as Notifications.DailyTriggerInput,
-    });
-    notificationIds.push(eveningId);
-
-    await AsyncStorage.setItem(SRS_NOTIFICATIONS_KEY, JSON.stringify(notificationIds));
-    console.log(`✅ Scheduled ${notificationIds.length} SRS notifications`);
-  } catch (error) {
-    console.error('Failed to schedule SRS notifications:', error);
-  }
+export async function scheduleSRSNotifications(_userId: string): Promise<void> {
+  await cancelSRSNotifications();
 }
 
 export async function cancelSRSNotifications(): Promise<void> {

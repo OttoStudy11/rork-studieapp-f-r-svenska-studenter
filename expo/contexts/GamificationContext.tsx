@@ -488,26 +488,18 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
           console.log('✅ point_transaction recorded successfully');
         }
 
-        // Sync total_points to user_progress table
+        // Sync total_points AND total_xp to user_progress table (for leaderboard)
         const { error: progressError } = await supabase.from('user_progress').upsert({
           user_id: authUser.id,
           total_points: newTotalXp,
+          total_xp: newTotalXp,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
         
         if (progressError) {
-          console.error('❌ Error syncing user_progress total_points:', progressError);
+          console.error('❌ Error syncing user_progress:', progressError);
         } else {
-          console.log('✅ user_progress total_points synced:', newTotalXp);
-        }
-        
-        // Also try to update profiles for leaderboard (total_points column may not exist)
-        try {
-          await (supabase as any).from('profiles').update({
-            updated_at: new Date().toISOString(),
-          }).eq('id', authUser.id);
-        } catch {
-          // Ignore profile update errors
+          console.log('✅ user_progress synced (total_points + total_xp):', newTotalXp);
         }
         
       } catch (error) {

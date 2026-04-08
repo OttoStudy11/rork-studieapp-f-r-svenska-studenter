@@ -8,6 +8,7 @@ export type CommunityType = 'school' | 'program' | 'study-group' | 'other';
 export type CommunityVisibility = 'open' | 'closed';
 export type MemberRole = 'admin' | 'member';
 export type RequestStatus = 'pending' | 'accepted' | 'rejected';
+export type PostType = 'discussion' | 'question' | 'information' | 'resource' | 'announcement';
 
 export interface CommunityMember {
   id: string;
@@ -74,6 +75,26 @@ export interface Community {
   hasPendingRequest?: boolean;
 }
 
+export interface CommunityMessage {
+  id: string;
+  communityId: string;
+  userId: string;
+  content: string;
+  postType: PostType;
+  imageUrl?: string;
+  likesCount: number;
+  repliesCount: number;
+  parentId?: string;
+  createdAt: string;
+  isLiked?: boolean;
+  user?: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl?: string;
+  };
+}
+
 interface CommunityContextType {
   communities: Community[];
   myCommunities: Community[];
@@ -96,6 +117,10 @@ interface CommunityContextType {
   updateMemberRole: (communityId: string, userId: string, role: MemberRole) => Promise<{ error?: string }>;
   deleteCommunity: (communityId: string) => Promise<{ error?: string }>;
   searchCommunities: (query: string) => Promise<Community[]>;
+  getCommunityMessages: (communityId: string, limit?: number) => Promise<CommunityMessage[]>;
+  sendCommunityMessage: (communityId: string, content: string, postType: PostType, imageUrl?: string, parentId?: string) => Promise<{ message?: CommunityMessage; error?: string }>;
+  toggleMessageLike: (messageId: string) => Promise<{ error?: string }>;
+  deleteCommunityMessage: (messageId: string) => Promise<{ error?: string }>;
 }
 
 export interface CreateCommunityData {
@@ -1106,6 +1131,203 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     }
   }, []);
 
+  const getCommunityMessages = useCallback(async (communityId: string, limit: number = 50): Promise<CommunityMessage[]> => {
+    if (!user) return [];
+    
+    try {
+      console.log('[Communities] Loading messages for:', communityId);
+      
+      const { data: messagesData, error: messagesError } = await (supabase as any)
+        .from('community_messages')
+        .select('*')
+        .eq('community_id', communityId)
+        .is('parent_id', null)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (messagesError) {
+        console.error('[Communities] Error loading messages:', messagesError);
+        return [];
+      }
+      
+      if (!messagesData || messagesData.length === 0) {
+        return [];
+      }
+      
+      const userIds = [...new Set((messagesData as any[]).map((m: any) => m.user_id))];
+      const messageIds = (messagesData as any[]).map((m: any) => m.id);
+      
+      const { data: profilesData } = await (supabase as any)
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', userIds);
+      
+      const profilesMap = new Map(
+        (profilesData || []).map((p: any) => [p.id, p])
+      );
+      
+      let likedMessageIds = new Set<string>();
+      if (messageIds.length > 0) {
+        const { data: likesData } = await (supabase as any)
+          .from('community_message_likes')
+          .select('message_id')
+          .eq('user_id', user.id)
+          .in('message_id', messageIds);
+        
+        likedMessageIds = new Set(
+          (likesData || []).map((l: any) => l.message_id)
+        );
+      }
+      
+      const messages: CommunityMessage[] = (messagesData as any[]).map((m: any) => {
+        const profile = profilesMap.get(m.user_id);
+        return {
+          id: m.id,
+          communityId: m.community_id,
+          userId: m.user_id,
+          content: m.content,
+          postType: (m.post_type || 'discussion') as PostType,
+          imageUrl: m.image_url || undefined,
+          likesCount: m.likes_count || 0,
+          repliesCount: m.replies_count || 0,
+          parentId: m.parent_id || undefined,
+          createdAt: m.created_at,
+          isLiked: likedMessageIds.has(m.id),
+          user: profile ? {
+            id: profile.id,
+            username: profile.username,
+            displayName: profile.display_name,
+            avatarUrl: profile.avatar_url,
+          } : undefined,
+        };
+      });
+      
+      console.log('[Communities] Loaded', messages.length, 'messages');
+      return messages;
+    } catch (err: any) {
+      console.error('[Communities] Exception loading messages:', err);
+      return [];
+    }
+  }, [user]);
+
+  const sendCommunityMessage = useCallback(async (
+    communityId: string,
+    content: string,
+    postType: PostType,
+    imageUrl?: string,
+    parentId?: string
+  ): Promise<{ message?: CommunityMessage; error?: string }> => {
+    if (!user) return { error: 'Du måste vara inloggad' };
+    
+    try {
+      console.log('[Communities] Sending message to:', communityId, 'type:', postType);
+      
+      const { data: newMessage, error: insertError } = await (supabase as any)
+        .from('community_messages')
+        .insert({
+          community_id: communityId,
+          user_id: user.id,
+          content,
+          post_type: postType,
+          image_url: imageUrl || null,
+          parent_id: parentId || null,
+        })
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('[Communities] Error sending message:', insertError);
+        return { error: 'Kunde inte skicka meddelande' };
+      }
+      
+      const { data: profileData } = await (supabase as any)
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+      
+      const message: CommunityMessage = {
+        id: newMessage.id,
+        communityId: newMessage.community_id,
+        userId: newMessage.user_id,
+        content: newMessage.content,
+        postType: (newMessage.post_type || 'discussion') as PostType,
+        imageUrl: newMessage.image_url || undefined,
+        likesCount: 0,
+        repliesCount: 0,
+        parentId: newMessage.parent_id || undefined,
+        createdAt: newMessage.created_at,
+        isLiked: false,
+        user: profileData ? {
+          id: profileData.id,
+          username: profileData.username,
+          displayName: profileData.display_name,
+          avatarUrl: profileData.avatar_url,
+        } : undefined,
+      };
+      
+      console.log('[Communities] Message sent successfully:', message.id);
+      return { message };
+    } catch (err: any) {
+      console.error('[Communities] Exception sending message:', err);
+      return { error: err?.message || 'Ett fel uppstod' };
+    }
+  }, [user]);
+
+  const toggleMessageLike = useCallback(async (messageId: string): Promise<{ error?: string }> => {
+    if (!user) return { error: 'Du måste vara inloggad' };
+    
+    try {
+      const { data: existingLike } = await (supabase as any)
+        .from('community_message_likes')
+        .select('id')
+        .eq('message_id', messageId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (existingLike) {
+        await (supabase as any)
+          .from('community_message_likes')
+          .delete()
+          .eq('id', existingLike.id);
+      } else {
+        await (supabase as any)
+          .from('community_message_likes')
+          .insert({
+            message_id: messageId,
+            user_id: user.id,
+          });
+      }
+      
+      return {};
+    } catch (err: any) {
+      console.error('[Communities] Exception toggling like:', err);
+      return { error: err?.message || 'Ett fel uppstod' };
+    }
+  }, [user]);
+
+  const deleteCommunityMessage = useCallback(async (messageId: string): Promise<{ error?: string }> => {
+    if (!user) return { error: 'Du måste vara inloggad' };
+    
+    try {
+      const { error: deleteError } = await (supabase as any)
+        .from('community_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('user_id', user.id);
+      
+      if (deleteError) {
+        console.error('[Communities] Error deleting message:', deleteError);
+        return { error: 'Kunde inte ta bort meddelande' };
+      }
+      
+      return {};
+    } catch (err: any) {
+      console.error('[Communities] Exception deleting message:', err);
+      return { error: err?.message || 'Ett fel uppstod' };
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       void loadMyCommunities();
@@ -1135,6 +1357,10 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     updateMemberRole,
     deleteCommunity,
     searchCommunities,
+    getCommunityMessages,
+    sendCommunityMessage,
+    toggleMessageLike,
+    deleteCommunityMessage,
   }), [
     communities,
     myCommunities,
@@ -1157,5 +1383,9 @@ export const [CommunityProvider, useCommunity] = createContextHook((): Community
     updateMemberRole,
     deleteCommunity,
     searchCommunities,
+    getCommunityMessages,
+    sendCommunityMessage,
+    toggleMessageLike,
+    deleteCommunityMessage,
   ]);
 });

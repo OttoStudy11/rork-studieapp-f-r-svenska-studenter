@@ -57,17 +57,49 @@ export interface GlobalLeaderboardEntry {
   avatarUrl: string | null;
   totalMinutes: number;
   totalSessions: number;
+  totalXp?: number;
+  currentStreak?: number;
 }
 
 export async function fetchGlobalLeaderboardTop15(): Promise<GlobalLeaderboardEntry[]> {
   console.log('Fetching global leaderboard...');
 
   try {
-    // Primary: try user_progress with profiles join
+    // Try RPC function first (most accurate, uses server-side logic)
+    try {
+      const { data: rpcData, error: rpcError } = await (supabase as any).rpc('get_global_leaderboard', {
+        p_user_id: '00000000-0000-0000-0000-000000000000',
+        p_limit: 15,
+      });
+
+      if (!rpcError && rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
+        console.log('Leaderboard from RPC:', rpcData.length, 'rows');
+        return (rpcData as any[]).map((r: any) => ({
+          userId: r.user_id,
+          rank: Number(r.rank),
+          username: r.username ?? 'unknown',
+          displayName: r.display_name ?? 'Okänd användare',
+          program: r.program ?? '',
+          level: r.level ?? '',
+          avatarUrl: r.avatar_url ?? null,
+          totalMinutes: Number(r.total_study_time ?? 0),
+          totalSessions: Number(r.total_sessions ?? 0),
+          totalXp: Number(r.total_xp ?? 0),
+          currentStreak: Number(r.current_streak ?? 0),
+        }));
+      }
+      if (rpcError) {
+        console.warn('RPC get_global_leaderboard failed, falling back:', rpcError.message);
+      }
+    } catch (rpcErr) {
+      console.warn('RPC not available, falling back to direct query');
+    }
+
+    // Fallback: user_progress with profiles join
     const { data, error } = await supabase
       .from('user_progress')
       .select(
-        'user_id, total_study_time, total_sessions, profiles!inner(id, username, display_name, program, level, avatar_url)',
+        'user_id, total_study_time, total_sessions, total_xp, current_streak, profiles!inner(id, username, display_name, program, level, avatar_url)',
       )
       .not('total_study_time', 'is', null)
       .gt('total_study_time', 0)
@@ -81,6 +113,8 @@ export async function fetchGlobalLeaderboardTop15(): Promise<GlobalLeaderboardEn
         user_id: string;
         total_study_time: number | null;
         total_sessions: number | null;
+        total_xp: number | null;
+        current_streak: number | null;
         profiles: {
           id: string;
           username: string;
@@ -106,6 +140,8 @@ export async function fetchGlobalLeaderboardTop15(): Promise<GlobalLeaderboardEn
             avatarUrl: p.avatar_url ?? null,
             totalMinutes: Number.isFinite(total) ? total : 0,
             totalSessions: Number(r.total_sessions ?? 0),
+            totalXp: Number(r.total_xp ?? 0),
+            currentStreak: Number(r.current_streak ?? 0),
           };
         });
 
@@ -120,7 +156,7 @@ export async function fetchGlobalLeaderboardTop15(): Promise<GlobalLeaderboardEn
       console.log('user_progress empty, falling back to pomodoro_sessions aggregation');
     }
 
-    // Fallback: aggregate directly from pomodoro_sessions
+    // Final fallback: aggregate directly from pomodoro_sessions
     const { data: sessions, error: sessionsError } = await supabase
       .from('pomodoro_sessions')
       .select('user_id, duration');
@@ -135,7 +171,6 @@ export async function fetchGlobalLeaderboardTop15(): Promise<GlobalLeaderboardEn
       return [];
     }
 
-    // Aggregate by user
     const userTotals: Record<string, { minutes: number; sessions: number }> = {};
     (sessions as { user_id: string; duration: number | null }[]).forEach(s => {
       if (!s.user_id) return;
@@ -198,5 +233,74 @@ export async function fetchGlobalLeaderboardTop15(): Promise<GlobalLeaderboardEn
   } catch (error) {
     console.error('Exception in fetchGlobalLeaderboardTop15:', error);
     throw error;
+  }
+}
+
+export async function fetchFriendsLeaderboard(userId: string): Promise<GlobalLeaderboardEntry[]> {
+  console.log('Fetching friends leaderboard for user:', userId);
+
+  try {
+    const { data: rpcData, error: rpcError } = await (supabase as any).rpc('get_friends_leaderboard', {
+      p_user_id: userId,
+      p_limit: 50,
+    });
+
+    if (!rpcError && rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
+      console.log('Friends leaderboard from RPC:', rpcData.length, 'rows');
+      return (rpcData as any[]).map((r: any) => ({
+        userId: r.user_id,
+        rank: Number(r.rank),
+        username: r.username ?? 'unknown',
+        displayName: r.display_name ?? 'Okänd användare',
+        program: r.program ?? '',
+        level: r.level ?? '',
+        avatarUrl: r.avatar_url ?? null,
+        totalMinutes: Number(r.total_study_time ?? 0),
+        totalSessions: Number(r.total_sessions ?? 0),
+        currentStreak: Number(r.current_streak ?? 0),
+      }));
+    }
+
+    if (rpcError) {
+      console.warn('RPC get_friends_leaderboard failed:', rpcError.message);
+    }
+    return [];
+  } catch (error) {
+    console.error('Exception in fetchFriendsLeaderboard:', error);
+    return [];
+  }
+}
+
+export async function fetchWeeklyLeaderboard(): Promise<GlobalLeaderboardEntry[]> {
+  console.log('Fetching weekly leaderboard...');
+
+  try {
+    const { data: rpcData, error: rpcError } = await (supabase as any).rpc('get_weekly_leaderboard', {
+      p_user_id: '00000000-0000-0000-0000-000000000000',
+      p_limit: 15,
+    });
+
+    if (!rpcError && rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
+      console.log('Weekly leaderboard from RPC:', rpcData.length, 'rows');
+      return (rpcData as any[]).map((r: any) => ({
+        userId: r.user_id,
+        rank: Number(r.rank),
+        username: r.username ?? 'unknown',
+        displayName: r.display_name ?? 'Okänd användare',
+        program: r.program ?? '',
+        level: r.level ?? '',
+        avatarUrl: r.avatar_url ?? null,
+        totalMinutes: Number(r.weekly_minutes ?? 0),
+        totalSessions: Number(r.weekly_sessions ?? 0),
+      }));
+    }
+
+    if (rpcError) {
+      console.warn('RPC get_weekly_leaderboard failed:', rpcError.message);
+    }
+    return [];
+  } catch (error) {
+    console.error('Exception in fetchWeeklyLeaderboard:', error);
+    return [];
   }
 }

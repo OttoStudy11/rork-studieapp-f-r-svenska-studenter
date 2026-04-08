@@ -5,8 +5,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
+  ScrollView,
 } from 'react-native';
-import { Calculator, Sparkles, ChevronRight, MessageSquare, Brain } from 'lucide-react-native';
+import { Calculator, Sparkles, ChevronRight, MessageSquare } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -81,18 +82,13 @@ export default function AISelectorScreen({ onSelectMath, onSelectGeneral }: AISe
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#0A0F1C' : '#F5F7FA' }]}>
       <Animated.View style={[styles.headerArea, { paddingTop: insets.top + 16, opacity: headerFade, transform: [{ translateY: headerSlide }] }]}>
-        <View style={styles.headerRow}>
-          <View style={[styles.headerBadge, { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.08)' }]}>
-            <Brain size={16} color="#6366F1" />
-          </View>
-          <View style={styles.headerTextWrap}>
-            <Text style={[styles.title, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>AI Assistent ✨</Text>
-            <Text style={[styles.subtitle, { color: isDark ? '#64748B' : '#94A3B8' }]}>Välj din smarta studiekompis</Text>
-          </View>
+        <View style={styles.headerTextWrap}>
+          <Text style={[styles.title, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>StudieStugan AI</Text>
+          <Text style={[styles.subtitle, { color: isDark ? '#64748B' : '#94A3B8' }]}>Välj din smarta studiekompis</Text>
         </View>
       </Animated.View>
 
-      <View style={styles.cardsContainer}>
+      <ScrollView style={styles.cardsContainer} contentContainerStyle={styles.cardsContentContainer} showsVerticalScrollIndicator={false}>
         <Animated.View style={[
           styles.cardWrapper,
           {
@@ -131,7 +127,7 @@ export default function AISelectorScreen({ onSelectMath, onSelectGeneral }: AISe
                 </View>
               </View>
 
-              <Text style={[styles.cardTitle, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>📐 Matematik AI</Text>
+              <Text style={[styles.cardTitle, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>Matematik AI</Text>
               <Text style={[styles.cardDescription, { color: isDark ? '#94A3B8' : '#64748B' }]}>
                 Fota uppgifter, skriv ekvationer & få steg-för-steg-lösningar direkt
               </Text>
@@ -195,7 +191,7 @@ export default function AISelectorScreen({ onSelectMath, onSelectGeneral }: AISe
                 </View>
               </View>
 
-              <Text style={[styles.cardTitle, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>💬 Generell AI</Text>
+              <Text style={[styles.cardTitle, { color: isDark ? '#F1F5F9' : '#0F172A' }]}>Generell AI</Text>
               <Text style={[styles.cardDescription, { color: isDark ? '#94A3B8' : '#64748B' }]}>
                 Studietips, sammanfattningar, förklaringar & allt du behöver hjälp med
               </Text>
@@ -220,14 +216,14 @@ export default function AISelectorScreen({ onSelectMath, onSelectGeneral }: AISe
             </View>
           </TouchableOpacity>
         </Animated.View>
-      </View>
 
-      <Animated.View style={[styles.footer, { opacity: fadeAnim, paddingBottom: insets.bottom + 90 }]}>
+      <Animated.View style={[styles.footerInScroll, { opacity: fadeAnim }]}>
         <View style={[styles.footerPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
           <MessageSquare size={12} color={isDark ? '#64748B' : '#94A3B8'} />
           <Text style={[styles.footerText, { color: isDark ? '#64748B' : '#94A3B8' }]}>Dina chattar sparas under sessionen</Text>
         </View>
       </Animated.View>
+      </ScrollView>
     </View>
   );
 }
@@ -239,18 +235,6 @@ const styles = StyleSheet.create({
   headerArea: {
     paddingHorizontal: 24,
     paddingBottom: 8,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  headerBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   headerTextWrap: {
     flex: 1,
@@ -268,8 +252,11 @@ const styles = StyleSheet.create({
   cardsContainer: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  cardsContentContainer: {
     paddingTop: 24,
     gap: 16,
+    paddingBottom: 40,
   },
   cardWrapper: {},
   card: {
@@ -356,9 +343,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  footer: {
+  footerInScroll: {
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 16,
+    paddingBottom: 20,
   },
   footerPill: {
     flexDirection: 'row',

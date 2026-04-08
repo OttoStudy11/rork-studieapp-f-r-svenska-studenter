@@ -510,25 +510,24 @@ export default function HomeScreen() {
                               </Text>
                             </View>
                           )}
-                          <TouchableOpacity
-                            style={styles.examStudyPlanBtn}
-                            onPress={() => {
-                              router.push(`/study-plan/${exam.id}?courseTitle=${encodeURIComponent(exam.title)}` as never);
-                            }}
-                            activeOpacity={0.8}
-                          >
-                            <LinearGradient
-                              colors={isDark ? ['#4F46E5', '#7C3AED'] : ['#6366F1', '#818CF8']}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 0 }}
-                              style={styles.examStudyPlanBtnGradient}
-                            >
-                              <FileText size={14} color="white" />
-                              <Text style={styles.examStudyPlanBtnText}>Visa studieplan</Text>
-                              <ChevronRight size={15} color="rgba(255,255,255,0.6)" />
-                            </LinearGradient>
-                          </TouchableOpacity>
                         </View>
+
+                        <TouchableOpacity
+                          style={styles.examStudyPlanIconBtn}
+                          onPress={() => {
+                            router.push(`/study-plan/${exam.id}?courseTitle=${encodeURIComponent(exam.title)}` as never);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <LinearGradient
+                            colors={isDark ? ['#4F46E5', '#7C3AED'] : ['#6366F1', '#818CF8']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.examStudyPlanIconGradient}
+                          >
+                            <FileText size={16} color="white" />
+                          </LinearGradient>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   </FadeInView>
@@ -1991,24 +1990,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: 'center',
   },
-  examStudyPlanBtn: {
-    marginTop: 10,
-    borderRadius: 10,
-    overflow: 'hidden',
+  examStudyPlanIconBtn: {
+    alignSelf: 'center',
+    marginLeft: 10,
   },
-  examStudyPlanBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  examStudyPlanIconGradient: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-  },
-  examStudyPlanBtnText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: 'white',
-    letterSpacing: 0.2,
+    alignItems: 'center',
   },
 });

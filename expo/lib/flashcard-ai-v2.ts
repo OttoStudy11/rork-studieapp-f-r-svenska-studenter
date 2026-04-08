@@ -11,6 +11,7 @@ export interface FlashcardGenerationRequest {
   difficulty?: 'all' | 'easy' | 'medium' | 'hard';
   topics?: string[];
   language?: 'sv' | 'en';
+  images?: Array<{ base64: string; mimeType: string }>;
 }
 
 export interface GeneratedFlashcard {
@@ -81,16 +82,36 @@ export async function generateFlashcardsWithAI(
     
     console.log(`📡 [AI Flashcards] Requesting ${targetCount} cards from AI...`);
     console.log(`📡 [AI Flashcards] Prompt preview:`, userPrompt.substring(0, 200));
+    const hasImages = request.images && request.images.length > 0;
+    console.log(`📸 [AI Flashcards] Images attached: ${hasImages ? request.images!.length : 0}`);
     onProgress?.(20);
     
     let response: any;
     try {
+      const messageContent: Array<{ type: string; text?: string; image?: string }> = [];
+
+      if (hasImages) {
+        for (const img of request.images!) {
+          messageContent.push({
+            type: 'image',
+            image: `data:${img.mimeType};base64,${img.base64}`,
+          });
+        }
+      }
+
+      messageContent.push({
+        type: 'text',
+        text: hasImages
+          ? `${systemPrompt}\n\n${userPrompt}\n\nANALYSERA BILDERNA OVAN noggrant. Extrahera allt innehåll, text, formler, diagram och koncept från bilderna. Skapa sedan flashcards baserat på bildinnehållet.`
+          : `${systemPrompt}\n\n${userPrompt}`,
+      });
+
       response = await generateObject({
         schema: flashcardsResponseSchema,
         messages: [
           {
             role: 'user',
-            content: `${systemPrompt}\n\n${userPrompt}`,
+            content: hasImages ? messageContent : `${systemPrompt}\n\n${userPrompt}`,
           },
         ],
       });

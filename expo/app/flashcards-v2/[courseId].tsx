@@ -18,15 +18,20 @@ import { supabase } from '@/lib/supabase';
 import { FlashcardSwipe } from '@/components/FlashcardSwipe';
 import { generateFlashcardsWithAI } from '@/lib/flashcard-ai-v2';
 import * as ImagePicker from 'expo-image-picker';
-import { extractTextFromImage } from '@/lib/vision-ai';
 import { compressImage } from '@/utils/compressImage';
-import { ArrowLeft, Sparkles, BookOpen, RefreshCw, AlertCircle, Plus, Camera, ImageIcon, X } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { ArrowLeft, Sparkles, BookOpen, RefreshCw, AlertCircle, Plus, Camera, ImageIcon, X, FileText } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { FreemiumLimitReached } from '@/components/FreemiumBanner';
 import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
 
-// Local flashcard type for session-only storage (compatible with FlashcardSwipe)
+interface AttachedImage {
+  uri: string;
+  base64: string;
+  mimeType: string;
+}
+
 interface LocalFlashcard {
   id: string;
   course_id: string;
@@ -50,21 +55,18 @@ export default function FlashcardsScreenV2() {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customText, setCustomText] = useState('');
   const [motivationalIndex, setMotivationalIndex] = useState(0);
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [extractingText, setExtractingText] = useState(false);
+  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
   const { theme } = useTheme();
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const previousCourseId = useRef<string | undefined>(undefined);
-  
-  // LOCAL STATE ONLY - flashcards are not persisted to database
+
   const [localFlashcards, setLocalFlashcards] = useState<LocalFlashcard[]>([]);
   const [reviewedCards, setReviewedCards] = useState<Set<string>>(new Set());
   const [correctCards, setCorrectCards] = useState<Set<string>>(new Set());
 
-  // Reset state when courseId changes
   useEffect(() => {
     if (courseId && courseId !== previousCourseId.current) {
-      console.log('🎴 Flashcard courseId changed:', courseId);
+      console.log('[Flashcards] courseId changed:', courseId);
       setCurrentIndex(0);
       setAiExplanation(undefined);
       setLocalFlashcards([]);
@@ -75,27 +77,25 @@ export default function FlashcardsScreenV2() {
   }, [courseId]);
 
   const motivationalMessages = [
-    '🧠 AI:n analyserar kursmaterialet...',
-    '✨ Skapar smarta frågor baserat på viktiga koncept...',
-    '📚 Optimerar svårighetsgraden för bästa inlärning...',
-    '🎯 Nästan klart! Färdigställer dina flashcards...',
-    '💡 Bra jobbat att du använder flashcards för att lära dig!',
-    '🚀 Flashcards är ett bevisat effektivt sätt att memorera!',
+    'AI:n analyserar materialet...',
+    'Skapar smarta frågor baserat på viktiga koncept...',
+    'Optimerar svårighetsgraden för bästa inlärning...',
+    'Nästan klart! Färdigställer dina flashcards...',
+    'Bra jobbat att du använder flashcards!',
+    'Flashcards är ett bevisat effektivt sätt att memorera!',
   ];
 
   const { data: course } = useQuery({
     queryKey: ['course', courseId],
     queryFn: async () => {
       if (!courseId) return null;
-
       const { data, error } = await supabase
         .from('courses')
         .select('title, description, subject')
         .eq('id', courseId)
         .single();
-
       if (error) {
-        console.log('📚 [Flashcards] Course not in DB, using courseId:', courseId);
+        console.log('[Flashcards] Course not in DB, using courseId:', courseId);
         return null;
       }
       return data;
@@ -103,7 +103,6 @@ export default function FlashcardsScreenV2() {
     enabled: !!courseId,
   });
 
-  // Local stats computed from session state
   const stats = React.useMemo(() => ({
     total: localFlashcards.length,
     reviewed: reviewedCards.size,
@@ -111,7 +110,6 @@ export default function FlashcardsScreenV2() {
     due: localFlashcards.length - reviewedCards.size,
   }), [localFlashcards.length, reviewedCards.size, correctCards.size]);
 
-  // All cards are available for study (no spaced repetition since local only)
   const cardsToStudy = localFlashcards;
 
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -124,12 +122,81 @@ export default function FlashcardsScreenV2() {
     }
   }, [generationError]);
 
+  const takePhoto = useCallback(async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till kameran.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        console.log('[Flashcards] Compressing camera photo...');
+        const compressed = await compressImage(result.assets[0].uri);
+        if (compressed.base64) {
+          setAttachedImages(prev => [...prev, {
+            uri: compressed.uri,
+            base64: compressed.base64,
+            mimeType: compressed.mimeType,
+          }]);
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          console.log('[Flashcards] Photo attached, base64 length:', compressed.base64.length);
+        }
+      }
+    } catch (err) {
+      console.error('[Flashcards] Error taking photo:', err);
+      Alert.alert('Fel', 'Kunde inte ta foto.');
+    }
+  }, []);
+
+  const pickImage = useCallback(async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+        allowsMultipleSelection: true,
+      });
+      if (!result.canceled && result.assets.length > 0) {
+        console.log('[Flashcards] Compressing', result.assets.length, 'picked images...');
+        const newImages: AttachedImage[] = [];
+        for (const asset of result.assets) {
+          const compressed = await compressImage(asset.uri);
+          if (compressed.base64) {
+            newImages.push({
+              uri: compressed.uri,
+              base64: compressed.base64,
+              mimeType: compressed.mimeType,
+            });
+          }
+        }
+        if (newImages.length > 0) {
+          setAttachedImages(prev => [...prev, ...newImages]);
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          console.log('[Flashcards]', newImages.length, 'images attached');
+        }
+      }
+    } catch (err) {
+      console.error('[Flashcards] Error picking image:', err);
+      Alert.alert('Fel', 'Kunde inte välja bild.');
+    }
+  }, []);
+
+  const removeImage = useCallback((index: number) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setAttachedImages(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
   const generateMutation = useMutation({
-    mutationFn: async (params: { count: number; customText?: string }) => {
-      console.log('🚀 [Flashcards] Starting generation for:', courseId);
+    mutationFn: async (params: { count: number; customText?: string; images?: AttachedImage[] }) => {
+      console.log('[Flashcards] Starting generation for:', courseId);
       setGenerationError(null);
       setGenerationProgress(0);
-      
+
       if (!courseId) {
         throw new Error('Ingen kurs vald');
       }
@@ -139,7 +206,15 @@ export default function FlashcardsScreenV2() {
         courseDescription = `${course?.description || ''}\n\nAnvändarens text att generera flashcards från:\n${params.customText}`;
       }
 
-      console.log('📡 [Flashcards] Calling AI service...');
+      const imagePayload = params.images && params.images.length > 0
+        ? params.images.map(img => ({ base64: img.base64, mimeType: img.mimeType }))
+        : undefined;
+
+      if (imagePayload) {
+        console.log('[Flashcards] Sending', imagePayload.length, 'images directly to AI');
+      }
+
+      console.log('[Flashcards] Calling AI service...');
       const result = await generateFlashcardsWithAI({
         courseName: course?.title || courseId,
         courseDescription,
@@ -147,18 +222,18 @@ export default function FlashcardsScreenV2() {
         targetCount: params.count,
         difficulty: 'all',
         language: 'sv',
+        images: imagePayload,
       }, (progress) => {
         setGenerationProgress(progress);
       });
 
       if (!result.success || result.flashcards.length === 0) {
-        console.error('❌ [Flashcards] AI generation failed:', result.error);
+        console.error('[Flashcards] AI generation failed:', result.error);
         throw new Error(result.error || 'AI kunde inte generera flashcards. Försök igen.');
       }
 
-      console.log(`✅ [Flashcards] Generated ${result.flashcards.length} flashcards (local only, not saved to DB)`);
-      
-      // Convert to local flashcards with unique IDs
+      console.log(`[Flashcards] Generated ${result.flashcards.length} flashcards`);
+
       const now = new Date().toISOString();
       const newLocalFlashcards: LocalFlashcard[] = result.flashcards.map((fc, index) => ({
         id: `local-${Date.now()}-${index}`,
@@ -176,19 +251,21 @@ export default function FlashcardsScreenV2() {
       return { flashcards: newLocalFlashcards, count: newLocalFlashcards.length };
     },
     onSuccess: (data) => {
-      // Add new flashcards to local state
       setLocalFlashcards(prev => [...data.flashcards, ...prev]);
       setCurrentIndex(0);
       setReviewedCards(new Set());
       setCorrectCards(new Set());
       setShowCustomInput(false);
+      setShowGenerateModal(false);
       setCustomText('');
+      setAttachedImages([]);
       setGenerationError(null);
       setGenerationProgress(0);
-      Alert.alert('✅ Klart!', `${data.count} flashcards har genererats!\n\nOBS: Flashcards sparas endast under denna session.`);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Klart!', `${data.count} flashcards har genererats!`);
     },
     onError: (error: any) => {
-      console.error('❌ [Flashcards] Generation failed:', error);
+      console.error('[Flashcards] Generation failed:', error);
       const errorMessage = error?.message || 'Ett oväntat fel uppstod.';
       setGenerationError(errorMessage);
       setGenerationProgress(0);
@@ -197,10 +274,10 @@ export default function FlashcardsScreenV2() {
         errorMessage,
         [
           { text: 'OK', style: 'default' },
-          { 
-            text: 'Försök igen', 
-            onPress: () => generateMutation.mutate({ count: generationCount }), 
-            style: 'cancel' 
+          {
+            text: 'Försök igen',
+            onPress: () => generateMutation.mutate({ count: generationCount }),
+            style: 'cancel'
           }
         ]
       );
@@ -218,7 +295,6 @@ export default function FlashcardsScreenV2() {
     }
   }, [generateMutation.isPending, motivationalMessages.length]);
 
-  // Local review tracking (no database persistence)
   const handleReview = useCallback((flashcardId: string, correct: boolean) => {
     setReviewedCards(prev => new Set(prev).add(flashcardId));
     if (correct) {
@@ -241,6 +317,22 @@ export default function FlashcardsScreenV2() {
       setAiExplanation(undefined);
     }
   }, [currentIndex, cardsToStudy, handleReview]);
+
+  const handleGenerateWithImages = useCallback(() => {
+    if (attachedImages.length === 0 && customText.trim().length < 20) {
+      Alert.alert('Inget material', 'Lägg till bilder eller skriv minst 20 tecken text.');
+      return;
+    }
+    generateMutation.mutate({
+      count: generationCount,
+      customText: customText.trim() || undefined,
+      images: attachedImages.length > 0 ? attachedImages : undefined,
+    });
+  }, [attachedImages, customText, generationCount, generateMutation]);
+
+  const handleGenerateFromCourse = useCallback(() => {
+    generateMutation.mutate({ count: generationCount });
+  }, [generationCount, generateMutation]);
 
   if (localFlashcards.length === 0) {
     if (!flashcardLimit.isPremium && !flashcardLimit.isAllowed) {
@@ -269,495 +361,121 @@ export default function FlashcardsScreenV2() {
           style={StyleSheet.absoluteFill}
         />
         <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color="#F1F5F9" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>AI Flashcards</Text>
-          <View style={styles.backButton} />
-        </View>
-
-        <ScrollView contentContainerStyle={styles.emptyContainer}>
-          <BookOpen size={80} color="#6366F1" strokeWidth={1.5} />
-          <Text style={styles.emptyTitle}>Inga flashcards än</Text>
-          <Text style={styles.emptyText}>
-            Generera intelligenta flashcards med AI baserat på {course?.title || 'din kurs'}
-          </Text>
-
-          <View style={styles.countSelector}>
-            <Text style={styles.countLabel}>Hur många flashcards vill du ha?</Text>
-            <Text style={styles.countHint}>Fler flashcards = djupare förståelse</Text>
-            <View style={styles.countButtons}>
-              {[10, 15, 20, 25, 30].map((count) => (
-                <TouchableOpacity
-                  key={count}
-                  style={[
-                    styles.countButton,
-                    generationCount === count && styles.countButtonActive,
-                  ]}
-                  onPress={() => setGenerationCount(count)}
-                  disabled={generateMutation.isPending}
-                >
-                  <Text
-                    style={[
-                      styles.countButtonText,
-                      generationCount === count && styles.countButtonTextActive,
-                    ]}
-                  >
-                    {count}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+          <Stack.Screen options={{ headerShown: false }} />
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <ArrowLeft size={24} color="#F1F5F9" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>AI Flashcards</Text>
+            <View style={styles.backButton} />
           </View>
 
-          {generationError && (
-            <View style={styles.errorBanner}>
-              <AlertCircle size={18} color="#F87171" />
-              <Text style={styles.errorBannerText}>{generationError}</Text>
-            </View>
-          )}
-
-          <TouchableOpacity
-            style={styles.generateButton}
-            onPress={() => generateMutation.mutate({ count: generationCount })}
-            disabled={generateMutation.isPending}
-          >
-            <LinearGradient
-              colors={['#6366F1', '#8B5CF6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.generateGradient}
-            >
-              {generateMutation.isPending ? (
-                <>
-                  <ActivityIndicator size="small" color="#fff" />
-                  <Text style={styles.generateButtonText}>Genererar {generationCount} flashcards...</Text>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={20} color="#fff" />
-                  <Text style={styles.generateButtonText}>Generera {generationCount} Flashcards</Text>
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {generateMutation.isPending && (
-            <View style={styles.progressContainer}>
-              <View style={styles.progressIndicator}>
-                <ActivityIndicator size="large" color="#6366F1" />
-              </View>
-              
-              <View style={styles.progressBarContainer}>
-                <View style={[styles.progressBarFill, { width: `${generationProgress}%` }]} />
-              </View>
-              
-              <Text style={styles.progressPercentage}>{generationProgress}%</Text>
-              
-              <View style={styles.motivationalContainer}>
-                <Text style={styles.motivationalText}>
-                  {motivationalMessages[motivationalIndex]}
-                </Text>
-              </View>
-              
-              <View style={styles.tipContainer}>
-                <Text style={styles.tipTitle}>💡 Visste du att:</Text>
-                <Text style={styles.tipText}>
-                  Studier visar att du minns 80% bättre när du använder flashcards
-                  jämfört med traditionell läsning.
-                </Text>
-              </View>
-              
-              <Text style={styles.dontLeaveText}>
-                ⏳ Stanna kvar - tar bara {Math.ceil((30 - generationProgress) / 10)}–{Math.ceil((50 - generationProgress) / 10)} sekunder...
-              </Text>
-            </View>
-          )}
-
-          <TouchableOpacity
-            style={[styles.customTextButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-            onPress={() => setShowCustomInput(true)}
-            disabled={generateMutation.isPending}
-          >
-            <Text style={[styles.customTextButtonText, { color: theme.colors.primary }]}>
-              📝 Generera från egen text
+          <ScrollView contentContainerStyle={styles.emptyContainer} showsVerticalScrollIndicator={false}>
+            <BookOpen size={64} color="#818CF8" strokeWidth={1.5} />
+            <Text style={styles.emptyTitle}>Skapa flashcards</Text>
+            <Text style={styles.emptyText}>
+              {course?.title || 'Din kurs'}
             </Text>
-          </TouchableOpacity>
-        </ScrollView>
 
-        <Modal
-          visible={showCustomInput}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={() => {
-            setShowCustomInput(false);
-            setSelectedImages([]);
-          }}
-        >
-          <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-              <TouchableOpacity onPress={() => {
-                setShowCustomInput(false);
-                setSelectedImages([]);
-              }}>
-                <Text style={[styles.modalCancel, { color: theme.colors.textSecondary }]}>Avbryt</Text>
-              </TouchableOpacity>
-              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Egen text</Text>
-              <TouchableOpacity 
-                onPress={() => {
-                  if (customText.trim().length < 20) {
-                    Alert.alert('För lite text', 'Skriv minst 20 tecken för att generera bra flashcards.');
-                    return;
-                  }
-                  generateMutation.mutate({ count: generationCount, customText });
-                  setSelectedImages([]);
-                }}
-                disabled={generateMutation.isPending || (customText.trim().length < 20 && selectedImages.length === 0)}
+            {attachedImages.length > 0 && (
+              <View style={styles.attachedImagesRow}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {attachedImages.map((img, index) => (
+                    <View key={index} style={styles.attachedImageItem}>
+                      <Image source={{ uri: img.uri }} style={styles.attachedImageThumb} />
+                      <TouchableOpacity
+                        style={styles.removeImageBtn}
+                        onPress={() => removeImage(index)}
+                      >
+                        <X size={14} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+                <Text style={styles.attachedImageCount}>
+                  {attachedImages.length} {attachedImages.length === 1 ? 'bild' : 'bilder'} bifogade
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.quickActions}>
+              <TouchableOpacity
+                style={styles.quickActionBtn}
+                onPress={takePhoto}
+                disabled={generateMutation.isPending}
               >
-                <Text style={[
-                  styles.modalDone, 
-                  { color: (generateMutation.isPending || (customText.trim().length < 20 && selectedImages.length === 0)) ? theme.colors.textMuted : theme.colors.primary }
-                ]}>
-                  Generera
-                </Text>
+                <View style={[styles.quickActionIcon, { backgroundColor: '#3B82F6' }]}>
+                  <Camera size={22} color="#fff" />
+                </View>
+                <Text style={styles.quickActionLabel}>Ta foto</Text>
+                <Text style={styles.quickActionHint}>Fota anteckningar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickActionBtn}
+                onPress={pickImage}
+                disabled={generateMutation.isPending}
+              >
+                <View style={[styles.quickActionIcon, { backgroundColor: '#8B5CF6' }]}>
+                  <ImageIcon size={22} color="#fff" />
+                </View>
+                <Text style={styles.quickActionLabel}>Galleri</Text>
+                <Text style={styles.quickActionHint}>Välj bilder</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickActionBtn}
+                onPress={() => setShowCustomInput(true)}
+                disabled={generateMutation.isPending}
+              >
+                <View style={[styles.quickActionIcon, { backgroundColor: '#10B981' }]}>
+                  <FileText size={22} color="#fff" />
+                </View>
+                <Text style={styles.quickActionLabel}>Text</Text>
+                <Text style={styles.quickActionHint}>Klistra in text</Text>
               </TouchableOpacity>
             </View>
-            
-            <ScrollView style={styles.modalContent}>
-              <Text style={[styles.modalDescription, { color: theme.colors.textSecondary }]}>
-                Klistra in text från anteckningar, lärobok eller sammanfattning. Eller ladda upp bilder så extraherar AI:n texten automatiskt!
-              </Text>
-              
-              {selectedImages.length > 0 && (
-                <View style={styles.imagePreviewContainer}>
-                  <Text style={[styles.imagePreviewTitle, { color: theme.colors.text }]}>
-                    📸 Uppladdade bilder ({selectedImages.length})
-                  </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewScroll}>
-                    {selectedImages.map((imageUri, index) => (
-                      <View key={index} style={styles.imagePreviewItem}>
-                        <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-                        <TouchableOpacity
-                          style={styles.removeImageButton}
-                          onPress={() => {
-                            setSelectedImages(prev => prev.filter((_, i) => i !== index));
-                          }}
-                        >
-                          <X size={16} color="#fff" />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-              
-              <View style={styles.imageButtonsRow}>
-                <TouchableOpacity
-                  style={[styles.imageButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-                  onPress={async () => {
-                    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-                    if (status !== 'granted') {
-                      Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till kameran för att ta foton.');
-                      return;
-                    }
-                    
-                    const result = await ImagePicker.launchCameraAsync({
-                      mediaTypes: 'images' as any,
-                      quality: 0.8,
-                      allowsEditing: true,
-                    });
-                    
-                    if (!result.canceled && result.assets[0]) {
-                      const compressed = await compressImage(result.assets[0].uri);
-                      setSelectedImages(prev => [...prev, compressed.uri]);
-                      
-                      setExtractingText(true);
-                      try {
-                        const extractedText = await extractTextFromImage(compressed.uri);
-                        if (extractedText) {
-                          setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
-                        }
-                      } catch {
-                        Alert.alert('Kunde inte läsa text', 'Försök med en tydligare bild.');
-                      } finally {
-                        setExtractingText(false);
-                      }
-                    }
-                  }}
-                  disabled={extractingText}
+
+            {(attachedImages.length > 0 || customText.trim().length >= 20) && (
+              <TouchableOpacity
+                style={styles.generateFromImagesButton}
+                onPress={handleGenerateWithImages}
+                disabled={generateMutation.isPending}
+              >
+                <LinearGradient
+                  colors={['#3B82F6', '#6366F1']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.generateGradient}
                 >
-                  <Camera size={20} color={theme.colors.primary} />
-                  <Text style={[styles.imageButtonText, { color: theme.colors.primary }]}>Ta foto</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.imageButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-                  onPress={async () => {
-                    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                    if (status !== 'granted') {
-                      Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till ditt fotoalbum.');
-                      return;
-                    }
-                    
-                    const result = await ImagePicker.launchImageLibraryAsync({
-                      mediaTypes: 'images' as any,
-                      quality: 0.8,
-                      allowsEditing: true,
-                      allowsMultipleSelection: false,
-                    });
-                    
-                    if (!result.canceled && result.assets[0]) {
-                      const compressed = await compressImage(result.assets[0].uri);
-                      setSelectedImages(prev => [...prev, compressed.uri]);
-                      
-                      setExtractingText(true);
-                      try {
-                        const extractedText = await extractTextFromImage(compressed.uri);
-                        if (extractedText) {
-                          setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
-                        }
-                      } catch {
-                        Alert.alert('Kunde inte läsa text', 'Försök med en tydligare bild.');
-                      } finally {
-                        setExtractingText(false);
-                      }
-                    }
-                  }}
-                  disabled={extractingText}
-                >
-                  <ImageIcon size={20} color={theme.colors.primary} />
-                  <Text style={[styles.imageButtonText, { color: theme.colors.primary }]}>Välj från galleri</Text>
-                </TouchableOpacity>
-              </View>
-              
-              {extractingText && (
-                <View style={styles.extractingContainer}>
-                  <ActivityIndicator size="small" color={theme.colors.primary} />
-                  <Text style={[styles.extractingText, { color: theme.colors.textSecondary }]}>
-                    Läser text från bild...
-                  </Text>
-                </View>
-              )}
-              <TextInput
-                style={[styles.textInput, { backgroundColor: theme.colors.surface, color: theme.colors.text, borderColor: theme.colors.border }]}
-                value={customText}
-                onChangeText={setCustomText}
-                placeholder="Skriv eller klistra in text här...\n\nExempel:\nFotosyntesen är processen där växter använder solenergi för att omvandla koldioxid och vatten till glukos och syrgas."
-                placeholderTextColor={theme.colors.textMuted}
-                multiline
-                textAlignVertical="top"
-                autoFocus
-              />
-              <Text style={[styles.charCount, { color: theme.colors.textMuted }]}>
-                {customText.length} tecken (minst 20 behövs)
-              </Text>
-            </ScrollView>
-          </SafeAreaView>
-        </Modal>
-        </SafeAreaView>
-      </View>
-    );
-  }
+                  {generateMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Sparkles size={20} color="#fff" />
+                      <Text style={styles.generateButtonText}>
+                        Skapa från {attachedImages.length > 0 ? `${attachedImages.length} ${attachedImages.length === 1 ? 'bild' : 'bilder'}` : 'text'}
+                      </Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
 
-  if (currentIndex >= cardsToStudy.length) {
-    return (
-      <View style={styles.container}>
-        <LinearGradient
-          colors={['#1E1B4B', '#0F172A', '#0F172A']}
-          locations={[0, 0.3, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color="#F1F5F9" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Flashcards</Text>
-          <View style={styles.backButton} />
-        </View>
-
-        <View style={styles.completedContainer}>
-          <LinearGradient
-            colors={['#6366F1', '#8B5CF6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.completedCard}
-          >
-            <Text style={styles.completedEmoji}>🎉</Text>
-            <Text style={styles.completedTitle}>Bra jobbat!</Text>
-            <Text style={styles.completedText}>
-              Du har gått igenom alla flashcards!
-            </Text>
-
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{stats.total}</Text>
-                <Text style={styles.statLabel}>Totalt</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{stats.reviewed}</Text>
-                <Text style={styles.statLabel}>Granskade</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{stats.mastered}</Text>
-                <Text style={styles.statLabel}>Rätt</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.reviewAllButton} 
-              onPress={() => {
-                setCurrentIndex(0);
-                setReviewedCards(new Set());
-                setCorrectCards(new Set());
-              }}
-            >
-              <Text style={styles.reviewAllButtonText}>Börja om</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.doneButton} onPress={() => router.back()}>
-              <Text style={styles.doneButtonText}>Tillbaka</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.generateMoreButton}
-              onPress={() => setShowGenerateModal(true)}
-              disabled={generateMutation.isPending}
-            >
-              <RefreshCw size={16} color="#E0E7FF" />
-              <Text style={styles.generateMoreText}>Generera fler</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        </View>
-        </SafeAreaView>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={['#1E1B4B', '#0F172A', '#0F172A']}
-        locations={[0, 0.3, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#F1F5F9" />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>{course?.title || 'Flashcards'}</Text>
-          <Text style={styles.headerSubtitle}>
-            {currentIndex + 1} / {cardsToStudy.length}
-          </Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={() => setShowGenerateModal(true)}
-        >
-          <Plus size={24} color="#F1F5F9" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.progressBar}>
-        <View
-          style={[
-            styles.progressFill,
-            { width: `${((currentIndex + 1) / cardsToStudy.length) * 100}%` },
-          ]}
-        />
-      </View>
-
-      <View style={styles.swipeContainer}>
-        {cardsToStudy[currentIndex] && (
-          <FlashcardSwipe
-            flashcard={cardsToStudy[currentIndex]}
-            onSwipeLeft={handleSwipeLeft}
-            onSwipeRight={handleSwipeRight}
-            explanation={aiExplanation}
-          />
-        )}
-      </View>
-
-      <View style={styles.instructions}>
-        <View style={styles.instructionItem}>
-          <View style={[styles.instructionDot, { backgroundColor: '#F87171' }]} />
-          <Text style={styles.instructionText}>Swipe vänster = Visa igen</Text>
-        </View>
-        <View style={styles.instructionItem}>
-          <View style={[styles.instructionDot, { backgroundColor: '#4ADE80' }]} />
-          <Text style={styles.instructionText}>Swipe höger = Jag kunde det</Text>
-        </View>
-      </View>
-
-      <Modal
-        visible={showGenerateModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowGenerateModal(false)}
-      >
-        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-            <TouchableOpacity onPress={() => setShowGenerateModal(false)}>
-              <Text style={[styles.modalCancel, { color: theme.colors.textSecondary }]}>Stäng</Text>
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Skapa Flashcards</Text>
-            <View style={{ width: 60 }} />
-          </View>
-          
-          <ScrollView contentContainerStyle={styles.modalScrollContent}>
-            <Text style={[styles.modalSectionTitle, { color: theme.colors.text }]}>Välj hur du vill skapa flashcards</Text>
-            
-            <TouchableOpacity
-              style={[styles.generationOptionCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-              onPress={() => {
-                setShowGenerateModal(false);
-                setTimeout(() => {
-                  setShowCustomInput(true);
-                }, 300);
-              }}
-              disabled={generateMutation.isPending}
-            >
-              <View style={[styles.optionIconContainer, { backgroundColor: '#6366F1' }]}>
-                <Text style={styles.optionIcon}>📝</Text>
-              </View>
-              <View style={styles.optionTextContainer}>
-                <Text style={[styles.optionTitle, { color: theme.colors.text }]}>Egen text eller bild</Text>
-                <Text style={[styles.optionDescription, { color: theme.colors.textSecondary }]}>Klistra in text eller ladda upp bilder från dina anteckningar</Text>
-              </View>
-              <ArrowLeft size={20} color={theme.colors.textMuted} style={{ transform: [{ rotate: '180deg' }] }} />
-            </TouchableOpacity>
-
-            <View style={styles.dividerContainer}>
-              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-              <Text style={[styles.dividerText, { color: theme.colors.textMuted }]}>eller</Text>
-              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-            </View>
-
-            <View style={[styles.generationOptionCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-              <View style={[styles.optionIconContainer, { backgroundColor: '#8B5CF6' }]}>
-                <Sparkles size={20} color="#fff" />
-              </View>
-              <View style={styles.optionTextContainer}>
-                <Text style={[styles.optionTitle, { color: theme.colors.text }]}>AI-genererat från kursen</Text>
-                <Text style={[styles.optionDescription, { color: theme.colors.textSecondary }]}>Låt AI:n skapa flashcards baserat på kursmaterialet</Text>
-              </View>
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerLabel}>eller generera från kursen</Text>
+              <View style={styles.dividerLine} />
             </View>
 
             <View style={styles.countSelector}>
-              <Text style={[styles.countLabel, { color: theme.colors.text }]}>Hur många flashcards?</Text>
+              <Text style={styles.countLabel}>Antal flashcards</Text>
               <View style={styles.countButtons}>
                 {[10, 15, 20, 25, 30].map((count) => (
                   <TouchableOpacity
                     key={count}
                     style={[
                       styles.countButton,
-                      { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
                       generationCount === count && styles.countButtonActive,
                     ]}
                     onPress={() => setGenerationCount(count)}
@@ -766,7 +484,6 @@ export default function FlashcardsScreenV2() {
                     <Text
                       style={[
                         styles.countButtonText,
-                        { color: theme.colors.textSecondary },
                         generationCount === count && styles.countButtonTextActive,
                       ]}
                     >
@@ -786,10 +503,7 @@ export default function FlashcardsScreenV2() {
 
             <TouchableOpacity
               style={styles.generateButton}
-              onPress={() => {
-                generateMutation.mutate({ count: generationCount });
-                setShowGenerateModal(false);
-              }}
+              onPress={handleGenerateFromCourse}
               disabled={generateMutation.isPending}
             >
               <LinearGradient
@@ -811,180 +525,315 @@ export default function FlashcardsScreenV2() {
                 )}
               </LinearGradient>
             </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
 
-      <Modal
-        visible={showCustomInput}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => {
-          setShowCustomInput(false);
-          setSelectedImages([]);
-        }}
-      >
-        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-            <TouchableOpacity onPress={() => {
-              setShowCustomInput(false);
-              setSelectedImages([]);
-            }}>
-              <Text style={[styles.modalCancel, { color: theme.colors.textSecondary }]}>Avbryt</Text>
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Egen text</Text>
-            <TouchableOpacity 
-              onPress={() => {
-                if (customText.trim().length < 20) {
-                  Alert.alert('För lite text', 'Skriv minst 20 tecken för att generera bra flashcards.');
-                  return;
-                }
-                generateMutation.mutate({ count: generationCount, customText });
-                setSelectedImages([]);
-                setShowCustomInput(false);
-              }}
-              disabled={generateMutation.isPending || (customText.trim().length < 20 && selectedImages.length === 0)}
-            >
-              <Text style={[
-                styles.modalDone, 
-                { color: (generateMutation.isPending || (customText.trim().length < 20 && selectedImages.length === 0)) ? theme.colors.textMuted : theme.colors.primary }
-              ]}>
-                Generera
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          <ScrollView style={styles.modalContent}>
-            <Text style={[styles.modalDescription, { color: theme.colors.textSecondary }]}>
-              Klistra in text från anteckningar, lärobok eller sammanfattning. Eller ladda upp bilder så extraherar AI:n texten automatiskt!
-            </Text>
-            
-            {selectedImages.length > 0 && (
-              <View style={styles.imagePreviewContainer}>
-                <Text style={[styles.imagePreviewTitle, { color: theme.colors.text }]}>
-                  📸 Uppladdade bilder ({selectedImages.length})
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewScroll}>
-                  {selectedImages.map((imageUri, index) => (
-                    <View key={index} style={styles.imagePreviewItem}>
-                      <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => {
-                          setSelectedImages(prev => prev.filter((_, i) => i !== index));
-                        }}
-                      >
-                        <X size={16} color="#fff" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-            
-            <View style={styles.imageButtonsRow}>
-              <TouchableOpacity
-                style={[styles.imageButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-                onPress={async () => {
-                  const { status } = await ImagePicker.requestCameraPermissionsAsync();
-                  if (status !== 'granted') {
-                    Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till kameran för att ta foton.');
-                    return;
-                  }
-                  
-                  const result = await ImagePicker.launchCameraAsync({
-                    mediaTypes: 'images' as any,
-                    quality: 0.8,
-                    allowsEditing: true,
-                  });
-                  
-                  if (!result.canceled && result.assets[0]) {
-                    const compressed = await compressImage(result.assets[0].uri);
-                    setSelectedImages(prev => [...prev, compressed.uri]);
-                    
-                    setExtractingText(true);
-                    try {
-                      const extractedText = await extractTextFromImage(compressed.uri);
-                      if (extractedText) {
-                        setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
-                      }
-                    } catch {
-                      Alert.alert('Kunde inte läsa text', 'Försök med en tydligare bild.');
-                    } finally {
-                      setExtractingText(false);
-                    }
-                  }
-                }}
-                disabled={extractingText}
-              >
-                <Camera size={20} color={theme.colors.primary} />
-                <Text style={[styles.imageButtonText, { color: theme.colors.primary }]}>Ta foto</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.imageButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-                onPress={async () => {
-                  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                  if (status !== 'granted') {
-                    Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till ditt fotoalbum.');
-                    return;
-                  }
-                  
-                  const result = await ImagePicker.launchImageLibraryAsync({
-                    mediaTypes: 'images' as any,
-                    quality: 0.8,
-                    allowsEditing: true,
-                    allowsMultipleSelection: false,
-                  });
-                  
-                  if (!result.canceled && result.assets[0]) {
-                    const compressed = await compressImage(result.assets[0].uri);
-                    setSelectedImages(prev => [...prev, compressed.uri]);
-                    
-                    setExtractingText(true);
-                    try {
-                      const extractedText = await extractTextFromImage(compressed.uri);
-                      if (extractedText) {
-                        setCustomText(prev => prev ? `${prev}\n\n${extractedText}` : extractedText);
-                      }
-                    } catch {
-                      Alert.alert('Kunde inte läsa text', 'Försök med en tydligare bild.');
-                    } finally {
-                      setExtractingText(false);
-                    }
-                  }
-                }}
-                disabled={extractingText}
-              >
-                <ImageIcon size={20} color={theme.colors.primary} />
-                <Text style={[styles.imageButtonText, { color: theme.colors.primary }]}>Välj från galleri</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {extractingText && (
-              <View style={styles.extractingContainer}>
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={[styles.extractingText, { color: theme.colors.textSecondary }]}>
-                  Läser text från bild...
+            {generateMutation.isPending && (
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBarContainer}>
+                  <View style={[styles.progressBarFill, { width: `${generationProgress}%` }]} />
+                </View>
+                <Text style={styles.progressPercentage}>{generationProgress}%</Text>
+                <Text style={styles.motivationalText}>
+                  {motivationalMessages[motivationalIndex]}
                 </Text>
               </View>
             )}
-            <TextInput
-              style={[styles.textInput, { backgroundColor: theme.colors.surface, color: theme.colors.text, borderColor: theme.colors.border }]}
-              value={customText}
-              onChangeText={setCustomText}
-              placeholder="Skriv eller klistra in text här...\n\nExempel:\nFotosyntesen är processen där växter använder solenergi för att omvandla koldioxid och vatten till glukos och syrgas."
-              placeholderTextColor={theme.colors.textMuted}
-              multiline
-              textAlignVertical="top"
-              autoFocus
-            />
-            <Text style={[styles.charCount, { color: theme.colors.textMuted }]}>
-              {customText.length} tecken (minst 20 behövs)
-            </Text>
           </ScrollView>
+
+          <Modal
+            visible={showCustomInput}
+            animationType="slide"
+            presentationStyle="pageSheet"
+            onRequestClose={() => setShowCustomInput(false)}
+          >
+            <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+                <TouchableOpacity onPress={() => setShowCustomInput(false)}>
+                  <Text style={[styles.modalCancel, { color: theme.colors.textSecondary }]}>Avbryt</Text>
+                </TouchableOpacity>
+                <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Egen text</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (customText.trim().length < 20) {
+                      Alert.alert('För lite text', 'Skriv minst 20 tecken.');
+                      return;
+                    }
+                    setShowCustomInput(false);
+                  }}
+                  disabled={customText.trim().length < 20}
+                >
+                  <Text style={[
+                    styles.modalDone,
+                    { color: customText.trim().length < 20 ? theme.colors.textMuted : theme.colors.primary }
+                  ]}>
+                    Klar
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalContent}>
+                <Text style={[styles.modalDescription, { color: theme.colors.textSecondary }]}>
+                  Klistra in text från anteckningar eller lärobok. AI:n skapar flashcards baserat på texten.
+                </Text>
+                <TextInput
+                  style={[styles.textInput, { backgroundColor: theme.colors.surface, color: theme.colors.text, borderColor: theme.colors.border }]}
+                  value={customText}
+                  onChangeText={setCustomText}
+                  placeholder="Klistra in din text här..."
+                  placeholderTextColor={theme.colors.textMuted}
+                  multiline
+                  textAlignVertical="top"
+                  autoFocus
+                />
+                <Text style={[styles.charCount, { color: theme.colors.textMuted }]}>
+                  {customText.length} tecken (minst 20 behövs)
+                </Text>
+              </ScrollView>
+            </SafeAreaView>
+          </Modal>
         </SafeAreaView>
-      </Modal>
+      </View>
+    );
+  }
+
+  if (currentIndex >= cardsToStudy.length) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#1E1B4B', '#0F172A', '#0F172A']}
+          locations={[0, 0.3, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <Stack.Screen options={{ headerShown: false }} />
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <ArrowLeft size={24} color="#F1F5F9" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Flashcards</Text>
+            <View style={styles.backButton} />
+          </View>
+
+          <View style={styles.completedContainer}>
+            <LinearGradient
+              colors={['#6366F1', '#8B5CF6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.completedCard}
+            >
+              <Text style={styles.completedEmoji}>🎉</Text>
+              <Text style={styles.completedTitle}>Bra jobbat!</Text>
+              <Text style={styles.completedText}>
+                Du har gått igenom alla flashcards!
+              </Text>
+
+              <View style={styles.statsGrid}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{stats.total}</Text>
+                  <Text style={styles.statLabel}>Totalt</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{stats.reviewed}</Text>
+                  <Text style={styles.statLabel}>Granskade</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{stats.mastered}</Text>
+                  <Text style={styles.statLabel}>Rätt</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={styles.reviewAllButton}
+                onPress={() => {
+                  setCurrentIndex(0);
+                  setReviewedCards(new Set());
+                  setCorrectCards(new Set());
+                }}
+              >
+                <Text style={styles.reviewAllButtonText}>Börja om</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.doneButton} onPress={() => router.back()}>
+                <Text style={styles.doneButtonText}>Tillbaka</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.generateMoreButton}
+                onPress={() => setShowGenerateModal(true)}
+                disabled={generateMutation.isPending}
+              >
+                <RefreshCw size={16} color="#E0E7FF" />
+                <Text style={styles.generateMoreText}>Generera fler</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#1E1B4B', '#0F172A', '#0F172A']}
+        locations={[0, 0.3, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={24} color="#F1F5F9" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>{course?.title || 'Flashcards'}</Text>
+            <Text style={styles.headerSubtitle}>
+              {currentIndex + 1} / {cardsToStudy.length}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setShowGenerateModal(true)}
+          >
+            <Plus size={24} color="#F1F5F9" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.progressBar}>
+          <View
+            style={[
+              styles.progressFill,
+              { width: `${((currentIndex + 1) / cardsToStudy.length) * 100}%` },
+            ]}
+          />
+        </View>
+
+        <View style={styles.swipeContainer}>
+          {cardsToStudy[currentIndex] && (
+            <FlashcardSwipe
+              flashcard={cardsToStudy[currentIndex]}
+              onSwipeLeft={handleSwipeLeft}
+              onSwipeRight={handleSwipeRight}
+              explanation={aiExplanation}
+            />
+          )}
+        </View>
+
+        <View style={styles.instructions}>
+          <View style={styles.instructionItem}>
+            <View style={[styles.instructionDot, { backgroundColor: '#F87171' }]} />
+            <Text style={styles.instructionText}>Swipe vänster = Visa igen</Text>
+          </View>
+          <View style={styles.instructionItem}>
+            <View style={[styles.instructionDot, { backgroundColor: '#4ADE80' }]} />
+            <Text style={styles.instructionText}>Swipe höger = Jag kunde det</Text>
+          </View>
+        </View>
+
+        <Modal
+          visible={showGenerateModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowGenerateModal(false)}
+        >
+          <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+              <TouchableOpacity onPress={() => setShowGenerateModal(false)}>
+                <Text style={[styles.modalCancel, { color: theme.colors.textSecondary }]}>Stäng</Text>
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Skapa fler</Text>
+              <View style={{ width: 60 }} />
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalScrollContent}>
+              <View style={styles.modalQuickActions}>
+                <TouchableOpacity
+                  style={[styles.modalActionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                  onPress={() => {
+                    setShowGenerateModal(false);
+                    setTimeout(takePhoto, 300);
+                  }}
+                >
+                  <Camera size={24} color="#3B82F6" />
+                  <Text style={[styles.modalActionLabel, { color: theme.colors.text }]}>Ta foto</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalActionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                  onPress={() => {
+                    setShowGenerateModal(false);
+                    setTimeout(pickImage, 300);
+                  }}
+                >
+                  <ImageIcon size={24} color="#8B5CF6" />
+                  <Text style={[styles.modalActionLabel, { color: theme.colors.text }]}>Galleri</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalActionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                  onPress={() => {
+                    setShowGenerateModal(false);
+                    setTimeout(() => setShowCustomInput(true), 300);
+                  }}
+                >
+                  <FileText size={24} color="#10B981" />
+                  <Text style={[styles.modalActionLabel, { color: theme.colors.text }]}>Text</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalDivider}>
+                <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+                <Text style={[styles.dividerLabel, { color: theme.colors.textMuted }]}>eller från kursen</Text>
+                <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+              </View>
+
+              <View style={styles.countSelector}>
+                <Text style={[styles.countLabel, { color: theme.colors.text }]}>Antal</Text>
+                <View style={styles.countButtons}>
+                  {[10, 15, 20, 25, 30].map((count) => (
+                    <TouchableOpacity
+                      key={count}
+                      style={[
+                        styles.countButton,
+                        { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                        generationCount === count && styles.countButtonActive,
+                      ]}
+                      onPress={() => setGenerationCount(count)}
+                    >
+                      <Text
+                        style={[
+                          styles.countButtonText,
+                          { color: theme.colors.textSecondary },
+                          generationCount === count && styles.countButtonTextActive,
+                        ]}
+                      >
+                        {count}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={styles.generateButton}
+                onPress={() => {
+                  generateMutation.mutate({ count: generationCount });
+                  setShowGenerateModal(false);
+                }}
+                disabled={generateMutation.isPending}
+              >
+                <LinearGradient
+                  colors={['#6366F1', '#8B5CF6']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.generateGradient}
+                >
+                  <Sparkles size={20} color="#fff" />
+                  <Text style={styles.generateButtonText}>Generera {generationCount} Flashcards</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
       </SafeAreaView>
     </View>
   );
@@ -997,22 +846,12 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#94A3B8',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
   },
   backButton: {
     width: 40,
@@ -1028,7 +867,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     color: '#F1F5F9',
   },
   headerSubtitle: {
@@ -1043,11 +882,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#6366F1',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   progressBar: {
     height: 4,
@@ -1066,8 +900,8 @@ const styles = StyleSheet.create({
   },
   instructions: {
     paddingHorizontal: 40,
-    paddingVertical: 24,
-    gap: 12,
+    paddingVertical: 20,
+    gap: 10,
   },
   instructionItem: {
     flexDirection: 'row',
@@ -1082,48 +916,133 @@ const styles = StyleSheet.create({
   instructionText: {
     fontSize: 14,
     color: '#94A3B8',
-    fontWeight: '500',
+    fontWeight: '500' as const,
   },
   emptyContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 24,
     paddingBottom: 40,
+    paddingTop: 20,
   },
   emptyTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     color: '#F1F5F9',
-    marginTop: 24,
+    marginTop: 16,
   },
   emptyText: {
     fontSize: 16,
     color: '#94A3B8',
     textAlign: 'center',
-    marginTop: 12,
-    lineHeight: 24,
+    marginTop: 6,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 28,
+    width: '100%',
+  },
+  quickActionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  quickActionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  quickActionLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#F1F5F9',
+  },
+  quickActionHint: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 3,
+  },
+  attachedImagesRow: {
+    width: '100%',
+    marginTop: 20,
+    backgroundColor: '#1E293B',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  attachedImageItem: {
+    position: 'relative',
+    marginRight: 10,
+  },
+  attachedImageThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+  },
+  removeImageBtn: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    width: 22,
+    height: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  attachedImageCount: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  generateFromImagesButton: {
+    marginTop: 16,
+    borderRadius: 14,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24,
+    gap: 12,
+    width: '100%',
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#334155',
+  },
+  dividerLabel: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500' as const,
   },
   countSelector: {
     width: '100%',
-    marginTop: 32,
+    marginTop: 20,
   },
   countLabel: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600' as const,
     color: '#F1F5F9',
-    marginBottom: 6,
+    marginBottom: 10,
     textAlign: 'center',
-  },
-  countHint: {
-    fontSize: 13,
-    color: '#94A3B8',
-    marginBottom: 16,
-    textAlign: 'center' as const,
   },
   countButtons: {
     flexDirection: 'row',
-    flexWrap: 'wrap' as const,
+    flexWrap: 'wrap',
     gap: 10,
     justifyContent: 'center',
   },
@@ -1134,8 +1053,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E293B',
     borderWidth: 2,
     borderColor: '#334155',
-    minWidth: 60,
-    alignItems: 'center' as const,
+    minWidth: 56,
+    alignItems: 'center',
   },
   countButtonActive: {
     backgroundColor: '#312E81',
@@ -1143,15 +1062,15 @@ const styles = StyleSheet.create({
   },
   countButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: '#94A3B8',
   },
   countButtonTextActive: {
     color: '#C7D2FE',
   },
   generateButton: {
-    marginTop: 32,
-    borderRadius: 16,
+    marginTop: 20,
+    borderRadius: 14,
     overflow: 'hidden',
     width: '100%',
   },
@@ -1159,14 +1078,68 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 10,
     paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
   },
   generateButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     color: '#fff',
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(248, 113, 113, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(248, 113, 113, 0.3)',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 12,
+    gap: 10,
+    width: '100%',
+  },
+  errorBannerText: {
+    flex: 1,
+    color: '#F87171',
+    fontSize: 14,
+    fontWeight: '500' as const,
+    lineHeight: 20,
+  },
+  progressContainer: {
+    marginTop: 20,
+    width: '100%',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    backgroundColor: '#1E293B',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#0F172A',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#6366F1',
+    borderRadius: 4,
+  },
+  progressPercentage: {
+    fontSize: 20,
+    fontWeight: '800' as const,
+    color: '#6366F1',
+  },
+  motivationalText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: '#94A3B8',
+    textAlign: 'center',
   },
   completedContainer: {
     flex: 1,
@@ -1185,7 +1158,7 @@ const styles = StyleSheet.create({
   },
   completedTitle: {
     fontSize: 28,
-    fontWeight: '900',
+    fontWeight: '900' as const,
     color: '#fff',
     marginTop: 16,
   },
@@ -1206,7 +1179,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 32,
-    fontWeight: '900',
+    fontWeight: '900' as const,
     color: '#fff',
   },
   statLabel: {
@@ -1223,20 +1196,8 @@ const styles = StyleSheet.create({
   },
   doneButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     color: '#6366F1',
-  },
-  generateMoreButton: {
-    marginTop: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
-  },
-  generateMoreText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#E0E7FF',
   },
   reviewAllButton: {
     marginTop: 16,
@@ -1249,26 +1210,20 @@ const styles = StyleSheet.create({
   },
   reviewAllButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     color: '#fff',
   },
-  headerBadge: {
-    fontSize: 11,
-    color: '#A5B4FC',
-    marginTop: 2,
-    fontWeight: '600',
-  },
-  customTextButton: {
+  generateMoreButton: {
     marginTop: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
+    gap: 8,
+    paddingVertical: 10,
   },
-  customTextButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+  generateMoreText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#E0E7FF',
   },
   modalContainer: {
     flex: 1,
@@ -1283,15 +1238,15 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   modalCancel: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '500' as const,
   },
   modalDone: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   modalContent: {
     flex: 1,
@@ -1315,222 +1270,30 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: 'right' as const,
   },
-  errorBanner: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    backgroundColor: 'rgba(248, 113, 113, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(248, 113, 113, 0.3)',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    gap: 10,
-  },
-  errorBannerText: {
-    flex: 1,
-    color: '#F87171',
-    fontSize: 14,
-    fontWeight: '500' as const,
-    lineHeight: 20,
-  },
-  generatingHint: {
-    fontSize: 13,
-    color: '#94A3B8',
-    textAlign: 'center' as const,
-    marginTop: 12,
-    fontStyle: 'italic' as const,
-  },
-  progressContainer: {
-    marginTop: 24,
-    width: '100%',
-    alignItems: 'center' as const,
-    gap: 16,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  progressIndicator: {
-    marginBottom: 8,
-  },
-  progressBarContainer: {
-    width: '100%',
-    height: 10,
-    backgroundColor: '#0F172A',
-    borderRadius: 5,
-    overflow: 'hidden' as const,
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#6366F1',
-    borderRadius: 5,
-  },
-  progressPercentage: {
-    fontSize: 24,
-    fontWeight: '900' as const,
-    color: '#6366F1',
-    marginTop: 4,
-  },
-  motivationalContainer: {
-    marginTop: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#312E81',
-    borderRadius: 12,
-    width: '100%',
-  },
-  motivationalText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: '#C7D2FE',
-    textAlign: 'center' as const,
-    lineHeight: 22,
-  },
-  tipContainer: {
-    marginTop: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.2)',
-    width: '100%',
-  },
-  tipTitle: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: '#C7D2FE',
-    marginBottom: 6,
-  },
-  tipText: {
-    fontSize: 13,
-    color: '#94A3B8',
-    lineHeight: 20,
-  },
-  dontLeaveText: {
-    fontSize: 13,
-    color: '#64748B',
-    textAlign: 'center' as const,
-    marginTop: 12,
-    fontStyle: 'italic' as const,
-  },
   modalScrollContent: {
     padding: 20,
     paddingBottom: 40,
   },
-  modalSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    marginBottom: 16,
+  modalQuickActions: {
+    flexDirection: 'row',
+    gap: 12,
   },
-  generationOptionCard: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    padding: 16,
-    borderRadius: 12,
+  modalActionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 20,
+    borderRadius: 14,
     borderWidth: 1.5,
-    gap: 12,
-    marginBottom: 12,
-  },
-  optionIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  optionIcon: {
-    fontSize: 22,
-  },
-  optionTextContainer: {
-    flex: 1,
-  },
-  optionTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    marginBottom: 4,
-  },
-  optionDescription: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  dividerContainer: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginVertical: 20,
-    gap: 12,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-  },
-  imageButtonsRow: {
-    flexDirection: 'row' as const,
-    gap: 12,
-    marginBottom: 20,
-  },
-  imageButton: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
     gap: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1.5,
   },
-  imageButtonText: {
-    fontSize: 15,
+  modalActionLabel: {
+    fontSize: 14,
     fontWeight: '600' as const,
   },
-  imagePreviewContainer: {
-    marginBottom: 16,
-  },
-  imagePreviewTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    marginBottom: 12,
-  },
-  imagePreviewScroll: {
-    flexDirection: 'row' as const,
-  },
-  imagePreviewItem: {
-    position: 'relative' as const,
-    marginRight: 12,
-  },
-  imagePreview: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-  },
-  removeImageButton: {
-    position: 'absolute' as const,
-    top: 4,
-    right: 4,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  extractingContainer: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 8,
-    paddingVertical: 12,
-    marginBottom: 12,
-  },
-  extractingText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
+  modalDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+    gap: 12,
   },
 });

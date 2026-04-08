@@ -988,16 +988,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         setPomodoroSessions(prev => [dbSession, ...prev]);
         console.log('✅ Session added to local state');
         
-        // Check achievements in background (non-blocking)
-        (async () => {
-          try {
-            const { checkAndUpdateAchievements } = await import('@/lib/database');
-            await checkAndUpdateAchievements(authUser.id);
-            console.log('✅ Achievements checked');
-          } catch (achError) {
-            console.error('❌ Failed to check achievements:', achError);
-          }
-        })();
+
       }
       
     } catch (error) {

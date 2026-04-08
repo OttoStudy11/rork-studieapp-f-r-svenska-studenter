@@ -65,19 +65,16 @@ interface CompletionScreenProps {
     courseName: string;
     coinsEarned: number;
   } | null;
-  onSave: () => void;
-  onDiscard: () => void;
+  onClose: () => void;
   dailyGoal: number;
   currentSessions: number;
 }
 
-function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions }: CompletionScreenProps) {
+function CompletionScreen({ data, onClose, dailyGoal, currentSessions }: CompletionScreenProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const [isSaved, setIsSaved] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
-  const checkmarkAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -94,20 +91,6 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
       }),
     ]).start();
   }, [fadeAnim, scaleAnim]);
-
-  const handleSave = useCallback(() => {
-    setIsSaved(true);
-    Animated.spring(checkmarkAnim, {
-      toValue: 1,
-      tension: 100,
-      friction: 8,
-      useNativeDriver: true,
-    }).start();
-    
-    setTimeout(() => {
-      onSave();
-    }, 600);
-  }, [checkmarkAnim, onSave]);
 
   if (!data) return null;
 
@@ -135,7 +118,7 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
       <View style={[styles.completionContainer, { backgroundColor: theme.colors.background, paddingTop: insets.top + 20 }]}>
         <TouchableOpacity 
           style={[styles.completionCloseButton, { backgroundColor: theme.colors.card }]}
-          onPress={onDiscard}
+          onPress={onClose}
           activeOpacity={0.7}
         >
           <X size={20} color={theme.colors.textSecondary} />
@@ -199,43 +182,20 @@ function CompletionScreen({ data, onSave, onDiscard, dailyGoal, currentSessions 
             </View>
           </View>
 
-          {isSaved && (
-            <Animated.View 
-              style={[
-                styles.savedConfirmation,
-                {
-                  opacity: checkmarkAnim,
-                  transform: [{ scale: checkmarkAnim }]
-                }
-              ]}
-            >
-              <CheckCircle size={22} color={theme.colors.success} />
-              <Text style={[styles.savedText, { color: theme.colors.success }]}>Sparad</Text>
-            </Animated.View>
-          )}
+          <View style={[styles.savedConfirmation]}>
+            <CheckCircle size={22} color={theme.colors.success} />
+            <Text style={[styles.savedText, { color: theme.colors.success }]}>Automatiskt sparad</Text>
+          </View>
         </View>
 
         <View style={[styles.completionActions, { paddingBottom: insets.bottom + 16 }]}>
           <TouchableOpacity 
-            style={[styles.completionPrimaryButton, { backgroundColor: isSaved ? theme.colors.success : theme.colors.primary }]}
-            onPress={handleSave}
+            style={[styles.completionPrimaryButton, { backgroundColor: theme.colors.primary }]}
+            onPress={onClose}
             activeOpacity={0.8}
-            disabled={isSaved}
           >
-            <Text style={styles.completionPrimaryButtonText}>
-              {isSaved ? '✓ Sparad' : 'Spara session'}
-            </Text>
+            <Text style={styles.completionPrimaryButtonText}>Stäng</Text>
           </TouchableOpacity>
-          
-          {!isSaved && (
-            <TouchableOpacity 
-              style={styles.completionSecondaryButton}
-              onPress={onDiscard}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.completionSecondaryButtonText, { color: theme.colors.textMuted }]}>Stäng utan att spara</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </View>
     </Animated.View>
@@ -1932,8 +1892,7 @@ export default function TimerScreen() {
       <Modal visible={showCompletionScreen} animationType="fade" presentationStyle="overFullScreen" transparent={true}>
         <CompletionScreen
           data={completedSessionData}
-          onSave={() => { setShowCompletionScreen(false); setCompletedSessionData(null); }}
-          onDiscard={() => { setShowCompletionScreen(false); setCompletedSessionData(null); }}
+          onClose={() => { setShowCompletionScreen(false); setCompletedSessionData(null); }}
           dailyGoal={dailyGoal}
           currentSessions={sessionCount}
         />

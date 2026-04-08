@@ -408,7 +408,7 @@ export default function FlashcardsScreenV2() {
                   <Camera size={22} color="#fff" />
                 </View>
                 <Text style={styles.quickActionLabel}>Ta foto</Text>
-                <Text style={styles.quickActionHint}>Fota anteckningar</Text>
+                <Text style={styles.quickActionHint}>Fota</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

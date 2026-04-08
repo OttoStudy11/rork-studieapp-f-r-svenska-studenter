@@ -676,20 +676,19 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </SlideInView>
 
-        {/* Study Tips & Techniques Section */}
+        {/* Study Tips Section */}
         <SlideInView direction="up" delay={300} duration={300}>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
                 <Sparkles size={20} color={theme.colors.primary} />
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips & Tekniker</Text>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
               </View>
               <TouchableOpacity onPress={() => router.push('/study-tips' as any)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
               </TouchableOpacity>
             </View>
             
-            {/* Study Tips Grid */}
             <View style={styles.tipsGrid}>
               {studyTips.slice(0, 2).map((tip, index) => (
                 <FadeInView key={tip.id} delay={350 + index * 30} duration={250}>
@@ -714,35 +713,39 @@ export default function HomeScreen() {
                 </FadeInView>
               ))}
             </View>
+          </View>
+        </SlideInView>
 
-            {/* Study Techniques Row */}
-            <View style={[styles.techniquesGrid, { paddingHorizontal: 0, marginTop: 12 }]}>
-              {studyTechniques.slice(0, 1).map((technique) => (
-                <FadeInView key={technique.id} delay={400} duration={250}>
+        {/* Study Techniques Section */}
+        <SlideInView direction="up" delay={350} duration={300}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <Brain size={20} color={theme.colors.primary} />
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/study-techniques' as any)}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.tipsGrid}>
+              {studyTechniques.slice(0, 2).map((technique, index) => (
+                <FadeInView key={technique.id} delay={400 + index * 30} duration={250}>
                   <TouchableOpacity 
-                    style={[styles.compactTechniqueCard, { backgroundColor: theme.colors.card }]}
+                    style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
                     onPress={() => router.push(`/study-technique/${technique.id}` as any)}
                   >
-                    <Text style={styles.compactTechniqueIcon}>{technique.icon}</Text>
-                    <Text style={[styles.compactTechniqueTitle, { color: theme.colors.text }]}>{technique.title}</Text>
+                    <Text style={styles.compactTipIcon}>{technique.icon}</Text>
+                    <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{technique.title}</Text>
                     <View style={[styles.compactTimeTag, { backgroundColor: theme.colors.primary + '15' }]}>
                       <Clock size={10} color={theme.colors.primary} />
                       <Text style={[styles.compactTimeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
                     </View>
-                    <ArrowRight size={14} color={theme.colors.textMuted} style={styles.compactArrow} />
                   </TouchableOpacity>
                 </FadeInView>
               ))}
             </View>
-            
-            {/* See All Techniques Button */}
-            <TouchableOpacity 
-              style={[styles.seeAllButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-              onPress={() => router.push('/study-techniques' as any)}
-            >
-              <Text style={[styles.seeAllButtonText, { color: theme.colors.primary }]}>Visa alla studietekniker</Text>
-              <ArrowRight size={18} color={theme.colors.primary} />
-            </TouchableOpacity>
           </View>
         </SlideInView>
 

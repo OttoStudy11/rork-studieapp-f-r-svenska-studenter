@@ -555,44 +555,51 @@ export default function HomeScreen() {
         {/* Högskoleprov Card */}
         <SlideInView direction="up" delay={200} duration={300}>
           <TouchableOpacity 
-            style={[styles.hpCard, { backgroundColor: theme.colors.card }]}
+            style={styles.hpCard}
             onPress={() => router.push('/hogskoleprovet' as any)}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
             <LinearGradient
-              colors={isDark ? ['#4F46E5', '#7C3AED'] : ['#6366F1', '#8B5CF6']}
+              colors={isDark ? ['#312E81', '#4338CA', '#6D28D9'] : ['#4338CA', '#6366F1', '#8B5CF6']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.hpCardGradient}
             >
-              <View style={styles.hpCardContent}>
-                <View style={styles.hpCardLeft}>
-                  <View style={styles.hpIconContainer}>
-                    <FileText size={24} color="white" />
+              <View style={styles.hpCardInnerShadow} />
+              <View style={styles.hpCardDecoCircle1} />
+              <View style={styles.hpCardDecoCircle2} />
+
+              <View style={styles.hpCardTopRow}>
+                <View style={styles.hpIconContainer}>
+                  <FileText size={28} color="white" />
+                </View>
+                {!isPremium && (
+                  <View style={styles.hpPremiumBadge}>
+                    <Crown size={12} color="#FFD700" />
+                    <Text style={styles.hpPremiumText}>Premium</Text>
                   </View>
-                  <View style={styles.hpCardInfo}>
-                    <Text style={styles.hpCardTitle}>Högskoleprov</Text>
-                    <Text style={styles.hpCardSubtitle} numberOfLines={2}>Träna inför HP med realistiska övningar</Text>
-                  </View>
-                </View>
-                <ChevronRight size={24} color="rgba(255,255,255,0.8)" />
+                )}
               </View>
-              <View style={styles.hpCardMeta}>
-                <View style={styles.hpMetaItem}>
-                  <Text style={styles.hpMetaText}>8 delprov</Text>
-                </View>
-                <View style={styles.hpMetaDot} />
-                <View style={styles.hpMetaItem}>
-                  <Text style={styles.hpMetaText}>ORD • LÄS • MEK • XYZ • KVA • DTK</Text>
-                </View>
+
+              <Text style={styles.hpCardTitle}>Högskoleprov</Text>
+              <Text style={styles.hpCardSubtitle}>Träna inför högskoleprovet med autentiska uppgifter, tidsbegränsning och detaljerad statistik</Text>
+
+              <View style={styles.hpCardChips}>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>ORD</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>LÄS</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>MEK</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>XYZ</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>KVA</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>DTK</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>ELF</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>NOG</Text></View>
               </View>
-              {!isPremium && (
-                <View style={styles.hpPremiumBadge}>
-                  <Crown size={12} color="#FFD700" />
-                  <Text style={styles.hpPremiumText}>Premium</Text>
-                </View>
-              )}
+
+              <View style={styles.hpCardFooter}>
+                <Text style={styles.hpFooterText}>Börja träna →</Text>
+              </View>
             </LinearGradient>
+            <View style={styles.hpCard3dBottom} />
           </TouchableOpacity>
         </SlideInView>
 
@@ -1051,84 +1058,132 @@ const styles = StyleSheet.create({
   },
   hpCard: {
     marginHorizontal: 24,
-    marginBottom: 24,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
+    marginBottom: 28,
+    borderRadius: 24,
+    overflow: 'visible' as const,
+    shadowColor: '#4338CA',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 12,
   },
   hpCardGradient: {
-    padding: 20,
+    padding: 24,
+    paddingBottom: 20,
+    borderRadius: 24,
+    overflow: 'hidden',
     position: 'relative' as const,
+    minHeight: 220,
   },
-  hpCardContent: {
+  hpCardInnerShadow: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  hpCardDecoCircle1: {
+    position: 'absolute' as const,
+    top: -30,
+    right: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  hpCardDecoCircle2: {
+    position: 'absolute' as const,
+    bottom: -20,
+    left: -20,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  hpCard3dBottom: {
+    position: 'absolute' as const,
+    bottom: -5,
+    left: 6,
+    right: 6,
+    height: 14,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+    backgroundColor: '#3730A3',
+    zIndex: -1,
+  },
+  hpCardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  hpCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 14,
+    marginBottom: 16,
+    zIndex: 1,
   },
   hpIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  hpCardInfo: {
-    flex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   hpCardTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
+    fontSize: 24,
+    fontWeight: '800' as const,
     color: 'white',
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: -0.5,
+    zIndex: 1,
   },
   hpCardSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.85)',
-    lineHeight: 18,
-  },
-  hpCardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.15)',
-  },
-  hpMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  hpMetaDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    marginHorizontal: 10,
-  },
-  hpMetaText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
+    fontSize: 14,
     color: 'rgba(255,255,255,0.8)',
+    lineHeight: 20,
+    marginBottom: 16,
+    zIndex: 1,
+  },
+  hpCardChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 18,
+    zIndex: 1,
+  },
+  hpChip: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  hpChipText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: 'rgba(255,255,255,0.9)',
+    letterSpacing: 0.5,
+  },
+  hpCardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
+    paddingTop: 14,
+    zIndex: 1,
+  },
+  hpFooterText: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: 'white',
+    letterSpacing: 0.3,
   },
   hpPremiumBadge: {
-    position: 'absolute' as const,
-    top: 12,
-    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,

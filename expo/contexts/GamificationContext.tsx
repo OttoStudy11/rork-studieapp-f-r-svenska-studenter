@@ -483,7 +483,7 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
         });
         
         if (transactionError) {
-          console.error('❌ Error recording point_transaction:', transactionError);
+          console.error('❌ Error recording point_transaction:', JSON.stringify(transactionError, null, 2));
         } else {
           console.log('✅ point_transaction recorded successfully');
         }

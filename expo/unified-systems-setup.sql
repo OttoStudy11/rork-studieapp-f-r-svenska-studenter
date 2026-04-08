@@ -479,6 +479,8 @@ CREATE POLICY "upa_update" ON user_points_adjustments FOR UPDATE USING (auth.uid
 -- 10. FUNCTIONS: Achievement checking
 -- ============================================================
 
+DROP FUNCTION IF EXISTS check_user_achievements(UUID);
+
 CREATE OR REPLACE FUNCTION check_user_achievements(p_user_id UUID)
 RETURNS TABLE(
   achievement_id UUID,
@@ -488,7 +490,7 @@ RETURNS TABLE(
   icon TEXT,
   xp_reward INTEGER,
   achievements JSONB
-) AS $$
+) AS $
 DECLARE
   v_total_study_time INTEGER;
   v_total_sessions INTEGER;

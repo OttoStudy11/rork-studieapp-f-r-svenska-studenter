@@ -1262,11 +1262,11 @@ function PaywallStep({ offerings, selectedPkg, setSelectedPkg, isPurchasing, isR
           <Text style={styles.legalLink}>{isRestoringPurchase ? 'Återställer...' : 'Återställ köp'}</Text>
         </TouchableOpacity>
         <Text style={styles.legalSep}>·</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/terms' as any)}>
           <Text style={styles.legalLink}>Villkor</Text>
         </TouchableOpacity>
         <Text style={styles.legalSep}>·</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/privacy-policy' as any)}>
           <Text style={styles.legalLink}>Integritetspolicy</Text>
         </TouchableOpacity>
       </View>

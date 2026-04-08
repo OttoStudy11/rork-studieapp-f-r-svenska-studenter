@@ -120,6 +120,8 @@ function AppContent() {
         <Stack.Screen name="study-plan/[examId]" options={{ headerShown: false }} />
         <Stack.Screen name="math-chat" options={{ headerShown: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="general-chat" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
+        <Stack.Screen name="terms" options={{ headerShown: false }} />
       </Stack>
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>

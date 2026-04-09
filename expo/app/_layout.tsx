@@ -3,8 +3,6 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
-import { useOTAUpdates } from "@/hooks/useOTAUpdates";
-import { UpdateScreen } from "@/components/UpdateScreen";
 import * as Notifications from 'expo-notifications';
 import { NotificationManager } from '@/lib/notification-manager';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -133,8 +131,6 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const { isBlocking, statusMessage } = useOTAUpdates();
-
   useEffect(() => {
     void NotificationManager.initialize();
     
@@ -151,10 +147,6 @@ export default function RootLayout() {
       responseListener.remove();
     };
   }, []);
-
-  if (isBlocking) {
-    return <UpdateScreen statusMessage={statusMessage} />;
-  }
 
   return (
     <ErrorBoundary>

@@ -28,7 +28,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CoursePickerModal, { UnifiedCourse } from '@/components/CoursePickerModal';
-import type { Course as ProgramCourse } from '@/home/project/constants/program-courses';
+import type { Course as ProgramCourse } from '@/constants/program-courses';
 
 const { width } = Dimensions.get('window');
 

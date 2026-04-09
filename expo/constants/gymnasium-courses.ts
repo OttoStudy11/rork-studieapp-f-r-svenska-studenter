@@ -1,8 +1,8 @@
 import { GYMNASIUM_PROGRAM_MAPPING, GYMNASIUM_PROGRAMS, type GymnasiumProgram } from './gymnasium-programs';
-import { programCourses } from '../home/project/constants/program-courses';
+import { programCourses } from './program-courses';
 import type { Gymnasium } from './gymnasiums';
 
-export type { Course } from '../home/project/constants/program-courses';
+export type { Course } from './program-courses';
 
 export interface GymnasiumCourse {
   id: string;

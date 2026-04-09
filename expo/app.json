@@ -2,7 +2,7 @@
   "expo": {
     "name": "StudieStugan",
     "slug": "studieapp-for-svenska-studenter",
-    "version": "1.6.2",
+    "version": "1.6.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "1.6.2",
+      "buildNumber": "1.6.3",
       "bundleIdentifier": "app.rork.studieapp-for-svenska-studenter",
       "infoPlist": {
         "UIBackgroundModes": [
@@ -30,7 +30,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.rorkapp.mobile",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
@@ -67,6 +67,9 @@
         }
       ]
     ],
+    "updates": {
+      "enabled": false
+    },
     "experiments": {
       "typedRoutes": true
     }

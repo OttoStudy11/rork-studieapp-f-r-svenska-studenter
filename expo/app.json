@@ -2,7 +2,7 @@
   "expo": {
     "name": "StudieStugan",
     "slug": "studieapp-for-svenska-studenter",
-    "version": "1.6.3",
+    "version": "1.6.7",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "1.6.3",
+      "buildNumber": "1.6.7",
       "bundleIdentifier": "app.rork.studieapp-for-svenska-studenter",
       "infoPlist": {
         "UIBackgroundModes": [

@@ -87,7 +87,7 @@ export default function HPStudyPlanScreen() {
   } = useHPStudyPlan();
 
   const [tab, setTab] = useState<ViewTab>('today');
-  const [selectedDate, setSelectedDate] = useState<HPDateKey>('spring2026');
+  const [selectedDate, setSelectedDate] = useState<HPDateKey>('fall2026');
   const [fadeAnim] = useState(new Animated.Value(0));
   const [progressAnims] = useState({
     ord: new Animated.Value(0),
@@ -401,9 +401,9 @@ function PlanSelectionView({
       </LinearGradient>
 
       <ScrollView contentContainerStyle={selStyles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={[selStyles.sectionLabel, { color: theme.colors.text }]}>Välj provtillfälle</Text>
+        <Text style={[selStyles.sectionLabel, { color: theme.colors.text }]}>Nästa provtillfälle</Text>
         <View style={selStyles.dateRow}>
-          {(['spring2026', 'fall2026'] as HPDateKey[]).map(key => {
+          {(['fall2026'] as HPDateKey[]).map(key => {
             const active = selectedDate === key;
             return (
               <AnimatedPressable
@@ -425,12 +425,12 @@ function PlanSelectionView({
                     elevation: 8,
                   },
                 ]}>
-                  <Text style={{ fontSize: 24, marginBottom: 8 }}>{key === 'spring2026' ? '🌸' : '🍂'}</Text>
+                  <Text style={{ fontSize: 24, marginBottom: 8 }}>🍂</Text>
                   <Text style={[selStyles.datePillTitle, { color: active ? '#FFF' : theme.colors.text }]}>
-                    {key === 'spring2026' ? 'Vår 2026' : 'Höst 2026'}
+                    Höst 2026
                   </Text>
                   <Text style={[selStyles.datePillSub, { color: active ? 'rgba(255,255,255,0.75)' : theme.colors.textSecondary }]}>
-                    {key === 'spring2026' ? '18 april' : '18 oktober'}
+                    18 oktober
                   </Text>
                   {active && (
                     <View style={selStyles.dateActiveCheck}>

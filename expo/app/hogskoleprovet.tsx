@@ -59,10 +59,7 @@ function HPCountdownCard({
   theme: any;
 }) {
   const planConfig = plan ? PLAN_CONFIGS.find((c: any) => c.type === plan.planType) : null;
-  const isSpring = daysUntil <= 230;
-  const nextHP = isSpring
-    ? { label: 'Vår 2026 · 18 april', icon: '🌸' }
-    : { label: 'Höst 2026 · 18 oktober', icon: '🍂' };
+  const nextHP = { label: 'Höst 2026 · 18 oktober', icon: '🍂' };
 
   const urgencyColor = daysUntil >= 60 ? '#10B981' : daysUntil >= 30 ? '#F97316' : '#EF4444';
 

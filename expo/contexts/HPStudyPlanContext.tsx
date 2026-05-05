@@ -5,15 +5,13 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 export type HPPlanType = 'LUGN' | 'BALANSERAD' | 'INTENSIV';
-export type HPDateKey = 'spring2026' | 'fall2026';
+export type HPDateKey = 'fall2026';
 
 export const HP_EXAM_DATES: Record<HPDateKey, Date> = {
-  spring2026: new Date('2026-04-18T09:00:00'),
   fall2026: new Date('2026-10-18T09:00:00'),
 };
 
 export const HP_DATE_LABELS: Record<HPDateKey, string> = {
-  spring2026: 'Vår 2026 · 18 april',
   fall2026: 'Höst 2026 · 18 oktober',
 };
 
@@ -185,8 +183,15 @@ export const [HPStudyPlanProvider, useHPStudyPlan] = createContextHook(() => {
       ]);
       if (planStr) {
         const parsed = JSON.parse(planStr) as HPStudyPlan;
-        setPlan(parsed);
-        console.log('[HPStudyPlan] Loaded plan:', parsed.planType, parsed.hpDateKey);
+        const migratedPlan: HPStudyPlan = {
+          ...parsed,
+          hpDateKey: HP_EXAM_DATES[parsed.hpDateKey] ? parsed.hpDateKey : 'fall2026',
+        };
+        if (migratedPlan.hpDateKey !== parsed.hpDateKey) {
+          await AsyncStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(migratedPlan));
+        }
+        setPlan(migratedPlan);
+        console.log('[HPStudyPlan] Loaded plan:', migratedPlan.planType, migratedPlan.hpDateKey);
       }
       if (progressStr) {
         const parsed = JSON.parse(progressStr) as HPStudyProgress;
@@ -388,7 +393,7 @@ export const [HPStudyPlanProvider, useHPStudyPlan] = createContextHook(() => {
   }, [progress]);
 
   const getDaysUntilHP = useCallback((): number => {
-    if (!plan) return getDaysUntil(HP_EXAM_DATES.spring2026);
+    if (!plan) return getDaysUntil(HP_EXAM_DATES.fall2026);
     return getDaysUntil(HP_EXAM_DATES[plan.hpDateKey]);
   }, [plan]);
 

@@ -51,11 +51,26 @@ interface Phase {
   focus: string;
 }
 
+interface ExamOverview {
+  subject: string;
+  keyTopics: string[];
+  gradeGoal: string;
+  skolverketKrav: string;
+  examStrategy: string;
+}
+
 interface StudyPlanData {
+  examOverview?: ExamOverview;
   overview: string;
   phases: Phase[];
   dailyPlan: DailyPlan[];
   examDayTips: string[];
+}
+
+interface ExamMeta {
+  subject?: string;
+  topics?: string;
+  gradeGoal?: string;
 }
 
 interface StoredPlan {
@@ -112,6 +127,18 @@ const getCountdownColor = (days: number): { color: string; bg: string } => {
   return { color: '#EF4444', bg: '#EF444420' };
 };
 
+const getGradeGoalColor = (gradeGoal: string): string => {
+  switch (gradeGoal?.toUpperCase()) {
+    case 'A': return '#8B5CF6';
+    case 'B': return '#6366F1';
+    case 'C': return '#3B82F6';
+    case 'D': return '#0EA5E9';
+    case 'E': return '#10B981';
+    case 'VG': case 'MVG': return '#8B5CF6';
+    default: return '#3B82F6';
+  }
+};
+
 export default function StudyPlanScreen() {
   const { examId, courseTitle: paramCourseTitle } = useLocalSearchParams<{ examId: string; courseTitle?: string }>();
   const { theme, isDark } = useTheme();
@@ -128,6 +155,13 @@ export default function StudyPlanScreen() {
   const loadingPulse = useRef(new Animated.Value(0.4)).current;
 
   const exam = examId ? getExamById(examId) : undefined;
+
+  const examMeta: ExamMeta | null = (() => {
+    if (!exam?.notes) return null;
+    try {
+      return JSON.parse(exam.notes) as ExamMeta;
+    } catch { return null; }
+  })();
 
   const daysUntilExam = exam
     ? Math.max(0, Math.ceil((exam.examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
@@ -269,41 +303,73 @@ export default function StudyPlanScreen() {
       return d.toISOString().split('T')[0];
     });
 
-    const systemPrompt = `Du är en expert på studieplanering för svenska gymnasie- och högskolestudenter. Du känner till Skolverkets kunskapskrav och betygskriterier. Generera en detaljerad studieplan i JSON-format.
+    const subject = examMeta?.subject || courseTitle;
+    const topics = examMeta?.topics || exam.description || 'Hela kursen';
+    const gradeGoal = examMeta?.gradeGoal || 'C';
 
-Returnera ENBART ett JSON-objekt utan markdown eller förklaringar:
+    const GRADE_GUIDANCE: Record<string, string> = {
+      E: 'Fokusera på grundl\u00e4ggande f\u00f6rst\u00e5else, definitioner och enklare till\u00e4mpningar. E-niv\u00e5 kr\u00e4ver att eleven kan beskriva, redogöra och utf\u00f6ra rutinm\u00e4ssiga uppgifter.',
+      C: 'Bygg p\u00e5 E-niv\u00e5 med djupare analys och sj\u00e4lvst\u00e4ndig till\u00e4mpning. C-niv\u00e5 kr\u00e4ver att eleven kan f\u00f6rklara samband, j\u00e4mf\u00f6ra och anv\u00e4nda kunskaper i varierande situationer.',
+      A: 'Str\u00e4va efter nyanserad syntes och v\u00e4rdering. A-niv\u00e5 kr\u00e4ver att eleven kan analysera komplexa samband, generalisera, kritiskt granska och skapa v\u00e4lmotiverade slutsatser.',
+    };
+
+    const systemPrompt = `Du \u00e4r en expert p\u00e5 Skolverkets l\u00e4roplan (Gy11/Gy23, Lgr22) och svenska gymnasiekurser. Du k\u00e4nner till exakta kunskapskrav och betygskriterier (A\u2013F) f\u00f6r alla gymnasiekurser och grundskolans \u00e4mnen.
+
+UPPGIFT: Generera en detaljerad, kursspecifik studieplan i JSON-format.
+
+KURS/\u00c4MNE: ${subject}
+PROVINNEH\u00c5LL: ${topics}
+BETYGSM\u00c5L: ${gradeGoal}
+BETYGSSTRATEGI: ${GRADE_GUIDANCE[gradeGoal] || GRADE_GUIDANCE['C']}
+
+INSTRUKTIONER:
+1. Basera varje dags uppgifter p\u00e5 FAKTISKA Skolverkets kunskapskrav f\u00f6r "${subject}"
+2. Anpassa uppgifternas sv\u00e5righetsgrad progressivt mot betygsniv\u00e5 ${gradeGoal}
+3. Fokusera SPECIFIKT p\u00e5 provinneh\u00e5llet: ${topics}
+4. Strukturera faserna: F\u00f6rst\u00e5else (E-niv\u00e5) \u2192 Till\u00e4mpning (C-niv\u00e5) \u2192 Syntes/Analys (A-niv\u00e5) \u2192 Repetition
+5. Ge KONKRETA uppgifter med specifika begrepp, problem eller moment fr\u00e5n kursen
+6. Ref. skolverket.se/undervisning f\u00f6r kunskapskrav
+
+Returnera ENBART ett JSON-objekt utan markdown:
 {
-  "overview": "kort motiverande text 1-2 meningar",
+  "examOverview": {
+    "subject": "${subject}",
+    "keyTopics": ["\u00e4mne1", "\u00e4mne2", "\u00e4mne3", "\u00e4mne4"],
+    "gradeGoal": "${gradeGoal}",
+    "skolverketKrav": "Sammanfattning i 2 meningar av de relevanta kunskapskrav fr\u00e5n Skolverket som detta prov pr\u00f6var f\u00f6r betyg ${gradeGoal}",
+    "examStrategy": "Konkret strategi (2-3 meningar) f\u00f6r att n\u00e5 betyg ${gradeGoal} p\u00e5 just detta prov med detta inneh\u00e5ll"
+  },
+  "overview": "kort motiverande text 1-2 meningar anpassad till kursen och betygsmålet",
   "phases": [
     {
       "name": "fasnamn",
-      "days": "dag X–Y",
-      "focus": "vad fokuseras på denna fas"
+      "days": "dag X\u2013Y",
+      "focus": "vad fokuseras p\u00e5 med koppling till kunskapskrav"
     }
   ],
   "dailyPlan": [
     {
       "day": 1,
       "date": "YYYY-MM-DD",
-      "theme": "dagens tema",
-      "technique": "studieteknik att använda (t.ex. Pomodoro, Feynman, Cornell-anteckningar, Spaced Repetition)",
-      "techniqueReason": "varför denna teknik passar idag",
+      "theme": "specifikt tema ur kursinneh\u00e5llet",
+      "technique": "studieteknik (Pomodoro, Feynman, Cornell, Spaced Repetition, Active Recall, Mindmap)",
+      "techniqueReason": "varf\u00f6r denna teknik passar f\u00f6r detta specifika inneh\u00e5ll",
       "tasks": [
         {
-          "title": "uppgiftstitel",
-          "description": "vad eleven ska göra konkret",
+          "title": "specifik uppgiftstitel ur kursinneh\u00e5llet",
+          "description": "vad eleven ska g\u00f6ra konkret, med specifika begrepp/moment fr\u00e5n kursen",
           "duration": 45,
-          "type": "läsning | övning | repetition | sammanfattning | flashcards | provförberedelse"
+          "type": "l\u00e4sning | \u00f6vning | repetition | sammanfattning | flashcards | provf\u00f6rberedelse"
         }
       ],
-      "skolverketFocus": "vilket kunskapskrav från Skolverket som tränas (t.ex. E-nivå grundförståelse, C-nivå analys, A-nivå syntes)",
-      "motivationTip": "kort motiverande tips för dagen"
+      "skolverketFocus": "Specifikt kunskapskrav fr\u00e5n Skolverket som tr\u00e4nas, t.ex. 'C-niv\u00e5: eleven kan analysera och f\u00f6rklara samband i ${subject}'",
+      "motivationTip": "kort konkret tips f\u00f6r dagen"
     }
   ],
-  "examDayTips": ["tip1", "tip2", "tip3"]
+  "examDayTips": ["specifikt tip1 f\u00f6r ${subject}-prov", "tip2", "tip3"]
 }`;
 
-    const userMessage = `Skapa en studieplan för kursen "${courseTitle}" med provet "${exam.title}" om ${daysLeft} dagar. Datum för varje dag: ${dates.join(', ')}. Skapa en plan för varje dag från idag till dagen innan provet (max 30 dagar). Inkludera varierade studietekniker och Skolverket-kopplingar.`;
+    const userMessage = `Skapa en studieplan f\u00f6r \u00e4mnet "${subject}" med provet "${exam.title}" om ${daysLeft} dagar. Provinneh\u00e5ll: ${topics}. Betygsmål: ${gradeGoal}. Datum: ${dates.join(', ')}. Skapa KURSSPECIFIKA uppgifter med konkreta moment fr\u00e5n Skolverkets kunskapskrav f\u00f6r ${subject}. Anpassa svårighetsnivå progressivt mot betyg ${gradeGoal}.`;
 
     try {
       console.log('Generating study plan with AI...');
@@ -476,6 +542,47 @@ Returnera ENBART ett JSON-objekt utan markdown eller förklaringar:
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
           >
+            {/* Exam Overview Card */}
+            {plan.examOverview && (
+              <View style={[styles.examOverviewCard, { backgroundColor: isDark ? '#1a1f3a' : '#F0F4FF' }]}>
+                <View style={styles.examOverviewHeader}>
+                  <View style={[styles.examOverviewSubjectBadge, { backgroundColor: theme.colors.primary }]}>
+                    <Text style={styles.examOverviewSubjectText} numberOfLines={1}>
+                      {plan.examOverview.subject}
+                    </Text>
+                  </View>
+                  <View style={[styles.gradeGoalBadge, { backgroundColor: getGradeGoalColor(plan.examOverview.gradeGoal) + '20', borderColor: getGradeGoalColor(plan.examOverview.gradeGoal) }]}>
+                    <Text style={[styles.gradeGoalBadgeText, { color: getGradeGoalColor(plan.examOverview.gradeGoal) }]}>
+                      Mål: {plan.examOverview.gradeGoal}
+                    </Text>
+                  </View>
+                </View>
+
+                {plan.examOverview.keyTopics && plan.examOverview.keyTopics.length > 0 && (
+                  <View style={styles.keyTopicsSection}>
+                    <Text style={[styles.examOverviewSectionLabel, { color: theme.colors.textSecondary }]}>PROVINNEHÅLL</Text>
+                    <View style={styles.keyTopicsRow}>
+                      {plan.examOverview.keyTopics.map((topic, i) => (
+                        <View key={i} style={[styles.topicChip, { backgroundColor: theme.colors.primary + '12', borderColor: theme.colors.primary + '30' }]}>
+                          <Text style={[styles.topicChipText, { color: theme.colors.primary }]}>{topic}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                <View style={[styles.skolverketKravBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }]}>
+                  <Text style={[styles.examOverviewSectionLabel, { color: theme.colors.textSecondary }]}>SKOLVERKETS KUNSKAPSKRAV</Text>
+                  <Text style={[styles.skolverketKravText, { color: theme.colors.text }]}>{plan.examOverview.skolverketKrav}</Text>
+                </View>
+
+                <View style={[styles.strategyBox, { backgroundColor: getGradeGoalColor(plan.examOverview.gradeGoal) + '10', borderColor: getGradeGoalColor(plan.examOverview.gradeGoal) + '30' }]}>
+                  <Text style={[styles.examOverviewSectionLabel, { color: getGradeGoalColor(plan.examOverview.gradeGoal) }]}>STRATEGI FÖR BETYG {plan.examOverview.gradeGoal}</Text>
+                  <Text style={[styles.strategyText, { color: theme.colors.text }]}>{plan.examOverview.examStrategy}</Text>
+                </View>
+              </View>
+            )}
+
             <View style={[styles.overviewCard, { backgroundColor: theme.colors.card }]}>
               <View style={[styles.overviewIcon, { backgroundColor: theme.colors.primary + '15' }]}>
                 <Lightbulb size={22} color={theme.colors.primary} />
@@ -1069,6 +1176,94 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
     lineHeight: 19,
     fontStyle: 'italic',
+  },
+  examOverviewCard: {
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    gap: 14,
+  },
+  examOverviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  examOverviewSubjectBadge: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    minWidth: 0,
+  },
+  examOverviewSubjectText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '700' as const,
+    letterSpacing: -0.2,
+  },
+  gradeGoalBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  gradeGoalBadgeText: {
+    fontSize: 15,
+    fontWeight: '800' as const,
+    letterSpacing: 0.2,
+  },
+  keyTopicsSection: {
+    gap: 8,
+  },
+  examOverviewSectionLabel: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    marginBottom: 4,
+  },
+  keyTopicsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  topicChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  topicChipText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  skolverketKravBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    gap: 4,
+  },
+  skolverketKravText: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontWeight: '500' as const,
+  },
+  strategyBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    gap: 4,
+  },
+  strategyText: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontWeight: '500' as const,
   },
   examTipsCard: {
     borderRadius: 16,

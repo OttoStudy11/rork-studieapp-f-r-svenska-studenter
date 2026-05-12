@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Alert
 } from 'react-native';
-import { X, Calendar, Clock, AlertCircle } from 'lucide-react-native';
+import { X, Calendar, Clock, AlertCircle, BookOpen, Target } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import * as Haptics from 'expo-haptics';
@@ -39,6 +39,31 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
   const [importance, setImportance] = useState<'low' | 'medium' | 'high'>('medium');
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [topics, setTopics] = useState('');
+  const [gradeGoal, setGradeGoal] = useState<'E' | 'C' | 'A'>('C');
+
+  const COMMON_SUBJECTS = [
+    'Matematik 1a', 'Matematik 1b', 'Matematik 1c',
+    'Matematik 2a', 'Matematik 2b', 'Matematik 2c',
+    'Matematik 3b', 'Matematik 3c', 'Matematik 4', 'Matematik 5',
+    'Svenska 1', 'Svenska 2', 'Svenska 3',
+    'Engelska 5', 'Engelska 6', 'Engelska 7',
+    'Historia 1a1', 'Historia 1b', 'Historia 2a', 'Historia 2b',
+    'Samhällskunskap 1a1', 'Samhällskunskap 1b', 'Samhällskunskap 2',
+    'Biologi 1', 'Biologi 2',
+    'Kemi 1', 'Kemi 2',
+    'Fysik 1a', 'Fysik 1b', 'Fysik 2',
+    'Geografi 1', 'Religionskunskap 1', 'Filosofi 1', 'Psykologi 1',
+    'Naturkunskap 1a1', 'Naturkunskap 1b', 'Naturkunskap 2',
+    'Ekonomi',
+  ];
+
+  const gradeGoals = [
+    { value: 'E' as const, label: 'E', desc: 'Godkänt', color: '#10B981' },
+    { value: 'C' as const, label: 'C', desc: 'Bra', color: '#3B82F6' },
+    { value: 'A' as const, label: 'A', desc: 'Topp', color: '#8B5CF6' },
+  ];
 
   const examTypes = [
     { value: 'written' as const, label: 'Skriftligt', icon: '📝' },
@@ -88,6 +113,12 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
         status: 'scheduled'
       });
 
+      const examNotes = JSON.stringify({
+        subject: subject.trim(),
+        topics: topics.trim(),
+        gradeGoal,
+      });
+
       await addExam({
         courseId: courseId,
         title: title.trim(),
@@ -98,7 +129,8 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
         examType,
         status: 'scheduled',
         notificationEnabled: true,
-        notificationTimeBeforeMinutes: 1440
+        notificationTimeBeforeMinutes: 1440,
+        notes: examNotes,
       });
 
       console.log('✅ Exam added successfully');
@@ -112,6 +144,9 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
       setExamType('written');
       setImportance('medium');
       setNotificationEnabled(true);
+      setSubject('');
+      setTopics('');
+      setGradeGoal('C');
       
       Alert.alert('Klart!', 'Provet har lagts till i din planering', [
         { text: 'OK', onPress: onClose }
@@ -191,20 +226,115 @@ export default function AddExamModal({ visible, onClose, courseId, courseTitle }
               />
             </View>
 
+            {/* Subject & Exam Content */}
+            <View style={[styles.sectionBox, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+              <View style={styles.sectionBoxHeader}>
+                <BookOpen size={16} color={theme.colors.primary} />
+                <Text style={[styles.sectionBoxTitle, { color: theme.colors.text }]}>Provinnehåll</Text>
+                <Text style={[styles.sectionBoxBadge, { backgroundColor: theme.colors.primary + '15', color: theme.colors.primary }]}>Förbättrar studieplanen</Text>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: theme.colors.text }]}>Ämne / Kurs</Text>
+                <TextInput
+                  style={[styles.input, { 
+                    backgroundColor: theme.colors.background,
+                    color: theme.colors.text,
+                    borderColor: theme.colors.border
+                  }]}
+                  placeholder="T.ex. Matematik 1a, Biologi 2, Svenska 3"
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={subject}
+                  onChangeText={setSubject}
+                />
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.subjectChipsScroll}
+                  contentContainerStyle={styles.subjectChipsContent}
+                >
+                  {COMMON_SUBJECTS.filter(s =>
+                    subject === '' || s.toLowerCase().includes(subject.toLowerCase())
+                  ).slice(0, 12).map((s) => (
+                    <TouchableOpacity
+                      key={s}
+                      style={[
+                        styles.subjectChip,
+                        {
+                          backgroundColor: subject === s ? theme.colors.primary : theme.colors.background,
+                          borderColor: subject === s ? theme.colors.primary : theme.colors.border,
+                        }
+                      ]}
+                      onPress={() => setSubject(subject === s ? '' : s)}
+                    >
+                      <Text style={[
+                        styles.subjectChipText,
+                        { color: subject === s ? 'white' : theme.colors.textSecondary }
+                      ]}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: theme.colors.text }]}>Vad ingår i provet?</Text>
+                <TextInput
+                  style={[styles.textArea, { 
+                    backgroundColor: theme.colors.background,
+                    color: theme.colors.text,
+                    borderColor: theme.colors.border
+                  }]}
+                  placeholder="T.ex. Kapitel 3–6, derivata, integraler, sannolikhetslära..."
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={topics}
+                  onChangeText={setTopics}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={[styles.inputGroup, { marginBottom: 0 }]}>
+                <View style={styles.gradeLabelRow}>
+                  <Target size={14} color={theme.colors.textSecondary} />
+                  <Text style={[styles.label, { color: theme.colors.text, marginBottom: 0 }]}>Betygsmål</Text>
+                </View>
+                <View style={styles.gradeGoalRow}>
+                  {gradeGoals.map((g) => (
+                    <TouchableOpacity
+                      key={g.value}
+                      style={[
+                        styles.gradeGoalBtn,
+                        {
+                          backgroundColor: gradeGoal === g.value ? g.color + '18' : theme.colors.background,
+                          borderColor: gradeGoal === g.value ? g.color : theme.colors.border,
+                          borderWidth: gradeGoal === g.value ? 2 : 1,
+                        }
+                      ]}
+                      onPress={() => setGradeGoal(g.value)}
+                    >
+                      <Text style={[styles.gradeGoalLetter, { color: gradeGoal === g.value ? g.color : theme.colors.text }]}>{g.label}</Text>
+                      <Text style={[styles.gradeGoalDesc, { color: gradeGoal === g.value ? g.color : theme.colors.textMuted }]}>{g.desc}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: theme.colors.text }]}>Beskrivning</Text>
+              <Text style={[styles.label, { color: theme.colors.text }]}>Anteckningar (valfritt)</Text>
               <TextInput
                 style={[styles.textArea, { 
                   backgroundColor: theme.colors.card,
                   color: theme.colors.text,
                   borderColor: theme.colors.border
                 }]}
-                placeholder="Lägg till eventuell beskrivning..."
+                placeholder="Lägg till eventuella anteckningar..."
                 placeholderTextColor={theme.colors.textMuted}
                 value={description}
                 onChangeText={setDescription}
                 multiline
-                numberOfLines={3}
+                numberOfLines={2}
                 textAlignVertical="top"
               />
             </View>
@@ -547,6 +677,74 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500' as const,
     flex: 1,
+  },
+  sectionBox: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 20,
+    gap: 0,
+  },
+  sectionBoxHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  sectionBoxTitle: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    flex: 1,
+  },
+  sectionBoxBadge: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  subjectChipsScroll: {
+    marginTop: 8,
+  },
+  subjectChipsContent: {
+    gap: 8,
+    paddingBottom: 4,
+  },
+  subjectChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  subjectChipText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  gradeLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  gradeGoalRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  gradeGoalBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 3,
+  },
+  gradeGoalLetter: {
+    fontSize: 22,
+    fontWeight: '800' as const,
+    lineHeight: 26,
+  },
+  gradeGoalDesc: {
+    fontSize: 11,
+    fontWeight: '600' as const,
   },
   infoBox: {
     flexDirection: 'row',

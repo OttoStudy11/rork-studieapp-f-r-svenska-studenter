@@ -22,7 +22,7 @@ export interface User {
   username: string;
   displayName: string;
   email: string;
-  studyLevel: 'gymnasie' | 'högskola';
+  studyLevel: 'gymnasie' | 'högskola' | 'komvux';
   program: string;
   purpose: string;
   avatar?: AvatarConfig;
@@ -32,6 +32,7 @@ export interface User {
   gymnasium?: Gymnasium | null;
   gymnasiumGrade?: string | null;
   universityYear?: string | null;
+  komvuxYear?: string | null;
   dailyGoalHours?: number;
 }
 
@@ -73,7 +74,12 @@ export interface StudyContextType {
   isAuthenticated: boolean;
   
   // User actions
-  completeOnboarding: (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number; gymnasiumGrade?: string | null; universityYear?: string | null; universityProgramId?: string }) => Promise<void>;
+  completeOnboarding: (userData: Omit<User, 'id' | 'onboardingCompleted'> & { selectedCourses?: string[]; dailyGoalHours?: number; gymnasiumGrade?: string | null; universityYear?: string | null; universityProgramId?: string; komvuxCourses?: string[]; komvuxYear?: string | null }) => Promise<void>;
+  
+  // Course enrollment
+  enrollCourse: (courseId: string, courseData: Omit<Course, 'id'>) => Promise<void>;
+  leaveCourse: (courseId: string) => Promise<void>;
+  updateCourseProgress: (courseId: string, progress: number) => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   
   // Course actions
@@ -196,6 +202,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       updateUser: async () => {},
       addCourse: async () => {},
       updateCourse: async () => {},
+      enrollCourse: async () => {},
+      leaveCourse: async () => {},
+      updateCourseProgress: async () => {},
       addNote: async () => {},
       updateNote: async () => {},
       deleteNote: async () => {},
@@ -643,6 +652,53 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
           console.warn('Missing universityProgramId or universityYear, cannot assign courses');
           courses = [];
         }
+      } else if (userData.studyLevel === 'komvux' && userData.komvuxCourses && userData.komvuxCourses.length > 0) {
+        // Handle Komvux course enrollment
+        console.log('🏫 Creating Komvux courses:', userData.komvuxCourses);
+        const { KOMVUX_COURSES } = await import('@/constants/komvux-courses');
+        const selectedKomvuxCourses = KOMVUX_COURSES.filter(c => userData.komvuxCourses!.includes(c.id));
+
+        courses = selectedKomvuxCourses.map(course => ({
+          id: `komvux-${course.code}`,
+          title: course.name,
+          description: `${course.name} · ${course.points} poäng`,
+          subject: course.subject,
+          level: 'komvux' as any,
+          progress: 0,
+          isActive: true,
+          resources: ['Kursmaterial', 'Övningsuppgifter'],
+          tips: ['Studera regelbündet', 'Använd StudieStugan varje dag'],
+          relatedCourses: [],
+        }));
+
+        // Sync to Supabase
+        try {
+          for (const course of selectedKomvuxCourses) {
+            const courseId = `komvux-${course.code}`;
+            await supabase.from('courses').upsert({
+              id: courseId,
+              title: course.name,
+              description: `${course.name} · ${course.points} poäng`,
+              subject: course.subject,
+              level: 'komvux',
+              resources: ['Kursmaterial'],
+              tips: ['Studera regelbündet'],
+              related_courses: [],
+              progress: 0,
+            }, { onConflict: 'id' });
+
+            await supabase.from('user_courses').upsert({
+              id: `${authUser.id}-${courseId}`,
+              user_id: authUser.id,
+              course_id: courseId,
+              progress: 0,
+              is_active: true,
+            }, { onConflict: 'id' });
+          }
+          console.log('✅ Komvux courses synced to Supabase');
+        } catch (err) {
+          console.warn('Could not sync Komvux courses to Supabase:', err);
+        }
       } else {
         // Use default sample courses
         courses = userData.studyLevel === 'gymnasie' ? [
@@ -763,6 +819,64 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       throw error;
     }
   }, [user, authUser]);
+
+  const enrollCourse = useCallback(async (courseId: string, courseData: Omit<Course, 'id'>) => {
+    if (!authUser) return;
+    // Prevent duplicate enrollments
+    if (courses.find(c => c.id === courseId)) return;
+    const newCourse: Course = { ...courseData, id: courseId };
+    setCourses(prev => [...prev, newCourse]);
+    try {
+      await supabase.from('courses').upsert({
+        id: courseId,
+        title: courseData.title,
+        description: courseData.description,
+        subject: courseData.subject,
+        level: courseData.level,
+        resources: courseData.resources,
+        tips: courseData.tips,
+        related_courses: courseData.relatedCourses,
+        progress: 0,
+      }, { onConflict: 'id' });
+      await supabase.from('user_courses').upsert({
+        id: `${authUser.id}-${courseId}`,
+        user_id: authUser.id,
+        course_id: courseId,
+        progress: 0,
+        is_active: true,
+      }, { onConflict: 'id' });
+    } catch (err) {
+      console.warn('enrollCourse sync failed:', err);
+    }
+  }, [authUser, courses]);
+
+  const leaveCourse = useCallback(async (courseId: string) => {
+    if (!authUser) return;
+    setCourses(prev => prev.filter(c => c.id !== courseId));
+    try {
+      await supabase
+        .from('user_courses')
+        .update({ is_active: false })
+        .eq('user_id', authUser.id)
+        .eq('course_id', courseId);
+    } catch (err) {
+      console.warn('leaveCourse sync failed:', err);
+    }
+  }, [authUser]);
+
+  const updateCourseProgress = useCallback(async (courseId: string, progress: number) => {
+    if (!authUser) return;
+    setCourses(prev => prev.map(c => c.id === courseId ? { ...c, progress } : c));
+    try {
+      await supabase
+        .from('user_courses')
+        .update({ progress })
+        .eq('user_id', authUser.id)
+        .eq('course_id', courseId);
+    } catch (err) {
+      console.warn('updateCourseProgress sync failed:', err);
+    }
+  }, [authUser]);
 
   const addCourse = useCallback(async (course: Omit<Course, 'id'>) => {
     try {
@@ -1008,6 +1122,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     updateUser,
     addCourse,
     updateCourse,
+    enrollCourse,
+    leaveCourse,
+    updateCourseProgress,
     addNote,
     updateNote,
     deleteNote,
@@ -1023,6 +1140,9 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     updateUser,
     addCourse,
     updateCourse,
+    enrollCourse,
+    leaveCourse,
+    updateCourseProgress,
     addNote,
     updateNote,
     deleteNote,

@@ -36,6 +36,7 @@ import { SWEDISH_UNIVERSITIES, UNIVERSITY_PROGRAMS } from '@/constants/universit
 import type { Gymnasium, GymnasiumGrade } from '@/constants/gymnasiums';
 import type { GymnasiumProgram } from '@/constants/gymnasium-programs';
 import { getGymnasiumCourses, type GymnasiumCourse } from '@/constants/gymnasium-courses';
+import { KOMVUX_COURSES, KOMVUX_SUBJECT_CATEGORIES, getKomvuxCoursesBySubject, type KomvuxCourse } from '@/constants/komvux-courses';
 import { MAX_COURSES } from '@/lib/course-assignment';
 import type { University, UniversityProgram, UniversityProgramYear } from '@/constants/universities';
 import type { AvatarConfig } from '@/constants/avatar-config';
@@ -106,7 +107,7 @@ const TESTIMONIALS = [
 interface OnboardingData {
   username: string;
   displayName: string;
-  studyLevel: 'gymnasie' | 'högskola' | '';
+  studyLevel: 'gymnasie' | 'högskola' | 'komvux' | '';
   gymnasium: Gymnasium | null;
   gymnasiumProgram: GymnasiumProgram | null;
   gymnasiumGrade: GymnasiumGrade | null;
@@ -183,6 +184,8 @@ export default function OnboardingScreen() {
   const progressAnim = useRef(new Animated.Value(0)).current;
   const testimonialIdx = useRef(0);
   const [testimonialDisplay, setTestimonialDisplay] = useState(0);
+
+  const [komvuxSubjectFilter, setKomvuxSubjectFilter] = useState<string>('all');
 
   const [data, setData] = useState<OnboardingData>({
     username: '',
@@ -298,6 +301,8 @@ export default function OnboardingScreen() {
       const programName =
         data.studyLevel === 'gymnasie'
           ? data.gymnasiumProgram?.name || data.program || 'Ej valt'
+          : data.studyLevel === 'komvux'
+          ? 'Komvux'
           : data.universityProgram?.name || data.program || 'Ej valt';
 
       const gym: Gymnasium = data.gymnasium || {
@@ -309,14 +314,16 @@ export default function OnboardingScreen() {
         username: data.username,
         displayName: data.displayName,
         email: authContext.user?.email || '',
-        studyLevel: data.studyLevel as 'gymnasie' | 'högskola',
+        studyLevel: data.studyLevel as 'gymnasie' | 'högskola' | 'komvux',
         program: programName,
         purpose: data.goals.join(', ') || 'Allmän studiehjälp',
         subscriptionType: 'free',
         gymnasium: gym,
         gymnasiumGrade: data.studyLevel === 'gymnasie' && data.year ? String(data.year) : null,
         universityYear: data.studyLevel === 'högskola' && data.universityYear ? String(data.universityYear) : null,
+        komvuxYear: data.studyLevel === 'komvux' ? 'Komvux' : null,
         universityProgramId: data.studyLevel === 'högskola' && data.universityProgram ? data.universityProgram.id : undefined,
+        komvuxCourses: data.studyLevel === 'komvux' ? Array.from(data.selectedCourses) : undefined,
         avatar: data.avatarConfig,
         selectedCourses: Array.from(data.selectedCourses),
         dailyGoalHours: data.dailyGoalMinutes / 60,
@@ -389,6 +396,7 @@ export default function OnboardingScreen() {
       case 'level': return data.studyLevel !== '';
       case 'school':
         if (data.studyLevel === 'gymnasie') return data.gymnasiumProgram !== null && data.year !== null;
+        if (data.studyLevel === 'komvux') return data.selectedCourses.size > 0;
         return data.universityProgram !== null && data.universityYear !== null;
       case 'problems': return data.problems.length > 0;
       case 'stress': return true;
@@ -461,6 +469,8 @@ export default function OnboardingScreen() {
           setGymnasiumSearch={setGymnasiumSearch}
           universitySearch={universitySearch}
           setUniversitySearch={setUniversitySearch}
+          komvuxSubjectFilter={komvuxSubjectFilter}
+          setKomvuxSubjectFilter={setKomvuxSubjectFilter}
           testimonialDisplay={testimonialDisplay}
           setTestimonialDisplay={setTestimonialDisplay}
           offerings={offerings}
@@ -511,6 +521,8 @@ interface StepProps {
   setGymnasiumSearch: (s: string) => void;
   universitySearch: string;
   setUniversitySearch: (s: string) => void;
+  komvuxSubjectFilter: string;
+  setKomvuxSubjectFilter: (s: string) => void;
   testimonialDisplay: number;
   setTestimonialDisplay: (n: number) => void;
   offerings: PurchasesPackage[];
@@ -658,42 +670,98 @@ function IntroStep({ }: StepProps) {
   );
 }
 
+const EDUCATION_PATHS = [
+  {
+    id: 'gymnasie',
+    label: 'Gymnasiet',
+    sub: 'Naturvetenskap, Teknik, Samhäll...',
+    emoji: '📚',
+    color: '#10B981',
+    bgColor: '#ECFDF5',
+    description: 'Välj program, kurs och lägg upp din gymnasieskolgång steg för steg.',
+  },
+  {
+    id: 'högskola',
+    label: 'Högskola / Universitet',
+    sub: 'Kandidat, Civilingenjör, Master...',
+    emoji: '🎓',
+    color: '#3B82F6',
+    bgColor: '#EFF6FF',
+    description: 'Koppla ditt program, välj termin och hämta rekommenderade kurser automatiskt.',
+  },
+  {
+    id: 'komvux',
+    label: 'Komvux',
+    sub: 'Komplettera betyg, läsa upp kurser...',
+    emoji: '🏫',
+    color: '#F59E0B',
+    bgColor: '#FFFBEB',
+    description: 'Välj exakt de kurser du ska läsa och get en personlig studieplan.',
+  },
+] as const;
+
 function LevelStep({ data, setData }: StepProps) {
+  const entryAnims = useRef(EDUCATION_PATHS.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    EDUCATION_PATHS.forEach((_, i) => {
+      Animated.timing(entryAnims[i], {
+        toValue: 1,
+        duration: 400,
+        delay: i * 100,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, []);
+
   return (
     <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
       <Text style={styles.questionTitle}>Var pluggar du?</Text>
-      <View style={{ gap: 12, marginTop: 8 }}>
-        {[
-          { id: 'gymnasie', label: 'Gymnasium', sub: 'Naturvetenskap, Teknik, Samhäll...', emoji: '📚' },
-          { id: 'högskola', label: 'Högskola / Universitet', sub: 'Kandidat, Civilingenjör, Master...', emoji: '🎓' },
-        ].map(opt => {
+      <Text style={styles.pageSubtitle}>Välj din utbildningsnivå så anpassar vi appen för dig.</Text>
+      <View style={{ gap: 14, marginTop: 12 }}>
+        {EDUCATION_PATHS.map((opt, i) => {
           const sel = data.studyLevel === opt.id;
           return (
-            <TouchableOpacity
+            <Animated.View
               key={opt.id}
-              style={[styles.optionCard, sel && styles.optionCardSel]}
-              onPress={() => setData({ ...data, studyLevel: opt.id as any })}
-              activeOpacity={0.75}
+              style={{ opacity: entryAnims[i], transform: [{ translateY: entryAnims[i].interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }}
             >
-              <Text style={styles.optionEmoji}>{opt.emoji}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.optionLabel, sel && styles.optionLabelSel]}>{opt.label}</Text>
-                <Text style={styles.optionSub}>{opt.sub}</Text>
-              </View>
-              {sel && (
-                <View style={styles.optionCheck}>
-                  <Check size={13} color="#fff" />
+              <TouchableOpacity
+                style={[
+                  styles.eduCard,
+                  sel && { borderColor: opt.color, borderWidth: 2.5, backgroundColor: opt.bgColor },
+                  !sel && { borderColor: BORDER, borderWidth: 1.5 },
+                ]}
+                onPress={() => setData({ ...data, studyLevel: opt.id as any, selectedCourses: new Set() })}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.eduCardIconWrap, sel && { backgroundColor: opt.color }]}>
+                  <Text style={{ fontSize: 24 }}>{opt.emoji}</Text>
                 </View>
-              )}
-            </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.eduCardTitle, sel && { color: opt.color }]}>{opt.label}</Text>
+                  <Text style={styles.eduCardSub}>{opt.description}</Text>
+                </View>
+                <View style={[styles.optionCheck, sel ? { backgroundColor: opt.color } : { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: BORDER }]}>
+                  {sel && <Check size={13} color="#fff" />}
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
           );
         })}
+      </View>
+      <View style={styles.levelHintCard}>
+        <Text style={styles.levelHintText}>💡 Du kan alltid byta utbildningstyp i inställningarna senare</Text>
       </View>
     </ScrollView>
   );
 }
 
-function SchoolStep({ data, setData, availableCourses, gymnasiumSearch, setGymnasiumSearch, universitySearch, setUniversitySearch }: StepProps) {
+function SchoolStep({ data, setData, availableCourses, gymnasiumSearch, setGymnasiumSearch, universitySearch, setUniversitySearch, komvuxSubjectFilter, setKomvuxSubjectFilter }: StepProps) {
+  if (data.studyLevel === 'komvux') {
+    return <KomvuxSchoolStep data={data} setData={setData} komvuxSubjectFilter={komvuxSubjectFilter} setKomvuxSubjectFilter={setKomvuxSubjectFilter} />;
+  }
+
   if (data.studyLevel === 'gymnasie') {
     return (
       <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
@@ -857,6 +925,109 @@ function SchoolStep({ data, setData, availableCourses, gymnasiumSearch, setGymna
           </TouchableOpacity>
         );
       })}
+    </ScrollView>
+  );
+}
+
+function KomvuxSchoolStep({ data, setData, komvuxSubjectFilter, setKomvuxSubjectFilter }: Pick<StepProps, 'data' | 'setData' | 'komvuxSubjectFilter' | 'setKomvuxSubjectFilter'>) {
+  const filteredCourses = getKomvuxCoursesBySubject(komvuxSubjectFilter);
+  const selectedCount = data.selectedCourses.size;
+
+  const toggleCourse = (courseId: string) => {
+    const ns = new Set(data.selectedCourses);
+    if (ns.has(courseId)) {
+      ns.delete(courseId);
+    } else if (ns.size < MAX_COURSES) {
+      ns.add(courseId);
+    }
+    setData({ ...data, selectedCourses: ns });
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <Text style={styles.questionTitle}>Vilka kurser läser du?</Text>
+      <Text style={styles.pageSubtitle}>
+        {selectedCount === 0
+          ? 'Välj de kurser du vill läsa på Komvux'
+          : `${selectedCount} kurs${selectedCount !== 1 ? 'er' : ''} valda (ögonsblicksbild)`}
+      </Text>
+
+      {/* Subject category filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginTop: 12, marginBottom: 4 }}
+        contentContainerStyle={{ gap: 8, paddingRight: 8 }}
+      >
+        {KOMVUX_SUBJECT_CATEGORIES.map(cat => {
+          const active = komvuxSubjectFilter === cat.id;
+          return (
+            <TouchableOpacity
+              key={cat.id}
+              style={[
+                styles.subjectChip,
+                active && { backgroundColor: ACCENT, borderColor: ACCENT },
+              ]}
+              onPress={() => setKomvuxSubjectFilter(cat.id)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.subjectChipEmoji}>{cat.emoji}</Text>
+              <Text style={[styles.subjectChipText, active && { color: '#fff', fontWeight: '700' as const }]}>
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Recommended banner */}
+      {komvuxSubjectFilter === 'all' && selectedCount === 0 && (
+        <View style={styles.komvuxRecommendBanner}>
+          <Text style={styles.komvuxRecommendText}>
+            💡 Vanligast bland Komvux-elever: Svenska 1, Engelska 5, Matematik 1b, Historia 1b, Samhällskunskap 1b
+          </Text>
+        </View>
+      )}
+
+      {/* Course list */}
+      <View style={{ gap: 8, marginTop: 12 }}>
+        {filteredCourses.map((course: KomvuxCourse) => {
+          const sel = data.selectedCourses.has(course.id);
+          const atMax = selectedCount >= MAX_COURSES && !sel;
+          return (
+            <TouchableOpacity
+              key={course.id}
+              style={[
+                styles.komvuxCourseRow,
+                sel && styles.komvuxCourseRowSel,
+                atMax && { opacity: 0.45 },
+              ]}
+              onPress={() => !atMax && toggleCourse(course.id)}
+              activeOpacity={atMax ? 1 : 0.75}
+            >
+              <View style={[styles.smallCheck, sel && styles.smallCheckOn]}>
+                {sel && <Check size={11} color="#fff" />}
+              </View>
+              <Text style={styles.komvuxCourseEmoji}>{course.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.courseTitle, sel && { color: ACCENT }]}>{course.name}</Text>
+                <Text style={styles.komvuxCourseMeta}>{course.points} p · {course.code}</Text>
+              </View>
+              {sel && (
+                <View style={styles.komvuxSelBadge}>
+                  <Check size={12} color={ACCENT} />
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {selectedCount >= MAX_COURSES && (
+        <Text style={[styles.hintTxt, { marginTop: 12, color: '#F59E0B' }]}>
+          Max {MAX_COURSES} kurser valda
+        </Text>
+      )}
     </ScrollView>
   );
 }
@@ -1275,6 +1446,118 @@ function PaywallStep({ offerings, selectedPkg, setSelectedPkg, isPurchasing, isR
 }
 
 const styles = StyleSheet.create({
+  // Education path cards
+  eduCard: {
+    backgroundColor: BG,
+    borderRadius: 20,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  eduCardIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: BG2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  eduCardTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    color: TEXT1,
+    marginBottom: 3,
+  },
+  eduCardSub: {
+    fontSize: 13,
+    color: TEXT2,
+    lineHeight: 18,
+  },
+  levelHintCard: {
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 20,
+  },
+  levelHintText: {
+    fontSize: 13,
+    color: TEXT2,
+    lineHeight: 18,
+  },
+  // Komvux styles
+  subjectChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: BG2,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+  },
+  subjectChipEmoji: {
+    fontSize: 14,
+  },
+  subjectChipText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: TEXT2,
+  },
+  komvuxRecommendBanner: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  komvuxRecommendText: {
+    fontSize: 13,
+    color: '#92400E',
+    lineHeight: 18,
+  },
+  komvuxCourseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: BG2,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  komvuxCourseRowSel: {
+    backgroundColor: '#ECFDF5',
+    borderColor: ACCENT,
+  },
+  komvuxCourseEmoji: {
+    fontSize: 18,
+    width: 24,
+    textAlign: 'center',
+  },
+  komvuxCourseMeta: {
+    fontSize: 12,
+    color: TEXT3,
+    marginTop: 2,
+  },
+  komvuxSelBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1.5,
+    borderColor: ACCENT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   root: {
     flex: 1,
     backgroundColor: BG,

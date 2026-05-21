@@ -385,6 +385,103 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     await saveCourses(updatedCourses);
   }, [courses, saveCourses]);
 
+  /**
+   * Enroll in a course: adds locally + upserts to Supabase user_courses.
+   * Prevents duplicate enrollments.
+   */
+  const enrollCourse = useCallback(async (courseData: Omit<Course, 'id' | 'createdAt' | 'updatedAt' | 'studiedHours'> & { code: string }) => {
+    if (!user?.id) return;
+    // Prevent duplicate
+    if (courses.find(c => c.code === courseData.code)) return;
+
+    const newCourse: Course = {
+      ...courseData,
+      id: `enroll-${courseData.code}-${Date.now()}`,
+      studiedHours: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await saveCourses([...courses, newCourse]);
+
+    try {
+      // Ensure course exists in courses table
+      await supabase.from('courses').upsert({
+        id: courseData.code,
+        title: courseData.name,
+        description: `${courseData.name} · ${courseData.points ?? 0} poäng`,
+        subject: extractSubjectFromName(courseData.name),
+        level: 'gymnasie',
+        resources: [],
+        tips: [],
+        related_courses: [],
+        progress: 0,
+      }, { onConflict: 'id' });
+
+      // Upsert user_courses row
+      const { error } = await supabase.from('user_courses').upsert({
+        id: `${user.id}-${courseData.code}`,
+        user_id: user.id,
+        course_id: courseData.code,
+        progress: 0,
+        is_active: true,
+      }, { onConflict: 'id' });
+
+      if (error) {
+        console.error('enrollCourse Supabase error:', error.message);
+      } else {
+        console.log('✅ Enrolled in course:', courseData.code);
+      }
+    } catch (err) {
+      console.warn('enrollCourse sync failed:', err);
+    }
+  }, [user?.id, courses, saveCourses]);
+
+  /**
+   * Leave a course: removes locally + marks is_active = false in Supabase.
+   */
+  const leaveCourse = useCallback(async (courseId: string) => {
+    if (!user?.id) return;
+    const course = courses.find(c => c.id === courseId);
+    await saveCourses(courses.filter(c => c.id !== courseId));
+
+    if (course?.code) {
+      try {
+        await supabase
+          .from('user_courses')
+          .update({ is_active: false })
+          .eq('user_id', user.id)
+          .eq('course_id', course.code);
+        console.log('✅ Left course:', course.code);
+      } catch (err) {
+        console.warn('leaveCourse sync failed:', err);
+      }
+    }
+  }, [user?.id, courses, saveCourses]);
+
+  /**
+   * Update progress for a course and sync to Supabase.
+   */
+  const updateEnrollmentProgress = useCallback(async (courseId: string, progress: number) => {
+    if (!user?.id) return;
+    const course = courses.find(c => c.id === courseId);
+    const updatedCourses = courses.map(c =>
+      c.id === courseId ? { ...c, updatedAt: new Date() } : c
+    );
+    await saveCourses(updatedCourses);
+
+    if (course?.code) {
+      try {
+        await supabase
+          .from('user_courses')
+          .update({ progress })
+          .eq('user_id', user.id)
+          .eq('course_id', course.code);
+      } catch (err) {
+        console.warn('updateEnrollmentProgress sync failed:', err);
+      }
+    }
+  }, [user?.id, courses, saveCourses]);
+
   const logStudyTime = useCallback(async (courseId: string, hours: number) => {
     const updatedCourses = courses.map(course =>
       course.id === courseId
@@ -484,6 +581,9 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     addCourse,
     updateCourse,
     deleteCourse,
+    enrollCourse,
+    leaveCourse,
+    updateEnrollmentProgress,
     logStudyTime,
     completeOnboarding,
     resetOnboarding,
@@ -505,6 +605,9 @@ export const [CourseProvider, useCourses] = createContextHook(() => {
     addCourse,
     updateCourse,
     deleteCourse,
+    enrollCourse,
+    leaveCourse,
+    updateEnrollmentProgress,
     logStudyTime,
     completeOnboarding,
     resetOnboarding,

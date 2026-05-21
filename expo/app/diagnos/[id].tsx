@@ -36,6 +36,7 @@ import {
   Sparkles,
   Shield,
   MessageCircle,
+  Focus,
 } from 'lucide-react-native';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import { DIAGNOSES, type DiagnosisInfo } from '../diagnosstod';

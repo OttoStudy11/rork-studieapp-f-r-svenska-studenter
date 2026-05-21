@@ -18,7 +18,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain, Heart } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
@@ -599,6 +599,46 @@ export default function HomeScreen() {
               </View>
             </LinearGradient>
 
+          </TouchableOpacity>
+        </SlideInView>
+
+        {/* Diagnosstöd Card */}
+        <SlideInView direction="up" delay={215} duration={300}>
+          <TouchableOpacity
+            style={styles.diagnosCard}
+            onPress={() => router.push('/diagnosstod' as any)}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={isDark ? ['#312E81', '#4C1D95', '#1E3A5F'] : ['#6366F1', '#8B5CF6', '#06B6D4']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.diagnosCardGradient}
+            >
+              <View style={styles.diagnosDecoCircle1} />
+              <View style={styles.diagnosDecoCircle2} />
+              <View style={styles.diagnosCardContent}>
+                <View style={styles.diagnosLeft}>
+                  <View style={styles.diagnosIconWrap}>
+                    <Heart size={22} color="white" fill="rgba(255,255,255,0.3)" />
+                  </View>
+                  <View style={styles.diagnosTextBlock}>
+                    <Text style={styles.diagnosTitle}>Diagnosstöd</Text>
+                    <Text style={styles.diagnosSubtitle} numberOfLines={2}>
+                      ADHD, dyslexi, autism & mer — personaliserade studiestrategier
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={22} color="rgba(255,255,255,0.7)" />
+              </View>
+              <View style={styles.diagnosPillRow}>
+                {['ADHD', 'Dyslexi', 'Autism', 'ADD', 'Ångest'].map((d) => (
+                  <View key={d} style={styles.diagnosPill}>
+                    <Text style={styles.diagnosPillText}>{d}</Text>
+                  </View>
+                ))}
+              </View>
+            </LinearGradient>
           </TouchableOpacity>
         </SlideInView>
 
@@ -1974,6 +2014,90 @@ const styles = StyleSheet.create({
   aiToolDesc: {
     fontSize: 11,
     textAlign: 'center',
+  },
+  diagnosCard: {
+    marginHorizontal: 24,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  diagnosCardGradient: {
+    padding: 20,
+    position: 'relative' as const,
+    overflow: 'hidden',
+  },
+  diagnosDecoCircle1: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: -30,
+    right: -20,
+  },
+  diagnosDecoCircle2: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    bottom: -20,
+    left: 40,
+  },
+  diagnosCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  diagnosLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
+  },
+  diagnosIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  diagnosTextBlock: {
+    flex: 1,
+  },
+  diagnosTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: 'white',
+    marginBottom: 4,
+  },
+  diagnosSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.82)',
+    lineHeight: 18,
+  },
+  diagnosPillRow: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  diagnosPill: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  diagnosPillText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: 'rgba(255,255,255,0.95)',
   },
   examStudyPlanIconBtn: {
     alignSelf: 'center',

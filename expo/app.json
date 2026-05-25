@@ -67,7 +67,6 @@
         }
       ]
     ],
-
     "experiments": {
       "typedRoutes": true
     }

@@ -1,6 +1,6 @@
 import { Tabs, useRouter, useSegments } from "expo-router";
 import React, { useRef } from "react";
-import { Home, BookOpen, Timer, Users, MessageCircle } from "lucide-react-native";
+import { Home, BookOpen, Timer, Users, GraduationCap } from "lucide-react-native";
 import { Platform, PanResponder, Dimensions, View, StyleSheet } from "react-native";
 import { COLORS } from "@/constants/design-system";
 import { t } from "@/constants/translations";
@@ -8,7 +8,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const TAB_ROUTES = ['home', 'courses', 'timer', 'friends', 'ai-chat'];
+const TAB_ROUTES = ['home', 'courses', 'timer', 'friends', 'hogskoleprovet'];
 
 export default function TabLayout() {
   const router = useRouter();
@@ -159,14 +159,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="ai-chat"
+        name="hogskoleprovet"
         options={{
-          title: t('navigation.aiChat'),
+          title: 'HP',
           tabBarIcon: ({ color, focused }) => (
             <View style={focused ? styles.activeIconContainer : undefined}>
-              <MessageCircle 
-                color={focused ? COLORS.primary : color} 
-                size={22} 
+              <GraduationCap 
+                color={focused ? '#F59E0B' : color} 
+                size={24} 
                 strokeWidth={focused ? 2.5 : 1.8}
               />
             </View>

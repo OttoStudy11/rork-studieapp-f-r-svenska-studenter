@@ -18,7 +18,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain, Heart } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain, Heart, Calculator, MessageCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
@@ -602,8 +602,49 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </SlideInView>
 
+        {/* AI Chat Card */}
+        <SlideInView direction="up" delay={210} duration={300}>
+          <TouchableOpacity
+            style={styles.aiHomeCard}
+            onPress={() => router.push('/math-chat' as any)}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={isDark ? ['#1E293B', '#0F172A'] : ['#F8FAFC', '#F1F5F9']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.aiHomeCardGradient}
+            >
+              <View style={styles.aiHomeCardRow}>
+                <View style={styles.aiHomeCardLeft}>
+                  <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.aiHomeIconBg}>
+                    <Sparkles size={20} color="#FFF" />
+                  </LinearGradient>
+                  <View style={styles.aiHomeCardText}>
+                    <Text style={[styles.aiHomeCardTitle, { color: theme.colors.text }]}>StudieStugan AI</Text>
+                    <Text style={[styles.aiHomeCardSub, { color: theme.colors.textSecondary }]}>
+                      Math AI & Generell AI — din smarta studiehjälp
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color={theme.colors.textSecondary} />
+              </View>
+              <View style={styles.aiHomeButtons}>
+                <View style={[styles.aiHomeBtn, { backgroundColor: isDark ? 'rgba(14,165,233,0.1)' : 'rgba(14,165,233,0.06)', borderColor: 'rgba(14,165,233,0.2)' }]}>
+                  <Calculator size={14} color="#0EA5E9" />
+                  <Text style={[styles.aiHomeBtnText, { color: '#0EA5E9' }]}>Matematik AI</Text>
+                </View>
+                <View style={[styles.aiHomeBtn, { backgroundColor: isDark ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.2)' }]}>
+                  <MessageCircle size={14} color="#10B981" />
+                  <Text style={[styles.aiHomeBtnText, { color: '#10B981' }]}>Generell AI</Text>
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </SlideInView>
+
         {/* Diagnosstöd Card */}
-        <SlideInView direction="up" delay={215} duration={300}>
+        <SlideInView direction="up" delay={230} duration={300}>
           <TouchableOpacity
             style={styles.diagnosCard}
             onPress={() => router.push('/diagnosstod' as any)}
@@ -2109,5 +2150,71 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // AI Home Card
+  aiHomeCard: {
+    borderRadius: 22,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  aiHomeCardGradient: {
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(99,102,241,0.12)',
+    borderRadius: 22,
+  },
+  aiHomeCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  aiHomeCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  aiHomeIconBg: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  aiHomeCardText: {
+    flex: 1,
+  },
+  aiHomeCardTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  aiHomeCardSub: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  aiHomeButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  aiHomeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 6,
+  },
+  aiHomeBtnText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
 });

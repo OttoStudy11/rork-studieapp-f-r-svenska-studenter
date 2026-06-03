@@ -48,6 +48,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import type { Database } from '@/lib/database.types';
 import { AIStudyInsights, AIQuickHelp } from '@/components/AIStudyInsights';
+import CourseAIChat from '@/components/CourseAIChat';
 import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
 import { Crown } from 'lucide-react-native';
 import CourseExamsSection from '@/components/CourseExamsSection';
@@ -893,6 +894,12 @@ export default function CourseDetailScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push(`/ai-chat?question=${encodeURIComponent(question)}&course=${encodeURIComponent(course.title)}` as any);
             }}
+          />
+
+          <CourseAIChat
+            courseTitle={course.title}
+            accentColor={courseStyle.primaryColor}
+            compact
           />
         </View>
 

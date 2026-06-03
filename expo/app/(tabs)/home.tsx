@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   StatusBar,
-  Animated,
+  Animated
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
@@ -18,97 +18,127 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import {
-  BookOpen,
-  Clock,
-  Target,
-  Plus,
-  Star,
-  Crown,
-  User,
-  TrendingUp,
-  Calendar,
-  Flame,
-  ArrowRight,
-  AlertCircle,
-  ChevronRight,
-  Zap,
-  FileText,
-  Sparkles,
-  Brain,
-  Heart,
-  GraduationCap,
-  Timer,
-} from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain, Heart } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { FadeInView, SlideInView, AnimatedPressable } from '@/components/Animations';
+import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_GAP = 14;
-const HORIZONTAL_PADDING = 20;
+const { width } = Dimensions.get('window');
 
-/* ── Skeleton ─────────────────────────────────────────────── */
-const SkeletonBox = ({
-  w,
-  h,
-  style,
-  br = 12,
-  color,
-}: {
-  w: number | string;
-  h: number;
-  style?: any;
-  br?: number;
-  color?: string;
-}) => {
-  const pulse = useRef(new Animated.Value(0.3)).current;
+const SkeletonBox = ({ width: w, height: h, style, borderRadius = 12, color }: { width: number | string; height: number; style?: any; borderRadius?: number; color?: string }) => {
+  const pulseAnim = useRef(new Animated.Value(0.3)).current;
+
   useEffect(() => {
-    const anim = Animated.loop(
+    const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 0.6, duration: 800, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0.3, duration: 800, useNativeDriver: true }),
-      ]),
+        Animated.timing(pulseAnim, {
+          toValue: 0.6,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
     );
-    anim.start();
-    return () => anim.stop();
-  }, [pulse]);
+    animation.start();
+    return () => animation.stop();
+  }, [pulseAnim]);
+
   return (
     <Animated.View
-      style={[{ width: w as any, height: h, borderRadius: br, backgroundColor: color || '#E5E7EB', opacity: pulse }, style]}
+      style={[
+        {
+          width: w as any,
+          height: h,
+          borderRadius,
+          backgroundColor: color || '#E5E7EB',
+          opacity: pulseAnim,
+        },
+        style,
+      ]}
     />
   );
 };
 
-const HomeSkeleton = ({ theme, isDark }: { theme: any; isDark: boolean }) => {
-  const c = theme.colors.border;
-  return (
-    <View style={[s.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-        <View style={s.headerWrap}>
-          <SkeletonBox w={180} h={32} style={{ marginBottom: 6 }} color={c} />
-          <SkeletonBox w={140} h={18} color={c} />
+const HomeScreenSkeleton = ({ theme }: { theme: any; isDark: boolean }) => {
+const skeletonColor = theme.colors.border;
+return (
+  <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <StatusBar 
+      barStyle="default" 
+      backgroundColor={theme.colors.background}
+    />
+    <ScrollView 
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+    >
+      {/* Header Skeleton */}
+      <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.headerLogo}>
+          <SkeletonBox width={100} height={100} borderRadius={50} color={skeletonColor} />
         </View>
-        <View style={{ paddingHorizontal: HORIZONTAL_PADDING, marginBottom: 28 }}>
-          <SkeletonBox w="100%" h={180} br={24} color={c} />
+        <View style={styles.headerTop}>
+          <View style={styles.headerLeft}>
+            <SkeletonBox width={180} height={28} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={140} height={18} color={skeletonColor} />
+          </View>
+          <SkeletonBox width={44} height={44} borderRadius={22} color={skeletonColor} />
         </View>
-        <View style={s.navGrid}>
-          {[1, 2, 3, 4].map((i) => (
-            <SkeletonBox key={i} w={(SCREEN_WIDTH - HORIZONTAL_PADDING * 2 - CARD_GAP) / 2} h={140} br={20} color={c} />
-          ))}
+      </View>
+
+      {/* Hero Card Skeleton */}
+      <View style={[styles.heroCard, { backgroundColor: theme.colors.card, marginHorizontal: 24, marginBottom: 24 }]}>
+        <View style={styles.heroStats}>
+          <View style={styles.heroStatItem}>
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={30} height={24} style={{ marginBottom: 4 }} color={skeletonColor} />
+            <SkeletonBox width={60} height={14} color={skeletonColor} />
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStatItem}>
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={30} height={24} style={{ marginBottom: 4 }} color={skeletonColor} />
+            <SkeletonBox width={40} height={14} color={skeletonColor} />
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStatItem}>
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={40} height={24} style={{ marginBottom: 4 }} color={skeletonColor} />
+            <SkeletonBox width={50} height={14} color={skeletonColor} />
+          </View>
         </View>
-        <View style={{ paddingHorizontal: HORIZONTAL_PADDING, marginBottom: 24 }}>
-          <SkeletonBox w="100%" h={72} br={16} color={c} />
-        </View>
-        <View style={{ paddingHorizontal: HORIZONTAL_PADDING, marginBottom: 24 }}>
-          <SkeletonBox w="100%" h={64} br={14} color={c} />
-        </View>
-      </ScrollView>
-    </View>
-  );
+      </View>
+
+      {/* Quick Action Skeleton */}
+      <View style={styles.quickActions}>
+        <SkeletonBox width="100%" height={56} borderRadius={16} color={skeletonColor} />
+      </View>
+
+      {/* Mini Stats Skeleton */}
+      <View style={styles.miniStatsGrid}>
+        <SkeletonBox width={(width - 72) / 3} height={90} color={skeletonColor} />
+        <SkeletonBox width={(width - 72) / 3} height={90} color={skeletonColor} />
+        <SkeletonBox width={(width - 72) / 3} height={90} color={skeletonColor} />
+      </View>
+
+      {/* Section Skeleton */}
+      <View style={[styles.section, { marginBottom: 16 }]}>
+        <SkeletonBox width={160} height={24} style={{ marginBottom: 16 }} color={skeletonColor} />
+        <SkeletonBox width="100%" height={80} style={{ marginBottom: 12 }} color={skeletonColor} />
+      </View>
+
+      {/* Card Skeleton */}
+      <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
+        <SkeletonBox width="100%" height={100} borderRadius={20} color={skeletonColor} />
+      </View>
+    </ScrollView>
+  </View>
+);
 };
 
-/* ── Main Screen ─────────────────────────────────────────── */
 export default function HomeScreen() {
   const { user, courses, pomodoroSessions, isLoading } = useStudy();
   const { currentStreak } = useAchievements();
@@ -118,7 +148,6 @@ export default function HomeScreen() {
   const { theme, isDark } = useTheme();
   const { upcomingExams } = useExams();
 
-  /* ── helpers ──────────────────────────────────────────── */
   const handleAddCourse = () => {
     if (!canAddCourse(courses.length)) {
       showPremiumModal('Obegränsat antal kurser');
@@ -127,426 +156,656 @@ export default function HomeScreen() {
     router.push('/courses' as any);
   };
 
-  if (isLoading) return <HomeSkeleton theme={theme} isDark={isDark} />;
+  // Handle loading with skeleton
+  if (isLoading) {
+    return <HomeScreenSkeleton theme={theme} isDark={isDark} />;
+  }
+
   if (!user) {
     return (
-      <View style={[s.center, { backgroundColor: theme.colors.background }]}>
-        <Text style={[s.err, { color: theme.colors.text }]}>Ingen användardata tillgänglig</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <Text style={[styles.errorText, { color: theme.colors.text }]}>Ingen användardata tillgänglig</Text>
       </View>
     );
   }
 
-  const activeCourses = courses.filter((c) => c.isActive);
-  const todaySessions = pomodoroSessions.filter((s) => {
+  const activeCourses = courses.filter(course => course.isActive);
+  const todaySessions = pomodoroSessions.filter(session => {
     const today = new Date().toDateString();
-    return today === new Date(s.endTime).toDateString();
-  });
-  const totalStudyMin = Math.round(
-    pomodoroSessions.reduce((sum, s) => sum + s.duration, 0) / 60,
-  );
-  const avgProgress =
-    courses.length > 0
-      ? Math.round(courses.reduce((sum, c) => sum + c.progress, 0) / courses.length)
-      : 0;
-
-  const todayDate = new Date();
-  const dateStr = todayDate.toLocaleDateString('sv-SE', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
+    const sessionDate = new Date(session.endTime).toDateString();
+    return today === sessionDate;
   });
 
-  /* ── UI ────────────────────────────────────────────────── */
+  const averageProgress = courses.length > 0 
+    ? Math.round(courses.reduce((sum, course) => sum + course.progress, 0) / courses.length)
+    : 0;
+
+  const totalStudyTime = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
+
+  // Study tips and techniques data
+  const studyTips = [
+    {
+      id: 1,
+      title: 'Pomodoro-tekniken',
+      description: 'Studera i 25-minuters intervaller med 5 minuters pauser',
+      icon: '🍅',
+      category: 'Tidshantering',
+      difficulty: 'Nybörjare'
+    },
+    {
+      id: 2,
+      title: 'Aktiv repetition',
+      description: 'Testa dig själv istället för att bara läsa om materialet',
+      icon: '🧠',
+      category: 'Minnestekniker',
+      difficulty: 'Medel'
+    },
+    {
+      id: 3,
+      title: 'Spaced repetition',
+      description: 'Repetera material med ökande intervaller för bättre minne',
+      icon: '📅',
+      category: 'Minnestekniker',
+      difficulty: 'Avancerad'
+    },
+    {
+      id: 4,
+      title: 'Feynman-tekniken',
+      description: 'Förklara komplexa koncept med enkla ord',
+      icon: '👨‍🏫',
+      category: 'Förståelse',
+      difficulty: 'Medel'
+    },
+    {
+      id: 5,
+      title: 'Mind mapping',
+      description: 'Skapa visuella kartor för att organisera information',
+      icon: '🗺️',
+      category: 'Organisation',
+      difficulty: 'Nybörjare'
+    },
+    {
+      id: 6,
+      title: 'Miljöbyte',
+      description: 'Byt studiemiljö för att förbättra inlärningen',
+      icon: '🏠',
+      category: 'Miljö',
+      difficulty: 'Nybörjare'
+    },
+    {
+      id: 7,
+      title: 'Chunking',
+      description: 'Dela upp information i mindre, hanterbara delar',
+      icon: '🧩',
+      category: 'Minnestekniker',
+      difficulty: 'Nybörjare'
+    },
+    {
+      id: 8,
+      title: 'Interleaving',
+      description: 'Variera mellan olika ämnen för effektivare inlärning',
+      icon: '🔀',
+      category: 'Inlärning',
+      difficulty: 'Medel'
+    },
+    {
+      id: 9,
+      title: 'Sömn & vila',
+      description: 'Optimera din sömn för bättre minneskonsolidering',
+      icon: '😴',
+      category: 'Hälsa',
+      difficulty: 'Nybörjare'
+    }
+  ];
+
+  const studyTechniques = [
+    {
+      id: 1,
+      title: 'SQ3R-metoden',
+      description: 'Survey, Question, Read, Recite, Review - systematisk läsning',
+      steps: ['Överblicka', 'Fråga', 'Läs', 'Återge', 'Repetera'],
+      icon: '📖',
+      timeNeeded: '30-60 min'
+    },
+    {
+      id: 2,
+      title: 'Cornell-anteckningar',
+      description: 'Strukturerad anteckningsmetod med tre sektioner',
+      steps: ['Anteckningar', 'Ledtrådar', 'Sammanfattning'],
+      icon: '📝',
+      timeNeeded: '15-30 min'
+    },
+    {
+      id: 3,
+      title: 'Elaborativ förfrågan',
+      description: 'Ställ "varför" och "hur" frågor för djupare förståelse',
+      steps: ['Läs fakta', 'Fråga varför', 'Förklara samband', 'Koppla till tidigare kunskap'],
+      icon: '❓',
+      timeNeeded: '20-40 min'
+    },
+    {
+      id: 4,
+      title: 'Leitner-systemet',
+      description: 'Flashcard-system med repetitionsintervaller baserat på prestation',
+      steps: ['Skapa kort', 'Sortera i lådor', 'Repetera', 'Flytta kort'],
+      icon: '📦',
+      timeNeeded: '15-25 min'
+    },
+    {
+      id: 5,
+      title: 'Retrieval Practice',
+      description: 'Träna på att hämta information från minnet aktivt',
+      steps: ['Studera material', 'Stäng allt', 'Skriv ner allt', 'Kontrollera'],
+      icon: '🔄',
+      timeNeeded: '20-30 min'
+    },
+    {
+      id: 6,
+      title: 'Dual Coding',
+      description: 'Kombinera text med visuella element för bättre inlärning',
+      steps: ['Läs text', 'Skapa bilder', 'Koppla samman', 'Repetera båda'],
+      icon: '🎨',
+      timeNeeded: '25-45 min'
+    }
+  ];
+
   return (
-    <View style={[s.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
-
-      <ScrollView
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar 
+        barStyle={isDark ? 'light-content' : 'dark-content'} 
+        backgroundColor={theme.colors.background}
+      />
+      <ScrollView 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.scroll}
-        bounces
-        scrollEventThrottle={16}
+        contentContainerStyle={styles.scrollContent}
+        bounces={true}
       >
-        {/* ── Header ─────────────────────────────────── */}
-        <View style={s.headerWrap}>
-          <View style={s.headerRow}>
-            <View style={s.headerText}>
-              <Text style={[s.greeting, { color: theme.colors.text }]}>
-                Hej, {user?.name?.split(' ')[0]} 👋
-              </Text>
-              <Text style={[s.dateText, { color: theme.colors.textSecondary }]}>{dateStr}</Text>
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+          <View style={styles.headerLogo}>
+            <Image
+              source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
+              style={styles.logo}
+              contentFit="contain"
+            />
+          </View>
+          <View style={styles.headerTop}>
+            <View style={styles.headerLeft}>
+              <Text style={[styles.greeting, { color: theme.colors.text }]}>Hej, {user?.name}! 👋</Text>
+              <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>Redo att plugga idag?</Text>
             </View>
-
-            <View style={s.headerBadges}>
+            <View style={styles.headerRight}>
               {isPremium && (
-                <View style={[s.premPill, { backgroundColor: theme.colors.warning + '18' }]}>
-                  <Crown size={13} color={theme.colors.warning} />
-                  <Text style={[s.premPillText, { color: theme.colors.warning }]}>Pro</Text>
+                <View style={[styles.premiumBadge, { backgroundColor: theme.colors.warning + '20' }]}>
+                  <Crown size={16} color={theme.colors.warning} />
+                  <Text style={[styles.premiumText, { color: theme.colors.warning }]}>Pro</Text>
                 </View>
               )}
-              <TouchableOpacity
-                style={s.avatarBtn}
+              <TouchableOpacity 
+                style={styles.profileButton}
                 onPress={() => router.push('/profile' as any)}
-                activeOpacity={0.7}
               >
                 {user.avatar ? (
-                  <CharacterAvatar config={user.avatar} size={42} />
+                  <CharacterAvatar config={user.avatar} size={44} />
                 ) : (
-                  <View style={[s.avatarFallback, { backgroundColor: theme.colors.primary + '14' }]}>
-                    <User size={20} color={theme.colors.primary} />
+                  <View style={[styles.profileButtonFallback, { backgroundColor: theme.colors.primary + '15' }]}>
+                    <User size={22} color={theme.colors.primary} />
                   </View>
                 )}
               </TouchableOpacity>
             </View>
           </View>
-
           {isDemoMode && (
-            <View style={[s.demoBanner, { backgroundColor: theme.colors.info + '12' }]}>
-              <Text style={[s.demoBannerText, { color: theme.colors.info }]}>🎯 Demo-läge aktivt</Text>
+            <View style={[styles.demoBanner, { backgroundColor: theme.colors.info + '15' }]}>
+              <Text style={[styles.demoText, { color: theme.colors.info }]}>🎯 Demo-läge aktivt</Text>
             </View>
           )}
         </View>
 
-        {/* ── Today Hero Card ────────────────────────── */}
-        <SlideInView direction="up" delay={40} duration={400}>
+        {/* Hero Stats Card */}
+        <SlideInView direction="up" delay={0} duration={300}>
           <LinearGradient
-            colors={
-              isDark
-                ? ['#1E1B4B', '#312E81', '#1E1B4B']
-                : ['#4F46E5', '#6366F1', '#4F46E5']
-            }
+            colors={theme.colors.gradient as any}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={s.heroGradient}
+            style={styles.heroCard}
           >
-            {/* decorative blurs */}
-            <View style={[s.heroBlob, { top: -40, right: -20, width: 140, height: 140 }]} />
-            <View style={[s.heroBlob, { bottom: -30, left: -30, width: 100, height: 100 }]} />
-
-            <View style={s.heroContent}>
-              <View style={s.heroStatsRow}>
-                <View style={s.heroStat}>
-                  <View style={s.heroStatIconWrap}>
-                    <Flame size={18} color="#FFB347" />
+            <View style={styles.heroContent}>
+              <View style={styles.heroStats}>
+                <View style={styles.heroStatItem}>
+                  <View style={styles.heroStatIcon}>
+                    <Flame size={20} color="white" />
                   </View>
-                  <Text style={s.heroStatVal}>{currentStreak}</Text>
-                  <Text style={s.heroStatLbl}>dagars streak</Text>
+                  <Text style={styles.heroStatNumber}>{currentStreak}</Text>
+                  <Text style={styles.heroStatLabel}>Dagars streak</Text>
                 </View>
-
-                <View style={s.heroStatDiv} />
-
-                <View style={s.heroStat}>
-                  <View style={s.heroStatIconWrap}>
-                    <Timer size={18} color="#A5B4FC" />
+                <View style={styles.heroStatDivider} />
+                <View style={styles.heroStatItem}>
+                  <View style={styles.heroStatIcon}>
+                    <Clock size={20} color="white" />
                   </View>
-                  <Text style={s.heroStatVal}>{todaySessions.length}</Text>
-                  <Text style={s.heroStatLbl}>pass idag</Text>
+                  <Text style={styles.heroStatNumber}>{todaySessions.length}</Text>
+                  <Text style={styles.heroStatLabel}>Idag</Text>
                 </View>
-
-                <View style={s.heroStatDiv} />
-
-                <View style={s.heroStat}>
-                  <View style={s.heroStatIconWrap}>
-                    <Star size={18} color="#FDE047" />
+                <View style={styles.heroStatDivider} />
+                <View style={styles.heroStatItem}>
+                  <View style={styles.heroStatIcon}>
+                    <Star size={20} color="white" />
                   </View>
-                  <Text style={s.heroStatVal}>{totalPoints}</Text>
-                  <Text style={s.heroStatLbl}>poäng</Text>
+                  <Text style={styles.heroStatNumber}>{totalPoints}</Text>
+                  <Text style={styles.heroStatLabel}>Poäng</Text>
+                  <Text style={styles.heroStatSubtext}>1p per 5 min</Text>
                 </View>
               </View>
-
-              <TouchableOpacity
-                style={s.heroCta}
-                onPress={() => router.push('/timer' as any)}
-                activeOpacity={0.85}
-              >
-                <View style={s.heroCtaInner}>
-                  <View style={s.heroCtaIcon}>
-                    <Clock size={22} color="#4F46E5" />
-                  </View>
-                  <Text style={s.heroCtaText}>Starta fokuspass</Text>
-                  <ArrowRight size={18} color="#4F46E5" style={{ opacity: 0.5 }} />
-                </View>
-              </TouchableOpacity>
             </View>
           </LinearGradient>
         </SlideInView>
 
-        {/* ── Quick Navigation Grid ──────────────────── */}
-        <SlideInView direction="up" delay={80} duration={400}>
-          <View style={s.navGrid}>
-            <AnimatedPressable
-              style={[s.navCard, { backgroundColor: theme.colors.card }]}
-              onPress={() => router.push('/hogskoleprovet' as any)}
-            >
-              <View style={[s.navIcon, { backgroundColor: '#EEF2FF' }]}>
-                <GraduationCap size={22} color="#4F46E5" />
-              </View>
-              <Text style={[s.navTitle, { color: theme.colors.text }]}>Högskole-{'\n'}provet</Text>
-              <Text style={[s.navSub, { color: theme.colors.textSecondary }]}>
-                {isPremium ? '8 delprov' : '2 gratis'}
-              </Text>
-            </AnimatedPressable>
 
-            <AnimatedPressable
-              style={[s.navCard, { backgroundColor: theme.colors.card }]}
-              onPress={() => router.push('/diagnosstod' as any)}
-            >
-              <View style={[s.navIcon, { backgroundColor: '#FDF2F8' }]}>
-                <Heart size={22} color="#EC4899" />
-              </View>
-              <Text style={[s.navTitle, { color: theme.colors.text }]}>Diagnos-{'\n'}stöd</Text>
-              <Text style={[s.navSub, { color: theme.colors.textSecondary }]}>Anpassat stöd</Text>
-            </AnimatedPressable>
 
-            <AnimatedPressable
-              style={[s.navCard, { backgroundColor: theme.colors.card }]}
-              onPress={() => router.push('/study-insights' as any)}
+        {/* Quick Actions */}
+        <SlideInView direction="up" delay={50} duration={300}>
+          <View style={styles.quickActions}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.actionButtonFull, { backgroundColor: theme.colors.primary }]}
+              onPress={() => router.push('/timer' as any)}
             >
-              <View style={[s.navIcon, { backgroundColor: '#ECFDF5' }]}>
-                <Brain size={22} color="#10B981" />
-              </View>
-              <Text style={[s.navTitle, { color: theme.colors.text }]}>Studie-{'\n'}insikter</Text>
-              <Text style={[s.navSub, { color: theme.colors.textSecondary }]}>AI-driven analys</Text>
-            </AnimatedPressable>
-
-            <AnimatedPressable
-              style={[s.navCard, { backgroundColor: theme.colors.card }]}
-              onPress={handleAddCourse}
-            >
-              <View style={[s.navIcon, { backgroundColor: '#FFF7ED' }]}>
-                <BookOpen size={22} color="#F97316" />
-              </View>
-              <Text style={[s.navTitle, { color: theme.colors.text }]}>Mina{'\n'}kurser</Text>
-              <Text style={[s.navSub, { color: theme.colors.textSecondary }]}>
-                {activeCourses.length} aktiva
-              </Text>
-            </AnimatedPressable>
+              <Clock size={24} color="white" />
+              <Text style={styles.actionButtonText}>Starta fokus</Text>
+            </TouchableOpacity>
           </View>
         </SlideInView>
 
-        {/* ── Stats Row ──────────────────────────────── */}
-        <SlideInView direction="up" delay={120} duration={400}>
-          <View style={s.statsRow}>
-            <View style={[s.statPill, { backgroundColor: theme.colors.card }]}>
-              <TrendingUp size={14} color={theme.colors.secondary} />
-              <Text style={[s.statPillVal, { color: theme.colors.text }]}>{avgProgress}%</Text>
-              <Text style={[s.statPillLbl, { color: theme.colors.textSecondary }]}>snitt</Text>
+        {/* Mini Stats Grid */}
+        <SlideInView direction="up" delay={100} duration={300}>
+          <View style={styles.miniStatsGrid}>
+            <View style={[styles.miniStatCard, { backgroundColor: theme.colors.card }]}>
+              <BookOpen size={20} color={theme.colors.primary} />
+              <Text style={[styles.miniStatNumber, { color: theme.colors.text }]}>{activeCourses.length}</Text>
+              <Text style={[styles.miniStatLabel, { color: theme.colors.textSecondary }]}>Aktiva kurser</Text>
             </View>
-            <View style={[s.statPill, { backgroundColor: theme.colors.card }]}>
-              <Calendar size={14} color={theme.colors.warning} />
-              <Text style={[s.statPillVal, { color: theme.colors.text }]}>{totalStudyMin}h</Text>
-              <Text style={[s.statPillLbl, { color: theme.colors.textSecondary }]}>totalt</Text>
+            <View style={[styles.miniStatCard, { backgroundColor: theme.colors.card }]}>
+              <TrendingUp size={20} color={theme.colors.secondary} />
+              <Text style={[styles.miniStatNumber, { color: theme.colors.text }]}>{averageProgress}%</Text>
+              <Text style={[styles.miniStatLabel, { color: theme.colors.textSecondary }]}>Genomsnitt</Text>
             </View>
-            <View style={[s.statPill, { backgroundColor: theme.colors.card }]}>
-              <Zap size={14} color={TIER_COLORS[currentLevel.tier]} />
-              <Text style={[s.statPillVal, { color: theme.colors.text }]}>{totalXp}</Text>
-              <Text style={[s.statPillLbl, { color: theme.colors.textSecondary }]}>XP</Text>
+            <View style={[styles.miniStatCard, { backgroundColor: theme.colors.card }]}>
+              <Calendar size={20} color={theme.colors.warning} />
+              <Text style={[styles.miniStatNumber, { color: theme.colors.text }]}>{Math.round(totalStudyTime / 60)}h</Text>
+              <Text style={[styles.miniStatLabel, { color: theme.colors.textSecondary }]}>Total tid</Text>
             </View>
           </View>
         </SlideInView>
 
-        {/* ── Upcoming Exams ─────────────────────────── */}
-        <SlideInView direction="up" delay={160} duration={400}>
-          <View style={s.sectionWrap}>
-            <View style={s.sectionHead}>
-              <View style={s.sectionTitleRow}>
-                <Calendar size={18} color={theme.colors.warning} />
-                <Text style={[s.sectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
-              </View>
-              <TouchableOpacity onPress={() => router.push('/planning' as any)}>
-                <Text style={[s.seeAll, { color: theme.colors.primary }]}>Se alla</Text>
-              </TouchableOpacity>
-            </View>
 
-            {upcomingExams.length > 0 ? (
-              upcomingExams.slice(0, 3).map((exam, i) => {
-                const daysUntil = Math.ceil((exam.examDate.getTime() - Date.now()) / 86400000);
-                const isUrgent = daysUntil <= 3;
-                return (
-                  <FadeInView key={exam.id} delay={200 + i * 60} duration={300}>
-                    <TouchableOpacity
-                      style={[s.examCard, { backgroundColor: theme.colors.card }]}
-                      onPress={() =>
-                        router.push(
-                          `/study-plan/${exam.id}?courseTitle=${encodeURIComponent(exam.title)}` as never,
-                        )
-                      }
-                      activeOpacity={0.7}
-                    >
-                      <View style={[s.examBadge, { backgroundColor: isUrgent ? theme.colors.error + '14' : theme.colors.warning + '14' }]}>
-                        <Text style={[s.examBadgeDay, { color: isUrgent ? theme.colors.error : theme.colors.warning }]}>
-                          {exam.examDate.getDate()}
-                        </Text>
-                        <Text style={[s.examBadgeMonth, { color: isUrgent ? theme.colors.error : theme.colors.warning }]}>
-                          {exam.examDate.toLocaleDateString('sv-SE', { month: 'short' }).toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={s.examInfo}>
-                        <Text style={[s.examName, { color: theme.colors.text }]} numberOfLines={1}>
-                          {exam.title}
-                        </Text>
-                        <View style={s.examMeta}>
-                          <Clock size={11} color={theme.colors.textMuted} />
-                          <Text style={[s.examMetaText, { color: theme.colors.textMuted }]}>
-                            {exam.examDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
-                          </Text>
-                          {exam.location && (
-                            <>
-                              <Text style={[s.examDot, { color: theme.colors.textMuted }]}>·</Text>
-                              <Text style={[s.examMetaText, { color: theme.colors.textMuted }]} numberOfLines={1}>
-                                {exam.location}
-                              </Text>
-                            </>
-                          )}
-                        </View>
-                        {isUrgent && (
-                          <View style={[s.urgentTag, { backgroundColor: theme.colors.error + '14' }]}>
-                            <AlertCircle size={10} color={theme.colors.error} />
-                            <Text style={[s.urgentTagText, { color: theme.colors.error }]}>
-                              {daysUntil === 0 ? 'Idag' : daysUntil === 1 ? 'Imorgon' : `Om ${daysUntil} dagar`}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      <FileText size={18} color={theme.colors.textMuted} />
-                    </TouchableOpacity>
-                  </FadeInView>
-                );
-              })
-            ) : (
-              <TouchableOpacity
-                style={[s.emptyExam, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-                onPress={() => router.push('/planning' as any)}
-                activeOpacity={0.7}
-              >
-                <View style={[s.emptyExamIcon, { backgroundColor: theme.colors.primary + '10' }]}>
-                  <Calendar size={20} color={theme.colors.primary} />
+
+        {/* Upcoming Exams Section */}
+        <SlideInView direction="up" delay={150} duration={300}>
+            <View style={[styles.section, { marginBottom: 16 }]}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleContainer}>
+                  <Calendar size={20} color={theme.colors.warning} />
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.emptyExamTitle, { color: theme.colors.text }]}>Inga planerade prov</Text>
-                  <Text style={[s.emptyExamSub, { color: theme.colors.textSecondary }]}>
-                    Lägg till prov för att få påminnelser
-                  </Text>
-                </View>
-                <ChevronRight size={18} color={theme.colors.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </SlideInView>
-
-        {/* ── Active Courses ─────────────────────────── */}
-        <SlideInView direction="up" delay={200} duration={400}>
-          <View style={s.sectionWrap}>
-            <View style={s.sectionHead}>
-              <View style={s.sectionTitleRow}>
-                <BookOpen size={18} color={theme.colors.primary} />
-                <Text style={[s.sectionTitle, { color: theme.colors.text }]}>Aktiva kurser</Text>
-              </View>
-              <TouchableOpacity onPress={() => router.push('/courses' as any)}>
-                <Text style={[s.seeAll, { color: theme.colors.primary }]}>Se alla</Text>
-              </TouchableOpacity>
-            </View>
-
-            {activeCourses.length > 0 ? (
-              activeCourses.slice(0, 3).map((course, i) => (
-                <FadeInView key={course.id} delay={250 + i * 50} duration={300}>
-                  <TouchableOpacity
-                    style={[s.courseCard, { backgroundColor: theme.colors.card }]}
-                    onPress={() => router.push(`/course/${course.id}` as any)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={s.courseTop}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[s.courseTitle, { color: theme.colors.text }]} numberOfLines={1}>
-                          {course.title}
-                        </Text>
-                        <Text style={[s.courseSubject, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                          {course.subject}
-                        </Text>
-                      </View>
-                      <Text style={[s.coursePct, { color: theme.colors.primary }]}>{course.progress}%</Text>
-                    </View>
-                    <View style={[s.progressTrack, { backgroundColor: theme.colors.borderLight }]}>
-                      <View
-                        style={[s.progressFill, { width: `${course.progress}%`, backgroundColor: theme.colors.primary }]}
-                      />
-                    </View>
-                  </TouchableOpacity>
-                </FadeInView>
-              ))
-            ) : (
-              <View style={s.emptyCourses}>
-                <Target size={40} color={theme.colors.textMuted} />
-                <Text style={[s.emptyTitle, { color: theme.colors.text }]}>Inga kurser än</Text>
-                <Text style={[s.emptySub, { color: theme.colors.textSecondary }]}>
-                  Lägg till kurser för att komma igång
-                </Text>
-                <TouchableOpacity style={[s.addBtn, { backgroundColor: theme.colors.primary }]} onPress={handleAddCourse}>
-                  <Plus size={18} color="white" />
-                  <Text style={s.addBtnText}>Lägg till kurs</Text>
+                <TouchableOpacity onPress={() => router.push('/planning' as any)}>
+                  <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Planering →</Text>
                 </TouchableOpacity>
               </View>
+              
+              {upcomingExams.slice(0, 3).map((exam, index) => {
+                const daysUntil = Math.ceil((exam.examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                const isUrgent = daysUntil <= 3;
+                
+                return (
+                  <FadeInView key={exam.id} delay={200 + index * 50} duration={300}>
+                    <View style={[
+                      styles.examCard,
+                      { backgroundColor: theme.colors.card },
+                      isUrgent && { borderLeftWidth: 4, borderLeftColor: theme.colors.error }
+                    ]}>
+                      <View style={styles.examCardContent}>
+                        <View style={[
+                          styles.examDateBadge,
+                          { backgroundColor: isUrgent ? theme.colors.error + '15' : theme.colors.warning + '15' }
+                        ]}>
+                          <Text style={[
+                            styles.examDateDay,
+                            { color: isUrgent ? theme.colors.error : theme.colors.warning }
+                          ]}>
+                            {exam.examDate.getDate()}
+                          </Text>
+                          <Text style={[
+                            styles.examDateMonth,
+                            { color: isUrgent ? theme.colors.error : theme.colors.warning }
+                          ]}>
+                            {exam.examDate.toLocaleDateString('sv-SE', { month: 'short' }).toUpperCase()}
+                          </Text>
+                        </View>
+                        
+                        <View style={styles.examInfo}>
+                          <Text style={[styles.examTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                            {exam.title}
+                          </Text>
+                          <View style={styles.examMeta}>
+                            <View style={styles.examMetaItem}>
+                              <Clock size={12} color={theme.colors.textMuted} />
+                              <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>
+                                {exam.examDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                              </Text>
+                            </View>
+                            {exam.location && (
+                              <>
+                                <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>•</Text>
+                                <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]} numberOfLines={1}>
+                                  {exam.location}
+                                </Text>
+                              </>
+                            )}
+                          </View>
+                          {isUrgent && (
+                            <View style={[styles.urgentBadge, { backgroundColor: theme.colors.error + '15' }]}>
+                              <AlertCircle size={12} color={theme.colors.error} />
+                              <Text style={[styles.urgentText, { color: theme.colors.error }]}>
+                                {daysUntil === 0 ? 'Idag' : daysUntil === 1 ? 'Imorgon' : `Om ${daysUntil} dagar`}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <TouchableOpacity
+                          style={styles.examStudyPlanIconBtn}
+                          onPress={() => {
+                            router.push(`/study-plan/${exam.id}?courseTitle=${encodeURIComponent(exam.title)}` as never);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <LinearGradient
+                            colors={isDark ? ['#4F46E5', '#7C3AED'] : ['#6366F1', '#818CF8']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.examStudyPlanIconGradient}
+                          >
+                            <FileText size={16} color="white" />
+                          </LinearGradient>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </FadeInView>
+                );
+              })}
+            {upcomingExams.length === 0 && (
+              <TouchableOpacity
+                style={[styles.addExamPrompt, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                onPress={() => router.push('/planning' as any)}
+              >
+                <View style={[styles.addExamIcon, { backgroundColor: theme.colors.primary + '15' }]}>
+                  <Calendar size={24} color={theme.colors.primary} />
+                </View>
+                <View style={styles.addExamContent}>
+                  <Text style={[styles.addExamTitle, { color: theme.colors.text }]}>Inga planerade prov</Text>
+                  <Text style={[styles.addExamSubtitle, { color: theme.colors.textSecondary }]}>Lägg till prov för att få påminnelser</Text>
+                </View>
+                <ChevronRight size={20} color={theme.colors.textMuted} />
+              </TouchableOpacity>
             )}
           </View>
         </SlideInView>
 
-        {/* ── XP Card ────────────────────────────────── */}
-        <SlideInView direction="up" delay={240} duration={400}>
-          <TouchableOpacity
-            style={[s.xpCard, { backgroundColor: theme.colors.card }]}
-            onPress={() => router.push('/achievements' as any)}
-            activeOpacity={0.8}
+        {/* Högskoleprov Card */}
+        <SlideInView direction="up" delay={200} duration={300}>
+          <TouchableOpacity 
+            style={styles.hpCard}
+            onPress={() => router.push('/hogskoleprovet' as any)}
+            activeOpacity={0.85}
           >
-            <View style={[s.xpBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] + '18' }]}>
-              <Text style={s.xpBadgeEmoji}>{currentLevel.iconEmoji}</Text>
-            </View>
-            <View style={s.xpInfo}>
-              <View style={s.xpRow}>
-                <Text style={[s.xpLevel, { color: theme.colors.text }]}>Nivå {currentLevel.level}</Text>
-                <View style={[s.xpTierPill, { backgroundColor: TIER_COLORS[currentLevel.tier] }]}>
-                  <Text style={s.xpTierText}>{currentLevel.titleSv}</Text>
+            <LinearGradient
+              colors={isDark ? ['#312E81', '#4338CA', '#6D28D9'] : ['#4338CA', '#6366F1', '#8B5CF6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.hpCardGradient}
+            >
+
+              <View style={styles.hpCardDecoCircle1} />
+              <View style={styles.hpCardDecoCircle2} />
+
+              <View style={styles.hpCardTopRow}>
+                <View style={styles.hpIconContainer}>
+                  <FileText size={28} color="white" />
                 </View>
+                {!isPremium && (
+                  <View style={styles.hpPremiumBadge}>
+                    <Crown size={12} color="#FFD700" />
+                    <Text style={styles.hpPremiumText}>Premium</Text>
+                  </View>
+                )}
               </View>
-              <View style={[s.xpTrack, { backgroundColor: theme.colors.border }]}>
-                <View
-                  style={[
-                    s.xpFill,
-                    {
-                      width: `${Math.min(100, xpProgress.percent)}%`,
-                      backgroundColor: TIER_COLORS[currentLevel.tier],
-                    },
-                  ]}
-                />
+
+              <Text style={styles.hpCardTitle}>Högskoleprov</Text>
+              <Text style={styles.hpCardSubtitle}>Träna inför högskoleprovet med autentiska uppgifter, tidsbegränsning och detaljerad statistik</Text>
+
+              <View style={styles.hpCardChips}>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>ORD</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>LÄS</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>MEK</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>XYZ</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>KVA</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>DTK</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>ELF</Text></View>
+                <View style={styles.hpChip}><Text style={styles.hpChipText}>NOG</Text></View>
               </View>
-              <Text style={[s.xpLabel, { color: theme.colors.textSecondary }]}>
-                {xpProgress.current} / {xpProgress.required} XP till nästa nivå
-              </Text>
-            </View>
-            <ChevronRight size={18} color={theme.colors.textMuted} />
+
+              <View style={styles.hpCardFooter}>
+                <Text style={styles.hpFooterText}>Börja träna →</Text>
+              </View>
+            </LinearGradient>
+
           </TouchableOpacity>
         </SlideInView>
 
-        {/* ── Premium Banner ─────────────────────────── */}
+        {/* Diagnosstöd Card */}
+        <SlideInView direction="up" delay={215} duration={300}>
+          <TouchableOpacity
+            style={styles.diagnosCard}
+            onPress={() => router.push('/diagnosstod' as any)}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={isDark ? ['#312E81', '#4C1D95', '#1E3A5F'] : ['#6366F1', '#8B5CF6', '#06B6D4']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.diagnosCardGradient}
+            >
+              <View style={styles.diagnosDecoCircle1} />
+              <View style={styles.diagnosDecoCircle2} />
+              <View style={styles.diagnosCardContent}>
+                <View style={styles.diagnosLeft}>
+                  <View style={styles.diagnosIconWrap}>
+                    <Heart size={22} color="white" fill="rgba(255,255,255,0.3)" />
+                  </View>
+                  <View style={styles.diagnosTextBlock}>
+                    <Text style={styles.diagnosTitle}>Diagnosstöd</Text>
+                    <Text style={styles.diagnosSubtitle} numberOfLines={2}>
+                      ADHD, dyslexi, autism & mer — personaliserade studiestrategier
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={22} color="rgba(255,255,255,0.7)" />
+              </View>
+              <View style={styles.diagnosPillRow}>
+                {['ADHD', 'Dyslexi', 'Autism', 'ADD', 'Ångest'].map((d) => (
+                  <View key={d} style={styles.diagnosPill}>
+                    <Text style={styles.diagnosPillText}>{d}</Text>
+                  </View>
+                ))}
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </SlideInView>
+
+        {/* Study Insights Card */}
+        <SlideInView direction="up" delay={225} duration={300}>
+          <TouchableOpacity 
+            style={[styles.insightsCard, { backgroundColor: theme.colors.card }]}
+            onPress={() => router.push('/study-insights' as any)}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={isDark ? ['#0D9488', '#059669'] : ['#10B981', '#059669']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.insightsCardGradient}
+            >
+              <View style={styles.insightsCardContent}>
+                <View style={styles.insightsCardLeft}>
+                  <View style={styles.insightsIconContainer}>
+                    <Brain size={24} color="white" />
+                  </View>
+                  <View style={styles.insightsCardInfo}>
+                    <Text style={styles.insightsCardTitle}>Studieinsikter</Text>
+                    <Text style={styles.insightsCardSubtitle} numberOfLines={2}>Spaced repetition, smart analys & kunskapsluckor</Text>
+                  </View>
+                </View>
+                <ChevronRight size={24} color="rgba(255,255,255,0.8)" />
+              </View>
+              <View style={styles.insightsCardMeta}>
+                <View style={styles.insightsMetaItem}>
+                  <Zap size={12} color="rgba(255,255,255,0.8)" />
+                  <Text style={styles.insightsMetaText}>AI-driven</Text>
+                </View>
+                <View style={styles.hpMetaDot} />
+                <View style={styles.insightsMetaItem}>
+                  <Text style={styles.insightsMetaText}>Repetition • Mönster • Analys</Text>
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </SlideInView>
+
+        {/* Compact XP Card */}
+        <SlideInView direction="up" delay={275} duration={300}>
+          <TouchableOpacity 
+            style={[styles.compactXpCard, { backgroundColor: theme.colors.card }]}
+            onPress={() => router.push('/achievements' as any)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.compactXpBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] + '20' }]}>
+              <Text style={styles.compactXpEmoji}>{currentLevel.iconEmoji}</Text>
+            </View>
+            <View style={styles.compactXpInfo}>
+              <View style={styles.compactXpRow}>
+                <Text style={[styles.compactXpLevel, { color: theme.colors.text }]}>Nivå {currentLevel.level}</Text>
+                <View style={[styles.compactXpTierBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] }]}>
+                  <Text style={styles.compactXpTierText}>{currentLevel.titleSv}</Text>
+                </View>
+              </View>
+              <View style={[styles.compactXpProgressBar, { backgroundColor: theme.colors.border }]}>
+                <View style={[styles.compactXpProgressFill, { width: `${Math.min(100, xpProgress.percent)}%`, backgroundColor: TIER_COLORS[currentLevel.tier] }]} />
+              </View>
+              <Text style={[styles.compactXpProgressText, { color: theme.colors.textSecondary }]}>
+                {xpProgress.current} / {xpProgress.required} XP till nästa nivå
+              </Text>
+            </View>
+            <View style={styles.compactXpRight}>
+              <View style={styles.compactXpTotal}>
+                <Zap size={14} color={TIER_COLORS[currentLevel.tier]} />
+                <Text style={[styles.compactXpTotalNumber, { color: theme.colors.text }]}>{totalXp}</Text>
+              </View>
+              <ChevronRight size={18} color={theme.colors.textMuted} />
+            </View>
+          </TouchableOpacity>
+        </SlideInView>
+
+        {/* Study Tips Section */}
+        <SlideInView direction="up" delay={300} duration={300}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <Sparkles size={20} color={theme.colors.primary} />
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/study-tips' as any)}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.tipsGrid}>
+              {studyTips.slice(0, 2).map((tip, index) => (
+                <FadeInView key={tip.id} delay={350 + index * 30} duration={250}>
+                  <TouchableOpacity 
+                    style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
+                    onPress={() => router.push(`/study-tip/${tip.id}` as any)}
+                  >
+                    <Text style={styles.compactTipIcon}>{tip.icon}</Text>
+                    <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
+                    <View style={[styles.compactTipDifficulty, { 
+                      backgroundColor: tip.difficulty === 'Nybörjare' ? theme.colors.success + '20' :
+                                     tip.difficulty === 'Medel' ? theme.colors.warning + '20' :
+                                     theme.colors.error + '20'
+                    }]}>
+                      <Text style={[styles.compactTipDifficultyText, { 
+                        color: tip.difficulty === 'Nybörjare' ? theme.colors.success :
+                              tip.difficulty === 'Medel' ? theme.colors.warning :
+                              theme.colors.error
+                      }]}>{tip.difficulty}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </FadeInView>
+              ))}
+            </View>
+          </View>
+        </SlideInView>
+
+        {/* Study Techniques Section */}
+        <SlideInView direction="up" delay={350} duration={300}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <Brain size={20} color={theme.colors.primary} />
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/study-techniques' as any)}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.tipsGrid}>
+              {studyTechniques.slice(0, 2).map((technique, index) => (
+                <FadeInView key={technique.id} delay={400 + index * 30} duration={250}>
+                  <TouchableOpacity 
+                    style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
+                    onPress={() => router.push(`/study-technique/${technique.id}` as any)}
+                  >
+                    <Text style={styles.compactTipIcon}>{technique.icon}</Text>
+                    <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{technique.title}</Text>
+                    <View style={[styles.compactTimeTag, { backgroundColor: theme.colors.primary + '15' }]}>
+                      <Clock size={10} color={theme.colors.primary} />
+                      <Text style={[styles.compactTimeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </FadeInView>
+              ))}
+            </View>
+          </View>
+        </SlideInView>
+
+        {/* Premium Upgrade Banner */}
         {!isPremium && (
-          <SlideInView direction="up" delay={280} duration={400}>
-            <View style={s.sectionWrap}>
-              <TouchableOpacity
-                style={[s.premBanner, { backgroundColor: theme.colors.warning + '0C', borderColor: theme.colors.warning + '20' }]}
+          <SlideInView direction="up" delay={350} duration={300}>
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={[styles.premiumBanner, { backgroundColor: theme.colors.warning + '15', borderColor: theme.colors.warning + '30' }]}
                 onPress={() => router.push('/premium' as any)}
-                activeOpacity={0.85}
               >
-                <View style={s.premBannerInner}>
-                  <View style={s.premBannerLeft}>
-                    <Crown size={22} color={theme.colors.warning} />
-                    <View style={{ marginLeft: 12, flex: 1 }}>
-                      <Text style={[s.premBannerTitle, { color: theme.colors.text }]}>Uppgradera till Premium</Text>
-                      <Text style={[s.premBannerSub, { color: theme.colors.textSecondary }]} numberOfLines={2}>
-                        Obegränsade kurser, avancerad statistik och mer
-                      </Text>
+                <View style={styles.premiumBannerContent}>
+                  <View style={styles.premiumBannerLeft}>
+                    <Crown size={24} color={theme.colors.warning} />
+                    <View style={styles.premiumBannerText}>
+                      <Text style={[styles.premiumBannerTitle, { color: theme.colors.text }]}>Uppgradera till Premium</Text>
+                      <Text style={[styles.premiumBannerSubtitle, { color: theme.colors.textSecondary }]} numberOfLines={2}>Obegränsade kurser, avancerad statistik och mer</Text>
                     </View>
                   </View>
-                  <View style={[s.premBannerBtn, { backgroundColor: theme.colors.warning }]}>
-                    <Text style={s.premBannerBtnText}>Prova</Text>
+                  <View style={[styles.premiumBannerButton, { backgroundColor: theme.colors.warning }]}>
+                    <Text style={styles.premiumBannerButtonText}>Uppgradera</Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -554,334 +813,1301 @@ export default function HomeScreen() {
           </SlideInView>
         )}
 
-        {/* ── Study Tips (compact) ───────────────────── */}
-        <SlideInView direction="up" delay={300} duration={400}>
-          <View style={s.sectionWrap}>
-            <View style={s.sectionHead}>
-              <View style={s.sectionTitleRow}>
-                <Sparkles size={18} color={theme.colors.primary} />
-                <Text style={[s.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
-              </View>
-              <TouchableOpacity onPress={() => router.push('/study-tips' as any)}>
-                <Text style={[s.seeAll, { color: theme.colors.primary }]}>Alla</Text>
+        {/* Active Courses */}
+        <SlideInView direction="up" delay={400} duration={300}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Aktiva kurser</Text>
+              <TouchableOpacity onPress={() => router.push('/courses' as any)}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tipsScroll}>
-              {[
-                { icon: '🍅', title: 'Pomodoro', tag: 'Fokus' },
-                { icon: '🧠', title: 'Aktiv rep.', tag: 'Minne' },
-                { icon: '📅', title: 'Spaced rep.', tag: 'Minne' },
-                { icon: '👨‍🏫', title: 'Feynman', tag: 'Förståelse' },
-                { icon: '🗺️', title: 'Mind maps', tag: 'Organisation' },
-              ].map((tip, i) => (
-                <TouchableOpacity
-                  key={tip.title}
-                  style={[s.tipChip, { backgroundColor: theme.colors.card }]}
-                  onPress={() => router.push(`/study-tip/${i + 1}` as any)}
-                  activeOpacity={0.7}
+            
+            {activeCourses.length > 0 ? (
+              activeCourses.slice(0, 3).map((course, index) => (
+                <FadeInView key={course.id} delay={450 + index * 50} duration={250}>
+                  <TouchableOpacity 
+                    style={[styles.courseCard, { backgroundColor: theme.colors.card }]}
+                    onPress={() => {
+                      console.log('Navigating to course:', course.id, course.title);
+                      router.push(`/course/${course.id}` as any);
+                    }}
+                  >
+                    <View style={styles.courseHeader}>
+                      <View style={styles.courseInfo}>
+                        <Text style={[styles.courseTitle, { color: theme.colors.text }]} numberOfLines={1}>{course.title}</Text>
+                        <Text style={[styles.courseSubject, { color: theme.colors.textSecondary }]} numberOfLines={1}>{course.subject}</Text>
+                      </View>
+                      <View style={styles.courseProgressContainer}>
+                        <Text style={[styles.courseProgress, { color: theme.colors.primary }]}>{course.progress}%</Text>
+                      </View>
+                    </View>
+                    <View style={[styles.progressBar, { backgroundColor: theme.colors.borderLight }]}>
+                      <View 
+                        style={[styles.progressFill, { 
+                          width: `${course.progress}%`,
+                          backgroundColor: theme.colors.primary
+                        }]} 
+                      />
+                    </View>
+                  </TouchableOpacity>
+                </FadeInView>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <Target size={48} color={theme.colors.textMuted} />
+                <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Inga aktiva kurser</Text>
+                <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>Lägg till kurser för att komma igång</Text>
+                <TouchableOpacity 
+                  style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
+                  onPress={handleAddCourse}
                 >
-                  <Text style={s.tipChipIcon}>{tip.icon}</Text>
-                  <Text style={[s.tipChipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
-                  <View style={[s.tipChipTag, { backgroundColor: theme.colors.primary + '10' }]}>
-                    <Text style={[s.tipChipTagText, { color: theme.colors.primary }]}>{tip.tag}</Text>
-                  </View>
+                  <Plus size={20} color="white" />
+                  <Text style={styles.addButtonText}>Lägg till kurs</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+              </View>
+            )}
           </View>
         </SlideInView>
-
-        {/* bottom spacer for tab bar */}
-        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
 }
 
-/* ── Styles ──────────────────────────────────────────────── */
-const s = StyleSheet.create({
-  container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  err: { fontSize: 16 },
-  scroll: { flexGrow: 1, paddingBottom: 20 },
-
-  /* header */
-  headerWrap: { paddingHorizontal: HORIZONTAL_PADDING, paddingTop: 60, paddingBottom: 20 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  headerText: { flex: 1, marginRight: 16 },
-  greeting: { fontSize: 30, fontWeight: '800' as const, letterSpacing: -0.5, marginBottom: 4 },
-  dateText: { fontSize: 15, fontWeight: '500' as const, letterSpacing: 0.1 },
-  headerBadges: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  premPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, gap: 4 },
-  premPillText: { fontSize: 12, fontWeight: '700' as const, letterSpacing: 0.3 },
-  avatarBtn: { width: 42, height: 42, borderRadius: 21, overflow: 'hidden' },
-  avatarFallback: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
-  demoBanner: { marginTop: 14, borderRadius: 12, padding: 12, alignItems: 'center' },
-  demoBannerText: { fontSize: 14, fontWeight: '600' as const },
-
-  /* hero */
-  heroGradient: {
-    marginHorizontal: HORIZONTAL_PADDING,
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 28,
-    overflow: 'hidden' as const,
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  heroBlob: {
-    position: 'absolute' as const,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  heroContent: { zIndex: 1 },
-  heroStatsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', marginBottom: 24 },
-  heroStat: { alignItems: 'center', flex: 1 },
-  heroStatIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  heroStatVal: { fontSize: 22, fontWeight: '800' as const, color: 'white', marginBottom: 2 },
-  heroStatLbl: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '500' as const, textAlign: 'center' },
-  heroStatDiv: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.15)' },
-  heroCta: { borderRadius: 16, overflow: 'hidden' },
-  heroCtaInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    gap: 10,
-  },
-  heroCtaIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: '#EEF2FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroCtaText: { fontSize: 16, fontWeight: '700' as const, color: '#1E1B4B', flex: 1 },
-
-  /* nav grid */
-  navGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: HORIZONTAL_PADDING,
-    gap: CARD_GAP,
-    marginBottom: 28,
-  },
-  navCard: {
-    width: (SCREEN_WIDTH - HORIZONTAL_PADDING * 2 - CARD_GAP) / 2,
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  navIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  navTitle: { fontSize: 16, fontWeight: '700' as const, lineHeight: 22, marginBottom: 4 },
-  navSub: { fontSize: 12, fontWeight: '500' as const },
-
-  /* stats row */
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: HORIZONTAL_PADDING,
-    gap: 10,
-    marginBottom: 28,
-  },
-  statPill: {
+const styles = StyleSheet.create({
+  container: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
   },
-  statPillVal: { fontSize: 15, fontWeight: '700' as const },
-  statPillLbl: { fontSize: 12, fontWeight: '500' as const },
-
-  /* sections */
-  sectionWrap: { paddingHorizontal: HORIZONTAL_PADDING, marginBottom: 28 },
-  sectionHead: {
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 100,
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  headerLogo: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+  },
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
+    alignItems: 'flex-start',
   },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: 19, fontWeight: '700' as const, letterSpacing: -0.3 },
-  seeAll: { fontSize: 15, fontWeight: '600' as const },
-
-  /* exams */
-  examCard: {
+  headerLeft: {
+    flex: 1,
+    marginRight: 16,
+  },
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
   },
-  examBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+  greeting: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+    letterSpacing: -0.5,
   },
-  examBadgeDay: { fontSize: 18, fontWeight: '700' as const, lineHeight: 22 },
-  examBadgeMonth: { fontSize: 9, fontWeight: '700' as const, letterSpacing: 0.5, marginTop: 1 },
-  examInfo: { flex: 1 },
-  examName: { fontSize: 15, fontWeight: '600' as const, marginBottom: 4 },
-  examMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
-  examMetaText: { fontSize: 11, fontWeight: '500' as const },
-  examDot: { fontSize: 11 },
-  urgentTag: {
+  subtitle: {
+    fontSize: 16,
+    fontWeight: '400',
+  },
+  premiumBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
     gap: 4,
-    marginTop: 6,
-    alignSelf: 'flex-start',
   },
-  urgentTagText: { fontSize: 10, fontWeight: '700' as const },
-  emptyExam: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderStyle: 'dashed' as const,
+  premiumText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  emptyExamIcon: {
+  profileButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  profileButtonFallback: {
     width: 44,
     height: 44,
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
   },
-  emptyExamTitle: { fontSize: 15, fontWeight: '600' as const, marginBottom: 2 },
-  emptyExamSub: { fontSize: 13 },
-
-  /* courses */
-  courseCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 10,
+  demoBanner: {
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  demoText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  heroCard: {
+    marginHorizontal: 24,
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  courseTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  courseTitle: { fontSize: 16, fontWeight: '600' as const, marginBottom: 2 },
-  courseSubject: { fontSize: 13, fontWeight: '500' as const },
-  coursePct: { fontSize: 16, fontWeight: '700' as const },
-  progressTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 3 },
-  emptyCourses: { alignItems: 'center', paddingVertical: 36 },
-  emptyTitle: { fontSize: 18, fontWeight: '600' as const, marginTop: 12, marginBottom: 4 },
-  emptySub: { fontSize: 14, textAlign: 'center', marginBottom: 20, lineHeight: 20 },
-  addBtn: {
+  heroContent: {
+    alignItems: 'center',
+  },
+  heroStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 11,
-    borderRadius: 14,
-    gap: 8,
+    justifyContent: 'space-around',
+    width: '100%',
   },
-  addBtnText: { color: 'white', fontSize: 15, fontWeight: '600' as const },
-
-  /* xp card */
-  xpCard: {
-    marginHorizontal: HORIZONTAL_PADDING,
+  heroStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  heroStatIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  heroStatNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: 'white',
+    marginBottom: 4,
+  },
+  heroStatLabel: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  heroStatSubtext: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontWeight: '400',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  heroStatDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginHorizontal: 16,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    marginBottom: 24,
+    gap: 16,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  actionButtonFull: {
+    flex: undefined,
+    width: '100%',
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  miniStatsGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    marginBottom: 32,
+    gap: 12,
+  },
+  miniStatCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  miniStatNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  miniStatLabel: {
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  section: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  seeAllText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  hpCard: {
+    marginHorizontal: 24,
     marginBottom: 28,
+    borderRadius: 24,
+    overflow: 'hidden' as const,
+    shadowColor: '#4338CA',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  hpCardGradient: {
+    padding: 24,
+    paddingBottom: 20,
+    borderRadius: 24,
+    overflow: 'hidden',
+    position: 'relative' as const,
+    minHeight: 220,
+  },
+  hpCardInnerShadow: {
+    display: 'none' as const,
+  },
+  hpCardDecoCircle1: {
+    position: 'absolute' as const,
+    top: -30,
+    right: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  hpCardDecoCircle2: {
+    position: 'absolute' as const,
+    bottom: -20,
+    left: -20,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  hpCard3dBottom: {
+    display: 'none' as const,
+  },
+  hpCardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    zIndex: 1,
+  },
+  hpIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  hpCardTitle: {
+    fontSize: 24,
+    fontWeight: '800' as const,
+    color: 'white',
+    marginBottom: 6,
+    letterSpacing: -0.5,
+    zIndex: 1,
+  },
+  hpCardSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 20,
+    marginBottom: 16,
+    zIndex: 1,
+  },
+  hpCardChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 18,
+    zIndex: 1,
+  },
+  hpChip: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  hpChipText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: 'rgba(255,255,255,0.9)',
+    letterSpacing: 0.5,
+  },
+  hpCardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
+    paddingTop: 14,
+    zIndex: 1,
+  },
+  hpFooterText: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: 'white',
+    letterSpacing: 0.3,
+  },
+  hpPremiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  hpPremiumText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#FFD700',
+  },
+  compactXpCard: {
+    marginHorizontal: 24,
+    marginBottom: 24,
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 3,
   },
-  xpBadge: {
-    width: 44,
-    height: 44,
+  compactXpBadge: {
+    width: 48,
+    height: 48,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
-  xpBadgeEmoji: { fontSize: 22 },
-  xpInfo: { flex: 1 },
-  xpRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  xpLevel: { fontSize: 15, fontWeight: '700' as const },
-  xpTierPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  xpTierText: { fontSize: 10, fontWeight: '700' as const, color: 'white', letterSpacing: 0.3 },
-  xpTrack: { height: 6, borderRadius: 3, overflow: 'hidden' as const, marginBottom: 5 },
-  xpFill: { height: '100%', borderRadius: 3 },
-  xpLabel: { fontSize: 11, fontWeight: '500' as const },
-
-  /* premium banner */
-  premBanner: { borderRadius: 18, borderWidth: 1, padding: 18 },
-  premBannerInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  premBannerLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  premBannerTitle: { fontSize: 15, fontWeight: '700' as const, marginBottom: 2 },
-  premBannerSub: { fontSize: 12, lineHeight: 17 },
-  premBannerBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
-  premBannerBtnText: { color: 'white', fontSize: 14, fontWeight: '700' as const },
-
-  /* tips */
-  tipsScroll: { paddingRight: HORIZONTAL_PADDING, gap: 10 },
-  tipChip: {
-    width: 110,
+  compactXpEmoji: {
+    fontSize: 24,
+  },
+  compactXpInfo: {
+    flex: 1,
+  },
+  compactXpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  compactXpLevel: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  compactXpTierBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  compactXpTierText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: 'white',
+  },
+  compactXpProgressBar: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden' as const,
+    marginBottom: 6,
+  },
+  compactXpProgressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  compactXpProgressText: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+  },
+  compactXpRight: {
+    alignItems: 'center' as const,
+    gap: 4,
+  },
+  compactXpTotal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  compactXpTotalNumber: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  levelCard: {
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  levelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  levelBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  levelInfo: {
+    flex: 1,
+  },
+  levelTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  levelSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  achievementsButton: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  achievementsButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  recentAchievements: {
+    borderTopWidth: 1,
+    paddingTop: 16,
+  },
+  recentAchievementsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  achievementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  achievementIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  achievementText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  courseCard: {
     borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  courseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  courseInfo: {
+    flex: 1,
+  },
+  courseTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  courseSubject: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  courseProgressContainer: {
+    alignItems: 'flex-end',
+  },
+  courseProgress: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  progressBar: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  addButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  tipsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  compactTipCard: {
+    width: (width - 72) / 2,
+    height: 130,
+    borderRadius: 12,
     padding: 12,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  tipChipIcon: { fontSize: 22, marginBottom: 8 },
-  tipChipTitle: { fontSize: 12, fontWeight: '600' as const, textAlign: 'center', marginBottom: 8 },
-  tipChipTag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  tipChipTagText: { fontSize: 9, fontWeight: '600' as const },
+  compactTipIcon: {
+    fontSize: 20,
+    marginBottom: 8,
+  },
+  compactTipTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 18,
+    height: 36,
+  },
+  compactTipDifficulty: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  compactTipDifficultyText: {
+    fontSize: 9,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  techniquesGrid: {
+    gap: 12,
+  },
+  compactTechniqueCard: {
+    borderRadius: 12,
+    padding: 16,
+    height: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  compactTechniqueIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  compactTechniqueTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  compactTimeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    gap: 3,
+    marginRight: 8,
+  },
+  compactTimeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  compactArrow: {
+    opacity: 0.6,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  seeAllButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  premiumBanner: {
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  premiumBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  premiumBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  premiumBannerText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  premiumBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  premiumBannerSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  premiumBannerButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  premiumBannerButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  techniqueCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  techniqueHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  techniqueLeft: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+  techniqueIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  techniqueInfo: {
+    flex: 1,
+  },
+  techniqueTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  techniqueDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  techniqueRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  timeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  timeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  stepsContainer: {
+    gap: 8,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stepNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepNumberText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stepText: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  examCard: {
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  examCardContent: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  examDateBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  examDateDay: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    lineHeight: 24,
+  },
+  examDateMonth: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    letterSpacing: 0.5,
+  },
+  examInfo: {
+    flex: 1,
+  },
+  examTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  examMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  examMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  examMetaText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  urgentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  urgentText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
+  addExamPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  addExamIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  addExamContent: {
+    flex: 1,
+  },
+  addExamTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  addExamSubtitle: {
+    fontSize: 13,
+    fontWeight: '400' as const,
+  },
+  xpLevelCard: {
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  xpLevelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  xpLevelBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    marginRight: 14,
+    position: 'relative' as const,
+  },
+  xpLevelEmoji: {
+    fontSize: 24,
+  },
+  xpLevelNumberBadge: {
+    position: 'absolute' as const,
+    bottom: -4,
+    right: -4,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  xpLevelNumber: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
+  xpLevelInfo: {
+    flex: 1,
+  },
+  xpLevelTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 6,
+  },
+  xpTierBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    alignSelf: 'flex-start' as const,
+  },
+  xpTierText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  xpTotalContainer: {
+    alignItems: 'flex-end' as const,
+  },
+  xpTotalNumber: {
+    fontSize: 24,
+    fontWeight: '800' as const,
+  },
+  xpTotalLabel: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+    marginTop: 2,
+  },
+  xpProgressContainer: {
+    marginTop: 4,
+  },
+  xpProgressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  xpProgressCurrent: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  xpProgressRequired: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  xpProgressTrack: {
+    height: 10,
+    borderRadius: 5,
+    overflow: 'hidden' as const,
+  },
+  xpProgressFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  xpNextLevelPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
+  xpNextLevelText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  challengesHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  unclaimedBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  unclaimedBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
+  challengesRefreshText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  challengeEmojiContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  challengeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap' as const,
+  },
+  difficultyBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  difficultyText: {
+    fontSize: 9,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+  },
+  emptyChallenges: {
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyChallengesText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  emptyChallengesSubtext: {
+    fontSize: 13,
+    fontWeight: '400' as const,
+  },
+  insightsCard: {
+    marginHorizontal: 24,
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  insightsCardGradient: {
+    padding: 20,
+    position: 'relative' as const,
+  },
+  insightsCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  insightsCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
+  },
+  insightsIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  insightsCardInfo: {
+    flex: 1,
+  },
+  insightsCardTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: 'white',
+    marginBottom: 4,
+  },
+  insightsCardSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 18,
+  },
+  insightsCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+  },
+  insightsMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  insightsMetaText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  aiToolsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  aiToolCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  aiToolIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  aiToolTitle: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  aiToolDesc: {
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  diagnosCard: {
+    marginHorizontal: 24,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  diagnosCardGradient: {
+    padding: 20,
+    position: 'relative' as const,
+    overflow: 'hidden',
+  },
+  diagnosDecoCircle1: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: -30,
+    right: -20,
+  },
+  diagnosDecoCircle2: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    bottom: -20,
+    left: 40,
+  },
+  diagnosCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  diagnosLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
+  },
+  diagnosIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  diagnosTextBlock: {
+    flex: 1,
+  },
+  diagnosTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: 'white',
+    marginBottom: 4,
+  },
+  diagnosSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.82)',
+    lineHeight: 18,
+  },
+  diagnosPillRow: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  diagnosPill: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  diagnosPillText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: 'rgba(255,255,255,0.95)',
+  },
+  examStudyPlanIconBtn: {
+    alignSelf: 'center',
+    marginLeft: 10,
+  },
+  examStudyPlanIconGradient: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

@@ -23,6 +23,7 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
 import { HP_SECTIONS, HP_MILESTONES, getScoreLabel } from '@/constants/hogskoleprovet';
+import { RadarChart } from '@/components/shared/RadarChart';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -128,6 +129,26 @@ export default function HPStatsScreen() {
                 </Text>
               </View>
             ))}
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <BarChart3 size={18} color={theme.colors.primary} />
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                Radaröversikt
+              </Text>
+            </View>
+
+            <View style={[styles.radarContainer, { backgroundColor: theme.colors.card }]}>
+              <RadarChart
+                data={HP_SECTIONS.map((section) => ({
+                  label: section.code,
+                  value: getSectionProgress(section.code).averageScore || 0,
+                  color: section.color,
+                }))}
+                size={SCREEN_WIDTH - 80}
+              />
+            </View>
           </View>
 
           <View style={styles.section}>
@@ -530,5 +551,11 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 20,
+  },
+  radarContainer: {
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 16,
   },
 });

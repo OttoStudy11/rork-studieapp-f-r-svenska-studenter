@@ -5,7 +5,8 @@
     "version": "1.7.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "studiestugan",
+    "associatedDomains": ["applinks:studiestugan.rork.app"],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {

@@ -4,6 +4,8 @@ import { useAuth } from './AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJsonParse } from '@/utils/safeJsonParse';
+import { logger } from '@/utils/logger';
 import { 
   HP_SECTIONS, 
   SAMPLE_HP_QUESTIONS, 
@@ -213,21 +215,19 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
       ]);
 
       if (statsJson) {
-        const stats = JSON.parse(statsJson);
+        const stats = safeJsonParse<Partial<HPUserStats>>(statsJson, {}, 'HPContext');
         setUserStats(prev => ({ ...prev, ...stats }));
-        console.log('[HP] Loaded stats:', stats);
       }
 
       if (sessionJson) {
-        const session = JSON.parse(sessionJson);
+        const session = safeJsonParse<HPSessionState | null>(sessionJson, null, 'HPContext');
         if (session && session.attemptId && !session.isCompleted) {
           setSessionState(session);
-          console.log('[HP] Restored active session');
         }
       }
 
       if (milestonesJson) {
-        const milestones = JSON.parse(milestonesJson);
+        const milestones = safeJsonParse<string[]>(milestonesJson, [], 'HPContext');
         setUserStats(prev => ({ ...prev, unlockedMilestones: milestones }));
       }
 

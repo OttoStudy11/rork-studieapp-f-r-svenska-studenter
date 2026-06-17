@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { useAuth } from '@/contexts/AuthContext';
+import { safeJsonParse } from '@/utils/safeJsonParse';
+import { logger } from '@/utils/logger';
 import { 
   allCourseContent, 
   getCourseContentById,

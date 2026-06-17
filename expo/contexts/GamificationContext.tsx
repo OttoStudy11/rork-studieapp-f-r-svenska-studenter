@@ -6,6 +6,8 @@ import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { supabase } from '@/lib/supabase';
 import { performanceCache } from '@/lib/performance';
+import { safeJsonParse } from '@/utils/safeJsonParse';
+import { logger } from '@/utils/logger';
 import {
   LEVELS,
   LevelDefinition,
@@ -152,15 +154,16 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored);
+        const parsed = safeJsonParse<Record<string, unknown>>(stored, {}, 'GamificationContext');
         return {
-          totalXp: parsed.totalXp ?? 0,
-          streak: parsed.streak ?? 0,
-          recentTransactions: parsed.recentTransactions ?? [],
+          totalXp: (parsed.totalXp as number) ?? 0,
+          streak: (parsed.streak as number) ?? 0,
+          recentTransactions: (parsed.recentTransactions as PointTransaction[]) ?? [],
         };
       }
-    } catch (error) {
-      console.log('Failed to load gamification from storage:', error);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('GamificationContext', 'Failed to load from storage', msg);
     }
     return {};
   }, []);

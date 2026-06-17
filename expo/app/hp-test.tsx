@@ -115,28 +115,38 @@ export default function HPFullTestScreen() {
 
   useEffect(() => {
     if (sessionState && sessionState.timeRemaining > 0 && !isPaused) {
+      if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         setSessionState(prev => {
           if (!prev) return prev;
           const newTime = prev.timeRemaining - 1;
           if (newTime <= 0) {
-            handleTimeUp();
             return { ...prev, timeRemaining: 0 };
           }
           return { ...prev, timeRemaining: newTime };
         });
       }, 1000);
-    } else if (timerRef.current && isPaused) {
+    } else if (timerRef.current) {
       clearInterval(timerRef.current);
+      timerRef.current = null;
     }
 
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionState?.attemptId, isPaused]);
+  }, [sessionState?.attemptId, isPaused, sessionState?.timeRemaining]);
+
+  useEffect(() => {
+    if (sessionState && sessionState.timeRemaining <= 0 && sessionState.timeRemaining !== undefined) {
+      const timeout = setTimeout(handleTimeUp, 100);
+      return () => clearTimeout(timeout);
+    }
+  }, [sessionState?.timeRemaining]);
+
+  const handleFinishRef = useRef<(() => Promise<void>) | null>(null);
 
   const handleTimeUp = useCallback(() => {
     if (timerRef.current) {
@@ -145,9 +155,8 @@ export default function HPFullTestScreen() {
     Alert.alert(
       'Tiden är slut!',
       'Ditt resultat sparas nu.',
-      [{ text: 'OK', onPress: handleFinish }]
+      [{ text: 'OK', onPress: () => handleFinishRef.current?.() }]
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const currentQuestion = sessionState?.questions[sessionState.currentQuestionIndex];
@@ -260,28 +269,38 @@ export default function HPFullTestScreen() {
     setShowExplanation(!!prevAnswer);
   };
 
-  const handleFinish = async () => {
+  const handleFinish = useCallback(async () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
+      timerRef.current = null;
     }
 
-    const result = await completeSession();
-    
-    if (result) {
-      router.replace({
-        pathname: '/hp-results' as any,
-        params: {
-          totalQuestions: result.totalQuestions.toString(),
-          correctAnswers: result.correctAnswers.toString(),
-          scorePercentage: result.scorePercentage.toFixed(1),
-          estimatedHPScore: result.estimatedHPScore.toFixed(2),
-          timeSpentMinutes: result.timeSpentMinutes.toString(),
-          sectionCode: '',
-          newMilestones: JSON.stringify(result.newMilestones),
-        },
-      });
+    try {
+      const result = await completeSession();
+      
+      if (result) {
+        router.replace({
+          pathname: '/hp-results' as any,
+          params: {
+            totalQuestions: result.totalQuestions.toString(),
+            correctAnswers: result.correctAnswers.toString(),
+            scorePercentage: result.scorePercentage.toFixed(1),
+            estimatedHPScore: result.estimatedHPScore.toFixed(2),
+            timeSpentMinutes: result.timeSpentMinutes.toString(),
+            sectionCode: '',
+            newMilestones: JSON.stringify(result.newMilestones),
+          },
+        });
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Okänt fel';
+      console.error('[HP Test] Failed to complete session:', message);
     }
-  };
+  }, [completeSession]);
+
+  useEffect(() => {
+    handleFinishRef.current = handleFinish;
+  }, [handleFinish]);
 
   const handleTogglePause = () => {
     setIsPaused(prev => !prev);

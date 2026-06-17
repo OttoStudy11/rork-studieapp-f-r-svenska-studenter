@@ -4,6 +4,8 @@ import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import * as db from '@/lib/database';
 import { Database } from '@/lib/database.types';
+import { safeJsonParse } from '@/utils/safeJsonParse';
+import { logger } from '@/utils/logger';
 
 type DbAchievement = Database['public']['Tables']['achievements']['Row'];
 type DbUserAchievement = Database['public']['Tables']['user_achievements']['Row'] & {
@@ -172,12 +174,9 @@ export const [AchievementProvider, useAchievements] = createContextHook(() => {
         // Parse achievements data - it can be JSONB or an object
         let achievement = userAchievement.achievements;
         if (typeof achievement === 'string') {
-          try {
-            achievement = JSON.parse(achievement);
-          } catch {
-            console.warn('Could not parse achievement data');
-            continue;
-          }
+          const parsed = safeJsonParse<typeof achievement | null>(achievement, null, 'AchievementContext');
+          if (!parsed) continue;
+          achievement = parsed;
         }
         
         if (achievement) {

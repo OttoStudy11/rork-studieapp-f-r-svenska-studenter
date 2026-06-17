@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Dimensions,
   StatusBar,
-  Animated
+  Animated,
+  Easing
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
@@ -22,6 +23,7 @@ import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar,
 import { router } from 'expo-router';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
+import { XpLevelRing } from '@/components/shared/XpLevelRing';
 
 const { width } = Dimensions.get('window');
 
@@ -155,6 +157,46 @@ export default function HomeScreen() {
     }
     router.push('/courses' as any);
   };
+
+  // Pulse animation for "Starta fokus" button
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseRef.current = pulse;
+    pulse.start();
+    return () => {
+      pulse.stop();
+      pulseRef.current = null;
+    };
+  }, [pulseAnim]);
+
+  // XP level ring
+  const levelRingAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(levelRingAnim, {
+      toValue: Math.min(100, xpProgress.percent) / 100,
+      duration: 800,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+  }, [xpProgress.percent, levelRingAnim]);
 
   // Handle loading with skeleton
   if (isLoading) {
@@ -406,13 +448,15 @@ export default function HomeScreen() {
         {/* Quick Actions */}
         <SlideInView direction="up" delay={50} duration={300}>
           <View style={styles.quickActions}>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.actionButtonFull, { backgroundColor: theme.colors.primary }]}
-              onPress={() => router.push('/timer' as any)}
-            >
-              <Clock size={24} color="white" />
-              <Text style={styles.actionButtonText}>Starta fokus</Text>
-            </TouchableOpacity>
+            <Animated.View style={{ transform: [{ scale: pulseAnim }], width: '100%' }}>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.actionButtonFull, { backgroundColor: theme.colors.primary }]}
+                onPress={() => router.push('/timer' as any)}
+              >
+                <Clock size={24} color="white" />
+                <Text style={styles.actionButtonText}>Starta fokus</Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
         </SlideInView>
 
@@ -729,18 +773,24 @@ export default function HomeScreen() {
             onPress={() => router.push('/achievements' as any)}
             activeOpacity={0.8}
           >
-            <View style={[styles.compactXpBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] + '20' }]}>
-              <Text style={styles.compactXpEmoji}>{currentLevel.iconEmoji}</Text>
-            </View>
+            <XpLevelRing
+              progress={xpProgress.percent}
+              color={TIER_COLORS[currentLevel.tier]}
+              size={72}
+              strokeWidth={5}
+              level={currentLevel.level}
+              totalXp={totalXp}
+              xpCurrent={xpProgress.current}
+              xpRequired={xpProgress.required}
+              tierName={currentLevel.titleSv}
+              emoji={currentLevel.iconEmoji}
+            />
             <View style={styles.compactXpInfo}>
               <View style={styles.compactXpRow}>
                 <Text style={[styles.compactXpLevel, { color: theme.colors.text }]}>Nivå {currentLevel.level}</Text>
                 <View style={[styles.compactXpTierBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] }]}>
                   <Text style={styles.compactXpTierText}>{currentLevel.titleSv}</Text>
                 </View>
-              </View>
-              <View style={[styles.compactXpProgressBar, { backgroundColor: theme.colors.border }]}>
-                <View style={[styles.compactXpProgressFill, { width: `${Math.min(100, xpProgress.percent)}%`, backgroundColor: TIER_COLORS[currentLevel.tier] }]} />
               </View>
               <Text style={[styles.compactXpProgressText, { color: theme.colors.textSecondary }]}>
                 {xpProgress.current} / {xpProgress.required} XP till nästa nivå
@@ -2216,5 +2266,12 @@ const styles = StyleSheet.create({
   aiHomeBtnText: {
     fontSize: 13,
     fontWeight: '600' as const,
+  },
+  hpMetaDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    alignSelf: 'center',
   },
 });

@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { safeJsonParse } from '@/utils/safeJsonParse';
+import { logger } from '@/utils/logger';
 
 export type HPPlanType = 'LUGN' | 'BALANSERAD' | 'INTENSIV';
 export type HPDateKey = 'fall2026';
@@ -182,7 +184,7 @@ export const [HPStudyPlanProvider, useHPStudyPlan] = createContextHook(() => {
         AsyncStorage.getItem(PROGRESS_STORAGE_KEY),
       ]);
       if (planStr) {
-        const parsed = JSON.parse(planStr) as HPStudyPlan;
+        const parsed = safeJsonParse<HPStudyPlan>(planStr, {} as HPStudyPlan, 'HPStudyPlan');
         const migratedPlan: HPStudyPlan = {
           ...parsed,
           hpDateKey: HP_EXAM_DATES[parsed.hpDateKey] ? parsed.hpDateKey : 'fall2026',
@@ -194,7 +196,7 @@ export const [HPStudyPlanProvider, useHPStudyPlan] = createContextHook(() => {
         console.log('[HPStudyPlan] Loaded plan:', migratedPlan.planType, migratedPlan.hpDateKey);
       }
       if (progressStr) {
-        const parsed = JSON.parse(progressStr) as HPStudyProgress;
+        const parsed = safeJsonParse<HPStudyProgress>(progressStr, {} as HPStudyProgress, 'HPStudyPlan');
         const streak = calculateStreak(parsed.dailyHistory);
         setProgress({ ...parsed, streak });
         console.log('[HPStudyPlan] Loaded progress, streak:', streak);

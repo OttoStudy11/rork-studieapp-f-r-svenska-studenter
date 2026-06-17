@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { usePremium } from './PremiumContext';
+import { safeJsonParse } from '@/utils/safeJsonParse';
+import { logger } from '@/utils/logger';
 
 export interface HPTrialStatus {
   hasPremium: boolean;
@@ -41,10 +43,12 @@ async function loadTrial(userId: string): Promise<StoredTrial | null> {
   try {
     const raw = await AsyncStorage.getItem(`${TRIAL_KEY_PREFIX}_${userId}`);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as StoredTrial;
-    if (parsed.userId !== userId) return null;
+    const parsed = safeJsonParse<StoredTrial>(raw, null as unknown as StoredTrial, 'HPTrialContext');
+    if (!parsed || parsed.userId !== userId) return null;
     return parsed;
-  } catch {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    logger.error('HPTrialContext', 'Failed to load trial', msg);
     return null;
   }
 }

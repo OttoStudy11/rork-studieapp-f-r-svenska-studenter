@@ -10,10 +10,6 @@ import {
   ActivityIndicator,
   Animated,
   StatusBar,
-  Modal,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
   RefreshControl
 } from 'react-native';
 import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router';
@@ -35,7 +31,6 @@ import {
   Lock,
   Award,
   Edit3,
-  X as CloseIcon,
   Brain,
   Sparkles,
   Zap,
@@ -47,11 +42,14 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import type { Database } from '@/lib/database.types';
-import { AIStudyInsights, AIQuickHelp } from '@/components/AIStudyInsights';
-import CourseAIChat from '@/components/CourseAIChat';
 import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
+import { ROUTES } from '@/utils/typedRoutes';
 import { Crown } from 'lucide-react-native';
 import CourseExamsSection from '@/components/CourseExamsSection';
+import CourseHero from '@/components/CourseHero';
+import CourseEditModal from '@/components/CourseEditModal';
+import CourseAISection from '@/components/CourseAISection';
+import CourseModulesSection from '@/components/CourseModulesSection';
 
 type Course = Database['public']['Tables']['courses']['Row'];
 type CourseLesson = Database['public']['Tables']['course_lessons']['Row'];
@@ -493,12 +491,12 @@ export default function CourseDetailScreen() {
 
   const navigateToLesson = (lesson: CourseLesson) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/lesson/${lesson.id}` as any);
+    router.push(ROUTES.lesson(lesson.id));
   };
 
   const navigateToStudyGuide = (guide: StudyGuide) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/study-guide/${guide.id}` as any);
+    router.push(ROUTES.studyGuide(guide.id));
   };
 
 
@@ -634,111 +632,17 @@ export default function CourseDetailScreen() {
           />
         }
       >
-        <Animated.View 
-          style={{
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }}
-        >
-        <View style={styles.heroContainer}>
-        <LinearGradient
-          colors={courseStyle.gradient as any}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.courseHeader}
-        >
-          {/* Decorative elements */}
-          <View style={styles.decorativeCircle1} />
-          <View style={styles.decorativeCircle2} />
-          
-          <View style={styles.courseHeaderContent}>
-            {/* Emoji and Title Section */}
-            <View style={styles.courseTitleSection}>
-              <View style={[styles.emojiContainer, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
-                <Text style={styles.courseEmojiLarge}>{courseStyle.emoji}</Text>
-              </View>
-              <View style={styles.courseTitleContainer}>
-                <Text style={styles.courseTitle}>{course.title}</Text>
-                <View style={styles.subjectBadge}>
-                  <Sparkles size={14} color="rgba(255, 255, 255, 0.9)" />
-                  <Text style={styles.courseSubject}>{course.subject}</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Course Description */}
-            <Text style={styles.courseDescription}>{course.description}</Text>
-            
-            {/* Progress Section with Enhanced Design */}
-            {userCourseData && (
-              <View style={styles.progressSection}>
-                <View style={styles.progressHeader}>
-                  <View style={styles.progressLabelContainer}>
-                    <TrendingUp size={18} color="white" />
-                    <Text style={styles.progressLabel}>Din framgång</Text>
-                  </View>
-                  <View style={styles.progressPercentBadge}>
-                    <Text style={styles.progressPercent}>{userCourseData.progress}%</Text>
-                  </View>
-                </View>
-                <View style={styles.progressBarContainer}>
-                  <View style={styles.progressBar}>
-                    <Animated.View 
-                      style={[
-                        styles.progressFill, 
-                        { width: `${userCourseData.progress}%` }
-                      ]} 
-                    />
-                  </View>
-                </View>
-                <View style={styles.progressTextContainer}>
-                  <View style={styles.progressStat}>
-                    <CheckCircle size={14} color="rgba(255, 255, 255, 0.9)" />
-                    <Text style={styles.progressText}>
-                      {userProgress.completed} av {userProgress.total} lektioner
-                    </Text>
-                  </View>
-                  {userCourseData?.target_grade && (
-                    <View style={styles.progressStat}>
-                      <Trophy size={14} color="#FCD34D" />
-                      <Text style={styles.progressText}>
-                        Mål: {userCourseData.target_grade}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            )}
-            
-            {/* Quick Stats with Enhanced Design */}
-            <View style={styles.quickStatsContainer}>
-              <View style={[styles.quickStatCard, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
-                <BookOpen size={20} color="white" />
-                <Text style={styles.quickStatNumber}>{modules.length}</Text>
-                <Text style={styles.quickStatLabel}>Moduler</Text>
-              </View>
-              <View style={[styles.quickStatCard, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
-                <Clock size={20} color="white" />
-                <Text style={styles.quickStatNumber}>{modules.reduce((sum, m) => sum + m.estimated_hours, 0)}h</Text>
-                <Text style={styles.quickStatLabel}>Uppskattad tid</Text>
-              </View>
-              <View style={[styles.quickStatCard, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
-                <Zap size={20} color="#FCD34D" />
-                <Text style={styles.quickStatNumber}>{userProgress.percentage}%</Text>
-                <Text style={styles.quickStatLabel}>Genomfört</Text>
-              </View>
-            </View>
-          </View>
-        </LinearGradient>
-        
-        <TouchableOpacity
-          style={[styles.editButton, { backgroundColor: 'rgba(255, 255, 255, 0.95)' }]}
-          onPress={() => setShowEditModal(true)}
-        >
-          <Edit3 size={20} color={courseStyle.primaryColor} />
-        </TouchableOpacity>
-        </View>
-        </Animated.View>
+        <CourseHero
+          course={course}
+          courseStyle={courseStyle}
+          userCourseData={userCourseData}
+          userProgress={userProgress}
+          modulesCount={modules.length}
+          totalHours={modules.reduce((sum, m) => sum + m.estimated_hours, 0)}
+          fadeAnim={fadeAnim}
+          slideAnim={slideAnim}
+          onEdit={() => setShowEditModal(true)}
+        />
 
 
 
@@ -801,7 +705,7 @@ export default function CourseDetailScreen() {
             style={[styles.flashcardsHeroCard, { backgroundColor: theme.colors.card }]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push(`/flashcards-v2/${id}` as any);
+              router.push(ROUTES.flashcardsV2(id!));
             }}
             activeOpacity={0.9}
           >
@@ -835,7 +739,7 @@ export default function CourseDetailScreen() {
             style={[styles.flashcardsHeroCard, { backgroundColor: theme.colors.card, marginTop: 16 }]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push(`/course-quiz/${id}` as any);
+              router.push(ROUTES.courseQuiz(id!));
             }}
             activeOpacity={0.9}
           >
@@ -872,36 +776,15 @@ export default function CourseDetailScreen() {
           accentColor={courseStyle.primaryColor}
         />
 
-        <View style={styles.aiSection}>
-          <View style={styles.aiSectionHeader}>
-            <Sparkles size={24} color={courseStyle.primaryColor} />
-            <Text style={[styles.aiSectionTitle, { color: theme.colors.text }]}>AI-Assisterad Inlärning</Text>
-          </View>
-          
-          <AIStudyInsights
-            courseTitle={course.title}
-            courseDescription={course.description}
-            progress={userCourseData?.progress || 0}
-            totalLessons={userProgress.total}
-            completedLessons={userProgress.completed}
-            courseStyle={courseStyle}
-          />
-
-          <AIQuickHelp
-            courseTitle={course.title}
-            courseStyle={courseStyle}
-            onAskQuestion={(question) => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push(`/ai-chat?question=${encodeURIComponent(question)}&course=${encodeURIComponent(course.title)}` as any);
-            }}
-          />
-
-          <CourseAIChat
-            courseTitle={course.title}
-            accentColor={courseStyle.primaryColor}
-            compact
-          />
-        </View>
+        <CourseAISection
+          courseTitle={course.title}
+          courseDescription={course.description}
+          userCourseData={userCourseData}
+          userProgress={userProgress}
+          courseStyle={courseStyle}
+          accentColor={courseStyle.primaryColor}
+          theme={theme}
+        />
 
         {studyGuides.length > 0 && (
           <View style={styles.section}>
@@ -934,147 +817,17 @@ export default function CourseDetailScreen() {
           </View>
         )}
 
-        <View style={styles.contentSection}>
-          <TouchableOpacity
-            style={[styles.contentToggle, { backgroundColor: theme.colors.card }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowContent(!showContent);
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={styles.contentToggleLeft}>
-              <BookOpen size={20} color={theme.colors.textMuted} />
-              <Text style={[styles.contentToggleTitle, { color: theme.colors.text }]}>Kursinnehåll & Lektioner</Text>
-            </View>
-            <View style={styles.contentToggleRight}>
-              <Text style={[styles.contentToggleCount, { color: theme.colors.textSecondary }]}>
-                {modules.length} moduler · {userProgress.total} lektioner
-              </Text>
-              {showContent ? (
-                <ChevronUp size={20} color={theme.colors.textMuted} />
-              ) : (
-                <ChevronDown size={20} color={theme.colors.textMuted} />
-              )}
-            </View>
-          </TouchableOpacity>
-
-          {showContent && (
-            <Animated.View style={styles.contentCollapse}>
-              {modules.map((module, moduleIndex) => {
-                const moduleLimit = freemium.checkCourseModule(moduleIndex);
-                const isModuleLocked = !moduleLimit.isAllowed;
-
-                return (
-            <View key={module.id} style={[styles.moduleCard, { backgroundColor: theme.colors.card }, isModuleLocked && { opacity: 0.6 }]}>
-              <View style={[styles.moduleHeader, { borderBottomColor: theme.colors.border }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={[styles.moduleTitle, { color: theme.colors.text, flex: 1 }]}>
-                    {moduleIndex + 1}. {module.title}
-                  </Text>
-                  {isModuleLocked && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFD700' + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, gap: 4 }}>
-                      <Crown size={12} color="#FFD700" />
-                      <Text style={{ fontSize: 11, fontWeight: '700' as const, color: '#FFD700' }}>Premium</Text>
-                    </View>
-                  )}
-                </View>
-                {module.description && <Text style={[styles.moduleDescription, { color: theme.colors.textSecondary }]}>{module.description}</Text>}
-                <Text style={[styles.moduleHours, { color: theme.colors.textMuted }]}>{module.estimated_hours}h uppskattad tid</Text>
-              </View>
-              
-              {!isModuleLocked && (
-              <View style={styles.lessonsContainer}>
-                {module.lessons.map((lesson, lessonIndex) => {
-                  const LessonIcon = getLessonTypeIcon(lesson.lesson_type);
-                  const isCompleted = lesson.progress?.status === 'completed';
-                  const isInProgress = lesson.progress?.status === 'in_progress';
-                  const isLocked = lessonIndex > 0 && !module.lessons[lessonIndex - 1].progress?.status;
-                  
-                  return (
-                    <TouchableOpacity
-                      key={lesson.id}
-                      style={[
-                        styles.lessonCard,
-                        { backgroundColor: theme.colors.surface },
-                        isCompleted && { backgroundColor: courseStyle.lightColor, borderColor: courseStyle.primaryColor, borderLeftWidth: 4 },
-                        isInProgress && { backgroundColor: theme.colors.warning + '15', borderColor: theme.colors.warning, borderLeftWidth: 4 },
-                        isLocked && { backgroundColor: theme.colors.borderLight, opacity: 0.6 }
-                      ]}
-                      onPress={() => !isLocked && navigateToLesson(lesson)}
-                      activeOpacity={isLocked ? 1 : 0.7}
-                    >
-                      <View style={styles.lessonLeft}>
-                        <View style={styles.lessonIconContainer}>
-                          {isLocked ? (
-                            <Lock size={20} color={theme.colors.textMuted} />
-                          ) : isCompleted ? (
-                            <CheckCircle size={20} color={courseStyle.primaryColor} />
-                          ) : isInProgress ? (
-                            <Circle size={20} color={theme.colors.warning} />
-                          ) : (
-                            <LessonIcon size={20} color={theme.colors.textSecondary} />
-                          )}
-                        </View>
-                        <View style={styles.lessonInfo}>
-                          <View style={styles.lessonTitleRow}>
-                            <Text style={[
-                              styles.lessonTitle,
-                              { color: theme.colors.text },
-                              isCompleted && { color: courseStyle.primaryColor },
-                              isLocked && { color: theme.colors.textMuted }
-                            ]}>
-                              {lessonIndex + 1}. {lesson.title}
-                            </Text>
-                            {isLocked && (
-                              <View style={[styles.lockedBadge, { backgroundColor: theme.colors.borderLight }]}>
-                                <Text style={[styles.lockedBadgeText, { color: theme.colors.textMuted }]}>Låst</Text>
-                              </View>
-                            )}
-                          </View>
-                          <Text style={[styles.lessonDescription, { color: theme.colors.textSecondary }]}>
-                            {lesson.description}
-                          </Text>
-                          <View style={styles.lessonMetadata}>
-                            <Text style={[styles.lessonDuration, { color: theme.colors.textMuted }]}>
-                              {lesson.estimated_minutes} min
-                            </Text>
-                            <View style={[
-                              styles.difficultyBadge,
-                              { backgroundColor: getDifficultyColor(lesson.difficulty_level) }
-                            ]}>
-                              <Text style={styles.difficultyText}>
-                                {lesson.difficulty_level === 'easy' ? 'Lätt' : 
-                                 lesson.difficulty_level === 'medium' ? 'Medel' : 'Svår'}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      </View>
-                      <ChevronRight size={20} color={theme.colors.textMuted} />
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              )}
-              {isModuleLocked && (
-                <View style={{ padding: 16, alignItems: 'center' }}>
-                  <TouchableOpacity
-                    onPress={() => router.push('/premium' as any)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFD700' + '15', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 }}
-                    activeOpacity={0.7}
-                  >
-                    <Lock size={14} color="#FFD700" />
-                    <Text style={{ fontSize: 13, fontWeight: '600' as const, color: '#FFD700' }}>Lås upp med Premium</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-                );
-              })}
-            </Animated.View>
-          )}
-        </View>
+        <CourseModulesSection
+          modules={modules as any}
+          userProgress={userProgress}
+          showContent={showContent}
+          setShowContent={setShowContent}
+          courseStyle={{ primaryColor: courseStyle.primaryColor, lightColor: courseStyle.lightColor }}
+          accentColor={courseStyle.primaryColor}
+          theme={theme as any}
+          freemium={freemium}
+          onNavigateLesson={navigateToLesson as any}
+        />
 
         {modules.length === 0 && (
           <View style={styles.emptyState}>
@@ -1102,251 +855,26 @@ export default function CourseDetailScreen() {
         )}
       </ScrollView>
 
-      <Modal
+      <CourseEditModal
         visible={showEditModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowEditModal(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
-          <View style={[styles.modalSheet, { backgroundColor: theme.colors.card }]}>
-            {/* Drag Handle */}
-            <View style={styles.sheetHandle} />
-
-            {/* Header */}
-            <View style={styles.sheetHeader}>
-              <View style={[styles.sheetIconBg, { backgroundColor: courseStyle.primaryColor + '18' }]}>
-                <Text style={styles.sheetHeaderEmoji}>{courseStyle.emoji}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>Redigera kurs</Text>
-                <Text style={[styles.sheetSubtitle, { color: theme.colors.textMuted }]}>{course?.title}</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.sheetCloseBtn, { backgroundColor: theme.colors.surface }]}
-                onPress={() => setShowEditModal(false)}
-              >
-                <CloseIcon size={18} color={theme.colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Tab Bar */}
-            <View style={[styles.tabBar, { backgroundColor: theme.colors.surface }]}>
-              {[
-                { key: 'progress', label: 'Framsteg', emoji: '📊' },
-                { key: 'grades', label: 'Betyg', emoji: '🎯' },
-                { key: 'eval', label: 'Värdering', emoji: '⭐' },
-                { key: 'notes', label: 'Anteckningar', emoji: '📝' },
-              ].map((tab) => (
-                <TouchableOpacity
-                  key={tab.key}
-                  style={[
-                    styles.tabItem,
-                    activeTab === tab.key && { backgroundColor: courseStyle.primaryColor }
-                  ]}
-                  onPress={() => { setActiveTab(tab.key as any); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                >
-                  <Text style={styles.tabEmoji}>{tab.emoji}</Text>
-                  <Text style={[styles.tabLabel, { color: activeTab === tab.key ? 'white' : theme.colors.textSecondary }]}>{tab.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Tab Content */}
-            <ScrollView style={styles.sheetBody} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-
-              {activeTab === 'progress' && (
-                <View style={styles.tabContent}>
-                  <Text style={[styles.tabSectionTitle, { color: theme.colors.text }]}>Hur långt har du kommit?</Text>
-                  <View style={[styles.progressDisplayBox, { backgroundColor: courseStyle.primaryColor + '12', borderColor: courseStyle.primaryColor + '30' }]}>
-                    <Text style={[styles.progressBigNumber, { color: courseStyle.primaryColor }]}>{editProgress}%</Text>
-                    <Text style={[styles.progressBigLabel, { color: theme.colors.textMuted }]}>slutfört</Text>
-                  </View>
-                  <View style={[styles.progressBarEdit, { backgroundColor: theme.colors.surface }]}>
-                    <View style={[styles.progressBarFillEdit, { width: `${Math.max(0, Math.min(100, parseInt(editProgress) || 0))}%`, backgroundColor: courseStyle.primaryColor }]} />
-                  </View>
-                  <View style={styles.progressControls}>
-                    {[0, 10, 25, 50, 75, 90, 100].map((val) => (
-                      <TouchableOpacity
-                        key={val}
-                        style={[
-                          styles.progressChip,
-                          { borderColor: theme.colors.border },
-                          editProgress === String(val) && { backgroundColor: courseStyle.primaryColor, borderColor: courseStyle.primaryColor }
-                        ]}
-                        onPress={() => { setEditProgress(String(val)); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                      >
-                        <Text style={[styles.progressChipText, { color: editProgress === String(val) ? 'white' : theme.colors.text }]}>{val}%</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  <View style={styles.progressManualRow}>
-                    <TouchableOpacity
-                      style={[styles.progressStepBtn, { backgroundColor: theme.colors.surface }]}
-                      onPress={() => { const v = Math.max(0, (parseInt(editProgress) || 0) - 1); setEditProgress(String(v)); }}
-                    >
-                      <Text style={[styles.progressStepBtnText, { color: theme.colors.text }]}>−</Text>
-                    </TouchableOpacity>
-                    <TextInput
-                      style={[styles.progressManualInput, { backgroundColor: theme.colors.surface, color: theme.colors.text, borderColor: theme.colors.border }]}
-                      value={editProgress}
-                      onChangeText={setEditProgress}
-                      keyboardType="numeric"
-                      textAlign="center"
-                    />
-                    <TouchableOpacity
-                      style={[styles.progressStepBtn, { backgroundColor: theme.colors.surface }]}
-                      onPress={() => { const v = Math.min(100, (parseInt(editProgress) || 0) + 1); setEditProgress(String(v)); }}
-                    >
-                      <Text style={[styles.progressStepBtnText, { color: theme.colors.text }]}>+</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-
-              {activeTab === 'grades' && (
-                <View style={styles.tabContent}>
-                  <Text style={[styles.tabSectionTitle, { color: theme.colors.text }]}>Betygsättning</Text>
-                  <View style={styles.gradeSection}>
-                    <Text style={[styles.gradeSectionLabel, { color: theme.colors.textSecondary }]}>Nuvarande betyg</Text>
-                    <Text style={[styles.gradeSectionHint, { color: theme.colors.textMuted }]}>Vilket betyg har du fått hittills?</Text>
-                    <View style={styles.gradeRow}>
-                      {['A', 'B', 'C', 'D', 'E', 'F'].map((grade) => (
-                        <TouchableOpacity
-                          key={grade}
-                          style={[
-                            styles.gradePillBtn,
-                            { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
-                            editCurrentGrade === grade && { backgroundColor: courseStyle.primaryColor, borderColor: courseStyle.primaryColor }
-                          ]}
-                          onPress={() => { setEditCurrentGrade(grade === editCurrentGrade ? '' : grade); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                        >
-                          <Text style={[styles.gradePillBtnText, { color: editCurrentGrade === grade ? 'white' : theme.colors.text }]}>{grade}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                  <View style={[styles.gradeDivider, { backgroundColor: theme.colors.border }]} />
-                  <View style={styles.gradeSection}>
-                    <Text style={[styles.gradeSectionLabel, { color: theme.colors.textSecondary }]}>Målbetyg</Text>
-                    <Text style={[styles.gradeSectionHint, { color: theme.colors.textMuted }]}>Vilket betyg siktar du på?</Text>
-                    <View style={styles.gradeRow}>
-                      {['A', 'B', 'C', 'D', 'E', 'F'].map((grade) => (
-                        <TouchableOpacity
-                          key={grade}
-                          style={[
-                            styles.gradePillBtn,
-                            { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
-                            editTargetGrade === grade && { backgroundColor: courseStyle.primaryColor + '25', borderColor: courseStyle.primaryColor }
-                          ]}
-                          onPress={() => { setEditTargetGrade(grade === editTargetGrade ? '' : grade); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                        >
-                          <Text style={[styles.gradePillBtnText, { color: editTargetGrade === grade ? courseStyle.primaryColor : theme.colors.text }]}>{grade}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                </View>
-              )}
-
-              {activeTab === 'eval' && (
-                <View style={styles.tabContent}>
-                  <Text style={[styles.tabSectionTitle, { color: theme.colors.text }]}>Självvärdering</Text>
-                  <Text style={[styles.evalSubtitle, { color: theme.colors.textSecondary }]}>Hur väl behärskar du kursen?</Text>
-                  <View style={styles.starsContainer}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <TouchableOpacity
-                        key={star}
-                        onPress={() => { setEditSelfEvaluation(star === editSelfEvaluation ? 0 : star); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
-                        style={styles.starButton}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[
-                          styles.starLarge,
-                          { color: star <= editSelfEvaluation ? '#F59E0B' : theme.colors.border }
-                        ]}>★</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  <Text style={[styles.evalLabel, { color: courseStyle.primaryColor }]}>
-                    {editSelfEvaluation === 0 ? 'Ej värderad' :
-                     editSelfEvaluation === 1 ? 'Nybörjare – Behöver mycket hjälp' :
-                     editSelfEvaluation === 2 ? 'Grundläggande – Förstår det mesta' :
-                     editSelfEvaluation === 3 ? 'Medel – Klarar de flesta uppgifter' :
-                     editSelfEvaluation === 4 ? 'Bra – Behärskar kursen väl' :
-                     'Utmärkt – Fullständig behärskning'}
-                  </Text>
-                  <View style={styles.evalCardsRow}>
-                    {[
-                      { val: 1, label: 'Nybörjare', emoji: '🌱' },
-                      { val: 2, label: 'Grundläggande', emoji: '📖' },
-                      { val: 3, label: 'Medel', emoji: '💡' },
-                      { val: 4, label: 'Bra', emoji: '🚀' },
-                      { val: 5, label: 'Utmärkt', emoji: '🏆' },
-                    ].map(item => (
-                      <TouchableOpacity
-                        key={item.val}
-                        style={[
-                          styles.evalCard,
-                          { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
-                          editSelfEvaluation === item.val && { borderColor: courseStyle.primaryColor, backgroundColor: courseStyle.primaryColor + '12' }
-                        ]}
-                        onPress={() => { setEditSelfEvaluation(item.val === editSelfEvaluation ? 0 : item.val); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                      >
-                        <Text style={styles.evalCardEmoji}>{item.emoji}</Text>
-                        <Text style={[styles.evalCardLabel, { color: editSelfEvaluation === item.val ? courseStyle.primaryColor : theme.colors.text }]}>{item.label}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              )}
-
-              {activeTab === 'notes' && (
-                <View style={styles.tabContent}>
-                  <Text style={[styles.tabSectionTitle, { color: theme.colors.text }]}>Anteckningar</Text>
-                  <Text style={[styles.evalSubtitle, { color: theme.colors.textSecondary }]}>Skriv dina egna tankar, mål eller påminnelser</Text>
-                  <TextInput
-                    style={[
-                      styles.notesInput,
-                      { backgroundColor: theme.colors.surface, color: theme.colors.text, borderColor: theme.colors.border }
-                    ]}
-                    value={editNotes}
-                    onChangeText={setEditNotes}
-                    multiline
-                    numberOfLines={10}
-                    placeholder="T.ex. 'Behöver repetera kapitel 3', 'Fråga läraren om derivatan', 'Plugga inför provet den 15e'..."
-                    placeholderTextColor={theme.colors.textMuted}
-                    textAlignVertical="top"
-                  />
-                  <Text style={[styles.charCount, { color: theme.colors.textMuted }]}>{editNotes.length} tecken</Text>
-                </View>
-              )}
-
-              <View style={{ height: 20 }} />
-            </ScrollView>
-
-            {/* Save Button */}
-            <View style={[styles.sheetFooter, { borderTopColor: theme.colors.border }]}>
-              <TouchableOpacity
-                style={[styles.sheetCancelBtn, { borderColor: theme.colors.border }]}
-                onPress={() => setShowEditModal(false)}
-              >
-                <Text style={[styles.sheetCancelBtnText, { color: theme.colors.text }]}>Avbryt</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.sheetSaveBtn, { backgroundColor: courseStyle.primaryColor }]}
-                onPress={handleSaveProgress}
-              >
-                <CheckCircle size={18} color="white" />
-                <Text style={styles.sheetSaveBtnText}>Spara ändringar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        onClose={() => setShowEditModal(false)}
+        onSave={handleSaveProgress}
+        courseStyle={courseStyle}
+        courseTitle={course?.title || ''}
+        editProgress={editProgress}
+        setEditProgress={setEditProgress}
+        editCurrentGrade={editCurrentGrade}
+        setEditCurrentGrade={setEditCurrentGrade}
+        editTargetGrade={editTargetGrade}
+        setEditTargetGrade={setEditTargetGrade}
+        editSelfEvaluation={editSelfEvaluation}
+        setEditSelfEvaluation={setEditSelfEvaluation}
+        editNotes={editNotes}
+        setEditNotes={setEditNotes}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        theme={theme}
+      />
     </SafeAreaView>
   );
 }

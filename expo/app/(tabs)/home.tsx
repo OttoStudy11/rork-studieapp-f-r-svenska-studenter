@@ -19,7 +19,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain, Heart, Calculator, MessageCircle } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain, Heart } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { ROUTES } from '@/utils/typedRoutes';
 import { FadeInView, SlideInView } from '@/components/Animations';
@@ -647,46 +647,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </SlideInView>
 
-        {/* AI Chat Card */}
-        <SlideInView direction="up" delay={210} duration={300}>
-          <TouchableOpacity
-            style={styles.aiHomeCard}
-            onPress={() => router.push(ROUTES.mathChat)}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={isDark ? ['#1E293B', '#0F172A'] : ['#F8FAFC', '#F1F5F9']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.aiHomeCardGradient}
-            >
-              <View style={styles.aiHomeCardRow}>
-                <View style={styles.aiHomeCardLeft}>
-                  <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.aiHomeIconBg}>
-                    <Sparkles size={20} color="#FFF" />
-                  </LinearGradient>
-                  <View style={styles.aiHomeCardText}>
-                    <Text style={[styles.aiHomeCardTitle, { color: theme.colors.text }]}>StudieStugan AI</Text>
-                    <Text style={[styles.aiHomeCardSub, { color: theme.colors.textSecondary }]}>
-                      Math AI & Generell AI — din smarta studiehjälp
-                    </Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} color={theme.colors.textSecondary} />
-              </View>
-              <View style={styles.aiHomeButtons}>
-                <View style={[styles.aiHomeBtn, { backgroundColor: isDark ? 'rgba(14,165,233,0.1)' : 'rgba(14,165,233,0.06)', borderColor: 'rgba(14,165,233,0.2)' }]}>
-                  <Calculator size={14} color="#0EA5E9" />
-                  <Text style={[styles.aiHomeBtnText, { color: '#0EA5E9' }]}>Matematik AI</Text>
-                </View>
-                <View style={[styles.aiHomeBtn, { backgroundColor: isDark ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.2)' }]}>
-                  <MessageCircle size={14} color="#10B981" />
-                  <Text style={[styles.aiHomeBtnText, { color: '#10B981' }]}>Generell AI</Text>
-                </View>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-        </SlideInView>
 
         {/* Diagnosstöd Card */}
         <SlideInView direction="up" delay={230} duration={300}>
@@ -1316,9 +1276,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     marginBottom: 24,
     borderRadius: 16,
-    padding: 16,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,

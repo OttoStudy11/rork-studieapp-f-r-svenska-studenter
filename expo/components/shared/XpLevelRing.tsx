@@ -80,11 +80,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emoji: {
-    fontSize: 22,
+    fontSize: 20,
   },
   levelText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    marginTop: 2,
+    marginTop: 4,
+    letterSpacing: 0.2,
   },
 });

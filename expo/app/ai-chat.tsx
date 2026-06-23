@@ -9,9 +9,7 @@ export default function AIChatScreen() {
   const { isPremium } = usePremium();
 
   const handleSelectMath = useCallback(() => {
-    console.log('[AI Chat] Selected Math AI');
     if (!isPremium) {
-      console.log('[AI Chat] User not premium, redirecting to premium page');
       router.push(ROUTES.premium);
       return;
     }
@@ -19,9 +17,7 @@ export default function AIChatScreen() {
   }, [isPremium]);
 
   const handleSelectGeneral = useCallback(() => {
-    console.log('[AI Chat] Selected General AI');
     if (!isPremium) {
-      console.log('[AI Chat] User not premium, redirecting to premium page');
       router.push(ROUTES.premium);
       return;
     }

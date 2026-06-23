@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,10 @@ import {
   Dimensions,
   StatusBar,
   Animated,
-  Easing
+  Easing,
+  LayoutAnimation,
+  Platform,
+  UIManager
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStudy } from '@/contexts/StudyContext';
@@ -19,7 +22,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain, Heart } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, ChevronDown, Zap, FileText, Sparkles, Brain, Heart } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { ROUTES } from '@/utils/typedRoutes';
 import { FadeInView, SlideInView } from '@/components/Animations';
@@ -27,6 +30,10 @@ import CharacterAvatar from '@/components/CharacterAvatar';
 import { XpLevelRing } from '@/components/shared/XpLevelRing';
 
 const { width } = Dimensions.get('window');
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const SkeletonBox = ({ width: w, height: h, style, borderRadius = 12, color }: { width: number | string; height: number; style?: any; borderRadius?: number; color?: string }) => {
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
@@ -150,6 +157,9 @@ export default function HomeScreen() {
   const { isPremium, isDemoMode, canAddCourse, showPremiumModal } = usePremium();
   const { theme, isDark } = useTheme();
   const { upcomingExams } = useExams();
+
+  const [examsExpanded, setExamsExpanded] = useState(false);
+  const [studyToolsTab, setStudyToolsTab] = useState<'tips' | 'tekniker'>('tips');
 
   const handleAddCourse = () => {
     if (!canAddCourse(courses.length)) {
@@ -484,100 +494,122 @@ export default function HomeScreen() {
 
 
 
-        {/* Upcoming Exams Section */}
+        {/* Upcoming Exams — collapsible */}
         <SlideInView direction="up" delay={150} duration={300}>
-            <View style={[styles.section, { marginBottom: 16 }]}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionTitleContainer}>
-                  <Calendar size={20} color={theme.colors.warning} />
-                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
-                </View>
+          <View style={[styles.section, { marginBottom: 36 }]}>
+            <TouchableOpacity
+              style={styles.sectionHeader}
+              onPress={() => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setExamsExpanded(!examsExpanded);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.sectionTitleContainer}>
+                <Calendar size={20} color={theme.colors.warning} />
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
+                {upcomingExams.length > 0 && (
+                  <View style={[styles.examCountBadge, { backgroundColor: theme.colors.warning + '20' }]}>
+                    <Text style={[styles.examCountText, { color: theme.colors.warning }]}>{upcomingExams.length}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <TouchableOpacity onPress={() => router.push(ROUTES.planning)}>
                   <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Planering →</Text>
                 </TouchableOpacity>
+                {upcomingExams.length > 1 && (
+                  <ChevronDown
+                    size={18}
+                    color={theme.colors.textSecondary}
+                    style={{ transform: [{ rotate: examsExpanded ? '180deg' : '0deg' }] }}
+                  />
+                )}
               </View>
-              
-              {upcomingExams.slice(0, 3).map((exam, index) => {
-                const daysUntil = Math.ceil((exam.examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                const isUrgent = daysUntil <= 3;
-                
-                return (
-                  <FadeInView key={exam.id} delay={200 + index * 50} duration={300}>
-                    <View style={[
-                      styles.examCard,
-                      { backgroundColor: theme.colors.card },
-                      isUrgent && { borderLeftWidth: 4, borderLeftColor: theme.colors.error }
-                    ]}>
-                      <View style={styles.examCardContent}>
-                        <View style={[
-                          styles.examDateBadge,
-                          { backgroundColor: isUrgent ? theme.colors.error + '15' : theme.colors.warning + '15' }
+            </TouchableOpacity>
+
+            {upcomingExams.slice(0, examsExpanded ? upcomingExams.length : 1).map((exam, index) => {
+              const daysUntil = Math.ceil((exam.examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+              const isUrgent = daysUntil <= 3;
+
+              return (
+                <FadeInView key={exam.id} delay={200 + index * 50} duration={300}>
+                  <View style={[
+                    styles.examCard,
+                    { backgroundColor: theme.colors.card },
+                    isUrgent && { borderLeftWidth: 4, borderLeftColor: theme.colors.error }
+                  ]}>
+                    <View style={styles.examCardContent}>
+                      <View style={[
+                        styles.examDateBadge,
+                        { backgroundColor: isUrgent ? theme.colors.error + '15' : theme.colors.warning + '15' }
+                      ]}>
+                        <Text style={[
+                          styles.examDateDay,
+                          { color: isUrgent ? theme.colors.error : theme.colors.warning }
                         ]}>
-                          <Text style={[
-                            styles.examDateDay,
-                            { color: isUrgent ? theme.colors.error : theme.colors.warning }
-                          ]}>
-                            {exam.examDate.getDate()}
-                          </Text>
-                          <Text style={[
-                            styles.examDateMonth,
-                            { color: isUrgent ? theme.colors.error : theme.colors.warning }
-                          ]}>
-                            {exam.examDate.toLocaleDateString('sv-SE', { month: 'short' }).toUpperCase()}
-                          </Text>
-                        </View>
-                        
-                        <View style={styles.examInfo}>
-                          <Text style={[styles.examTitle, { color: theme.colors.text }]} numberOfLines={1}>
-                            {exam.title}
-                          </Text>
-                          <View style={styles.examMeta}>
-                            <View style={styles.examMetaItem}>
-                              <Clock size={12} color={theme.colors.textMuted} />
-                              <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>
-                                {exam.examDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
-                              </Text>
-                            </View>
-                            {exam.location && (
-                              <>
-                                <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>•</Text>
-                                <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]} numberOfLines={1}>
-                                  {exam.location}
-                                </Text>
-                              </>
-                            )}
+                          {exam.examDate.getDate()}
+                        </Text>
+                        <Text style={[
+                          styles.examDateMonth,
+                          { color: isUrgent ? theme.colors.error : theme.colors.warning }
+                        ]}>
+                          {exam.examDate.toLocaleDateString('sv-SE', { month: 'short' }).toUpperCase()}
+                        </Text>
+                      </View>
+
+                      <View style={styles.examInfo}>
+                        <Text style={[styles.examTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                          {exam.title}
+                        </Text>
+                        <View style={styles.examMeta}>
+                          <View style={styles.examMetaItem}>
+                            <Clock size={12} color={theme.colors.textMuted} />
+                            <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>
+                              {exam.examDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                            </Text>
                           </View>
-                          {isUrgent && (
-                            <View style={[styles.urgentBadge, { backgroundColor: theme.colors.error + '15' }]}>
-                              <AlertCircle size={12} color={theme.colors.error} />
-                              <Text style={[styles.urgentText, { color: theme.colors.error }]}>
-                                {daysUntil === 0 ? 'Idag' : daysUntil === 1 ? 'Imorgon' : `Om ${daysUntil} dagar`}
+                          {exam.location && (
+                            <>
+                              <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>•</Text>
+                              <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]} numberOfLines={1}>
+                                {exam.location}
                               </Text>
-                            </View>
+                            </>
                           )}
                         </View>
-
-                        <TouchableOpacity
-                          style={styles.examStudyPlanIconBtn}
-                          onPress={() => {
-                            router.push(`/study-plan/${exam.id}?courseTitle=${encodeURIComponent(exam.title)}` as never);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <LinearGradient
-                            colors={isDark ? ['#4F46E5', '#7C3AED'] : ['#6366F1', '#818CF8']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.examStudyPlanIconGradient}
-                          >
-                            <FileText size={16} color="white" />
-                          </LinearGradient>
-                        </TouchableOpacity>
+                        {isUrgent && (
+                          <View style={[styles.urgentBadge, { backgroundColor: theme.colors.error + '15' }]}>
+                            <AlertCircle size={12} color={theme.colors.error} />
+                            <Text style={[styles.urgentText, { color: theme.colors.error }]}>
+                              {daysUntil === 0 ? 'Idag' : daysUntil === 1 ? 'Imorgon' : `Om ${daysUntil} dagar`}
+                            </Text>
+                          </View>
+                        )}
                       </View>
+
+                      <TouchableOpacity
+                        style={styles.examStudyPlanIconBtn}
+                        onPress={() => {
+                          router.push(`/study-plan/${exam.id}?courseTitle=${encodeURIComponent(exam.title)}` as never);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <LinearGradient
+                          colors={isDark ? ['#4F46E5', '#7C3AED'] : ['#6366F1', '#818CF8']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.examStudyPlanIconGradient}
+                        >
+                          <FileText size={16} color="white" />
+                        </LinearGradient>
+                      </TouchableOpacity>
                     </View>
-                  </FadeInView>
-                );
-              })}
+                  </View>
+                </FadeInView>
+              );
+            })}
+
             {upcomingExams.length === 0 && (
               <TouchableOpacity
                 style={[styles.addExamPrompt, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
@@ -593,138 +625,80 @@ export default function HomeScreen() {
                 <ChevronRight size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
             )}
+
+            {upcomingExams.length > 1 && !examsExpanded && (
+              <TouchableOpacity
+                style={styles.showMoreBtn}
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setExamsExpanded(true);
+                }}
+              >
+                <Text style={[styles.showMoreText, { color: theme.colors.primary }]}>
+                  Visa alla {upcomingExams.length} prov
+                </Text>
+                <ChevronDown size={14} color={theme.colors.primary} />
+              </TouchableOpacity>
+            )}
           </View>
         </SlideInView>
 
-        {/* Högskoleprov Card */}
+        {/* HP + Diagnosstöd — two-column row */}
         <SlideInView direction="up" delay={200} duration={300}>
-          <TouchableOpacity 
-            style={styles.hpCard}
-            onPress={() => router.push(ROUTES.hogskoleprovetMain)}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={isDark ? ['#312E81', '#4338CA', '#6D28D9'] : ['#4338CA', '#6366F1', '#8B5CF6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.hpCardGradient}
+          <View style={[styles.twoColumnRow, { marginBottom: 36 }]}>
+            {/* Högskoleprov — compact card */}
+            <TouchableOpacity 
+              style={styles.twoColCard}
+              onPress={() => router.push(ROUTES.hogskoleprovetMain)}
+              activeOpacity={0.85}
             >
-
-              <View style={styles.hpCardDecoCircle1} />
-              <View style={styles.hpCardDecoCircle2} />
-
-              <View style={styles.hpCardTopRow}>
-                <View style={styles.hpIconContainer}>
-                  <FileText size={28} color="white" />
+              <LinearGradient
+                colors={isDark ? ['#312E81', '#4338CA'] : ['#4338CA', '#6366F1']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.twoColGradient}
+              >
+                <View style={styles.twoColIcon}>
+                  <FileText size={22} color="white" />
                 </View>
-                {!isPremium && (
-                  <View style={styles.hpPremiumBadge}>
-                    <Crown size={12} color="#FFD700" />
-                    <Text style={styles.hpPremiumText}>Premium</Text>
-                  </View>
-                )}
-              </View>
+                <Text style={styles.twoColTitle}>Högskoleprov</Text>
+                <View style={styles.twoColMiniChips}>
+                  <Text style={styles.twoColMiniChipText}>ORD · LÄS · MEK</Text>
+                  <Text style={styles.twoColMiniChipText}>XYZ · KVA · DTK</Text>
+                </View>
+                <View style={styles.twoColFooter}>
+                  <Text style={styles.twoColCta}>Börja träna →</Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
 
-              <Text style={styles.hpCardTitle}>Högskoleprov</Text>
-              <Text style={styles.hpCardSubtitle}>Träna inför högskoleprovet med autentiska uppgifter, tidsbegränsning och detaljerad statistik</Text>
-
-              <View style={styles.hpCardChips}>
-                <View style={styles.hpChip}><Text style={styles.hpChipText}>ORD</Text></View>
-                <View style={styles.hpChip}><Text style={styles.hpChipText}>LÄS</Text></View>
-                <View style={styles.hpChip}><Text style={styles.hpChipText}>MEK</Text></View>
-                <View style={styles.hpChip}><Text style={styles.hpChipText}>XYZ</Text></View>
-                <View style={styles.hpChip}><Text style={styles.hpChipText}>KVA</Text></View>
-                <View style={styles.hpChip}><Text style={styles.hpChipText}>DTK</Text></View>
-                <View style={styles.hpChip}><Text style={styles.hpChipText}>ELF</Text></View>
-                <View style={styles.hpChip}><Text style={styles.hpChipText}>NOG</Text></View>
-              </View>
-
-              <View style={styles.hpCardFooter}>
-                <Text style={styles.hpFooterText}>Börja träna →</Text>
-              </View>
-            </LinearGradient>
-
-          </TouchableOpacity>
-        </SlideInView>
-
-
-        {/* Diagnosstöd Card */}
-        <SlideInView direction="up" delay={230} duration={300}>
-          <TouchableOpacity
-            style={styles.diagnosCard}
-            onPress={() => router.push(ROUTES.diagnosstod)}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={isDark ? ['#312E81', '#4C1D95', '#1E3A5F'] : ['#6366F1', '#8B5CF6', '#06B6D4']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.diagnosCardGradient}
+            {/* Diagnosstöd — compact card */}
+            <TouchableOpacity
+              style={styles.twoColCard}
+              onPress={() => router.push(ROUTES.diagnosstod)}
+              activeOpacity={0.85}
             >
-              <View style={styles.diagnosDecoCircle1} />
-              <View style={styles.diagnosDecoCircle2} />
-              <View style={styles.diagnosCardContent}>
-                <View style={styles.diagnosLeft}>
-                  <View style={styles.diagnosIconWrap}>
-                    <Heart size={22} color="white" fill="rgba(255,255,255,0.3)" />
-                  </View>
-                  <View style={styles.diagnosTextBlock}>
-                    <Text style={styles.diagnosTitle}>Diagnosstöd</Text>
-                    <Text style={styles.diagnosSubtitle} numberOfLines={2}>
-                      ADHD, dyslexi, autism & mer — personaliserade studiestrategier
-                    </Text>
-                  </View>
+              <LinearGradient
+                colors={isDark ? ['#312E81', '#4C1D95'] : ['#6366F1', '#7C3AED']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.twoColGradient}
+              >
+                <View style={styles.twoColIcon}>
+                  <Heart size={22} color="white" fill="rgba(255,255,255,0.3)" />
                 </View>
-                <ChevronRight size={22} color="rgba(255,255,255,0.7)" />
-              </View>
-              <View style={styles.diagnosPillRow}>
-                {['ADHD', 'Dyslexi', 'Autism', 'ADD', 'Ångest'].map((d) => (
-                  <View key={d} style={styles.diagnosPill}>
-                    <Text style={styles.diagnosPillText}>{d}</Text>
-                  </View>
-                ))}
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-        </SlideInView>
-
-        {/* Study Insights Card */}
-        <SlideInView direction="up" delay={225} duration={300}>
-          <TouchableOpacity 
-            style={[styles.insightsCard, { backgroundColor: theme.colors.card }]}
-            onPress={() => router.push(ROUTES.studyInsights)}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={isDark ? ['#0D9488', '#059669'] : ['#10B981', '#059669']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.insightsCardGradient}
-            >
-              <View style={styles.insightsCardContent}>
-                <View style={styles.insightsCardLeft}>
-                  <View style={styles.insightsIconContainer}>
-                    <Brain size={24} color="white" />
-                  </View>
-                  <View style={styles.insightsCardInfo}>
-                    <Text style={styles.insightsCardTitle}>Studieinsikter</Text>
-                    <Text style={styles.insightsCardSubtitle} numberOfLines={2}>Spaced repetition, smart analys & kunskapsluckor</Text>
-                  </View>
+                <Text style={styles.twoColTitle}>Diagnosstöd</Text>
+                <Text style={styles.twoColDesc} numberOfLines={2}>
+                  ADHD, dyslexi, autism & mer
+                </Text>
+                <View style={styles.twoColMiniPills}>
+                  {['ADHD', 'Dyslexi', 'Autism'].map((d) => (
+                    <Text key={d} style={styles.twoColMiniPillText}>{d}</Text>
+                  ))}
                 </View>
-                <ChevronRight size={24} color="rgba(255,255,255,0.8)" />
-              </View>
-              <View style={styles.insightsCardMeta}>
-                <View style={styles.insightsMetaItem}>
-                  <Zap size={12} color="rgba(255,255,255,0.8)" />
-                  <Text style={styles.insightsMetaText}>AI-driven</Text>
-                </View>
-                <View style={styles.hpMetaDot} />
-                <View style={styles.insightsMetaItem}>
-                  <Text style={styles.insightsMetaText}>Repetition • Mönster • Analys</Text>
-                </View>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </SlideInView>
 
         {/* Compact XP Card */}
@@ -767,76 +741,95 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </SlideInView>
 
-        {/* Study Tips Section */}
+        {/* Studieverktyg & Tips — tabbed section */}
         <SlideInView direction="up" delay={300} duration={300}>
-          <View style={styles.section}>
+          <View style={[styles.section, { marginBottom: 36 }]}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
                 <Sparkles size={20} color={theme.colors.primary} />
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studieverktyg & Tips</Text>
               </View>
               <TouchableOpacity onPress={() => router.push(ROUTES.studyTips)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
               </TouchableOpacity>
             </View>
-            
-            <View style={styles.tipsGrid}>
-              {studyTips.slice(0, 2).map((tip, index) => (
-                <FadeInView key={tip.id} delay={350 + index * 30} duration={250}>
-                  <TouchableOpacity 
-                    style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
-                    onPress={() => router.push(ROUTES.studyTip(String(tip.id)))}
-                  >
-                    <Text style={styles.compactTipIcon}>{tip.icon}</Text>
-                    <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
-                    <View style={[styles.compactTipDifficulty, { 
-                      backgroundColor: tip.difficulty === 'Nybörjare' ? theme.colors.success + '20' :
-                                     tip.difficulty === 'Medel' ? theme.colors.warning + '20' :
-                                     theme.colors.error + '20'
-                    }]}>
-                      <Text style={[styles.compactTipDifficultyText, { 
-                        color: tip.difficulty === 'Nybörjare' ? theme.colors.success :
-                              tip.difficulty === 'Medel' ? theme.colors.warning :
-                              theme.colors.error
-                      }]}>{tip.difficulty}</Text>
-                    </View>
-                  </TouchableOpacity>
-                </FadeInView>
-              ))}
-            </View>
-          </View>
-        </SlideInView>
 
-        {/* Study Techniques Section */}
-        <SlideInView direction="up" delay={350} duration={300}>
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <Brain size={20} color={theme.colors.primary} />
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
-              </View>
-              <TouchableOpacity onPress={() => router.push(ROUTES.studyTechniques)}>
-                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
+            {/* Tab bar */}
+            <View style={[styles.tabBar, { backgroundColor: theme.colors.card }]}>
+              <TouchableOpacity
+                style={[styles.tabItem, studyToolsTab === 'tips' && { backgroundColor: theme.colors.primary }]}
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setStudyToolsTab('tips');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabItemText, { color: studyToolsTab === 'tips' ? '#FFF' : theme.colors.textSecondary }]}>
+                  Tips
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tabItem, studyToolsTab === 'tekniker' && { backgroundColor: theme.colors.primary }]}
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setStudyToolsTab('tekniker');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabItemText, { color: studyToolsTab === 'tekniker' ? '#FFF' : theme.colors.textSecondary }]}>
+                  Tekniker
+                </Text>
               </TouchableOpacity>
             </View>
-            
-            <View style={styles.tipsGrid}>
-              {studyTechniques.slice(0, 2).map((technique, index) => (
-                <FadeInView key={technique.id} delay={400 + index * 30} duration={250}>
-                  <TouchableOpacity 
-                    style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
-                    onPress={() => router.push(ROUTES.studyTechnique(String(technique.id)))}
-                  >
-                    <Text style={styles.compactTipIcon}>{technique.icon}</Text>
-                    <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{technique.title}</Text>
-                    <View style={[styles.compactTimeTag, { backgroundColor: theme.colors.primary + '15' }]}>
-                      <Clock size={10} color={theme.colors.primary} />
-                      <Text style={[styles.compactTimeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
-                    </View>
-                  </TouchableOpacity>
-                </FadeInView>
-              ))}
-            </View>
+
+            {/* Tips tab content */}
+            {studyToolsTab === 'tips' && (
+              <View style={styles.tipsGrid}>
+                {studyTips.slice(0, 2).map((tip, index) => (
+                  <FadeInView key={tip.id} delay={350 + index * 30} duration={250}>
+                    <TouchableOpacity 
+                      style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
+                      onPress={() => router.push(ROUTES.studyTip(String(tip.id)))}
+                    >
+                      <Text style={styles.compactTipIcon}>{tip.icon}</Text>
+                      <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
+                      <View style={[styles.compactTipDifficulty, { 
+                        backgroundColor: tip.difficulty === 'Nybörjare' ? theme.colors.success + '20' :
+                                       tip.difficulty === 'Medel' ? theme.colors.warning + '20' :
+                                       theme.colors.error + '20'
+                      }]}>
+                        <Text style={[styles.compactTipDifficultyText, { 
+                          color: tip.difficulty === 'Nybörjare' ? theme.colors.success :
+                                tip.difficulty === 'Medel' ? theme.colors.warning :
+                                theme.colors.error
+                        }]}>{tip.difficulty}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </FadeInView>
+                ))}
+              </View>
+            )}
+
+            {/* Tekniker tab content */}
+            {studyToolsTab === 'tekniker' && (
+              <View style={styles.tipsGrid}>
+                {studyTechniques.slice(0, 2).map((technique, index) => (
+                  <FadeInView key={technique.id} delay={350 + index * 30} duration={250}>
+                    <TouchableOpacity 
+                      style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
+                      onPress={() => router.push(ROUTES.studyTechnique(String(technique.id)))}
+                    >
+                      <Text style={styles.compactTipIcon}>{technique.icon}</Text>
+                      <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{technique.title}</Text>
+                      <View style={[styles.compactTimeTag, { backgroundColor: theme.colors.primary + '15' }]}>
+                        <Clock size={10} color={theme.colors.primary} />
+                        <Text style={[styles.compactTimeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </FadeInView>
+                ))}
+              </View>
+            )}
           </View>
         </SlideInView>
 
@@ -1020,7 +1013,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     borderRadius: 24,
     padding: 24,
-    marginBottom: 24,
+    marginBottom: 32,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
@@ -1077,7 +1070,7 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     paddingHorizontal: 24,
-    marginBottom: 24,
+    marginBottom: 32,
     gap: 16,
   },
   actionButton: {
@@ -1106,7 +1099,7 @@ const styles = StyleSheet.create({
   miniStatsGrid: {
     flexDirection: 'row',
     paddingHorizontal: 24,
-    marginBottom: 32,
+    marginBottom: 36,
     gap: 12,
   },
   miniStatCard: {
@@ -1133,7 +1126,7 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 24,
-    marginBottom: 32,
+    marginBottom: 36,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1274,7 +1267,7 @@ const styles = StyleSheet.create({
   },
   compactXpCard: {
     marginHorizontal: 24,
-    marginBottom: 24,
+    marginBottom: 36,
     borderRadius: 16,
     padding: 18,
     flexDirection: 'row',
@@ -2235,5 +2228,121 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: 'rgba(255,255,255,0.4)',
     alignSelf: 'center',
+  },
+  // ─── New styles for restructured home screen ───
+  examCountBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 4,
+  },
+  examCountText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
+  showMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    gap: 6,
+  },
+  showMoreText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  twoColumnRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    gap: 12,
+  },
+  twoColCard: {
+    flex: 1,
+    borderRadius: 18,
+    overflow: 'hidden' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  twoColGradient: {
+    padding: 16,
+    minHeight: 160,
+    justifyContent: 'space-between' as const,
+  },
+  twoColIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  twoColTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: 'white',
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  twoColDesc: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.75)',
+    lineHeight: 15,
+    marginBottom: 10,
+  },
+  twoColMiniChips: {
+    marginBottom: 12,
+    gap: 4,
+  },
+  twoColMiniChipText: {
+    fontSize: 10,
+    fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.65)',
+    letterSpacing: 0.3,
+    marginBottom: 2,
+  },
+  twoColFooter: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
+    paddingTop: 10,
+  },
+  twoColCta: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: 'white',
+  },
+  twoColMiniPills: {
+    flexDirection: 'row',
+    gap: 5,
+    flexWrap: 'wrap' as const,
+  },
+  twoColMiniPillText: {
+    fontSize: 10,
+    fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    overflow: 'hidden' as const,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+  },
+  tabItem: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center' as const,
+  },
+  tabItemText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });

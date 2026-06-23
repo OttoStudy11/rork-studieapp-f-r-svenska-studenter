@@ -314,7 +314,7 @@ function CollapsibleSectionGroup({
                 }),
               }],
             }}>
-              <ChevronDown size={22} color={theme.colors.textSecondary} />
+              <ChevronDown size={18} color={theme.colors.textSecondary} />
             </Animated.View>
           </View>
         </LinearGradient>
@@ -351,7 +351,7 @@ function CollapsibleSectionGroup({
                       <Text style={[groupStyles.sectionFullName, { color: theme.colors.text }]}>{section.fullName}</Text>
                     </View>
                     <View style={groupStyles.sectionMetaRow}>
-                      <Clock size={10} color={theme.colors.textSecondary} />
+                      <Clock size={9} color={theme.colors.textSecondary} />
                       <Text style={[groupStyles.sectionMeta, { color: theme.colors.textSecondary }]}>
                         {section.timeMinutes} min · {section.questionCount} frågor
                       </Text>
@@ -372,12 +372,12 @@ function CollapsibleSectionGroup({
                       </>
                     ) : (
                       <View style={[groupStyles.playBtn, { backgroundColor: section.color + '14' }]}>
-                        <Play size={14} color={section.color} fill={section.color} />
+                        <Play size={12} color={section.color} fill={section.color} />
                       </View>
                     )}
                   </View>
 
-                  <ChevronRight size={16} color={theme.colors.textSecondary} style={{ opacity: 0.5 }} />
+                  <ChevronRight size={12} color={theme.colors.textSecondary} style={{ opacity: 0.5 }} />
                 </TouchableOpacity>
               );
             })}
@@ -888,7 +888,7 @@ export default function HogskoleprovetScreen() {
           title="Verbal del"
           subtitle="4 delprov"
           color="#6366F1"
-          icon={<BookOpen size={20} color="#6366F1" />}
+          icon={<BookOpen size={16} color="#6366F1" />}
           sections={verbalSections}
           getSectionProgress={getSectionProgress}
           isPremium={isPremium}
@@ -903,7 +903,7 @@ export default function HogskoleprovetScreen() {
           title="Kvantitativ del"
           subtitle="4 delprov"
           color="#EC4899"
-          icon={<Calculator size={20} color="#EC4899" />}
+          icon={<Calculator size={16} color="#EC4899" />}
           sections={kvantSections}
           getSectionProgress={getSectionProgress}
           isPremium={isPremium}
@@ -1293,119 +1293,119 @@ const styles = StyleSheet.create({
 // ─── Collapsible Group Styles ─────────────────────────────────────────────────
 const groupStyles = StyleSheet.create({
   trigger: {
-    borderRadius: 22,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
   triggerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   triggerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 10,
     flex: 1,
   },
   triggerIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   triggerTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700' as const,
     letterSpacing: -0.2,
   },
   triggerSubtitle: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '500' as const,
     marginTop: 2,
   },
   triggerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   triggerBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   triggerBadgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700' as const,
   },
   expandedContent: {
-    paddingTop: 14,
-    gap: 8,
+    paddingTop: 8,
+    gap: 4,
   },
   sectionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    gap: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    gap: 8,
     borderWidth: 1,
   },
   sectionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   sectionNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    gap: 6,
+    marginBottom: 2,
   },
   sectionCode: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '800' as const,
     letterSpacing: 0.2,
   },
   sectionFullName: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600' as const,
   },
   sectionMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   sectionMeta: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500' as const,
   },
   sectionScore: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800' as const,
     letterSpacing: -0.3,
   },
   accuracyChip: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
     marginTop: 2,
   },
   accuracyChipText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700' as const,
   },
   playBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
   },

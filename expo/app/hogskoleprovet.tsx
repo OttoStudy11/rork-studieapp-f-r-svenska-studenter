@@ -275,8 +275,8 @@ function CollapsibleSectionGroup({
       <TouchableOpacity
         style={[groupStyles.trigger, {
           backgroundColor: isDark ? '#1A2235' : '#F8FAFF',
-          borderColor: color + '30',
-          borderWidth: 1.5,
+          borderColor: color + '25',
+          borderWidth: 1,
         }]}
         onPress={toggleExpand}
         activeOpacity={0.85}
@@ -770,18 +770,20 @@ export default function HogskoleprovetScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Countdown ── */}
-        <HPCountdownCard
-          daysUntil={daysUntilHP}
-          countdownMsg={countdownMsg}
-          plan={plan}
-          todayProgress={todayHPProgress}
-          isDark={isDark}
-          theme={theme}
-        />
+        <View style={{ marginBottom: 32 }}>
+          <HPCountdownCard
+            daysUntil={daysUntilHP}
+            countdownMsg={countdownMsg}
+            plan={plan}
+            todayProgress={todayHPProgress}
+            isDark={isDark}
+            theme={theme}
+          />
+        </View>
 
         {/* ── Premium Dashboard (stats + AI) ── */}
         {isPremium && stats.totalAttempts > 0 && (
-          <Animated.View style={{ opacity: fadeAnim, marginBottom: 28 }}>
+          <Animated.View style={{ opacity: fadeAnim, marginBottom: 36 }}>
             <PremiumDashboard
               stats={stats}
               estimatedScore={estimatedScore}
@@ -796,12 +798,12 @@ export default function HogskoleprovetScreen() {
           <FreemiumBanner
             feature="hp_section"
             status={hpLimit}
-            style={{ marginBottom: 24 }}
+            style={{ marginBottom: 32 }}
           />
         )}
 
         {/* ── Full Test Card ── */}
-        <Animated.View style={{ opacity: fadeAnim, marginBottom: 28 }}>
+        <Animated.View style={{ opacity: fadeAnim, marginBottom: 36 }}>
           <TouchableOpacity
             style={[fullTestStyles.card, !isPremium && { opacity: 0.9 }]}
             onPress={handleStartFullTest}
@@ -1044,59 +1046,61 @@ export default function HogskoleprovetScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  // Header
+  // Header — dramatically larger and more prominent
   headerGradient: {
-    paddingBottom: 28,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    paddingBottom: 40,
+    paddingTop: 8,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
     overflow: 'hidden',
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 0,
+    paddingTop: 8,
   },
   backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.20)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 24,
   },
   headerTitleArea: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 18,
+    marginBottom: 24,
   },
   headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 14,
+    gap: 16,
     flex: 1,
-    marginRight: 16,
+    marginRight: 20,
   },
   headerCapIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.20)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 30,
+    fontSize: 34,
     fontWeight: '800' as const,
     color: '#FFF',
     letterSpacing: -0.5,
-    lineHeight: 36,
+    lineHeight: 40,
   },
   headerSubtitle: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 4,
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 6,
     letterSpacing: -0.2,
+    lineHeight: 22,
   },
   proBadge: {
     paddingHorizontal: 8,
@@ -1142,16 +1146,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Scroll
+  // Scroll — generous spacing
   scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 24 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 32, paddingBottom: 48 },
 
-  // Section labels
+  // Section labels — more breathing room
   sectionLabel: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 10,
+    marginTop: 8,
+    marginBottom: 20,
+    gap: 12,
   },
   sectionLabelLine: {
     flex: 1,
@@ -1288,29 +1293,30 @@ const styles = StyleSheet.create({
 // ─── Collapsible Group Styles ─────────────────────────────────────────────────
 const groupStyles = StyleSheet.create({
   trigger: {
-    borderRadius: 20,
+    borderRadius: 22,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
   },
   triggerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
   },
   triggerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 16,
     flex: 1,
   },
   triggerIcon: {
-    width: 46,
-    height: 46,
+    width: 48,
+    height: 48,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1318,7 +1324,7 @@ const groupStyles = StyleSheet.create({
   triggerTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
   triggerSubtitle: {
     fontSize: 13,
@@ -1340,21 +1346,22 @@ const groupStyles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   expandedContent: {
-    paddingTop: 12,
+    paddingTop: 14,
     gap: 8,
   },
   sectionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 16,
     gap: 12,
     borderWidth: 1,
   },
   sectionDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   sectionNameRow: {
     flexDirection: 'row',
@@ -1363,12 +1370,12 @@ const groupStyles = StyleSheet.create({
     marginBottom: 4,
   },
   sectionCode: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800' as const,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   sectionFullName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
   },
   sectionMetaRow: {
@@ -1396,9 +1403,9 @@ const groupStyles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   playBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1407,11 +1414,12 @@ const groupStyles = StyleSheet.create({
 // ─── Premium Dashboard Styles ─────────────────────────────────────────────────
 const dashboardStyles = StyleSheet.create({
   wrapper: {
-    gap: 12,
+    gap: 16,
+    marginBottom: 4,
   },
   mainCard: {
-    borderRadius: 24,
-    padding: 22,
+    borderRadius: 26,
+    padding: 24,
     overflow: 'hidden',
   },
   scoreSection: {

@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import {
   ChevronLeft,
   Shuffle,
@@ -67,7 +68,7 @@ export default function HPSelectVersionScreen() {
 
   useEffect(() => {
     if (isReady && !isPremium) {
-      router.replace('/premium' as any);
+      router.replace(ROUTES.premium);
     }
   }, [isReady, isPremium]);
 

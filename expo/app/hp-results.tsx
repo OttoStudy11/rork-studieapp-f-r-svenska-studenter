@@ -8,6 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
 import { useHPTrial } from '@/contexts/HPTrialContext';
 import { HPPaywallModal } from '@/components/hogskoleprovet/HPPaywallModal';
+import { ROUTES } from '@/utils/typedRoutes';
 import { COLORS } from '@/constants/design-system';
 
 export default function HPResultScreen() {
@@ -25,7 +26,7 @@ export default function HPResultScreen() {
     const loadResults = async () => {
       if (!sessionState) {
         console.log('[HP Results] No session state');
-        router.replace('/hogskoleprovet' as any);
+        router.replace(ROUTES.hogskoleprovetMain);
         return;
       }
 
@@ -64,7 +65,7 @@ export default function HPResultScreen() {
   }, []);
 
   const handleContinue = useCallback(() => {
-    router.replace('/hogskoleprovet' as any);
+    router.replace(ROUTES.hogskoleprovetMain);
   }, []);
 
   if (isLoading || !results) {
@@ -208,7 +209,7 @@ export default function HPResultScreen() {
         }}
         onUpgrade={() => {
           setPaywallVisible(false);
-          router.push('/premium' as any);
+          router.push(ROUTES.premium);
         }}
         type="after_trial"
         trialScore={scorePercentage}

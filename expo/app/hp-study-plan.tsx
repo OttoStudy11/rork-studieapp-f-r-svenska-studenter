@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import {
   ChevronLeft,
   Calendar,
@@ -767,7 +768,7 @@ function TodayView({
                     </AnimatedPressable>
                   )}
                   <AnimatedPressable
-                    onPress={() => router.push({ pathname: '/hp-select-version' as any, params: { sectionCode: task.sectionCode } })}
+                    onPress={() => router.push({ pathname: ROUTES.hpSelectVersion, params: { sectionCode: task.sectionCode } })}
                     scaleValue={0.93}
                   >
                     <View style={[taskStyles.goBtn, { backgroundColor: task.color, shadowColor: task.color }]}>

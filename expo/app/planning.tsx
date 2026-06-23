@@ -25,6 +25,7 @@ import {
   ChevronLeft
 } from 'lucide-react-native';
 import { router, Stack } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams, Exam } from '@/contexts/ExamContext';
 import { FadeInView, SlideInView } from '@/components/Animations';
@@ -288,7 +289,7 @@ export default function PlanningScreen() {
           </View>
           <TouchableOpacity
             style={[styles.historyButton, { backgroundColor: theme.colors.card }]}
-            onPress={() => router.push('/history' as any)}
+            onPress={() => router.push(ROUTES.history)}
           >
             <History size={20} color={theme.colors.primary} />
           </TouchableOpacity>

@@ -825,34 +825,71 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
     // Prevent duplicate enrollments
     if (courses.find(c => c.id === courseId)) return;
     const newCourse: Course = { ...courseData, id: courseId };
+
+    // Optimistic update — instant UI feedback
+    const previousCourses = courses;
     setCourses(prev => [...prev, newCourse]);
-    try {
-      await supabase.from('courses').upsert({
-        id: courseId,
-        title: courseData.title,
-        description: courseData.description,
-        subject: courseData.subject,
-        level: courseData.level,
-        resources: courseData.resources,
-        tips: courseData.tips,
-        related_courses: courseData.relatedCourses,
-        progress: 0,
-      }, { onConflict: 'id' });
-      await supabase.from('user_courses').upsert({
-        id: `${authUser.id}-${courseId}`,
-        user_id: authUser.id,
-        course_id: courseId,
-        progress: 0,
-        is_active: true,
-      }, { onConflict: 'id' });
-    } catch (err) {
-      console.warn('enrollCourse sync failed:', err);
+
+    // Update performance cache immediately for persistence
+    if (user) {
+      performanceCache.set(`${STUDY_CACHE_KEY}_${authUser.id}`, {
+        user,
+        courses: [...courses, newCourse],
+      });
     }
-  }, [authUser, courses]);
+
+    // Atomic Supabase sync — both tables in parallel
+    try {
+      await Promise.all([
+        supabase.from('courses').upsert({
+          id: courseId,
+          title: courseData.title,
+          description: courseData.description,
+          subject: courseData.subject,
+          level: courseData.level,
+          resources: courseData.resources,
+          tips: courseData.tips,
+          related_courses: courseData.relatedCourses,
+          progress: 0,
+        }, { onConflict: 'id' }),
+        supabase.from('user_courses').upsert({
+          id: `${authUser.id}-${courseId}`,
+          user_id: authUser.id,
+          course_id: courseId,
+          progress: 0,
+          is_active: true,
+        }, { onConflict: 'id' }),
+      ]);
+    } catch (err) {
+      // Rollback on failure — revert to previous state
+      console.warn('enrollCourse sync failed, rolling back:', (err as Error)?.message);
+      setCourses(previousCourses);
+      // Update cache with rolled-back state too
+      if (user) {
+        performanceCache.set(`${STUDY_CACHE_KEY}_${authUser.id}`, {
+          user,
+          courses: previousCourses,
+        });
+      }
+    }
+  }, [authUser, courses, user]);
 
   const leaveCourse = useCallback(async (courseId: string) => {
     if (!authUser) return;
+
+    // Optimistic update — instant UI feedback
+    const previousCourses = courses;
     setCourses(prev => prev.filter(c => c.id !== courseId));
+
+    // Update cache
+    if (user) {
+      performanceCache.set(`${STUDY_CACHE_KEY}_${authUser.id}`, {
+        user,
+        courses: courses.filter(c => c.id !== courseId),
+      });
+    }
+
+    // Atomic Supabase sync
     try {
       await supabase
         .from('user_courses')
@@ -860,13 +897,35 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         .eq('user_id', authUser.id)
         .eq('course_id', courseId);
     } catch (err) {
-      console.warn('leaveCourse sync failed:', err);
+      // Rollback on failure
+      console.warn('leaveCourse sync failed, rolling back:', (err as Error)?.message);
+      setCourses(previousCourses);
+      if (user) {
+        performanceCache.set(`${STUDY_CACHE_KEY}_${authUser.id}`, {
+          user,
+          courses: previousCourses,
+        });
+      }
     }
-  }, [authUser]);
+  }, [authUser, courses, user]);
 
   const updateCourseProgress = useCallback(async (courseId: string, progress: number) => {
     if (!authUser) return;
+
+    // Optimistic update
+    const previousCourses = courses;
     setCourses(prev => prev.map(c => c.id === courseId ? { ...c, progress } : c));
+
+    // Update cache
+    if (user) {
+      const updatedCourses = courses.map(c => c.id === courseId ? { ...c, progress } : c);
+      performanceCache.set(`${STUDY_CACHE_KEY}_${authUser.id}`, {
+        user,
+        courses: updatedCourses,
+      });
+    }
+
+    // Atomic Supabase sync
     try {
       await supabase
         .from('user_courses')
@@ -874,9 +933,17 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         .eq('user_id', authUser.id)
         .eq('course_id', courseId);
     } catch (err) {
-      console.warn('updateCourseProgress sync failed:', err);
+      // Rollback on failure
+      console.warn('updateCourseProgress sync failed, rolling back:', (err as Error)?.message);
+      setCourses(previousCourses);
+      if (user) {
+        performanceCache.set(`${STUDY_CACHE_KEY}_${authUser.id}`, {
+          user,
+          courses: previousCourses,
+        });
+      }
     }
-  }, [authUser]);
+  }, [authUser, courses, user]);
 
   const addCourse = useCallback(async (course: Omit<Course, 'id'>) => {
     try {

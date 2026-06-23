@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -435,7 +436,7 @@ export default function AdvancedAnalyticsScreen() {
               style={[styles.insightsLink, { backgroundColor: theme.colors.card }]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-                router.push('/study-insights' as any);
+                router.push(ROUTES.studyInsights);
               }}
             >
               <View style={[styles.insightsLinkIcon, { backgroundColor: theme.colors.primary + '12' }]}>

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
   ArrowLeft,
@@ -367,7 +368,7 @@ export default function DiagnosstodScreen() {
                   <TouchableOpacity
                     key={d.id}
                     style={styles.featuredCard}
-                    onPress={() => router.push(`/diagnos/${d.id}` as any)}
+                    onPress={() => router.push(ROUTES.diagnosDetail(d.id))}
                     activeOpacity={0.85}
                   >
                     <LinearGradient
@@ -432,7 +433,7 @@ export default function DiagnosstodScreen() {
                   key={d.id}
                   diagnosis={d}
                   delay={100 + i * 40}
-                  onPress={() => router.push(`/diagnos/${d.id}` as any)}
+                  onPress={() => router.push(ROUTES.diagnosDetail(d.id))}
                 />
               ))}
             </View>

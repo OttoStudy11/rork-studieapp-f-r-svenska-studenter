@@ -12,6 +12,7 @@ import {
   Alert as RNAlert,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import { useStudy } from '@/contexts/StudyContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -191,7 +192,7 @@ export default function ProfileScreen() {
               xpProgress={xpProgress}
               totalXp={totalXp}
               streak={streak}
-              onPress={() => router.push('/achievements' as any)}
+              onPress={() => router.push(ROUTES.achievements)}
             />
           </View>
         )}
@@ -235,7 +236,7 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Dagens utmaningar</Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/home' as any)}>
+              <TouchableOpacity onPress={() => router.push(ROUTES.home)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -287,7 +288,7 @@ export default function ProfileScreen() {
                   <Text style={{ color: theme.colors.primary }}> ({unclaimedAchievements} nya)</Text>
                 )}
               </Text>
-              <TouchableOpacity onPress={() => router.push('/achievements' as any)}>
+              <TouchableOpacity onPress={() => router.push(ROUTES.achievements)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -384,7 +385,7 @@ export default function ProfileScreen() {
 
             <AnimatedPressable 
               style={styles.actionItem}
-              onPress={() => router.push('/settings' as any)}
+              onPress={() => router.push(ROUTES.settings)}
             >
               <View style={[styles.actionIconCircle, { backgroundColor: theme.colors.secondary + '15' }]}>
                 <Settings size={20} color={theme.colors.secondary} />
@@ -397,7 +398,7 @@ export default function ProfileScreen() {
 
             <AnimatedPressable 
               style={styles.actionItem}
-              onPress={() => router.push('/achievements' as any)}
+              onPress={() => router.push(ROUTES.achievements)}
             >
               <View style={[styles.actionIconCircle, { backgroundColor: theme.colors.warning + '15' }]}>
                 <Award size={20} color={theme.colors.warning} />

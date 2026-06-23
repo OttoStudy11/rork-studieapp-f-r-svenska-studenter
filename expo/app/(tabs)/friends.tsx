@@ -28,6 +28,7 @@ import { useCommunity, CommunityType, CommunityVisibility } from '@/contexts/Com
 import { useTheme } from '@/contexts/ThemeContext';
 
 import { useRouter } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import { FadeInView, SlideInView } from '@/components/Animations';
 
 
@@ -432,7 +433,7 @@ export default function FriendsScreen() {
     });
     
     if (community) {
-      router.push(`/community/${community.id}` as any);
+      router.push(ROUTES.community(community.id));
     }
   };
 
@@ -808,7 +809,7 @@ export default function FriendsScreen() {
                       <FadeInView key={friend.id} delay={400 + index * 50}>
                         <TouchableOpacity 
                           style={[styles.friendCard, { backgroundColor: theme.colors.card }]}
-                          onPress={() => router.push(`/friend-stats/${friend.id}` as any)}
+                          onPress={() => router.push(ROUTES.friendStats(friend.id))}
                           activeOpacity={0.7}
                         >
                           <View style={styles.friendContent}>
@@ -1021,7 +1022,7 @@ export default function FriendsScreen() {
                     <FadeInView key={community.id} delay={250 + index * 50}>
                       <TouchableOpacity
                         style={[styles.communityCard, { backgroundColor: theme.colors.card }]}
-                        onPress={() => router.push(`/community/${community.id}` as any)}
+                        onPress={() => router.push(ROUTES.community(community.id))}
                         activeOpacity={0.7}
                       >
                         <View style={[styles.communityIconContainer, { backgroundColor: theme.colors.primary + '15' }]}>

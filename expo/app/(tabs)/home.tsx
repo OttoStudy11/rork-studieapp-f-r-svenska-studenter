@@ -21,6 +21,7 @@ import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
 import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, Zap, FileText, Sparkles, Brain, Heart, Calculator, MessageCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
 import { XpLevelRing } from '@/components/shared/XpLevelRing';
@@ -155,7 +156,7 @@ export default function HomeScreen() {
       showPremiumModal('Obegränsat antal kurser');
       return;
     }
-    router.push('/courses' as any);
+    router.push(ROUTES.courses);
   };
 
   // Pulse animation for "Starta fokus" button
@@ -385,7 +386,7 @@ export default function HomeScreen() {
               )}
               <TouchableOpacity 
                 style={styles.profileButton}
-                onPress={() => router.push('/profile' as any)}
+                onPress={() => router.push(ROUTES.profile)}
               >
                 {user.avatar ? (
                   <CharacterAvatar config={user.avatar} size={44} />
@@ -451,7 +452,7 @@ export default function HomeScreen() {
             <Animated.View style={{ transform: [{ scale: pulseAnim }], width: '100%' }}>
               <TouchableOpacity 
                 style={[styles.actionButton, styles.actionButtonFull, { backgroundColor: theme.colors.primary }]}
-                onPress={() => router.push('/timer' as any)}
+                onPress={() => router.push(ROUTES.timer)}
               >
                 <Clock size={24} color="white" />
                 <Text style={styles.actionButtonText}>Starta fokus</Text>
@@ -491,7 +492,7 @@ export default function HomeScreen() {
                   <Calendar size={20} color={theme.colors.warning} />
                   <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
                 </View>
-                <TouchableOpacity onPress={() => router.push('/planning' as any)}>
+                <TouchableOpacity onPress={() => router.push(ROUTES.planning)}>
                   <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Planering →</Text>
                 </TouchableOpacity>
               </View>
@@ -580,7 +581,7 @@ export default function HomeScreen() {
             {upcomingExams.length === 0 && (
               <TouchableOpacity
                 style={[styles.addExamPrompt, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-                onPress={() => router.push('/planning' as any)}
+                onPress={() => router.push(ROUTES.planning)}
               >
                 <View style={[styles.addExamIcon, { backgroundColor: theme.colors.primary + '15' }]}>
                   <Calendar size={24} color={theme.colors.primary} />
@@ -599,7 +600,7 @@ export default function HomeScreen() {
         <SlideInView direction="up" delay={200} duration={300}>
           <TouchableOpacity 
             style={styles.hpCard}
-            onPress={() => router.push('/hogskoleprovet' as any)}
+            onPress={() => router.push(ROUTES.hogskoleprovetMain)}
             activeOpacity={0.85}
           >
             <LinearGradient
@@ -650,7 +651,7 @@ export default function HomeScreen() {
         <SlideInView direction="up" delay={210} duration={300}>
           <TouchableOpacity
             style={styles.aiHomeCard}
-            onPress={() => router.push('/math-chat' as any)}
+            onPress={() => router.push(ROUTES.mathChat)}
             activeOpacity={0.85}
           >
             <LinearGradient
@@ -691,7 +692,7 @@ export default function HomeScreen() {
         <SlideInView direction="up" delay={230} duration={300}>
           <TouchableOpacity
             style={styles.diagnosCard}
-            onPress={() => router.push('/diagnosstod' as any)}
+            onPress={() => router.push(ROUTES.diagnosstod)}
             activeOpacity={0.85}
           >
             <LinearGradient
@@ -731,7 +732,7 @@ export default function HomeScreen() {
         <SlideInView direction="up" delay={225} duration={300}>
           <TouchableOpacity 
             style={[styles.insightsCard, { backgroundColor: theme.colors.card }]}
-            onPress={() => router.push('/study-insights' as any)}
+            onPress={() => router.push(ROUTES.studyInsights)}
             activeOpacity={0.8}
           >
             <LinearGradient
@@ -770,7 +771,7 @@ export default function HomeScreen() {
         <SlideInView direction="up" delay={275} duration={300}>
           <TouchableOpacity 
             style={[styles.compactXpCard, { backgroundColor: theme.colors.card }]}
-            onPress={() => router.push('/achievements' as any)}
+            onPress={() => router.push(ROUTES.achievements)}
             activeOpacity={0.8}
           >
             <XpLevelRing
@@ -814,7 +815,7 @@ export default function HomeScreen() {
                 <Sparkles size={20} color={theme.colors.primary} />
                 <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
               </View>
-              <TouchableOpacity onPress={() => router.push('/study-tips' as any)}>
+              <TouchableOpacity onPress={() => router.push(ROUTES.studyTips)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
               </TouchableOpacity>
             </View>
@@ -824,7 +825,7 @@ export default function HomeScreen() {
                 <FadeInView key={tip.id} delay={350 + index * 30} duration={250}>
                   <TouchableOpacity 
                     style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
-                    onPress={() => router.push(`/study-tip/${tip.id}` as any)}
+                    onPress={() => router.push(ROUTES.studyTip(String(tip.id)))}
                   >
                     <Text style={styles.compactTipIcon}>{tip.icon}</Text>
                     <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
@@ -854,7 +855,7 @@ export default function HomeScreen() {
                 <Brain size={20} color={theme.colors.primary} />
                 <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
               </View>
-              <TouchableOpacity onPress={() => router.push('/study-techniques' as any)}>
+              <TouchableOpacity onPress={() => router.push(ROUTES.studyTechniques)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
               </TouchableOpacity>
             </View>
@@ -864,7 +865,7 @@ export default function HomeScreen() {
                 <FadeInView key={technique.id} delay={400 + index * 30} duration={250}>
                   <TouchableOpacity 
                     style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
-                    onPress={() => router.push(`/study-technique/${technique.id}` as any)}
+                    onPress={() => router.push(ROUTES.studyTechnique(String(technique.id)))}
                   >
                     <Text style={styles.compactTipIcon}>{technique.icon}</Text>
                     <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{technique.title}</Text>
@@ -885,7 +886,7 @@ export default function HomeScreen() {
             <View style={styles.section}>
               <TouchableOpacity 
                 style={[styles.premiumBanner, { backgroundColor: theme.colors.warning + '15', borderColor: theme.colors.warning + '30' }]}
-                onPress={() => router.push('/premium' as any)}
+                onPress={() => router.push(ROUTES.premium)}
               >
                 <View style={styles.premiumBannerContent}>
                   <View style={styles.premiumBannerLeft}>
@@ -909,7 +910,7 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Aktiva kurser</Text>
-              <TouchableOpacity onPress={() => router.push('/courses' as any)}>
+              <TouchableOpacity onPress={() => router.push(ROUTES.courses)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
@@ -921,7 +922,7 @@ export default function HomeScreen() {
                     style={[styles.courseCard, { backgroundColor: theme.colors.card }]}
                     onPress={() => {
                       console.log('Navigating to course:', course.id, course.title);
-                      router.push(`/course/${course.id}` as any);
+                      router.push(ROUTES.courseDetail(course.id));
                     }}
                   >
                     <View style={styles.courseHeader}>

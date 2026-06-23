@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import {
   Sparkles,
   ChevronRight,
@@ -96,7 +97,7 @@ export default function HPAIGeneratorScreen() {
 
   const handleGenerateTest = async () => {
     if (!isPremium) {
-      router.push('/premium' as any);
+      router.push(ROUTES.premium);
       return;
     }
 
@@ -250,7 +251,7 @@ export default function HPAIGeneratorScreen() {
             </Text>
             <TouchableOpacity
               style={styles.premiumButton}
-              onPress={() => router.push('/premium' as any)}
+              onPress={() => router.push(ROUTES.premium)}
             >
               <LinearGradient
                 colors={['#FFD700', '#FFA500']}

@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES } from '@/utils/typedRoutes';
 import { useToast } from '@/contexts/ToastContext';
 import { Image } from 'expo-image';
 import { Mail, Lock, Eye, EyeOff, Check, ArrowRight, RefreshCw, CheckCircle, AlertCircle, GraduationCap, Brain, Zap } from 'lucide-react-native';
@@ -117,9 +118,9 @@ export default function AuthScreen() {
     if (isAuthenticated && !isLoading) {
       console.log('User authenticated, navigating...', { hasCompletedOnboarding });
       if (hasCompletedOnboarding) {
-        router.replace('/(tabs)/home' as any);
+        router.replace(ROUTES.home as any);
       } else {
-        router.replace('/onboarding' as any);
+        router.replace(ROUTES.onboarding as any);
       }
     }
   }, [isAuthenticated, hasCompletedOnboarding, isLoading]);

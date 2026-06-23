@@ -10,6 +10,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { router, Stack } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import { 
   Search, 
   BookOpen, 
@@ -54,7 +55,7 @@ export default function CourseLibraryScreen() {
   };
 
   const navigateToCourse = (courseId: string) => {
-    router.push(`/content-course/${courseId}` as any);
+    router.push(ROUTES.contentCourse(courseId));
   };
 
   if (isLoading) {

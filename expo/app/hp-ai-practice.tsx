@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import {
   ChevronLeft,
   Clock,
@@ -282,7 +283,7 @@ export default function HPAIPracticeScreen() {
 
             <TouchableOpacity
               style={[styles.resultButtonOutline, { borderColor: theme.colors.border }]}
-              onPress={() => router.push('/hp-ai-generator' as any)}
+              onPress={() => router.push(ROUTES.hpAiGenerator)}
             >
               <Sparkles size={20} color={COLORS.primary} />
               <Text style={[styles.resultButtonOutlineText, { color: COLORS.primary }]}>
@@ -292,7 +293,7 @@ export default function HPAIPracticeScreen() {
 
             <TouchableOpacity
               style={[styles.resultButtonOutline, { borderColor: theme.colors.border }]}
-              onPress={() => router.push('/hogskoleprovet' as any)}
+              onPress={() => router.push(ROUTES.hogskoleprovetMain)}
             >
               <Home size={20} color={theme.colors.text} />
               <Text style={[styles.resultButtonOutlineText, { color: theme.colors.text }]}>

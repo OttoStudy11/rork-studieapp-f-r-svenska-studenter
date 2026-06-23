@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import {
@@ -208,7 +209,7 @@ export default function StudyInsightsScreen() {
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
                   if (dueCards.length > 0) {
-                    router.push(`/flashcards/${dueCards[0].courseId}` as any);
+                    router.push(ROUTES.flashcards(dueCards[0].courseId));
                   }
                 }}
               >
@@ -271,7 +272,7 @@ export default function StudyInsightsScreen() {
                 ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-                  router.push(`/flashcards/${course.courseId}` as any);
+                  router.push(ROUTES.flashcards(course.courseId));
                 }}
               >
                 <View style={styles.courseRowLeft}>
@@ -522,7 +523,7 @@ export default function StudyInsightsScreen() {
                 style={[styles.weakPointCard, { borderColor: theme.colors.border + '40' }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-                  router.push(`/flashcards/${wp.courseId}` as any);
+                  router.push(ROUTES.flashcards(wp.courseId));
                 }}
               >
                 <View style={styles.weakPointTop}>

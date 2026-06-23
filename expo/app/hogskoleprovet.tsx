@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import {
   GraduationCap,
   Clock,
@@ -123,7 +124,7 @@ function HPCountdownCard({
         borderWidth: 1,
         borderColor: urgencyColor + '28',
       }]}
-      onPress={() => router.push('/hp-study-plan' as any)}
+      onPress={() => router.push(ROUTES.hpStudyPlan)}
       activeOpacity={0.82}
     >
       <View style={countdownStyles.inner}>
@@ -727,14 +728,14 @@ export default function HogskoleprovetScreen() {
 
   const handleStartFullTestWithVersion = (testVersionId?: string) => {
     setFullTestModalVisible(false);
-    router.push({ pathname: '/hp-test' as any, params: { testVersionId: testVersionId || '' } });
+    router.push({ pathname: ROUTES.hpTest, params: { testVersionId: testVersionId || '' } });
   };
 
   const handleStartSection = async (sectionCode: string) => {
     if (!isPremium) {
       if (hpLimit.isAllowed || canAccessContent('delprov', sectionCode)) {
         freemium.trackUsage('hp_section', { sectionCode });
-        router.push({ pathname: '/hp-select-version' as any, params: { sectionCode } });
+        router.push({ pathname: ROUTES.hpSelectVersion, params: { sectionCode } });
       } else if (isTrialAvailable) {
         setPaywallType('before_trial');
         setPaywallVisible(true);
@@ -744,7 +745,7 @@ export default function HogskoleprovetScreen() {
       }
       return;
     }
-    router.push({ pathname: '/hp-select-version' as any, params: { sectionCode } });
+    router.push({ pathname: ROUTES.hpSelectVersion, params: { sectionCode } });
   };
 
   const verbalSections = HP_SECTIONS.filter(s => VERBAL_CODES.includes(s.code));
@@ -799,7 +800,7 @@ export default function HogskoleprovetScreen() {
             {!isPremium && (
               <TouchableOpacity
                 style={styles.premiumCTA}
-                onPress={() => router.push('/premium' as any)}
+                onPress={() => router.push(ROUTES.premium)}
               >
                 <LinearGradient
                   colors={['#FFD700', '#FFA500']}
@@ -873,7 +874,7 @@ export default function HogskoleprovetScreen() {
                 </View>
                 <TouchableOpacity
                   style={[styles.statsButton, { backgroundColor: theme.colors.surface }]}
-                  onPress={() => router.push('/hp-stats' as any)}
+                  onPress={() => router.push(ROUTES.hpStats)}
                 >
                   <BarChart3 size={18} color={COLORS.primary} />
                 </TouchableOpacity>
@@ -963,7 +964,7 @@ export default function HogskoleprovetScreen() {
         {isPremium && (
           <TouchableOpacity
             style={styles.aiGeneratorCard}
-            onPress={() => router.push('/hp-ai-generator' as any)}
+            onPress={() => router.push(ROUTES.hpAiGenerator)}
             activeOpacity={0.85}
           >
             <LinearGradient
@@ -1104,7 +1105,7 @@ export default function HogskoleprovetScreen() {
 
           <TouchableOpacity
             style={[styles.viewMoreTips, { backgroundColor: theme.colors.surface }]}
-            onPress={() => router.push('/study-tips' as any)}
+            onPress={() => router.push(ROUTES.studyTips)}
           >
             <Text style={[styles.viewMoreText, { color: COLORS.primary }]}>Visa alla studietips</Text>
             <ChevronRight size={18} color={COLORS.primary} />
@@ -1131,7 +1132,7 @@ export default function HogskoleprovetScreen() {
         }}
         onSelectSection={(sectionCode) => {
           setTrialSelectionVisible(false);
-          router.push({ pathname: '/hp-select-version' as any, params: { sectionCode } });
+          router.push({ pathname: ROUTES.hpSelectVersion, params: { sectionCode } });
         }}
       />
 
@@ -1143,7 +1144,7 @@ export default function HogskoleprovetScreen() {
         }}
         onUpgrade={() => {
           setPaywallVisible(false);
-          router.push('/premium' as any);
+          router.push(ROUTES.premium);
         }}
         type={paywallType}
       />

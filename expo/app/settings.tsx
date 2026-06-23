@@ -18,6 +18,7 @@ import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
 import { Moon, Sun, Smartphone, Palette, Bell, Shield, HelpCircle, LogOut, User, Crown, Star, ChevronRight, Volume2, Vibrate, Battery, ArrowLeft, Trash2 } from 'lucide-react-native';
 import { router, Stack, useRouter } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import { AnimatedPressable, FadeInView } from '@/components/Animations';
 
 interface SettingItem {
@@ -168,7 +169,7 @@ export default function SettingsScreen() {
           icon: isPremium ? <Crown size={20} color={theme.colors.warning} /> : <Star size={20} color={theme.colors.primary} />,
           title: isPremium ? 'Premium aktiv' : 'Uppgradera till Premium',
           subtitle: isPremium ? 'Du har tillgång till alla funktioner' : 'Lås upp obegränsade funktioner',
-          onPress: () => router.push('/premium' as any),
+          onPress: () => router.push(ROUTES.premium as any),
         },
       ],
     },
@@ -264,13 +265,13 @@ export default function SettingsScreen() {
           icon: <Shield size={20} color={theme.colors.textSecondary} />,
           title: 'Integritetspolicy',
           subtitle: 'Läs om hur vi hanterar din data',
-          onPress: () => router.push('/privacy-policy' as any),
+          onPress: () => router.push(ROUTES.privacyPolicy as any),
         },
         {
           icon: <Shield size={20} color={theme.colors.textSecondary} />,
           title: 'Användarvillkor',
           subtitle: 'Läs våra användarvillkor',
-          onPress: () => router.push('/terms' as any),
+          onPress: () => router.push(ROUTES.terms as any),
         },
       ],
     },

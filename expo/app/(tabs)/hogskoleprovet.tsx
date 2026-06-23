@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { ROUTES } from '@/utils/typedRoutes';
 import {
   GraduationCap,
   Clock,
@@ -274,21 +275,21 @@ export default function HogskoleprovetTab() {
 
   const handleStartFullTestWithVersion = (testVersionId?: string) => {
     setFullTestModalVisible(false);
-    router.push({ pathname: '/hp-test' as any, params: { testVersionId: testVersionId || '' } });
+    router.push({ pathname: ROUTES.hpTest, params: { testVersionId: testVersionId || '' } });
   };
 
   const handleStartSection = (sectionCode: string) => {
     if (!isPremium) {
       if (hpLimit.isAllowed || canAccessContent('delprov', sectionCode)) {
         freemium.trackUsage('hp_section', { sectionCode });
-        router.push({ pathname: '/hp-select-version' as any, params: { sectionCode } });
+        router.push({ pathname: ROUTES.hpSelectVersion, params: { sectionCode } });
       } else {
         setPaywallType('before_trial');
         setPaywallVisible(true);
       }
       return;
     }
-    router.push({ pathname: '/hp-select-version' as any, params: { sectionCode } });
+    router.push({ pathname: ROUTES.hpSelectVersion, params: { sectionCode } });
   };
 
   const verbalSections = HP_SECTIONS.filter(s => VERBAL_CODES.includes(s.code));
@@ -343,7 +344,7 @@ export default function HogskoleprovetTab() {
               )}
 
               {!isPremium && (
-                <TouchableOpacity style={styles.heroUnlockBtn} onPress={() => router.push('/premium' as any)} activeOpacity={0.85}>
+                <TouchableOpacity style={styles.heroUnlockBtn} onPress={() => router.push(ROUTES.premium)} activeOpacity={0.85}>
                   <LinearGradient colors={['#FFD700', '#F59E0B']} style={styles.heroUnlockGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                     <Crown size={16} color="#000" />
                     <Text style={styles.heroUnlockText}>Lås upp Högskoleprovet</Text>
@@ -364,7 +365,7 @@ export default function HogskoleprovetTab() {
           <View style={styles.quickRow}>
             {/* AI Bar */}
             <TouchableOpacity style={[styles.quickAiBar, { backgroundColor: isDark ? '#1E1B4B' : '#EEF2FF' }]}
-              onPress={() => router.push('/math-chat?course=H%C3%B6gskoleprovet' as any)} activeOpacity={0.8}>
+              onPress={() => router.push((ROUTES.mathChat + '?course=H%C3%B6gskoleprovet') as any)} activeOpacity={0.8}>
               <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.quickAiIcon}>
                 <Calculator size={18} color="#FFF" />
               </LinearGradient>
@@ -376,7 +377,7 @@ export default function HogskoleprovetTab() {
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.quickAiBar, { backgroundColor: isDark ? '#1A2E1A' : '#ECFDF5' }]}
-              onPress={() => router.push('/general-chat?course=H%C3%B6gskoleprovet' as any)} activeOpacity={0.8}>
+              onPress={() => router.push((ROUTES.generalChat + '?course=H%C3%B6gskoleprovet') as any)} activeOpacity={0.8}>
               <LinearGradient colors={['#10B981', '#059669']} style={styles.quickAiIcon}>
                 <MessageCircle size={18} color="#FFF" />
               </LinearGradient>
@@ -391,14 +392,14 @@ export default function HogskoleprovetTab() {
           {/* Study Plan + AI Generator buttons */}
           <View style={styles.quickActionsRow}>
             <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: isDark ? '#1A2235' : '#F4F6FF', borderColor: COLORS.primary + '30' }]}
-              onPress={() => router.push('/hp-study-plan' as any)} activeOpacity={0.8}>
+              onPress={() => router.push(ROUTES.hpStudyPlan)} activeOpacity={0.8}>
               <Calendar size={20} color={COLORS.primary} />
               <Text style={[styles.quickActionText, { color: theme.colors.text }]}>Studieplan</Text>
               {plan && <View style={[styles.quickActionDot, { backgroundColor: '#10B981' }]} />}
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: isDark ? '#1A2235' : '#F4F6FF', borderColor: '#8B5CF630' }]}
-              onPress={() => router.push('/hp-ai-generator' as any)} activeOpacity={0.8}>
+              onPress={() => router.push(ROUTES.hpAiGenerator)} activeOpacity={0.8}>
               <Sparkles size={20} color="#8B5CF6" />
               <Text style={[styles.quickActionText, { color: theme.colors.text }]}>AI-generator</Text>
               <View style={[styles.quickActionAiBadge, { backgroundColor: '#8B5CF620' }]}>
@@ -407,7 +408,7 @@ export default function HogskoleprovetTab() {
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: isDark ? '#1A2235' : '#F4F6FF', borderColor: '#EC489930' }]}
-              onPress={() => router.push('/hp-stats' as any)} activeOpacity={0.8}>
+              onPress={() => router.push(ROUTES.hpStats)} activeOpacity={0.8}>
               <BarChart3 size={20} color="#EC4899" />
               <Text style={[styles.quickActionText, { color: theme.colors.text }]}>Statistik</Text>
             </TouchableOpacity>
@@ -491,7 +492,7 @@ export default function HogskoleprovetTab() {
         {!isPremium && (
           <Animated.View style={{ opacity: fadeAnim }}>
             <TouchableOpacity style={[styles.upsellCard, { backgroundColor: isDark ? '#1E1B4B' : '#F5F3FF' }]}
-              onPress={() => router.push('/premium' as any)} activeOpacity={0.85}>
+              onPress={() => router.push(ROUTES.premium)} activeOpacity={0.85}>
               <LinearGradient colors={['#FFD700', '#F59E0B']} style={styles.upsellBadge}>
                 <Crown size={16} color="#000" />
                 <Text style={styles.upsellBadgeText}>LÅS UPP ALLT</Text>
@@ -553,7 +554,7 @@ export default function HogskoleprovetTab() {
             </View>
           ))}
           <TouchableOpacity style={[styles.viewMoreTips, { backgroundColor: theme.colors.surface }]}
-            onPress={() => router.push('/study-tips' as any)}>
+            onPress={() => router.push(ROUTES.studyTips)}>
             <Text style={[styles.viewMoreText, { color: COLORS.primary }]}>Visa alla studietips</Text>
             <ChevronRight size={18} color={COLORS.primary} />
           </TouchableOpacity>
@@ -568,7 +569,7 @@ export default function HogskoleprovetTab() {
       )}
 
       <HPPaywallModal visible={paywallVisible} onClose={() => setPaywallVisible(false)}
-        onUpgrade={() => { setPaywallVisible(false); router.push('/premium' as any); }}
+        onUpgrade={() => { setPaywallVisible(false); router.push(ROUTES.premium); }}
         type={paywallType} />
     </View>
   );

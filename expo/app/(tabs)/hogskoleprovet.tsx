@@ -186,55 +186,50 @@ function SectionCard({ section, progress, isLocked, onPress, isDark, theme }: {
   const accuracyColor = accuracyPct >= 70 ? '#10B981' : accuracyPct >= 50 ? '#F59E0B' : '#EF4444';
 
   return (
-    <TouchableOpacity style={[sc.card, { backgroundColor: theme.colors.surface, opacity: isLocked ? 0.72 : 1 }]} onPress={onPress} activeOpacity={0.75}>
-      <View style={[sc.stripe, { backgroundColor: section.color }]} />
+    <TouchableOpacity
+      style={[sc.card, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderWidth: 1 }]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
       <View style={sc.body}>
         <View style={sc.topRow}>
-          <LinearGradient colors={isLocked ? ['#4B5563', '#374151'] : section.gradientColors as any} style={sc.iconBg}>
-            {isLocked ? <Lock size={18} color="rgba(255,255,255,0.6)" /> : <Text style={sc.iconEmoji}>{section.icon}</Text>}
+          <LinearGradient
+            colors={isLocked ? ['#6B7280', '#4B5563'] : section.gradientColors as any}
+            style={[sc.iconBg, { opacity: isLocked ? 0.6 : 1 }]}
+          >
+            {isLocked ? <Lock size={16} color="#FFF" /> : <Text style={sc.iconEmoji}>{section.icon}</Text>}
           </LinearGradient>
           <View style={sc.titleBlock}>
-            <View style={sc.nameRow}>
-              <Text style={[sc.sectionCode, { color: section.color }]}>{section.name}</Text>
-              <Text style={[sc.fullName, { color: theme.colors.text }]}>{section.fullName}</Text>
-            </View>
-            <View style={sc.metaRow}>
-              <Clock size={10} color={theme.colors.textSecondary} />
-              <Text style={[sc.meta, { color: theme.colors.textSecondary }]}>{section.timeMinutes} min · {section.questionCount} frågor</Text>
-            </View>
+            <Text style={[sc.sectionCode, { color: isLocked ? theme.colors.textSecondary : section.color }]}>{section.name}</Text>
+            <Text style={[sc.fullName, { color: isLocked ? theme.colors.textSecondary : theme.colors.text }]} numberOfLines={1}>{section.fullName}</Text>
           </View>
-          {!isLocked && hasData ? (
-            <View style={sc.scoreBlock}>
-              <Text style={[sc.scoreNum, { color: section.color }]}>{est}</Text>
-              <Text style={[sc.scoreMax, { color: theme.colors.textSecondary }]}>/{section.maxScore}p</Text>
-            </View>
-          ) : isLocked ? (
-            <View style={[sc.lockBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
-              <Lock size={12} color={theme.colors.textSecondary} />
-            </View>
-          ) : null}
+          <View style={sc.rightBlock}>
+            {isLocked ? (
+              <View style={sc.lockRow}>
+                <Crown size={11} color="#F59E0B" />
+                <Text style={sc.lockLabel}>Premium</Text>
+              </View>
+            ) : hasData ? (
+              <View style={sc.scoreBadge}>
+                <Text style={[sc.scoreNum, { color: section.color }]}>{est}</Text>
+                <Text style={sc.scoreMax}>/{section.maxScore}</Text>
+              </View>
+            ) : (
+              <Play size={16} color={section.color} fill={section.color + '30'} />
+            )}
+          </View>
         </View>
-        {!isLocked && (
-          <View style={sc.progressSection}>
-            <View style={sc.progressRow}>
-              {hasData ? (
-                <View style={[sc.accuracyBadge, { backgroundColor: accuracyColor + '18' }]}>
-                  <Text style={[sc.accuracyText, { color: accuracyColor }]}>{accuracyPct}% rätt</Text>
-                </View>
-              ) : (
-                <Text style={[sc.notStarted, { color: theme.colors.textSecondary }]}>Ej påbörjad</Text>
-              )}
-            </View>
+        <View style={sc.bottomRow}>
+          <View style={sc.metaRow}>
+            <Clock size={11} color={theme.colors.textSecondary} />
+            <Text style={[sc.meta, { color: theme.colors.textSecondary }]}>{section.timeMinutes} min · {section.questionCount} fr</Text>
           </View>
-        )}
-        <TouchableOpacity style={[sc.ctaBtn, { backgroundColor: isLocked ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : section.color + '15' }]} onPress={onPress} activeOpacity={0.7}>
-          {isLocked ? (
-            <><Crown size={13} color={theme.colors.textSecondary} /><Text style={[sc.ctaText, { color: theme.colors.textSecondary }]}>Kräver Premium</Text></>
-          ) : (
-            <><Play size={13} color={section.color} fill={section.color} /><Text style={[sc.ctaText, { color: section.color }]}>{hasData ? 'Öva igen' : 'Öva nu'}</Text></>
+          {!isLocked && hasData && (
+            <View style={[sc.accuracyBadge, { backgroundColor: accuracyColor + '20' }]}>
+              <Text style={[sc.accuracyText, { color: accuracyColor }]}>{accuracyPct}%</Text>
+            </View>
           )}
-          <ChevronRight size={13} color={isLocked ? theme.colors.textSecondary : section.color} />
-        </TouchableOpacity>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -255,7 +250,7 @@ export default function HogskoleprovetTab() {
   const [studyTips] = useState(() => getRandomTips(3));
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [paywallType, setPaywallType] = useState<'before_trial' | 'after_trial'>('before_trial');
-  const [expandedGroup, setExpandedGroup] = useState<'verbal' | 'kvant' | null>(null);
+  const [expandedGroup, setExpandedGroup] = useState<'verbal' | 'kvant' | null>('verbal');
 
   const daysUntilHP = getDaysUntilHP();
   const countdownMsg = getCountdownMessage(daysUntilHP);
@@ -312,51 +307,53 @@ export default function HogskoleprovetTab() {
         {/* ── Immersive Hero ── */}
         <Animated.View style={{ opacity: fadeAnim }}>
           <LinearGradient
-            colors={isDark ? ['#1E1B4B', '#312E81', '#4338CA'] : ['#4F46E5', '#7C3AED', '#A855F7']}
+            colors={isDark ? ['#1E1B4B', '#312E81', '#312E81'] : ['#4F46E5', '#6366F1', '#818CF8']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={styles.heroCard}
           >
-            {/* Decorative background circles */}
-            <View style={[styles.heroDeco1, { backgroundColor: 'rgba(255,255,255,0.06)' }]} />
-            <View style={[styles.heroDeco2, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+            {/* Decorative elements */}
+            <View style={styles.heroDeco1} />
+            <View style={styles.heroDeco2} />
 
             <View style={styles.heroTop}>
               <View style={styles.heroTitleRow}>
-                <GraduationCap size={26} color="#FFF" strokeWidth={2.5} />
-                <Text style={styles.heroTitle}>Högskoleprovet</Text>
+                <View style={styles.heroIconCircle}>
+                  <GraduationCap size={22} color="#FFF" strokeWidth={2} />
+                </View>
+                <View>
+                  <Text style={styles.heroTitle}>Högskoleprovet</Text>
+                  <Text style={styles.heroSubtitle}>Höst 2026 · 18 oktober</Text>
+                </View>
                 {isPremium && (
                   <View style={styles.heroProBadge}>
-                    <Crown size={12} color="#FFD700" />
+                    <Crown size={11} color="#FFD700" />
                     <Text style={styles.heroProText}>PRO</Text>
                   </View>
                 )}
               </View>
-              <Text style={styles.heroSubtitle}>Höst 2026 · 18 oktober</Text>
             </View>
 
             <View style={styles.heroBottom}>
-              {/* Countdown block */}
               <View style={styles.heroCountdown}>
-                <View style={[styles.heroCountdownBlock, { backgroundColor: urgencyColor + '20', borderColor: urgencyColor + '40', borderWidth: 1 }]}>
-                  <Text style={[styles.heroCountdownNum, { color: urgencyColor }]}>{daysUntilHP}</Text>
-                  <Text style={[styles.heroCountdownLabel, { color: urgencyColor + 'BB' }]}>dagar kvar</Text>
+                <View style={styles.heroCountdownBlock}>
+                  <Text style={[styles.heroCountdownNum, { color: isDark ? '#A5B4FC' : '#FFF' }]}>{daysUntilHP}</Text>
+                  <Text style={styles.heroCountdownLabel}>dagar kvar</Text>
                 </View>
-                <Text style={styles.heroCountdownMsg} numberOfLines={2}>{countdownMsg}</Text>
               </View>
 
-              {/* Score ring for premium users */}
               {isPremium && stats.totalAttempts > 0 && (
                 <View style={styles.heroScore}>
-                  <ScoreRing score={estimatedScore} maxScore={2.0} color="#FFD700" size={80} />
-                  <Text style={styles.heroScoreLabel}>Uppskattat resultat</Text>
+                  <ScoreRing score={estimatedScore} maxScore={2.0} color="#FFD700" size={74} />
+                  <Text style={styles.heroScoreLabel}>Est. resultat</Text>
                 </View>
               )}
 
               {!isPremium && (
                 <TouchableOpacity style={styles.heroUnlockBtn} onPress={() => router.push(ROUTES.premium)} activeOpacity={0.85}>
                   <LinearGradient colors={['#FFD700', '#F59E0B']} style={styles.heroUnlockGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                    <Crown size={16} color="#000" />
+                    <Crown size={15} color="#000" />
                     <Text style={styles.heroUnlockText}>Lås upp Högskoleprovet</Text>
+                    <ChevronRight size={15} color="#000" />
                   </LinearGradient>
                 </TouchableOpacity>
               )}
@@ -369,49 +366,38 @@ export default function HogskoleprovetTab() {
 
         {!isPremium && <FreemiumBanner feature="hp_section" status={hpLimit} style={{ marginBottom: 20 }} />}
 
-        {/* ── Quick Access Row (AI + Actions) ── */}
-        <Animated.View style={{ opacity: fadeAnim, marginBottom: 24 }}>
-          {/* Compressed AI row — icons only, no description text */}
+        {/* ── Quick Row (AI + Tools) ── */}
+        <Animated.View style={{ opacity: fadeAnim, marginBottom: 20 }}>
           <View style={styles.quickRow}>
-            <TouchableOpacity style={[styles.quickAiBarCompact, { backgroundColor: isDark ? '#1E1B4B' : '#EEF2FF' }]}
+            <TouchableOpacity style={[styles.aiChip, { backgroundColor: isDark ? '#1E1B4B' : '#EEF2FF', borderColor: '#6366F130' }]}
               onPress={() => router.push((ROUTES.mathChat + '?course=H%C3%B6gskoleprovet') as any)} activeOpacity={0.8}>
-              <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.quickAiIconSmall}>
-                <Calculator size={16} color="#FFF" />
+              <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.aiChipIcon}>
+                <Calculator size={14} color="#FFF" />
               </LinearGradient>
-              <Text style={[styles.quickAiTitleCompact, { color: theme.colors.text }]}>Math AI</Text>
+              <Text style={[styles.aiChipText, { color: theme.colors.text }]}>Math AI</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.quickAiBarCompact, { backgroundColor: isDark ? '#1A2E1A' : '#ECFDF5' }]}
+            <TouchableOpacity style={[styles.aiChip, { backgroundColor: isDark ? '#1A2E1A' : '#ECFDF5', borderColor: '#10B98130' }]}
               onPress={() => router.push((ROUTES.generalChat + '?course=H%C3%B6gskoleprovet') as any)} activeOpacity={0.8}>
-              <LinearGradient colors={['#10B981', '#059669']} style={styles.quickAiIconSmall}>
-                <MessageCircle size={16} color="#FFF" />
+              <LinearGradient colors={['#10B981', '#059669']} style={styles.aiChipIcon}>
+                <MessageCircle size={14} color="#FFF" />
               </LinearGradient>
-              <Text style={[styles.quickAiTitleCompact, { color: theme.colors.text }]}>Generell AI</Text>
+              <Text style={[styles.aiChipText, { color: theme.colors.text }]}>Generell AI</Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Study Plan + AI Generator + Stats buttons */}
-          <View style={styles.quickActionsRow}>
-            <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: isDark ? '#1A2235' : '#F4F6FF', borderColor: COLORS.primary + '30' }]}
+            <TouchableOpacity style={[styles.toolChip, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}
               onPress={() => router.push(ROUTES.hpStudyPlan)} activeOpacity={0.8}>
-              <Calendar size={18} color={COLORS.primary} />
-              <Text style={[styles.quickActionText, { color: theme.colors.text }]}>Studieplan</Text>
-              {plan && <View style={[styles.quickActionDot, { backgroundColor: '#10B981' }]} />}
+              <Calendar size={14} color={COLORS.primary} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: isDark ? '#1A2235' : '#F4F6FF', borderColor: '#8B5CF630' }]}
+            <TouchableOpacity style={[styles.toolChip, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}
               onPress={() => router.push(ROUTES.hpAiGenerator)} activeOpacity={0.8}>
-              <Sparkles size={18} color="#8B5CF6" />
-              <Text style={[styles.quickActionText, { color: theme.colors.text }]}>AI-generator</Text>
-              <View style={[styles.quickActionAiBadge, { backgroundColor: '#8B5CF620' }]}>
-                <Zap size={8} color="#8B5CF6" />
-              </View>
+              <Sparkles size={14} color="#8B5CF6" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: isDark ? '#1A2235' : '#F4F6FF', borderColor: '#EC489930' }]}
+            <TouchableOpacity style={[styles.toolChip, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}
               onPress={() => router.push(ROUTES.hpStats)} activeOpacity={0.8}>
-              <BarChart3 size={18} color="#EC4899" />
-              <Text style={[styles.quickActionText, { color: theme.colors.text }]}>Statistik</Text>
+              <BarChart3 size={14} color="#EC4899" />
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -491,10 +477,15 @@ export default function HogskoleprovetTab() {
 
           {expandedGroup === 'verbal' && (
             <View style={styles.collapseContent}>
-              {verbalSections.map((section) => (
-                <SectionCard key={section.code} section={section} progress={getSectionProgress(section.code)}
-                  isLocked={!isPremium} onPress={() => handleStartSection(section.code)} isDark={isDark} theme={theme} />
-              ))}
+              {verbalSections.map((section) => {
+                const sectionProgress = getSectionProgress(section.code);
+                const hasSectionData = sectionProgress.attempts > 0;
+                return (
+                  <SectionCard key={section.code} section={section} progress={sectionProgress}
+                    isLocked={!isPremium && !canAccessContent('delprov', section.code)}
+                    onPress={() => handleStartSection(section.code)} isDark={isDark} theme={theme} />
+                );
+              })}
             </View>
           )}
         </Animated.View>
@@ -527,30 +518,32 @@ export default function HogskoleprovetTab() {
 
           {expandedGroup === 'kvant' && (
             <View style={styles.collapseContent}>
-              {kvantSections.map((section) => (
-                <SectionCard key={section.code} section={section} progress={getSectionProgress(section.code)}
-                  isLocked={!isPremium} onPress={() => handleStartSection(section.code)} isDark={isDark} theme={theme} />
-              ))}
+              {kvantSections.map((section) => {
+                const sectionProgress = getSectionProgress(section.code);
+                return (
+                  <SectionCard key={section.code} section={section} progress={sectionProgress}
+                    isLocked={!isPremium && !canAccessContent('delprov', section.code)}
+                    onPress={() => handleStartSection(section.code)} isDark={isDark} theme={theme} />
+                );
+              })}
             </View>
           )}
         </Animated.View>
 
-        {/* ── Premium upsell between sections ── */}
+        {/* ── Premium upsell ── */}
         {!isPremium && (
-          <Animated.View style={{ opacity: fadeAnim }}>
-            <TouchableOpacity style={[styles.upsellCard, { backgroundColor: isDark ? '#1E1B4B' : '#F5F3FF' }]}
+          <Animated.View style={{ opacity: fadeAnim, marginBottom: 24 }}>
+            <TouchableOpacity style={[styles.upsellCard, { backgroundColor: isDark ? '#1E1B4B' : '#F5F3FF', borderColor: '#C4B5FD30' }]}
               onPress={() => router.push(ROUTES.premium)} activeOpacity={0.85}>
-              <LinearGradient colors={['#FFD700', '#F59E0B']} style={styles.upsellBadge}>
-                <Crown size={16} color="#000" />
-                <Text style={styles.upsellBadgeText}>LÅS UPP ALLT</Text>
-              </LinearGradient>
-              <Text style={[styles.upsellTitle, { color: theme.colors.text }]}>Få tillgång till alla delprov</Text>
-              <Text style={[styles.upsellSub, { color: theme.colors.textSecondary }]}>
-                Full tillgång till 8 delprov · AI-generator · Studieplan · Obegränsat övande
-              </Text>
-              <View style={[styles.upsellCta, { backgroundColor: COLORS.primary }]}>
-                <Text style={styles.upsellCtaText}>Se Premium</Text>
-                <ChevronRight size={16} color="#FFF" />
+              <View style={styles.upsellRow}>
+                <LinearGradient colors={['#FFD700', '#F59E0B']} style={styles.upsellBadge}>
+                  <Crown size={14} color="#000" />
+                </LinearGradient>
+                <View style={styles.upsellTextWrap}>
+                  <Text style={[styles.upsellTitle, { color: theme.colors.text }]}>Lås upp alla delprov</Text>
+                  <Text style={[styles.upsellSub, { color: theme.colors.textSecondary }]}>8 delprov · AI-generator · Studieplan · Obegränsat</Text>
+                </View>
+                <ChevronRight size={18} color={COLORS.primary} />
               </View>
             </TouchableOpacity>
           </Animated.View>
@@ -561,7 +554,7 @@ export default function HogskoleprovetTab() {
           <Animated.View style={{ opacity: fadeAnim, marginTop: 8 }}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Milstolpar</Text>
-              <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>Samla prestationer och XP</Text>
+              <Text style={{ fontSize: 13, color: theme.colors.textSecondary, marginTop: 2 }}>Samla prestationer och XP</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.milestonesRow}>
               {HP_MILESTONES.slice(0, 5).map((milestone) => {
@@ -582,28 +575,25 @@ export default function HogskoleprovetTab() {
         )}
 
         {/* ── Study Tips ── */}
-        <Animated.View style={{ opacity: fadeAnim }}>
+        <Animated.View style={{ opacity: fadeAnim, marginBottom: 32 }}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
-            <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>Expertråd för att maximera ditt resultat</Text>
           </View>
-          {studyTips.map((tip) => (
-            <View key={tip.id} style={[styles.tipCard, { backgroundColor: theme.colors.surface }]}>
-              <View style={styles.tipHeader}>
-                <View style={[styles.tipIconBg, { backgroundColor: `${tip.color}20` }]}>
+          <View style={styles.tipsGrid}>
+            {studyTips.map((tip) => (
+              <View key={tip.id} style={[styles.tipCard, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                <View style={[styles.tipIconBg, { backgroundColor: `${tip.color}18` }]}>
                   <Text style={styles.tipEmoji}>{tip.icon}</Text>
                 </View>
-                <View style={styles.tipContent}>
-                  <Text style={[styles.tipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
-                  <Text style={[styles.tipDescription, { color: theme.colors.textSecondary }]}>{tip.description}</Text>
-                </View>
+                <Text style={[styles.tipTitle, { color: theme.colors.text }]} numberOfLines={1}>{tip.title}</Text>
+                <Text style={[styles.tipDescription, { color: theme.colors.textSecondary }]} numberOfLines={2}>{tip.description}</Text>
               </View>
-            </View>
-          ))}
-          <TouchableOpacity style={[styles.viewMoreTips, { backgroundColor: theme.colors.surface }]}
-            onPress={() => router.push(ROUTES.studyTips)}>
+            ))}
+          </View>
+          <TouchableOpacity style={[styles.viewMoreTips, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
+            onPress={() => router.push(ROUTES.studyTips)} activeOpacity={0.8}>
             <Text style={[styles.viewMoreText, { color: COLORS.primary }]}>Visa alla studietips</Text>
-            <ChevronRight size={18} color={COLORS.primary} />
+            <ChevronRight size={16} color={COLORS.primary} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -626,68 +616,64 @@ export default function HogskoleprovetTab() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 16 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 32 },
 
   // Hero
   heroCard: {
-    borderRadius: 28,
-    padding: 24,
-    marginBottom: 24,
-    overflow: 'hidden',
-    position: 'relative',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 15,
+    borderRadius: 24, padding: 22, marginBottom: 20,
+    overflow: 'hidden', position: 'relative',
   },
   heroDeco1: {
-    position: 'absolute', top: -60, right: -40,
-    width: 180, height: 180, borderRadius: 90,
+    position: 'absolute', top: -40, right: -20,
+    width: 140, height: 140, borderRadius: 70,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   heroDeco2: {
-    position: 'absolute', bottom: -50, left: -30,
-    width: 140, height: 140, borderRadius: 70,
+    position: 'absolute', bottom: -30, left: -20,
+    width: 110, height: 110, borderRadius: 55,
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
-  heroTop: { marginBottom: 20 },
-  heroTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
-  heroTitle: { fontSize: 26, fontWeight: '900' as const, color: '#FFF', letterSpacing: -0.5 },
+  heroTop: { marginBottom: 18, zIndex: 1 },
+  heroTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  heroIconCircle: {
+    width: 44, height: 44, borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  heroTitle: { fontSize: 22, fontWeight: '800' as const, color: '#FFF', letterSpacing: -0.3 },
   heroProBadge: {
-    paddingHorizontal: 9, paddingVertical: 4, borderRadius: 10,
-    backgroundColor: 'rgba(255,215,0,0.25)', flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+    backgroundColor: 'rgba(255,215,0,0.2)', flexDirection: 'row', alignItems: 'center', gap: 3,
   },
-  heroProText: { fontSize: 11, fontWeight: '800' as const, color: '#FFD700', letterSpacing: 0.5 },
-  heroSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.8)', fontWeight: '500' as const, letterSpacing: -0.2 },
-  heroBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroProText: { fontSize: 10, fontWeight: '800' as const, color: '#FFD700', letterSpacing: 0.3 },
+  heroSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: '500' as const, letterSpacing: -0.1, marginTop: 2 },
+  heroBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 1 },
   heroCountdown: { flex: 1, marginRight: 16 },
-  heroCountdownBlock: { alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 16, alignSelf: 'flex-start', marginBottom: 8 },
-  heroCountdownNum: { fontSize: 34, fontWeight: '900' as const, letterSpacing: -1, lineHeight: 38 },
-  heroCountdownLabel: { fontSize: 10, fontWeight: '700' as const, textTransform: 'uppercase' as const, marginTop: 2 },
-  heroCountdownMsg: { fontSize: 12, fontWeight: '600' as const, color: 'rgba(255,255,255,0.85)', lineHeight: 17 },
-  heroScore: { alignItems: 'center', gap: 6 },
-  heroScoreLabel: { fontSize: 11, fontWeight: '600' as const, color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
-  heroUnlockBtn: { borderRadius: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  heroUnlockGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 20, gap: 8 },
-  heroUnlockText: { fontSize: 15, fontWeight: '700' as const, color: '#000' },
-
-  // Quick row
-  quickRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  quickAiBar: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 16, gap: 10 },
-  quickAiBarCompact: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, gap: 8 },
-  quickAiIconSmall: { width: 30, height: 30, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  quickAiTitleCompact: { fontSize: 12, fontWeight: '700' as const },
-  quickAiIcon: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  quickAiTextWrap: { flex: 1 },
-  quickAiTitle: { fontSize: 13, fontWeight: '700' as const, marginBottom: 1 },
-  quickAiSub: { fontSize: 11, fontWeight: '500' as const },
-  quickActionsRow: { flexDirection: 'row', gap: 10 },
-  quickActionBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 12, borderRadius: 14, borderWidth: 1, gap: 6,
+  heroCountdownBlock: {
+    alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20,
+    borderRadius: 16, alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  quickActionText: { fontSize: 12, fontWeight: '700' as const },
-  quickActionDot: { width: 8, height: 8, borderRadius: 4, position: 'absolute', top: 6, right: 6 },
-  quickActionAiBadge: { width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center', position: 'absolute', top: 4, right: 4 },
+  heroCountdownNum: { fontSize: 36, fontWeight: '900' as const, letterSpacing: -1, lineHeight: 40 },
+  heroCountdownLabel: { fontSize: 11, fontWeight: '700' as const, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' as const, marginTop: 2 },
+  heroScore: { alignItems: 'center', gap: 5 },
+  heroScoreLabel: { fontSize: 10, fontWeight: '600' as const, color: 'rgba(255,255,255,0.65)', textAlign: 'center' },
+  heroUnlockBtn: { borderRadius: 14, overflow: 'hidden' },
+  heroUnlockGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 18, gap: 6 },
+  heroUnlockText: { fontSize: 14, fontWeight: '700' as const, color: '#000' },
+
+  // Quick row — chips style
+  quickRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  aiChip: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, gap: 7,
+  },
+  aiChipIcon: { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  aiChipText: { fontSize: 12, fontWeight: '700' as const },
+  toolChip: {
+    width: 38, height: 38, borderRadius: 12, borderWidth: 1,
+    justifyContent: 'center', alignItems: 'center',
+  },
 
   // Full test card
   fullTestCard: { borderRadius: 24, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 12 },
@@ -709,33 +695,27 @@ const styles = StyleSheet.create({
   // Collapsible groups
   collapseTrigger: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 14, borderRadius: 18, borderWidth: 1, marginBottom: 4,
+    padding: 16, borderRadius: 20, borderWidth: 1, marginBottom: 4,
   },
-  collapseTriggerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  collapseTriggerIcon: { width: 42, height: 42, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  collapseTriggerEmoji: { fontSize: 20 },
-  collapseTriggerText: { flex: 1, gap: 2 },
-  collapseTriggerTitle: { fontSize: 15, fontWeight: '700' as const },
-  collapseTriggerSub: { fontSize: 11, fontWeight: '500' as const },
-  collapseContent: { paddingTop: 4 },
-  // Group headers (kept for compatibility)
-  groupHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, marginTop: 4 },
-  groupPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
-  groupPillText: { fontSize: 14, fontWeight: '700' as const },
+  collapseTriggerLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+  collapseTriggerIcon: { width: 44, height: 44, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  collapseTriggerEmoji: { fontSize: 22 },
+  collapseTriggerText: { flex: 1, gap: 3 },
+  collapseTriggerTitle: { fontSize: 16, fontWeight: '700' as const, letterSpacing: -0.2 },
+  collapseTriggerSub: { fontSize: 12, fontWeight: '500' as const },
+  collapseContent: { paddingTop: 6 },
 
   // Section header
-  sectionHeader: { marginBottom: 14, marginTop: 8 },
-  sectionTitle: { fontSize: 20, fontWeight: '700' as const, marginBottom: 4 },
-  sectionSubtitle: { fontSize: 14 },
+  sectionHeader: { marginBottom: 14, marginTop: 12 },
+  sectionTitle: { fontSize: 18, fontWeight: '700' as const, letterSpacing: -0.2 },
 
   // Upsell
-  upsellCard: { borderRadius: 20, padding: 20, marginBottom: 20, marginTop: 8, alignItems: 'center' },
-  upsellBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, gap: 6, marginBottom: 12 },
-  upsellBadgeText: { fontSize: 11, fontWeight: '800' as const, color: '#000', letterSpacing: 0.5 },
-  upsellTitle: { fontSize: 18, fontWeight: '800' as const, textAlign: 'center', marginBottom: 6 },
-  upsellSub: { fontSize: 13, textAlign: 'center', lineHeight: 20, marginBottom: 14 },
-  upsellCta: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14, gap: 6 },
-  upsellCtaText: { fontSize: 15, fontWeight: '700' as const, color: '#FFF' },
+  upsellCard: { borderRadius: 18, padding: 18, borderWidth: 1, marginTop: 4 },
+  upsellRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  upsellBadge: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  upsellTextWrap: { flex: 1, gap: 3 },
+  upsellTitle: { fontSize: 15, fontWeight: '700' as const },
+  upsellSub: { fontSize: 12, lineHeight: 17 },
 
   // Milestones
   milestonesRow: { paddingRight: 20, gap: 12, marginBottom: 24 },
@@ -745,51 +725,49 @@ const styles = StyleSheet.create({
   milestoneName: { fontSize: 12, fontWeight: '600' as const, textAlign: 'center', marginBottom: 4 },
   milestoneXP: { fontSize: 11, fontWeight: '700' as const },
 
-  // Tips
-  tipCard: { padding: 16, borderRadius: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  tipHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  tipIconBg: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  tipEmoji: { fontSize: 22 },
-  tipContent: { flex: 1 },
-  tipTitle: { fontSize: 15, fontWeight: '700' as const, marginBottom: 4 },
-  tipDescription: { fontSize: 13, lineHeight: 20 },
-  viewMoreTips: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 12, gap: 6, marginTop: 4 },
-  viewMoreText: { fontSize: 15, fontWeight: '600' as const },
+  // Tips — grid of cards
+  tipsGrid: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  tipCard: { flex: 1, padding: 14, borderRadius: 16, borderWidth: 1, gap: 8 },
+  tipIconBg: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  tipEmoji: { fontSize: 18 },
+  tipTitle: { fontSize: 13, fontWeight: '700' as const },
+  tipDescription: { fontSize: 11, lineHeight: 16 },
+  viewMoreTips: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    padding: 13, borderRadius: 14, borderWidth: 1, gap: 6,
+  },
+  viewMoreText: { fontSize: 14, fontWeight: '600' as const },
 });
 
 // ─── Section Card Styles ──────────────────────────────────────────────────────
 const sc = StyleSheet.create({
-  card: { borderRadius: 20, marginBottom: 12, flexDirection: 'row', overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 4 },
-  stripe: { width: 4 },
-  body: { flex: 1, padding: 16, gap: 10 },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  iconBg: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  iconEmoji: { fontSize: 20 },
-  titleBlock: { flex: 1, gap: 3 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sectionCode: { fontSize: 15, fontWeight: '800' as const, letterSpacing: 0.3 },
-  fullName: { fontSize: 14, fontWeight: '600' as const },
+  card: { borderRadius: 16, marginBottom: 6, overflow: 'hidden' },
+  body: { padding: 14, gap: 8 },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+  iconBg: { width: 38, height: 38, borderRadius: 11, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  iconEmoji: { fontSize: 18 },
+  titleBlock: { flex: 1, gap: 2 },
+  sectionCode: { fontSize: 14, fontWeight: '800' as const, letterSpacing: 0.2 },
+  fullName: { fontSize: 13, fontWeight: '600' as const },
+  rightBlock: { flexShrink: 0, alignItems: 'center', justifyContent: 'center' },
+  lockRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  lockLabel: { fontSize: 10, fontWeight: '700' as const, color: '#F59E0B' },
+  scoreBadge: { flexDirection: 'row', alignItems: 'baseline', gap: 1 },
+  scoreNum: { fontSize: 18, fontWeight: '800' as const, letterSpacing: -0.5 },
+  scoreMax: { fontSize: 10, fontWeight: '600' as const, color: '#9CA3AF' },
+  bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   meta: { fontSize: 11, fontWeight: '500' as const },
-  scoreBlock: { alignItems: 'flex-end', flexShrink: 0 },
-  scoreNum: { fontSize: 22, fontWeight: '800' as const, letterSpacing: -0.5 },
-  scoreMax: { fontSize: 10, fontWeight: '600' as const },
-  lockBadge: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  progressSection: { gap: 6 },
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  accuracyBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  accuracyText: { fontSize: 11, fontWeight: '700' as const },
-  notStarted: { fontSize: 11, fontWeight: '500' as const },
-  ctaBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 9, borderRadius: 12, gap: 6 },
-  ctaText: { fontSize: 13, fontWeight: '700' as const, flex: 1, textAlign: 'center' },
+  accuracyBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
+  accuracyText: { fontSize: 10, fontWeight: '700' as const },
 });
 
 // ─── Stats Strip Styles ───────────────────────────────────────────────────────
 const ss = StyleSheet.create({
   strip: { paddingRight: 20, gap: 10, marginBottom: 24 },
-  statCard: { width: 90, padding: 14, borderRadius: 18, alignItems: 'center', gap: 6 },
-  iconBg: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  value: { fontSize: 18, fontWeight: '800' as const, letterSpacing: -0.5 },
+  statCard: { width: 86, padding: 12, borderRadius: 16, alignItems: 'center', gap: 5 },
+  iconBg: { width: 30, height: 30, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+  value: { fontSize: 16, fontWeight: '800' as const, letterSpacing: -0.5 },
   label: { fontSize: 10, fontWeight: '600' as const, textAlign: 'center', lineHeight: 13 },
 });
 

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, ScrollView, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { StepProps, ACCENT } from './shared';
+import { onboardingStyles as styles } from './styles';
 
 export default function WelcomeStep(_props: StepProps): React.ReactElement {
   const scaleAnim = useRef(new Animated.Value(0.85)).current;
@@ -12,8 +13,6 @@ export default function WelcomeStep(_props: StepProps): React.ReactElement {
       Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
     ]).start();
   }, []);
-
-  const styles = React.useMemo(() => require('../onboardingStyles'), []);
 
   return (
     <ScrollView contentContainerStyle={styles.centered} showsVerticalScrollIndicator={false}>

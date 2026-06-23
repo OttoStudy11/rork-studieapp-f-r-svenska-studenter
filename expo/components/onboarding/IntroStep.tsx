@@ -1,9 +1,8 @@
-import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { StepProps } from './shared';
+import { onboardingStyles as styles } from './styles';
 
 export default function IntroStep(_props: StepProps): React.ReactElement {
-  const styles = React.useMemo(() => require('../onboardingStyles'), []);
   return (
     <ScrollView contentContainerStyle={styles.centered} showsVerticalScrollIndicator={false}>
       <Text style={{ fontSize: 80, textAlign: 'center', marginBottom: 24 }}>🎓</Text>

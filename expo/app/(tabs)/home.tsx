@@ -496,7 +496,7 @@ export default function HomeScreen() {
 
         {/* Upcoming Exams — collapsible */}
         <SlideInView direction="up" delay={150} duration={300}>
-          <View style={[styles.section, { marginBottom: 36 }]}>
+          <View style={[styles.section, { marginBottom: 44 }]}>
             <TouchableOpacity
               style={styles.sectionHeader}
               onPress={() => {
@@ -645,7 +645,7 @@ export default function HomeScreen() {
 
         {/* HP + Diagnosstöd — two-column row */}
         <SlideInView direction="up" delay={200} duration={300}>
-          <View style={[styles.twoColumnRow, { marginBottom: 36 }]}>
+          <View style={[styles.twoColumnRow, { marginBottom: 48 }]}>
             {/* Högskoleprov — compact card */}
             <TouchableOpacity 
               style={styles.twoColCard}
@@ -1013,7 +1013,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     borderRadius: 24,
     padding: 24,
-    marginBottom: 32,
+    marginBottom: 44,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
@@ -1070,7 +1070,7 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     paddingHorizontal: 24,
-    marginBottom: 32,
+    marginBottom: 44,
     gap: 16,
   },
   actionButton: {
@@ -1099,7 +1099,7 @@ const styles = StyleSheet.create({
   miniStatsGrid: {
     flexDirection: 'row',
     paddingHorizontal: 24,
-    marginBottom: 36,
+    marginBottom: 48,
     gap: 12,
   },
   miniStatCard: {
@@ -1126,7 +1126,7 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 24,
-    marginBottom: 36,
+    marginBottom: 44,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1267,7 +1267,7 @@ const styles = StyleSheet.create({
   },
   compactXpCard: {
     marginHorizontal: 24,
-    marginBottom: 36,
+    marginBottom: 44,
     borderRadius: 16,
     padding: 18,
     flexDirection: 'row',

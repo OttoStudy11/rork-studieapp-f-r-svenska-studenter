@@ -8,7 +8,14 @@ import {
   Animated,
   Dimensions,
   Modal,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { ROUTES } from '@/utils/typedRoutes';
@@ -18,6 +25,7 @@ import {
   Target,
   Trophy,
   ChevronRight,
+  ChevronDown,
   Play,
   BarChart3,
   Lock,
@@ -247,6 +255,7 @@ export default function HogskoleprovetTab() {
   const [studyTips] = useState(() => getRandomTips(3));
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [paywallType, setPaywallType] = useState<'before_trial' | 'after_trial'>('before_trial');
+  const [expandedGroup, setExpandedGroup] = useState<'verbal' | 'kvant' | null>(null);
 
   const daysUntilHP = getDaysUntilHP();
   const countdownMsg = getCountdownMessage(daysUntilHP);
@@ -360,56 +369,48 @@ export default function HogskoleprovetTab() {
 
         {!isPremium && <FreemiumBanner feature="hp_section" status={hpLimit} style={{ marginBottom: 20 }} />}
 
-        {/* ── Quick Access Row (AI + Study Plan + Full Test) ── */}
+        {/* ── Quick Access Row (AI + Actions) ── */}
         <Animated.View style={{ opacity: fadeAnim, marginBottom: 24 }}>
+          {/* Compressed AI row — icons only, no description text */}
           <View style={styles.quickRow}>
-            {/* AI Bar */}
-            <TouchableOpacity style={[styles.quickAiBar, { backgroundColor: isDark ? '#1E1B4B' : '#EEF2FF' }]}
+            <TouchableOpacity style={[styles.quickAiBarCompact, { backgroundColor: isDark ? '#1E1B4B' : '#EEF2FF' }]}
               onPress={() => router.push((ROUTES.mathChat + '?course=H%C3%B6gskoleprovet') as any)} activeOpacity={0.8}>
-              <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.quickAiIcon}>
-                <Calculator size={18} color="#FFF" />
+              <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.quickAiIconSmall}>
+                <Calculator size={16} color="#FFF" />
               </LinearGradient>
-              <View style={styles.quickAiTextWrap}>
-                <Text style={[styles.quickAiTitle, { color: theme.colors.text }]}>Math AI</Text>
-                <Text style={[styles.quickAiSub, { color: theme.colors.textSecondary }]}>HP-hjälp</Text>
-              </View>
-              <ChevronRight size={14} color={theme.colors.textSecondary} />
+              <Text style={[styles.quickAiTitleCompact, { color: theme.colors.text }]}>Math AI</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.quickAiBar, { backgroundColor: isDark ? '#1A2E1A' : '#ECFDF5' }]}
+            <TouchableOpacity style={[styles.quickAiBarCompact, { backgroundColor: isDark ? '#1A2E1A' : '#ECFDF5' }]}
               onPress={() => router.push((ROUTES.generalChat + '?course=H%C3%B6gskoleprovet') as any)} activeOpacity={0.8}>
-              <LinearGradient colors={['#10B981', '#059669']} style={styles.quickAiIcon}>
-                <MessageCircle size={18} color="#FFF" />
+              <LinearGradient colors={['#10B981', '#059669']} style={styles.quickAiIconSmall}>
+                <MessageCircle size={16} color="#FFF" />
               </LinearGradient>
-              <View style={styles.quickAiTextWrap}>
-                <Text style={[styles.quickAiTitle, { color: theme.colors.text }]}>Generell AI</Text>
-                <Text style={[styles.quickAiSub, { color: theme.colors.textSecondary }]}>Studietips</Text>
-              </View>
-              <ChevronRight size={14} color={theme.colors.textSecondary} />
+              <Text style={[styles.quickAiTitleCompact, { color: theme.colors.text }]}>Generell AI</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Study Plan + AI Generator buttons */}
+          {/* Study Plan + AI Generator + Stats buttons */}
           <View style={styles.quickActionsRow}>
             <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: isDark ? '#1A2235' : '#F4F6FF', borderColor: COLORS.primary + '30' }]}
               onPress={() => router.push(ROUTES.hpStudyPlan)} activeOpacity={0.8}>
-              <Calendar size={20} color={COLORS.primary} />
+              <Calendar size={18} color={COLORS.primary} />
               <Text style={[styles.quickActionText, { color: theme.colors.text }]}>Studieplan</Text>
               {plan && <View style={[styles.quickActionDot, { backgroundColor: '#10B981' }]} />}
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: isDark ? '#1A2235' : '#F4F6FF', borderColor: '#8B5CF630' }]}
               onPress={() => router.push(ROUTES.hpAiGenerator)} activeOpacity={0.8}>
-              <Sparkles size={20} color="#8B5CF6" />
+              <Sparkles size={18} color="#8B5CF6" />
               <Text style={[styles.quickActionText, { color: theme.colors.text }]}>AI-generator</Text>
               <View style={[styles.quickActionAiBadge, { backgroundColor: '#8B5CF620' }]}>
-                <Zap size={10} color="#8B5CF6" />
+                <Zap size={8} color="#8B5CF6" />
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: isDark ? '#1A2235' : '#F4F6FF', borderColor: '#EC489930' }]}
               onPress={() => router.push(ROUTES.hpStats)} activeOpacity={0.8}>
-              <BarChart3 size={20} color="#EC4899" />
+              <BarChart3 size={18} color="#EC4899" />
               <Text style={[styles.quickActionText, { color: theme.colors.text }]}>Statistik</Text>
             </TouchableOpacity>
           </View>
@@ -462,30 +463,76 @@ export default function HogskoleprovetTab() {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* ── Verbal Sections ── */}
+        {/* ── Collapsible Verbal Group ── */}
         <Animated.View style={{ opacity: fadeAnim }}>
-          <View style={styles.groupHeader}>
-            <View style={[styles.groupPill, { backgroundColor: '#6366F120' }]}>
-              <Text style={[styles.groupPillText, { color: '#6366F1' }]}>📖 Verbal del</Text>
+          <TouchableOpacity
+            style={[styles.collapseTrigger, { backgroundColor: theme.colors.surface, borderColor: '#6366F120' }]}
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setExpandedGroup(expandedGroup === 'verbal' ? null : 'verbal');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.collapseTriggerLeft}>
+              <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.collapseTriggerIcon}>
+                <Text style={styles.collapseTriggerEmoji}>📖</Text>
+              </LinearGradient>
+              <View style={styles.collapseTriggerText}>
+                <Text style={[styles.collapseTriggerTitle, { color: theme.colors.text }]}>Verbal del</Text>
+                <Text style={[styles.collapseTriggerSub, { color: theme.colors.textSecondary }]}>ORD · LÄS · MEK · ELF — 4 delprov</Text>
+              </View>
             </View>
-          </View>
-          {verbalSections.map((section) => (
-            <SectionCard key={section.code} section={section} progress={getSectionProgress(section.code)}
-              isLocked={!isPremium} onPress={() => handleStartSection(section.code)} isDark={isDark} theme={theme} />
-          ))}
+            <ChevronDown
+              size={18}
+              color={theme.colors.textSecondary}
+              style={{ transform: [{ rotate: expandedGroup === 'verbal' ? '180deg' : '0deg' }] }}
+            />
+          </TouchableOpacity>
+
+          {expandedGroup === 'verbal' && (
+            <View style={styles.collapseContent}>
+              {verbalSections.map((section) => (
+                <SectionCard key={section.code} section={section} progress={getSectionProgress(section.code)}
+                  isLocked={!isPremium} onPress={() => handleStartSection(section.code)} isDark={isDark} theme={theme} />
+              ))}
+            </View>
+          )}
         </Animated.View>
 
-        {/* ── Kvantitative Sections ── */}
+        {/* ── Collapsible Kvantitative Group ── */}
         <Animated.View style={{ opacity: fadeAnim, marginTop: 4 }}>
-          <View style={styles.groupHeader}>
-            <View style={[styles.groupPill, { backgroundColor: '#EC489920' }]}>
-              <Text style={[styles.groupPillText, { color: '#EC4899' }]}>🔢 Kvantitativ del</Text>
+          <TouchableOpacity
+            style={[styles.collapseTrigger, { backgroundColor: theme.colors.surface, borderColor: '#EC489920' }]}
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setExpandedGroup(expandedGroup === 'kvant' ? null : 'kvant');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.collapseTriggerLeft}>
+              <LinearGradient colors={['#EC4899', '#F97316']} style={styles.collapseTriggerIcon}>
+                <Text style={styles.collapseTriggerEmoji}>🔢</Text>
+              </LinearGradient>
+              <View style={styles.collapseTriggerText}>
+                <Text style={[styles.collapseTriggerTitle, { color: theme.colors.text }]}>Kvantitativ del</Text>
+                <Text style={[styles.collapseTriggerSub, { color: theme.colors.textSecondary }]}>XYZ · KVA · NOG · DTK — 4 delprov</Text>
+              </View>
             </View>
-          </View>
-          {kvantSections.map((section) => (
-            <SectionCard key={section.code} section={section} progress={getSectionProgress(section.code)}
-              isLocked={!isPremium} onPress={() => handleStartSection(section.code)} isDark={isDark} theme={theme} />
-          ))}
+            <ChevronDown
+              size={18}
+              color={theme.colors.textSecondary}
+              style={{ transform: [{ rotate: expandedGroup === 'kvant' ? '180deg' : '0deg' }] }}
+            />
+          </TouchableOpacity>
+
+          {expandedGroup === 'kvant' && (
+            <View style={styles.collapseContent}>
+              {kvantSections.map((section) => (
+                <SectionCard key={section.code} section={section} progress={getSectionProgress(section.code)}
+                  isLocked={!isPremium} onPress={() => handleStartSection(section.code)} isDark={isDark} theme={theme} />
+              ))}
+            </View>
+          )}
         </Animated.View>
 
         {/* ── Premium upsell between sections ── */}
@@ -624,8 +671,11 @@ const styles = StyleSheet.create({
   heroUnlockText: { fontSize: 15, fontWeight: '700' as const, color: '#000' },
 
   // Quick row
-  quickRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  quickRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   quickAiBar: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 16, gap: 10 },
+  quickAiBarCompact: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, gap: 8 },
+  quickAiIconSmall: { width: 30, height: 30, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  quickAiTitleCompact: { fontSize: 12, fontWeight: '700' as const },
   quickAiIcon: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   quickAiTextWrap: { flex: 1 },
   quickAiTitle: { fontSize: 13, fontWeight: '700' as const, marginBottom: 1 },
@@ -656,7 +706,19 @@ const styles = StyleSheet.create({
   fullTestPassLabel: { fontSize: 12, fontWeight: '700' as const, color: 'rgba(255,255,255,0.9)' },
   fullTestPassSub: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: '500' as const },
 
-  // Group headers
+  // Collapsible groups
+  collapseTrigger: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    padding: 14, borderRadius: 18, borderWidth: 1, marginBottom: 4,
+  },
+  collapseTriggerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  collapseTriggerIcon: { width: 42, height: 42, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  collapseTriggerEmoji: { fontSize: 20 },
+  collapseTriggerText: { flex: 1, gap: 2 },
+  collapseTriggerTitle: { fontSize: 15, fontWeight: '700' as const },
+  collapseTriggerSub: { fontSize: 11, fontWeight: '500' as const },
+  collapseContent: { paddingTop: 4 },
+  // Group headers (kept for compatibility)
   groupHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, marginTop: 4 },
   groupPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
   groupPillText: { fontSize: 14, fontWeight: '700' as const },

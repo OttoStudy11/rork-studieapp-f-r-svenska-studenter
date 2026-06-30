@@ -6,21 +6,15 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { ChevronRight, Clock, Trophy, Target, CheckCircle2 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
-import { useHPTrial } from '@/contexts/HPTrialContext';
-import { HPPaywallModal } from '@/components/hogskoleprovet/HPPaywallModal';
 import { ROUTES } from '@/utils/typedRoutes';
 import { COLORS } from '@/constants/design-system';
 
 export default function HPResultScreen() {
   const { theme, isDark } = useTheme();
   const { sessionState, completeSession } = useHogskoleprovet();
-  const { completeTrial, trialStatus } = useHPTrial();
-  const params = useLocalSearchParams();
-  
+
   const [results, setResults] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [paywallVisible, setPaywallVisible] = useState(false);
-  const [isTrialMode] = useState(params.isTrialMode === 'true');
 
   useEffect(() => {
     const loadResults = async () => {
@@ -31,27 +25,11 @@ export default function HPResultScreen() {
       }
 
       try {
-        console.log('[HP Results] Completing session', { isTrialMode });
+        console.log('[HP Results] Completing session');
         const result = await completeSession();
-        
+
         if (result) {
           setResults(result);
-          
-          if (isTrialMode && sessionState.trialId) {
-            console.log('[HP Results] Completing trial', sessionState.trialId);
-            await completeTrial(
-              sessionState.trialId,
-              result.totalQuestions,
-              result.correctAnswers,
-              result.scorePercentage,
-              result.estimatedHPScore,
-              result.timeSpentMinutes
-            );
-            
-            setTimeout(() => {
-              setPaywallVisible(true);
-            }, 1500);
-          }
         }
       } catch (error) {
         console.error('[HP Results] Error:', error);
@@ -96,9 +74,7 @@ export default function HPResultScreen() {
             <View style={styles.crownContainer}>
               <Trophy size={64} color="#FFF" />
             </View>
-            <Text style={styles.headerTitle}>
-              {isTrialMode ? '🎯 Provperiod slutförd!' : 'Resultat'}
-            </Text>
+            <Text style={styles.headerTitle}>Resultat</Text>
             <Text style={styles.headerSubtitle}>
               {scorePercentage >= 80
                 ? 'Fantastiskt resultat!'
@@ -173,19 +149,6 @@ export default function HPResultScreen() {
           </View>
         )}
 
-        {isTrialMode && (
-          <View style={[styles.trialInfoCard, { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)' }]}>
-            <CheckCircle2 size={24} color={COLORS.primary} />
-            <View style={styles.trialInfoContent}>
-              <Text style={[styles.trialInfoTitle, { color: theme.colors.text }]}>
-                Tack för att du testade!
-              </Text>
-              <Text style={[styles.trialInfoText, { color: theme.colors.textSecondary }]}>
-                Uppgradera till Premium för obegränsad tillgång till alla prov och funktioner
-              </Text>
-            </View>
-          </View>
-        )}
       </ScrollView>
 
       <SafeAreaView edges={['bottom']} style={styles.footer}>
@@ -194,28 +157,11 @@ export default function HPResultScreen() {
           onPress={handleContinue}
           activeOpacity={0.8}
         >
-          <Text style={styles.continueButtonText}>
-            {isTrialMode ? 'Tillbaka till start' : 'Fortsätt'}
-          </Text>
+          <Text style={styles.continueButtonText}>Fortsätt</Text>
           <ChevronRight size={20} color="#FFF" />
         </TouchableOpacity>
       </SafeAreaView>
 
-      <HPPaywallModal
-        visible={paywallVisible}
-        onClose={() => {
-          setPaywallVisible(false);
-          handleContinue();
-        }}
-        onUpgrade={() => {
-          setPaywallVisible(false);
-          router.push(ROUTES.premium);
-        }}
-        type="after_trial"
-        trialScore={scorePercentage}
-        trialType={results.sectionCode ? 'section' : 'full_test'}
-        trialTarget={results.sectionCode}
-      />
     </View>
   );
 }

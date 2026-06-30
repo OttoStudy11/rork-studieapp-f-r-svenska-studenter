@@ -27,7 +27,6 @@ import {
   ChevronRight,
   ChevronDown,
   Play,
-  BarChart3,
   Lock,
   Crown,
   Sparkles,
@@ -37,22 +36,14 @@ import {
   Calendar,
   TrendingUp,
   Flame,
-  CheckCircle2,
   Calculator,
   MessageCircle,
-  BookOpen,
-  BrainCircuit,
-  LineChart,
-  Star,
   ArrowUpRight,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
-import { useHPTrial } from '@/contexts/HPTrialContext';
-import { useFreemiumLimits } from '@/hooks/useFreemiumLimits';
-import { FreemiumBanner } from '@/components/FreemiumBanner';
-import { HPPaywallModal } from '@/components/hogskoleprovet/HPPaywallModal';
+
 import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HP_FULL_TEST_VERSIONS, HPSectionConfig } from '@/constants/hogskoleprovet';
 import { getRandomTips } from '@/constants/hogskoleprovet-study-tips';
 import { COLORS } from '@/constants/design-system';
@@ -232,16 +223,11 @@ function SectionCard({ section, progress, isLocked, onPress, isDark, theme }: {
 export default function HogskoleprovetTab() {
   const { theme, isDark } = useTheme();
   const { isPremium } = usePremium();
-  const freemium = useFreemiumLimits();
-  const hpLimit = freemium.checkHPSection();
   const { getUserStats, getEstimatedHPScore, getUnlockedMilestones, getSectionProgress } = useHogskoleprovet();
-  const { canAccessContent } = useHPTrial();
   const { plan, getDaysUntilHP, getCountdownMessage, getTodayProgress } = useHPStudyPlan();
 
   const [fadeAnim] = useState(new Animated.Value(0));
   const [fullTestModalVisible, setFullTestModalVisible] = useState(false);
-  const [paywallVisible, setPaywallVisible] = useState(false);
-  const [paywallType, setPaywallType] = useState<'before_trial' | 'after_trial'>('before_trial');
   const [expandedGroup, setExpandedGroup] = useState<'verbal' | 'kvant' | null>(null);
 
   const daysUntilHP = getDaysUntilHP();
@@ -258,12 +244,7 @@ export default function HogskoleprovetTab() {
 
   const handleStartFullTest = async () => {
     if (!isPremium) {
-      if (canAccessContent('full_test')) {
-        setFullTestModalVisible(true);
-      } else {
-        setPaywallType('before_trial');
-        setPaywallVisible(true);
-      }
+      router.push(ROUTES.premium);
       return;
     }
     setFullTestModalVisible(true);
@@ -276,13 +257,7 @@ export default function HogskoleprovetTab() {
 
   const handleStartSection = (sectionCode: string) => {
     if (!isPremium) {
-      if (hpLimit.isAllowed || canAccessContent('delprov', sectionCode)) {
-        freemium.trackUsage('hp_section', { sectionCode });
-        router.push({ pathname: ROUTES.hpSelectVersion, params: { sectionCode } });
-      } else {
-        setPaywallType('before_trial');
-        setPaywallVisible(true);
-      }
+      router.push(ROUTES.premium);
       return;
     }
     router.push({ pathname: ROUTES.hpSelectVersion, params: { sectionCode } });
@@ -562,8 +537,6 @@ export default function HogskoleprovetTab() {
 
         </Animated.View>
 
-        {!isPremium && <FreemiumBanner feature="hp_section" status={hpLimit} style={{ marginBottom: 36 }} />}
-
         {/* ═══════════════════ VERBAL SECTION ═══════════════════ */}
         <Animated.View style={{ opacity: fadeAnim }}>
           <View style={styles.sectionHeader}>
@@ -710,10 +683,6 @@ export default function HogskoleprovetTab() {
         <FullTestVersionModal visible={fullTestModalVisible} onClose={() => setFullTestModalVisible(false)}
           onSelectVersion={handleStartFullTestWithVersion} />
       )}
-
-      <HPPaywallModal visible={paywallVisible} onClose={() => setPaywallVisible(false)}
-        onUpgrade={() => { setPaywallVisible(false); router.push(ROUTES.premium); }}
-        type={paywallType} />
     </View>
   );
 }

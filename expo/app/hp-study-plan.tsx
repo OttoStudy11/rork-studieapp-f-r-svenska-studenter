@@ -6,10 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
-  Switch,
   Platform,
   Alert,
   Dimensions,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,9 +31,9 @@ import {
   BarChart3,
   Zap,
   BookOpen,
-  Edit3,
-  Hash,
   Play,
+  Settings,
+  Trash2,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
@@ -55,49 +55,33 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // Helpers
 // ════════════════════════════════════════════════════════════════════════════════
 
-function AnimatedPressable({
-  onPress,
-  style,
-  children,
-  scaleValue = 0.96,
-}: {
+function getTodayString(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function ScaleOnPress({ onPress, style, children, scaleTo = 0.97 }: {
   onPress: () => void;
   style?: any;
   children: React.ReactNode;
-  scaleValue?: number;
+  scaleTo?: number;
 }) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const anim = useRef(new Animated.Value(1)).current;
 
   return (
-    <Animated.View style={[style, { transform: [{ scale: scaleAnim }] }]}>
-      <TouchableOpacity
+    <Animated.View style={[style, { transform: [{ scale: anim }] }]}>
+      <Pressable
         onPress={onPress}
         onPressIn={() =>
-          Animated.spring(scaleAnim, {
-            toValue: scaleValue,
-            useNativeDriver: true,
-            speed: 40,
-            bounciness: 3,
-          }).start()
+          Animated.spring(anim, { toValue: scaleTo, useNativeDriver: true, speed: 50, bounciness: 2 }).start()
         }
         onPressOut={() =>
-          Animated.spring(scaleAnim, {
-            toValue: 1,
-            useNativeDriver: true,
-            speed: 30,
-            bounciness: 5,
-          }).start()
+          Animated.spring(anim, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 4 }).start()
         }
-        activeOpacity={1}
       >
         {children}
-      </TouchableOpacity>
+      </Pressable>
     </Animated.View>
   );
-}
-
-function getTodayString(): string {
-  return new Date().toISOString().split('T')[0];
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -106,106 +90,94 @@ function getTodayString(): string {
 
 function PremiumUpsellView({ theme, isDark }: { theme: any; isDark: boolean }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const bumpAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bumpAnim, { toValue: 1.04, duration: 1500, useNativeDriver: true }),
-        Animated.timing(bumpAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-      ]),
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [fadeAnim, bumpAnim]);
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+  }, [fadeAnim]);
 
   const features = [
-    { icon: Target, color: '#10B981', title: 'Personlig intensitetsnivå', desc: 'Anpassad efter hur lång tid du har till provet' },
-    { icon: Flame, color: '#F97316', title: 'Streak-tracking', desc: 'Bygg starka studievanor och håll koll på din streak' },
-    { icon: Bell, color: '#6366F1', title: 'Smarta påminnelser', desc: 'Få notiser vid rätt tidpunkt varje dag' },
-    { icon: BarChart3, color: '#EC4899', title: 'Detaljerad statistik', desc: 'Se din utveckling med vecko- och månadsstatistik' },
+    { icon: Target, color: '#10B981', title: 'Planera din studietid', desc: 'Anpassad intensitetsnivå baserat på hur lång tid du har kvar' },
+    { icon: Flame, color: '#F97316', title: 'Bygg en streak', desc: 'Håll koll på dina studiedagar och bygg starka vanor' },
+    { icon: Bell, color: '#6366F1', title: 'Smarta påminnelser', desc: 'Få notiser vid rätt tid varje dag så du inte missar ett pass' },
+    { icon: BarChart3, color: '#EC4899', title: 'Detaljerad statistik', desc: 'Se din utveckling vecka för vecka med tydliga grafer' },
   ];
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+    <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView edges={['top']} style={{ paddingHorizontal: 20, paddingTop: 6 }}>
-        <TouchableOpacity
-          style={[styles.backCircle, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <ChevronLeft size={20} color={isDark ? '#FFF' : '#1A1A2E'} />
-        </TouchableOpacity>
+
+      <SafeAreaView edges={['top']}>
+        <View style={upStyles.navRow}>
+          <TouchableOpacity
+            style={upStyles.backBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+            accessibilityLabel="Gå tillbaka"
+            accessibilityRole="button"
+          >
+            <ChevronLeft size={22} color={theme.colors.text} />
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
 
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 60, alignItems: 'center' }}
+        contentContainerStyle={upStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={{ opacity: fadeAnim, alignItems: 'center', width: '100%' }}>
-          {/* Crown icon */}
-          <View style={{ position: 'relative', marginBottom: 28, alignItems: 'center' }}>
+        <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
+          {/* Crown area */}
+          <View style={upStyles.crownArea}>
             <LinearGradient
               colors={['#FFD700', '#F59E0B', '#EA580C']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
               style={upStyles.crownCircle}
             >
-              <Crown size={44} color="#FFF" fill="#FFF" />
+              <Crown size={48} color="#FFF" fill="#FFF" />
             </LinearGradient>
-            <View style={{ position: 'absolute', top: -6, left: -20 }}>
+            <View style={upStyles.sparkle1}>
               <Sparkles size={18} color="#FFD700" />
             </View>
-            <View style={{ position: 'absolute', bottom: 6, right: -14 }}>
+            <View style={upStyles.sparkle2}>
               <Sparkles size={14} color="#FFD700" />
             </View>
           </View>
 
-          <Text style={[upStyles.title, { color: theme.colors.text }]}>
-            Studieplan är Premium
-          </Text>
-          <Text style={[upStyles.subtitle, { color: theme.colors.textSecondary }]}>
+          <Text style={upStyles.title}>Studieplan kräver Premium</Text>
+          <Text style={upStyles.subtitle}>
             Få en personlig studieplan med dagliga mål, streak-tracking och smarta påminnelser inför högskoleprovet
           </Text>
 
-          {/* Feature list */}
-          <View style={[upStyles.featureCard, { backgroundColor: isDark ? theme.colors.surface : '#FFF' }]}>
+          {/* Feature cards */}
+          <View style={upStyles.featureList}>
             {features.map((f, i) => (
-              <View key={i} style={upStyles.featureRow}>
-                <View style={[upStyles.featureIcon, { backgroundColor: f.color + '18' }]}>
-                  <f.icon size={20} color={f.color} />
+              <View key={i} style={upStyles.featureItem}>
+                <View style={[upStyles.featureIcon, { backgroundColor: f.color + '15' }]}>
+                  <f.icon size={22} color={f.color} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[upStyles.featureTitle, { color: theme.colors.text }]}>{f.title}</Text>
-                  <Text style={[upStyles.featureDesc, { color: theme.colors.textSecondary }]}>{f.desc}</Text>
+                <View style={upStyles.featureBody}>
+                  <Text style={upStyles.featureTitle}>{f.title}</Text>
+                  <Text style={upStyles.featureDesc}>{f.desc}</Text>
                 </View>
               </View>
             ))}
           </View>
 
           {/* CTA */}
-          <Animated.View style={{ transform: [{ scale: bumpAnim }], width: '100%' }}>
-            <TouchableOpacity
-              style={upStyles.ctaBtn}
-              onPress={() => router.push(ROUTES.premium)}
-              activeOpacity={0.85}
+          <ScaleOnPress onPress={() => router.push(ROUTES.premium)} style={upStyles.ctaWrap} scaleTo={0.96}>
+            <LinearGradient
+              colors={['#FFD700', '#F59E0B', '#EA580C']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={upStyles.cta}
             >
-              <LinearGradient
-                colors={['#FFD700', '#F59E0B', '#EA580C']}
-                style={upStyles.ctaGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Crown size={20} color="#000" />
-                <Text style={upStyles.ctaText}>Lås upp Studieplan</Text>
-                <ArrowRight size={18} color="#000" />
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
+              <Crown size={20} color="#000" />
+              <Text style={upStyles.ctaText}>Lås upp Studieplan</Text>
+              <ArrowRight size={18} color="#000" />
+            </LinearGradient>
+          </ScaleOnPress>
 
-          <Text style={[upStyles.trust, { color: theme.colors.textSecondary }]}>
-            Ingår i Premium · Avbryt när du vill
-          </Text>
+          <Text style={upStyles.trustText}>Ingår i Premium · Ingen bindningstid</Text>
         </Animated.View>
       </ScrollView>
     </View>
@@ -217,8 +189,6 @@ function PremiumUpsellView({ theme, isDark }: { theme: any; isDark: boolean }) {
 // ════════════════════════════════════════════════════════════════════════════════
 
 function PlanSelectionView({
-  selectedDate,
-  setSelectedDate,
   daysUntil,
   countdownMsg,
   suggestedPlan,
@@ -226,8 +196,6 @@ function PlanSelectionView({
   theme,
   isDark,
 }: {
-  selectedDate: HPDateKey;
-  setSelectedDate: (k: HPDateKey) => void;
   daysUntil: number;
   countdownMsg: string;
   suggestedPlan: HPPlanType;
@@ -235,84 +203,79 @@ function PlanSelectionView({
   theme: any;
   isDark: boolean;
 }) {
-  const urgencyColor = daysUntil >= 60 ? '#10B981' : daysUntil >= 30 ? '#F97316' : '#EF4444';
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const urgencyColor = daysUntil >= 60 ? '#10B981' : daysUntil >= 30 ? '#F97316' : '#EF4444';
 
   useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    Animated.spring(fadeAnim, { toValue: 1, useNativeDriver: true, speed: 8, bounciness: 2 }).start();
   }, [fadeAnim]);
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+    <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Hero */}
-      <LinearGradient
-        colors={isDark ? ['#0F172A', '#1A1F3A', '#1E1B4B'] : ['#1A1A2E', '#16213E', '#0F3460']}
-        style={selStyles.hero}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+      <ScrollView contentContainerStyle={selStyles.scrollContainer} showsVerticalScrollIndicator={false}>
         <SafeAreaView edges={['top']}>
-          <TouchableOpacity style={selStyles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <ChevronLeft size={20} color="rgba(255,255,255,0.8)" />
-          </TouchableOpacity>
+          <View style={selStyles.navRow}>
+            <TouchableOpacity
+              style={selStyles.backBtn}
+              onPress={() => router.back()}
+              activeOpacity={0.7}
+              accessibilityLabel="Gå tillbaka"
+              accessibilityRole="button"
+            >
+              <ChevronLeft size={22} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
 
-          <Animated.View style={{ opacity: fadeAnim, paddingHorizontal: 28 }}>
-            <Text style={selStyles.heroLabel}>HÖGSKOLEPROV 2026</Text>
-            <View style={selStyles.heroCountRow}>
-              <Text style={[selStyles.heroNum, { color: urgencyColor }]}>{daysUntil}</Text>
-              <View style={selStyles.heroNumRight}>
-                <Text style={selStyles.heroNumUnit}>dagar</Text>
-                <Text style={selStyles.heroNumUnit}>kvar</Text>
+        <Animated.View style={{ opacity: fadeAnim }}>
+          {/* Title area */}
+          <View style={selStyles.titleArea}>
+            <Text style={selStyles.overline}>HÖGSKOLEPROVET 2026</Text>
+            <Text style={selStyles.mainTitle}>Skapa din studieplan</Text>
+            <Text style={selStyles.mainSub}>
+              Välj intensitet och få ett dagligt schema fram till provdagen
+            </Text>
+          </View>
+
+          {/* Countdown card */}
+          <View style={selStyles.countdownCard}>
+            <View style={selStyles.countdownInner}>
+              <View style={selStyles.countdownLeft}>
+                <Text style={[selStyles.countdownNum, { color: urgencyColor }]}>{daysUntil}</Text>
+                <Text style={selStyles.countdownUnit}>dagar kvar</Text>
+              </View>
+              <View style={selStyles.countdownRight}>
+                <Calendar size={36} color="rgba(255,255,255,0.6)" />
+                <Text style={selStyles.countdownLabel}>Höst 2026</Text>
+                <Text style={selStyles.countdownDate}>18 oktober</Text>
               </View>
             </View>
-            <View style={[selStyles.msgPill, { backgroundColor: urgencyColor + '20', borderColor: urgencyColor + '40', borderWidth: 1 }]}>
-              <Text style={[selStyles.msgText, { color: urgencyColor }]}>{countdownMsg}</Text>
+            <View style={[selStyles.countdownMsg, { backgroundColor: urgencyColor + '15' }]}>
+              <Text style={[selStyles.countdownMsgText, { color: urgencyColor }]}>{countdownMsg}</Text>
             </View>
-          </Animated.View>
-        </SafeAreaView>
-      </LinearGradient>
+          </View>
 
-      <ScrollView contentContainerStyle={selStyles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={[selStyles.sectionTitle, { color: theme.colors.text }]}>Välj provtillfälle</Text>
-        <View style={selStyles.dateRow}>
-          <TouchableOpacity
-            style={[selStyles.dateCard, {
-              backgroundColor: '#6366F1',
-              shadowColor: '#6366F1',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.35,
-              shadowRadius: 14,
-              elevation: 10,
-            }]}
-            activeOpacity={1}
-          >
-            <Text style={{ fontSize: 28, marginBottom: 10 }}>🍂</Text>
-            <Text style={selStyles.dateCardTitle}>Höst 2026</Text>
-            <Text style={selStyles.dateCardSub}>18 oktober</Text>
-            <View style={selStyles.dateCheck}>
-              <CheckCircle2 size={18} color="#FFF" fill="#FFF" />
-            </View>
-          </TouchableOpacity>
-        </View>
+          {/* Plan cards */}
+          <Text style={selStyles.sectionLabel}>Välj intensitetsnivå</Text>
 
-        <Text style={[selStyles.sectionTitle, { color: theme.colors.text }]}>Välj intensitet</Text>
+          {PLAN_CONFIGS.map((config) => {
+            const isSuggested = config.type === suggestedPlan;
+            return (
+              <PlanCard
+                key={config.type}
+                config={config}
+                isSuggested={isSuggested}
+                onSelect={() => onSelectPlan(config.type)}
+                theme={theme}
+                isDark={isDark}
+              />
+            );
+          })}
 
-        {PLAN_CONFIGS.map((config) => {
-          const isSuggested = config.type === suggestedPlan;
-          return (
-            <PlanCard
-              key={config.type}
-              config={config}
-              isSuggested={isSuggested}
-              onSelect={() => onSelectPlan(config.type)}
-              theme={theme}
-              isDark={isDark}
-            />
-          );
-        })}
-        <View style={{ height: 60 }} />
+          <View style={{ height: 60 }} />
+        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -337,8 +300,8 @@ function PlanCard({
     if (!isSuggested) return;
     const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.02, duration: 1200, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.015, duration: 1400, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1400, useNativeDriver: true }),
       ]),
     );
     pulse.start();
@@ -346,64 +309,72 @@ function PlanCard({
   }, [isSuggested, pulseAnim]);
 
   return (
-    <AnimatedPressable onPress={onSelect} style={{ marginBottom: 18 }} scaleValue={0.975}>
-      <Animated.View style={[{ transform: [{ scale: pulseAnim }] }]}>
+    <ScaleOnPress onPress={onSelect} scaleTo={0.978}>
+      <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
         <View style={[pcStyles.card, isSuggested && pcStyles.cardSuggested]}>
+          {/* Gradient top */}
           <LinearGradient
-            colors={[config.gradientColors[0], config.gradientColors[1]]}
+            colors={config.gradientColors as any}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0.8 }}
-            style={pcStyles.top}
+            end={{ x: 1, y: 1 }}
+            style={pcStyles.cardTop}
           >
             {isSuggested && (
               <View style={pcStyles.recBadge}>
-                <Sparkles size={11} color="#FFF" />
-                <Text style={pcStyles.recText}>Rekommenderad</Text>
+                <Sparkles size={12} color="#FFF" />
+                <Text style={pcStyles.recText}>Rekommenderas</Text>
               </View>
             )}
-            <View style={pcStyles.topRow}>
-              <View style={pcStyles.emojiWrap}>
-                <Text style={{ fontSize: 36 }}>{config.emoji}</Text>
+
+            <View style={pcStyles.cardTopRow}>
+              <View style={pcStyles.emojiBox}>
+                <Text style={pcStyles.emoji}>{config.emoji}</Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={pcStyles.name}>{config.name}</Text>
-                <Text style={pcStyles.subtitle}>{config.subtitle}</Text>
+              <View style={pcStyles.cardTopInfo}>
+                <Text style={pcStyles.cardName}>{config.name}</Text>
+                <Text style={pcStyles.cardSub}>{config.subtitle}</Text>
               </View>
-              <View style={pcStyles.arrowCircle}>
-                <ArrowRight size={16} color="rgba(255,255,255,0.9)" />
+              <View style={pcStyles.arrowWrap}>
+                <ArrowRight size={18} color="#FFF" />
               </View>
             </View>
           </LinearGradient>
 
-          <View style={[pcStyles.bottom, { backgroundColor: isDark ? '#1E293B' : '#FAFBFF' }]}>
+          {/* Info bottom */}
+          <View style={[pcStyles.cardBottom, { backgroundColor: isDark ? '#1E293B' : '#FAFBFF' }]}>
+            {/* Daily stats */}
             <View style={pcStyles.pillRow}>
-              <PlanPill emoji="📖" label={`${config.wordsPerDay} ORD`} color={config.color} />
-              <PlanPill emoji="✍️" label={`${config.mekPerDay} MEK`} color={config.color} />
-              <PlanPill emoji="🔢" label={`${config.quantPerDay} KVA`} color={config.color} />
+              <View style={[pcStyles.pill, { backgroundColor: config.color + '14' }]}>
+                <Text style={pcStyles.pillEmoji}>📖</Text>
+                <Text style={[pcStyles.pillLabel, { color: config.color }]}>{config.wordsPerDay} ORD</Text>
+              </View>
+              <View style={[pcStyles.pill, { backgroundColor: config.color + '14' }]}>
+                <Text style={pcStyles.pillEmoji}>✍️</Text>
+                <Text style={[pcStyles.pillLabel, { color: config.color }]}>{config.mekPerDay} MEK</Text>
+              </View>
+              <View style={[pcStyles.pill, { backgroundColor: config.color + '14' }]}>
+                <Text style={pcStyles.pillEmoji}>🔢</Text>
+                <Text style={[pcStyles.pillLabel, { color: config.color }]}>{config.quantPerDay} KVA</Text>
+              </View>
             </View>
+
+            {/* Meta row */}
             <View style={pcStyles.metaRow}>
               <View style={pcStyles.metaItem}>
-                <Clock size={13} color={theme.colors.textSecondary} />
-                <Text style={[pcStyles.metaText, { color: theme.colors.textSecondary }]}>{config.minutesPerDay}</Text>
+                <Clock size={14} color={theme.colors.textSecondary} />
+                <Text style={[pcStyles.metaText, { color: theme.colors.textSecondary }]}>
+                  {config.minutesPerDay}
+                </Text>
               </View>
               <View style={[pcStyles.goalBadge, { backgroundColor: config.color + '15' }]}>
-                <TrendingUp size={12} color={config.color} />
+                <TrendingUp size={13} color={config.color} />
                 <Text style={[pcStyles.goalText, { color: config.color }]}>{config.goalIncrease}</Text>
               </View>
             </View>
           </View>
         </View>
       </Animated.View>
-    </AnimatedPressable>
-  );
-}
-
-function PlanPill({ emoji, label, color }: { emoji: string; label: string; color: string }) {
-  return (
-    <View style={[pillStyles.wrap, { backgroundColor: color + '14' }]}>
-      <Text style={{ fontSize: 12 }}>{emoji}</Text>
-      <Text style={[pillStyles.text, { color }]}>{label}</Text>
-    </View>
+    </ScaleOnPress>
   );
 }
 
@@ -470,7 +441,7 @@ function ActivePlanView({
     Animated.spring(tabAnim, {
       toValue: tab === 'today' ? 0 : 1,
       useNativeDriver: false,
-      speed: 16,
+      speed: 14,
       bounciness: 2,
     }).start();
   }, [tab, tabAnim]);
@@ -480,47 +451,55 @@ function ActivePlanView({
   const monthNames = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
   const dayLabel = `${dayNames[now.getDay()]} ${now.getDate()} ${monthNames[now.getMonth()]}`;
   const allDone = todayPct >= 100;
-  const tabWidth = (SCREEN_WIDTH - 64) / 2;
+  const tabWidth = (SCREEN_WIDTH - 40 - 8) / 2;
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+    <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Gradient background behind header */}
+      {/* Gradient header background */}
       <LinearGradient
         colors={isDark
-          ? [planConfig.color + '44', planConfig.color + '15', 'transparent']
-          : [planConfig.color + '66', planConfig.color + '33', 'transparent']}
-        style={styles.headerBg}
+          ? [planConfig.color + '33', planConfig.color + '0D', 'transparent']
+          : [planConfig.color + '55', planConfig.color + '1A', 'transparent']}
+        style={apStyles.headerBg}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       />
 
       <SafeAreaView edges={['top']}>
-        {/* Back + title */}
-        <View style={styles.headerRow}>
+        {/* Nav row */}
+        <View style={apStyles.navRow}>
           <TouchableOpacity
-            style={[styles.backCircle, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}
+            style={apStyles.navBtn}
             onPress={() => router.back()}
             activeOpacity={0.7}
+            accessibilityLabel="Gå tillbaka"
+            accessibilityRole="button"
           >
-            <ChevronLeft size={20} color={isDark ? '#FFF' : '#1A1A2E'} />
+            <ChevronLeft size={22} color={theme.colors.text} />
           </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#1A1A2E' }]}>Studieplan</Text>
-            <Text style={[styles.headerSub, { color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)' }]}>
-              {planConfig.emoji} {planConfig.name} · {HP_DATE_LABELS[plan.hpDateKey as HPDateKey]}
+
+          <View style={apStyles.navCenter}>
+            <Text style={[apStyles.navTitle, { color: theme.colors.text }]}>Studieplan</Text>
+            <Text style={apStyles.navSub}>
+              {planConfig.emoji} {planConfig.name}
             </Text>
           </View>
+
           <TouchableOpacity
-            style={[styles.backCircle, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}
-            onPress={() =>
-              Alert.alert('Inställningar', 'Vill du ändra inställningar eller ta bort planen?', [
+            style={apStyles.navBtn}
+            onPress={() => {
+              Alert.alert('Studieplan', 'Vad vill du göra?', [
                 { text: 'Avbryt', style: 'cancel' },
-                { text: 'Ta bort plan', style: 'destructive', onPress: onDeletePlan },
+                {
+                  text: 'Ta bort plan',
+                  style: 'destructive',
+                  onPress: onDeletePlan,
+                },
                 {
                   text: 'Notiser',
-                  onPress: () =>
+                  onPress: () => {
                     Alert.alert(
                       'Påminnelser',
                       `Daglig påminnelse: ${plan.dailyReminderHour}:00`,
@@ -531,81 +510,102 @@ function ActivePlanView({
                           onPress: () => onUpdateSettings({ notificationsEnabled: !plan.notificationsEnabled }),
                         },
                       ],
-                    ),
+                    );
+                  },
                 },
-              ])
-            }
+              ]);
+            }}
             activeOpacity={0.7}
+            accessibilityLabel="Inställningar"
+            accessibilityRole="button"
           >
-            <Bell size={18} color={isDark ? '#FFF' : '#1A1A2E'} />
+            <Settings size={20} color={theme.colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         {/* Stats strip */}
-        <View style={styles.statsStrip}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statNum, { color: isDark ? '#FFF' : '#1A1A2E' }]}>{daysUntil}</Text>
-            <Text style={[styles.statLabel, { color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)' }]}>dagar kvar</Text>
+        <View style={apStyles.statsRow}>
+          <View style={apStyles.statItem}>
+            <Text style={[apStyles.statNum, { color: theme.colors.text }]}>{daysUntil}</Text>
+            <Text style={apStyles.statLabel}>dagar kvar</Text>
           </View>
-          <View style={[styles.statDiv, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)' }]} />
-          <View style={styles.statItem}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Flame size={16} color="#F97316" />
-              <Text style={[styles.statNum, { color: isDark ? '#FFF' : '#1A1A2E' }]}>{progress.streak}</Text>
+          <View style={apStyles.statDiv} />
+          <View style={apStyles.statItem}>
+            <View style={apStyles.statInline}>
+              <Flame size={18} color="#F97316" />
+              <Text style={[apStyles.statNum, { color: theme.colors.text }]}>{progress.streak}</Text>
             </View>
-            <Text style={[styles.statLabel, { color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)' }]}>streak</Text>
+            <Text style={apStyles.statLabel}>streak</Text>
           </View>
-          <View style={[styles.statDiv, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)' }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNum, { color: isDark ? '#FFF' : '#1A1A2E' }]}>
+          <View style={apStyles.statDiv} />
+          <View style={apStyles.statItem}>
+            <Text style={[apStyles.statNum, { color: theme.colors.text }]}>
               {currentDay}
-              <Text style={{ fontSize: 14, fontWeight: '500' as const, color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)' }}>/{totalDays}</Text>
+              <Text style={apStyles.statNumFaded}>/{totalDays}</Text>
             </Text>
-            <Text style={[styles.statLabel, { color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)' }]}>plan dag</Text>
+            <Text style={apStyles.statLabel}>plan dag</Text>
           </View>
         </View>
 
         {/* Countdown message */}
-        <View style={styles.msgRow}>
-          <View style={[styles.msgPill, { backgroundColor: planConfig.color + '18', borderColor: planConfig.color + '35', borderWidth: 1 }]}>
-            <Text style={[styles.msgText, { color: planConfig.color }]}>{countdownMsg}</Text>
-          </View>
+        <View style={[apStyles.msgPill, { backgroundColor: planConfig.color + '15' }]}>
+          <Text style={[apStyles.msgText, { color: planConfig.color }]}>{countdownMsg}</Text>
         </View>
       </SafeAreaView>
 
       {/* Tab bar */}
-      <View style={[styles.tabBar, { backgroundColor: isDark ? theme.colors.surface : '#F8F9FB', borderBottomColor: theme.colors.border }]}>
+      <View style={[apStyles.tabBar, { borderBottomColor: theme.colors.border }]}>
         <Animated.View
           style={[
-            styles.tabIndicator,
+            apStyles.tabIndicator,
             {
               backgroundColor: planConfig.color,
-              width: tabWidth - 20,
-              transform: [
-                {
-                  translateX: tabAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [28, tabWidth + 28],
-                  }),
-                },
-              ],
+              width: tabWidth - 24,
+              transform: [{
+                translateX: tabAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20 + 12, 20 + 12 + tabWidth],
+                }),
+              }],
             },
           ]}
         />
-        <TouchableOpacity style={styles.tabItem} onPress={() => setTab('today')} activeOpacity={0.7}>
-          <Text style={[styles.tabLabel, { color: tab === 'today' ? planConfig.color : theme.colors.textSecondary, fontWeight: tab === 'today' ? '700' as const : '500' as const }]}>
+        <Pressable
+          style={apStyles.tab}
+          onPress={() => setTab('today')}
+          accessibilityLabel="Dagens uppgifter"
+          accessibilityRole="tab"
+          accessibilityState={{ selected: tab === 'today' }}
+        >
+          <Text style={[apStyles.tabLabel, {
+            color: tab === 'today' ? planConfig.color : theme.colors.textSecondary,
+            fontWeight: tab === 'today' ? '700' as const : '500' as const,
+          }]}>
             Idag
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tabItem} onPress={() => setTab('progress')} activeOpacity={0.7}>
-          <Text style={[styles.tabLabel, { color: tab === 'progress' ? planConfig.color : theme.colors.textSecondary, fontWeight: tab === 'progress' ? '700' as const : '500' as const }]}>
+        </Pressable>
+        <Pressable
+          style={apStyles.tab}
+          onPress={() => setTab('progress')}
+          accessibilityLabel="Progress"
+          accessibilityRole="tab"
+          accessibilityState={{ selected: tab === 'progress' }}
+        >
+          <Text style={[apStyles.tabLabel, {
+            color: tab === 'progress' ? planConfig.color : theme.colors.textSecondary,
+            fontWeight: tab === 'progress' ? '700' as const : '500' as const,
+          }]}>
             Progress
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Content */}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={apStyles.contentScroll}
+        contentContainerStyle={apStyles.contentPadding}
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.View style={{ opacity: fadeAnim }}>
           {tab === 'today' && (
             <TodayTab
@@ -687,7 +687,7 @@ function TodayTab({
       emoji: '📖',
       label: 'Ordkunskap',
       code: 'ORD',
-      desc: `${ordTarget} nya ord idag`,
+      desc: ordTarget > 0 ? `${ordTarget} nya ord idag` : 'Inga ord idag',
       completed: todayOrd,
       target: ordTarget,
       color: '#10B981',
@@ -698,7 +698,7 @@ function TodayTab({
       emoji: '✍️',
       label: 'Meningskomplettering',
       code: 'MEK',
-      desc: `${mekTarget} meningskompletteringar`,
+      desc: mekTarget > 0 ? `${mekTarget} meningskompletteringar` : 'Inga MEK idag',
       completed: todayMek,
       target: mekTarget,
       color: '#6366F1',
@@ -709,7 +709,7 @@ function TodayTab({
       emoji: '🔢',
       label: 'Kvantitativt',
       code: 'KVA',
-      desc: `${quantTarget} kvantitativa uppgifter`,
+      desc: quantTarget > 0 ? `${quantTarget} kvantitativa uppgifter` : 'Inga kvantitativa idag',
       completed: todayQuant,
       target: quantTarget,
       color: '#F97316',
@@ -720,41 +720,38 @@ function TodayTab({
   return (
     <View>
       {/* Date + day badge */}
-      <View style={tStyles.dateRow}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-          <Calendar size={14} color={theme.colors.textSecondary} />
+      <View style={tStyles.headerRow}>
+        <View style={tStyles.headerLeft}>
+          <Calendar size={15} color={theme.colors.textSecondary} />
           <Text style={[tStyles.dateText, { color: theme.colors.textSecondary }]}>{dayLabel}</Text>
         </View>
-        <View style={[tStyles.dayBadge, { backgroundColor: planConfig.color + '14' }]}>
-          <Text style={[tStyles.dayBadgeText, { color: planConfig.color }]}>Dag {currentDay}/{totalDays}</Text>
+        <View style={[tStyles.dayBadge, { backgroundColor: planConfig.color + '15' }]}>
+          <Text style={[tStyles.dayBadgeText, { color: planConfig.color }]}>
+            Dag {currentDay} av {totalDays}
+          </Text>
         </View>
       </View>
 
-      {/* Overall progress card */}
-      <View
-        style={[
-          tStyles.overallCard,
-          {
-            backgroundColor: allDone
-              ? isDark ? 'rgba(16,185,129,0.12)' : 'rgba(16,185,129,0.06)'
-              : isDark ? theme.colors.surface : '#FAFBFF',
-            borderColor: allDone ? '#10B98160' : theme.colors.border,
-          },
-        ]}
-      >
+      {/* Overall progress */}
+      <View style={[tStyles.overallCard, {
+        backgroundColor: allDone
+          ? isDark ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.05)'
+          : theme.colors.surface,
+        borderColor: allDone ? '#10B98140' : theme.colors.border,
+      }]}>
         {allDone ? (
-          <LinearGradient colors={['#10B981', '#059669']} style={tStyles.celebration} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-            <Text style={{ fontSize: 28 }}>🎉</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={tStyles.celebrationTitle}>Allt klart idag!</Text>
-              <Text style={tStyles.celebrationSub}>Fantastiskt jobbat – streaken håller!</Text>
+          <LinearGradient colors={['#10B981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={tStyles.celebration}>
+            <Text style={tStyles.celebEmoji}>🎉</Text>
+            <View style={tStyles.celebBody}>
+              <Text style={tStyles.celebTitle}>Allt klart idag!</Text>
+              <Text style={tStyles.celebSub}>Fantastiskt jobbat – streaken håller!</Text>
             </View>
-            <Sparkles size={20} color="rgba(255,255,255,0.8)" />
+            <Sparkles size={22} color="rgba(255,255,255,0.7)" />
           </LinearGradient>
         ) : (
           <>
             <View style={tStyles.overallTop}>
-              <View style={{ flex: 1 }}>
+              <View style={tStyles.overallTopLeft}>
                 <Text style={[tStyles.overallTitle, { color: theme.colors.text }]}>Dagens framsteg</Text>
                 <Text style={[tStyles.overallSub, { color: theme.colors.textSecondary }]}>{todayPct}% slutfört</Text>
               </View>
@@ -762,104 +759,106 @@ function TodayTab({
                 <Text style={tStyles.pctText}>{todayPct}%</Text>
               </View>
             </View>
-            <View style={[tStyles.barBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}>
-              <View style={[tStyles.barFill, { width: `${Math.min((todayOrd / ordTarget) * 33.3, 33.3)}%`, backgroundColor: '#10B981' }]} />
-              <View style={[tStyles.barFill, { width: `${Math.min((todayMek / mekTarget) * 33.3, 33.3)}%`, backgroundColor: '#6366F1', marginLeft: 2 }]} />
-              <View style={[tStyles.barFill, { width: `${Math.min((todayQuant / quantTarget) * 33.3, 33.3)}%`, backgroundColor: '#F97316', marginLeft: 2 }]} />
+
+            {/* Segmented progress bar */}
+            <View style={tStyles.barRow}>
+              <View style={[tStyles.barBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)' }]}>
+                <View style={[tStyles.barSeg, {
+                  width: `${ordTarget > 0 ? Math.min((todayOrd / ordTarget) * 33.3, 33.3) : 0}%`,
+                  backgroundColor: '#10B981',
+                }]} />
+                <View style={[tStyles.barSeg, {
+                  width: `${mekTarget > 0 ? Math.min((todayMek / mekTarget) * 33.3, 33.3) : 0}%`,
+                  backgroundColor: '#6366F1',
+                  marginLeft: 3,
+                }]} />
+                <View style={[tStyles.barSeg, {
+                  width: `${quantTarget > 0 ? Math.min((todayQuant / quantTarget) * 33.3, 33.3) : 0}%`,
+                  backgroundColor: '#F97316',
+                  marginLeft: 3,
+                }]} />
+              </View>
             </View>
           </>
         )}
       </View>
 
-      {/* Section header + "Alla klara" */}
+      {/* Section header */}
       <View style={tStyles.sectionRow}>
         <Text style={[tStyles.sectionTitle, { color: theme.colors.text }]}>Dagens uppgifter</Text>
-        {!allDone && (
-          <AnimatedPressable onPress={onMarkAllDone} scaleValue={0.94}>
-            <View style={[tStyles.markAllBtn, { backgroundColor: planConfig.color + '12', borderColor: planConfig.color + '30' }]}>
-              <CheckCheck size={14} color={planConfig.color} />
+        {!allDone && (todayOrd > 0 || todayMek > 0 || todayQuant > 0) && (
+          <ScaleOnPress onPress={onMarkAllDone} scaleTo={0.94}>
+            <View style={[tStyles.markAllBtn, { backgroundColor: planConfig.color + '12', borderColor: planConfig.color + '25' }]}>
+              <CheckCheck size={15} color={planConfig.color} />
               <Text style={[tStyles.markAllText, { color: planConfig.color }]}>Alla klara</Text>
             </View>
-          </AnimatedPressable>
+          </ScaleOnPress>
         )}
       </View>
 
       {/* Task cards */}
       {tasks.map((task) => {
         const done = task.completed >= task.target;
-        const progressPct = Math.min(task.completed / task.target, 1);
+        const progressPct = task.target > 0 ? Math.min(task.completed / task.target, 1) : 0;
 
         return (
-          <View
-            key={task.type}
-            style={[
-              taskStyles.card,
-              {
-                backgroundColor: isDark ? theme.colors.surface : '#FFF',
-                borderColor: done ? task.color + '50' : isDark ? theme.colors.border : 'rgba(0,0,0,0.06)',
-                borderWidth: done ? 1.5 : 1,
-              },
-            ]}
-          >
-            {/* Left icon area */}
-            <LinearGradient
-              colors={[task.color + '18', task.color + '06']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={taskStyles.iconArea}
-            >
-              <Text style={{ fontSize: 28 }}>{task.emoji}</Text>
+          <View key={task.type} style={[taskStyles.card, {
+            backgroundColor: theme.colors.surface,
+            borderColor: done ? task.color + '40' : theme.colors.border,
+          }]}>
+            {/* Left icon */}
+            <View style={[taskStyles.iconCol, { backgroundColor: task.color + '10' }]}>
+              <Text style={taskStyles.emojiText}>{task.emoji}</Text>
               <View style={[taskStyles.codeChip, { backgroundColor: task.color + '20' }]}>
                 <Text style={[taskStyles.codeText, { color: task.color }]}>{task.code}</Text>
               </View>
-            </LinearGradient>
+            </View>
 
             {/* Body */}
             <View style={taskStyles.body}>
-              <View style={taskStyles.topRow}>
-                <Text style={[taskStyles.name, { color: theme.colors.text }]}>{task.label}</Text>
-                {done ? (
-                  <CheckCircle2 size={22} color={task.color} fill={task.color} />
-                ) : (
-                  <View style={[taskStyles.countBadge, { backgroundColor: task.color + '14' }]}>
-                    <Text style={[taskStyles.countText, { color: task.color }]}>{task.completed}/{task.target}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={[taskStyles.desc, { color: theme.colors.textSecondary }]}>{task.desc}</Text>
+              <Text style={[taskStyles.taskName, { color: theme.colors.text }]}>{task.label}</Text>
+              <Text style={[taskStyles.taskDesc, { color: theme.colors.textSecondary }]}>{task.desc}</Text>
 
               {/* Progress bar */}
-              <View style={taskStyles.barBg}>
-                <View style={[taskStyles.barFill, { width: `${progressPct * 100}%`, backgroundColor: task.color }]} />
+              <View style={[taskStyles.taskBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}>
+                <View style={[taskStyles.taskBarFill, { width: `${progressPct * 100}%`, backgroundColor: task.color }]} />
               </View>
 
-              {/* Bottom row: meta + actions */}
+              {/* Bottom actions */}
               <View style={taskStyles.bottomRow}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                  <Clock size={12} color={theme.colors.textSecondary} />
+                <View style={taskStyles.metaGroup}>
+                  <Clock size={13} color={theme.colors.textSecondary} />
                   <Text style={[taskStyles.metaText, { color: theme.colors.textSecondary }]}>~10 min</Text>
-                  {done && <Text style={[taskStyles.tapHint, { color: task.color }]}>Klart 🎉</Text>}
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  {!done && (
-                    <AnimatedPressable onPress={() => onCheckTask(task.type)} scaleValue={0.88}>
-                      <View style={[taskStyles.checkBtn, { backgroundColor: task.color + '12', borderColor: task.color + '30' }]}>
-                        <CheckCircle2 size={13} color={task.color} />
-                        <Text style={[taskStyles.checkBtnText, { color: task.color }]}>+1</Text>
-                      </View>
-                    </AnimatedPressable>
+                  <View style={[taskStyles.countBadge, { backgroundColor: task.color + '14' }]}>
+                    <Text style={[taskStyles.countText, { color: task.color }]}>
+                      {task.completed}/{task.target}
+                    </Text>
+                  </View>
+                  {done && (
+                    <View style={taskStyles.doneMark}>
+                      <CheckCircle2 size={14} color={task.color} fill={task.color} />
+                      <Text style={[taskStyles.doneText, { color: task.color }]}>Klart</Text>
+                    </View>
                   )}
-                  <AnimatedPressable
-                    onPress={() => {
-                      router.push(ROUTES.hpPractice(task.sectionCode));
-                    }}
-                    scaleValue={0.93}
+                </View>
+
+                <View style={taskStyles.actionGroup}>
+                  {!done && task.target > 0 && (
+                    <ScaleOnPress onPress={() => onCheckTask(task.type)} scaleTo={0.9}>
+                      <View style={[taskStyles.plusBtn, { backgroundColor: task.color + '15', borderColor: task.color + '30' }]}>
+                        <Text style={[taskStyles.plusBtnText, { color: task.color }]}>+1</Text>
+                      </View>
+                    </ScaleOnPress>
+                  )}
+                  <ScaleOnPress
+                    onPress={() => router.push(ROUTES.hpPractice(task.sectionCode))}
+                    scaleTo={0.93}
                   >
-                    <View style={[taskStyles.goBtn, { backgroundColor: task.color, shadowColor: task.color }]}>
-                      <Play size={12} color="#FFF" fill="#FFF" />
+                    <View style={[taskStyles.goBtn, { backgroundColor: task.color }]}>
+                      <Play size={13} color="#FFF" fill="#FFF" />
                       <Text style={taskStyles.goBtnText}>Träna</Text>
                     </View>
-                  </AnimatedPressable>
+                  </ScaleOnPress>
                 </View>
               </View>
             </View>
@@ -890,7 +889,7 @@ function ProgressTab({
   isDark: boolean;
 }) {
   const completedDays = weekStats.filter((d: any) => d.fullyCompleted).length;
-  const planProgress = Math.min(currentDay / totalDays, 1);
+  const planProgress = totalDays > 0 ? Math.min(currentDay / totalDays, 1) : 0;
 
   const getDayLabel = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -899,74 +898,59 @@ function ProgressTab({
 
   const isToday = (dateStr: string) => dateStr === getTodayString();
 
+  const maxMinutes = Math.max(...weekStats.map((d: any) => d.minutesSpent), 1);
+
   return (
     <View>
-      {/* Stat cards */}
+      {/* Totals grid */}
       <Text style={[pStyles.sectionTitle, { color: theme.colors.text }]}>Totalt</Text>
-      <View style={pStyles.statsGrid}>
-        <StatTile label="Ord inlärda" value={progress.totalWordsLearned} emoji="📖" color="#10B981" theme={theme} isDark={isDark} />
-        <StatTile label="MEK gjorda" value={progress.totalMekCompleted} emoji="✍️" color="#6366F1" theme={theme} isDark={isDark} />
-        <StatTile label="KVA lösta" value={progress.totalQuantCompleted} emoji="🔢" color="#F97316" theme={theme} isDark={isDark} />
+      <View style={pStyles.totalsGrid}>
+        <StatTile label="Ord inlärda" value={progress.totalWordsLearned} emoji="📖" color="#10B981" />
+        <StatTile label="MEK gjorda" value={progress.totalMekCompleted} emoji="✍️" color="#6366F1" />
+        <StatTile label="KVA lösta" value={progress.totalQuantCompleted} emoji="🔢" color="#F97316" />
       </View>
 
       {/* Streak card */}
-      <View style={[pStyles.streakCard, { backgroundColor: isDark ? '#1E293B' : '#FFF' }]}>
-        <LinearGradient
-          colors={['rgba(239,68,68,0.1)', 'rgba(249,115,22,0.04)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={pStyles.streakGradient}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 }}>
-            <View style={[pStyles.streakIcon, { backgroundColor: 'rgba(239,68,68,0.12)' }]}>
-              <Flame size={28} color="#EF4444" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[pStyles.streakNum, { color: theme.colors.text }]}>{progress.streak} dagars streak</Text>
-              <Text style={[pStyles.streakSub, { color: theme.colors.textSecondary }]}>
-                Längst: {progress.longestStreak} dagar · {progress.totalMinutes} min totalt
-              </Text>
-            </View>
+      <View style={pStyles.streakCard}>
+        <View style={pStyles.streakRow}>
+          <View style={pStyles.streakIconWrap}>
+            <Flame size={32} color="#EF4444" />
           </View>
-          <Trophy size={24} color="#F59E0B" />
-        </LinearGradient>
+          <View style={pStyles.streakInfo}>
+            <Text style={[pStyles.streakNum, { color: theme.colors.text }]}>{progress.streak} dagar</Text>
+            <Text style={[pStyles.streakSub, { color: theme.colors.textSecondary }]}>
+              Längsta streak: {progress.longestStreak} dagar · {progress.totalMinutes} min totalt
+            </Text>
+          </View>
+          <Trophy size={28} color="#F59E0B" />
+        </View>
       </View>
 
       {/* Week activity */}
       <Text style={[pStyles.sectionTitle, { color: theme.colors.text }]}>Veckans aktivitet</Text>
-      <View style={[pStyles.weekCard, { backgroundColor: isDark ? theme.colors.surface : '#FFF' }]}>
+      <View style={pStyles.weekCard}>
         {weekStats.map((day: any) => {
           const todayMark = isToday(day.date);
-          const barH = day.minutesSpent > 0 ? Math.max(12, (day.minutesSpent / Math.max(...weekStats.map((d: any) => d.minutesSpent), 1)) * 64) : 6;
+          const barH = day.minutesSpent > 0 ? Math.max(10, (day.minutesSpent / maxMinutes) * 72) : 4;
           return (
             <View key={day.date} style={pStyles.weekCol}>
               {day.fullyCompleted && (
                 <View style={[pStyles.weekCheck, { backgroundColor: planConfig.color }]}>
-                  <CheckCircle2 size={8} color="#FFF" fill="#FFF" />
+                  <CheckCircle2 size={9} color="#FFF" fill="#FFF" />
                 </View>
               )}
-              <View
-                style={[
-                  pStyles.weekBar,
-                  {
-                    height: barH,
-                    backgroundColor: day.fullyCompleted
-                      ? planConfig.color
-                      : day.minutesSpent > 0
-                        ? planConfig.color + '50'
-                        : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                  },
-                ]}
-              />
-              <Text
-                style={[
-                  pStyles.weekLabel,
-                  {
-                    color: todayMark ? planConfig.color : theme.colors.textSecondary,
-                    fontWeight: todayMark ? '700' as const : '500' as const,
-                  },
-                ]}
-              >
+              <View style={[pStyles.weekBar, {
+                height: barH,
+                backgroundColor: day.fullyCompleted
+                  ? planConfig.color
+                  : day.minutesSpent > 0
+                    ? planConfig.color + '55'
+                    : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+              }]} />
+              <Text style={[pStyles.weekLabel, {
+                color: todayMark ? planConfig.color : theme.colors.textSecondary,
+                fontWeight: todayMark ? '700' as const : '500' as const,
+              }]}>
                 {getDayLabel(day.date)}
               </Text>
               {todayMark && <View style={[pStyles.weekDot, { backgroundColor: planConfig.color }]} />}
@@ -974,67 +958,50 @@ function ProgressTab({
           );
         })}
       </View>
-      <Text style={[pStyles.weekNote, { color: theme.colors.textSecondary }]}>
+      <Text style={pStyles.weekSummary}>
         {completedDays}/7 dagar slutförda denna vecka
       </Text>
 
       {/* Plan progress */}
       <Text style={[pStyles.sectionTitle, { color: theme.colors.text }]}>Planens framsteg</Text>
-      <View style={[pStyles.planCard, { backgroundColor: isDark ? theme.colors.surface : '#FFF' }]}>
+      <View style={pStyles.planCard}>
         <View style={pStyles.planHeader}>
-          <View style={{ flex: 1 }}>
+          <View>
             <Text style={[pStyles.planDay, { color: theme.colors.text }]}>Dag {currentDay} av {totalDays}</Text>
-            <Text style={[pStyles.planNote, { color: theme.colors.textSecondary }]}>
-              {totalDays - currentDay} dagar kvar på planen
-            </Text>
+            <Text style={pStyles.planSub}>{totalDays - currentDay} dagar kvar på planen</Text>
           </View>
-          <View style={[pStyles.planPct, { backgroundColor: planConfig.color + '14' }]}>
+          <View style={[pStyles.planPctBadge, { backgroundColor: planConfig.color + '15' }]}>
             <Text style={[pStyles.planPctText, { color: planConfig.color }]}>{Math.round(planProgress * 100)}%</Text>
           </View>
         </View>
-        <View style={[pStyles.planBarBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}>
+        <View style={pStyles.planBarBg}>
           <View style={[pStyles.planBarFill, { width: `${planProgress * 100}%`, backgroundColor: planConfig.color }]} />
         </View>
         <View style={pStyles.planMarkers}>
-          <View style={[pStyles.markerDot, { left: '25%', backgroundColor: planConfig.color + '30' }]} />
-          <View style={[pStyles.markerDot, { left: '50%', backgroundColor: planConfig.color + '30' }]} />
-          <View style={[pStyles.markerDot, { left: '75%', backgroundColor: planConfig.color + '30' }]} />
-          <View style={{ position: 'absolute', left: '100%', marginLeft: -8 }}>
-            <Target size={14} color={planConfig.color} />
+          {[0.25, 0.5, 0.75].map((mark, i) => (
+            <View key={i} style={[pStyles.marker, { left: `${mark * 100}%` }]}>
+              <View style={[pStyles.markerDot, { backgroundColor: planConfig.color + '35' }]} />
+              <Text style={pStyles.markerLabel}>{Math.round(mark * 100)}%</Text>
+            </View>
+          ))}
+          <View style={[pStyles.marker, { left: '100%' }]}>
+            <Target size={16} color={planConfig.color} />
+            <Text style={[pStyles.markerLabel, { color: planConfig.color }]}>Mål</Text>
           </View>
         </View>
       </View>
+
+      <View style={{ height: 60 }} />
     </View>
   );
 }
 
-function StatTile({
-  label,
-  value,
-  emoji,
-  color,
-  theme,
-  isDark,
-}: {
-  label: string;
-  value: number;
-  emoji: string;
-  color: string;
-  theme: any;
-  isDark: boolean;
-}) {
+function StatTile({ label, value, emoji, color }: { label: string; value: number; emoji: string; color: string }) {
   return (
-    <View style={[stStyles.card, { backgroundColor: isDark ? theme.colors.surface : '#FFF' }]}>
-      <LinearGradient
-        colors={[color + '18', color + '06']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={stStyles.gradient}
-      >
-        <Text style={{ fontSize: 26, marginBottom: 8 }}>{emoji}</Text>
-        <Text style={[stStyles.val, { color }]}>{value}</Text>
-        <Text style={[stStyles.lbl, { color: theme.colors.textSecondary }]}>{label}</Text>
-      </LinearGradient>
+    <View style={stStyles.tile}>
+      <Text style={stStyles.tileEmoji}>{emoji}</Text>
+      <Text style={[stStyles.tileNum, { color }]}>{value}</Text>
+      <Text style={stStyles.tileLabel}>{label}</Text>
     </View>
   );
 }
@@ -1063,7 +1030,7 @@ export default function HPStudyPlanScreen() {
     getWeekStats,
   } = useHPStudyPlan();
 
-  const [selectedDate, setSelectedDate] = useState<HPDateKey>('fall2026');
+  const [selectedDate] = useState<HPDateKey>('fall2026');
 
   const daysUntil = getDaysUntilHP();
   const countdownMsg = getCountdownMessage(daysUntil);
@@ -1079,12 +1046,12 @@ export default function HPStudyPlanScreen() {
   const todayMek = todayProgress?.mekCompleted ?? 0;
   const todayQuant = todayProgress?.quantCompleted ?? 0;
 
-  const ordTarget = planConfig?.wordsPerDay ?? 30;
-  const mekTarget = planConfig?.mekPerDay ?? 3;
-  const quantTarget = planConfig?.quantPerDay ?? 12;
+  const ordTarget = planConfig?.wordsPerDay ?? 0;
+  const mekTarget = planConfig?.mekPerDay ?? 0;
+  const quantTarget = planConfig?.quantPerDay ?? 0;
 
-  const todayPct = planConfig
-    ? Math.min(100, Math.round(((todayOrd / ordTarget + todayMek / mekTarget + todayQuant / quantTarget) / 3) * 100))
+  const todayPct = planConfig && (ordTarget + mekTarget + quantTarget) > 0
+    ? Math.min(100, Math.round(((todayOrd / Math.max(1, ordTarget) + todayMek / Math.max(1, mekTarget) + todayQuant / Math.max(1, quantTarget)) / 3) * 100))
     : 0;
 
   const handleSelectPlan = useCallback(
@@ -1100,7 +1067,7 @@ export default function HPStudyPlanScreen() {
       if (!planConfig) return;
       const targets: Record<string, number> = { ord: ordTarget, mek: mekTarget, quant: quantTarget };
       const current: Record<string, number> = { ord: todayOrd, mek: todayMek, quant: todayQuant };
-      if (current[type] >= targets[type]) return;
+      if (current[type] >= (targets[type] || 1)) return;
       if (Platform.OS !== 'web') await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       await updateDailyProgress(type, 1);
     },
@@ -1118,7 +1085,7 @@ export default function HPStudyPlanScreen() {
   }, [ordTarget, mekTarget, quantTarget, todayOrd, todayMek, todayQuant, updateDailyProgress]);
 
   const handleDeletePlan = useCallback(() => {
-    Alert.alert('Ta bort studieplan', 'Är du säker? All din progress sparas men planen raderas.', [
+    Alert.alert('Ta bort studieplan', 'Är du säker? Din progress sparas men planen raderas.', [
       { text: 'Avbryt', style: 'cancel' },
       { text: 'Ta bort', style: 'destructive', onPress: async () => { await deletePlan(); } },
     ]);
@@ -1142,8 +1109,6 @@ export default function HPStudyPlanScreen() {
   if (!plan) {
     return (
       <PlanSelectionView
-        selectedDate={selectedDate}
-        setSelectedDate={setSelectedDate}
         daysUntil={daysUntil}
         countdownMsg={countdownMsg}
         suggestedPlan={suggestedPlan}
@@ -1188,441 +1153,365 @@ export default function HPStudyPlanScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  headerBg: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 240,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 6,
-    marginBottom: 20,
-  },
-  backCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    letterSpacing: -0.4,
-  },
-  headerSub: {
-    fontSize: 12,
-    marginTop: 2,
-    fontWeight: '500' as const,
-  },
-  statsStrip: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 14,
-  },
-  statItem: {
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  statNum: {
-    fontSize: 28,
-    fontWeight: '800' as const,
-    letterSpacing: -0.8,
-    lineHeight: 34,
-  },
-  statLabel: {
-    fontSize: 11,
-    marginTop: 3,
-    fontWeight: '500' as const,
-  },
-  statDiv: {
-    width: 1,
-    height: 40,
-  },
-  msgRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 12,
-  },
-  msgPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  msgText: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    letterSpacing: -0.2,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    paddingHorizontal: 32,
-    position: 'relative',
-    marginBottom: 0,
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    height: 3,
-    borderRadius: 1.5,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-  tabLabel: {
-    fontSize: 15,
-  },
 });
 
-// ─── Premium Upsell Styles ─────────────────────────────────────────────────────
+// ─── PREMIUM UPSELL STYLES ─────────────────────────────────────────────────────
 
 const upStyles = StyleSheet.create({
-  crownCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 14,
+  navRow: { paddingHorizontal: 16, paddingTop: 6, marginBottom: 8 },
+  backBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    justifyContent: 'center', alignItems: 'center',
+    backgroundColor: 'transparent',
   },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 80, alignItems: 'center' },
+  crownArea: {
+    position: 'relative',
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  crownCircle: {
+    width: 104, height: 104, borderRadius: 52,
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  sparkle1: { position: 'absolute', top: -8, left: -24 },
+  sparkle2: { position: 'absolute', bottom: 4, right: -18 },
   title: {
-    fontSize: 26,
-    fontWeight: '900' as const,
-    textAlign: 'center',
-    letterSpacing: -0.6,
-    marginBottom: 12,
+    fontSize: 28, fontWeight: '800' as const,
+    textAlign: 'center', letterSpacing: -0.6,
+    color: '#1A1A2E',
+    marginBottom: 14,
   },
   subtitle: {
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 23,
-    marginBottom: 28,
-    paddingHorizontal: 8,
-    fontWeight: '500' as const,
+    fontSize: 15, textAlign: 'center',
+    lineHeight: 24, color: '#64748B',
+    marginBottom: 32,
+    paddingHorizontal: 12,
   },
-  featureCard: {
+  featureList: {
     width: '100%',
-    borderRadius: 22,
-    padding: 20,
-    gap: 20,
-    marginBottom: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    gap: 0,
+    marginBottom: 32,
   },
-  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  featureIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    justifyContent: 'center',
+  featureItem: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+    gap: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    minHeight: 64,
+  },
+  featureIcon: {
+    width: 48, height: 48, borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center',
     flexShrink: 0,
   },
-  featureTitle: { fontSize: 15, fontWeight: '700' as const, marginBottom: 2 },
-  featureDesc: { fontSize: 13, lineHeight: 18, fontWeight: '400' as const },
-  ctaBtn: {
+  featureBody: { flex: 1 },
+  featureTitle: { fontSize: 16, fontWeight: '700' as const, color: '#1A1A2E', marginBottom: 3 },
+  featureDesc: { fontSize: 13, lineHeight: 19, color: '#64748B' },
+  ctaWrap: {
     width: '100%',
-    borderRadius: 18,
-    overflow: 'hidden',
-    marginBottom: 14,
     shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 10,
+    marginBottom: 16,
   },
-  ctaGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  cta: {
+    flexDirection: 'row', alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    gap: 10,
+    paddingVertical: 18, paddingHorizontal: 24,
+    borderRadius: 18, gap: 10,
   },
   ctaText: { fontSize: 17, fontWeight: '800' as const, color: '#000' },
-  trust: { fontSize: 13, textAlign: 'center', fontWeight: '500' as const },
+  trustText: { fontSize: 13, color: '#94A3B8', textAlign: 'center' },
 });
 
-// ─── Plan Selection Styles ────────────────────────────────────────────────────
+// ─── PLAN SELECTION STYLES ─────────────────────────────────────────────────────
 
 const selStyles = StyleSheet.create({
-  hero: {
-    paddingBottom: 36,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+  scrollContainer: { paddingBottom: 80 },
+  navRow: { paddingHorizontal: 20, paddingTop: 6 },
+  backBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  titleArea: {
+    paddingHorizontal: 24,
+    marginTop: 10,
+    marginBottom: 24,
+  },
+  overline: {
+    fontSize: 12, fontWeight: '700' as const,
+    letterSpacing: 1.5, color: '#94A3B8',
+    marginBottom: 8,
+  },
+  mainTitle: {
+    fontSize: 32, fontWeight: '900' as const,
+    letterSpacing: -0.8, color: '#1A1A2E',
+    marginBottom: 8,
+  },
+  mainSub: {
+    fontSize: 16, lineHeight: 23,
+    color: '#64748B',
+  },
+  countdownCard: {
+    marginHorizontal: 24,
+    marginBottom: 32,
+    borderRadius: 24,
     overflow: 'hidden',
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 24,
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  heroLabel: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.55)',
-    fontWeight: '600' as const,
-    letterSpacing: 1,
-    textTransform: 'uppercase' as const,
-    marginBottom: 12,
-  },
-  heroCountRow: {
+  countdownInner: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 12,
-    marginBottom: 18,
-  },
-  heroNum: {
-    fontSize: 78,
-    fontWeight: '900' as const,
-    lineHeight: 82,
-    letterSpacing: -4,
-  },
-  heroNumRight: { marginBottom: 12 },
-  heroNumUnit: {
-    fontSize: 20,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '600' as const,
-    lineHeight: 24,
-    letterSpacing: -0.3,
-  },
-  msgPill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  msgText: { fontSize: 14, fontWeight: '700' as const },
-  scroll: { padding: 24 },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    marginBottom: 14,
-    marginTop: 8,
-    letterSpacing: -0.4,
-  },
-  dateRow: { flexDirection: 'row', gap: 14, marginBottom: 30 },
-  dateCard: {
-    flex: 1,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    position: 'relative',
+    padding: 24,
+    backgroundColor: '#1A1A2E',
   },
-  dateCardTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: '#FFF',
-    marginBottom: 3,
+  countdownLeft: { alignItems: 'flex-start' },
+  countdownNum: {
+    fontSize: 64, fontWeight: '900' as const,
+    letterSpacing: -3, lineHeight: 68,
   },
-  dateCardSub: {
-    fontSize: 13,
-    fontWeight: '500' as const,
+  countdownUnit: {
+    fontSize: 16, fontWeight: '700' as const,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 2,
+  },
+  countdownRight: { alignItems: 'center', gap: 4 },
+  countdownLabel: {
+    fontSize: 16, fontWeight: '700' as const,
     color: 'rgba(255,255,255,0.75)',
+    marginTop: 8,
   },
-  dateCheck: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
+  countdownDate: {
+    fontSize: 13, fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.5)',
+  },
+  countdownMsg: {
+    paddingHorizontal: 24, paddingVertical: 12,
+  },
+  countdownMsgText: {
+    fontSize: 14, fontWeight: '700' as const,
+    textAlign: 'center',
+  },
+  sectionLabel: {
+    fontSize: 17, fontWeight: '700' as const,
+    color: '#1A1A2E',
+    paddingHorizontal: 24,
+    marginBottom: 16,
+    marginTop: 4,
   },
 });
 
-// ─── Plan Card Styles ─────────────────────────────────────────────────────────
+// ─── PLAN CARD STYLES ──────────────────────────────────────────────────────────
 
 const pcStyles = StyleSheet.create({
   card: {
-    borderRadius: 22,
+    marginHorizontal: 24,
+    borderRadius: 20,
     overflow: 'hidden',
+    marginBottom: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 5,
   },
   cardSuggested: {
     shadowColor: '#6366F1',
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 12,
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 10,
   },
-  top: { padding: 22, paddingBottom: 18 },
+  cardTop: { padding: 22 },
   recBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    flexDirection: 'row', alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: 12, paddingVertical: 5,
+    borderRadius: 10, gap: 5,
     marginBottom: 16,
   },
   recText: { fontSize: 12, fontWeight: '700' as const, color: '#FFF' },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  emojiWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+  cardTopRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  emojiBox: {
+    width: 56, height: 56, borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center', alignItems: 'center',
   },
-  name: {
-    fontSize: 21,
-    fontWeight: '800' as const,
-    color: '#FFF',
-    letterSpacing: -0.5,
-    marginBottom: 4,
+  emoji: { fontSize: 28 },
+  cardTopInfo: { flex: 1 },
+  cardName: {
+    fontSize: 20, fontWeight: '800' as const,
+    color: '#FFF', letterSpacing: -0.4,
+    marginBottom: 3,
   },
-  subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 19 },
-  arrowCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  cardSub: { fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 19 },
+  arrowWrap: {
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center', alignItems: 'center',
   },
-  bottom: { padding: 18, paddingTop: 16 },
-  pillRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  cardBottom: { padding: 20 },
+  pillRow: {
+    flexDirection: 'row', gap: 10,
+    marginBottom: 16, flexWrap: 'wrap',
+  },
+  pill: {
+    flexDirection: 'row', alignItems: 'center',
+    gap: 6, paddingHorizontal: 12,
+    paddingVertical: 7, borderRadius: 12,
+  },
+  pillEmoji: { fontSize: 13 },
+  pillLabel: { fontSize: 12, fontWeight: '700' as const },
   metaRow: {
-    flexDirection: 'row',
+    flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  metaText: { fontSize: 13, fontWeight: '500' as const },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaText: { fontSize: 14, fontWeight: '500' as const },
   goalBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
+    flexDirection: 'row', alignItems: 'center',
+    gap: 6, paddingHorizontal: 14,
+    paddingVertical: 6, borderRadius: 12,
   },
   goalText: { fontSize: 13, fontWeight: '700' as const },
 });
 
-const pillStyles = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+// ─── ACTIVE PLAN STYLES ────────────────────────────────────────────────────────
+
+const apStyles = StyleSheet.create({
+  headerBg: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: 220,
   },
-  text: { fontSize: 12, fontWeight: '700' as const, letterSpacing: 0.2 },
+  navRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingTop: 6,
+    marginBottom: 18,
+  },
+  navBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  navCenter: {
+    flex: 1, alignItems: 'center',
+  },
+  navTitle: {
+    fontSize: 18, fontWeight: '700' as const,
+    letterSpacing: -0.3,
+  },
+  navSub: {
+    fontSize: 12, fontWeight: '500' as const,
+    color: '#94A3B8', marginTop: 2,
+  },
+  statsRow: {
+    flexDirection: 'row', justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: 24, marginBottom: 12,
+  },
+  statItem: { alignItems: 'center', paddingVertical: 4 },
+  statNum: { fontSize: 26, fontWeight: '800' as const, letterSpacing: -0.6, lineHeight: 30 },
+  statNumFaded: { fontSize: 14, fontWeight: '500' as const, color: '#94A3B8' },
+  statLabel: { fontSize: 11, fontWeight: '600' as const, color: '#94A3B8', marginTop: 3 },
+  statInline: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  statDiv: { width: 1, height: 36, backgroundColor: 'rgba(0,0,0,0.08)' },
+  msgPill: {
+    alignSelf: 'center',
+    paddingHorizontal: 20, paddingVertical: 8,
+    borderRadius: 20, marginBottom: 8,
+  },
+  msgText: { fontSize: 14, fontWeight: '700' as const },
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    paddingHorizontal: 20,
+    position: 'relative',
+    marginBottom: 0,
+    minHeight: 50,
+  },
+  tabIndicator: {
+    position: 'absolute', bottom: 0,
+    height: 3, borderRadius: 1.5,
+  },
+  tab: {
+    flex: 1, alignItems: 'center',
+    paddingVertical: 14,
+    minHeight: 50,
+  },
+  tabLabel: { fontSize: 15 },
+  contentScroll: { flex: 1 },
+  contentPadding: { padding: 20, paddingBottom: 100 },
 });
 
-// ─── Today Tab Styles ─────────────────────────────────────────────────────────
+// ─── TODAY TAB STYLES ──────────────────────────────────────────────────────────
 
 const tStyles = StyleSheet.create({
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
+  headerRow: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', marginBottom: 16,
   },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dateText: { fontSize: 14, fontWeight: '500' as const },
-  dayBadge: { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 14 },
-  dayBadgeText: { fontSize: 12, fontWeight: '700' as const },
+  dayBadge: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 14 },
+  dayBadgeText: { fontSize: 13, fontWeight: '700' as const },
   overallCard: {
-    padding: 20,
-    borderRadius: 22,
+    padding: 20, borderRadius: 22,
     borderWidth: 1.5,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
     overflow: 'hidden',
   },
   celebration: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    gap: 14,
+    flexDirection: 'row', alignItems: 'center',
+    padding: 22, gap: 14,
     margin: -20,
   },
-  celebrationTitle: {
-    fontSize: 17,
-    fontWeight: '800' as const,
-    color: '#FFF',
-    letterSpacing: -0.3,
-  },
-  celebrationSub: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.85)',
-    marginTop: 2,
-  },
+  celebEmoji: { fontSize: 32 },
+  celebBody: { flex: 1 },
+  celebTitle: { fontSize: 18, fontWeight: '800' as const, color: '#FFF' },
+  celebSub: { fontSize: 14, color: 'rgba(255,255,255,0.85)', marginTop: 3 },
   overallTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 16,
   },
+  overallTopLeft: { flex: 1 },
   overallTitle: { fontSize: 17, fontWeight: '700' as const, letterSpacing: -0.3 },
-  overallSub: { fontSize: 13, marginTop: 3, fontWeight: '500' as const },
+  overallSub: { fontSize: 13, marginTop: 4, fontWeight: '500' as const },
   pctCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 60, height: 60, borderRadius: 30,
+    justifyContent: 'center', alignItems: 'center',
   },
-  pctText: { fontSize: 15, fontWeight: '800' as const, color: '#FFF' },
-  barBg: { height: 12, borderRadius: 6, flexDirection: 'row', overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: 4 },
+  pctText: { fontSize: 16, fontWeight: '800' as const, color: '#FFF' },
+  barRow: { marginTop: 4 },
+  barBg: {
+    height: 14, borderRadius: 7,
+    flexDirection: 'row', overflow: 'hidden',
+  },
+  barSeg: { height: '100%', borderRadius: 5 },
   sectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', marginBottom: 16,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '700' as const, letterSpacing: -0.4 },
+  sectionTitle: { fontSize: 19, fontWeight: '700' as const, letterSpacing: -0.4 },
   markAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 14,
-    borderWidth: 1,
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    paddingHorizontal: 14, paddingVertical: 9,
+    borderRadius: 14, borderWidth: 1,
   },
   markAllText: { fontSize: 13, fontWeight: '700' as const },
 });
 
-// ─── Task Card Styles ─────────────────────────────────────────────────────────
+// ─── TASK CARD STYLES ──────────────────────────────────────────────────────────
 
 const taskStyles = StyleSheet.create({
   card: {
@@ -1631,116 +1520,100 @@ const taskStyles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 14,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    minHeight: 110,
   },
-  iconArea: {
-    width: 88,
+  iconCol: {
+    width: 90,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
+    paddingVertical: 18,
     gap: 10,
   },
-  codeChip: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
-  codeText: { fontSize: 10, fontWeight: '800' as const, letterSpacing: 0.6 },
-  body: { flex: 1, padding: 16, paddingLeft: 14 },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
+  emojiText: { fontSize: 30 },
+  codeChip: {
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 8,
   },
-  name: { fontSize: 15, fontWeight: '700' as const, flex: 1, marginRight: 10, letterSpacing: -0.3 },
-  desc: { fontSize: 13, marginBottom: 10, lineHeight: 18, fontWeight: '400' as const },
-  barBg: {
-    height: 7,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 10,
-    backgroundColor: 'rgba(0,0,0,0.06)',
-  },
-  barFill: { height: '100%', borderRadius: 4 },
+  codeText: { fontSize: 11, fontWeight: '800' as const, letterSpacing: 0.6 },
+  body: { flex: 1, padding: 18, paddingLeft: 12, justifyContent: 'center' },
+  taskName: { fontSize: 16, fontWeight: '700' as const, letterSpacing: -0.3, marginBottom: 3 },
+  taskDesc: { fontSize: 13, lineHeight: 18, marginBottom: 10 },
+  taskBar: { height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: 12 },
+  taskBarFill: { height: '100%', borderRadius: 4 },
   bottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: 36,
+  },
+  metaGroup: {
+    flexDirection: 'row', alignItems: 'center',
+    gap: 8, flexShrink: 1,
   },
   metaText: { fontSize: 12, fontWeight: '500' as const },
-  tapHint: { fontSize: 12, fontWeight: '600' as const, marginLeft: 4 },
-  checkBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 12,
+  countBadge: {
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 10,
+  },
+  countText: { fontSize: 13, fontWeight: '800' as const },
+  doneMark: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  doneText: { fontSize: 12, fontWeight: '700' as const },
+  actionGroup: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  plusBtn: {
+    width: 40, height: 40, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
     borderWidth: 1,
   },
-  checkBtnText: { fontSize: 13, fontWeight: '700' as const },
+  plusBtnText: { fontSize: 14, fontWeight: '800' as const },
   goBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 16, paddingVertical: 10,
     borderRadius: 12,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25, shadowRadius: 4,
+    elevation: 3,
+    minHeight: 44,
   },
-  goBtnText: { fontSize: 13, fontWeight: '700' as const, color: '#FFF' },
-  countBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
-  countText: { fontSize: 13, fontWeight: '800' as const },
+  goBtnText: { fontSize: 14, fontWeight: '700' as const, color: '#FFF' },
 });
 
-// ─── Progress Tab Styles ──────────────────────────────────────────────────────
+// ─── PROGRESS TAB STYLES ───────────────────────────────────────────────────────
 
 const pStyles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    letterSpacing: -0.4,
-    marginBottom: 14,
+    fontSize: 18, fontWeight: '700' as const,
+    letterSpacing: -0.4, marginBottom: 14, marginTop: 4,
   },
-  statsGrid: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  totalsGrid: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   streakCard: {
-    borderRadius: 22,
+    padding: 22, borderRadius: 22,
+    backgroundColor: '#FFF',
     marginBottom: 24,
-    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  streakGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
+  streakRow: {
+    flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
   },
-  streakIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    justifyContent: 'center',
-    alignItems: 'center',
+  streakIconWrap: {
+    width: 60, height: 60, borderRadius: 30,
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  streakNum: { fontSize: 18, fontWeight: '700' as const, letterSpacing: -0.3 },
-  streakSub: { fontSize: 12, marginTop: 3, fontWeight: '500' as const, lineHeight: 17 },
+  streakInfo: { flex: 1, marginLeft: 16 },
+  streakNum: { fontSize: 20, fontWeight: '700' as const },
+  streakSub: { fontSize: 13, marginTop: 4, lineHeight: 18 },
   weekCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: 'row', justifyContent: 'space-around',
     alignItems: 'flex-end',
-    padding: 20,
-    paddingBottom: 14,
+    padding: 20, paddingBottom: 14,
     borderRadius: 22,
-    marginBottom: 8,
-    minHeight: 110,
+    backgroundColor: '#FFF',
+    marginBottom: 10,
+    minHeight: 120,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -1748,22 +1621,22 @@ const pStyles = StyleSheet.create({
     elevation: 2,
   },
   weekCol: { alignItems: 'center', gap: 7, flex: 1 },
-  weekBar: { width: 28, minHeight: 6, borderRadius: 6 },
+  weekBar: { width: 30, minHeight: 4, borderRadius: 6 },
   weekCheck: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    marginBottom: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 16, height: 16, borderRadius: 8,
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 2,
   },
   weekLabel: { fontSize: 12 },
   weekDot: { width: 6, height: 6, borderRadius: 3 },
-  weekNote: { fontSize: 13, textAlign: 'center', marginBottom: 24, fontWeight: '500' as const },
+  weekSummary: {
+    fontSize: 14, textAlign: 'center',
+    color: '#64748B', marginBottom: 24,
+    fontWeight: '500' as const,
+  },
   planCard: {
-    padding: 22,
-    borderRadius: 22,
-    marginBottom: 8,
+    padding: 22, borderRadius: 22,
+    backgroundColor: '#FFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -1771,55 +1644,49 @@ const pStyles = StyleSheet.create({
     elevation: 2,
   },
   planHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 16,
   },
-  planDay: { fontSize: 16, fontWeight: '700' as const, letterSpacing: -0.3 },
-  planNote: { fontSize: 13, marginTop: 3, fontWeight: '500' as const },
-  planPct: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 14 },
-  planPctText: { fontSize: 18, fontWeight: '800' as const },
+  planDay: { fontSize: 17, fontWeight: '700' as const },
+  planSub: { fontSize: 13, color: '#94A3B8', marginTop: 3 },
+  planPctBadge: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
+  planPctText: { fontSize: 20, fontWeight: '800' as const },
   planBarBg: {
-    height: 12,
-    borderRadius: 6,
+    height: 12, borderRadius: 6,
     overflow: 'hidden',
-    marginBottom: 12,
+    marginBottom: 14,
+    backgroundColor: 'rgba(0,0,0,0.06)',
   },
   planBarFill: { height: '100%', borderRadius: 6 },
   planMarkers: {
     position: 'relative',
-    height: 16,
+    height: 32,
   },
-  markerDot: {
+  marker: {
     position: 'absolute',
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    top: 6,
-    marginLeft: -2,
+    alignItems: 'center',
+    transform: [{ translateX: -14 }],
   },
+  markerDot: { width: 6, height: 6, borderRadius: 3, marginBottom: 4 },
+  markerLabel: { fontSize: 11, color: '#94A3B8', fontWeight: '500' as const },
 });
 
-// ─── Stat Tile Styles ─────────────────────────────────────────────────────────
+// ─── STAT TILE STYLES ──────────────────────────────────────────────────────────
 
 const stStyles = StyleSheet.create({
-  card: {
-    flex: 1,
-    borderRadius: 20,
-    overflow: 'hidden',
+  tile: {
+    flex: 1, borderRadius: 18,
+    backgroundColor: '#FFF',
+    padding: 16, alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 110,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
-  gradient: {
-    padding: 16,
-    alignItems: 'center',
-    minHeight: 110,
-    justifyContent: 'center',
-  },
-  val: { fontSize: 28, fontWeight: '800' as const, letterSpacing: -0.5 },
-  lbl: { fontSize: 11, marginTop: 4, textAlign: 'center', fontWeight: '600' as const },
+  tileEmoji: { fontSize: 28, marginBottom: 8 },
+  tileNum: { fontSize: 28, fontWeight: '800' as const, letterSpacing: -0.5 },
+  tileLabel: { fontSize: 11, color: '#94A3B8', marginTop: 4, textAlign: 'center', fontWeight: '600' as const },
 });

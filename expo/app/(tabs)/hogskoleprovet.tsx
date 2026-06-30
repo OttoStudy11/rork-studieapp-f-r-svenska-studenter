@@ -758,13 +758,13 @@ const styles = StyleSheet.create({
   heroScoreLabel: { fontSize: 11, fontWeight: '600' as const, color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
 
   // Hero actions
-  heroActions: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  heroStudyPlanBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6 },
-  heroStudyPlanGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, paddingHorizontal: 16, gap: 8 },
-  heroStudyPlanText: { fontSize: 15, fontWeight: '700' as const, color: '#4F46E5' },
-  heroUnlockBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6 },
-  heroUnlockGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, paddingHorizontal: 16, gap: 8 },
-  heroUnlockText: { fontSize: 15, fontWeight: '700' as const, color: '#000' },
+  heroActions: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  heroStudyPlanBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6, minHeight: 52 },
+  heroStudyPlanGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 12, gap: 6 },
+  heroStudyPlanText: { fontSize: 14, fontWeight: '700' as const, color: '#4F46E5', flexShrink: 1 },
+  heroUnlockBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6, minHeight: 52 },
+  heroUnlockGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 12, gap: 6 },
+  heroUnlockText: { fontSize: 14, fontWeight: '700' as const, color: '#000', flexShrink: 1 },
 
   // Hero stat pills
   heroStatPills: {
@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.35)', zIndex: 1, borderRadius: 26,
   },
-  fullTestLockText: { fontSize: 15, fontWeight: '700' as const, color: 'rgba(255,255,255,0.7)', marginTop: 10 },
+  fullTestLockText: { fontSize: 15, fontWeight: '700' as const, color: 'rgba(255,255,255,0.85)', marginTop: 12, textAlign: 'center', paddingHorizontal: 20 },
   fullTestInner: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 22 },
   fullTestIconLarge: {
     width: 64, height: 64, borderRadius: 32,
@@ -858,11 +858,11 @@ const styles = StyleSheet.create({
 
   // ═══ UPSELL ═══
   upsellCard: { borderRadius: 22, padding: 24, marginTop: 36, marginBottom: 36, alignItems: 'center' },
-  upsellBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12, gap: 6, marginBottom: 14 },
+  upsellBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12, gap: 6, marginBottom: 16 },
   upsellBadgeText: { fontSize: 12, fontWeight: '800' as const, color: '#000', letterSpacing: 0.8 },
-  upsellTitle: { fontSize: 20, fontWeight: '800' as const, textAlign: 'center', marginBottom: 8 },
-  upsellSub: { fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 18 },
-  upsellCta: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16, gap: 8 },
+  upsellTitle: { fontSize: 19, fontWeight: '800' as const, textAlign: 'center', marginBottom: 10, lineHeight: 24 },
+  upsellSub: { fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 20, paddingHorizontal: 4 },
+  upsellCta: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 28, paddingVertical: 15, borderRadius: 16, gap: 8, minWidth: 180, justifyContent: 'center' },
   upsellCtaText: { fontSize: 16, fontWeight: '700' as const, color: '#FFF' },
 
   // ═══ STUDY TIPS ═══

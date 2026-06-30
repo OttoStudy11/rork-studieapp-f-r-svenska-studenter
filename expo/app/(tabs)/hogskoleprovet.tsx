@@ -472,15 +472,10 @@ export default function HogskoleprovetTab() {
               onPress={() => router.push((ROUTES.mathChat + '?course=H%C3%B6gskoleprovet') as any)}
               activeOpacity={0.85}
             >
-              <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.toolIconLarge}>
-                <Calculator size={28} color="#FFF" />
+              <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.toolIconSmall}>
+                <Calculator size={20} color="#FFF" />
               </LinearGradient>
-              <Text style={[styles.toolTitle, { color: theme.colors.text }]}>Matte AI</Text>
-              <Text style={[styles.toolDesc, { color: theme.colors.textSecondary }]}>Få hjälp med kvantitativa problem</Text>
-              <View style={[styles.toolCta, { backgroundColor: '#6366F115' }]}>
-                <Text style={[styles.toolCtaText, { color: '#6366F1' }]}>Starta</Text>
-                <ChevronRight size={14} color="#6366F1" />
-              </View>
+              <Text style={[styles.toolTitleSmall, { color: theme.colors.text }]}>Matte AI</Text>
             </TouchableOpacity>
 
             {/* Generell AI */}
@@ -489,15 +484,10 @@ export default function HogskoleprovetTab() {
               onPress={() => router.push((ROUTES.generalChat + '?course=H%C3%B6gskoleprovet') as any)}
               activeOpacity={0.85}
             >
-              <LinearGradient colors={['#10B981', '#059669']} style={styles.toolIconLarge}>
-                <MessageCircle size={28} color="#FFF" />
+              <LinearGradient colors={['#10B981', '#059669']} style={styles.toolIconSmall}>
+                <MessageCircle size={20} color="#FFF" />
               </LinearGradient>
-              <Text style={[styles.toolTitle, { color: theme.colors.text }]}>Generell AI</Text>
-              <Text style={[styles.toolDesc, { color: theme.colors.textSecondary }]}>Chatta om studier och strategi</Text>
-              <View style={[styles.toolCta, { backgroundColor: '#10B98115' }]}>
-                <Text style={[styles.toolCtaText, { color: '#10B981' }]}>Starta</Text>
-                <ChevronRight size={14} color="#10B981" />
-              </View>
+              <Text style={[styles.toolTitleSmall, { color: theme.colors.text }]}>Generell AI</Text>
             </TouchableOpacity>
 
             {/* AI Generator */}
@@ -506,15 +496,10 @@ export default function HogskoleprovetTab() {
               onPress={() => router.push(ROUTES.hpAiGenerator)}
               activeOpacity={0.85}
             >
-              <LinearGradient colors={['#EC4899', '#8B5CF6']} style={styles.toolIconLarge}>
-                <Sparkles size={28} color="#FFF" />
+              <LinearGradient colors={['#EC4899', '#8B5CF6']} style={styles.toolIconSmall}>
+                <Sparkles size={20} color="#FFF" />
               </LinearGradient>
-              <Text style={[styles.toolTitle, { color: theme.colors.text }]}>AI-generator</Text>
-              <Text style={[styles.toolDesc, { color: theme.colors.textSecondary }]}>Skapa skräddarsydda övningar</Text>
-              <View style={[styles.toolCta, { backgroundColor: '#EC489915' }]}>
-                <Text style={[styles.toolCtaText, { color: '#EC4899' }]}>Skapa</Text>
-                <ChevronRight size={14} color="#EC4899" />
-              </View>
+              <Text style={[styles.toolTitleSmall, { color: theme.colors.text }]}>AI-generator</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -574,31 +559,7 @@ export default function HogskoleprovetTab() {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Practice & Previous exams sub-cards */}
-          <View style={styles.examSubCards}>
-            <TouchableOpacity
-              style={[styles.examSubCard, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
-              onPress={handleStartFullTest}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.examSubIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                <BrainCircuit size={22} color={COLORS.primary} />
-              </View>
-              <Text style={[styles.examSubTitle, { color: theme.colors.text }]}>Övningsprov</Text>
-              <Text style={[styles.examSubDesc, { color: theme.colors.textSecondary }]}>Träna i din takt</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.examSubCard, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
-              onPress={() => setFullTestModalVisible(true)}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.examSubIcon, { backgroundColor: '#8B5CF615' }]}>
-                <BookOpen size={22} color="#8B5CF6" />
-              </View>
-              <Text style={[styles.examSubTitle, { color: theme.colors.text }]}>Tidigare prov</Text>
-              <Text style={[styles.examSubDesc, { color: theme.colors.textSecondary }]}>Äkta HP-prov</Text>
-            </TouchableOpacity>
-          </View>
+
         </Animated.View>
 
         {!isPremium && <FreemiumBanner feature="hp_section" status={hpLimit} style={{ marginBottom: 36 }} />}
@@ -873,20 +834,17 @@ const styles = StyleSheet.create({
   // ═══ QUICK TOOLS ═══
   toolsGrid: { flexDirection: 'row', gap: 10, marginBottom: 36 },
   toolCard: {
-    flex: 1, borderRadius: 22, padding: 18,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3,
+    flex: 1, borderRadius: 18, padding: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
   },
-  toolIconLarge: { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 14 },
-  toolTitle: { fontSize: 16, fontWeight: '800' as const, marginBottom: 4, letterSpacing: -0.2 },
-  toolDesc: { fontSize: 11, fontWeight: '500' as const, lineHeight: 16, marginBottom: 12 },
-  toolCta: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, paddingHorizontal: 12, borderRadius: 10, alignSelf: 'flex-start', gap: 4 },
-  toolCtaText: { fontSize: 12, fontWeight: '700' as const },
+  toolIconSmall: { width: 40, height: 40, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  toolTitleSmall: { fontSize: 13, fontWeight: '700' as const, textAlign: 'center' },
 
   // ═══ COMPLETE HP ═══
   fullTestCard: {
     borderRadius: 26, overflow: 'hidden',
     shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 12,
-    marginBottom: 12,
+    marginBottom: 36,
   },
   fullTestLocked: { opacity: 0.88 },
   fullTestGradient: { padding: 26 },
@@ -914,16 +872,6 @@ const styles = StyleSheet.create({
   fullTestPassIcon: { fontSize: 18 },
   fullTestPassLabel: { fontSize: 13, fontWeight: '700' as const, color: 'rgba(255,255,255,0.9)' },
   fullTestPassSub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '500' as const },
-
-  // Sub cards
-  examSubCards: { flexDirection: 'row', gap: 10, marginBottom: 36 },
-  examSubCard: {
-    flex: 1, borderRadius: 18, padding: 16, borderWidth: 1, alignItems: 'center', gap: 6,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
-  },
-  examSubIcon: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-  examSubTitle: { fontSize: 14, fontWeight: '700' as const },
-  examSubDesc: { fontSize: 11, fontWeight: '500' as const },
 
   // ═══ COLLAPSIBLE GROUPS ═══
   collapseTrigger: {

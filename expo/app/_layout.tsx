@@ -25,6 +25,7 @@ import { HogskoleprovetProvider } from "@/contexts/HogskoleprovetContext";
 import { HPTrialProvider } from "@/contexts/HPTrialContext";
 import { CommunityProvider } from "@/contexts/CommunityContext";
 import { HPStudyPlanProvider } from "@/contexts/HPStudyPlanContext";
+import { FlashcardProvider } from "@/contexts/FlashcardContext";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -168,9 +169,11 @@ export default function RootLayout() {
                                     <HPTrialProvider>
                                       <HogskoleprovetProvider>
                                         <HPStudyPlanProvider>
-                                          <CommunityProvider>
-                                            <RootLayoutNav />
-                                          </CommunityProvider>
+                                          <FlashcardProvider>
+                                            <CommunityProvider>
+                                              <RootLayoutNav />
+                                            </CommunityProvider>
+                                          </FlashcardProvider>
                                         </HPStudyPlanProvider>
                                       </HogskoleprovetProvider>
                                     </HPTrialProvider>

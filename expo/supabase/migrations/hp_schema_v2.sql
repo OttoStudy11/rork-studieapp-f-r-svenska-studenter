@@ -3,10 +3,42 @@
 -- Handles all 8 subtests: ORD, LÄS, MEK, ELF, XYZ, KVA, NOG, DTK
 -- ============================================================
 -- Run this in Supabase SQL Editor.
--- Safe to re-run (uses IF NOT EXISTS / ON CONFLICT).
+-- Safe to re-run (drops old tables if present, then creates V2).
 -- ============================================================
 
 create extension if not exists "pgcrypto";
+
+-- ============================================================
+-- 0. DROP OLD SCHEMA (from hp_questions_schema.sql)
+-- These tables conflict with V2 because CREATE TABLE IF NOT EXISTS
+-- would skip creating the new versions. We drop them first.
+-- ============================================================
+
+-- Drop old view (recreated below with V2 structure)
+drop view if exists public.hp_section_question_counts;
+
+-- Drop old user-data tables
+drop table if exists public.user_hp_question_answers cascade;
+drop table if exists public.user_hp_test_attempts cascade;
+
+-- Drop old questions table (has section_code, test_version_id)
+drop table if exists public.hp_questions cascade;
+
+-- Drop old test versions table (replaced by hp_exam_sets)
+drop table if exists public.hp_test_versions cascade;
+
+-- Drop old trigger function
+drop function if exists public.set_updated_at() cascade;
+
+-- Drop old policies that referenced old tables (if any survive)
+drop policy if exists "Published versions are public" on public.hp_test_versions;
+drop policy if exists "Questions from published versions are public" on public.hp_questions;
+drop policy if exists "Service role can manage questions" on public.hp_questions;
+drop policy if exists "Service role can manage versions" on public.hp_test_versions;
+
+-- ============================================================
+-- V2 SCHEMA STARTS HERE
+-- ============================================================
 
 -- ============================================================
 -- 1. hp_exam_sets — One exam occasion (e.g. "HP Vår 2024")
@@ -324,6 +356,22 @@ create policy "Users manage own word progress"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+-- Note: PostgreSQL does not support IF NOT EXISTS on CREATE POLICY.
+-- If re-running and policies already exist, the CREATE POLICY statements
+-- above will error. To force a clean re-run, uncomment the drops below:
+--
+-- drop policy if exists "Public read published exam sets" on public.hp_exam_sets;
+-- drop policy if exists "Public read sections of published exams" on public.hp_sections;
+-- drop policy if exists "Public read questions of published exams" on public.hp_questions;
+-- drop policy if exists "Public read answer options" on public.hp_answer_options;
+-- drop policy if exists "Public read words" on public.hp_word_exam_refs;
+-- drop policy if exists "Public read word refs" on public.hp_words;
+-- drop policy if exists "Public read norming tables" on public.hp_norming_tables;
+-- drop policy if exists "Users manage own exam attempts" on public.hp_user_exam_attempts;
+-- drop policy if exists "Users manage own attempt answers" on public.hp_user_attempt_answers;
+-- drop policy if exists "Users manage own question progress" on public.hp_user_question_progress;
+-- drop policy if exists "Users manage own word progress" on public.hp_user_word_progress;
+
 -- ============================================================
 -- HELPER FUNCTIONS
 -- ============================================================
@@ -574,34 +622,15 @@ order by s.part, s.type;
 -- ============================================================
 -- MIGRATION NOTES
 -- ============================================================
--- The following OLD tables can be dropped after migrating data:
---   hp_test_versions  (replaced by hp_exam_sets)
---   hp_tests          (replaced by hp_exam_sets)
---   hp_sections (old) (replaced by hp_sections v2 — note: old table
---                      used section_code as standalone, new links to exam_set)
---   hp_questions (old)(replaced by hp_questions v2 with normalized options)
---   user_hp_test_attempts (replaced by hp_user_exam_attempts)
---   user_hp_question_answers (replaced by hp_user_attempt_answers + progress)
+-- Old tables (from hp_questions_schema.sql) are dropped at the top
+-- of this file (section 0). No manual migration step needed.
 --
--- Migration script (run manually after verifying v2 works):
+-- This migration is now self-contained and idempotent:
+--   1. Drops old tables/view/functions if they exist
+--   2. Creates all V2 tables with CREATE TABLE IF NOT EXISTS
+--   3. Creates RLS policies
+--   4. Creates helper functions (CREATE OR REPLACE)
+--   5. Creates the section question counts view
 --
---   -- 1. Migrate exam sets
---   insert into hp_exam_sets (year, season, title, is_published, duration_minutes)
---   select test_year,
---          case when test_season = 'spring' then 'vår' else 'höst' end,
---          'HP ' || test_season || ' ' || test_year,
---          is_published,
---          240
---   from hp_tests on conflict (year, season) do nothing;
---
---   -- 2. Then migrate sections and questions manually, mapping
---      old section_code → new hp_sections rows per exam_set.
---
---   -- 3. Drop old tables when done:
---   drop table if exists public.user_hp_question_answers cascade;
---   drop table if exists public.user_hp_test_attempts cascade;
---   drop table if exists public.hp_questions cascade;       -- OLD table
---   drop table if exists public.hp_sections cascade;        -- OLD table
---   drop table if exists public.hp_tests cascade;
---   drop table if exists public.hp_test_versions cascade;
+-- To seed exam sets, uncomment the SELECT calls in the SEED DATA section.
 -- ============================================================

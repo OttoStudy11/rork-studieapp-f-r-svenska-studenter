@@ -30,11 +30,10 @@ drop table if exists public.hp_test_versions cascade;
 -- Drop old trigger function
 drop function if exists public.set_updated_at() cascade;
 
--- Drop old policies that referenced old tables (if any survive)
-drop policy if exists "Published versions are public" on public.hp_test_versions;
-drop policy if exists "Questions from published versions are public" on public.hp_questions;
-drop policy if exists "Service role can manage questions" on public.hp_questions;
-drop policy if exists "Service role can manage versions" on public.hp_test_versions;
+-- Note: old RLS policies on hp_test_versions / hp_questions are
+-- automatically removed by the CASCADE drops above.
+-- Do NOT add "drop policy ... on hp_test_versions" here —
+-- DROP POLICY errors if the table itself is already gone.
 
 -- ============================================================
 -- V2 SCHEMA STARTS HERE
@@ -290,11 +289,14 @@ alter table public.hp_user_question_progress enable row level security;
 alter table public.hp_user_word_progress    enable row level security;
 
 -- ── Content policies ──────────────────────────────────────────
+-- Each policy is dropped first so the migration is fully re-runnable.
 
+drop policy if exists "Public read published exam sets" on public.hp_exam_sets;
 create policy "Public read published exam sets"
   on public.hp_exam_sets for select
   using (is_published = true);
 
+drop policy if exists "Public read sections of published exams" on public.hp_sections;
 create policy "Public read sections of published exams"
   on public.hp_sections for select
   using (
@@ -304,6 +306,7 @@ create policy "Public read sections of published exams"
     )
   );
 
+drop policy if exists "Public read questions of published exams" on public.hp_questions;
 create policy "Public read questions of published exams"
   on public.hp_questions for select
   using (
@@ -314,6 +317,7 @@ create policy "Public read questions of published exams"
     )
   );
 
+drop policy if exists "Public read answer options" on public.hp_answer_options;
 create policy "Public read answer options"
   on public.hp_answer_options for select
   using (
@@ -325,52 +329,43 @@ create policy "Public read answer options"
     )
   );
 
+drop policy if exists "Public read words" on public.hp_word_exam_refs;
 create policy "Public read words"
   on public.hp_word_exam_refs for select using (true);
 
+drop policy if exists "Public read word refs" on public.hp_words;
 create policy "Public read word refs"
   on public.hp_words for select using (true);
 
+drop policy if exists "Public read norming tables" on public.hp_norming_tables;
 create policy "Public read norming tables"
   on public.hp_norming_tables for select using (true);
 
 -- ── User data policies ────────────────────────────────────────
 
+drop policy if exists "Users manage own exam attempts" on public.hp_user_exam_attempts;
 create policy "Users manage own exam attempts"
   on public.hp_user_exam_attempts for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users manage own attempt answers" on public.hp_user_attempt_answers;
 create policy "Users manage own attempt answers"
   on public.hp_user_attempt_answers for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users manage own question progress" on public.hp_user_question_progress;
 create policy "Users manage own question progress"
   on public.hp_user_question_progress for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users manage own word progress" on public.hp_user_word_progress;
 create policy "Users manage own word progress"
   on public.hp_user_word_progress for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
-
--- Note: PostgreSQL does not support IF NOT EXISTS on CREATE POLICY.
--- If re-running and policies already exist, the CREATE POLICY statements
--- above will error. To force a clean re-run, uncomment the drops below:
---
--- drop policy if exists "Public read published exam sets" on public.hp_exam_sets;
--- drop policy if exists "Public read sections of published exams" on public.hp_sections;
--- drop policy if exists "Public read questions of published exams" on public.hp_questions;
--- drop policy if exists "Public read answer options" on public.hp_answer_options;
--- drop policy if exists "Public read words" on public.hp_word_exam_refs;
--- drop policy if exists "Public read word refs" on public.hp_words;
--- drop policy if exists "Public read norming tables" on public.hp_norming_tables;
--- drop policy if exists "Users manage own exam attempts" on public.hp_user_exam_attempts;
--- drop policy if exists "Users manage own attempt answers" on public.hp_user_attempt_answers;
--- drop policy if exists "Users manage own question progress" on public.hp_user_question_progress;
--- drop policy if exists "Users manage own word progress" on public.hp_user_word_progress;
 
 -- ============================================================
 -- HELPER FUNCTIONS

@@ -24,6 +24,12 @@ drop table if exists public.user_hp_test_attempts cascade;
 -- Drop old questions table (has section_code, test_version_id)
 drop table if exists public.hp_questions cascade;
 
+-- Drop old sections table (has test_version_id instead of exam_set_id)
+-- THIS is the root cause of the "column exam_set_id does not exist" error:
+-- CREATE TABLE IF NOT EXISTS silently skips the new hp_sections, leaving
+-- the old one with the wrong columns, so RLS policies fail.
+drop table if exists public.hp_sections cascade;
+
 -- Drop old test versions table (replaced by hp_exam_sets)
 drop table if exists public.hp_test_versions cascade;
 

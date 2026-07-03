@@ -1661,186 +1661,6 @@ export interface Database {
           }
         ]
       }
-      hp_tests: {
-        Row: {
-          id: string
-          test_date: string
-          test_season: 'spring' | 'fall'
-          test_year: number
-          is_published: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          test_date: string
-          test_season: 'spring' | 'fall'
-          test_year: number
-          is_published?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          test_date?: string
-          test_season?: 'spring' | 'fall'
-          test_year?: number
-          is_published?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      hp_sections: {
-        Row: {
-          id: string
-          section_code: string
-          section_name: string
-          description: string | null
-          time_limit_minutes: number
-          max_score: number
-          section_order: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          section_code: string
-          section_name: string
-          description?: string | null
-          time_limit_minutes: number
-          max_score: number
-          section_order: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          section_code?: string
-          section_name?: string
-          description?: string | null
-          time_limit_minutes?: number
-          max_score?: number
-          section_order?: number
-          created_at?: string
-        }
-        Relationships: []
-      }
-      hp_questions: {
-        Row: {
-          id: string
-          test_id: string
-          section_id: string
-          question_number: number
-          question_text: string
-          question_type: 'multiple_choice' | 'true_false' | 'diagram' | 'reading_comprehension'
-          options: Json
-          correct_answer: string
-          explanation: string | null
-          difficulty_level: 'easy' | 'medium' | 'hard'
-          points: number
-          time_estimate_seconds: number
-          reading_passage: string | null
-          diagram_url: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          test_id: string
-          section_id: string
-          question_number: number
-          question_text: string
-          question_type: 'multiple_choice' | 'true_false' | 'diagram' | 'reading_comprehension'
-          options: Json
-          correct_answer: string
-          explanation?: string | null
-          difficulty_level?: 'easy' | 'medium' | 'hard'
-          points?: number
-          time_estimate_seconds?: number
-          reading_passage?: string | null
-          diagram_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          test_id?: string
-          section_id?: string
-          question_number?: number
-          question_text?: string
-          question_type?: 'multiple_choice' | 'true_false' | 'diagram' | 'reading_comprehension'
-          options?: Json
-          correct_answer?: string
-          explanation?: string | null
-          difficulty_level?: 'easy' | 'medium' | 'hard'
-          points?: number
-          time_estimate_seconds?: number
-          reading_passage?: string | null
-          diagram_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "hp_questions_test_id_fkey"
-            columns: ["test_id"]
-            isOneToOne: false
-            referencedRelation: "hp_tests"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "hp_questions_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "hp_sections"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      user_hp_question_answers: {
-        Row: {
-          id: string
-          user_id: string
-          question_id: string
-          selected_answer: string
-          is_correct: boolean
-          time_spent_seconds: number | null
-          answered_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          question_id: string
-          selected_answer: string
-          is_correct: boolean
-          time_spent_seconds?: number | null
-          answered_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          question_id?: string
-          selected_answer?: string
-          is_correct?: boolean
-          time_spent_seconds?: number | null
-          answered_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_hp_question_answers_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_hp_question_answers_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "hp_questions"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       user_module_progress: {
         Row: {
           id: string
@@ -1946,76 +1766,6 @@ export interface Database {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      user_hp_test_attempts: {
-        Row: {
-          id: string
-          user_id: string
-          test_id: string | null
-          section_id: string | null
-          attempt_type: 'full_test' | 'section_practice' | 'question_practice'
-          status: 'in_progress' | 'completed' | 'abandoned'
-          total_questions: number
-          correct_answers: number
-          score_percentage: number | null
-          time_spent_minutes: number
-          started_at: string
-          completed_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          test_id?: string | null
-          section_id?: string | null
-          attempt_type: 'full_test' | 'section_practice' | 'question_practice'
-          status?: 'in_progress' | 'completed' | 'abandoned'
-          total_questions?: number
-          correct_answers?: number
-          score_percentage?: number | null
-          time_spent_minutes?: number
-          started_at?: string
-          completed_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          test_id?: string | null
-          section_id?: string | null
-          attempt_type?: 'full_test' | 'section_practice' | 'question_practice'
-          status?: 'in_progress' | 'completed' | 'abandoned'
-          total_questions?: number
-          correct_answers?: number
-          score_percentage?: number | null
-          time_spent_minutes?: number
-          started_at?: string
-          completed_at?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_hp_test_attempts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_hp_test_attempts_test_id_fkey"
-            columns: ["test_id"]
-            isOneToOne: false
-            referencedRelation: "hp_tests"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_hp_test_attempts_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "hp_sections"
             referencedColumns: ["id"]
           }
         ]
@@ -2289,6 +2039,515 @@ export interface Database {
           }
         ]
       }
+      // ── HP Schema V2 ──────────────────────────────────────────
+      hp_exam_sets: {
+        Row: {
+          id: string
+          year: number
+          season: 'vår' | 'höst'
+          title: string
+          source: 'official' | 'generated'
+          is_published: boolean
+          duration_minutes: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          year: number
+          season: 'vår' | 'höst'
+          title: string
+          source?: 'official' | 'generated'
+          is_published?: boolean
+          duration_minutes?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          year?: number
+          season?: 'vår' | 'höst'
+          title?: string
+          source?: 'official' | 'generated'
+          is_published?: boolean
+          duration_minutes?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hp_sections: {
+        Row: {
+          id: string
+          exam_set_id: string
+          type: 'ORD' | 'LÄS' | 'MEK' | 'ELF' | 'XYZ' | 'KVA' | 'NOG' | 'DTK'
+          part: 'verbal' | 'kvantitativ'
+          order_index: number
+          time_limit_minutes: number | null
+          question_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          exam_set_id: string
+          type: 'ORD' | 'LÄS' | 'MEK' | 'ELF' | 'XYZ' | 'KVA' | 'NOG' | 'DTK'
+          part: 'verbal' | 'kvantitativ'
+          order_index: number
+          time_limit_minutes?: number | null
+          question_count?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          exam_set_id?: string
+          type?: 'ORD' | 'LÄS' | 'MEK' | 'ELF' | 'XYZ' | 'KVA' | 'NOG' | 'DTK'
+          part?: 'verbal' | 'kvantitativ'
+          order_index?: number
+          time_limit_minutes?: number | null
+          question_count?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hp_sections_exam_set_id_fkey"
+            columns: ["exam_set_id"]
+            isOneToOne: false
+            referencedRelation: "hp_exam_sets"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      hp_questions: {
+        Row: {
+          id: string
+          section_id: string
+          question_number: number
+          question_text: string
+          question_type: 'multiple_choice' | 'reading_comprehension' | 'comparison' | 'diagram' | 'nog'
+          reading_passage: string | null
+          image_url: string | null
+          needs_image: boolean
+          difficulty: 'easy' | 'medium' | 'hard' | null
+          topic: string | null
+          correct_answer: string
+          explanation: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          section_id: string
+          question_number: number
+          question_text: string
+          question_type?: 'multiple_choice' | 'reading_comprehension' | 'comparison' | 'diagram' | 'nog'
+          reading_passage?: string | null
+          image_url?: string | null
+          needs_image?: boolean
+          difficulty?: 'easy' | 'medium' | 'hard' | null
+          topic?: string | null
+          correct_answer: string
+          explanation?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          section_id?: string
+          question_number?: number
+          question_text?: string
+          question_type?: 'multiple_choice' | 'reading_comprehension' | 'comparison' | 'diagram' | 'nog'
+          reading_passage?: string | null
+          image_url?: string | null
+          needs_image?: boolean
+          difficulty?: 'easy' | 'medium' | 'hard' | null
+          topic?: string | null
+          correct_answer?: string
+          explanation?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hp_questions_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "hp_sections"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      hp_answer_options: {
+        Row: {
+          id: string
+          question_id: string
+          letter: 'A' | 'B' | 'C' | 'D' | 'E'
+          text: string
+          is_correct: boolean
+        }
+        Insert: {
+          id?: string
+          question_id: string
+          letter: 'A' | 'B' | 'C' | 'D' | 'E'
+          text: string
+          is_correct?: boolean
+        }
+        Update: {
+          id?: string
+          question_id?: string
+          letter?: 'A' | 'B' | 'C' | 'D' | 'E'
+          text?: string
+          is_correct?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hp_answer_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "hp_questions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      hp_words: {
+        Row: {
+          id: string
+          word: string
+          definition: string
+          synonyms: string[]
+          antonyms: string[]
+          example: string | null
+          etymology: string | null
+          memory_tip: string | null
+          category: string | null
+          difficulty: 'easy' | 'medium' | 'hard' | null
+          frequency: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          word: string
+          definition: string
+          synonyms?: string[]
+          antonyms?: string[]
+          example?: string | null
+          etymology?: string | null
+          memory_tip?: string | null
+          category?: string | null
+          difficulty?: 'easy' | 'medium' | 'hard' | null
+          frequency?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          word?: string
+          definition?: string
+          synonyms?: string[]
+          antonyms?: string[]
+          example?: string | null
+          etymology?: string | null
+          memory_tip?: string | null
+          category?: string | null
+          difficulty?: 'easy' | 'medium' | 'hard' | null
+          frequency?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      hp_word_exam_refs: {
+        Row: {
+          word_id: string
+          exam_set_id: string
+        }
+        Insert: {
+          word_id: string
+          exam_set_id: string
+        }
+        Update: {
+          word_id?: string
+          exam_set_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hp_word_exam_refs_word_id_fkey"
+            columns: ["word_id"]
+            isOneToOne: false
+            referencedRelation: "hp_words"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hp_word_exam_refs_exam_set_id_fkey"
+            columns: ["exam_set_id"]
+            isOneToOne: false
+            referencedRelation: "hp_exam_sets"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      hp_norming_tables: {
+        Row: {
+          id: string
+          exam_set_id: string | null
+          raw_score: number
+          normed_score: number
+          part: 'verbal' | 'kvantitativ' | 'total' | null
+        }
+        Insert: {
+          id?: string
+          exam_set_id?: string | null
+          raw_score: number
+          normed_score: number
+          part?: 'verbal' | 'kvantitativ' | 'total' | null
+        }
+        Update: {
+          id?: string
+          exam_set_id?: string | null
+          raw_score?: number
+          normed_score?: number
+          part?: 'verbal' | 'kvantitativ' | 'total' | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hp_norming_tables_exam_set_id_fkey"
+            columns: ["exam_set_id"]
+            isOneToOne: false
+            referencedRelation: "hp_exam_sets"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      hp_user_exam_attempts: {
+        Row: {
+          id: string
+          user_id: string
+          exam_set_id: string | null
+          section_id: string | null
+          attempt_type: 'full_test' | 'section_practice'
+          status: 'in_progress' | 'completed' | 'abandoned'
+          total_questions: number
+          correct_answers: number
+          raw_score: number | null
+          normed_score: number | null
+          time_spent_seconds: number
+          section_scores: Json
+          started_at: string
+          completed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          exam_set_id?: string | null
+          section_id?: string | null
+          attempt_type: 'full_test' | 'section_practice'
+          status?: 'in_progress' | 'completed' | 'abandoned'
+          total_questions?: number
+          correct_answers?: number
+          raw_score?: number | null
+          normed_score?: number | null
+          time_spent_seconds?: number
+          section_scores?: Json
+          started_at?: string
+          completed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          exam_set_id?: string | null
+          section_id?: string | null
+          attempt_type?: 'full_test' | 'section_practice'
+          status?: 'in_progress' | 'completed' | 'abandoned'
+          total_questions?: number
+          correct_answers?: number
+          raw_score?: number | null
+          normed_score?: number | null
+          time_spent_seconds?: number
+          section_scores?: Json
+          started_at?: string
+          completed_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hp_user_exam_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hp_user_exam_attempts_exam_set_id_fkey"
+            columns: ["exam_set_id"]
+            isOneToOne: false
+            referencedRelation: "hp_exam_sets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hp_user_exam_attempts_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "hp_sections"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      hp_user_attempt_answers: {
+        Row: {
+          id: string
+          attempt_id: string
+          user_id: string
+          question_id: string
+          selected_letter: 'A' | 'B' | 'C' | 'D' | 'E' | null
+          is_correct: boolean
+          time_seconds: number | null
+          answered_at: string
+        }
+        Insert: {
+          id?: string
+          attempt_id: string
+          user_id: string
+          question_id: string
+          selected_letter?: 'A' | 'B' | 'C' | 'D' | 'E' | null
+          is_correct?: boolean
+          time_seconds?: number | null
+          answered_at?: string
+        }
+        Update: {
+          id?: string
+          attempt_id?: string
+          user_id?: string
+          question_id?: string
+          selected_letter?: 'A' | 'B' | 'C' | 'D' | 'E' | null
+          is_correct?: boolean
+          time_seconds?: number | null
+          answered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hp_user_attempt_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "hp_user_exam_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hp_user_attempt_answers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hp_user_attempt_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "hp_questions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      hp_user_question_progress: {
+        Row: {
+          user_id: string
+          question_id: string
+          correct_count: number
+          incorrect_count: number
+          total_attempts: number
+          last_correct: boolean | null
+          avg_time_seconds: number | null
+          last_seen_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          question_id: string
+          correct_count?: number
+          incorrect_count?: number
+          total_attempts?: number
+          last_correct?: boolean | null
+          avg_time_seconds?: number | null
+          last_seen_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          question_id?: string
+          correct_count?: number
+          incorrect_count?: number
+          total_attempts?: number
+          last_correct?: boolean | null
+          avg_time_seconds?: number | null
+          last_seen_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hp_user_question_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hp_user_question_progress_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "hp_questions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      hp_user_word_progress: {
+        Row: {
+          user_id: string
+          word_id: string
+          mastery: number
+          ease_factor: number
+          interval_days: number
+          repetitions: number
+          next_review_at: string
+          streak: number
+          last_reviewed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          word_id: string
+          mastery?: number
+          ease_factor?: number
+          interval_days?: number
+          repetitions?: number
+          next_review_at?: string
+          streak?: number
+          last_reviewed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          word_id?: string
+          mastery?: number
+          ease_factor?: number
+          interval_days?: number
+          repetitions?: number
+          next_review_at?: string
+          streak?: number
+          last_reviewed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hp_user_word_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hp_user_word_progress_word_id_fkey"
+            columns: ["word_id"]
+            isOneToOne: false
+            referencedRelation: "hp_words"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2310,6 +2569,29 @@ export interface Database {
           display_name: string
           avatar_url: string | null
         }[]
+      }
+      hp_create_exam_with_sections: {
+        Args: {
+          p_year: number
+          p_season: string
+          p_title: string
+        }
+        Returns: string
+      }
+      hp_record_answer: {
+        Args: {
+          p_attempt_id: string
+          p_question_id: string
+          p_selected_letter: string | null
+          p_time_seconds: number | null
+        }
+        Returns: boolean
+      }
+      hp_finalize_attempt: {
+        Args: {
+          p_attempt_id: string
+        }
+        Returns: Json
       }
     }
     Enums: {

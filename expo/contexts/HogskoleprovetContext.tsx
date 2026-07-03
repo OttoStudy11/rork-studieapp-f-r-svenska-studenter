@@ -244,11 +244,11 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
 
     try {
       const { data: attempts, error } = await supabase
-        .from('user_hp_test_attempts')
+        .from('hp_user_exam_attempts')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'completed')
-        .order('completed_at', { ascending: false });
+        .order('completed_at', { ascending: false }) as any;
 
       if (error) {
         console.error('[HP] Error fetching attempts:', error);
@@ -261,10 +261,10 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
         let bestScore = 0;
         let totalTime = 0;
 
-        attempts.forEach(attempt => {
-          const score = attempt.score_percentage || 0;
+        attempts.forEach((attempt: any) => {
+          const score = attempt.normed_score ? attempt.normed_score * 50 : 0;
           totalScore += score;
-          totalTime += attempt.time_spent_minutes || 0;
+          totalTime += Math.round((attempt.time_spent_seconds || 0) / 60);
           
           if (score > bestScore) bestScore = score;
 
@@ -330,11 +330,11 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
 
     try {
       const { data: attempts, error } = await supabase
-        .from('user_hp_test_attempts')
+        .from('hp_user_exam_attempts')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'completed')
-        .order('completed_at', { ascending: false });
+        .order('completed_at', { ascending: false }) as any;
 
       if (error) {
         console.error('[HP] Error fetching attempts:', error);
@@ -347,10 +347,10 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
         let bestScore = 0;
         let totalTime = 0;
 
-        attempts.forEach(attempt => {
-          const score = attempt.score_percentage || 0;
+        attempts.forEach((attempt: any) => {
+          const score = attempt.normed_score ? attempt.normed_score * 50 : 0;
           totalScore += score;
-          totalTime += attempt.time_spent_minutes || 0;
+          totalTime += Math.round((attempt.time_spent_seconds || 0) / 60);
           
           if (score > bestScore) bestScore = score;
 
@@ -735,18 +735,17 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
 
       try {
         await supabase
-          .from('user_hp_test_attempts')
+          .from('hp_user_exam_attempts')
           .insert({
             user_id: user.id,
-            section_code: sectionCode,
             attempt_type: sectionCode ? 'section_practice' : 'full_test',
             status: 'completed',
             total_questions: totalQuestions,
             correct_answers: correctAnswers,
-            score_percentage: scorePercentage,
-            time_spent_minutes: timeSpentMinutes,
+            raw_score: correctAnswers,
+            time_spent_seconds: timeSpentMinutes * 60,
             completed_at: new Date().toISOString(),
-          });
+          } as any);
       } catch (dbError) {
         console.error('[HP] Database insert error (continuing locally):', dbError);
       }

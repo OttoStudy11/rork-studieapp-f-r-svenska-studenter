@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,9 @@ import {
   Easing,
   LayoutAnimation,
   Platform,
-  UIManager,
+  UIManager
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { useStudy } from '@/contexts/StudyContext';
 import { useAchievements } from '@/contexts/AchievementContext';
 import { usePoints } from '@/contexts/PointsContext';
@@ -22,39 +21,13 @@ import { useGamification, TIER_COLORS } from '@/contexts/GamificationContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
-import { useFlashcards } from '@/contexts/FlashcardContext';
-import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
 import { Image } from 'expo-image';
-import {
-  BookOpen,
-  Clock,
-  Target,
-  Plus,
-  Star,
-  Crown,
-  User,
-  TrendingUp,
-  TrendingDown,
-  Calendar,
-  Flame,
-  ArrowRight,
-  ChevronRight,
-  ChevronDown,
-  Zap,
-  FileText,
-  Sparkles,
-  Brain,
-  Layers,
-  Lightbulb,
-  Check,
-  GraduationCap,
-  PenTool,
-  BarChart3,
-} from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, ChevronDown, Zap, FileText, Sparkles, Brain, Heart } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { ROUTES } from '@/utils/typedRoutes';
 import { FadeInView, SlideInView } from '@/components/Animations';
 import CharacterAvatar from '@/components/CharacterAvatar';
+import { XpLevelRing } from '@/components/shared/XpLevelRing';
 
 const { width } = Dimensions.get('window');
 
@@ -62,56 +35,14 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// ============================================================================
-// CONFIGURATION — Warm Scandinavian light palette (matches profile + premium)
-// ============================================================================
-const PALETTE = {
-  bgWarm: '#FAFAF8',
-  bgSoft: '#F7F7F5',
-  white: '#FFFFFF',
-  green: '#10B981',
-  greenDark: '#059669',
-  greenLight: '#34D399',
-  teal: '#14B8A6',
-  emerald: '#10B981',
-  emeraldDark: '#059669',
-  amber: '#F59E0B',
-  amberLight: '#FBBF24',
-  rose: '#F43F5E',
-  cyan: '#06B6D4',
-  textDark: '#1A2E25',
-  textMid: '#3A4A42',
-  textLight: '#6A7A72',
-  textMuted: '#9AAAA2',
-  borderLight: 'rgba(16, 185, 129, 0.10)',
-  borderGlass: 'rgba(255, 255, 255, 0.6)',
-  glassBg: 'rgba(255, 255, 255, 0.72)',
-  glassBgLight: 'rgba(255, 255, 255, 0.55)',
-} as const;
-
-// ============================================================================
-// SKELETON
-// ============================================================================
-const SkeletonBox = ({
-  width: w,
-  height: h,
-  style,
-  borderRadius = 12,
-  color,
-}: {
-  width: number | string;
-  height: number;
-  style?: any;
-  borderRadius?: number;
-  color?: string;
-}) => {
+const SkeletonBox = ({ width: w, height: h, style, borderRadius = 12, color }: { width: number | string; height: number; style?: any; borderRadius?: number; color?: string }) => {
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 0.55,
+          toValue: 0.6,
           duration: 800,
           useNativeDriver: true,
         }),
@@ -133,7 +64,7 @@ const SkeletonBox = ({
           width: w as any,
           height: h,
           borderRadius,
-          backgroundColor: color || PALETTE.borderLight,
+          backgroundColor: color || '#E5E7EB',
           opacity: pulseAnim,
         },
         style,
@@ -142,53 +73,82 @@ const SkeletonBox = ({
   );
 };
 
-const HomeScreenSkeleton = () => {
-  return (
-    <View style={[styles.container, { backgroundColor: PALETTE.bgWarm }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={PALETTE.bgWarm} />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Hero Skeleton */}
-        <View style={styles.heroSection}>
-          <View style={styles.skeletonHeroTop}>
-            <View style={{ flex: 1 }}>
-              <SkeletonBox width={180} height={28} style={{ marginBottom: 8 }} />
-              <SkeletonBox width={140} height={18} />
-            </View>
-            <SkeletonBox width={48} height={48} borderRadius={24} />
+const HomeScreenSkeleton = ({ theme }: { theme: any; isDark: boolean }) => {
+const skeletonColor = theme.colors.border;
+return (
+  <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <StatusBar 
+      barStyle="default" 
+      backgroundColor={theme.colors.background}
+    />
+    <ScrollView 
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+    >
+      {/* Header Skeleton */}
+      <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.headerLogo}>
+          <SkeletonBox width={100} height={100} borderRadius={50} color={skeletonColor} />
+        </View>
+        <View style={styles.headerTop}>
+          <View style={styles.headerLeft}>
+            <SkeletonBox width={180} height={28} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={140} height={18} color={skeletonColor} />
           </View>
-          <SkeletonBox width="100%" height={180} borderRadius={24} style={{ marginTop: 20 }} />
+          <SkeletonBox width={44} height={44} borderRadius={22} color={skeletonColor} />
         </View>
+      </View>
 
-        {/* Stats Skeleton */}
-        <View style={styles.statsRow}>
-          {[0, 1, 2].map((i) => (
-            <SkeletonBox
-              key={i}
-              width={(width - 72) / 3}
-              height={100}
-              borderRadius={20}
-              style={{ flex: 1 }}
-            />
-          ))}
+      {/* Hero Card Skeleton */}
+      <View style={[styles.heroCard, { backgroundColor: theme.colors.card, marginHorizontal: 24, marginBottom: 24 }]}>
+        <View style={styles.heroStats}>
+          <View style={styles.heroStatItem}>
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={30} height={24} style={{ marginBottom: 4 }} color={skeletonColor} />
+            <SkeletonBox width={60} height={14} color={skeletonColor} />
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStatItem}>
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={30} height={24} style={{ marginBottom: 4 }} color={skeletonColor} />
+            <SkeletonBox width={40} height={14} color={skeletonColor} />
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStatItem}>
+            <SkeletonBox width={40} height={40} borderRadius={20} style={{ marginBottom: 8 }} color={skeletonColor} />
+            <SkeletonBox width={40} height={24} style={{ marginBottom: 4 }} color={skeletonColor} />
+            <SkeletonBox width={50} height={14} color={skeletonColor} />
+          </View>
         </View>
+      </View>
 
-        {/* Section Skeleton */}
-        <View style={styles.section}>
-          <SkeletonBox width={160} height={24} style={{ marginBottom: 16 }} />
-          <SkeletonBox width="100%" height={120} borderRadius={24} style={{ marginBottom: 12 }} />
-          <SkeletonBox width="100%" height={120} borderRadius={24} />
-        </View>
-      </ScrollView>
-    </View>
-  );
+      {/* Quick Action Skeleton */}
+      <View style={styles.quickActions}>
+        <SkeletonBox width="100%" height={56} borderRadius={16} color={skeletonColor} />
+      </View>
+
+      {/* Mini Stats Skeleton */}
+      <View style={styles.miniStatsGrid}>
+        <SkeletonBox width={(width - 72) / 3} height={90} color={skeletonColor} />
+        <SkeletonBox width={(width - 72) / 3} height={90} color={skeletonColor} />
+        <SkeletonBox width={(width - 72) / 3} height={90} color={skeletonColor} />
+      </View>
+
+      {/* Section Skeleton */}
+      <View style={[styles.section, { marginBottom: 16 }]}>
+        <SkeletonBox width={160} height={24} style={{ marginBottom: 16 }} color={skeletonColor} />
+        <SkeletonBox width="100%" height={80} style={{ marginBottom: 12 }} color={skeletonColor} />
+      </View>
+
+      {/* Card Skeleton */}
+      <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
+        <SkeletonBox width="100%" height={100} borderRadius={20} color={skeletonColor} />
+      </View>
+    </ScrollView>
+  </View>
+);
 };
 
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 export default function HomeScreen() {
   const { user, courses, pomodoroSessions, isLoading } = useStudy();
   const { currentStreak } = useAchievements();
@@ -197,10 +157,9 @@ export default function HomeScreen() {
   const { isPremium, isDemoMode, canAddCourse, showPremiumModal } = usePremium();
   const { theme, isDark } = useTheme();
   const { upcomingExams } = useExams();
-  const { userProgress } = useFlashcards();
-  const hpContext = useHogskoleprovet();
 
   const [examsExpanded, setExamsExpanded] = useState(false);
+  const [studyToolsTab, setStudyToolsTab] = useState<'tips' | 'tekniker'>('tips');
 
   const handleAddCourse = () => {
     if (!canAddCourse(courses.length)) {
@@ -210,498 +169,640 @@ export default function HomeScreen() {
     router.push(ROUTES.courses);
   };
 
-  // --- Animations ---
-  const orb1Anim = useRef(new Animated.Value(0)).current;
-  const orb2Anim = useRef(new Animated.Value(0)).current;
+  // Pulse animation for "Starta fokus" button
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
-    const orb1Loop = Animated.loop(
+    const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(orb1Anim, { toValue: 1, duration: 4000, useNativeDriver: true }),
-        Animated.timing(orb1Anim, { toValue: 0, duration: 4000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
       ])
     );
-    const orb2Loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(orb2Anim, { toValue: 1, duration: 5000, useNativeDriver: true }),
-        Animated.timing(orb2Anim, { toValue: 0, duration: 5000, useNativeDriver: true }),
-      ])
-    );
-    const pulseLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.04, duration: 2500, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 2500, useNativeDriver: true }),
-      ])
-    );
-    orb1Loop.start();
-    orb2Loop.start();
-    pulseLoop.start();
+    pulseRef.current = pulse;
+    pulse.start();
     return () => {
-      orb1Loop.stop();
-      orb2Loop.stop();
-      pulseLoop.stop();
+      pulse.stop();
+      pulseRef.current = null;
     };
-  }, [orb1Anim, orb2Anim, pulseAnim]);
+  }, [pulseAnim]);
 
-  // --- Derived data ---
-  const activeCourses = courses.filter((c) => c.isActive);
-
-  const todaySessions = useMemo(() => {
-    const today = new Date().toDateString();
-    return pomodoroSessions.filter((s) => new Date(s.endTime).toDateString() === today);
-  }, [pomodoroSessions]);
-
-  const weekSessions = useMemo(() => {
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    return pomodoroSessions.filter((s) => new Date(s.endTime).getTime() > weekAgo);
-  }, [pomodoroSessions]);
-
-  const weekStudyMinutes = weekSessions.reduce((sum, s) => sum + s.duration, 0);
-  const totalStudyMinutes = pomodoroSessions.reduce((sum, s) => sum + s.duration, 0);
-
-  const averageProgress =
-    courses.length > 0
-      ? Math.round(courses.reduce((sum, c) => sum + c.progress, 0) / courses.length)
-      : 0;
-
-  // Flashcards mastered (repetitions >= 3)
-  const flashcardsMastered = useMemo(() => {
-    let count = 0;
-    userProgress.forEach((p) => {
-      if (p.repetitions >= 3) count++;
-    });
-    return count;
-  }, [userProgress]);
-
-  // HP stats
-  const hpStats = hpContext?.getUserStats();
-  const hpReadiness = hpStats?.estimatedHPScore ?? 0;
-  const hpTotalAttempts = hpStats?.totalAttempts ?? 0;
-  const hpSectionStats = hpStats?.sectionStats ?? {};
-
-  // Accuracy from HP attempts
-  const accuracy = hpTotalAttempts > 0
-    ? Math.round(hpStats?.averageScore ?? 0)
-    : Math.round(averageProgress);
-
-  // Daily goal
-  const dailyGoal = 3;
-  const dailyProgress = Math.min(100, (todaySessions.length / dailyGoal) * 100);
-
-  // Animate progress bar
+  // XP level ring
+  const levelRingAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(progressAnim, {
-      toValue: dailyProgress / 100,
+    Animated.timing(levelRingAnim, {
+      toValue: Math.min(100, xpProgress.percent) / 100,
       duration: 800,
-      easing: Easing.out(Easing.cubic),
+      easing: Easing.inOut(Easing.ease),
       useNativeDriver: false,
     }).start();
-  }, [dailyProgress, progressAnim]);
+  }, [xpProgress.percent, levelRingAnim]);
 
-  // Time-based greeting
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 6) return 'God natt';
-    if (hour < 12) return 'God morgon';
-    if (hour < 18) return 'God dag';
-    return 'God kväll';
-  }, []);
-
-  // Trend (compare this week vs last week — simplified)
-  const trendUp = weekSessions.length >= pomodoroSessions.length - weekSessions.length;
-
-  // Study tips (rotating daily)
-  const dailyTipIndex = new Date().getDate() % 5;
-  const studyTips: { title: string; text: string; icon: string }[] = [
-    {
-      title: 'Pomodoro-tekniken',
-      text: 'Studera i 25-minuters fokuspass med 5 minuters pauser för maximal koncentration.',
-      icon: '🍅',
-    },
-    {
-      title: 'Aktiv repetition',
-      text: 'Testa dig själv istället för att bara läsa om materialet — det förstärker minnet.',
-      icon: '🧠',
-    },
-    {
-      title: 'Spaced repetition',
-      text: 'Repetera material med ökande intervaller för att minnet ska fästa långsiktigt.',
-      icon: '📅',
-    },
-    {
-      title: 'Feynman-tekniken',
-      text: 'Förklara komplexa koncept med enkla ord — om du kan, förstår du dem.',
-      icon: '👨‍🏫',
-    },
-    {
-      title: 'Chunking',
-      text: 'Dela upp stor mängd information i mindre, hanterbara delar för effektiv inlärning.',
-      icon: '🧩',
-    },
-  ];
-
-  // --- Loading ---
+  // Handle loading with skeleton
   if (isLoading) {
-    return <HomeScreenSkeleton />;
+    return <HomeScreenSkeleton theme={theme} isDark={isDark} />;
   }
 
   if (!user) {
     return (
-      <View style={[styles.container, { backgroundColor: PALETTE.bgWarm, justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ fontSize: 16, color: PALETTE.textMid }}>Ingen användardata tillgänglig</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <Text style={[styles.errorText, { color: theme.colors.text }]}>Ingen användardata tillgänglig</Text>
       </View>
     );
   }
 
-  // --- HP section progress helpers ---
-  const getHPSectionProgress = (sectionCodes: string[]) => {
-    const relevant = sectionCodes
-      .map((code) => hpSectionStats[code])
-      .filter(Boolean);
-    if (relevant.length === 0) return 0;
-    return Math.round(relevant.reduce((sum, s) => sum + s.averageScore, 0) / relevant.length);
-  };
+  const activeCourses = courses.filter(course => course.isActive);
+  const todaySessions = pomodoroSessions.filter(session => {
+    const today = new Date().toDateString();
+    const sessionDate = new Date(session.endTime).toDateString();
+    return today === sessionDate;
+  });
 
-  const verbalProgress = getHPSectionProgress(['ORD', 'LAS', 'ELF', 'MEK']);
-  const quantProgress = getHPSectionProgress(['XYZ', 'KVA', 'NOG', 'DTK']);
+  const averageProgress = courses.length > 0 
+    ? Math.round(courses.reduce((sum, course) => sum + course.progress, 0) / courses.length)
+    : 0;
 
-  // Course data — merge real courses with the four premium paths
-  const premiumCourseCards = [
+  const totalStudyTime = pomodoroSessions.reduce((sum, session) => sum + session.duration, 0);
+
+  // Study tips and techniques data
+  const studyTips = [
     {
-      id: 'hp',
-      title: 'Högskoleprovet',
-      subtitle: 'Full HP-preparation',
-      progress: hpTotalAttempts > 0 ? Math.round((hpStats?.averageScore ?? 0)) : 0,
-      route: ROUTES.hogskoleprovetMain,
-      icon: FileText,
-      gradient: [PALETTE.green, PALETTE.greenDark] as readonly [string, string],
-      lastStudied: hpTotalAttempts > 0 ? `${hpTotalAttempts} försök` : 'Ej påbörjad',
+      id: 1,
+      title: 'Pomodoro-tekniken',
+      description: 'Studera i 25-minuters intervaller med 5 minuters pauser',
+      icon: '🍅',
+      category: 'Tidshantering',
+      difficulty: 'Nybörjare'
     },
     {
-      id: 'vocab',
-      title: 'Ordförråd',
-      subtitle: 'Flashcards & vokabulär',
-      progress: flashcardsMastered > 0 ? Math.min(100, Math.round((flashcardsMastered / 50) * 100)) : 0,
-      route: '/smart-flashcards' as never,
-      icon: BookOpen,
-      gradient: [PALETTE.teal, PALETTE.green] as readonly [string, string],
-      lastStudied: flashcardsMastered > 0 ? `${flashcardsMastered} kort` : 'Ej påbörjad',
+      id: 2,
+      title: 'Aktiv repetition',
+      description: 'Testa dig själv istället för att bara läsa om materialet',
+      icon: '🧠',
+      category: 'Minnestekniker',
+      difficulty: 'Medel'
     },
     {
-      id: 'math',
-      title: 'Matematik',
-      subtitle: 'AI mattehjälp',
-      progress: 0,
-      route: ROUTES.mathChat,
-      icon: Brain,
-      gradient: [PALETTE.cyan, PALETTE.teal] as readonly [string, string],
-      lastStudied: 'AI-tutor',
+      id: 3,
+      title: 'Spaced repetition',
+      description: 'Repetera material med ökande intervaller för bättre minne',
+      icon: '📅',
+      category: 'Minnestekniker',
+      difficulty: 'Avancerad'
     },
     {
-      id: 'ai',
-      title: 'AI Studievägledning',
-      subtitle: 'Personlig AI-coach',
-      progress: 0,
-      route: ROUTES.generalChat,
-      icon: Sparkles,
-      gradient: [PALETTE.greenLight, PALETTE.teal] as readonly [string, string],
-      lastStudied: 'Alltid tillgänglig',
+      id: 4,
+      title: 'Feynman-tekniken',
+      description: 'Förklara komplexa koncept med enkla ord',
+      icon: '👨‍🏫',
+      category: 'Förståelse',
+      difficulty: 'Medel'
     },
+    {
+      id: 5,
+      title: 'Mind mapping',
+      description: 'Skapa visuella kartor för att organisera information',
+      icon: '🗺️',
+      category: 'Organisation',
+      difficulty: 'Nybörjare'
+    },
+    {
+      id: 6,
+      title: 'Miljöbyte',
+      description: 'Byt studiemiljö för att förbättra inlärningen',
+      icon: '🏠',
+      category: 'Miljö',
+      difficulty: 'Nybörjare'
+    },
+    {
+      id: 7,
+      title: 'Chunking',
+      description: 'Dela upp information i mindre, hanterbara delar',
+      icon: '🧩',
+      category: 'Minnestekniker',
+      difficulty: 'Nybörjare'
+    },
+    {
+      id: 8,
+      title: 'Interleaving',
+      description: 'Variera mellan olika ämnen för effektivare inlärning',
+      icon: '🔀',
+      category: 'Inlärning',
+      difficulty: 'Medel'
+    },
+    {
+      id: 9,
+      title: 'Sömn & vila',
+      description: 'Optimera din sömn för bättre minneskonsolidering',
+      icon: '😴',
+      category: 'Hälsa',
+      difficulty: 'Nybörjare'
+    }
   ];
 
-  const orb1Y = orb1Anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -30],
-  });
-  const orb1Scale = orb1Anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.15],
-  });
-  const orb2Y = orb2Anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 20],
-  });
-  const orb2Scale = orb2Anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.1],
-  });
+  const studyTechniques = [
+    {
+      id: 1,
+      title: 'SQ3R-metoden',
+      description: 'Survey, Question, Read, Recite, Review - systematisk läsning',
+      steps: ['Överblicka', 'Fråga', 'Läs', 'Återge', 'Repetera'],
+      icon: '📖',
+      timeNeeded: '30-60 min'
+    },
+    {
+      id: 2,
+      title: 'Cornell-anteckningar',
+      description: 'Strukturerad anteckningsmetod med tre sektioner',
+      steps: ['Anteckningar', 'Ledtrådar', 'Sammanfattning'],
+      icon: '📝',
+      timeNeeded: '15-30 min'
+    },
+    {
+      id: 3,
+      title: 'Elaborativ förfrågan',
+      description: 'Ställ "varför" och "hur" frågor för djupare förståelse',
+      steps: ['Läs fakta', 'Fråga varför', 'Förklara samband', 'Koppla till tidigare kunskap'],
+      icon: '❓',
+      timeNeeded: '20-40 min'
+    },
+    {
+      id: 4,
+      title: 'Leitner-systemet',
+      description: 'Flashcard-system med repetitionsintervaller baserat på prestation',
+      steps: ['Skapa kort', 'Sortera i lådor', 'Repetera', 'Flytta kort'],
+      icon: '📦',
+      timeNeeded: '15-25 min'
+    },
+    {
+      id: 5,
+      title: 'Retrieval Practice',
+      description: 'Träna på att hämta information från minnet aktivt',
+      steps: ['Studera material', 'Stäng allt', 'Skriv ner allt', 'Kontrollera'],
+      icon: '🔄',
+      timeNeeded: '20-30 min'
+    },
+    {
+      id: 6,
+      title: 'Dual Coding',
+      description: 'Kombinera text med visuella element för bättre inlärning',
+      steps: ['Läs text', 'Skapa bilder', 'Koppla samman', 'Repetera båda'],
+      icon: '🎨',
+      timeNeeded: '25-45 min'
+    }
+  ];
 
   return (
-    <View style={[styles.container, { backgroundColor: PALETTE.bgWarm }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={PALETTE.bgWarm} />
-      <ScrollView
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar 
+        barStyle={isDark ? 'light-content' : 'dark-content'} 
+        backgroundColor={theme.colors.background}
+      />
+      <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         bounces={true}
       >
-        {/* ================================================================ */}
-        {/* 1. HERO DASHBOARD                                                */}
-        {/* ================================================================ */}
-        <View style={styles.heroSection}>
-          {/* Floating gradient orbs */}
-          <Animated.View
-            style={[
-              styles.orb1,
-              {
-                transform: [{ translateY: orb1Y }, { scale: orb1Scale }],
-              },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.orb2,
-              {
-                transform: [{ translateY: orb2Y }, { scale: orb2Scale }],
-              },
-            ]}
-          />
-
-          {/* Top bar */}
-          <View style={styles.heroTopBar}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.greeting}>{greeting}, {user?.name?.split(' ')[0]}</Text>
-              <Text style={styles.greetingSub}>Redo att studera smartare idag?</Text>
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+          <View style={styles.headerLogo}>
+            <Image
+              source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm' }}
+              style={styles.logo}
+              contentFit="contain"
+            />
+          </View>
+          <View style={styles.headerTop}>
+            <View style={styles.headerLeft}>
+              <Text style={[styles.greeting, { color: theme.colors.text }]}>Hej, {user?.name}! 👋</Text>
+              <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>Redo att plugga idag?</Text>
             </View>
-            <TouchableOpacity
-              style={styles.avatarButton}
-              onPress={() => router.push(ROUTES.profile)}
-              activeOpacity={0.85}
-            >
-              {user.avatar ? (
-                <CharacterAvatar config={user.avatar} size={48} />
-              ) : (
-                <View style={styles.avatarFallback}>
-                  <User size={22} color={PALETTE.green} />
+            <View style={styles.headerRight}>
+              {isPremium && (
+                <View style={[styles.premiumBadge, { backgroundColor: theme.colors.warning + '20' }]}>
+                  <Crown size={16} color={theme.colors.warning} />
+                  <Text style={[styles.premiumText, { color: theme.colors.warning }]}>Pro</Text>
                 </View>
               )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Hero glass card */}
-          <SlideInView direction="up" delay={50} duration={400}>
-            <View style={styles.heroCard}>
-              <BlurView intensity={60} tint="light" style={styles.heroBlur}>
-                <View style={styles.heroCardContent}>
-                  {/* Badges row */}
-                  <View style={styles.heroBadges}>
-                    <View style={styles.heroBadge}>
-                      <Flame size={14} color={PALETTE.green} />
-                      <Text style={styles.heroBadgeText}>{currentStreak} dagar</Text>
-                    </View>
-                    <View style={styles.heroBadge}>
-                      <Zap size={14} color={PALETTE.amber} />
-                      <Text style={styles.heroBadgeText}>Nivå {currentLevel?.level ?? 1}</Text>
-                    </View>
-                    {isPremium && (
-                      <View style={[styles.heroBadge, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
-                        <Crown size={14} color={PALETTE.amber} />
-                        <Text style={[styles.heroBadgeText, { color: PALETTE.amber }]}>Premium</Text>
-                      </View>
-                    )}
+              <TouchableOpacity 
+                style={styles.profileButton}
+                onPress={() => router.push(ROUTES.profile)}
+              >
+                {user.avatar ? (
+                  <CharacterAvatar config={user.avatar} size={44} />
+                ) : (
+                  <View style={[styles.profileButtonFallback, { backgroundColor: theme.colors.primary + '15' }]}>
+                    <User size={22} color={theme.colors.primary} />
                   </View>
-
-                  {/* Daily goal */}
-                  <Text style={styles.heroGoalTitle}>Dagens studiemål</Text>
-                  <View style={styles.heroGoalRow}>
-                    <Text style={styles.heroGoalNumber}>{todaySessions.length}</Text>
-                    <Text style={styles.heroGoalDivider}>/ {dailyGoal} sessioner</Text>
-                  </View>
-                  <View style={styles.heroProgressBar}>
-                    <Animated.View
-                      style={[
-                        styles.heroProgressFill,
-                        {
-                          width: progressAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ['0%', '100%'],
-                          }),
-                        },
-                      ]}
-                    />
-                  </View>
-
-                  {/* Motivational insight */}
-                  <Text style={styles.heroInsight}>
-                    {dailyProgress >= 100
-                      ? '🎯 Dagens mål klart! Du är på väg att nå din veckomålsstämpel.'
-                      : `Du är ${Math.round(dailyProgress)}% närmare dagens mål. Fortsätt!`}
-                  </Text>
-
-                  {/* CTA */}
-                  <Animated.View style={{ transform: [{ scale: pulseAnim }], width: '100%' }}>
-                    <TouchableOpacity
-                      style={styles.heroCta}
-                      onPress={() => router.push(ROUTES.timer)}
-                      activeOpacity={0.9}
-                    >
-                      <LinearGradient
-                        colors={[PALETTE.green, PALETTE.greenDark] as [string, string]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.heroCtaGradient}
-                      >
-                        <Clock size={20} color="white" />
-                        <Text style={styles.heroCtaText}>Fortsätt studera</Text>
-                        <ArrowRight size={20} color="white" />
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </Animated.View>
-                </View>
-              </BlurView>
+                )}
+              </TouchableOpacity>
             </View>
-          </SlideInView>
-
+          </View>
           {isDemoMode && (
-            <View style={styles.demoBanner}>
-              <Text style={styles.demoText}>🎯 Demo-läge aktivt</Text>
+            <View style={[styles.demoBanner, { backgroundColor: theme.colors.info + '15' }]}>
+              <Text style={[styles.demoText, { color: theme.colors.info }]}>🎯 Demo-läge aktivt</Text>
             </View>
           )}
         </View>
 
-        {/* ================================================================ */}
-        {/* 2. QUICK STATS                                                    */}
-        {/* ================================================================ */}
-        <SlideInView direction="up" delay={100} duration={400}>
-          <View style={styles.statsRow}>
-            <StatMiniCard
-              icon={Clock}
-              value={`${(weekStudyMinutes / 60).toFixed(1)}h`}
-              label="Denna vecka"
-              color={PALETTE.green}
-            />
-            <StatMiniCard
-              icon={Target}
-              value={`${accuracy}%`}
-              label="Precision"
-              color={PALETTE.teal}
-              trend={trendUp ? 'up' : 'down'}
-            />
-            <StatMiniCard
-              icon={Check}
-              value={`${pomodoroSessions.length}`}
-              label="Sessioner"
-              color={PALETTE.cyan}
-            />
+        {/* Hero Stats Card */}
+        <SlideInView direction="up" delay={0} duration={300}>
+          <LinearGradient
+            colors={theme.colors.gradient as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroCard}
+          >
+            <View style={styles.heroContent}>
+              <View style={styles.heroStats}>
+                <View style={styles.heroStatItem}>
+                  <View style={styles.heroStatIcon}>
+                    <Flame size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatNumber}>{currentStreak}</Text>
+                  <Text style={styles.heroStatLabel}>Dagars streak</Text>
+                </View>
+                <View style={styles.heroStatDivider} />
+                <View style={styles.heroStatItem}>
+                  <View style={styles.heroStatIcon}>
+                    <Clock size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatNumber}>{todaySessions.length}</Text>
+                  <Text style={styles.heroStatLabel}>Idag</Text>
+                </View>
+                <View style={styles.heroStatDivider} />
+                <View style={styles.heroStatItem}>
+                  <View style={styles.heroStatIcon}>
+                    <Star size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatNumber}>{totalPoints}</Text>
+                  <Text style={styles.heroStatLabel}>Poäng</Text>
+                  <Text style={styles.heroStatSubtext}>1p per 5 min</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
+        </SlideInView>
+
+
+
+        {/* Quick Actions */}
+        <SlideInView direction="up" delay={50} duration={300}>
+          <View style={styles.quickActions}>
+            <Animated.View style={{ transform: [{ scale: pulseAnim }], width: '100%' }}>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.actionButtonFull, { backgroundColor: theme.colors.primary }]}
+                onPress={() => router.push(ROUTES.timer)}
+              >
+                <Clock size={24} color="white" />
+                <Text style={styles.actionButtonText}>Starta fokus</Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
         </SlideInView>
 
-        <SlideInView direction="up" delay={150} duration={400}>
-          <View style={styles.statsRow}>
-            <StatMiniCard
-              icon={BookOpen}
-              value={`${flashcardsMastered}`}
-              label="Flashcards"
-              color={PALETTE.greenDark}
-            />
-            <StatMiniCard
-              icon={GraduationCap}
-              value={hpReadiness > 0 ? `${hpReadiness}` : '—'}
-              label="HP-poäng"
-              color={PALETTE.amber}
-            />
-            <StatMiniCard
-              icon={trendUp ? TrendingUp : TrendingDown}
-              value={trendUp ? '↑' : '↓'}
-              label="Trend"
-              color={trendUp ? PALETTE.green : PALETTE.rose}
-            />
+        {/* Mini Stats Grid */}
+        <SlideInView direction="up" delay={100} duration={300}>
+          <View style={styles.miniStatsGrid}>
+            <View style={[styles.miniStatCard, { backgroundColor: theme.colors.card }]}>
+              <BookOpen size={20} color={theme.colors.primary} />
+              <Text style={[styles.miniStatNumber, { color: theme.colors.text }]}>{activeCourses.length}</Text>
+              <Text style={[styles.miniStatLabel, { color: theme.colors.textSecondary }]}>Aktiva kurser</Text>
+            </View>
+            <View style={[styles.miniStatCard, { backgroundColor: theme.colors.card }]}>
+              <TrendingUp size={20} color={theme.colors.secondary} />
+              <Text style={[styles.miniStatNumber, { color: theme.colors.text }]}>{averageProgress}%</Text>
+              <Text style={[styles.miniStatLabel, { color: theme.colors.textSecondary }]}>Genomsnitt</Text>
+            </View>
+            <View style={[styles.miniStatCard, { backgroundColor: theme.colors.card }]}>
+              <Calendar size={20} color={theme.colors.warning} />
+              <Text style={[styles.miniStatNumber, { color: theme.colors.text }]}>{Math.round(totalStudyTime / 60)}h</Text>
+              <Text style={[styles.miniStatLabel, { color: theme.colors.textSecondary }]}>Total tid</Text>
+            </View>
           </View>
         </SlideInView>
 
-        {/* ================================================================ */}
-        {/* 3. COURSES                                                        */}
-        {/* ================================================================ */}
-        <SlideInView direction="up" delay={200} duration={400}>
-          <View style={styles.section}>
+
+
+        {/* Upcoming Exams — collapsible */}
+        <SlideInView direction="up" delay={150} duration={300}>
+          <View style={[styles.section, { marginBottom: 44 }]}>
+            <TouchableOpacity
+              style={styles.sectionHeader}
+              onPress={() => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setExamsExpanded(!examsExpanded);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.sectionTitleContainer}>
+                <Calendar size={20} color={theme.colors.warning} />
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Kommande prov</Text>
+                {upcomingExams.length > 0 && (
+                  <View style={[styles.examCountBadge, { backgroundColor: theme.colors.warning + '20' }]}>
+                    <Text style={[styles.examCountText, { color: theme.colors.warning }]}>{upcomingExams.length}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <TouchableOpacity onPress={() => router.push(ROUTES.planning)}>
+                  <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Planering →</Text>
+                </TouchableOpacity>
+                {upcomingExams.length > 1 && (
+                  <ChevronDown
+                    size={18}
+                    color={theme.colors.textSecondary}
+                    style={{ transform: [{ rotate: examsExpanded ? '180deg' : '0deg' }] }}
+                  />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {upcomingExams.slice(0, examsExpanded ? upcomingExams.length : 1).map((exam, index) => {
+              const daysUntil = Math.ceil((exam.examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+              const isUrgent = daysUntil <= 3;
+
+              return (
+                <FadeInView key={exam.id} delay={200 + index * 50} duration={300}>
+                  <View style={[
+                    styles.examCard,
+                    { backgroundColor: theme.colors.card },
+                    isUrgent && { borderLeftWidth: 4, borderLeftColor: theme.colors.error }
+                  ]}>
+                    <View style={styles.examCardContent}>
+                      <View style={[
+                        styles.examDateBadge,
+                        { backgroundColor: isUrgent ? theme.colors.error + '15' : theme.colors.warning + '15' }
+                      ]}>
+                        <Text style={[
+                          styles.examDateDay,
+                          { color: isUrgent ? theme.colors.error : theme.colors.warning }
+                        ]}>
+                          {exam.examDate.getDate()}
+                        </Text>
+                        <Text style={[
+                          styles.examDateMonth,
+                          { color: isUrgent ? theme.colors.error : theme.colors.warning }
+                        ]}>
+                          {exam.examDate.toLocaleDateString('sv-SE', { month: 'short' }).toUpperCase()}
+                        </Text>
+                      </View>
+
+                      <View style={styles.examInfo}>
+                        <Text style={[styles.examTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                          {exam.title}
+                        </Text>
+                        <View style={styles.examMeta}>
+                          <View style={styles.examMetaItem}>
+                            <Clock size={12} color={theme.colors.textMuted} />
+                            <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>
+                              {exam.examDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                            </Text>
+                          </View>
+                          {exam.location && (
+                            <>
+                              <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]}>•</Text>
+                              <Text style={[styles.examMetaText, { color: theme.colors.textMuted }]} numberOfLines={1}>
+                                {exam.location}
+                              </Text>
+                            </>
+                          )}
+                        </View>
+                        {isUrgent && (
+                          <View style={[styles.urgentBadge, { backgroundColor: theme.colors.error + '15' }]}>
+                            <AlertCircle size={12} color={theme.colors.error} />
+                            <Text style={[styles.urgentText, { color: theme.colors.error }]}>
+                              {daysUntil === 0 ? 'Idag' : daysUntil === 1 ? 'Imorgon' : `Om ${daysUntil} dagar`}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+
+                      <TouchableOpacity
+                        style={styles.examStudyPlanIconBtn}
+                        onPress={() => {
+                          router.push(`/study-plan/${exam.id}?courseTitle=${encodeURIComponent(exam.title)}` as never);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <LinearGradient
+                          colors={isDark ? ['#4F46E5', '#7C3AED'] : ['#6366F1', '#818CF8']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.examStudyPlanIconGradient}
+                        >
+                          <FileText size={16} color="white" />
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </FadeInView>
+              );
+            })}
+
+            {upcomingExams.length === 0 && (
+              <TouchableOpacity
+                style={[styles.addExamPrompt, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                onPress={() => router.push(ROUTES.planning)}
+              >
+                <View style={[styles.addExamIcon, { backgroundColor: theme.colors.primary + '15' }]}>
+                  <Calendar size={24} color={theme.colors.primary} />
+                </View>
+                <View style={styles.addExamContent}>
+                  <Text style={[styles.addExamTitle, { color: theme.colors.text }]}>Inga planerade prov</Text>
+                  <Text style={[styles.addExamSubtitle, { color: theme.colors.textSecondary }]}>Lägg till prov för att få påminnelser</Text>
+                </View>
+                <ChevronRight size={20} color={theme.colors.textMuted} />
+              </TouchableOpacity>
+            )}
+
+            {upcomingExams.length > 1 && !examsExpanded && (
+              <TouchableOpacity
+                style={styles.showMoreBtn}
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setExamsExpanded(true);
+                }}
+              >
+                <Text style={[styles.showMoreText, { color: theme.colors.primary }]}>
+                  Visa alla {upcomingExams.length} prov
+                </Text>
+                <ChevronDown size={14} color={theme.colors.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </SlideInView>
+
+        {/* HP + Diagnosstöd — two-column row */}
+        <SlideInView direction="up" delay={200} duration={300}>
+          <View style={[styles.twoColumnRow, { marginBottom: 48 }]}>
+            {/* Högskoleprov — compact card */}
+            <TouchableOpacity 
+              style={styles.twoColCard}
+              onPress={() => router.push(ROUTES.hogskoleprovetMain)}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={isDark ? ['#312E81', '#4338CA'] : ['#4338CA', '#6366F1']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.twoColGradient}
+              >
+                <View style={styles.twoColIcon}>
+                  <FileText size={22} color="white" />
+                </View>
+                <Text style={styles.twoColTitle}>Högskoleprov</Text>
+                <View style={styles.twoColMiniChips}>
+                  <Text style={styles.twoColMiniChipText}>ORD · LÄS · MEK</Text>
+                  <Text style={styles.twoColMiniChipText}>XYZ · KVA · DTK</Text>
+                </View>
+                <View style={styles.twoColFooter}>
+                  <Text style={styles.twoColCta}>Börja träna →</Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Diagnosstöd — compact card */}
+            <TouchableOpacity
+              style={styles.twoColCard}
+              onPress={() => router.push(ROUTES.diagnosstod)}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={isDark ? ['#312E81', '#4C1D95'] : ['#6366F1', '#7C3AED']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.twoColGradient}
+              >
+                <View style={styles.twoColIcon}>
+                  <Heart size={22} color="white" fill="rgba(255,255,255,0.3)" />
+                </View>
+                <Text style={styles.twoColTitle}>Diagnosstöd</Text>
+                <Text style={styles.twoColDesc} numberOfLines={2}>
+                  ADHD, dyslexi, autism & mer
+                </Text>
+                <View style={styles.twoColMiniPills}>
+                  {['ADHD', 'Dyslexi', 'Autism'].map((d) => (
+                    <Text key={d} style={styles.twoColMiniPillText}>{d}</Text>
+                  ))}
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </SlideInView>
+
+        {/* Compact XP Card */}
+        <SlideInView direction="up" delay={275} duration={300}>
+          <TouchableOpacity 
+            style={[styles.compactXpCard, { backgroundColor: theme.colors.card }]}
+            onPress={() => router.push(ROUTES.achievements)}
+            activeOpacity={0.8}
+          >
+            <XpLevelRing
+              progress={xpProgress.percent}
+              color={TIER_COLORS[currentLevel.tier]}
+              size={72}
+              strokeWidth={5}
+              level={currentLevel.level}
+              totalXp={totalXp}
+              xpCurrent={xpProgress.current}
+              xpRequired={xpProgress.required}
+              tierName={currentLevel.titleSv}
+              emoji={currentLevel.iconEmoji}
+            />
+            <View style={styles.compactXpInfo}>
+              <View style={styles.compactXpRow}>
+                <Text style={[styles.compactXpLevel, { color: theme.colors.text }]}>Nivå {currentLevel.level}</Text>
+                <View style={[styles.compactXpTierBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] }]}>
+                  <Text style={styles.compactXpTierText}>{currentLevel.titleSv}</Text>
+                </View>
+              </View>
+              <Text style={[styles.compactXpProgressText, { color: theme.colors.textSecondary }]}>
+                {xpProgress.current} / {xpProgress.required} XP till nästa nivå
+              </Text>
+            </View>
+            <View style={styles.compactXpRight}>
+              <View style={styles.compactXpTotal}>
+                <Zap size={14} color={TIER_COLORS[currentLevel.tier]} />
+                <Text style={[styles.compactXpTotalNumber, { color: theme.colors.text }]}>{totalXp}</Text>
+              </View>
+              <ChevronRight size={18} color={theme.colors.textMuted} />
+            </View>
+          </TouchableOpacity>
+        </SlideInView>
+
+        {/* Studieverktyg & Tips — tabbed section */}
+        <SlideInView direction="up" delay={300} duration={300}>
+          <View style={[styles.section, { marginBottom: 36 }]}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
-                <GraduationCap size={22} color={PALETTE.green} />
-                <Text style={styles.sectionTitle}>Dina kurser</Text>
+                <Sparkles size={20} color={theme.colors.primary} />
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studieverktyg & Tips</Text>
               </View>
-              <TouchableOpacity onPress={() => router.push(ROUTES.courses)}>
-                <Text style={styles.seeAllText}>Se alla →</Text>
+              <TouchableOpacity onPress={() => router.push(ROUTES.studyTips)}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Premium course cards */}
-            {premiumCourseCards.map((course, index) => (
-              <FadeInView key={course.id} delay={250 + index * 60} duration={300}>
-                <TouchableOpacity
-                  style={styles.courseCard}
-                  onPress={() => router.push(course.route as never)}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.courseCardLeft}>
-                    <LinearGradient
-                      colors={course.gradient as [string, string]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.courseIcon}
-                    >
-                      <course.icon size={22} color="white" />
-                    </LinearGradient>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.courseTitle} numberOfLines={1}>{course.title}</Text>
-                      <Text style={styles.courseSubtitle} numberOfLines={1}>{course.subtitle}</Text>
-                      <Text style={styles.courseLastStudied}>{course.lastStudied}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.courseRight}>
-                    <Text style={styles.courseProgressText}>{course.progress}%</Text>
-                    <View style={styles.courseProgressBar}>
-                      <View
-                        style={[
-                          styles.courseProgressFill,
-                          { width: `${course.progress}%`, backgroundColor: PALETTE.green },
-                        ]}
-                      />
-                    </View>
-                    <View style={styles.courseContinueBtn}>
-                      <Text style={styles.courseContinueText}>Fortsätt</Text>
-                      <ArrowRight size={12} color={PALETTE.green} />
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              </FadeInView>
-            ))}
+            {/* Tab bar */}
+            <View style={[styles.tabBar, { backgroundColor: theme.colors.card }]}>
+              <TouchableOpacity
+                style={[styles.tabItem, studyToolsTab === 'tips' && { backgroundColor: theme.colors.primary }]}
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setStudyToolsTab('tips');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabItemText, { color: studyToolsTab === 'tips' ? '#FFF' : theme.colors.textSecondary }]}>
+                  Tips
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tabItem, studyToolsTab === 'tekniker' && { backgroundColor: theme.colors.primary }]}
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setStudyToolsTab('tekniker');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabItemText, { color: studyToolsTab === 'tekniker' ? '#FFF' : theme.colors.textSecondary }]}>
+                  Tekniker
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-            {/* Custom user courses */}
-            {activeCourses.length > 0 && (
-              <View style={styles.customCoursesContainer}>
-                <Text style={styles.customCoursesLabel}>Egna kurser</Text>
-                {activeCourses.slice(0, 3).map((course, index) => (
-                  <FadeInView key={course.id} delay={500 + index * 50} duration={250}>
-                    <TouchableOpacity
-                      style={styles.courseCard}
-                      onPress={() => router.push(ROUTES.courseDetail(course.id))}
-                      activeOpacity={0.85}
+            {/* Tips tab content */}
+            {studyToolsTab === 'tips' && (
+              <View style={styles.tipsGrid}>
+                {studyTips.slice(0, 2).map((tip, index) => (
+                  <FadeInView key={tip.id} delay={350 + index * 30} duration={250}>
+                    <TouchableOpacity 
+                      style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
+                      onPress={() => router.push(ROUTES.studyTip(String(tip.id)))}
                     >
-                      <View style={styles.courseCardLeft}>
-                        <View style={[styles.courseIcon, { backgroundColor: PALETTE.borderLight }]}>
-                          <BookOpen size={22} color={PALETTE.green} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.courseTitle} numberOfLines={1}>{course.title}</Text>
-                          <Text style={styles.courseSubtitle} numberOfLines={1}>{course.subject}</Text>
-                          <Text style={styles.courseLastStudied}>{course.progress}% klart</Text>
-                        </View>
-                      </View>
-                      <View style={styles.courseRight}>
-                        <Text style={styles.courseProgressText}>{course.progress}%</Text>
-                        <View style={styles.courseProgressBar}>
-                          <View
-                            style={[
-                              styles.courseProgressFill,
-                              { width: `${course.progress}%`, backgroundColor: PALETTE.green },
-                            ]}
-                          />
-                        </View>
-                        <View style={styles.courseContinueBtn}>
-                          <Text style={styles.courseContinueText}>Fortsätt</Text>
-                          <ArrowRight size={12} color={PALETTE.green} />
-                        </View>
+                      <Text style={styles.compactTipIcon}>{tip.icon}</Text>
+                      <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
+                      <View style={[styles.compactTipDifficulty, { 
+                        backgroundColor: tip.difficulty === 'Nybörjare' ? theme.colors.success + '20' :
+                                       tip.difficulty === 'Medel' ? theme.colors.warning + '20' :
+                                       theme.colors.error + '20'
+                      }]}>
+                        <Text style={[styles.compactTipDifficultyText, { 
+                          color: tip.difficulty === 'Nybörjare' ? theme.colors.success :
+                                tip.difficulty === 'Medel' ? theme.colors.warning :
+                                theme.colors.error
+                        }]}>{tip.difficulty}</Text>
                       </View>
                     </TouchableOpacity>
                   </FadeInView>
@@ -709,300 +810,106 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* Add course */}
-            <TouchableOpacity
-              style={styles.addCourseCard}
-              onPress={handleAddCourse}
-              activeOpacity={0.85}
-            >
-              <Plus size={20} color={PALETTE.green} />
-              <Text style={styles.addCourseText}>Lägg till egen kurs</Text>
-            </TouchableOpacity>
-
-            {/* Empty state for exams */}
-            {upcomingExams.length > 0 && (
-              <View style={styles.examsContainer}>
-                <Text style={styles.customCoursesLabel}>Kommande prov</Text>
-                {upcomingExams.slice(0, examsExpanded ? upcomingExams.length : 2).map((exam, index) => {
-                  const daysUntil = Math.ceil((exam.examDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                  const isUrgent = daysUntil <= 3;
-                  return (
-                    <TouchableOpacity
-                      key={exam.id}
-                      style={styles.examCard}
-                      onPress={() => router.push(`/study-plan/${exam.id}?courseTitle=${encodeURIComponent(exam.title)}` as never)}
-                      activeOpacity={0.85}
+            {/* Tekniker tab content */}
+            {studyToolsTab === 'tekniker' && (
+              <View style={styles.tipsGrid}>
+                {studyTechniques.slice(0, 2).map((technique, index) => (
+                  <FadeInView key={technique.id} delay={350 + index * 30} duration={250}>
+                    <TouchableOpacity 
+                      style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
+                      onPress={() => router.push(ROUTES.studyTechnique(String(technique.id)))}
                     >
-                      <View style={[styles.examDateBadge, { backgroundColor: isUrgent ? 'rgba(244, 63, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)' }]}>
-                        <Text style={[styles.examDateDay, { color: isUrgent ? PALETTE.rose : PALETTE.amber }]}>
-                          {exam.examDate.getDate()}
-                        </Text>
-                        <Text style={[styles.examDateMonth, { color: isUrgent ? PALETTE.rose : PALETTE.amber }]}>
-                          {exam.examDate.toLocaleDateString('sv-SE', { month: 'short' }).toUpperCase()}
-                        </Text>
+                      <Text style={styles.compactTipIcon}>{technique.icon}</Text>
+                      <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{technique.title}</Text>
+                      <View style={[styles.compactTimeTag, { backgroundColor: theme.colors.primary + '15' }]}>
+                        <Clock size={10} color={theme.colors.primary} />
+                        <Text style={[styles.compactTimeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
                       </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.examTitle} numberOfLines={1}>{exam.title}</Text>
-                        <Text style={styles.examMeta}>
-                          {daysUntil === 0 ? 'Idag' : daysUntil === 1 ? 'Imorgon' : `Om ${daysUntil} dagar`}
-                        </Text>
-                      </View>
-                      <ChevronRight size={18} color={PALETTE.textMuted} />
                     </TouchableOpacity>
-                  );
-                })}
-                {upcomingExams.length > 2 && !examsExpanded && (
-                  <TouchableOpacity
-                    style={styles.showMoreBtn}
-                    onPress={() => {
-                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                      setExamsExpanded(true);
-                    }}
-                  >
-                    <Text style={styles.showMoreText}>Visa alla {upcomingExams.length} prov</Text>
-                    <ChevronDown size={14} color={PALETTE.green} />
-                  </TouchableOpacity>
-                )}
+                  </FadeInView>
+                ))}
               </View>
             )}
           </View>
         </SlideInView>
 
-        {/* ================================================================ */}
-        {/* 4. STUDY TIPS (AI)                                               */}
-        {/* ================================================================ */}
-        <SlideInView direction="up" delay={250} duration={400}>
+        {/* Premium Upgrade Banner */}
+        {!isPremium && (
+          <SlideInView direction="up" delay={350} duration={300}>
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={[styles.premiumBanner, { backgroundColor: theme.colors.warning + '15', borderColor: theme.colors.warning + '30' }]}
+                onPress={() => router.push(ROUTES.premium)}
+              >
+                <View style={styles.premiumBannerContent}>
+                  <View style={styles.premiumBannerLeft}>
+                    <Crown size={24} color={theme.colors.warning} />
+                    <View style={styles.premiumBannerText}>
+                      <Text style={[styles.premiumBannerTitle, { color: theme.colors.text }]}>Uppgradera till Premium</Text>
+                      <Text style={[styles.premiumBannerSubtitle, { color: theme.colors.textSecondary }]} numberOfLines={2}>Obegränsade kurser, avancerad statistik och mer</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.premiumBannerButton, { backgroundColor: theme.colors.warning }]}>
+                    <Text style={styles.premiumBannerButtonText}>Uppgradera</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </SlideInView>
+        )}
+
+        {/* Active Courses */}
+        <SlideInView direction="up" delay={400} duration={300}>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <Sparkles size={22} color={PALETTE.green} />
-                <Text style={styles.sectionTitle}>Studietips</Text>
-              </View>
-              <TouchableOpacity onPress={() => router.push(ROUTES.studyTips)}>
-                <Text style={styles.seeAllText}>Se alla →</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Aktiva kurser</Text>
+              <TouchableOpacity onPress={() => router.push(ROUTES.courses)}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
             </View>
-
-            {/* Featured tip card */}
-            <View style={styles.tipFeaturedCard}>
-              <BlurView intensity={40} tint="light" style={styles.tipBlur}>
-                <View style={styles.tipFeaturedContent}>
-                  <Text style={styles.tipFeaturedEmoji}>{studyTips[dailyTipIndex].icon}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.tipFeaturedLabel}>DAGENS TIPS</Text>
-                    <Text style={styles.tipFeaturedTitle}>{studyTips[dailyTipIndex].title}</Text>
-                    <Text style={styles.tipFeaturedText}>{studyTips[dailyTipIndex].text}</Text>
-                  </View>
-                </View>
-              </BlurView>
-            </View>
-
-            {/* Two smaller tips */}
-            <View style={styles.tipSmallRow}>
-              <View style={styles.tipSmallCard}>
-                <Lightbulb size={18} color={PALETTE.amber} />
-                <Text style={styles.tipSmallTitle}>Fokusområde</Text>
-                <Text style={styles.tipSmallText}>
-                  {hpStats?.weakSections?.length
-                    ? `Fokusera på ${hpStats.weakSections[0]} denna vecka`
-                    : 'Öva på svagheter för snabbast förbättring'}
-                </Text>
-              </View>
-              <View style={styles.tipSmallCard}>
-                <Brain size={18} color={PALETTE.green} />
-                <Text style={styles.tipSmallTitle}>Minnesteknik</Text>
-                <Text style={styles.tipSmallText}>Repetera glosor med 1, 3 och 7 dagars mellanrum.</Text>
-              </View>
-            </View>
-          </View>
-        </SlideInView>
-
-        {/* ================================================================ */}
-        {/* 5. HÖGSKOLEPROVET HUB                                            */}
-        {/* ================================================================ */}
-        <SlideInView direction="up" delay={300} duration={400}>
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <FileText size={22} color={PALETTE.green} />
-                <Text style={styles.sectionTitle}>Högskoleprovet</Text>
-              </View>
-              <TouchableOpacity onPress={() => router.push(ROUTES.hogskoleprovetMain)}>
-                <Text style={styles.seeAllText}>Alla →</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Full HP Simulation — mini-hero */}
-            <TouchableOpacity
-              style={styles.hpHeroCard}
-              onPress={() => router.push(ROUTES.hogskoleprovetMain)}
-              activeOpacity={0.88}
-            >
-              <LinearGradient
-                colors={[PALETTE.green, PALETTE.greenDark] as [string, string]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.hpHeroGradient}
-              >
-                <View style={styles.hpHeroDeco1} />
-                <View style={styles.hpHeroDeco2} />
-                <View style={styles.hpHeroTop}>
-                  <View style={styles.hpHeroIcon}>
-                    <FileText size={24} color="white" />
-                  </View>
-                  {hpTotalAttempts > 0 && (
-                    <View style={styles.hpHeroBadge}>
-                      <Text style={styles.hpHeroBadgeText}>{hpTotalAttempts} försök</Text>
+            
+            {activeCourses.length > 0 ? (
+              activeCourses.slice(0, 3).map((course, index) => (
+                <FadeInView key={course.id} delay={450 + index * 50} duration={250}>
+                  <TouchableOpacity 
+                    style={[styles.courseCard, { backgroundColor: theme.colors.card }]}
+                    onPress={() => {
+                      console.log('Navigating to course:', course.id, course.title);
+                      router.push(ROUTES.courseDetail(course.id));
+                    }}
+                  >
+                    <View style={styles.courseHeader}>
+                      <View style={styles.courseInfo}>
+                        <Text style={[styles.courseTitle, { color: theme.colors.text }]} numberOfLines={1}>{course.title}</Text>
+                        <Text style={[styles.courseSubject, { color: theme.colors.textSecondary }]} numberOfLines={1}>{course.subject}</Text>
+                      </View>
+                      <View style={styles.courseProgressContainer}>
+                        <Text style={[styles.courseProgress, { color: theme.colors.primary }]}>{course.progress}%</Text>
+                      </View>
                     </View>
-                  )}
-                </View>
-                <Text style={styles.hpHeroTitle}>Full HP-simulering</Text>
-                <Text style={styles.hpHeroSubtitle}>Träna en hel provdag — 160 frågor, 5 timmar</Text>
-                {hpReadiness > 0 && (
-                  <View style={styles.hpHeroScoreRow}>
-                    <Text style={styles.hpHeroScoreLabel}>Beräknad poäng</Text>
-                    <Text style={styles.hpHeroScoreValue}>{hpReadiness}</Text>
-                  </View>
-                )}
-                <View style={styles.hpHeroFooter}>
-                  <Text style={styles.hpHeroCta}>Starta simulering</Text>
-                  <ArrowRight size={16} color="white" />
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            {/* Verbal + Quantitative cards */}
-            <View style={styles.hpSectionRow}>
-              <TouchableOpacity
-                style={styles.hpSectionCard}
-                onPress={() => router.push(ROUTES.hpPractice('ORD') as never)}
-                activeOpacity={0.85}
-              >
-                <View style={styles.hpSectionHeader}>
-                  <Text style={styles.hpSectionTitle}>Verbal</Text>
-                  <View style={[styles.hpDifficulty, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-                    <Text style={[styles.hpDifficultyText, { color: PALETTE.green }]}>ORD · LÄS · ELF</Text>
-                  </View>
-                </View>
-                <View style={styles.hpMiniProgress}>
-                  <View
-                    style={[styles.hpMiniProgressFill, { width: `${verbalProgress}%` }]}
-                  />
-                </View>
-                <Text style={styles.hpMiniProgressText}>{verbalProgress}% snitt</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.hpSectionCard}
-                onPress={() => router.push(ROUTES.hpPractice('XYZ') as never)}
-                activeOpacity={0.85}
-              >
-                <View style={styles.hpSectionHeader}>
-                  <Text style={styles.hpSectionTitle}>Kvantitativ</Text>
-                  <View style={[styles.hpDifficulty, { backgroundColor: 'rgba(20, 184, 166, 0.1)' }]}>
-                    <Text style={[styles.hpDifficultyText, { color: PALETTE.teal }]}>XYZ · KVA · DTK</Text>
-                  </View>
-                </View>
-                <View style={styles.hpMiniProgress}>
-                  <View
-                    style={[styles.hpMiniProgressFill, { width: `${quantProgress}%`, backgroundColor: PALETTE.teal }]}
-                  />
-                </View>
-                <Text style={styles.hpMiniProgressText}>{quantProgress}% snitt</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SlideInView>
-
-        {/* ================================================================ */}
-        {/* 6. QUICK ACTIONS                                                 */}
-        {/* ================================================================ */}
-        <SlideInView direction="up" delay={350} duration={400}>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitleSmall}>Snabbåtkomst</Text>
-            <View style={styles.quickActionsGrid}>
-              <QuickActionTile
-                icon={Layers}
-                label="Flashcards"
-                color={PALETTE.green}
-                onPress={() => router.push('/smart-flashcards' as never)}
-              />
-              <QuickActionTile
-                icon={PenTool}
-                label="Quiz-generator"
-                color={PALETTE.teal}
-                onPress={() => router.push(ROUTES.generalChat)}
-              />
-              <QuickActionTile
-                icon={Brain}
-                label="AI Tutor"
-                color={PALETTE.cyan}
-                onPress={() => router.push(ROUTES.generalChat)}
-              />
-              <QuickActionTile
-                icon={Calendar}
-                label="Studieplan"
-                color={PALETTE.amber}
-                onPress={() => router.push(ROUTES.planning)}
-              />
-            </View>
-          </View>
-        </SlideInView>
-
-        {/* ================================================================ */}
-        {/* 7. PREMIUM UPGRADE                                               */}
-        {/* ================================================================ */}
-        <SlideInView direction="up" delay={400} duration={400}>
-          <View style={styles.section}>
-            {!isPremium ? (
-              <View style={styles.premiumCard}>
-                <LinearGradient
-                  colors={[PALETTE.green, PALETTE.greenDark] as [string, string]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.premiumGradient}
-                >
-                  <View style={styles.premiumDeco1} />
-                  <View style={styles.premiumDeco2} />
-                  <View style={styles.premiumContent}>
-                    <View style={styles.premiumHeaderRow}>
-                      <Crown size={24} color="white" />
-                      <Text style={styles.premiumTitle}>Premium</Text>
+                    <View style={[styles.progressBar, { backgroundColor: theme.colors.borderLight }]}>
+                      <View 
+                        style={[styles.progressFill, { 
+                          width: `${course.progress}%`,
+                          backgroundColor: theme.colors.primary
+                        }]} 
+                      />
                     </View>
-                    <Text style={styles.premiumSubtitle}>
-                      Lås upp allt i Studiestugan
-                    </Text>
-                    <View style={styles.premiumBullets}>
-                      <PremiumBullet text="AI Studievägledare" />
-                      <PremiumBullet text="Obegränsad HP-praktik" />
-                      <PremiumBullet text="Full statistik & insikter" />
-                      <PremiumBullet text="Full kursåtkomst" />
-                    </View>
-                    <TouchableOpacity
-                      style={styles.premiumCtaBtn}
-                      onPress={() => router.push(ROUTES.premium)}
-                      activeOpacity={0.9}
-                    >
-                      <Text style={styles.premiumCtaText}>Uppgradera till Premium</Text>
-                      <ArrowRight size={18} color={PALETTE.greenDark} />
-                    </TouchableOpacity>
-                  </View>
-                </LinearGradient>
-              </View>
+                  </TouchableOpacity>
+                </FadeInView>
+              ))
             ) : (
-              <View style={styles.premiumActiveCard}>
-                <BlurView intensity={40} tint="light" style={styles.premiumActiveBlur}>
-                  <View style={styles.premiumActiveContent}>
-                    <View style={styles.premiumActiveIcon}>
-                      <Crown size={20} color={PALETTE.amber} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.premiumActiveTitle}>Premium aktiv</Text>
-                      <Text style={styles.premiumActiveSub}>Du har full åtkomst till alla funktioner</Text>
-                    </View>
-                    <ChevronRight size={20} color={PALETTE.textMuted} />
-                  </View>
-                </BlurView>
+              <View style={styles.emptyState}>
+                <Target size={48} color={theme.colors.textMuted} />
+                <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Inga aktiva kurser</Text>
+                <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>Lägg till kurser för att komma igång</Text>
+                <TouchableOpacity 
+                  style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
+                  onPress={handleAddCourse}
+                >
+                  <Plus size={20} color="white" />
+                  <Text style={styles.addButtonText}>Lägg till kurs</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -1012,328 +919,214 @@ export default function HomeScreen() {
   );
 }
 
-// ============================================================================
-// SUB-COMPONENTS
-// ============================================================================
-const StatMiniCard = ({
-  icon: Icon,
-  value,
-  label,
-  color,
-  trend,
-}: {
-  icon: React.ComponentType<{ size: number; color: string }>;
-  value: string;
-  label: string;
-  color: string;
-  trend?: 'up' | 'down';
-}) => (
-  <View style={styles.statMiniCard}>
-    <View style={[styles.statMiniIcon, { backgroundColor: color + '15' }]}>
-      <Icon size={16} color={color} />
-    </View>
-    <Text style={styles.statMiniValue}>{value}</Text>
-    <Text style={styles.statMiniLabel}>{label}</Text>
-    {trend && (
-      <View style={[styles.statTrend, { backgroundColor: trend === 'up' ? PALETTE.green + '15' : PALETTE.rose + '15' }]}>
-        {trend === 'up' ? (
-          <TrendingUp size={10} color={PALETTE.green} />
-        ) : (
-          <TrendingDown size={10} color={PALETTE.rose} />
-        )}
-      </View>
-    )}
-  </View>
-);
-
-const QuickActionTile = ({
-  icon: Icon,
-  label,
-  color,
-  onPress,
-}: {
-  icon: React.ComponentType<{ size: number; color: string }>;
-  label: string;
-  color: string;
-  onPress: () => void;
-}) => (
-  <TouchableOpacity
-    style={styles.quickActionTile}
-    onPress={onPress}
-    activeOpacity={0.85}
-  >
-    <View style={[styles.quickActionIcon, { backgroundColor: color + '15' }]}>
-      <Icon size={22} color={color} />
-    </View>
-    <Text style={styles.quickActionLabel}>{label}</Text>
-  </TouchableOpacity>
-);
-
-const PremiumBullet = ({ text }: { text: string }) => (
-  <View style={styles.premiumBulletRow}>
-    <View style={styles.premiumBulletCheck}>
-      <Check size={12} color="white" />
-    </View>
-    <Text style={styles.premiumBulletText}>{text}</Text>
-  </View>
-);
-
-// ============================================================================
-// STYLES
-// ============================================================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: PALETTE.bgWarm,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 100,
   },
-
-  // --- Hero ---
-  heroSection: {
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 8,
-    overflow: 'hidden',
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
-  orb1: {
-    position: 'absolute',
-    top: 10,
-    right: -40,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: PALETTE.green,
-    opacity: 0.08,
+  headerLogo: {
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  orb2: {
-    position: 'absolute',
-    top: 120,
-    left: -50,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: PALETTE.teal,
-    opacity: 0.07,
+  logo: {
+    width: 100,
+    height: 100,
   },
-  heroTopBar: {
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerLeft: {
+    flex: 1,
+    marginRight: 16,
+  },
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    zIndex: 1,
+    gap: 12,
   },
   greeting: {
-    fontSize: 28,
-    fontWeight: '800' as const,
-    color: PALETTE.textDark,
-    letterSpacing: -0.8,
-    marginBottom: 2,
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+    letterSpacing: -0.5,
   },
-  greetingSub: {
-    fontSize: 15,
-    color: PALETTE.textLight,
-    fontWeight: '500' as const,
-  },
-  avatarButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    overflow: 'hidden',
-    shadowColor: PALETTE.green,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  avatarFallback: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: PALETTE.borderLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  // --- Hero card ---
-  heroCard: {
-    borderRadius: 28,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: PALETTE.borderGlass,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 6,
-  },
-  heroBlur: {
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-  heroCardContent: {
-    padding: 24,
-  },
-  heroBadges: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: PALETTE.borderLight,
-  },
-  heroBadgeText: {
-    fontSize: 12,
-    fontWeight: '700' as const,
-    color: PALETTE.greenDark,
-  },
-  heroGoalTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: PALETTE.textLight,
-    marginBottom: 6,
-  },
-  heroGoalRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 12,
-  },
-  heroGoalNumber: {
-    fontSize: 36,
-    fontWeight: '800' as const,
-    color: PALETTE.textDark,
-    letterSpacing: -1,
-  },
-  heroGoalDivider: {
+  subtitle: {
     fontSize: 16,
-    fontWeight: '500' as const,
-    color: PALETTE.textLight,
-    marginLeft: 8,
+    fontWeight: '400',
   },
-  heroProgressBar: {
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: PALETTE.borderLight,
-    overflow: 'hidden' as const,
-    marginBottom: 14,
-  },
-  heroProgressFill: {
-    height: '100%',
-    borderRadius: 5,
-    backgroundColor: PALETTE.green,
-  },
-  heroInsight: {
-    fontSize: 14,
-    color: PALETTE.textMid,
-    lineHeight: 20,
-    marginBottom: 20,
-    fontWeight: '500' as const,
-  },
-  heroCta: {
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
+    gap: 4,
+  },
+  premiumText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  profileButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     overflow: 'hidden',
-    shadowColor: PALETTE.green,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 6,
   },
-  heroCtaGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  profileButtonFallback: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 8,
+    alignItems: 'center',
   },
-  heroCtaText: {
-    color: 'white',
-    fontSize: 17,
-    fontWeight: '700' as const,
-    letterSpacing: 0.3,
-  },
-
-  // --- Demo banner ---
   demoBanner: {
-    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
-    marginTop: 12,
   },
   demoText: {
     fontSize: 14,
-    fontWeight: '600' as const,
-    color: PALETTE.cyan,
+    fontWeight: '600',
   },
-
-  // --- Stats ---
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 10,
-    marginBottom: 10,
-  },
-  statMiniCard: {
-    flex: 1,
-    backgroundColor: PALETTE.white,
-    borderRadius: 20,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: PALETTE.borderLight,
+  heroCard: {
+    marginHorizontal: 24,
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 44,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-    position: 'relative',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  statMiniIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  heroContent: {
+    alignItems: 'center',
+  },
+  heroStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  heroStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  heroStatIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
-  statMiniValue: {
-    fontSize: 18,
-    fontWeight: '800' as const,
-    color: PALETTE.textDark,
-    letterSpacing: -0.3,
+  heroStatNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: 'white',
+    marginBottom: 4,
   },
-  statMiniLabel: {
-    fontSize: 11,
-    fontWeight: '500' as const,
-    color: PALETTE.textLight,
+  heroStatLabel: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  heroStatSubtext: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontWeight: '400',
+    textAlign: 'center',
     marginTop: 2,
   },
-  statTrend: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+  heroStatDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginHorizontal: 16,
   },
-
-  // --- Section ---
+  quickActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    marginBottom: 44,
+    gap: 16,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  actionButtonFull: {
+    flex: undefined,
+    width: '100%',
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  miniStatsGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    marginBottom: 48,
+    gap: 12,
+  },
+  miniStatCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  miniStatNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  miniStatLabel: {
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
   section: {
-    paddingHorizontal: 20,
-    marginTop: 32,
+    paddingHorizontal: 24,
+    marginBottom: 44,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1341,613 +1134,1215 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   sectionTitle: {
     fontSize: 22,
-    fontWeight: '800' as const,
-    color: PALETTE.textDark,
+    fontWeight: '700',
     letterSpacing: -0.5,
-  },
-  sectionTitleSmall: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: PALETTE.textDark,
-    marginBottom: 14,
-    letterSpacing: -0.3,
   },
   seeAllText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: PALETTE.green,
-  },
-
-  // --- Courses ---
-  courseCard: {
-    flexDirection: 'row',
-    backgroundColor: PALETTE.white,
-    borderRadius: 24,
-    padding: 16,
-    marginBottom: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: PALETTE.borderLight,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  courseCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  courseIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  courseTitle: {
     fontSize: 16,
-    fontWeight: '700' as const,
-    color: PALETTE.textDark,
-    marginBottom: 2,
+    fontWeight: '600',
   },
-  courseSubtitle: {
-    fontSize: 13,
-    color: PALETTE.textLight,
-    marginBottom: 2,
-  },
-  courseLastStudied: {
-    fontSize: 11,
-    color: PALETTE.textMuted,
-    fontWeight: '500' as const,
-  },
-  courseRight: {
-    alignItems: 'flex-end',
-    gap: 6,
-    minWidth: 70,
-  },
-  courseProgressText: {
-    fontSize: 14,
-    fontWeight: '800' as const,
-    color: PALETTE.green,
-  },
-  courseProgressBar: {
-    width: 60,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: PALETTE.borderLight,
-    overflow: 'hidden' as const,
-  },
-  courseProgressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  courseContinueBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    backgroundColor: PALETTE.borderLight,
-  },
-  courseContinueText: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-    color: PALETTE.green,
-  },
-  customCoursesContainer: {
-    marginTop: 20,
-  },
-  customCoursesLabel: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: PALETTE.textLight,
-    marginBottom: 12,
-    letterSpacing: 0.3,
-  },
-  addCourseCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: PALETTE.borderLight,
-    borderStyle: 'dashed' as const,
-    marginTop: 8,
-  },
-  addCourseText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: PALETTE.green,
-  },
-
-  // --- Exams ---
-  examsContainer: {
-    marginTop: 24,
-  },
-  examCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: PALETTE.white,
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 10,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: PALETTE.borderLight,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  examDateBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  examDateDay: {
-    fontSize: 18,
-    fontWeight: '800' as const,
-  },
-  examDateMonth: {
-    fontSize: 10,
-    fontWeight: '700' as const,
-  },
-  examTitle: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: PALETTE.textDark,
-    marginBottom: 2,
-  },
-  examMeta: {
-    fontSize: 12,
-    color: PALETTE.textLight,
-  },
-  showMoreBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-  },
-  showMoreText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: PALETTE.green,
-  },
-
-  // --- Study tips ---
-  tipFeaturedCard: {
+  hpCard: {
+    marginHorizontal: 24,
+    marginBottom: 28,
     borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: PALETTE.borderGlass,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  tipBlur: {
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  tipFeaturedContent: {
-    flexDirection: 'row',
-    padding: 20,
-    gap: 14,
-    alignItems: 'flex-start',
-  },
-  tipFeaturedEmoji: {
-    fontSize: 32,
-  },
-  tipFeaturedLabel: {
-    fontSize: 10,
-    fontWeight: '800' as const,
-    color: PALETTE.green,
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  tipFeaturedTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    color: PALETTE.textDark,
-    marginBottom: 6,
-  },
-  tipFeaturedText: {
-    fontSize: 13,
-    color: PALETTE.textMid,
-    lineHeight: 19,
-  },
-  tipSmallRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  tipSmallCard: {
-    flex: 1,
-    backgroundColor: PALETTE.white,
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: PALETTE.borderLight,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  tipSmallTitle: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: PALETTE.textDark,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  tipSmallText: {
-    fontSize: 12,
-    color: PALETTE.textLight,
-    lineHeight: 17,
-  },
-
-  // --- HP Hub ---
-  hpHeroCard: {
-    borderRadius: 28,
-    overflow: 'hidden',
-    marginBottom: 12,
-    shadowColor: PALETTE.green,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  hpHeroGradient: {
-    padding: 24,
-    borderRadius: 28,
     overflow: 'hidden' as const,
-    position: 'relative' as const,
-  },
-  hpHeroDeco1: {
-    position: 'absolute' as const,
-    top: -40,
-    right: -40,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  hpHeroDeco2: {
-    position: 'absolute' as const,
-    bottom: -30,
-    left: -30,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
-  hpHeroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    zIndex: 1,
-  },
-  hpHeroIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
-  hpHeroBadge: {
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  hpHeroBadgeText: {
-    fontSize: 12,
-    fontWeight: '700' as const,
-    color: 'rgba(255,255,255,0.9)',
-  },
-  hpHeroTitle: {
-    fontSize: 22,
-    fontWeight: '800' as const,
-    color: 'white',
-    marginBottom: 4,
-    letterSpacing: -0.5,
-    zIndex: 1,
-  },
-  hpHeroSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    lineHeight: 20,
-    marginBottom: 16,
-    zIndex: 1,
-  },
-  hpHeroScoreRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginBottom: 16,
-    zIndex: 1,
-  },
-  hpHeroScoreLabel: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '500' as const,
-  },
-  hpHeroScoreValue: {
-    fontSize: 28,
-    fontWeight: '800' as const,
-    color: 'white',
-    letterSpacing: -0.5,
-  },
-  hpHeroFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.15)',
-    paddingTop: 14,
-    zIndex: 1,
-  },
-  hpHeroCta: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: 'white',
-  },
-
-  hpSectionRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  hpSectionCard: {
-    flex: 1,
-    backgroundColor: PALETTE.white,
-    borderRadius: 22,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: PALETTE.borderLight,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  hpSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  hpSectionTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    color: PALETTE.textDark,
-  },
-  hpDifficulty: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  hpDifficultyText: {
-    fontSize: 9,
-    fontWeight: '700' as const,
-    letterSpacing: 0.5,
-  },
-  hpMiniProgress: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: PALETTE.borderLight,
-    overflow: 'hidden' as const,
-    marginBottom: 6,
-  },
-  hpMiniProgressFill: {
-    height: '100%',
-    borderRadius: 3,
-    backgroundColor: PALETTE.green,
-  },
-  hpMiniProgressText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: PALETTE.textLight,
-  },
-
-  // --- Quick Actions ---
-  quickActionsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  quickActionTile: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: PALETTE.white,
-    borderRadius: 20,
-    paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: PALETTE.borderLight,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  quickActionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  quickActionLabel: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: PALETTE.textMid,
-    textAlign: 'center',
-  },
-
-  // --- Premium ---
-  premiumCard: {
-    borderRadius: 28,
-    overflow: 'hidden',
-    shadowColor: PALETTE.green,
-    shadowOffset: { width: 0, height: 8 },
+    shadowColor: '#4338CA',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
-    shadowRadius: 24,
+    shadowRadius: 16,
     elevation: 8,
   },
-  premiumGradient: {
-    borderRadius: 28,
-    overflow: 'hidden' as const,
+  hpCardGradient: {
     padding: 24,
+    paddingBottom: 20,
+    borderRadius: 24,
+    overflow: 'hidden',
     position: 'relative' as const,
+    minHeight: 220,
   },
-  premiumDeco1: {
+  hpCardInnerShadow: {
+    display: 'none' as const,
+  },
+  hpCardDecoCircle1: {
     position: 'absolute' as const,
     top: -30,
     right: -30,
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  premiumDeco2: {
+  hpCardDecoCircle2: {
     position: 'absolute' as const,
     bottom: -20,
     left: -20,
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
-  premiumContent: {
-    zIndex: 1,
+  hpCard3dBottom: {
+    display: 'none' as const,
   },
-  premiumHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  premiumTitle: {
-    fontSize: 22,
-    fontWeight: '800' as const,
-    color: 'white',
-    letterSpacing: -0.5,
-  },
-  premiumSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.85)',
-    marginBottom: 18,
-  },
-  premiumBullets: {
-    gap: 10,
-    marginBottom: 24,
-  },
-  premiumBulletRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  premiumBulletCheck: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  premiumBulletText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: 'white',
-  },
-  premiumCtaBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: 'white',
-    paddingVertical: 15,
-    borderRadius: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  premiumCtaText: {
-    fontSize: 16,
-    fontWeight: '800' as const,
-    color: PALETTE.greenDark,
-  },
-
-  // --- Premium Active ---
-  premiumActiveCard: {
-    borderRadius: 22,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: PALETTE.borderGlass,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  premiumActiveBlur: {
-    borderRadius: 22,
-    overflow: 'hidden',
-  },
-  premiumActiveContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 18,
-    gap: 14,
-  },
-  premiumActiveIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  premiumActiveTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: PALETTE.textDark,
-    marginBottom: 2,
-  },
-  premiumActiveSub: {
-    fontSize: 13,
-    color: PALETTE.textLight,
-  },
-
-  // --- Skeleton ---
-  skeletonHeroTop: {
+  hpCardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 16,
+    zIndex: 1,
+  },
+  hpIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  hpCardTitle: {
+    fontSize: 24,
+    fontWeight: '800' as const,
+    color: 'white',
+    marginBottom: 6,
+    letterSpacing: -0.5,
+    zIndex: 1,
+  },
+  hpCardSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 20,
+    marginBottom: 16,
+    zIndex: 1,
+  },
+  hpCardChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 18,
+    zIndex: 1,
+  },
+  hpChip: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  hpChipText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: 'rgba(255,255,255,0.9)',
+    letterSpacing: 0.5,
+  },
+  hpCardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
+    paddingTop: 14,
+    zIndex: 1,
+  },
+  hpFooterText: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: 'white',
+    letterSpacing: 0.3,
+  },
+  hpPremiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  hpPremiumText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#FFD700',
+  },
+  compactXpCard: {
+    marginHorizontal: 24,
+    marginBottom: 44,
+    borderRadius: 16,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  compactXpBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  compactXpEmoji: {
+    fontSize: 24,
+  },
+  compactXpInfo: {
+    flex: 1,
+  },
+  compactXpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  compactXpLevel: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  compactXpTierBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  compactXpTierText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: 'white',
+  },
+  compactXpProgressBar: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden' as const,
+    marginBottom: 6,
+  },
+  compactXpProgressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  compactXpProgressText: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+  },
+  compactXpRight: {
+    alignItems: 'center' as const,
+    gap: 4,
+  },
+  compactXpTotal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  compactXpTotalNumber: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  levelCard: {
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  levelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  levelBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  levelInfo: {
+    flex: 1,
+  },
+  levelTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  levelSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  achievementsButton: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  achievementsButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  recentAchievements: {
+    borderTopWidth: 1,
+    paddingTop: 16,
+  },
+  recentAchievementsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  achievementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  achievementIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  achievementText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  courseCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  courseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  courseInfo: {
+    flex: 1,
+  },
+  courseTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  courseSubject: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  courseProgressContainer: {
+    alignItems: 'flex-end',
+  },
+  courseProgress: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  progressBar: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  addButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  tipsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  compactTipCard: {
+    width: (width - 72) / 2,
+    height: 130,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  compactTipIcon: {
+    fontSize: 20,
+    marginBottom: 8,
+  },
+  compactTipTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 18,
+    height: 36,
+  },
+  compactTipDifficulty: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  compactTipDifficultyText: {
+    fontSize: 9,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  techniquesGrid: {
+    gap: 12,
+  },
+  compactTechniqueCard: {
+    borderRadius: 12,
+    padding: 16,
+    height: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  compactTechniqueIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  compactTechniqueTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  compactTimeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    gap: 3,
+    marginRight: 8,
+  },
+  compactTimeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  compactArrow: {
+    opacity: 0.6,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  seeAllButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  premiumBanner: {
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  premiumBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  premiumBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  premiumBannerText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  premiumBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  premiumBannerSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  premiumBannerButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  premiumBannerButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  techniqueCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  techniqueHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  techniqueLeft: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+  techniqueIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  techniqueInfo: {
+    flex: 1,
+  },
+  techniqueTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  techniqueDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  techniqueRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  timeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  timeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  stepsContainer: {
+    gap: 8,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stepNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepNumberText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stepText: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  examCard: {
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  examCardContent: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  examDateBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  examDateDay: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    lineHeight: 24,
+  },
+  examDateMonth: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    letterSpacing: 0.5,
+  },
+  examInfo: {
+    flex: 1,
+  },
+  examTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  examMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  examMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  examMetaText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  urgentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  urgentText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
+  addExamPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  addExamIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  addExamContent: {
+    flex: 1,
+  },
+  addExamTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  addExamSubtitle: {
+    fontSize: 13,
+    fontWeight: '400' as const,
+  },
+  xpLevelCard: {
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  xpLevelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  xpLevelBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    marginRight: 14,
+    position: 'relative' as const,
+  },
+  xpLevelEmoji: {
+    fontSize: 24,
+  },
+  xpLevelNumberBadge: {
+    position: 'absolute' as const,
+    bottom: -4,
+    right: -4,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  xpLevelNumber: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
+  xpLevelInfo: {
+    flex: 1,
+  },
+  xpLevelTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 6,
+  },
+  xpTierBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    alignSelf: 'flex-start' as const,
+  },
+  xpTierText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  xpTotalContainer: {
+    alignItems: 'flex-end' as const,
+  },
+  xpTotalNumber: {
+    fontSize: 24,
+    fontWeight: '800' as const,
+  },
+  xpTotalLabel: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+    marginTop: 2,
+  },
+  xpProgressContainer: {
+    marginTop: 4,
+  },
+  xpProgressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  xpProgressCurrent: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  xpProgressRequired: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  xpProgressTrack: {
+    height: 10,
+    borderRadius: 5,
+    overflow: 'hidden' as const,
+  },
+  xpProgressFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  xpNextLevelPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
+  xpNextLevelText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  challengesHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  unclaimedBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  unclaimedBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
+  challengesRefreshText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  challengeEmojiContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  challengeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap' as const,
+  },
+  difficultyBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  difficultyText: {
+    fontSize: 9,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+  },
+  emptyChallenges: {
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyChallengesText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  emptyChallengesSubtext: {
+    fontSize: 13,
+    fontWeight: '400' as const,
+  },
+  insightsCard: {
+    marginHorizontal: 24,
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  insightsCardGradient: {
+    padding: 20,
+    position: 'relative' as const,
+  },
+  insightsCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  insightsCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
+  },
+  insightsIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  insightsCardInfo: {
+    flex: 1,
+  },
+  insightsCardTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: 'white',
+    marginBottom: 4,
+  },
+  insightsCardSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 18,
+  },
+  insightsCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+  },
+  insightsMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  insightsMetaText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  aiToolsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  aiToolCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  aiToolIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  aiToolTitle: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  aiToolDesc: {
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  diagnosCard: {
+    marginHorizontal: 24,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  diagnosCardGradient: {
+    padding: 20,
+    position: 'relative' as const,
+    overflow: 'hidden',
+  },
+  diagnosDecoCircle1: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: -30,
+    right: -20,
+  },
+  diagnosDecoCircle2: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    bottom: -20,
+    left: 40,
+  },
+  diagnosCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  diagnosLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
+  },
+  diagnosIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  diagnosTextBlock: {
+    flex: 1,
+  },
+  diagnosTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: 'white',
+    marginBottom: 4,
+  },
+  diagnosSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.82)',
+    lineHeight: 18,
+  },
+  diagnosPillRow: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  diagnosPill: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  diagnosPillText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: 'rgba(255,255,255,0.95)',
+  },
+  examStudyPlanIconBtn: {
+    alignSelf: 'center',
+    marginLeft: 10,
+  },
+  examStudyPlanIconGradient: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // AI Home Card
+  aiHomeCard: {
+    borderRadius: 22,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  aiHomeCardGradient: {
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(99,102,241,0.12)',
+    borderRadius: 22,
+  },
+  aiHomeCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  aiHomeCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  aiHomeIconBg: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  aiHomeCardText: {
+    flex: 1,
+  },
+  aiHomeCardTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  aiHomeCardSub: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  aiHomeButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  aiHomeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 6,
+  },
+  aiHomeBtnText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  hpMetaDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    alignSelf: 'center',
+  },
+  // ─── New styles for restructured home screen ───
+  examCountBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 4,
+  },
+  examCountText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
+  showMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    gap: 6,
+  },
+  showMoreText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  twoColumnRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    gap: 12,
+  },
+  twoColCard: {
+    flex: 1,
+    borderRadius: 18,
+    overflow: 'hidden' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  twoColGradient: {
+    padding: 16,
+    minHeight: 160,
+    justifyContent: 'space-between' as const,
+  },
+  twoColIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  twoColTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: 'white',
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  twoColDesc: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.75)',
+    lineHeight: 15,
+    marginBottom: 10,
+  },
+  twoColMiniChips: {
+    marginBottom: 12,
+    gap: 4,
+  },
+  twoColMiniChipText: {
+    fontSize: 10,
+    fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.65)',
+    letterSpacing: 0.3,
+    marginBottom: 2,
+  },
+  twoColFooter: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
+    paddingTop: 10,
+  },
+  twoColCta: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: 'white',
+  },
+  twoColMiniPills: {
+    flexDirection: 'row',
+    gap: 5,
+    flexWrap: 'wrap' as const,
+  },
+  twoColMiniPillText: {
+    fontSize: 10,
+    fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    overflow: 'hidden' as const,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+  },
+  tabItem: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center' as const,
+  },
+  tabItemText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });

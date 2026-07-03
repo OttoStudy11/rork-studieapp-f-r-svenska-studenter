@@ -29,27 +29,20 @@ import {
   BarChart3,
   ArrowLeft,
   Sparkles,
-  Zap,
   Star,
   TrendingUp,
-  Award,
   Unlock,
   Users,
   AlertCircle,
   RefreshCw,
   Shield,
   ExternalLink,
-  Palette,
-  User,
   Brain,
-  Flame,
   BookOpen,
   Target,
   Layers,
-  Clock,
   Lock,
   ChevronDown,
-  Quote,
 } from 'lucide-react-native';
 import { FadeInView, SlideInView, AnimatedPressable } from '@/components/Animations';
 import {
@@ -73,26 +66,26 @@ const TERMS_URL = 'https://studiestugan.se/terms';
 const PRIVACY_URL = 'https://studiestugan.se/privacy';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Warm Scandinavian light palette
+// Warm Scandinavian light palette — green primary (matches auth/app theme)
 const PALETTE = {
   bgWarm: '#FAFAF8',
   bgSoft: '#F7F7F5',
   white: '#FFFFFF',
-  indigo: '#6366F1',
-  indigoDark: '#4F46E5',
-  indigoLight: '#818CF8',
-  purple: '#8B5CF6',
-  purpleLight: '#A78BFA',
+  green: '#10B981',
+  greenDark: '#059669',
+  greenLight: '#34D399',
+  teal: '#14B8A6',
+  tealLight: '#5EEAD4',
   emerald: '#10B981',
   emeraldDark: '#059669',
   amber: '#F59E0B',
   rose: '#F43F5E',
   cyan: '#06B6D4',
-  textDark: '#1A1A2E',
-  textMid: '#4A4A5E',
-  textLight: '#7A7A8E',
-  textMuted: '#A0A0B0',
-  borderLight: 'rgba(99, 102, 241, 0.08)',
+  textDark: '#1A2E25',
+  textMid: '#3A4A42',
+  textLight: '#6A7A72',
+  textMuted: '#9AAAa2',
+  borderLight: 'rgba(16, 185, 129, 0.10)',
   borderGlass: 'rgba(255, 255, 255, 0.6)',
   glassBg: 'rgba(255, 255, 255, 0.72)',
   glassBgLight: 'rgba(255, 255, 255, 0.55)',
@@ -132,15 +125,6 @@ interface StatItem {
   gradient: readonly [string, string];
 }
 
-interface Testimonial {
-  name: string;
-  role: string;
-  quote: string;
-  rating: number;
-  avatarColor: readonly [string, string];
-  initials: string;
-}
-
 interface FAQItem {
   question: string;
   answer: string;
@@ -154,21 +138,21 @@ const FEATURES: FeatureItem[] = [
     icon: Sparkles,
     title: 'Obegränsad AI',
     description: 'Generera quiz och flashcards utan veckogräns',
-    gradient: ['#6366F1', '#818CF8'] as const,
+    gradient: ['#10B981', '#34D399'] as const,
     badge: 'Nytt',
   },
   {
     icon: Layers,
     title: 'AI Flashcards',
     description: 'Obegränsade AI-flashcards med spaced repetition',
-    gradient: ['#8B5CF6', '#A78BFA'] as const,
+    gradient: ['#14B8A6', '#5EEAD4'] as const,
     badge: 'AI',
   },
   {
     icon: Target,
     title: 'AI Quiz-generator',
     description: 'Skapa quiz från valfritt studiematerial på sekunder',
-    gradient: ['#06B6D4', '#22D3EE'] as const,
+    gradient: ['#059669', '#10B981'] as const,
     badge: 'AI',
   },
   {
@@ -178,41 +162,17 @@ const FEATURES: FeatureItem[] = [
     gradient: ['#F59E0B', '#FBBF24'] as const,
   },
   {
-    icon: BookOpen,
-    title: 'Full ordbank',
-    description: 'Komplett ordlista med SRS och minnestips',
-    gradient: ['#10B981', '#34D399'] as const,
-  },
-  {
-    icon: Target,
-    title: 'Personliga studieplaner',
-    description: 'AI skapar en plan anpassad efter dina mål',
-    gradient: ['#F43F5E', '#FB7185'] as const,
+    icon: Brain,
+    title: 'AI Studiecoach',
+    description: 'Personlig AI-coach som guidar dig mot dina mål',
+    gradient: ['#10B981', '#059669'] as const,
+    badge: 'AI',
   },
   {
     icon: BarChart3,
     title: 'Avancerad statistik',
     description: 'Detaljerade grafer, trender och prediktioner',
-    gradient: ['#6366F1', '#4F46E5'] as const,
-  },
-  {
-    icon: Brain,
-    title: 'AI Studiecoach',
-    description: 'Personlig AI-coach som guidar dig mot dina mål',
-    gradient: ['#8B5CF6', '#7C3AED'] as const,
-    badge: 'AI',
-  },
-  {
-    icon: Flame,
-    title: 'Studie-streaks',
-    description: 'Håll motivation uppe med streaks och belöningar',
-    gradient: ['#F59E0B', '#EA580C'] as const,
-  },
-  {
-    icon: Zap,
-    title: 'Snabbare inlärning',
-    description: 'Smart repetition som maximerar retention',
-    gradient: ['#06B6D4', '#0891B2'] as const,
+    gradient: ['#34D399', '#10B981'] as const,
   },
 ];
 
@@ -221,67 +181,28 @@ const COMPARISON: ComparisonRow[] = [
   { label: 'AI Flashcards', free: false, premium: true },
   { label: 'AI Quiz-generator', free: false, premium: true },
   { label: 'Högskoleprov-övning', free: 'Begränsat', premium: 'Komplett' },
-  { label: 'Ordbank', free: 'Grundläggande', premium: 'Fullständig' },
-  { label: 'Studieplaner', free: false, premium: true },
   { label: 'Avancerad statistik', free: false, premium: true },
   { label: 'AI Studiecoach', free: false, premium: true },
-  { label: 'Antal kurser', free: '3', premium: 'Obegränsat' },
-  { label: 'Anpassade teman', free: false, premium: true },
-  { label: 'Tävlingsläge', free: false, premium: true },
-  { label: 'Premium-avatarer', free: false, premium: true },
 ];
 
 const STATS: StatItem[] = [
   {
-    value: '2 500+',
+    value: '3 000+',
     label: 'Studenter',
     icon: Users,
-    gradient: ['#6366F1', '#818CF8'] as const,
-  },
-  {
-    value: '200+',
-    label: 'Premium-medlemmar',
-    icon: Crown,
-    gradient: ['#F59E0B', '#FBBF24'] as const,
+    gradient: ['#10B981', '#34D399'] as const,
   },
   {
     value: '4.8★',
     label: 'Snittbetyg',
     icon: Star,
-    gradient: ['#10B981', '#34D399'] as const,
+    gradient: ['#F59E0B', '#FBBF24'] as const,
   },
   {
     value: '10k+',
     label: 'Studiesessioner',
     icon: TrendingUp,
-    gradient: ['#8B5CF6', '#A78BFA'] as const,
-  },
-];
-
-const TESTIMONIALS: Testimonial[] = [
-  {
-    name: 'Erik Lindqvist',
-    role: 'HP-student',
-    quote: 'Höjde mitt HP-resultat med 0.6 på bara två månader. AI-coachen gav mig exakt det jag behövde fokusera på.',
-    rating: 5,
-    avatarColor: ['#6366F1', '#818CF8'] as const,
-    initials: 'EL',
-  },
-  {
-    name: 'Sofia Andersson',
-    role: 'Gymnasiet – SAES',
-    quote: 'Studiestugan har helt förändrat hur jag pluggar. Flashcards och quiz sparar mig timmar varje vecka.',
-    rating: 5,
-    avatarColor: ['#8B5CF6', '#A78BFA'] as const,
-    initials: 'SA',
-  },
-  {
-    name: 'Johan Bergström',
-    role: 'Premium-användare',
-    quote: 'Värt varje krona. Statistiken visar exakt var jag står och streaks håller mig motiverad varje dag.',
-    rating: 5,
-    avatarColor: ['#10B981', '#34D399'] as const,
-    initials: 'JB',
+    gradient: ['#14B8A6', '#5EEAD4'] as const,
   },
 ];
 
@@ -581,11 +502,11 @@ export default function PremiumScreen() {
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.premiumUserScroll}>
             {/* Decorative gradient header */}
             <LinearGradient
-              colors={[PALETTE.indigo, PALETTE.purple]}
+              colors={[PALETTE.green, PALETTE.teal]}
               style={styles.premiumUserHeader}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-            >
+           >
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => router.back()}
@@ -675,7 +596,7 @@ export default function PremiumScreen() {
           <View style={styles.heroSection}>
             {/* Animated gradient background */}
             <LinearGradient
-              colors={[PALETTE.bgWarm, '#F0F0FF', PALETTE.bgSoft]}
+              colors={[PALETTE.bgWarm, '#E8F6F0', PALETTE.bgSoft]}
               style={styles.heroBg}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
@@ -719,7 +640,7 @@ export default function PremiumScreen() {
             <FadeInView delay={100}>
               <View style={styles.premiumBadge}>
                 <BlurView intensity={30} tint="light" style={styles.premiumBadgeBlur}>
-                  <Sparkles size={14} color={PALETTE.indigo} />
+                  <Sparkles size={14} color={PALETTE.green} />
                   <Text style={styles.premiumBadgeText}>PREMIUM</Text>
                 </BlurView>
               </View>
@@ -729,7 +650,7 @@ export default function PremiumScreen() {
             <FadeInView delay={200}>
               <Animated.View style={[styles.heroCrownWrap, { transform: [{ scale: pulseAnim }] }]}>
                 <LinearGradient
-                  colors={[PALETTE.indigo, PALETTE.purple]}
+                  colors={[PALETTE.green, PALETTE.teal]}
                   style={styles.heroCrownCircle}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -759,7 +680,7 @@ export default function PremiumScreen() {
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={[PALETTE.indigo, PALETTE.purple]}
+                  colors={[PALETTE.green, PALETTE.teal]}
                   style={styles.ctaGradientFill}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
@@ -791,7 +712,7 @@ export default function PremiumScreen() {
                 </Text>
                 {loadError && (
                   <TouchableOpacity onPress={handleRetry} style={styles.retryBtn}>
-                    <RefreshCw size={15} color={PALETTE.indigo} />
+                    <RefreshCw size={15} color={PALETTE.green} />
                     <Text style={styles.retryText}>Försök igen</Text>
                   </TouchableOpacity>
                 )}
@@ -807,8 +728,8 @@ export default function PremiumScreen() {
               <View style={styles.valueGrid}>
                 <FadeInView delay={100}>
                   <View style={styles.glassCardCentered}>
-                    <View style={[styles.valueIconWrap, { backgroundColor: PALETTE.indigo + '15' }]}>
-                      <Unlock size={22} color={PALETTE.indigo} />
+                    <View style={[styles.valueIconWrap, { backgroundColor: PALETTE.green + '15' }]}>
+                      <Unlock size={22} color={PALETTE.green} />
                     </View>
                     <Text style={styles.valueNumber}>10+</Text>
                     <Text style={styles.valueLabel}>Premium-funktioner</Text>
@@ -825,8 +746,8 @@ export default function PremiumScreen() {
                 </FadeInView>
                 <FadeInView delay={300}>
                   <View style={styles.glassCardCentered}>
-                    <View style={[styles.valueIconWrap, { backgroundColor: PALETTE.purple + '15' }]}>
-                      <Sparkles size={22} color={PALETTE.purple} />
+                    <View style={[styles.valueIconWrap, { backgroundColor: PALETTE.teal + '15' }]}>
+                      <Sparkles size={22} color={PALETTE.teal} />
                     </View>
                     <Text style={styles.valueNumber}>AI</Text>
                     <Text style={styles.valueLabel}>Assisterad</Text>
@@ -865,7 +786,7 @@ export default function PremiumScreen() {
                             styles.featureBadgeSmall,
                             {
                               backgroundColor: feature.badge === 'AI'
-                                ? PALETTE.indigo + '15'
+                                ? PALETTE.teal + '15'
                                 : feature.badge === 'Nytt'
                                 ? PALETTE.emerald + '15'
                                 : PALETTE.amber + '15',
@@ -875,7 +796,7 @@ export default function PremiumScreen() {
                               styles.featureBadgeSmallText,
                               {
                                 color: feature.badge === 'AI'
-                                  ? PALETTE.indigo
+                                  ? PALETTE.teal
                                   : feature.badge === 'Nytt'
                                   ? PALETTE.emerald
                                   : PALETTE.amber,
@@ -902,9 +823,9 @@ export default function PremiumScreen() {
                 disabled={!canPurchase}
                 activeOpacity={0.85}
               >
-                <Crown size={18} color={PALETTE.indigo} />
+                <Crown size={18} color={PALETTE.green} />
                 <Text style={styles.secondaryCTAText}>Starta gratis provperiod</Text>
-                <ArrowLeft size={16} color={PALETTE.indigo} style={{ transform: [{ rotate: '180deg' }] }} />
+                <ArrowLeft size={16} color={PALETTE.green} style={{ transform: [{ rotate: '180deg' }] }} />
               </AnimatedPressable>
             </FadeInView>
           </View>
@@ -928,7 +849,7 @@ export default function PremiumScreen() {
                   </View>
                   <View style={styles.comparisonColFeatured}>
                     <LinearGradient
-                      colors={[PALETTE.indigo, PALETTE.purple]}
+                      colors={[PALETTE.green, PALETTE.teal]}
                       style={styles.comparisonFeaturedBadge}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
@@ -965,7 +886,7 @@ export default function PremiumScreen() {
                     <View style={styles.comparisonColFeatured}>
                       {typeof row.premium === 'boolean' ? (
                         row.premium ? (
-                          <Check size={18} color={PALETTE.indigo} strokeWidth={2.5} />
+                          <Check size={18} color={PALETTE.green} strokeWidth={2.5} />
                         ) : (
                           <X size={18} color={PALETTE.textMuted} strokeWidth={2.5} />
                         )
@@ -1009,45 +930,6 @@ export default function PremiumScreen() {
           </View>
 
           {/* ================================================================
-              SECTION 6: TESTIMONIALS
-          ================================================================= */}
-          <View style={styles.sectionWrap}>
-            <SlideInView direction="up" delay={0}>
-              <Text style={styles.sectionHeading}>Vad våra studenter säger</Text>
-            </SlideInView>
-
-            <View style={styles.testimonialsContainer}>
-              {TESTIMONIALS.map((testimonial, index) => (
-                <SlideInView key={index} direction="up" delay={index * 120}>
-                  <View style={styles.testimonialCard}>
-                    <Quote size={24} color={PALETTE.indigo + '30'} style={styles.testimonialQuoteIcon} />
-                    <View style={styles.testimonialStars}>
-                      {Array.from({ length: testimonial.rating }).map((_, i) => (
-                        <Star key={i} size={14} color={PALETTE.amber} fill={PALETTE.amber} />
-                      ))}
-                    </View>
-                    <Text style={styles.testimonialText}>"{testimonial.quote}"</Text>
-                    <View style={styles.testimonialAuthor}>
-                      <LinearGradient
-                        colors={testimonial.avatarColor as [string, string]}
-                        style={styles.testimonialAvatar}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                      >
-                        <Text style={styles.testimonialAvatarText}>{testimonial.initials}</Text>
-                      </LinearGradient>
-                      <View>
-                        <Text style={styles.testimonialName}>{testimonial.name}</Text>
-                        <Text style={styles.testimonialRole}>{testimonial.role}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </SlideInView>
-              ))}
-            </View>
-          </View>
-
-          {/* ================================================================
               SECTION 7: PRICING
           ================================================================= */}
           <View style={styles.sectionWrap}>
@@ -1058,7 +940,7 @@ export default function PremiumScreen() {
 
             {isLoadingOfferings ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={PALETTE.indigo} />
+                <ActivityIndicator size="large" color={PALETTE.green} />
                 <Text style={styles.loadingText}>Laddar priser...</Text>
               </View>
             ) : pricingPlans.length === 0 ? (
@@ -1128,7 +1010,7 @@ export default function PremiumScreen() {
                       {/* Most popular tag */}
                       {isFeatured && (
                         <View style={styles.mostPopularTag}>
-                          <Crown size={11} color={PALETTE.indigo} />
+                          <Crown size={11} color={PALETTE.green} />
                           <Text style={styles.mostPopularText}>MEST POPULÄR</Text>
                         </View>
                       )}
@@ -1148,7 +1030,7 @@ export default function PremiumScreen() {
                       <View style={[
                         styles.pricingSelectedDot,
                         isSelected
-                          ? { backgroundColor: PALETTE.indigo }
+                          ? { backgroundColor: PALETTE.green }
                           : { backgroundColor: PALETTE.borderLight },
                       ]}>
                         {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
@@ -1169,7 +1051,7 @@ export default function PremiumScreen() {
                   activeOpacity={0.85}
                 >
                   <LinearGradient
-                    colors={[PALETTE.indigo, PALETTE.purple]}
+                    colors={[PALETTE.green, PALETTE.teal]}
                     style={styles.ctaGradientFill}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
@@ -1248,7 +1130,7 @@ export default function PremiumScreen() {
                         rotate: expandedFAQ === index ? '180deg' as string : '0deg' as string,
                       }],
                     }}>
-                      <ChevronDown size={20} color={PALETTE.indigo} />
+                      <ChevronDown size={20} color={PALETTE.green} />
                     </Animated.View>
                   </View>
                   {expandedFAQ === index && (
@@ -1264,7 +1146,7 @@ export default function PremiumScreen() {
           ================================================================= */}
           <View style={styles.finalCTASection}>
             <LinearGradient
-              colors={[PALETTE.indigo, PALETTE.purple, PALETTE.indigoDark]}
+              colors={[PALETTE.green, PALETTE.teal, PALETTE.greenDark]}
               style={styles.finalCTABg}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -1288,10 +1170,10 @@ export default function PremiumScreen() {
                   activeOpacity={0.85}
                 >
                   {isPurchasing ? (
-                    <ActivityIndicator size="small" color={PALETTE.indigo} />
+                    <ActivityIndicator size="small" color={PALETTE.green} />
                   ) : (
                     <>
-                      <Crown size={20} color={PALETTE.indigo} />
+                      <Crown size={20} color={PALETTE.green} />
                       <Text style={styles.finalCTABtnText}>Starta gratis provperiod</Text>
                     </>
                   )}
@@ -1329,7 +1211,7 @@ export default function PremiumScreen() {
               activeOpacity={0.8}
             >
               {isRestoring ? (
-                <ActivityIndicator size="small" color={PALETTE.indigo} />
+                <ActivityIndicator size="small" color={PALETTE.green} />
               ) : (
                 <Text style={styles.restoreBtnText}>Återställ köp</Text>
               )}
@@ -1428,7 +1310,7 @@ export default function PremiumScreen() {
               onPress={() => openExternalLink(PRIVACY_URL)}
               activeOpacity={0.8}
             >
-              <ExternalLink size={16} color={PALETTE.indigo} />
+              <ExternalLink size={16} color={PALETTE.green} />
               <Text style={styles.externalLinkText}>Öppna i webbläsare</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -1500,7 +1382,7 @@ export default function PremiumScreen() {
               onPress={() => openExternalLink(TERMS_URL)}
               activeOpacity={0.8}
             >
-              <ExternalLink size={16} color={PALETTE.indigo} />
+              <ExternalLink size={16} color={PALETTE.green} />
               <Text style={styles.externalLinkText}>Öppna i webbläsare</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -1584,7 +1466,7 @@ const styles = StyleSheet.create({
   orb1: {
     width: 200,
     height: 200,
-    backgroundColor: PALETTE.indigo,
+    backgroundColor: PALETTE.green,
     top: 60,
     right: -40,
     blurRadius: 40,
@@ -1592,7 +1474,7 @@ const styles = StyleSheet.create({
   orb2: {
     width: 180,
     height: 180,
-    backgroundColor: PALETTE.purple,
+    backgroundColor: PALETTE.teal,
     top: 200,
     left: -50,
     opacity: 0.18,
@@ -1600,7 +1482,7 @@ const styles = StyleSheet.create({
   orb3: {
     width: 150,
     height: 150,
-    backgroundColor: PALETTE.cyan,
+    backgroundColor: PALETTE.greenLight,
     bottom: 80,
     right: 20,
     opacity: 0.15,
@@ -1635,7 +1517,7 @@ const styles = StyleSheet.create({
   premiumBadgeText: {
     fontSize: 11,
     fontWeight: '800' as const,
-    color: PALETTE.indigo,
+    color: PALETTE.green,
     letterSpacing: 1.5,
   },
   heroCrownWrap: {
@@ -1647,7 +1529,7 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: PALETTE.indigo,
+    shadowColor: PALETTE.green,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
@@ -1680,7 +1562,7 @@ const styles = StyleSheet.create({
   primaryCTABtn: {
     borderRadius: 24,
     overflow: 'hidden',
-    shadowColor: PALETTE.indigo,
+    shadowColor: PALETTE.green,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -1721,7 +1603,7 @@ const styles = StyleSheet.create({
   secondaryCTAText: {
     fontSize: 16,
     fontWeight: '700' as const,
-    color: PALETTE.indigo,
+    color: PALETTE.green,
   },
 
   // ---- Notice ----
@@ -1749,7 +1631,7 @@ const styles = StyleSheet.create({
   retryText: {
     fontSize: 13,
     fontWeight: '700' as const,
-    color: PALETTE.indigo,
+    color: PALETTE.green,
   },
 
   // ---- Section wrappers ----
@@ -1956,7 +1838,7 @@ const styles = StyleSheet.create({
   },
   comparisonRowValuePremium: {
     fontSize: 12,
-    color: PALETTE.indigo,
+    color: PALETTE.green,
     fontWeight: '700' as const,
   },
 
@@ -2007,68 +1889,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // ---- Testimonials ----
-  testimonialsContainer: {
-    gap: 14,
-  },
-  testimonialCard: {
-    backgroundColor: PALETTE.glassBg,
-    borderRadius: 22,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: PALETTE.borderGlass,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  testimonialQuoteIcon: {
-    position: 'absolute',
-    top: 14,
-    right: 16,
-  },
-  testimonialStars: {
-    flexDirection: 'row',
-    gap: 3,
-    marginBottom: 12,
-  },
-  testimonialText: {
-    fontSize: 15,
-    color: PALETTE.textMid,
-    lineHeight: 23,
-    marginBottom: 16,
-    fontWeight: '500' as const,
-  },
-  testimonialAuthor: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  testimonialAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  testimonialAvatarText: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: '#FFFFFF',
-  },
-  testimonialName: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: PALETTE.textDark,
-  },
-  testimonialRole: {
-    fontSize: 12,
-    color: PALETTE.textLight,
-  },
-
   // ---- Pricing ----
   loadingContainer: {
     alignItems: 'center',
@@ -2104,7 +1924,7 @@ const styles = StyleSheet.create({
   errorRetryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PALETTE.indigo,
+    backgroundColor: PALETTE.green,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 14,
@@ -2129,20 +1949,20 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   pricingCardFeatured: {
-    borderColor: PALETTE.indigo + '40',
+    borderColor: PALETTE.green + '40',
     borderWidth: 2,
-    shadowColor: PALETTE.indigo,
+    shadowColor: PALETTE.green,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 6,
   },
   pricingCardSelectedFeatured: {
-    borderColor: PALETTE.indigo,
+    borderColor: PALETTE.green,
     borderWidth: 2.5,
   },
   pricingCardSelected: {
-    borderColor: PALETTE.indigo + '60',
+    borderColor: PALETTE.green + '60',
     borderWidth: 2,
   },
   pricingGlow: {
@@ -2151,7 +1971,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: PALETTE.indigo,
+    backgroundColor: PALETTE.green,
     borderRadius: 22,
   },
   pricingBadgeWrap: {
@@ -2181,7 +2001,7 @@ const styles = StyleSheet.create({
     right: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PALETTE.indigo + '12',
+    backgroundColor: PALETTE.green + '12',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -2190,7 +2010,7 @@ const styles = StyleSheet.create({
   mostPopularText: {
     fontSize: 9,
     fontWeight: '800' as const,
-    color: PALETTE.indigo,
+    color: PALETTE.green,
     letterSpacing: 0.5,
   },
   pricingCardBody: {
@@ -2323,7 +2143,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     borderRadius: 28,
     overflow: 'hidden',
-    shadowColor: PALETTE.indigo,
+    shadowColor: PALETTE.green,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 24,
@@ -2350,7 +2170,7 @@ const styles = StyleSheet.create({
   finalOrb2: {
     width: 140,
     height: 140,
-    backgroundColor: PALETTE.purpleLight,
+    backgroundColor: PALETTE.tealLight,
     bottom: -30,
     left: -20,
     opacity: 0.2,
@@ -2385,7 +2205,7 @@ const styles = StyleSheet.create({
   finalCTABtnText: {
     fontSize: 17,
     fontWeight: '700' as const,
-    color: PALETTE.indigo,
+    color: PALETTE.green,
     letterSpacing: -0.3,
   },
   trustBadges: {
@@ -2419,7 +2239,7 @@ const styles = StyleSheet.create({
   restoreBtnText: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: PALETTE.indigo,
+    color: PALETTE.green,
   },
   termsCard: {
     backgroundColor: PALETTE.glassBgLight,
@@ -2454,7 +2274,7 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontSize: 13,
-    color: PALETTE.indigo,
+    color: PALETTE.green,
     fontWeight: '600' as const,
   },
   footerDivider: {
@@ -2515,7 +2335,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   stickyCTABtn: {
-    backgroundColor: PALETTE.indigo,
+    backgroundColor: PALETTE.green,
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 22,
@@ -2664,7 +2484,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderWidth: 1.5,
-    borderColor: PALETTE.indigo + '20',
+    borderColor: PALETTE.green + '20',
     borderRadius: 14,
     gap: 8,
     marginBottom: 40,
@@ -2672,6 +2492,6 @@ const styles = StyleSheet.create({
   externalLinkText: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: PALETTE.indigo,
+    color: PALETTE.green,
   },
 });

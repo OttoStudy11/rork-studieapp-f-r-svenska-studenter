@@ -22,7 +22,7 @@ import { usePremium } from '@/contexts/PremiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { Image } from 'expo-image';
-import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, ChevronDown, Zap, FileText, Sparkles, Brain, Heart } from 'lucide-react-native';
+import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar, Flame, ArrowRight, AlertCircle, ChevronRight, ChevronDown, Zap, FileText, Brain, Heart } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { ROUTES } from '@/utils/typedRoutes';
 import { FadeInView, SlideInView } from '@/components/Animations';
@@ -159,7 +159,6 @@ export default function HomeScreen() {
   const { upcomingExams } = useExams();
 
   const [examsExpanded, setExamsExpanded] = useState(false);
-  const [studyToolsTab, setStudyToolsTab] = useState<'tips' | 'tekniker'>('tips');
 
   const handleAddCourse = () => {
     if (!canAddCourse(courses.length)) {
@@ -643,193 +642,238 @@ export default function HomeScreen() {
           </View>
         </SlideInView>
 
-        {/* HP + Diagnosstöd — two-column row */}
+        {/* Högskoleprov */}
         <SlideInView direction="up" delay={200} duration={300}>
-          <View style={[styles.twoColumnRow, { marginBottom: 48 }]}>
-            {/* Högskoleprov — compact card */}
-            <TouchableOpacity 
-              style={styles.twoColCard}
-              onPress={() => router.push(ROUTES.hogskoleprovetMain)}
-              activeOpacity={0.85}
+          <TouchableOpacity
+            style={styles.hpCard}
+            onPress={() => router.push(ROUTES.hogskoleprovetMain)}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={isDark ? ['#4338CA', '#7C3AED'] : ['#5B4DFF', '#A855F7']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.hpCardGradient}
             >
-              <LinearGradient
-                colors={isDark ? ['#312E81', '#4338CA'] : ['#4338CA', '#6366F1']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.twoColGradient}
-              >
-                <View style={styles.twoColIcon}>
-                  <FileText size={22} color="white" />
+              <View style={styles.hpCardDecoCircle1} />
+              <View style={styles.hpCardDecoCircle2} />
+              <View style={styles.hpCardTopRow}>
+                <View style={styles.hpIconContainer}>
+                  <FileText size={24} color="white" />
                 </View>
-                <Text style={styles.twoColTitle}>Högskoleprov</Text>
-                <View style={styles.twoColMiniChips}>
-                  <Text style={styles.twoColMiniChipText}>ORD · LÄS · MEK</Text>
-                  <Text style={styles.twoColMiniChipText}>XYZ · KVA · DTK</Text>
-                </View>
-                <View style={styles.twoColFooter}>
-                  <Text style={styles.twoColCta}>Börja träna →</Text>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            {/* Diagnosstöd — compact card */}
-            <TouchableOpacity
-              style={styles.twoColCard}
-              onPress={() => router.push(ROUTES.diagnosstod)}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={isDark ? ['#312E81', '#4C1D95'] : ['#6366F1', '#7C3AED']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.twoColGradient}
-              >
-                <View style={styles.twoColIcon}>
-                  <Heart size={22} color="white" fill="rgba(255,255,255,0.3)" />
-                </View>
-                <Text style={styles.twoColTitle}>Diagnosstöd</Text>
-                <Text style={styles.twoColDesc} numberOfLines={2}>
-                  ADHD, dyslexi, autism & mer
-                </Text>
-                <View style={styles.twoColMiniPills}>
-                  {['ADHD', 'Dyslexi', 'Autism'].map((d) => (
-                    <Text key={d} style={styles.twoColMiniPillText}>{d}</Text>
-                  ))}
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+                {!isPremium && (
+                  <View style={styles.hpPremiumBadge}>
+                    <Crown size={12} color="#FFD700" />
+                    <Text style={styles.hpPremiumText}>Premium</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.hpCardTitle}>Högskoleprov</Text>
+              <Text style={styles.hpCardSubtitle}>
+                Träna inför högskoleprovet med autentiska uppgifter, tidsbegränsning och detaljerad statistik
+              </Text>
+              <View style={styles.hpCardChips}>
+                {['ORD', 'LÄS', 'MEK', 'XYZ', 'KVA', 'DTK', 'ELF', 'NOG'].map((chip) => (
+                  <View key={chip} style={styles.hpChip}>
+                    <Text style={styles.hpChipText}>{chip}</Text>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.hpCardFooter}>
+                <Text style={styles.hpFooterText}>Börja träna →</Text>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
         </SlideInView>
 
-        {/* Compact XP Card */}
+        {/* Diagnosstöd */}
+        <SlideInView direction="up" delay={250} duration={300}>
+          <TouchableOpacity
+            style={styles.diagnosCard}
+            onPress={() => router.push(ROUTES.diagnosstod)}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={isDark ? ['#4F46E5', '#06B6D4'] : ['#6366F1', '#3B82F6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.diagnosCardGradient}
+            >
+              <View style={styles.diagnosDecoCircle1} />
+              <View style={styles.diagnosDecoCircle2} />
+              <View style={styles.diagnosCardContent}>
+                <View style={styles.diagnosLeft}>
+                  <View style={styles.diagnosIconWrap}>
+                    <Heart size={24} color="white" fill="rgba(255,255,255,0.3)" />
+                  </View>
+                  <View style={styles.diagnosTextBlock}>
+                    <Text style={styles.diagnosTitle}>Diagnosstöd</Text>
+                    <Text style={styles.diagnosSubtitle} numberOfLines={2}>
+                      ADHD, dyslexi, autism & mer — personaliserade studiestrategier
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={24} color="white" />
+              </View>
+              <View style={styles.diagnosPillRow}>
+                {['ADHD', 'Dyslexi', 'Autism', 'ADD', 'Ångest'].map((d) => (
+                  <View key={d} style={styles.diagnosPill}>
+                    <Text style={styles.diagnosPillText}>{d}</Text>
+                  </View>
+                ))}
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </SlideInView>
+
+        {/* Studieinsikter */}
+        <SlideInView direction="up" delay={300} duration={300}>
+          <TouchableOpacity
+            style={styles.insightsCard}
+            onPress={() => router.push(ROUTES.advancedAnalytics)}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={isDark ? ['#059669', '#10B981'] : ['#10B981', '#34D399']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.insightsCardGradient}
+            >
+              <View style={styles.insightsCardContent}>
+                <View style={styles.insightsCardLeft}>
+                  <View style={styles.insightsIconContainer}>
+                    <Brain size={24} color="white" />
+                  </View>
+                  <View style={styles.insightsCardInfo}>
+                    <Text style={styles.insightsCardTitle}>Studieinsikter</Text>
+                    <Text style={styles.insightsCardSubtitle} numberOfLines={2}>
+                      Spaced repetition, smart analys & kunskapsluckor
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={24} color="white" />
+              </View>
+              <View style={styles.insightsCardMeta}>
+                <Zap size={14} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.insightsMetaText}>AI-driven</Text>
+                <View style={styles.hpMetaDot} />
+                <Text style={styles.insightsMetaText}>Repetition</Text>
+                <View style={styles.hpMetaDot} />
+                <Text style={styles.insightsMetaText}>Mönster</Text>
+                <View style={styles.hpMetaDot} />
+                <Text style={styles.insightsMetaText}>Analys</Text>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </SlideInView>
+
+        {/* Level Card */}
         <SlideInView direction="up" delay={275} duration={300}>
-          <TouchableOpacity 
-            style={[styles.compactXpCard, { backgroundColor: theme.colors.card }]}
+          <TouchableOpacity
+            style={[styles.levelCard, { backgroundColor: theme.colors.card }]}
             onPress={() => router.push(ROUTES.achievements)}
             activeOpacity={0.8}
           >
-            <XpLevelRing
-              progress={xpProgress.percent}
-              color={TIER_COLORS[currentLevel.tier]}
-              size={72}
-              strokeWidth={5}
-              level={currentLevel.level}
-              totalXp={totalXp}
-              xpCurrent={xpProgress.current}
-              xpRequired={xpProgress.required}
-              tierName={currentLevel.titleSv}
-              emoji={currentLevel.iconEmoji}
-            />
-            <View style={styles.compactXpInfo}>
-              <View style={styles.compactXpRow}>
-                <Text style={[styles.compactXpLevel, { color: theme.colors.text }]}>Nivå {currentLevel.level}</Text>
-                <View style={[styles.compactXpTierBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] }]}>
-                  <Text style={styles.compactXpTierText}>{currentLevel.titleSv}</Text>
+            <View style={[styles.levelBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] + '20', borderColor: TIER_COLORS[currentLevel.tier] + '30' }]}>
+              <Text style={styles.levelEmoji}>{currentLevel.iconEmoji || '🏅'}</Text>
+            </View>
+            <View style={styles.levelInfo}>
+              <View style={styles.levelHeader}>
+                <Text style={[styles.levelTitle, { color: theme.colors.text }]}>Nivå {currentLevel.level}</Text>
+                <View style={[styles.levelTierBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] }]}>
+                  <Text style={styles.levelTierText}>{currentLevel.titleSv}</Text>
                 </View>
               </View>
-              <Text style={[styles.compactXpProgressText, { color: theme.colors.textSecondary }]}>
+              <View style={[styles.levelProgressBar, { backgroundColor: theme.colors.borderLight }]}>
+                <View
+                  style={[
+                    styles.levelProgressFill,
+                    { width: `${Math.min(100, xpProgress.percent)}%`, backgroundColor: TIER_COLORS[currentLevel.tier] }
+                  ]}
+                />
+              </View>
+              <Text style={[styles.levelProgressText, { color: theme.colors.textSecondary }]}>
                 {xpProgress.current} / {xpProgress.required} XP till nästa nivå
               </Text>
             </View>
-            <View style={styles.compactXpRight}>
-              <View style={styles.compactXpTotal}>
+            <View style={styles.levelRight}>
+              <View style={styles.levelPoints}>
                 <Zap size={14} color={TIER_COLORS[currentLevel.tier]} />
-                <Text style={[styles.compactXpTotalNumber, { color: theme.colors.text }]}>{totalXp}</Text>
+                <Text style={[styles.levelPointsNumber, { color: theme.colors.text }]}>{totalXp}</Text>
               </View>
               <ChevronRight size={18} color={theme.colors.textMuted} />
             </View>
           </TouchableOpacity>
         </SlideInView>
 
-        {/* Studieverktyg & Tips — tabbed section */}
+        {/* Studietips */}
         <SlideInView direction="up" delay={300} duration={300}>
           <View style={[styles.section, { marginBottom: 36 }]}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
-                <Sparkles size={20} color={theme.colors.primary} />
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studieverktyg & Tips</Text>
+                <Star size={20} color={theme.colors.warning} />
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
               </View>
               <TouchableOpacity onPress={() => router.push(ROUTES.studyTips)}>
                 <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
               </TouchableOpacity>
             </View>
+            <View style={styles.tipsGrid}>
+              {studyTips.slice(0, 2).map((tip, index) => (
+                <FadeInView key={tip.id} delay={350 + index * 30} duration={250}>
+                  <TouchableOpacity
+                    style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
+                    onPress={() => router.push(ROUTES.studyTip(String(tip.id)))}
+                  >
+                    <Text style={styles.compactTipIcon}>{tip.icon}</Text>
+                    <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
+                    <View style={[styles.compactTipDifficulty, {
+                      backgroundColor: tip.difficulty === 'Nybörjare' ? theme.colors.success + '20' :
+                                     tip.difficulty === 'Medel' ? theme.colors.warning + '20' :
+                                     theme.colors.error + '20'
+                    }]}>
+                      <Text style={[styles.compactTipDifficultyText, {
+                        color: tip.difficulty === 'Nybörjare' ? theme.colors.success :
+                              tip.difficulty === 'Medel' ? theme.colors.warning :
+                              theme.colors.error
+                      }]}>{tip.difficulty}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </FadeInView>
+              ))}
+            </View>
+          </View>
+        </SlideInView>
 
-            {/* Tab bar */}
-            <View style={[styles.tabBar, { backgroundColor: theme.colors.card }]}>
-              <TouchableOpacity
-                style={[styles.tabItem, studyToolsTab === 'tips' && { backgroundColor: theme.colors.primary }]}
-                onPress={() => {
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  setStudyToolsTab('tips');
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.tabItemText, { color: studyToolsTab === 'tips' ? '#FFF' : theme.colors.textSecondary }]}>
-                  Tips
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tabItem, studyToolsTab === 'tekniker' && { backgroundColor: theme.colors.primary }]}
-                onPress={() => {
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  setStudyToolsTab('tekniker');
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.tabItemText, { color: studyToolsTab === 'tekniker' ? '#FFF' : theme.colors.textSecondary }]}>
-                  Tekniker
-                </Text>
+        {/* Studietekniker */}
+        <SlideInView direction="up" delay={350} duration={300}>
+          <View style={[styles.section, { marginBottom: 36 }]}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <Brain size={20} color={theme.colors.primary} />
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push(ROUTES.studyTechniques)}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla →</Text>
               </TouchableOpacity>
             </View>
-
-            {/* Tips tab content */}
-            {studyToolsTab === 'tips' && (
-              <View style={styles.tipsGrid}>
-                {studyTips.slice(0, 2).map((tip, index) => (
-                  <FadeInView key={tip.id} delay={350 + index * 30} duration={250}>
-                    <TouchableOpacity 
-                      style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
-                      onPress={() => router.push(ROUTES.studyTip(String(tip.id)))}
-                    >
-                      <Text style={styles.compactTipIcon}>{tip.icon}</Text>
-                      <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
-                      <View style={[styles.compactTipDifficulty, { 
-                        backgroundColor: tip.difficulty === 'Nybörjare' ? theme.colors.success + '20' :
-                                       tip.difficulty === 'Medel' ? theme.colors.warning + '20' :
-                                       theme.colors.error + '20'
-                      }]}>
-                        <Text style={[styles.compactTipDifficultyText, { 
-                          color: tip.difficulty === 'Nybörjare' ? theme.colors.success :
-                                tip.difficulty === 'Medel' ? theme.colors.warning :
-                                theme.colors.error
-                        }]}>{tip.difficulty}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </FadeInView>
-                ))}
-              </View>
-            )}
-
-            {/* Tekniker tab content */}
-            {studyToolsTab === 'tekniker' && (
-              <View style={styles.tipsGrid}>
-                {studyTechniques.slice(0, 2).map((technique, index) => (
-                  <FadeInView key={technique.id} delay={350 + index * 30} duration={250}>
-                    <TouchableOpacity 
-                      style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
-                      onPress={() => router.push(ROUTES.studyTechnique(String(technique.id)))}
-                    >
-                      <Text style={styles.compactTipIcon}>{technique.icon}</Text>
-                      <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{technique.title}</Text>
-                      <View style={[styles.compactTimeTag, { backgroundColor: theme.colors.primary + '15' }]}>
-                        <Clock size={10} color={theme.colors.primary} />
-                        <Text style={[styles.compactTimeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </FadeInView>
-                ))}
-              </View>
-            )}
+            <View style={styles.tipsGrid}>
+              {studyTechniques.slice(0, 2).map((technique, index) => (
+                <FadeInView key={technique.id} delay={400 + index * 30} duration={250}>
+                  <TouchableOpacity
+                    style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
+                    onPress={() => router.push(ROUTES.studyTechnique(String(technique.id)))}
+                  >
+                    <Text style={styles.compactTipIcon}>{technique.icon}</Text>
+                    <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{technique.title}</Text>
+                    <View style={[styles.compactTimeTag, { backgroundColor: theme.colors.primary + '15' }]}>
+                      <Clock size={10} color={theme.colors.primary} />
+                      <Text style={[styles.compactTimeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </FadeInView>
+              ))}
+            </View>
           </View>
         </SlideInView>
 
@@ -1373,6 +1417,50 @@ const styles = StyleSheet.create({
   levelSubtitle: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  levelEmoji: {
+    fontSize: 24,
+  },
+  levelTierBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  levelTierText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  levelProgressBar: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden' as const,
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  levelProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  levelProgressText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  levelRight: {
+    alignItems: 'center' as const,
+    gap: 4,
+  },
+  levelPoints: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  levelPointsNumber: {
+    fontSize: 16,
+    fontWeight: '700' as const,
   },
   achievementsButton: {
     borderRadius: 12,

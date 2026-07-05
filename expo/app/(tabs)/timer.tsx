@@ -18,6 +18,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStudy } from '@/contexts/StudyContext';
+import { useRating } from '@/contexts/RatingContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAchievements } from '@/contexts/AchievementContext';
@@ -98,11 +99,11 @@ function CompletionScreen({ data, onClose, dailyGoal, currentSessions }: Complet
   const isFocusSession = data.sessionType === 'focus';
 
   const getMotivationalMessage = () => {
-    if (progressPercentage >= 100) return 'Dagsmål uppnått!';
-    if (progressPercentage >= 75) return 'Nästan där!';
-    if (progressPercentage >= 50) return 'Halvvägs!';
+    if (progressPercentage >= 100) return `Dagsmål uppnått!`;
+    if (progressPercentage >= 75) return `Nästan där!`;
+    if (progressPercentage >= 50) return `Halvvägs!`;
     if (progressPercentage >= 25) return 'Bra start!';
-    return 'Första steget!';
+    return `Första steget!`;
   };
 
   return (
@@ -126,14 +127,14 @@ function CompletionScreen({ data, onClose, dailyGoal, currentSessions }: Complet
 
         <View style={styles.completionContent}>
           <View style={[styles.completionEmojiCircle, { backgroundColor: theme.colors.primary + '12' }]}>
-            <Text style={styles.completionEmoji}>{isFocusSession ? '🎯' : '☕'}</Text>
+            <Text style={styles.completionEmoji}>{isFocusSession ? `🎯` : `☕`}</Text>
           </View>
           
           <Text style={[styles.completionTitle, { color: theme.colors.text }]}>
             {isFocusSession ? getMotivationalMessage() : 'Paus avslutad'}
           </Text>
           <Text style={[styles.completionSubtitle, { color: theme.colors.textSecondary }]}>
-            {isFocusSession ? 'Session slutförd' : 'Redo att fortsätta'}
+            {isFocusSession ? `Session slutförd` : `Redo att fortsätta`}
           </Text>
           
           <View style={styles.completionProgressWrapper}>
@@ -208,6 +209,7 @@ export default function TimerScreen() {
   const { theme, isDark } = useTheme();
   const { currentStreak, checkAchievements, refreshAchievements } = useAchievements();
   const { awardStudySession } = useGamification();
+  const { triggerRating } = useRating();
   const { settings } = useTimerSettings();
   const insets = useSafeAreaInsets();
   const { isPremium } = usePremium();
@@ -271,7 +273,10 @@ export default function TimerScreen() {
   const breakTimeRef = useRef<number>(breakTime);
   const addPomodoroSessionRef = useRef(addPomodoroSession);
   const awardStudySessionRef = useRef(awardStudySession);
+  const triggerRatingRef = useRef(triggerRating);
   const coursesRef = useRef(courses);
+  const sessionCountRef = useRef<number>(sessionCount);
+  const streakStatsRef = useRef<{ current: number; longest: number }>({ current: 0, longest: 0 });
   const checkAchievementsRef = useRef(checkAchievements);
   const refreshAchievementsRef = useRef(refreshAchievements);
 
@@ -289,23 +294,25 @@ export default function TimerScreen() {
   useEffect(() => { breakTimeRef.current = breakTime; }, [breakTime]);
   useEffect(() => { addPomodoroSessionRef.current = addPomodoroSession; }, [addPomodoroSession]);
   useEffect(() => { awardStudySessionRef.current = awardStudySession; }, [awardStudySession]);
+  useEffect(() => { triggerRatingRef.current = triggerRating; }, [triggerRating]);
   useEffect(() => { coursesRef.current = courses; }, [courses]);
+  useEffect(() => { sessionCountRef.current = sessionCount; }, [sessionCount]);
   useEffect(() => { checkAchievementsRef.current = checkAchievements; }, [checkAchievements]);
   useEffect(() => { refreshAchievementsRef.current = refreshAchievements; }, [refreshAchievements]);
 
   const motivationalQuotes = useMemo(() => [
-    'Du är fantastisk! Fortsätt så! 💪',
-    'Varje minut räknas! 🌟',
-    'Fokus är din superkraft! 🚀',
-    'Du bygger din framtid just nu! 🏗️',
-    'Kunskap är makt! 📚',
-    'Steg för steg mot målet! 🎯',
-    'Du klarar det här! 💯',
-    'Håll fokus, du är grym! 🔥',
-    'Framgång börjar här! ⭐',
-    'Din tid, din framtid! ⏰',
-    'Varje session räknas! 📈',
-    'Du är på rätt väg! 🛤️'
+    `Du är fantastisk! Fortsätt så! 💪`,
+    `Varje minut räknas! 🌟`,
+    `Fokus är din superkraft! 🚀`,
+    `Du bygger din framtid just nu! 🏗️`,
+    `Kunskap är makt! 📚`,
+    `Steg för steg mot målet! 🎯`,
+    `Du klarar det här! 💯`,
+    `Håll fokus, du är grym! 🔥`,
+    `Framgång börjar här! ⭐`,
+    `Din tid, din framtid! ⏰`,
+    `Varje session räknas! 📈`,
+    `Du är på rätt väg! 🛤️`
   ], []);
 
   const getStreakStats = useCallback(() => {
@@ -395,11 +402,11 @@ export default function TimerScreen() {
       
       const savedState = await TimerPersistence.loadTimerState();
       if (savedState && savedState.status === 'running' && settings.backgroundTimerEnabled) {
-        console.log('🔄 Restoring timer from background');
-        console.log('⏱️ Remaining time:', savedState.remainingTime, 'seconds');
+        console.log(`🔄 Restoring timer from background`);
+        console.log(`⏱️ Remaining time:`, savedState.remainingTime, 'seconds');
         
         if (savedState.remainingTime <= 0) {
-          console.log('✅ Timer completed while app was closed, saving session...');
+          console.log(`✅ Timer completed while app was closed, saving session...`);
           timerEndTimeRef.current = null;
           setTimerState('idle');
           setSessionType(savedState.sessionType);
@@ -433,7 +440,7 @@ export default function TimerScreen() {
         } else {
           const now = Date.now();
           timerEndTimeRef.current = now + (savedState.remainingTime * 1000);
-          console.log('⏰ Timer end time set to:', new Date(timerEndTimeRef.current).toISOString());
+          console.log(`⏰ Timer end time set to:`, new Date(timerEndTimeRef.current).toISOString());
           
           setTimerState(savedState.status);
           setSessionType(savedState.sessionType);
@@ -528,7 +535,7 @@ export default function TimerScreen() {
       });
       
       setIsDndActive(true);
-      showSuccess('Stör ej aktiverat', 'Notifikationer är nu tysta');
+      showSuccess(`Stör ej aktiverat`, `Notifikationer är nu tysta`);
     } catch (error) {
       console.log('Error enabling DND:', error);
     }
@@ -552,7 +559,7 @@ export default function TimerScreen() {
       });
       
       setIsDndActive(false);
-      showSuccess('Stör ej inaktiverat', 'Notifikationer är nu aktiva');
+      showSuccess(`Stör ej inaktiverat`, `Notifikationer är nu aktiva`);
     } catch (error) {
       console.log('Error disabling DND:', error);
     }
@@ -560,7 +567,7 @@ export default function TimerScreen() {
 
   const handleTimerComplete = useCallback(async () => {
     if (isCompletingRef.current) {
-      console.log('⚠️ Timer completion already in progress, skipping...');
+      console.log(`⚠️ Timer completion already in progress, skipping...`);
       return;
     }
     
@@ -574,8 +581,8 @@ export default function TimerScreen() {
     const currentSessionStartTime = sessionStartTimeRef.current;
     const currentCourses = coursesRef.current;
 
-    console.log('✅ Timer completed! Session type:', currentSessionType, 'Duration:', currentSessionType === 'focus' ? currentFocusTime : currentBreakTime, 'minutes');
-    console.log('📅 Session start time:', currentSessionStartTime?.toISOString() ?? 'null');
+    console.log(`✅ Timer completed! Session type:`, currentSessionType, 'Duration:', currentSessionType === 'focus' ? currentFocusTime : currentBreakTime, 'minutes');
+    console.log(`📅 Session start time:`, currentSessionStartTime?.toISOString() ?? 'null');
     
     try {
       setTimerState('idle');
@@ -591,41 +598,77 @@ export default function TimerScreen() {
       
       if (currentSessionType === 'focus' && currentSessionStartTime) {
         try {
-          console.log('💾 Saving pomodoro session to database...');
+          console.log(`💾 Saving pomodoro session to database...`);
           await addPomodoroSessionRef.current({
             courseId: currentSelectedCourse || undefined,
             duration: currentFocusTime,
             startTime: currentSessionStartTime.toISOString(),
             endTime: new Date().toISOString()
           });
-          console.log('✅ Pomodoro session saved');
+          console.log(`✅ Pomodoro session saved`);
           
           const courseName = currentSelectedCourse 
-            ? currentCourses.find((c) => c.id === currentSelectedCourse)?.title || 'Okänd kurs'
-            : 'Allmän session';
+            ? currentCourses.find((c) => c.id === currentSelectedCourse)?.title || `Okänd kurs`
+            : `Allmän session`;
           
           setSessionCount(prev => prev + 1);
-          
+
+          // Rating prompt: completed study sessions milestone
+          try {
+            const totalSessions = (sessionCountRef.current ?? 0) + 1;
+            if (totalSessions === 10) {
+              triggerRatingRef.current?.('study_session_10', {
+                title: `🎉 10 studiesessioner!`,
+                message: `Du har slutfört 10 studiesessioner. Fantastiskt jobb!`,
+              });
+            } else if (totalSessions === 25) {
+              triggerRatingRef.current?.('study_session_25', {
+                title: `🎉 25 studiesessioner!`,
+                message: `Du har slutfört 25 studiesessioner. Otroligt!`,
+              });
+            }
+            // Streak-based triggers
+            const streak = streakStatsRef.current?.current ?? 0;
+            if (streak === 7) {
+              triggerRatingRef.current?.('streak_7', {
+                title: `🔥 7 dagars streak!`,
+                message: 'Du har pluggat 7 dagar i rad. Imponerande!',
+              });
+            } else if (streak === 14) {
+              triggerRatingRef.current?.('streak_14', {
+                title: `🔥 14 dagars streak!`,
+                message: 'Du har pluggat 14 dagar i rad. Helt galet!',
+              });
+            } else if (streak === 30) {
+              triggerRatingRef.current?.('streak_30', {
+                title: `🔥 30 dagars streak!`,
+                message: 'Du har pluggat 30 dagar i rad. Legendariskt!',
+              });
+            }
+          } catch (e) {
+            console.warn('Rating trigger skipped:', e);
+          }
+
           let pointsEarned = currentFocusTime;
           try {
-            console.log('🎯 Awarding', currentFocusTime, 'minutes of study XP...');
+            console.log(`🎯 Awarding`, currentFocusTime, 'minutes of study XP...');
             const levelUpEvent = await awardStudySessionRef.current(currentFocusTime, currentSelectedCourse || undefined);
             if (levelUpEvent) {
               console.log(`🎉 Level up! ${levelUpEvent.previousLevel} -> ${levelUpEvent.newLevel}`);
             }
             pointsEarned = Math.floor(currentFocusTime / 5) * 5;
-            console.log('✅ Study session XP awarded:', pointsEarned, 'XP');
+            console.log(`✅ Study session XP awarded:`, pointsEarned, 'XP');
           } catch (xpError) {
-            console.error('❌ Failed to award study session XP:', xpError);
+            console.error(`❌ Failed to award study session XP:`, xpError);
           }
           
           try {
-            console.log('🏆 Checking for achievements...');
+            console.log(`🏆 Checking for achievements...`);
             await checkAchievementsRef.current();
             await refreshAchievementsRef.current();
-            console.log('✅ Achievements checked');
+            console.log(`✅ Achievements checked`);
           } catch (achError) {
-            console.error('❌ Failed to check achievements:', achError);
+            console.error(`❌ Failed to check achievements:`, achError);
           }
           
           setCompletedSessionData({
@@ -638,17 +681,17 @@ export default function TimerScreen() {
           
           if (settings.notificationsEnabled) {
             await TimerPersistence.showImmediateNotification(
-              '🎯 Focus Session Complete!',
+              `🎯 Focus Session Complete!`,
               `Great work on ${courseName}! You earned ${pointsEarned} points.`
             );
           }
           
           if (sessionCount + 1 === dailyGoal) {
             await soundManager.playSound('achievement');
-            showAchievement('Dagsmål uppnått! 🎯', `Du har slutfört ${dailyGoal} sessioner idag!`);
+            showAchievement(`Dagsmål uppnått! 🎯`, `Du har slutfört ${dailyGoal} sessioner idag!`);
           }
         } catch (error) {
-          console.error('❌ Failed to complete focus session:', error);
+          console.error(`❌ Failed to complete focus session:`, error);
         }
       } else {
         setCompletedSessionData({
@@ -684,15 +727,15 @@ export default function TimerScreen() {
 
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      console.log('📱 App state changed:', appState.current, '->', nextAppState);
+      console.log(`📱 App state changed:`, appState.current, '->', nextAppState);
 
       if (appState.current.match(/active/) && nextAppState.match(/inactive|background/)) {
-        console.log('📱 App going to background');
+        console.log(`📱 App going to background`);
         
         if (timerState === 'running' && settings.backgroundTimerEnabled) {
           const courseName = selectedCourse 
-            ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
-            : 'Allmän session';
+            ? courses.find((c) => c.id === selectedCourse)?.title || `Allmän session`
+            : `Allmän session`;
           
           const now = Date.now();
           const remainingTime = timerEndTimeRef.current 
@@ -710,21 +753,21 @@ export default function TimerScreen() {
             courseName,
           });
           
-          console.log('💾 Saved timer state to storage, remaining:', remainingTime, 'seconds');
+          console.log(`💾 Saved timer state to storage, remaining:`, remainingTime, 'seconds');
         }
       }
 
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        console.log('📱 App coming to foreground');
+        console.log(`📱 App coming to foreground`);
         
         if (settings.backgroundTimerEnabled) {
           const savedState = await TimerPersistence.loadTimerState();
           
           if (savedState && savedState.status === 'running') {
-            console.log('🔄 Recalculating time after background');
+            console.log(`🔄 Recalculating time after background`);
             
             if (savedState.remainingTime <= 0) {
-              console.log('✅ Timer completed in background, completing now...');
+              console.log(`✅ Timer completed in background, completing now...`);
               timerEndTimeRef.current = null;
               setTimerState('idle');
               setSessionType(savedState.sessionType);
@@ -772,7 +815,7 @@ export default function TimerScreen() {
   }, [timerState, sessionType, selectedCourse, courses, focusTime, breakTime, settings.backgroundTimerEnabled, handleTimerComplete]);
 
   useEffect(() => {
-    console.log('⚙️ Timer effect triggered, state:', timerState);
+    console.log(`⚙️ Timer effect triggered, state:`, timerState);
     
     if (timerState === 'running') {
       if (intervalRef.current) {
@@ -828,8 +871,8 @@ export default function TimerScreen() {
     }
 
     const courseName = selectedCourse 
-      ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
-      : 'Allmän session';
+      ? courses.find((c) => c.id === selectedCourse)?.title || `Allmän session`
+      : `Allmän session`;
     
     backgroundUpdateRef.current = setInterval(async () => {
       if (settings.notificationsEnabled && settings.backgroundTimerEnabled) {
@@ -881,8 +924,8 @@ export default function TimerScreen() {
     setTimerState('running');
     
     const courseName = selectedCourse 
-      ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
-      : 'Allmän session';
+      ? courses.find((c) => c.id === selectedCourse)?.title || `Allmän session`
+      : `Allmän session`;
     
     const sessionOriginalStart = timerState === 'idle' ? now : (sessionStartTimeRef.current?.getTime() ?? now);
     await TimerPersistence.saveTimerState({
@@ -928,8 +971,8 @@ export default function TimerScreen() {
     await TimerPersistence.cancelNotification();
     
     const courseName = selectedCourse 
-      ? courses.find((c) => c.id === selectedCourse)?.title || 'Allmän session'
-      : 'Allmän session';
+      ? courses.find((c) => c.id === selectedCourse)?.title || `Allmän session`
+      : `Allmän session`;
     
     await TimerPersistence.saveTimerState({
       status: 'paused',
@@ -976,9 +1019,9 @@ export default function TimerScreen() {
   };
 
   const getSelectedCourseTitle = useCallback(() => {
-    if (!selectedCourse) return 'Allmän session';
+    if (!selectedCourse) return `Allmän session`;
     const course = courses.find((c) => c.id === selectedCourse);
-    return course ? course.title : 'Okänd kurs';
+    return course ? course.title : `Okänd kurs`;
   }, [selectedCourse, courses]);
 
   const todayStats = useMemo(() => {
@@ -1033,6 +1076,7 @@ export default function TimerScreen() {
   }, [pomodoroSessions]);
 
   const streakStats = useMemo(() => getStreakStats(), [getStreakStats]);
+  useEffect(() => { streakStatsRef.current = streakStats; }, [streakStats]);
 
   const courseDistribution = useMemo(() => {
     const distribution: { [key: string]: { name: string; minutes: number; sessions: number; color: string } } = {};
@@ -1042,8 +1086,8 @@ export default function TimerScreen() {
     pomodoroSessions.forEach(session => {
       const courseId = session.courseId || 'general';
       const courseName = session.courseId 
-        ? courses.find(c => c.id === session.courseId)?.title || 'Okänd kurs'
-        : 'Allmän session';
+        ? courses.find(c => c.id === session.courseId)?.title || `Okänd kurs`
+        : `Allmän session`;
       
       if (!distribution[courseId]) {
         distribution[courseId] = {
@@ -1065,7 +1109,7 @@ export default function TimerScreen() {
     const periods = {
       morning: { label: 'Morgon', icon: 'sunrise', minutes: 0, sessions: 0, hours: '06-12' },
       afternoon: { label: 'Eftermiddag', icon: 'sun', minutes: 0, sessions: 0, hours: '12-18' },
-      evening: { label: 'Kväll', icon: 'moon', minutes: 0, sessions: 0, hours: '18-24' },
+      evening: { label: `Kväll`, icon: 'moon', minutes: 0, sessions: 0, hours: '18-24' },
       night: { label: 'Natt', icon: 'star', minutes: 0, sessions: 0, hours: '00-06' }
     };
     
@@ -1122,7 +1166,7 @@ export default function TimerScreen() {
   }, [pomodoroSessions]);
 
   const focusScore = useMemo(() => {
-    if (pomodoroSessions.length === 0) return { score: 0, level: 'Nybörjare', description: 'Börja plugga för att bygga din poäng!' };
+    if (pomodoroSessions.length === 0) return { score: 0, level: `Nybörjare`, description: `Börja plugga för att bygga din poäng!` };
     
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -1136,14 +1180,14 @@ export default function TimerScreen() {
     
     const score = Math.min(Math.round(consistency + volume + quality), 100);
     
-    let level = 'Nybörjare';
-    let description = 'Fortsätt plugga för att öka din poäng!';
+    let level = `Nybörjare`;
+    let description = `Fortsätt plugga för att öka din poäng!`;
     
-    if (score >= 90) { level = 'Mästare'; description = 'Otroligt! Du är en studiemaskin!'; }
-    else if (score >= 75) { level = 'Expert'; description = 'Fantastiskt arbete, fortsätt så!'; }
-    else if (score >= 60) { level = 'Avancerad'; description = 'Bra jobbat! Du är på rätt väg.'; }
-    else if (score >= 40) { level = 'Mellanliggande'; description = 'Bra start! Öka konsistensen.'; }
-    else if (score >= 20) { level = 'Lärling'; description = 'Du kommer igång, fortsätt!'; }
+    if (score >= 90) { level = `Mästare`; description = `Otroligt! Du är en studiemaskin!`; }
+    else if (score >= 75) { level = 'Expert'; description = `Fantastiskt arbete, fortsätt så!`; }
+    else if (score >= 60) { level = 'Avancerad'; description = `Bra jobbat! Du är på rätt väg.`; }
+    else if (score >= 40) { level = 'Mellanliggande'; description = `Bra start! Öka konsistensen.`; }
+    else if (score >= 20) { level = `Lärling`; description = `Du kommer igång, fortsätt!`; }
     
     return { score, level, description };
   }, [pomodoroSessions, streakStats]);
@@ -1178,35 +1222,35 @@ export default function TimerScreen() {
     const insights: { icon: string; title: string; description: string; type: 'success' | 'warning' | 'info' }[] = [];
     
     if (streakStats.current >= 7) {
-      insights.push({ icon: '🔥', title: 'Imponerande streak!', description: `Du har pluggat ${streakStats.current} dagar i rad!`, type: 'success' });
+      insights.push({ icon: `🔥`, title: 'Imponerande streak!', description: `Du har pluggat ${streakStats.current} dagar i rad!`, type: 'success' });
     }
     
     const { periods } = productivityByTimeOfDay;
     const mostProductivePeriod = Object.entries(periods).sort((a, b) => b[1].minutes - a[1].minutes)[0];
     if (mostProductivePeriod[1].minutes > 0) {
-      insights.push({ icon: '⏰', title: 'Bästa tiden', description: `Du är mest produktiv på ${mostProductivePeriod[1].label.toLowerCase()} (${mostProductivePeriod[1].hours})`, type: 'info' });
+      insights.push({ icon: `⏰`, title: `Bästa tiden`, description: `Du är mest produktiv på ${mostProductivePeriod[1].label.toLowerCase()} (${mostProductivePeriod[1].hours})`, type: 'info' });
     }
     
     if (weekComparison.isImprovement && weekComparison.percentChange > 20) {
-      insights.push({ icon: '📈', title: 'Stark vecka!', description: `${weekComparison.percentChange}% mer studietid än förra veckan!`, type: 'success' });
+      insights.push({ icon: `📈`, title: 'Stark vecka!', description: `${weekComparison.percentChange}% mer studietid än förra veckan!`, type: 'success' });
     } else if (!weekComparison.isImprovement && weekComparison.percentChange < -20) {
-      insights.push({ icon: '💪', title: 'Tid att öka tempot', description: 'Du har studerat mindre denna vecka. Sätt igång!', type: 'warning' });
+      insights.push({ icon: `💪`, title: `Tid att öka tempot`, description: `Du har studerat mindre denna vecka. Sätt igång!`, type: 'warning' });
     }
     
     if (courseDistribution.length > 0) {
       const topCourse = courseDistribution[0];
-      insights.push({ icon: '📚', title: 'Favoritkurs', description: `${topCourse.name} - ${Math.round(topCourse.minutes / 60)}h totalt`, type: 'info' });
+      insights.push({ icon: `📚`, title: 'Favoritkurs', description: `${topCourse.name} - ${Math.round(topCourse.minutes / 60)}h totalt`, type: 'info' });
     }
     
     const avgSession = pomodoroSessions.length > 0 
       ? Math.round(pomodoroSessions.reduce((sum, s) => sum + s.duration, 0) / pomodoroSessions.length)
       : 0;
     if (avgSession >= 25) {
-      insights.push({ icon: '🎯', title: 'Bra sessioner', description: `Snitt ${avgSession} min per session - perfekt längd!`, type: 'success' });
+      insights.push({ icon: `🎯`, title: 'Bra sessioner', description: `Snitt ${avgSession} min per session - perfekt längd!`, type: 'success' });
     }
     
     if (insights.length === 0) {
-      insights.push({ icon: '🚀', title: 'Börja plugga!', description: 'Slutför några sessioner för att se insikter', type: 'info' });
+      insights.push({ icon: `🚀`, title: `Börja plugga!`, description: `Slutför några sessioner för att se insikter`, type: 'info' });
     }
     
     return insights.slice(0, 4);
@@ -1325,7 +1369,7 @@ export default function TimerScreen() {
 
         <View style={styles.timerSection}>
           <Text style={[styles.timerSessionName, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>
-            {sessionType === 'focus' ? '🎯 Fokus' : '☕ Paus'}
+            {sessionType === 'focus' ? `🎯 Fokus` : `☕ Paus`}
           </Text>
           <Text style={[styles.timerSessionSub, { color: isDarkBg ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)' }]}>{getSelectedCourseTitle()}</Text>
 
@@ -1492,7 +1536,7 @@ export default function TimerScreen() {
                   setTimerState('idle');
                   setSessionStartTime(null);
                   if (isDndActive) { await disableDoNotDisturb(); }
-                  showSuccess('Session skipped', 'Tiden räknas inte i din statistik');
+                  showSuccess('Session skipped', `Tiden räknas inte i din statistik`);
                 }}
                 activeOpacity={0.7}
               >
@@ -1505,8 +1549,8 @@ export default function TimerScreen() {
         <View style={styles.statsRow}>
           {[
             { value: `🔥 ${currentStreak}`, label: 'Streak', icon: Flame, color: '#F59E0B' },
-            { value: `${sessionCount}/${dailyGoal}`, label: '🎯 Dagsmål', icon: Target, color: '#A78BFA' },
-            { value: `${todayStats.minutes}m`, label: '⚡ Idag', icon: Zap, color: '#34D399' },
+            { value: `${sessionCount}/${dailyGoal}`, label: `🎯 Dagsmål`, icon: Target, color: '#A78BFA' },
+            { value: `${todayStats.minutes}m`, label: `⚡ Idag`, icon: Zap, color: '#34D399' },
           ].map((stat, i) => (
             <View key={i} style={[styles.statMiniCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.05)' }]}>
               <View style={[styles.statMiniIcon, { backgroundColor: stat.color + '22' }]}>
@@ -1559,15 +1603,15 @@ export default function TimerScreen() {
                   </View>
 
                   <Text style={[styles.luxGateDesc, { color: isDarkBg ? 'rgba(255,255,255,0.6)' : '#475569' }]}>
-                    {'Fokuspoäng, värmekarta, kursfördelning och djupgående produktivitetsinsikter.'}
+                    {`Fokuspoäng, värmekarta, kursfördelning och djupgående produktivitetsinsikter.`}
                   </Text>
 
                   <View style={styles.luxGateGrid}>
                     {[
-                      { emoji: '🔥', label: 'Streak & fokus' },
-                      { emoji: '📊', label: 'Veckotrender' },
-                      { emoji: '🗓', label: 'Aktivitetskarta' },
-                      { emoji: '🏆', label: 'Kursranking' },
+                      { emoji: `🔥`, label: 'Streak & fokus' },
+                      { emoji: `📊`, label: 'Veckotrender' },
+                      { emoji: `🗓`, label: 'Aktivitetskarta' },
+                      { emoji: `🏆`, label: 'Kursranking' },
                     ].map((f, i) => (
                       <View key={i} style={[styles.luxGateChip, {
                         backgroundColor: isDarkBg ? 'rgba(255,215,0,0.1)' : 'rgba(255,180,0,0.08)',
@@ -1591,7 +1635,7 @@ export default function TimerScreen() {
                       end={{ x: 1, y: 0 }}
                     >
                       <Star size={15} color="#FFF" fill="#FFF" />
-                      <Text style={styles.luxGateBtnText}>{'Lås upp Premium'}</Text>
+                      <Text style={styles.luxGateBtnText}>{`Lås upp Premium`}</Text>
                       <ChevronRight size={15} color="rgba(255,255,255,0.85)" />
                     </LinearGradient>
                   </TouchableOpacity>
@@ -1648,7 +1692,7 @@ export default function TimerScreen() {
             {[
               { value: selectedStatView === 'day' ? todayStats.sessions.toString() : weekStats.sessions.toString(), label: 'Sessioner', icon: Brain, color: theme.colors.primary },
               { value: selectedStatView === 'day' ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m` : `${Math.floor(weekStats.minutes / 60)}h`, label: 'Total tid', icon: Zap, color: '#F59E0B' },
-              { value: streakStats.longest.toString(), label: 'Bästa streak', icon: Flame, color: '#EF4444' },
+              { value: streakStats.longest.toString(), label: `Bästa streak`, icon: Flame, color: '#EF4444' },
             ].map((stat, i) => (
               <View key={i} style={[styles.statsGridCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
                 <View style={[styles.statsGridIcon, { backgroundColor: stat.color + '22' }]}>
@@ -1853,7 +1897,7 @@ export default function TimerScreen() {
 
           <View style={styles.extraStatsRow}>
             {[
-              { value: `${longestSession}m`, label: 'Längsta', icon: Clock, color: theme.colors.primary },
+              { value: `${longestSession}m`, label: `Längsta`, icon: Clock, color: theme.colors.primary },
               { value: `${Math.floor(totalAllTime / 60)}h`, label: 'Totalt', icon: Target, color: theme.colors.secondary },
               { value: `${pomodoroSessions.length > 0 ? Math.round(totalAllTime / pomodoroSessions.length) : 0}m`, label: 'Snitt', icon: Brain, color: theme.colors.warning },
             ].map((stat, i) => (
@@ -1974,7 +2018,7 @@ export default function TimerScreen() {
               style={[styles.resetButton, { backgroundColor: '#EF4444' + '12' }]}
               onPress={async () => {
                 await resetTimer();
-                showSuccess('Timer återställd', 'Redo för en ny session');
+                showSuccess(`Timer återställd`, `Redo för en ny session`);
               }}
               activeOpacity={0.7}
             >
@@ -2156,8 +2200,8 @@ export default function TimerScreen() {
               style={[styles.addSessionBtn, { backgroundColor: theme.colors.primary }]}
               onPress={() => {
                 const courseName = newSessionCourse 
-                  ? courses.find((c) => c.id === newSessionCourse)?.title || 'Okänd kurs'
-                  : 'Allmän session';
+                  ? courses.find((c) => c.id === newSessionCourse)?.title || `Okänd kurs`
+                  : `Allmän session`;
                 
                 setShowAddSession(false);
                 setNewSessionCourse('');

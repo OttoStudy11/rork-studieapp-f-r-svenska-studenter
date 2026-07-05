@@ -26,6 +26,7 @@ import {
   Home,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useRating } from '@/contexts/RatingContext';
 import { COLORS } from '@/constants/design-system';
 import { hpAITestService, StoredAITest } from '@/services/hp-ai-tests';
 import { GeneratedHPQuestion } from '@/lib/hp-ai-generator';
@@ -57,6 +58,7 @@ export default function HPAIPracticeScreen() {
   
   const [fadeAnim] = useState(new Animated.Value(0));
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const { triggerRating } = useRating();
 
   const loadTest = useCallback(async () => {
     if (!testId) {
@@ -170,6 +172,16 @@ export default function HPAIPracticeScreen() {
 
     setIsCompleted(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    // Rating prompt: finished an HP simulation / quiz
+    try {
+      if (scorePercentage >= 75) {
+        triggerRating('hp_difficult_quiz', {
+          title: `🎉 Bra jobbat!`,
+          message: `Du fick ${Math.round(scorePercentage)}% på ditt quiz. Strålande!`,
+        });
+      }
+    } catch {}
   };
 
   const handleRetry = () => {
@@ -335,9 +347,9 @@ export default function HPAIPracticeScreen() {
             onPress={() => {
               Alert.alert(
                 'Avsluta test',
-                'Är du säker på att du vill avsluta? Dina framsteg sparas inte.',
+                `Är du säker på att du vill avsluta? Dina framsteg sparas inte.`,
                 [
-                  { text: 'Fortsätt', style: 'cancel' },
+                  { text: `Fortsätt`, style: 'cancel' },
                   { text: 'Avsluta', style: 'destructive', onPress: () => router.back() },
                 ]
               );
@@ -399,8 +411,8 @@ export default function HPAIPracticeScreen() {
                 color: currentQuestion.difficulty === 'easy' ? COLORS.success :
                   currentQuestion.difficulty === 'medium' ? COLORS.warning : COLORS.error
               }]}>
-                {currentQuestion.difficulty === 'easy' ? 'Lätt' :
-                  currentQuestion.difficulty === 'medium' ? 'Medel' : 'Svår'}
+                {currentQuestion.difficulty === 'easy' ? `Lätt` :
+                  currentQuestion.difficulty === 'medium' ? 'Medel' : `Svår`}
               </Text>
             </View>
           </View>
@@ -493,7 +505,7 @@ export default function HPAIPracticeScreen() {
                 end={{ x: 1, y: 0 }}
               >
                 <Text style={styles.nextButtonText}>
-                  {currentIndex < totalQuestions - 1 ? 'Nästa fråga' : 'Avsluta test'}
+                  {currentIndex < totalQuestions - 1 ? `Nästa fråga` : 'Avsluta test'}
                 </Text>
                 <ArrowRight size={20} color="#FFF" />
               </LinearGradient>

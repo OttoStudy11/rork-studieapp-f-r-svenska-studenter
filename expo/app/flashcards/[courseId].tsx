@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { FlashcardSwipe } from '@/components/FlashcardSwipe';
 import { generateFlashcardsFromContent, generateAIExplanation, generateFlashcardsFromText } from '@/lib/flashcard-ai';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRating } from '@/contexts/RatingContext';
 import { ArrowLeft, Sparkles, BookOpen, Plus, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { calculateSM2, getQualityFromSwipe } from '@/lib/sm2-algorithm';
@@ -126,12 +127,12 @@ export default function FlashcardsScreen() {
     onSuccess: () => {
       console.log('Flashcards generated successfully');
       queryClient.invalidateQueries({ queryKey: ['flashcards', courseId] });
-      Alert.alert('Klart! 🎉', 'Flashcards har genererats. Du kan börja träna nu!');
+      Alert.alert(`Klart! 🎉`, `Flashcards har genererats. Du kan börja träna nu!`);
     },
     onError: (error: any) => {
       console.error('Failed to generate flashcards:', error);
       
-      let errorMessage = 'Ett okänt fel uppstod';
+      let errorMessage = `Ett okänt fel uppstod`;
       
       if (error instanceof Error) {
         errorMessage = error.message;
@@ -148,7 +149,7 @@ export default function FlashcardsScreen() {
 
   const handleGenerateFromText = async () => {
     if (!inputText.trim()) {
-      Alert.alert('Ingen text', 'Vänligen skriv in eller klistra in text att generera flashcards från.');
+      Alert.alert('Ingen text', `Vänligen skriv in eller klistra in text att generera flashcards från.`);
       return;
     }
 
@@ -171,10 +172,10 @@ export default function FlashcardsScreen() {
       
       setShowInputModal(false);
       setInputText('');
-      Alert.alert('Klart! 🎉', 'Flashcards har genererats från din text!');
+      Alert.alert(`Klart! 🎉`, `Flashcards har genererats från din text!`);
     } catch (error: any) {
       console.error('Failed to generate flashcards from text:', error);
-      Alert.alert('Fel', error?.message || 'Kunde inte generera flashcards från text');
+      Alert.alert('Fel', error?.message || `Kunde inte generera flashcards från text`);
     } finally {
       setIsGeneratingFromText(false);
     }
@@ -278,6 +279,21 @@ export default function FlashcardsScreen() {
       });
       setCurrentIndex((prev) => prev + 1);
       setAiExplanation(undefined);
+      // Rating prompt: mastered flashcards milestones
+      const newMastered = masteredRef.current + 1;
+      try {
+        if (newMastered === 100) {
+          triggerRating('flashcards_100', {
+            title: `🎉 100 flashcards behärskade!`,
+            message: `Du har nu behärskat 100 flashcards. Otroligt jobb!`,
+          });
+        } else if (newMastered === 500) {
+          triggerRating('flashcards_500', {
+            title: `🎉 500 flashcards behärskade!`,
+            message: `Du har nu behärskat 500 flashcards. Legendariskt!`,
+          });
+        }
+      } catch {}
     }
   };
 
@@ -290,7 +306,7 @@ export default function FlashcardsScreen() {
       const explanation = await generateAIExplanation(card.question, card.answer);
       setAiExplanation(explanation);
     } catch (error: any) {
-      Alert.alert('Fel', 'Kunde inte generera förklaring: ' + error.message);
+      Alert.alert('Fel', `Kunde inte generera förklaring: ` + error.message);
     } finally {
       setIsExplaining(false);
     }
@@ -304,6 +320,9 @@ export default function FlashcardsScreen() {
 
     return { total, reviewed, mastered, due };
   }, [flashcards, progressData, dueCards]);
+  const { triggerRating } = useRating();
+  const masteredRef = React.useRef(stats.mastered);
+  React.useEffect(() => { masteredRef.current = stats.mastered; }, [stats.mastered]);
 
   if (isLoading) {
     return (

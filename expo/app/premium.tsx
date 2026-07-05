@@ -22,6 +22,7 @@ import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 import { usePremium } from '@/contexts/PremiumContext';
+import { useRating } from '@/contexts/RatingContext';
 import {
   Crown,
   Check,
@@ -136,35 +137,35 @@ interface FAQItem {
 const FEATURES: FeatureItem[] = [
   {
     icon: Sparkles,
-    title: 'Obegränsad AI',
-    description: 'Generera quiz och flashcards utan veckogräns',
+    title: `Obegränsad AI`,
+    description: `Generera quiz och flashcards utan veckogräns`,
     gradient: ['#10B981', '#34D399'] as const,
     badge: 'Nytt',
   },
   {
     icon: Layers,
     title: 'AI Flashcards',
-    description: 'Obegränsade AI-flashcards med spaced repetition',
+    description: `Obegränsade AI-flashcards med spaced repetition`,
     gradient: ['#14B8A6', '#5EEAD4'] as const,
     badge: 'AI',
   },
   {
     icon: Target,
     title: 'AI Quiz-generator',
-    description: 'Skapa quiz från valfritt studiematerial på sekunder',
+    description: `Skapa quiz från valfritt studiematerial på sekunder`,
     gradient: ['#059669', '#10B981'] as const,
     badge: 'AI',
   },
   {
     icon: BookOpen,
-    title: 'Komplett HP-övning',
-    description: 'Alla 8 delprov med riktiga frågor och tidsgränser',
+    title: `Komplett HP-övning`,
+    description: `Alla 8 delprov med riktiga frågor och tidsgränser`,
     gradient: ['#F59E0B', '#FBBF24'] as const,
   },
   {
     icon: Brain,
     title: 'AI Studiecoach',
-    description: 'Personlig AI-coach som guidar dig mot dina mål',
+    description: `Personlig AI-coach som guidar dig mot dina mål`,
     gradient: ['#10B981', '#059669'] as const,
     badge: 'AI',
   },
@@ -177,10 +178,10 @@ const FEATURES: FeatureItem[] = [
 ];
 
 const COMPARISON: ComparisonRow[] = [
-  { label: 'AI-genereringar per vecka', free: '10 st', premium: 'Obegränsat' },
+  { label: 'AI-genereringar per vecka', free: '10 st', premium: `Obegränsat` },
   { label: 'AI Flashcards', free: false, premium: true },
   { label: 'AI Quiz-generator', free: false, premium: true },
-  { label: 'Högskoleprov-övning', free: 'Begränsat', premium: 'Komplett' },
+  { label: `Högskoleprov-övning`, free: `Begränsat`, premium: 'Komplett' },
   { label: 'Avancerad statistik', free: false, premium: true },
   { label: 'AI Studiecoach', free: false, premium: true },
 ];
@@ -193,7 +194,7 @@ const STATS: StatItem[] = [
     gradient: ['#10B981', '#34D399'] as const,
   },
   {
-    value: '4.8★',
+    value: `4.8★`,
     label: 'Snittbetyg',
     icon: Star,
     gradient: ['#F59E0B', '#FBBF24'] as const,
@@ -208,20 +209,20 @@ const STATS: StatItem[] = [
 
 const FAQS: FAQItem[] = [
   {
-    question: 'Kan jag avbryta när som helst?',
-    answer: 'Ja, absolut. Du kan avbryta din prenumeration när som helst via App Store eller Google Play. Du behåller full Premium-åtkomst till slutet av den fakturerade perioden.',
+    question: `Kan jag avbryta när som helst?`,
+    answer: `Ja, absolut. Du kan avbryta din prenumeration när som helst via App Store eller Google Play. Du behåller full Premium-åtkomst till slutet av den fakturerade perioden.`,
   },
   {
-    question: 'Vad händer efter provperioden?',
-    answer: 'Efter den 3-dagars gratis provperioden övergår prenumerationen automatiskt till vald plan (månadsvis eller årsvis). Du debiteras inte förrän provperioden är slut och kan avbryta innan dess utan kostnad.',
+    question: `Vad händer efter provperioden?`,
+    answer: `Efter den 3-dagars gratis provperioden övergår prenumerationen automatiskt till vald plan (månadsvis eller årsvis). Du debiteras inte förrän provperioden är slut och kan avbryta innan dess utan kostnad.`,
   },
   {
-    question: 'Fungerar Premium på alla enheter?',
-    answer: 'Ja, din Premium-prenumeration är kopplad till ditt Studiestugan-konto och fungerar på alla enheter där du är inloggad — iPhone, iPad och Android.',
+    question: `Fungerar Premium på alla enheter?`,
+    answer: `Ja, din Premium-prenumeration är kopplad till ditt Studiestugan-konto och fungerar på alla enheter där du är inloggad — iPhone, iPad och Android.`,
   },
   {
-    question: 'Är min data säker?',
-    answer: 'Ja. All din data lagras säkert med end-to-end-kryptering via Supabase. Vi delar aldrig din information med tredje part. Du kan radera ditt konto och all data när som helst.',
+    question: `Är min data säker?`,
+    answer: `Ja. All din data lagras säkert med end-to-end-kryptering via Supabase. Vi delar aldrig din information med tredje part. Du kan radera ditt konto och all data när som helst.`,
   },
 ];
 
@@ -230,6 +231,7 @@ const FAQS: FAQItem[] = [
 // ============================================================================
 export default function PremiumScreen() {
   const { isPremium, getOfferings, purchasePackage, restorePurchases, isOffline } = usePremium();
+  const { triggerRating } = useRating();
 
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
@@ -295,7 +297,7 @@ export default function PremiumScreen() {
   const loadOfferings = useCallback(async (attempt: number = 0) => {
     if (Platform.OS === 'web') {
       setIsLoadingOfferings(false);
-      setLoadError('RevenueCat stöds inte på web. Testa på iOS eller Android.');
+      setLoadError(`RevenueCat stöds inte på web. Testa på iOS eller Android.`);
       return;
     }
 
@@ -316,7 +318,7 @@ export default function PremiumScreen() {
           setTimeout(() => loadOfferings(attempt + 1), delay);
           return;
         }
-        setLoadError('Produkter ej tillgängliga. Försök igen om en stund.');
+        setLoadError(`Produkter ej tillgängliga. Försök igen om en stund.`);
         setIsLoadingOfferings(false);
       }
     } catch (error) {
@@ -338,8 +340,8 @@ export default function PremiumScreen() {
   const pricingPlans = useMemo((): PricingPlan[] => {
     if (!offerings) {
       return [
-        { id: 'monthly', title: 'Månadsvis', price: '...', period: '/månad', isFeatured: false },
-        { id: 'yearly', title: 'Årsvis', price: '...', period: '/år', savings: 'Laddar...', isFeatured: true },
+        { id: 'monthly', title: `Månadsvis`, price: '...', period: `/månad`, isFeatured: false },
+        { id: 'yearly', title: `Årsvis`, price: '...', period: `/år`, savings: 'Laddar...', isFeatured: true },
       ];
     }
 
@@ -353,9 +355,9 @@ export default function PremiumScreen() {
       plans.push({
         id: 'monthly',
         pkg: monthlyPkg,
-        title: 'Månadsvis',
+        title: `Månadsvis`,
         price: monthlyPkg.product.priceString,
-        period: '/månad',
+        period: `/månad`,
         isFeatured: false,
       });
     }
@@ -375,10 +377,10 @@ export default function PremiumScreen() {
       plans.push({
         id: 'yearly',
         pkg: yearlyPkg,
-        title: 'Årsvis',
+        title: `Årsvis`,
         price: yearlyPkg.product.priceString,
-        period: '/år',
-        savings: savings || 'Bäst värde',
+        period: `/år`,
+        savings: savings || `Bäst värde`,
         isFeatured: true,
       });
     }
@@ -389,10 +391,10 @@ export default function PremiumScreen() {
         plans.push({
           id: isAnnual ? 'yearly' : 'monthly',
           pkg,
-          title: isAnnual ? 'Årsvis' : 'Månadsvis',
+          title: isAnnual ? `Årsvis` : `Månadsvis`,
           price: pkg.product.priceString,
-          period: isAnnual ? '/år' : '/månad',
-          savings: isAnnual ? 'Bäst värde' : undefined,
+          period: isAnnual ? `/år` : `/månad`,
+          savings: isAnnual ? `Bäst värde` : undefined,
           isFeatured: isAnnual,
         });
       });
@@ -406,20 +408,20 @@ export default function PremiumScreen() {
   const handlePurchase = async () => {
     if (isPurchasing) return;
     if (isLoadingOfferings) {
-      Alert.alert('Vänligen vänta', 'Produkter laddas fortfarande. Försök igen om ett ögonblick.');
+      Alert.alert(`Vänligen vänta`, `Produkter laddas fortfarande. Försök igen om ett ögonblick.`);
       return;
     }
     if (!offerings) {
-      Alert.alert('Produkter ej tillgängliga', 'Vi kunde inte ladda produkter just nu. Kontrollera din internetanslutning och försök igen.', [
+      Alert.alert(`Produkter ej tillgängliga`, `Vi kunde inte ladda produkter just nu. Kontrollera din internetanslutning och försök igen.`, [
         { text: 'Avbryt', style: 'cancel' },
-        { text: 'Försök igen', onPress: () => loadOfferings(0) },
+        { text: `Försök igen`, onPress: () => loadOfferings(0) },
       ]);
       return;
     }
 
     const selectedPlanData = pricingPlans.find(p => p.id === selectedPlan);
     if (!selectedPlanData?.pkg) {
-      Alert.alert('Fel', 'Vald prenumeration kunde inte hittas. Försök igen.');
+      Alert.alert('Fel', `Vald prenumeration kunde inte hittas. Försök igen.`);
       return;
     }
 
@@ -427,10 +429,17 @@ export default function PremiumScreen() {
     try {
       const success = await purchasePackage(selectedPlanData.pkg);
       if (success) {
+        // Schedule a premium-purchase rating prompt 4 days from now via milestone check today
+        try {
+          triggerRating('premium_purchase', {
+            title: `✨ Välkommen till Premium!`,
+            message: `Tack för att du blev Premium-medlem. Vi hoppas du älskar appen!`,
+          });
+        } catch {}
         router.back();
       }
     } catch (error) {
-      Alert.alert('Köpfel', 'Något gick fel vid köpet. Försök igen eller kontakta support.');
+      Alert.alert(`Köpfel`, `Något gick fel vid köpet. Försök igen eller kontakta support.`);
     } finally {
       setIsPurchasing(false);
     }
@@ -708,7 +717,7 @@ export default function PremiumScreen() {
               <View style={styles.noticeCard}>
                 <AlertCircle size={18} color={PALETTE.amber} />
                 <Text style={styles.noticeText}>
-                  {loadError || 'Du är offline. Vissa funktioner kan vara begränsade.'}
+                  {loadError || `Du är offline. Vissa funktioner kan vara begränsade.`}
                 </Text>
                 {loadError && (
                   <TouchableOpacity onPress={handleRetry} style={styles.retryBtn}>
@@ -947,12 +956,12 @@ export default function PremiumScreen() {
               <View style={styles.errorPricingCard}>
                 <AlertCircle size={28} color={PALETTE.amber} />
                 <Text style={styles.errorPricingTitle}>
-                  {Platform.OS === 'web' ? 'Endast tillgängligt på mobil' : 'Produkter ej tillgängliga'}
+                  {Platform.OS === 'web' ? `Endast tillgängligt på mobil` : `Produkter ej tillgängliga`}
                 </Text>
                 <Text style={styles.errorPricingDesc}>
                   {Platform.OS === 'web'
-                    ? 'RevenueCat in-app purchases fungerar endast på iOS och Android.'
-                    : 'Vi kunde inte ladda produkterna just nu. Försök igen om en stund.'}
+                    ? `RevenueCat in-app purchases fungerar endast på iOS och Android.`
+                    : `Vi kunde inte ladda produkterna just nu. Försök igen om en stund.`}
                 </Text>
                 {Platform.OS !== 'web' && (
                   <TouchableOpacity

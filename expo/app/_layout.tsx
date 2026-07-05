@@ -25,6 +25,8 @@ import { HogskoleprovetProvider } from "@/contexts/HogskoleprovetContext";
 import { HPTrialProvider } from "@/contexts/HPTrialContext";
 import { CommunityProvider } from "@/contexts/CommunityContext";
 import { HPStudyPlanProvider } from "@/contexts/HPStudyPlanContext";
+import { RatingProvider, useRating } from "@/contexts/RatingContext";
+import RatingModal from "@/components/RatingModal";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -47,8 +49,9 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const { toasts, dismissToast } = useToast();
-  const { authInitialized } = useAuth();
+  const { authInitialized, isAuthenticated } = useAuth();
   const { theme } = useTheme();
+  const { trackAppOpen } = useRating();
   const splashHiddenRef = useRef(false);
   const [isReady, setIsReady] = useState(false);
 
@@ -71,8 +74,12 @@ function AppContent() {
     if (authInitialized) {
       setIsReady(true);
       void hideSplash();
+      // Track app open for rating usage-based triggers (once per foreground)
+      if (isAuthenticated) {
+        void trackAppOpen();
+      }
     }
-  }, [authInitialized, hideSplash]);
+  }, [authInitialized, hideSplash, isAuthenticated, trackAppOpen]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -169,7 +176,10 @@ export default function RootLayout() {
                                       <HogskoleprovetProvider>
                                         <HPStudyPlanProvider>
                                           <CommunityProvider>
-                                            <RootLayoutNav />
+                                            <RatingProvider>
+                                              <RootLayoutNav />
+                                              <RatingModal />
+                                            </RatingProvider>
                                           </CommunityProvider>
                                         </HPStudyPlanProvider>
                                       </HogskoleprovetProvider>

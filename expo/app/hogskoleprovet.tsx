@@ -1049,14 +1049,14 @@ const styles = StyleSheet.create({
   // Header — dramatically larger and more prominent
   headerGradient: {
     paddingBottom: 40,
-    paddingTop: 8,
+    paddingTop: 20,
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
     overflow: 'hidden',
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 12,
   },
   backButton: {
     width: 42,

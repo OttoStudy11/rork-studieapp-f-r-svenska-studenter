@@ -1158,7 +1158,7 @@ const styles = StyleSheet.create({
 // ─── PREMIUM UPSELL STYLES ─────────────────────────────────────────────────────
 
 const upStyles = StyleSheet.create({
-  navRow: { paddingHorizontal: 16, paddingTop: 6, marginBottom: 8 },
+  navRow: { paddingHorizontal: 16, paddingTop: 16, marginBottom: 8 },
   backBtn: {
     width: 44, height: 44, borderRadius: 22,
     justifyContent: 'center', alignItems: 'center',
@@ -1239,7 +1239,7 @@ const upStyles = StyleSheet.create({
 
 const selStyles = StyleSheet.create({
   scrollContainer: { paddingBottom: 80 },
-  navRow: { paddingHorizontal: 20, paddingTop: 6 },
+  navRow: { paddingHorizontal: 20, paddingTop: 16 },
   backBtn: {
     width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.15)',
@@ -1397,7 +1397,7 @@ const apStyles = StyleSheet.create({
   },
   navRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: 6,
+    paddingHorizontal: 16, paddingTop: 16,
     marginBottom: 18,
   },
   navBtn: {

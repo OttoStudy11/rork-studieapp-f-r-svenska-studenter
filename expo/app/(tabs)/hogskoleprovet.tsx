@@ -39,6 +39,7 @@ import {
   Calculator,
   MessageCircle,
   ArrowUpRight,
+  BarChart3,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
@@ -339,37 +340,26 @@ export default function HogskoleprovetTab() {
                 </LinearGradient>
               </TouchableOpacity>
 
-              {!isPremium && (
-                <TouchableOpacity style={styles.heroUnlockBtn} onPress={() => router.push(ROUTES.premium)} activeOpacity={0.85}>
-                  <LinearGradient colors={['#FFD700', '#F59E0B']} style={styles.heroUnlockGradient}>
-                    <Crown size={16} color="#000" />
-                    <Text style={styles.heroUnlockText}>Lås upp PRO</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={styles.heroStatsBtn}
+                onPress={() => router.push(ROUTES.hpStats)}
+                activeOpacity={0.85}
+              >
+                <LinearGradient colors={['rgba(255,255,255,0.22)', 'rgba(255,255,255,0.10)']} style={styles.heroStudyPlanGradient}>
+                  <BarChart3 size={18} color="#FFF" />
+                  <Text style={styles.heroStatsText}>Statistik</Text>
+                  <ArrowUpRight size={16} color="#FFF" />
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
 
-            {/* Bottom stat pills */}
-            {isPremium && (
-              <View style={styles.heroStatPills}>
-                <View style={styles.heroStatPill}>
-                  <Target size={14} color="rgba(255,255,255,0.7)" />
-                  <Text style={styles.heroStatPillValue}>{stats.totalAttempts}</Text>
-                  <Text style={styles.heroStatPillLabel}>pass</Text>
-                </View>
-                <View style={styles.heroStatDivider} />
-                <View style={styles.heroStatPill}>
-                  <Clock size={14} color="rgba(255,255,255,0.7)" />
-                  <Text style={styles.heroStatPillValue}>{stats.totalStudyTime}h</Text>
-                  <Text style={styles.heroStatPillLabel}>studietid</Text>
-                </View>
-                <View style={styles.heroStatDivider} />
-                <View style={styles.heroStatPill}>
-                  <TrendingUp size={14} color="rgba(255,255,255,0.7)" />
-                  <Text style={styles.heroStatPillValue}>{scoreInfo.label}</Text>
-                  <Text style={styles.heroStatPillLabel}>nivå</Text>
-                </View>
-              </View>
+            {!isPremium && (
+              <TouchableOpacity style={styles.heroUnlockFullBtn} onPress={() => router.push(ROUTES.premium)} activeOpacity={0.85}>
+                <LinearGradient colors={['#FFD700', '#F59E0B']} style={styles.heroUnlockGradient}>
+                  <Crown size={16} color="#000" />
+                  <Text style={styles.heroUnlockText}>Lås upp PRO</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             )}
           </LinearGradient>
         </Animated.View>
@@ -487,119 +477,6 @@ export default function HogskoleprovetTab() {
             </TouchableOpacity>
           </View>
         </Animated.View>
-
-        {/* ═══════════════════ STATISTIK ═══════════════════ */}
-        {isPremium && stats.totalAttempts > 0 && (
-          <Animated.View style={{ opacity: fadeAnim }}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Statistik</Text>
-              <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>Din utveckling och prestation</Text>
-            </View>
-
-            {/* 2×2 key stat grid */}
-            <View style={styles.statsGrid}>
-              {/* Accuracy */}
-              <View style={[styles.statsCard, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                <View style={[styles.statsIconDot, { backgroundColor: '#6366F120' }]}>
-                  <Target size={18} color="#6366F1" />
-                </View>
-                <Text style={[styles.statsValue, { color: theme.colors.text }]}>{Math.round(stats.averageScore)}%</Text>
-                <Text style={[styles.statsLabel, { color: theme.colors.textSecondary }]}>Träffsäkerhet</Text>
-                <View style={[styles.statsMiniProgress, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
-                  <View style={[styles.statsMiniFill, { backgroundColor: '#6366F1', width: `${Math.min(100, stats.averageScore)}%` }]} />
-                </View>
-              </View>
-
-              {/* Streak */}
-              <View style={[styles.statsCard, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                <View style={[styles.statsIconDot, { backgroundColor: '#F9731620' }]}>
-                  <Flame size={18} color="#F97316" />
-                </View>
-                <Text style={[styles.statsValue, { color: '#F97316' }]}>{stats.currentStreak}</Text>
-                <Text style={[styles.statsLabel, { color: theme.colors.textSecondary }]}>Dagar i rad</Text>
-                <View style={[styles.statsMiniProgress, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
-                  <View style={[styles.statsMiniFill, { backgroundColor: '#F97316', width: `${Math.min(100, (stats.currentStreak / Math.max(30, stats.longestStreak)) * 100)}%` }]} />
-                </View>
-              </View>
-
-              {/* Study time */}
-              <View style={[styles.statsCard, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                <View style={[styles.statsIconDot, { backgroundColor: '#10B98120' }]}>
-                  <Clock size={18} color="#10B981" />
-                </View>
-                <Text style={[styles.statsValue, { color: theme.colors.text }]}>{stats.totalStudyTime}h</Text>
-                <Text style={[styles.statsLabel, { color: theme.colors.textSecondary }]}>Total studietid</Text>
-                <View style={[styles.statsMiniProgress, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
-                  <View style={[styles.statsMiniFill, { backgroundColor: '#10B981', width: `${Math.min(100, (stats.totalStudyTime / 100) * 100)}%` }]} />
-                </View>
-              </View>
-
-              {/* Estimated HP score */}
-              <View style={[styles.statsCard, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                <View style={[styles.statsIconDot, { backgroundColor: '#FFD70020' }]}>
-                  <Trophy size={18} color="#FFD700" />
-                </View>
-                <Text style={[styles.statsValue, { color: '#FFD700' }]}>{estimatedScore.toFixed(1)}</Text>
-                <Text style={[styles.statsLabel, { color: theme.colors.textSecondary }]}>Uppskattat HP</Text>
-                <View style={[styles.statsMiniProgress, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
-                  <View style={[styles.statsMiniFill, { backgroundColor: '#FFD700', width: `${Math.min(100, (estimatedScore / 2.0) * 100)}%` }]} />
-                </View>
-              </View>
-            </View>
-
-            {/* Section grades */}
-            <View style={[styles.sectionGradesCard, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-              <Text style={[styles.sectionGradesTitle, { color: theme.colors.textSecondary }]}>Sektionsbetyg</Text>
-              {[...HP_SECTIONS].sort((a, b) => {
-                const pa = getSectionProgress(a.code);
-                const pb = getSectionProgress(b.code);
-                return pb.averageScore - pa.averageScore;
-              }).map((section) => {
-                const sp = getSectionProgress(section.code);
-                const hasData = sp.attempts > 0;
-                const pct = hasData ? Math.round(sp.averageScore) : 0;
-                return (
-                  <View key={section.code} style={styles.sectionGradeRow}>
-                    <View style={[styles.sectionGradeCode, { backgroundColor: section.color + '18' }]}>
-                      <Text style={[styles.sectionGradeCodeText, { color: section.color }]}>{section.code}</Text>
-                    </View>
-                    <View style={styles.sectionGradeBarCol}>
-                      <View style={[styles.sectionGradeBarBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
-                        <View style={[styles.sectionGradeBarFill, {
-                          backgroundColor: section.color,
-                          width: `${hasData ? pct : 0}%`,
-                        }]} />
-                      </View>
-                    </View>
-                    <Text style={[styles.sectionGradeValue, { color: hasData ? section.color : theme.colors.textSecondary }]}>
-                      {hasData ? `${pct}%` : '—'}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-
-            {/* Recent improvement trend */}
-            {stats.totalAttempts >= 3 && (
-              <View style={[styles.trendRow, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                <View style={[styles.trendIcon, { backgroundColor: (stats.recentImprovement >= 0 ? '#10B981' : '#EF4444') + '20' }]}>
-                  <TrendingUp size={20} color={stats.recentImprovement >= 0 ? '#10B981' : '#EF4444'} />
-                </View>
-                <View style={styles.trendText}>
-                  <Text style={[styles.trendTitle, { color: theme.colors.text }]}>
-                    {stats.recentImprovement >= 0 ? 'Du förbättrar dig!' : 'Fortsätt kämpa!'}
-                  </Text>
-                  <Text style={[styles.trendSub, { color: theme.colors.textSecondary }]}>
-                    {stats.recentImprovement >= 0
-                      ? `+${stats.recentImprovement}% förbättring i senaste försöken`
-                      : `${stats.recentImprovement}% försämring — fortsätt öva så vänder det`}
-                  </Text>
-                </View>
-                <ChevronRight size={18} color={theme.colors.textSecondary} />
-              </View>
-            )}
-          </Animated.View>
-        )}
 
         {/* ═══════════════════ COMPLETE HÖGSKOLEPROVET ═══════════════════ */}
         <Animated.View style={{ opacity: fadeAnim }}>
@@ -814,7 +691,7 @@ export default function HogskoleprovetTab() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 40 },
 
   // ═══ HERO ═══
   hero: {
@@ -880,23 +757,16 @@ const styles = StyleSheet.create({
   heroScoreLabel: { fontSize: 11, fontWeight: '600' as const, color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
 
   // Hero actions
-  heroActions: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  heroActions: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   heroStudyPlanBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6, minHeight: 52 },
   heroStudyPlanGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 12, gap: 6 },
   heroStudyPlanText: { fontSize: 14, fontWeight: '700' as const, color: '#4F46E5', flexShrink: 1 },
+  heroStatsBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 52, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+  heroStatsText: { fontSize: 14, fontWeight: '700' as const, color: '#FFF', flexShrink: 1 },
   heroUnlockBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6, minHeight: 52 },
   heroUnlockGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 12, gap: 6 },
   heroUnlockText: { fontSize: 14, fontWeight: '700' as const, color: '#000', flexShrink: 1 },
-
-  // Hero stat pills
-  heroStatPills: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingTop: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)',
-  },
-  heroStatPill: { flex: 1, alignItems: 'center', gap: 2 },
-  heroStatPillValue: { fontSize: 16, fontWeight: '800' as const, color: '#FFF' },
-  heroStatPillLabel: { fontSize: 10, fontWeight: '600' as const, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase' as const },
-  heroStatDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.15)' },
+  heroUnlockFullBtn: { borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6, minHeight: 52 },
 
   // ═══ SECTION HEADERS ═══
   sectionHeader: { marginBottom: 18, marginTop: 0 },
@@ -979,40 +849,6 @@ const styles = StyleSheet.create({
   collapseTriggerTitle: { fontSize: 17, fontWeight: '700' as const },
   collapseTriggerSub: { fontSize: 12, fontWeight: '500' as const },
   collapseContent: { paddingTop: 8, gap: 10, marginBottom: 0 },
-
-  // ═══ STATISTIK ═══
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
-  statsCard: {
-    width: SCREEN_WIDTH / 2 - 30, borderRadius: 20, padding: 18, borderWidth: 1,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
-  },
-  statsIconDot: { width: 40, height: 40, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  statsValue: { fontSize: 26, fontWeight: '900' as const, letterSpacing: -0.6, marginBottom: 2 },
-  statsLabel: { fontSize: 11, fontWeight: '600' as const, marginBottom: 10, textTransform: 'uppercase' as const },
-  statsMiniProgress: { height: 4, borderRadius: 2, overflow: 'hidden' },
-  statsMiniFill: { height: '100%', borderRadius: 2 },
-
-  // Section grades
-  sectionGradesCard: { borderRadius: 20, padding: 20, borderWidth: 1, marginBottom: 14 },
-  sectionGradesTitle: { fontSize: 11, fontWeight: '700' as const, letterSpacing: 1, marginBottom: 16, textTransform: 'uppercase' as const },
-  sectionGradeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  sectionGradeCode: { width: 46, paddingVertical: 6, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  sectionGradeCodeText: { fontSize: 12, fontWeight: '800' as const, letterSpacing: 0.5 },
-  sectionGradeBarCol: { flex: 1 },
-  sectionGradeBarBg: { height: 8, borderRadius: 4, overflow: 'hidden' },
-  sectionGradeBarFill: { height: '100%', borderRadius: 4 },
-  sectionGradeValue: { width: 42, fontSize: 13, fontWeight: '700' as const, textAlign: 'right' },
-
-  // Trend row
-  trendRow: {
-    flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: 20,
-    borderWidth: 1, gap: 14, marginBottom: 36,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6, elevation: 1,
-  },
-  trendIcon: { width: 44, height: 44, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  trendText: { flex: 1, gap: 3 },
-  trendTitle: { fontSize: 15, fontWeight: '700' as const },
-  trendSub: { fontSize: 13, fontWeight: '500' as const, lineHeight: 18 },
 
   // ═══ UPSELL ═══
   upsellCard: { borderRadius: 22, padding: 24, marginTop: 36, marginBottom: 36, alignItems: 'center' },

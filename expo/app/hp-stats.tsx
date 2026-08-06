@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Stack } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import {
   ChevronLeft,
   Trophy,
@@ -19,22 +21,131 @@ import {
   Award,
   BarChart3,
   Zap,
+  History,
+  Calendar,
+  CheckCircle2,
+  Layers,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { HP_SECTIONS, HP_MILESTONES, getScoreLabel } from '@/constants/hogskoleprovet';
 import { RadarChart } from '@/components/shared/RadarChart';
+
+interface AttemptRecord {
+  id: string;
+  attempt_type: 'full_test' | 'section_practice' | 'question_practice';
+  section_code: string | null;
+  status: string;
+  total_questions: number;
+  correct_answers: number;
+  score_percentage: number | null;
+  normed_score: number | null;
+  estimated_hp_score: number | null;
+  time_spent_seconds: number | null;
+  time_spent_minutes: number | null;
+  completed_at: string | null;
+  started_at: string;
+}
+
+const formatDate = (isoString: string): string => {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Idag';
+  if (diffDays === 1) return 'Igår';
+  if (diffDays < 7) return `${diffDays} dagar sedan`;
+
+  return date.toLocaleDateString('sv-SE', {
+    day: 'numeric',
+    month: 'short',
+    year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric',
+  });
+};
+
+const formatDuration = (seconds: number | null, minutes: number | null): string => {
+  const totalMinutes = minutes ?? Math.round((seconds ?? 0) / 60);
+  if (totalMinutes < 1) return '<1 min';
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
+
+const getAttemptTypeLabel = (type: string, sectionCode: string | null): { label: string; icon: typeof Layers } => {
+  if (type === 'full_test') return { label: 'Hela provet', icon: Layers };
+  if (type === 'section_practice') {
+    const section = HP_SECTIONS.find((s) => s.code === sectionCode);
+    return { label: section ? section.fullName : 'Delprov', icon: Target };
+  }
+  return { label: 'Frågeövning', icon: CheckCircle2 };
+};
+
+const getScoreColor = (percentage: number): string => {
+  if (percentage >= 80) return '#10B981';
+  if (percentage >= 60) return '#06B6D4';
+  if (percentage >= 40) return '#F59E0B';
+  return '#EF4444';
+};
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function HPStatsScreen() {
   const { theme, isDark } = useTheme();
   const { getUserStats, getSectionProgress, getUnlockedMilestones } = useHogskoleprovet();
+  const { user } = useAuth();
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [refreshing, setRefreshing] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const stats = getUserStats();
   const unlockedMilestones = getUnlockedMilestones();
   const scoreInfo = getScoreLabel(stats.estimatedHPScore);
+
+  const { data: attemptHistory = [], refetch } = useQuery<AttemptRecord[]>({
+    queryKey: ['hp-attempt-history', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('hp_user_exam_attempts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false }) as any;
+      if (error) {
+        console.error('[HP Stats] Error fetching attempt history:', error);
+        return [];
+      }
+      return (data || []) as AttemptRecord[];
+    },
+    enabled: !!user?.id,
+    staleTime: 30_000,
+  });
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  const groupedHistory = useMemo(() => {
+    const groups: Record<string, AttemptRecord[]> = {};
+    attemptHistory.forEach((attempt) => {
+      const dateKey = attempt.completed_at
+        ? new Date(attempt.completed_at).toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
+        : 'Okänt datum';
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(attempt);
+    });
+    return Object.entries(groups).slice(0, 10);
+  }, [attemptHistory]);
+
+  const totalCompleted = attemptHistory.length;
+  const fullTestCount = attemptHistory.filter((a) => a.attempt_type === 'full_test').length;
+  const sectionPracticeCount = attemptHistory.filter((a) => a.attempt_type === 'section_practice').length;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -74,6 +185,14 @@ export default function HPStatsScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
       >
         <Animated.View style={{ opacity: fadeAnim }}>
           <View
@@ -200,6 +319,147 @@ export default function HPStatsScreen() {
                 );
               })}
             </View>
+          </View>
+
+          {/* ═══════════════════ EXAM HISTORY ═══════════════════ */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <History size={18} color={theme.colors.primary} />
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                Provhistorik
+              </Text>
+            </View>
+
+            {totalCompleted === 0 ? (
+              <View style={[styles.historyEmpty, { backgroundColor: theme.colors.card }]}>
+                <View style={[styles.historyEmptyIcon, { backgroundColor: theme.colors.primary + '12' }]}>
+                  <History size={28} color={theme.colors.primary} />
+                </View>
+                <Text style={[styles.historyEmptyTitle, { color: theme.colors.text }]}>
+                  Inga genomförda prov än
+                </Text>
+                <Text style={[styles.historyEmptySub, { color: theme.colors.textSecondary }]}>
+                  Slutför ditt första prov för att se din historik här
+                </Text>
+              </View>
+            ) : (
+              <>
+                {/* Summary row */}
+                <View style={[styles.historySummary, { backgroundColor: theme.colors.card, borderColor: isDark ? theme.colors.border : 'rgba(0,0,0,0.04)' }]}>
+                  <View style={styles.historySummaryItem}>
+                    <Text style={[styles.historySummaryValue, { color: theme.colors.text }]}>{totalCompleted}</Text>
+                    <Text style={[styles.historySummaryLabel, { color: theme.colors.textSecondary }]}>Totalt</Text>
+                  </View>
+                  <View style={[styles.historySummaryDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]} />
+                  <View style={styles.historySummaryItem}>
+                    <Text style={[styles.historySummaryValue, { color: theme.colors.text }]}>{fullTestCount}</Text>
+                    <Text style={[styles.historySummaryLabel, { color: theme.colors.textSecondary }]}>Hela prov</Text>
+                  </View>
+                  <View style={[styles.historySummaryDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]} />
+                  <View style={styles.historySummaryItem}>
+                    <Text style={[styles.historySummaryValue, { color: theme.colors.text }]}>{sectionPracticeCount}</Text>
+                    <Text style={[styles.historySummaryLabel, { color: theme.colors.textSecondary }]}>Delprov</Text>
+                  </View>
+                </View>
+
+                {/* Grouped history */}
+                {groupedHistory.map(([dateLabel, attempts]) => (
+                  <View key={dateLabel} style={styles.historyGroup}>
+                    <View style={styles.historyDateRow}>
+                      <Calendar size={13} color={theme.colors.textSecondary} />
+                      <Text style={[styles.historyDateText, { color: theme.colors.textSecondary }]}>
+                        {dateLabel}
+                      </Text>
+                      <View style={[styles.historyDateLine, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]} />
+                    </View>
+
+                    {attempts.map((attempt) => {
+                      const typeInfo = getAttemptTypeLabel(attempt.attempt_type, attempt.section_code);
+                      const TypeIcon = typeInfo.icon;
+                      const scorePct = attempt.score_percentage
+                        ?? (attempt.total_questions > 0
+                          ? (attempt.correct_answers / attempt.total_questions) * 100
+                          : 0);
+                      const scoreColor = getScoreColor(scorePct);
+                      const isExpanded = expandedId === attempt.id;
+                      const section = attempt.section_code
+                        ? HP_SECTIONS.find((s) => s.code === attempt.section_code)
+                        : null;
+                      const normedScore = attempt.normed_score ? attempt.normed_score * 50 : null;
+
+                      return (
+                        <TouchableOpacity
+                          key={attempt.id}
+                          style={[
+                            styles.historyCard,
+                            { backgroundColor: theme.colors.card, borderColor: isDark ? theme.colors.border : 'rgba(0,0,0,0.04)' },
+                          ]}
+                          onPress={() => setExpandedId(isExpanded ? null : attempt.id)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.historyCardTop}>
+                            <View style={[
+                              styles.historyTypeIcon,
+                              { backgroundColor: (section?.color ?? theme.colors.primary) + '15' },
+                            ]}>
+                              <TypeIcon size={16} color={section?.color ?? theme.colors.primary} />
+                            </View>
+                            <View style={styles.historyCardInfo}>
+                              <Text style={[styles.historyCardTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                                {typeInfo.label}
+                              </Text>
+                              <Text style={[styles.historyCardSub, { color: theme.colors.textSecondary }]}>
+                                {formatDate(attempt.completed_at || attempt.started_at)}
+                              </Text>
+                            </View>
+                            <View style={styles.historyScoreCol}>
+                              <Text style={[styles.historyScorePct, { color: scoreColor }]}>
+                                {Math.round(scorePct)}%
+                              </Text>
+                              <Text style={[styles.historyScoreCorrect, { color: theme.colors.textMuted }]}>
+                                {attempt.correct_answers}/{attempt.total_questions}
+                              </Text>
+                            </View>
+                          </View>
+
+                          {/* Expanded details */}
+                          {isExpanded && (
+                            <View style={[styles.historyCardDetails, { borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
+                              <View style={styles.historyDetailRow}>
+                                <Clock size={14} color={theme.colors.textSecondary} />
+                                <Text style={[styles.historyDetailText, { color: theme.colors.textSecondary }]}>
+                                  Tid: {formatDuration(attempt.time_spent_seconds, attempt.time_spent_minutes)}
+                                </Text>
+                              </View>
+                              {normedScore !== null && (
+                                <View style={styles.historyDetailRow}>
+                                  <Trophy size={14} color={theme.colors.textSecondary} />
+                                  <Text style={[styles.historyDetailText, { color: theme.colors.textSecondary }]}>
+                                    Normerat: {normedScore.toFixed(1)}
+                                  </Text>
+                                </View>
+                              )}
+                              {attempt.estimated_hp_score !== null && (
+                                <View style={styles.historyDetailRow}>
+                                  <TrendingUp size={14} color={theme.colors.textSecondary} />
+                                  <Text style={[styles.historyDetailText, { color: theme.colors.textSecondary }]}>
+                                    Uppskattat HP: {attempt.estimated_hp_score.toFixed(2)}
+                                  </Text>
+                                </View>
+                              )}
+                              {/* Score bar */}
+                              <View style={[styles.historyScoreBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
+                                <View style={[styles.historyScoreBarFill, { backgroundColor: scoreColor, width: `${Math.min(100, scorePct)}%` }]} />
+                              </View>
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ))}
+              </>
+            )}
           </View>
 
           <View style={styles.section}>
@@ -557,5 +817,145 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     marginBottom: 16,
+  },
+
+  // ═══ EXAM HISTORY ═══
+  historyEmpty: {
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    gap: 10,
+  },
+  historyEmptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  historyEmptyTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  historyEmptySub: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  historySummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  historySummaryItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  historySummaryValue: {
+    fontSize: 22,
+    fontWeight: '800' as const,
+    letterSpacing: -0.5,
+  },
+  historySummaryLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+  },
+  historySummaryDivider: {
+    width: 1,
+    height: 32,
+  },
+  historyGroup: {
+    marginBottom: 16,
+  },
+  historyDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  historyDateText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    letterSpacing: 0.3,
+  },
+  historyDateLine: {
+    flex: 1,
+    height: 1,
+    borderRadius: 0.5,
+  },
+  historyCard: {
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  historyCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  historyTypeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyCardInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  historyCardTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  historyCardSub: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  historyScoreCol: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  historyScorePct: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+    letterSpacing: -0.3,
+  },
+  historyScoreCorrect: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+  },
+  historyCardDetails: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    gap: 8,
+  },
+  historyDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  historyDetailText: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  historyScoreBar: {
+    height: 5,
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  historyScoreBarFill: {
+    height: '100%',
+    borderRadius: 3,
   },
 });

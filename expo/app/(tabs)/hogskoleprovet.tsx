@@ -757,11 +757,11 @@ const styles = StyleSheet.create({
   heroScoreLabel: { fontSize: 11, fontWeight: '600' as const, color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
 
   // Hero actions
-  heroActions: { flexDirection: 'row', gap: 10, marginBottom: 10 },
-  heroStudyPlanBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6, minHeight: 52 },
-  heroStudyPlanGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 12, gap: 6 },
+  heroActions: { flexDirection: 'row', gap: 12, marginBottom: 14 },
+  heroStudyPlanBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6, minHeight: 54 },
+  heroStudyPlanGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, paddingHorizontal: 14, gap: 7 },
   heroStudyPlanText: { fontSize: 14, fontWeight: '700' as const, color: '#4F46E5', flexShrink: 1 },
-  heroStatsBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 52, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+  heroStatsBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 54, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 },
   heroStatsText: { fontSize: 14, fontWeight: '700' as const, color: '#FFF', flexShrink: 1 },
   heroUnlockBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6, minHeight: 52 },
   heroUnlockGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 12, gap: 6 },

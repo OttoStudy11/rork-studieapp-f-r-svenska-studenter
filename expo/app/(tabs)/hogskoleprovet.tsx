@@ -295,11 +295,7 @@ export default function HogskoleprovetTab() {
                   <Text style={styles.heroDate}>Höst 2026 · 18 oktober</Text>
                 </View>
               </View>
-              {isPremium && (
-                <View style={styles.heroProBadge}>
-                  <Text style={styles.heroProText}>PRO</Text>
-                </View>
-              )}
+
             </View>
 
             {/* Center: Countdown + Score ring */}

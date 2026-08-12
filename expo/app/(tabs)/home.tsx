@@ -770,39 +770,40 @@ export default function HomeScreen() {
         {/* Level Card */}
         <SlideInView direction="up" delay={275} duration={300}>
           <TouchableOpacity
-            style={[styles.levelCard, { backgroundColor: theme.colors.card }]}
+            style={styles.levelCard}
             onPress={() => router.push(ROUTES.achievements)}
-            activeOpacity={0.8}
+            activeOpacity={0.9}
           >
-            <View style={[styles.levelBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] + '20', borderColor: TIER_COLORS[currentLevel.tier] + '30' }]}>
-              <Text style={styles.levelEmoji}>{currentLevel.iconEmoji || '🏅'}</Text>
-            </View>
-            <View style={styles.levelInfo}>
-              <View style={styles.levelHeader}>
-                <Text style={[styles.levelTitle, { color: theme.colors.text }]}>Nivå {currentLevel.level}</Text>
-                <View style={[styles.levelTierBadge, { backgroundColor: TIER_COLORS[currentLevel.tier] }]}>
-                  <Text style={styles.levelTierText}>{currentLevel.titleSv}</Text>
+            <LinearGradient
+              colors={isDark ? [TIER_COLORS[currentLevel.tier], TIER_COLORS[currentLevel.tier] + 'CC'] : [TIER_COLORS[currentLevel.tier], TIER_COLORS[currentLevel.tier] + 'DD']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.levelCardGradient}
+            >
+              <View style={styles.levelCardContent}>
+                <View style={styles.levelCardLeft}>
+                  <View style={styles.levelIconContainer}>
+                    <Text style={styles.levelEmoji}>{currentLevel.iconEmoji || '🏅'}</Text>
+                  </View>
+                  <View style={styles.levelCardInfo}>
+                    <Text style={styles.levelCardTitle}>Nivå {currentLevel.level} · {currentLevel.titleSv}</Text>
+                    <Text style={styles.levelCardSubtitle} numberOfLines={2}>
+                      {xpProgress.current} / {xpProgress.required} XP till nästa nivå
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={24} color="white" />
+              </View>
+              <View style={styles.levelCardMeta}>
+                <Zap size={14} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.levelMetaText}>{totalXp} XP totalt</Text>
+                <View style={styles.hpMetaDot} />
+                <Text style={styles.levelMetaText}>{Math.round(xpProgress.percent)}%</Text>
+                <View style={styles.levelProgressMini}>
+                  <View style={[styles.levelProgressMiniFill, { width: `${Math.min(100, xpProgress.percent)}%` }]} />
                 </View>
               </View>
-              <View style={[styles.levelProgressBar, { backgroundColor: theme.colors.borderLight }]}>
-                <View
-                  style={[
-                    styles.levelProgressFill,
-                    { width: `${Math.min(100, xpProgress.percent)}%`, backgroundColor: TIER_COLORS[currentLevel.tier] }
-                  ]}
-                />
-              </View>
-              <Text style={[styles.levelProgressText, { color: theme.colors.textSecondary }]}>
-                {xpProgress.current} / {xpProgress.required} XP till nästa nivå
-              </Text>
-            </View>
-            <View style={styles.levelRight}>
-              <View style={styles.levelPoints}>
-                <Zap size={14} color={TIER_COLORS[currentLevel.tier]} />
-                <Text style={[styles.levelPointsNumber, { color: theme.colors.text }]}>{totalXp}</Text>
-              </View>
-              <ChevronRight size={18} color={theme.colors.textMuted} />
-            </View>
+            </LinearGradient>
           </TouchableOpacity>
         </SlideInView>
 
@@ -1385,85 +1386,82 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   levelCard: {
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginHorizontal: 24,
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden' as const,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  levelHeader: {
+  levelCardGradient: {
+    padding: 20,
+    position: 'relative' as const,
+  },
+  levelCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'space-between',
   },
-  levelBadge: {
+  levelCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
+  },
+  levelIconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
-    borderWidth: 1,
   },
-  levelInfo: {
+  levelCardInfo: {
     flex: 1,
   },
-  levelTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    marginBottom: 2,
+  levelCardTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: 'white',
+    marginBottom: 4,
   },
-  levelSubtitle: {
-    fontSize: 14,
-    fontWeight: '500',
+  levelCardSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 18,
   },
   levelEmoji: {
     fontSize: 24,
   },
-  levelTierBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginLeft: 8,
-  },
-  levelTierText: {
-    color: 'white',
-    fontSize: 11,
-    fontWeight: '600' as const,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-  },
-  levelProgressBar: {
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden' as const,
-    marginTop: 6,
-    marginBottom: 4,
-  },
-  levelProgressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  levelProgressText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-  },
-  levelRight: {
-    alignItems: 'center' as const,
-    gap: 4,
-  },
-  levelPoints: {
+  levelCardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+    gap: 6,
   },
-  levelPointsNumber: {
-    fontSize: 16,
-    fontWeight: '700' as const,
+  levelMetaText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  levelProgressMini: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    overflow: 'hidden' as const,
+    marginLeft: 8,
+  },
+  levelProgressMiniFill: {
+    height: '100%',
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
   achievementsButton: {
     borderRadius: 12,

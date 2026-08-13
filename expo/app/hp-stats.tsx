@@ -14,6 +14,7 @@ import { router, Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import {
   ChevronLeft,
+  ChevronRight,
   Trophy,
   Clock,
   Target,
@@ -99,7 +100,6 @@ export default function HPStatsScreen() {
   const { user } = useAuth();
   const [fadeAnim] = useState(new Animated.Value(0));
   const [refreshing, setRefreshing] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const stats = getUserStats();
   const unlockedMilestones = getUnlockedMilestones();
@@ -381,11 +381,9 @@ export default function HPStatsScreen() {
                           ? (attempt.correct_answers / attempt.total_questions) * 100
                           : 0);
                       const scoreColor = getScoreColor(scorePct);
-                      const isExpanded = expandedId === attempt.id;
                       const section = attempt.section_code
                         ? HP_SECTIONS.find((s) => s.code === attempt.section_code)
                         : null;
-                      const normedScore = attempt.normed_score ? attempt.normed_score * 50 : null;
 
                       return (
                         <TouchableOpacity
@@ -394,7 +392,7 @@ export default function HPStatsScreen() {
                             styles.historyCard,
                             { backgroundColor: theme.colors.card, borderColor: isDark ? theme.colors.border : 'rgba(0,0,0,0.04)' },
                           ]}
-                          onPress={() => setExpandedId(isExpanded ? null : attempt.id)}
+                          onPress={() => router.push(`/hp-attempt/${attempt.id}` as never)}
                           activeOpacity={0.7}
                         >
                           <View style={styles.historyCardTop}>
@@ -420,39 +418,8 @@ export default function HPStatsScreen() {
                                 {attempt.correct_answers}/{attempt.total_questions}
                               </Text>
                             </View>
+                            <ChevronRight size={18} color={theme.colors.textMuted} />
                           </View>
-
-                          {/* Expanded details */}
-                          {isExpanded && (
-                            <View style={[styles.historyCardDetails, { borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
-                              <View style={styles.historyDetailRow}>
-                                <Clock size={14} color={theme.colors.textSecondary} />
-                                <Text style={[styles.historyDetailText, { color: theme.colors.textSecondary }]}>
-                                  Tid: {formatDuration(attempt.time_spent_seconds, attempt.time_spent_minutes)}
-                                </Text>
-                              </View>
-                              {normedScore !== null && (
-                                <View style={styles.historyDetailRow}>
-                                  <Trophy size={14} color={theme.colors.textSecondary} />
-                                  <Text style={[styles.historyDetailText, { color: theme.colors.textSecondary }]}>
-                                    Normerat: {normedScore.toFixed(1)}
-                                  </Text>
-                                </View>
-                              )}
-                              {attempt.estimated_hp_score !== null && (
-                                <View style={styles.historyDetailRow}>
-                                  <TrendingUp size={14} color={theme.colors.textSecondary} />
-                                  <Text style={[styles.historyDetailText, { color: theme.colors.textSecondary }]}>
-                                    Uppskattat HP: {attempt.estimated_hp_score.toFixed(2)}
-                                  </Text>
-                                </View>
-                              )}
-                              {/* Score bar */}
-                              <View style={[styles.historyScoreBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
-                                <View style={[styles.historyScoreBarFill, { backgroundColor: scoreColor, width: `${Math.min(100, scorePct)}%` }]} />
-                              </View>
-                            </View>
-                          )}
                         </TouchableOpacity>
                       );
                     })}

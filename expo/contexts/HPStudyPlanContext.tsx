@@ -389,6 +389,57 @@ export const [HPStudyPlanProvider, useHPStudyPlan] = createContextHook(() => {
     await saveProgress(newProgress);
   }, [plan, progress, saveProgress]);
 
+  const markAllComplete = useCallback(async () => {
+    if (!plan) return;
+    const config = PLAN_CONFIGS.find(c => c.type === plan.planType)!;
+    const today = getTodayString();
+
+    const history = [...progress.dailyHistory];
+    let todayEntry = history.find(d => d.date === today);
+    if (!todayEntry) {
+      todayEntry = {
+        date: today,
+        ordCompleted: 0,
+        mekCompleted: 0,
+        quantCompleted: 0,
+        minutesSpent: 0,
+        fullyCompleted: false,
+      };
+      history.push(todayEntry);
+    }
+
+    const idx = history.findIndex(d => d.date === today);
+    const entry = { ...history[idx] };
+
+    const remOrd = Math.max(0, config.wordsPerDay - entry.ordCompleted);
+    const remMek = Math.max(0, config.mekPerDay - entry.mekCompleted);
+    const remQuant = Math.max(0, config.quantPerDay - entry.quantCompleted);
+
+    entry.ordCompleted = config.wordsPerDay;
+    entry.mekCompleted = config.mekPerDay;
+    entry.quantCompleted = config.quantPerDay;
+    entry.minutesSpent += remOrd * 10 + remMek * 15 + remQuant * 10;
+    entry.fullyCompleted = true;
+
+    history[idx] = entry;
+
+    const newProgress: HPStudyProgress = {
+      totalWordsLearned: progress.totalWordsLearned + remOrd,
+      totalMekCompleted: progress.totalMekCompleted + remMek,
+      totalQuantCompleted: progress.totalQuantCompleted + remQuant,
+      totalMinutes: progress.totalMinutes + remOrd * 10 + remMek * 15 + remQuant * 10,
+      lastStudyDate: today,
+      dailyHistory: history,
+      streak: 0,
+      longestStreak: progress.longestStreak,
+    };
+    const streak = calculateStreak(history);
+    newProgress.streak = streak;
+    newProgress.longestStreak = Math.max(streak, progress.longestStreak);
+
+    await saveProgress(newProgress);
+  }, [plan, progress, saveProgress]);
+
   const getTodayProgress = useCallback((): DailyProgress | null => {
     const today = getTodayString();
     return progress.dailyHistory.find(d => d.date === today) ?? null;
@@ -460,6 +511,7 @@ export const [HPStudyPlanProvider, useHPStudyPlan] = createContextHook(() => {
     deletePlan,
     updateSettings,
     updateDailyProgress,
+    markAllComplete,
     getTodayProgress,
     getDaysUntilHP,
     getCountdownMessage,

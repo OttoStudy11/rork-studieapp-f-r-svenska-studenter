@@ -1020,6 +1020,7 @@ export default function HPStudyPlanScreen() {
     selectPlan,
     deletePlan,
     updateSettings,
+    markAllComplete,
     updateDailyProgress,
     getTodayProgress,
     getDaysUntilHP,
@@ -1076,13 +1077,8 @@ export default function HPStudyPlanScreen() {
 
   const handleMarkAllDone = useCallback(async () => {
     if (Platform.OS !== 'web') await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const remOrd = Math.max(0, ordTarget - todayOrd);
-    const remMek = Math.max(0, mekTarget - todayMek);
-    const remQuant = Math.max(0, quantTarget - todayQuant);
-    for (let i = 0; i < remOrd; i++) await updateDailyProgress('ord', 1);
-    for (let i = 0; i < remMek; i++) await updateDailyProgress('mek', 1);
-    for (let i = 0; i < remQuant; i++) await updateDailyProgress('quant', 1);
-  }, [ordTarget, mekTarget, quantTarget, todayOrd, todayMek, todayQuant, updateDailyProgress]);
+    await markAllComplete();
+  }, [markAllComplete]);
 
   const handleDeletePlan = useCallback(() => {
     Alert.alert('Ta bort studieplan', 'Är du säker? Din progress sparas men planen raderas.', [
@@ -1559,7 +1555,7 @@ const taskStyles = StyleSheet.create({
   doneText: { fontSize: 12, fontWeight: '700' as const },
   actionGroup: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   plusBtn: {
-    width: 40, height: 40, borderRadius: 12,
+    width: 44, height: 44, borderRadius: 14,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 1,
   },

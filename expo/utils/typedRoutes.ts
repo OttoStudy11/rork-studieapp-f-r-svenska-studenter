@@ -53,6 +53,7 @@ export const ROUTES = {
   hpSelectVersion: '/hp-select-version' as const,
   hpAiGenerator: '/hp-ai-generator' as const,
   hpAiPractice: '/hp-ai-practice' as const,
+  hpAttempt: (id: string) => `/hp-attempt/${id}` as const,
 
   // Study features
   studyInsights: '/study-insights' as const,

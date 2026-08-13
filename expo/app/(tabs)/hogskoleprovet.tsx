@@ -330,7 +330,7 @@ export default function HogskoleprovetTab() {
               >
                 <LinearGradient colors={['#FFFFFF', 'rgba(255,255,255,0.85)']} style={styles.heroStudyPlanGradient}>
                   <Calendar size={18} color="#4F46E5" />
-                  <Text style={styles.heroStudyPlanText}>Studieplan</Text>
+                  <Text style={styles.heroStudyPlanText} numberOfLines={1}>Studieplan</Text>
                   <ArrowUpRight size={16} color="#4F46E5" />
                 </LinearGradient>
               </TouchableOpacity>
@@ -342,7 +342,7 @@ export default function HogskoleprovetTab() {
               >
                 <LinearGradient colors={['rgba(255,255,255,0.22)', 'rgba(255,255,255,0.10)']} style={styles.heroStudyPlanGradient}>
                   <BarChart3 size={18} color="#FFF" />
-                  <Text style={styles.heroStatsText}>Statistik</Text>
+                  <Text style={styles.heroStatsText} numberOfLines={1}>Statistik</Text>
                   <ArrowUpRight size={16} color="#FFF" />
                 </LinearGradient>
               </TouchableOpacity>
@@ -754,7 +754,7 @@ const styles = StyleSheet.create({
   // Hero actions
   heroActions: { flexDirection: 'row', gap: 12, marginBottom: 14 },
   heroStudyPlanBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 54 },
-  heroStudyPlanGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, paddingHorizontal: 14, gap: 7 },
+  heroStudyPlanGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, paddingHorizontal: 10, gap: 6 },
   heroStudyPlanText: { fontSize: 14, fontWeight: '700' as const, color: '#4F46E5', flexShrink: 1 },
   heroStatsBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 54, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
   heroStatsText: { fontSize: 14, fontWeight: '700' as const, color: '#FFF', flexShrink: 1 },

@@ -116,6 +116,7 @@ function AppContent() {
         <Stack.Screen name="hp-results" options={{ headerShown: false }} />
         <Stack.Screen name="hp-stats" options={{ headerShown: false }} />
         <Stack.Screen name="hp-study-plan" options={{ headerShown: false }} />
+        <Stack.Screen name="hp-attempt/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="community/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="study-insights" options={{ headerShown: false }} />
         <Stack.Screen name="advanced-analytics" options={{ headerShown: false }} />

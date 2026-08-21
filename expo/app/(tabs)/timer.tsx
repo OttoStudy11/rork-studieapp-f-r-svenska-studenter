@@ -30,31 +30,14 @@ import { TimerPersistence } from '@/lib/timer-persistence';
 import { soundManager } from '@/lib/sound-manager';
 import { hapticsManager } from '@/lib/haptics-manager';
 
-import { Play, Pause, Square, Settings, Flame, Target, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, ChevronRight, CheckCircle, TrendingUp, TrendingDown, Award, BarChart3, PieChart, Sunrise, Sun, Moon, Lightbulb, Trophy, Activity } from 'lucide-react-native';
+import { Play, Pause, Square, Settings, Flame, Target, Brain, Zap, Volume2, VolumeX, SkipForward, X, Star, Calendar, Clock, ChevronRight, CheckCircle, TrendingUp, TrendingDown, Award, BarChart3, PieChart, Sunrise, Sun, Moon, Lightbulb, Trophy, Activity, Lock } from 'lucide-react-native';
+import { router } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 
 
 import * as Notifications from 'expo-notifications';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const BG_THEMES = [
-  { colors: ['#FFFFFF', '#F0F0F0'] as [string, string], dark: false, dot: '#D1D5DB' },
-  { colors: ['#FFF7ED', '#FDDCBC'] as [string, string], dark: false, dot: '#F97316' },
-  { colors: ['#EEF6FF', '#BFDBFE'] as [string, string], dark: false, dot: '#3B82F6' },
-  { colors: ['#ECFDF5', '#A7F3D0'] as [string, string], dark: false, dot: '#10B981' },
-  { colors: ['#FFF1F2', '#FECDD3'] as [string, string], dark: false, dot: '#F43F5E' },
-  { colors: ['#0F172A', '#1E293B'] as [string, string], dark: true, dot: '#475569' },
-];
-
-const STATS_BG: string[] = [
-  '#F8FAFC',
-  '#FFFBF5',
-  '#F0F7FF',
-  '#F0FDF8',
-  '#FFF5F6',
-  '#080E1A',
-];
 
 type TimerState = 'idle' | 'running' | 'paused';
 type SessionType = 'focus' | 'break';
@@ -241,13 +224,10 @@ export default function TimerScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const [bgIndex, setBgIndex] = useState<number>(0);
-  
   void motivationalQuote;
   void totalFocusToday;
   void weeklyAverage;
   void bestStreak;
-  const isDarkBg = BG_THEMES[bgIndex].dark;
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   const [completedSessionData, setCompletedSessionData] = useState<{
     duration: number;
@@ -1283,16 +1263,14 @@ export default function TimerScreen() {
       const isActive = (i / totalTicks) <= elapsed;
       const x1 = center + r1 * Math.cos(angle);
       const y1 = center + r1 * Math.sin(angle);
-      const activeColor = sessionType === 'focus'
-        ? (isDarkBg ? '#60A5FA' : '#2563EB')
-        : (isDarkBg ? '#34D399' : '#059669');
+      const activeColor = '#FFFFFF';
       elements.push(
         <React.Fragment key={`tick-${i}`}>
           <Circle
             cx={x1}
             cy={y1}
             r={isMajor ? 2.5 : 1.2}
-            fill={isActive ? activeColor : (isDarkBg ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)')}
+            fill={isActive ? activeColor : 'rgba(255,255,255,0.22)'}
           />
         </React.Fragment>
       );
@@ -1302,13 +1280,13 @@ export default function TimerScreen() {
     const nx = center + nLen * Math.cos(needleAngle);
     const ny = center + nLen * Math.sin(needleAngle);
     const activeColor = sessionType === 'focus'
-      ? (isDarkBg ? '#60A5FA' : '#2563EB')
-      : (isDarkBg ? '#34D399' : '#059669');
+      ? (isDark ? '#60A5FA' : '#2563EB')
+      : (isDark ? '#34D399' : '#059669');
     elements.push(
       <React.Fragment key="needle">
         <Circle cx={nx} cy={ny} r={5} fill={activeColor} opacity={0.9} />
         <Circle cx={nx} cy={ny} r={2.5} fill="#FFFFFF" />
-        <Circle cx={center} cy={center} r={5} fill={isDarkBg ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'} />
+        <Circle cx={center} cy={center} r={5} fill="rgba(255,255,255,0.25)" />
         <Circle cx={center} cy={center} r={2.5} fill={activeColor} />
       </React.Fragment>
     );
@@ -1316,96 +1294,82 @@ export default function TimerScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
-      <StatusBar barStyle={isDarkBg ? 'light-content' : 'dark-content'} />
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle="light-content" />
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        <LinearGradient colors={BG_THEMES[bgIndex].colors} style={styles.timerBackground}>
+        <LinearGradient colors={theme.colors.gradient as unknown as [string, string]} style={styles.timerBackground}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
-              <Text style={[styles.headerTitle, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>⏱️ Timer</Text>
+              <Text style={styles.headerTitle}>Timer</Text>
             </View>
             <View style={styles.headerRight}>
               <TouchableOpacity
-                style={[styles.headerIconButton, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)' }]}
+                style={styles.headerIconButton}
                 onPress={() => { soundManager.setEnabled(!settings.soundEnabled); }}
                 activeOpacity={0.7}
               >
                 {settings.soundEnabled ? (
-                  <Volume2 size={18} color={isDarkBg ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'} />
+                  <Volume2 size={18} color="rgba(255,255,255,0.85)" />
                 ) : (
-                  <VolumeX size={18} color={isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'} />
+                  <VolumeX size={18} color="rgba(255,255,255,0.4)" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.headerIconButton, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)' }]}
+                style={styles.headerIconButton}
                 onPress={() => setShowSettings(true)}
                 activeOpacity={0.7}
               >
-                <Settings size={18} color={isDarkBg ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'} />
+                <Settings size={18} color="rgba(255,255,255,0.85)" />
               </TouchableOpacity>
             </View>
-          </View>
-          <View style={styles.bgPickerRow}>
-            {BG_THEMES.map((bg, i) => (
-              <TouchableOpacity
-                key={i}
-                style={[
-                  styles.bgPickerDot,
-                  { backgroundColor: bg.dot },
-                  i === bgIndex && [styles.bgPickerDotActive, { borderColor: isDarkBg ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.45)' }]
-                ]}
-                onPress={() => setBgIndex(i)}
-                activeOpacity={0.8}
-              />
-            ))}
           </View>
         </View>
 
         <View style={styles.timerSection}>
-          <Text style={[styles.timerSessionName, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>
-            {sessionType === 'focus' ? `🎯 Fokus` : `☕ Paus`}
+          <Text style={styles.timerSessionName}>
+            {sessionType === 'focus' ? 'Fokus' : 'Paus'}
           </Text>
-          <Text style={[styles.timerSessionSub, { color: isDarkBg ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)' }]}>{getSelectedCourseTitle()}</Text>
+          <Text style={styles.timerSessionSub}>{getSelectedCourseTitle()}</Text>
 
           <Animated.View style={[styles.timerWrapper, { transform: [{ scale: timerState === 'running' ? pulseAnim : scaleAnim }] }]}>
             <View style={[styles.timer3DOuterRing, {
               width: timerCircleSize + 20,
               height: timerCircleSize + 20,
               borderRadius: (timerCircleSize + 20) / 2,
-              backgroundColor: isDarkBg ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+              backgroundColor: 'rgba(255,255,255,0.05)',
               borderWidth: 1,
-              borderColor: isDarkBg ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+              borderColor: 'rgba(255,255,255,0.10)',
             }]}>
               <View style={[styles.timerDarkCircle, {
                 width: timerCircleSize,
                 height: timerCircleSize,
-                shadowColor: sessionType === 'focus' ? '#2563EB' : '#059669',
+                shadowColor: 'rgba(99,102,241,0.45)',
               }]}>
                 <Svg width={timerCircleSize} height={timerCircleSize}>
                   <Circle
                     cx={timerCircleSize / 2}
                     cy={timerCircleSize / 2}
                     r={timerCircleSize / 2}
-                    fill={isDarkBg ? '#141E2E' : '#F4F6F8'}
+                    fill="rgba(15,17,40,0.35)"
                   />
                   <Circle
                     cx={timerCircleSize / 2}
                     cy={timerCircleSize / 2}
                     r={timerCircleSize / 2 - 3}
-                    fill={isDarkBg ? '#1A2636' : '#FAFBFC'}
+                    fill="rgba(255,255,255,0.05)"
                   />
                   {renderWatchFace()}
                   <Circle
                     cx={timerCircleSize / 2}
                     cy={timerCircleSize / 2}
                     r={timerRadius}
-                    stroke={isDarkBg ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}
+                    stroke="rgba(255,255,255,0.12)"
                     strokeWidth={4}
                     fill="none"
                   />
@@ -1413,7 +1377,7 @@ export default function TimerScreen() {
                     cx={timerCircleSize / 2}
                     cy={timerCircleSize / 2}
                     r={timerRadius}
-                    stroke={sessionType === 'focus' ? (isDarkBg ? '#3B82F6' : '#2563EB') : (isDarkBg ? '#34D399' : '#059669')}
+                    stroke="#FFFFFF"
                     strokeWidth={4}
                     fill="none"
                     strokeDasharray={circumference}
@@ -1426,29 +1390,29 @@ export default function TimerScreen() {
             </View>
           </Animated.View>
 
-          <Text style={[styles.timerDigitsBelow, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>{formatTime(timeLeft)}</Text>
+          <Text style={styles.timerDigitsBelow}>{formatTime(timeLeft)}</Text>
           {timerState === 'running' && (
-            <Text style={[styles.timerRunningHint, { color: isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)' }]}>⏳ pågår...</Text>
+            <Text style={styles.timerRunningHint}>pågår...</Text>
           )}
         </View>
 
         {sessionType === 'focus' && timerState === 'idle' && (
           <View style={styles.courseSection}>
-            <Text style={[styles.sectionLabel, { color: isDarkBg ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)' }]}>KURS</Text>
+            <Text style={styles.sectionLabel}>Kurs</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.courseListContent}>
               <TouchableOpacity
                 style={[
                   styles.courseChip,
                   { 
-                    backgroundColor: !selectedCourse ? (isDarkBg ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.1)') : (isDarkBg ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)'),
-                    borderColor: !selectedCourse ? (isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)') : 'transparent',
+                    backgroundColor: !selectedCourse ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
+                    borderColor: !selectedCourse ? 'rgba(255,255,255,0.5)' : 'transparent',
                     borderWidth: 1,
                   }
                 ]}
                 onPress={() => setSelectedCourse('')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.courseChipText, { color: !selectedCourse ? (isDarkBg ? '#FFFFFF' : '#111827') : (isDarkBg ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)') }]}>Allmänt</Text>
+                <Text style={[styles.courseChipText, { color: !selectedCourse ? '#FFFFFF' : 'rgba(255,255,255,0.55)' }]}>Allmänt</Text>
               </TouchableOpacity>
               {courses.map((course) => (
                 <TouchableOpacity
@@ -1456,15 +1420,15 @@ export default function TimerScreen() {
                   style={[
                     styles.courseChip,
                     { 
-                      backgroundColor: selectedCourse === course.id ? (isDarkBg ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.1)') : (isDarkBg ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)'),
-                      borderColor: selectedCourse === course.id ? (isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)') : 'transparent',
+                      backgroundColor: selectedCourse === course.id ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
+                      borderColor: selectedCourse === course.id ? 'rgba(255,255,255,0.5)' : 'transparent',
                       borderWidth: 1,
                     }
                   ]}
                   onPress={() => setSelectedCourse(course.id)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.courseChipText, { color: selectedCourse === course.id ? (isDarkBg ? '#FFFFFF' : '#111827') : (isDarkBg ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)') }]} numberOfLines={1}>{course.title}</Text>
+                  <Text style={[styles.courseChipText, { color: selectedCourse === course.id ? '#FFFFFF' : 'rgba(255,255,255,0.55)' }]} numberOfLines={1}>{course.title}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -1481,15 +1445,15 @@ export default function TimerScreen() {
                     style={[
                       styles.quickTimeChip,
                       { 
-                        backgroundColor: focusTime === time ? (isDarkBg ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.1)') : (isDarkBg ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
-                        borderColor: focusTime === time ? (isDarkBg ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.22)') : 'transparent',
+                        backgroundColor: focusTime === time ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
+                        borderColor: focusTime === time ? 'rgba(255,255,255,0.5)' : 'transparent',
                         borderWidth: 1,
                       }
                     ]}
                     onPress={() => { setFocusTime(time); setTimeLeft(time * 60); }}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.quickTimeText, { color: focusTime === time ? (isDarkBg ? '#FFFFFF' : '#111827') : (isDarkBg ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)') }]}>{time} min</Text>
+                    <Text style={[styles.quickTimeText, { color: focusTime === time ? '#FFFFFF' : 'rgba(255,255,255,0.55)' }]}>{time} min</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -1499,8 +1463,8 @@ export default function TimerScreen() {
                 onPress={startTimer}
                 activeOpacity={0.85}
               >
-                <View style={[styles.playButtonInner, { backgroundColor: isDarkBg ? '#FFFFFF' : '#111827' }]}>
-                  <Play size={28} color={isDarkBg ? '#111827' : '#FFFFFF'} fill={isDarkBg ? '#111827' : '#FFFFFF'} />
+                <View style={styles.playButtonInner}>
+                  <Play size={28} color={theme.colors.primary} fill={theme.colors.primary} />
                 </View>
               </TouchableOpacity>
             </View>
@@ -1519,17 +1483,17 @@ export default function TimerScreen() {
                 onPress={timerState === 'running' ? pauseTimer : startTimer}
                 activeOpacity={0.85}
               >
-                <View style={[styles.mainControlInner, { backgroundColor: isDarkBg ? '#FFFFFF' : '#111827' }]}>
+                <View style={styles.mainControlInner}>
                   {timerState === 'running' ? (
-                    <Pause size={26} color={isDarkBg ? '#111827' : '#FFFFFF'} fill={isDarkBg ? '#111827' : '#FFFFFF'} />
+                    <Pause size={26} color={theme.colors.primary} fill={theme.colors.primary} />
                   ) : (
-                    <Play size={26} color={isDarkBg ? '#111827' : '#FFFFFF'} fill={isDarkBg ? '#111827' : '#FFFFFF'} />
+                    <Play size={26} color={theme.colors.primary} fill={theme.colors.primary} />
                   )}
                 </View>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.controlButton, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]} 
+                style={[styles.controlButton, { backgroundColor: 'rgba(255,255,255,0.14)' }]} 
                 onPress={async () => {
                   setSessionType(sessionType === 'focus' ? 'break' : 'focus');
                   setTimeLeft(sessionType === 'focus' ? breakTime * 60 : focusTime * 60);
@@ -1540,7 +1504,7 @@ export default function TimerScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <SkipForward size={20} color={isDarkBg ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)'} />
+                <SkipForward size={20} color="rgba(255,255,255,0.75)" />
               </TouchableOpacity>
             </View>
           )}
@@ -1552,105 +1516,81 @@ export default function TimerScreen() {
             { value: `${sessionCount}/${dailyGoal}`, label: `🎯 Dagsmål`, icon: Target, color: '#A78BFA' },
             { value: `${todayStats.minutes}m`, label: `⚡ Idag`, icon: Zap, color: '#34D399' },
           ].map((stat, i) => (
-            <View key={i} style={[styles.statMiniCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.05)' }]}>
-              <View style={[styles.statMiniIcon, { backgroundColor: stat.color + '22' }]}>
+            <View key={i} style={styles.statMiniCard}>
+              <View style={[styles.statMiniIcon, { backgroundColor: stat.color + '33' }]}>
                 <stat.icon size={16} color={stat.color} />
               </View>
-              <Text style={[styles.statMiniValue, { color: isDarkBg ? '#FFFFFF' : '#111827' }]}>{stat.value}</Text>
-              <Text style={[styles.statMiniLabel, { color: isDarkBg ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)' }]}>{stat.label}</Text>
+              <Text style={styles.statMiniValue}>{stat.value}</Text>
+              <Text style={styles.statMiniLabel}>{stat.label}</Text>
             </View>
           ))}
         </View>
         </LinearGradient>
 
-        <View style={[styles.sectionContainer, { backgroundColor: STATS_BG[bgIndex], paddingTop: 28, borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: 4 }]}>
+        <View style={[styles.sectionContainer, { backgroundColor: theme.colors.background, paddingTop: 28, borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: 4 }]}>
           <View style={styles.statsSectionHeader}>
             <View style={styles.statsSectionTitleRow}>
-              <Text style={[styles.sectionTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Statistik</Text>
+              <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>Statistik</Text>
             </View>
-            <Text style={[styles.statsSectionSubtitle, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#64748B' }]}>Din studieprestanda</Text>
+            <Text style={[styles.statsSectionSubtitle, { color: isDark ? 'rgba(255,255,255,0.45)' : '#64748B' }]}>Din studieprestanda</Text>
           </View>
           {!isPremium && (
-            <View style={styles.luxGateWrap}>
-              <LinearGradient
-                colors={isDarkBg ? ['rgba(255,215,0,0.12)', 'rgba(255,165,0,0.08)', 'rgba(255,140,0,0.06)'] : ['#FFFCEC', '#FFF8D6', '#FFFCF0']}
-                style={styles.luxGateOuter}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <View style={styles.luxGateAccentBar} />
-                <View style={styles.luxGateContent}>
-                  <View style={styles.luxGateHeaderRow}>
-                    <LinearGradient
-                      colors={['#FFD700', '#FFA500', '#FF8C00']}
-                      style={styles.luxGateCrownCircle}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    >
-                      <Star size={22} color="#FFF" fill="#FFF" />
-                    </LinearGradient>
-                    <View style={{ flex: 1 }}>
-                      <LinearGradient
-                        colors={['#FFD700', '#FFA500']}
-                        style={styles.luxGatePill}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                      >
-                        <Text style={styles.luxGatePillText}>PREMIUM</Text>
-                      </LinearGradient>
-                      <Text style={[styles.luxGateTitle, { color: isDarkBg ? '#FFFFFF' : '#0A0A1A' }]}>Avancerad Statistik</Text>
-                    </View>
-                  </View>
-
-                  <Text style={[styles.luxGateDesc, { color: isDarkBg ? 'rgba(255,255,255,0.6)' : '#475569' }]}>
-                    {`Fokuspoäng, värmekarta, kursfördelning och djupgående produktivitetsinsikter.`}
-                  </Text>
-
-                  <View style={styles.luxGateGrid}>
-                    {[
-                      { emoji: `🔥`, label: 'Streak & fokus' },
-                      { emoji: `📊`, label: 'Veckotrender' },
-                      { emoji: `🗓`, label: 'Aktivitetskarta' },
-                      { emoji: `🏆`, label: 'Kursranking' },
-                    ].map((f, i) => (
-                      <View key={i} style={[styles.luxGateChip, {
-                        backgroundColor: isDarkBg ? 'rgba(255,215,0,0.1)' : 'rgba(255,180,0,0.08)',
-                        borderColor: isDarkBg ? 'rgba(255,215,0,0.22)' : 'rgba(255,180,0,0.28)',
-                      }]}>
-                        <Text style={{ fontSize: 14 }}>{f.emoji}</Text>
-                        <Text style={[styles.luxGateChipText, { color: isDarkBg ? 'rgba(255,255,255,0.82)' : '#334155' }]}>{f.label}</Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.luxGateBtn}
-                    onPress={() => { require('expo-router').router.push('/premium'); }}
-                    activeOpacity={0.88}
-                  >
-                    <LinearGradient
-                      colors={['#FFD700', '#FFAA00', '#FF8C00']}
-                      style={styles.luxGateBtnGradient}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                    >
-                      <Star size={15} color="#FFF" fill="#FFF" />
-                      <Text style={styles.luxGateBtnText}>{`Lås upp Premium`}</Text>
-                      <ChevronRight size={15} color="rgba(255,255,255,0.85)" />
-                    </LinearGradient>
-                  </TouchableOpacity>
+            <LinearGradient
+              colors={theme.colors.gradient as unknown as [string, string]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.premiumGate}
+            >
+              <View style={styles.premiumGateHeaderRow}>
+                <View style={styles.premiumGateIconCircle}>
+                  <BarChart3 size={20} color="#FFFFFF" />
                 </View>
-              </LinearGradient>
-            </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.premiumGatePillText}>PREMIUM</Text>
+                  <Text style={styles.premiumGateTitle}>Avancerad statistik</Text>
+                </View>
+                <View style={styles.premiumGateLock}>
+                  <Lock size={13} color="rgba(255,255,255,0.8)" />
+                </View>
+              </View>
+
+              <Text style={styles.premiumGateDesc}>
+                Lås upp fokuspoäng, aktivitetskarta, veckotrender och djupgående insikter om din studietid.
+              </Text>
+
+              <View style={styles.premiumGateGrid}>
+                {[
+                  { icon: Flame, label: 'Streak & fokus' },
+                  { icon: BarChart3, label: 'Veckotrender' },
+                  { icon: Calendar, label: 'Aktivitetskarta' },
+                  { icon: Trophy, label: 'Kursranking' },
+                ].map((f, i) => (
+                  <View key={i} style={styles.premiumGateChip}>
+                    <f.icon size={13} color="rgba(255,255,255,0.9)" />
+                    <Text style={styles.premiumGateChipText}>{f.label}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={styles.premiumGateBtn}
+                onPress={() => router.push('/premium')}
+                activeOpacity={0.85}
+              >
+                <Star size={15} color={theme.colors.primary} fill={theme.colors.primary} />
+                <Text style={styles.premiumGateBtnText}>Lås upp Premium</Text>
+                <ChevronRight size={15} color={theme.colors.primary} />
+              </TouchableOpacity>
+            </LinearGradient>
           )}
 
           {isPremium && (
           <>
-          <View style={[styles.focusScoreCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDarkBg ? 0 : 0.06, shadowRadius: 14, elevation: 3 }]}>
+          <View style={[styles.focusScoreCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.06, shadowRadius: 14, elevation: 3 }]}>
             <View style={styles.focusScoreRow}>
               <View style={styles.focusScoreLeft}>
-                <Text style={[styles.focusScoreLabel, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>FOKUSPOÄNG</Text>
-                <Text style={[styles.focusScoreValue, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>{focusScore.score}</Text>
+                <Text style={[styles.focusScoreLabel, { color: isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>FOKUSPOÄNG</Text>
+                <Text style={[styles.focusScoreValue, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>{focusScore.score}</Text>
                 <View style={[styles.focusScoreBadge, { backgroundColor: theme.colors.primary + '18' }]}>
                   <Trophy size={11} color={theme.colors.primary} />
                   <Text style={[styles.focusScoreLevel, { color: theme.colors.primary }]}>{focusScore.level}</Text>
@@ -1658,7 +1598,7 @@ export default function TimerScreen() {
               </View>
               <View style={styles.focusScoreRight}>
                 <Svg width={96} height={96}>
-                  <Circle cx={48} cy={48} r={40} stroke={isDarkBg ? 'rgba(255,255,255,0.08)' : '#E2E8F0'} strokeWidth={6} fill="none" />
+                  <Circle cx={48} cy={48} r={40} stroke={isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'} strokeWidth={6} fill="none" />
                   <Circle cx={48} cy={48} r={40} stroke={theme.colors.primary} strokeWidth={6} fill="none" strokeDasharray={2 * Math.PI * 40} strokeDashoffset={2 * Math.PI * 40 * (1 - focusScore.score / 100)} strokeLinecap="round" transform="rotate(-90 48 48)" />
                 </Svg>
                 <View style={styles.focusScoreCenter}>
@@ -1666,10 +1606,10 @@ export default function TimerScreen() {
                 </View>
               </View>
             </View>
-            <Text style={[styles.focusScoreDesc, { color: isDarkBg ? 'rgba(255,255,255,0.55)' : '#475569' }]}>{focusScore.description}</Text>
+            <Text style={[styles.focusScoreDesc, { color: isDark ? 'rgba(255,255,255,0.55)' : '#475569' }]}>{focusScore.description}</Text>
           </View>
 
-          <View style={[styles.viewToggle, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.08)' : '#EEF2F7' }]}>
+          <View style={[styles.viewToggle, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#EEF2F7' }]}>
             {(['day', 'week'] as const).map((view) => (
               <TouchableOpacity 
                 key={view}
@@ -1682,7 +1622,7 @@ export default function TimerScreen() {
               >
                 <Text style={[
                   styles.viewToggleText,
-                  { color: selectedStatView === view ? '#FFFFFF' : (isDarkBg ? 'rgba(255,255,255,0.5)' : '#64748B') }
+                  { color: selectedStatView === view ? '#FFFFFF' : (isDark ? 'rgba(255,255,255,0.5)' : '#64748B') }
                 ]}>{view === 'day' ? 'Idag' : 'Vecka'}</Text>
               </TouchableOpacity>
             ))}
@@ -1694,12 +1634,12 @@ export default function TimerScreen() {
               { value: selectedStatView === 'day' ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m` : `${Math.floor(weekStats.minutes / 60)}h`, label: 'Total tid', icon: Zap, color: '#F59E0B' },
               { value: streakStats.longest.toString(), label: `Bästa streak`, icon: Flame, color: '#EF4444' },
             ].map((stat, i) => (
-              <View key={i} style={[styles.statsGridCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+              <View key={i} style={[styles.statsGridCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
                 <View style={[styles.statsGridIcon, { backgroundColor: stat.color + '22' }]}>
                   <stat.icon size={17} color={stat.color} />
                 </View>
-                <Text style={[styles.statsGridValue, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>{stat.value}</Text>
-                <Text style={[styles.statsGridLabel, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{stat.label}</Text>
+                <Text style={[styles.statsGridValue, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>{stat.value}</Text>
+                <Text style={[styles.statsGridLabel, { color: isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{stat.label}</Text>
               </View>
             ))}
           </View>
@@ -1737,8 +1677,8 @@ export default function TimerScreen() {
           </View>
 
           {selectedStatView === 'week' && (
-            <View style={[styles.weeklyGraph, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
-              <Text style={[styles.graphTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Veckoöversikt</Text>
+            <View style={[styles.weeklyGraph, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+              <Text style={[styles.graphTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>Veckoöversikt</Text>
               <View style={styles.graphBars}>
                 {weekStats.dailyStats.map((day: any, i: number) => {
                   const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
@@ -1754,7 +1694,7 @@ export default function TimerScreen() {
                             styles.dayBar, 
                             { 
                               height: `${barHeight}%`,
-                              backgroundColor: isToday ? theme.colors.primary : (isDarkBg ? 'rgba(255,255,255,0.1)' : '#E2E8F0'),
+                              backgroundColor: isToday ? theme.colors.primary : (isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'),
                             }
                           ]} 
                         />
@@ -1762,7 +1702,7 @@ export default function TimerScreen() {
                       <Text style={[
                         styles.dayLabel, 
                         { 
-                          color: isToday ? theme.colors.primary : (isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8'),
+                          color: isToday ? theme.colors.primary : (isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8'),
                           fontWeight: isToday ? '600' as const : '400' as const
                         }
                       ]}>{dayName}</Text>
@@ -1773,10 +1713,10 @@ export default function TimerScreen() {
             </View>
           )}
 
-          <View style={[styles.productivityCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+          <View style={[styles.productivityCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Activity size={16} color={theme.colors.secondary} />
-              <Text style={[styles.cardHeaderTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Produktivitet per tid</Text>
+              <Text style={[styles.cardHeaderTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>Produktivitet per tid</Text>
             </View>
             <View style={styles.productivityBars}>
               {Object.entries(productivityByTimeOfDay.periods).map(([key, period]) => {
@@ -1791,13 +1731,13 @@ export default function TimerScreen() {
                       <View style={[styles.productivityIcon, { backgroundColor: theme.colors.secondary + '14' }]}>
                         <IconComponent size={13} color={theme.colors.secondary} />
                       </View>
-                      <Text style={[styles.productivityLabel, { color: isDarkBg ? 'rgba(255,255,255,0.8)' : '#334155' }]}>{period.label}</Text>
+                      <Text style={[styles.productivityLabel, { color: isDark ? 'rgba(255,255,255,0.8)' : '#334155' }]}>{period.label}</Text>
                     </View>
                     <View style={styles.productivityBarContainer}>
-                      <View style={[styles.productivityBarBg, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}>
+                      <View style={[styles.productivityBarBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}>
                         <View style={[styles.productivityBarFill, { width: `${Math.max(percentage, 2)}%`, backgroundColor: theme.colors.secondary }]} />
                       </View>
-                      <Text style={[styles.productivityValue, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>
+                      <Text style={[styles.productivityValue, { color: isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>
                         {Math.round(period.minutes / 60)}h
                       </Text>
                     </View>
@@ -1808,10 +1748,10 @@ export default function TimerScreen() {
           </View>
 
           {courseDistribution.length > 0 && (
-            <View style={[styles.courseDistCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+            <View style={[styles.courseDistCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
               <View style={styles.cardHeader}>
                 <PieChart size={16} color={theme.colors.primary} />
-                <Text style={[styles.cardHeaderTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Kursfördelning</Text>
+                <Text style={[styles.cardHeaderTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>Kursfördelning</Text>
               </View>
               {courseDistribution.slice(0, 5).map((course, index) => {
                 const totalMinutes = courseDistribution.reduce((sum, c) => sum + c.minutes, 0);
@@ -1820,25 +1760,25 @@ export default function TimerScreen() {
                   <View key={index} style={styles.courseDistItem}>
                     <View style={styles.courseDistLeft}>
                       <View style={[styles.courseDistDot, { backgroundColor: course.color }]} />
-                      <Text style={[styles.courseDistName, { color: isDarkBg ? 'rgba(255,255,255,0.85)' : '#1E293B' }]} numberOfLines={1}>{course.name}</Text>
+                      <Text style={[styles.courseDistName, { color: isDark ? 'rgba(255,255,255,0.85)' : '#1E293B' }]} numberOfLines={1}>{course.name}</Text>
                     </View>
-                    <Text style={[styles.courseDistPercent, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{percentage}%</Text>
+                    <Text style={[styles.courseDistPercent, { color: isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{percentage}%</Text>
                   </View>
                 );
               })}
             </View>
           )}
 
-          <View style={[styles.heatmapCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+          <View style={[styles.heatmapCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Calendar size={16} color={theme.colors.warning} />
-              <Text style={[styles.cardHeaderTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>
+              <Text style={[styles.cardHeaderTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>
                 {monthlyHeatmap.monthName.charAt(0).toUpperCase() + monthlyHeatmap.monthName.slice(1)}
               </Text>
             </View>
             <View style={styles.heatmapWeekdays}>
               {['M', 'T', 'O', 'T', 'F', 'L', 'S'].map((day, i) => (
-                <Text key={`${day}-${i}`} style={[styles.heatmapWeekday, { color: isDarkBg ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>{day}</Text>
+                <Text key={`${day}-${i}`} style={[styles.heatmapWeekday, { color: isDark ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>{day}</Text>
               ))}
             </View>
             <View style={styles.heatmapGrid}>
@@ -1847,7 +1787,7 @@ export default function TimerScreen() {
               ))}
               {monthlyHeatmap.data.map((day) => {
                 const intensityColors = [
-                  isDarkBg ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                  isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
                   theme.colors.primary + '30',
                   theme.colors.primary + '55',
                   theme.colors.primary + '88',
@@ -1866,7 +1806,7 @@ export default function TimerScreen() {
                   >
                     <Text style={[
                       styles.heatmapDayText,
-                      { color: day.intensity >= 2 ? '#FFFFFF' : (isDarkBg ? 'rgba(255,255,255,0.35)' : '#94A3B8') },
+                      { color: day.intensity >= 2 ? '#FFFFFF' : (isDark ? 'rgba(255,255,255,0.35)' : '#94A3B8') },
                       isToday && { fontWeight: '700' as const }
                     ]}>
                       {day.day}
@@ -1876,13 +1816,13 @@ export default function TimerScreen() {
               })}
             </View>
             <View style={styles.heatmapLegend}>
-              <Text style={[styles.heatmapLegendText, { color: isDarkBg ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>Mindre</Text>
+              <Text style={[styles.heatmapLegendText, { color: isDark ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>Mindre</Text>
               <View style={styles.heatmapLegendColors}>
                 {[0, 1, 2, 3, 4].map(i => (
                   <View 
                     key={i} 
                     style={[styles.heatmapLegendCell, { backgroundColor: [
-                      isDarkBg ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                      isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
                       theme.colors.primary + '30',
                       theme.colors.primary + '55',
                       theme.colors.primary + '88',
@@ -1891,7 +1831,7 @@ export default function TimerScreen() {
                   />
                 ))}
               </View>
-              <Text style={[styles.heatmapLegendText, { color: isDarkBg ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>Mer</Text>
+              <Text style={[styles.heatmapLegendText, { color: isDark ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>Mer</Text>
             </View>
           </View>
 
@@ -1901,28 +1841,28 @@ export default function TimerScreen() {
               { value: `${Math.floor(totalAllTime / 60)}h`, label: 'Totalt', icon: Target, color: theme.colors.secondary },
               { value: `${pomodoroSessions.length > 0 ? Math.round(totalAllTime / pomodoroSessions.length) : 0}m`, label: 'Snitt', icon: Brain, color: theme.colors.warning },
             ].map((stat, i) => (
-              <View key={i} style={[styles.extraStatCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+              <View key={i} style={[styles.extraStatCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
                 <stat.icon size={16} color={stat.color} />
-                <Text style={[styles.extraStatValue, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>{stat.value}</Text>
-                <Text style={[styles.extraStatLabel, { color: isDarkBg ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{stat.label}</Text>
+                <Text style={[styles.extraStatValue, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>{stat.value}</Text>
+                <Text style={[styles.extraStatLabel, { color: isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{stat.label}</Text>
               </View>
             ))}
           </View>
 
-          <View style={[styles.insightsCard, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkBg ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+          <View style={[styles.insightsCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Lightbulb size={16} color="#F59E0B" />
-              <Text style={[styles.cardHeaderTitle, { color: isDarkBg ? '#FFFFFF' : '#0F172A' }]}>Insikter</Text>
+              <Text style={[styles.cardHeaderTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>Insikter</Text>
             </View>
             {studyInsights.map((insight, index) => (
               <View 
                 key={index} 
-                style={[styles.insightItem, { backgroundColor: isDarkBg ? 'rgba(255,255,255,0.05)' : '#F8FAFC' }]}
+                style={[styles.insightItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC' }]}
               >
                 <Text style={styles.insightEmoji}>{insight.icon}</Text>
                 <View style={styles.insightContent}>
-                  <Text style={[styles.insightTitle, { color: isDarkBg ? '#FFFFFF' : '#1E293B' }]}>{insight.title}</Text>
-                  <Text style={[styles.insightDesc, { color: isDarkBg ? 'rgba(255,255,255,0.5)' : '#64748B' }]}>{insight.description}</Text>
+                  <Text style={[styles.insightTitle, { color: isDark ? '#FFFFFF' : '#1E293B' }]}>{insight.title}</Text>
+                  <Text style={[styles.insightDesc, { color: isDark ? 'rgba(255,255,255,0.5)' : '#64748B' }]}>{insight.description}</Text>
                 </View>
               </View>
             ))}
@@ -2230,24 +2170,6 @@ const styles = StyleSheet.create({
   timerBackground: {
     paddingBottom: 4,
   },
-  bgPickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 4,
-  },
-  bgPickerDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  bgPickerDotActive: {
-    borderWidth: 2.5,
-  },
   statsSectionHeader: {
     marginBottom: 20,
   },
@@ -2262,113 +2184,91 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginTop: 3,
   },
-  luxGateWrap: {
+  premiumGate: {
+    borderRadius: 24,
+    padding: 20,
     marginBottom: 24,
-    borderRadius: 22,
-    overflow: 'hidden',
-    shadowColor: '#FFB800',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 18,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
     elevation: 10,
   },
-  luxGateOuter: {
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,215,0,0.35)',
-  },
-  luxGateAccentBar: {
-    height: 3,
-    backgroundColor: '#FFD700',
-    marginHorizontal: 20,
-    borderRadius: 2,
-  },
-  luxGateContent: {
-    padding: 20,
-    paddingTop: 14,
-  },
-  luxGateHeaderRow: {
+  premiumGateHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    marginBottom: 12,
-  },
-  luxGateCrownCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  luxGatePill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
-  luxGatePillText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#FFF',
-    letterSpacing: 1.5,
-  },
-  luxGateTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-  },
-  luxGateDesc: {
-    fontSize: 13,
-    lineHeight: 19,
     marginBottom: 14,
   },
-  luxGateGrid: {
+  premiumGateIconCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  premiumGatePillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 1.8,
+    marginBottom: 3,
+  },
+  premiumGateTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.4,
+  },
+  premiumGateLock: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  premiumGateDesc: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: 16,
+  },
+  premiumGateGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     marginBottom: 18,
   },
-  luxGateChip: {
+  premiumGateChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 11,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: 10,
-    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.13)',
   },
-  luxGateChipText: {
+  premiumGateChipText: {
     fontSize: 12,
     fontWeight: '600',
+    color: 'rgba(255,255,255,0.9)',
   },
-  luxGateBtn: {
-    borderRadius: 13,
-    overflow: 'hidden',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.38,
-    shadowRadius: 10,
-    elevation: 7,
-  },
-  luxGateBtnGradient: {
+  premiumGateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
-    paddingHorizontal: 24,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
   },
-  luxGateBtnText: {
+  premiumGateBtnText: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#FFF',
-    letterSpacing: 0.2,
+    color: '#4F46E5',
+    letterSpacing: 0.1,
   },
   scrollView: {
     flex: 1,
@@ -2396,6 +2296,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     letterSpacing: -0.3,
+    color: '#FFFFFF',
   },
   headerSubtitle: {
     fontSize: 15,
@@ -2409,6 +2310,7 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
   },
   timerSection: {
     alignItems: 'center',
@@ -2418,14 +2320,14 @@ const styles = StyleSheet.create({
   timerSessionName: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#111827',
+    color: '#FFFFFF',
     letterSpacing: -0.5,
     textAlign: 'center',
   },
   timerSessionSub: {
     fontSize: 14,
     fontWeight: '400',
-    color: 'rgba(0,0,0,0.4)',
+    color: 'rgba(255,255,255,0.65)',
     marginTop: 4,
     marginBottom: 20,
     textAlign: 'center',
@@ -2454,7 +2356,7 @@ const styles = StyleSheet.create({
   timerDigitsBelow: {
     fontSize: 44,
     fontWeight: '300',
-    color: '#111827',
+    color: '#FFFFFF',
     letterSpacing: 3,
     marginTop: 22,
     fontVariant: ['tabular-nums'],
@@ -2467,6 +2369,7 @@ const styles = StyleSheet.create({
   timerRunningHint: {
     fontSize: 13,
     fontWeight: '400' as const,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 6,
     letterSpacing: 0.5,
   },
@@ -2513,6 +2416,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 1,
     textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.55)',
     marginBottom: 10,
     paddingHorizontal: 20,
   },
@@ -2550,17 +2454,12 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#111827',
-    shadowColor: '#111827',
+    backgroundColor: '#FFFFFF',
+    shadowColor: 'rgba(99,102,241,0.5)',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.5,
     shadowRadius: 24,
     elevation: 14,
-    borderWidth: 2,
-    borderTopColor: 'rgba(255,255,255,0.15)',
-    borderLeftColor: 'rgba(255,255,255,0.08)',
-    borderRightColor: 'rgba(0,0,0,0.1)',
-    borderBottomColor: 'rgba(0,0,0,0.15)',
   },
   playButtonGradient: {
     width: 80,
@@ -2609,17 +2508,12 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#111827',
-    shadowColor: '#111827',
+    backgroundColor: '#FFFFFF',
+    shadowColor: 'rgba(99,102,241,0.5)',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.5,
     shadowRadius: 20,
     elevation: 12,
-    borderWidth: 2,
-    borderTopColor: 'rgba(255,255,255,0.15)',
-    borderLeftColor: 'rgba(255,255,255,0.08)',
-    borderRightColor: 'rgba(0,0,0,0.1)',
-    borderBottomColor: 'rgba(0,0,0,0.15)',
   },
   mainControlGradient: {
     width: 72,
@@ -2641,11 +2535,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderRadius: 18,
-    borderWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    borderLeftColor: 'rgba(255,255,255,0.04)',
-    borderRightColor: 'rgba(0,0,0,0.02)',
-    borderBottomColor: 'rgba(0,0,0,0.04)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   statMiniIcon: {
     width: 36,
@@ -2660,11 +2550,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.5,
     marginBottom: 2,
+    color: '#FFFFFF',
   },
   statMiniLabel: {
     fontSize: 11,
     fontWeight: '500',
     letterSpacing: 0.2,
+    color: 'rgba(255,255,255,0.55)',
   },
   sectionContainer: {
     paddingHorizontal: 20,

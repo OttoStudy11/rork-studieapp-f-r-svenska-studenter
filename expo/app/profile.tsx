@@ -11,6 +11,7 @@ import {
   StatusBar,
   Alert as RNAlert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { ROUTES } from '@/utils/typedRoutes';
 import { useStudy } from '@/contexts/StudyContext';
@@ -45,9 +46,10 @@ import { TIER_COLORS, RARITY_COLORS, formatXp } from '@/constants/gamification';
 export default function ProfileScreen() {
   const { user, courses, pomodoroSessions, updateUser } = useStudy();
   const { user: authUser } = useAuth();
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
   const { showSuccess } = useToast();
   const gamificationData = useGamification();
+  const insets = useSafeAreaInsets();
   const { 
     totalXp = 0, 
     currentLevel, 
@@ -107,27 +109,11 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Stack.Screen options={{ 
-        title: 'Min Profil',
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: theme.colors.background,
-        },
-        headerTintColor: theme.colors.text,
-        headerShadowVisible: false,
-        headerLeft: () => (
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            style={{ padding: 8, marginLeft: -8 }}
-            activeOpacity={0.7}
-          >
-            <ArrowLeft size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-        ),
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <StatusBar 
-        barStyle={isDark ? 'light-content' : 'dark-content'} 
-        backgroundColor={theme.colors.background}
+        barStyle="light-content" 
+        translucent
+        backgroundColor="transparent"
       />
       
       {/* Profile Header Card */}
@@ -140,8 +126,20 @@ export default function ProfileScreen() {
           colors={theme.colors.gradient as any}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.headerCard}
+          style={[styles.headerCard, { paddingTop: insets.top + 10 }]}
         >
+          {/* Header top row — sits on the gradient, same colour as the profile header */}
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={styles.backButton}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <ArrowLeft size={22} color="white" />
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity 
             style={styles.avatarWrapper}
             onPress={() => setShowAvatarModal(true)}
@@ -500,9 +498,8 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   headerCard: {
-    paddingTop: 32,
-    paddingBottom: 32,
-    paddingHorizontal: 24,
+    paddingBottom: 44,
+    paddingHorizontal: 20,
     alignItems: 'center',
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
@@ -512,7 +509,22 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
+  headerTopRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   avatarWrapper: {
+    marginTop: 12,
     marginBottom: 20,
   },
   avatarPlaceholder: {
@@ -553,7 +565,7 @@ const styles = StyleSheet.create({
   },
   levelSection: {
     paddingHorizontal: 20,
-    marginTop: -32,
+    marginTop: -36,
     marginBottom: 24,
   },
   statsContainer: {

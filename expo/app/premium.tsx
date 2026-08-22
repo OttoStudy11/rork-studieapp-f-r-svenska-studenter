@@ -1031,7 +1031,7 @@ export default function PremiumScreen() {
                           <Text style={styles.pricingPeriod}>{plan.period}</Text>
                         </View>
                         {isFeatured && (
-                          <Text style={styles.pricingSubtext}>Endast ~21 SEK/månad</Text>
+                          <Text style={styles.pricingSubtext}>Endast ~25 SEK/månad</Text>
                         )}
                       </View>
 

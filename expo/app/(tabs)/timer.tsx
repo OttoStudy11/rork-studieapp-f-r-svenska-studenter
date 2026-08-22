@@ -39,6 +39,14 @@ import * as Notifications from 'expo-notifications';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// Light green focus theme — matches the premium trial page
+const FOCUS_BG = '#E8F6F0';
+const FOCUS_GREEN = '#10B981';
+const FOCUS_GREEN_DARK = '#059669';
+const FOCUS_TEXT = '#1A2E25';
+const FOCUS_TEXT_MID = '#3A4A42';
+const FOCUS_TEXT_MUTED = '#6A7A72';
+
 type TimerState = 'idle' | 'running' | 'paused';
 type SessionType = 'focus' | 'break';
 
@@ -1263,14 +1271,14 @@ export default function TimerScreen() {
       const isActive = (i / totalTicks) <= elapsed;
       const x1 = center + r1 * Math.cos(angle);
       const y1 = center + r1 * Math.sin(angle);
-      const activeColor = '#FFFFFF';
+      const activeColor = FOCUS_GREEN;
       elements.push(
         <React.Fragment key={`tick-${i}`}>
           <Circle
             cx={x1}
             cy={y1}
             r={isMajor ? 2.5 : 1.2}
-            fill={isActive ? activeColor : 'rgba(255,255,255,0.22)'}
+            fill={isActive ? activeColor : 'rgba(16,185,129,0.15)'}
           />
         </React.Fragment>
       );
@@ -1286,7 +1294,7 @@ export default function TimerScreen() {
       <React.Fragment key="needle">
         <Circle cx={nx} cy={ny} r={5} fill={activeColor} opacity={0.9} />
         <Circle cx={nx} cy={ny} r={2.5} fill="#FFFFFF" />
-        <Circle cx={center} cy={center} r={5} fill="rgba(255,255,255,0.25)" />
+        <Circle cx={center} cy={center} r={5} fill="rgba(16,185,129,0.2)" />
         <Circle cx={center} cy={center} r={2.5} fill={activeColor} />
       </React.Fragment>
     );
@@ -1294,15 +1302,15 @@ export default function TimerScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.container, { backgroundColor: FOCUS_BG }]}>
+      <StatusBar barStyle="dark-content" />
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        <LinearGradient colors={theme.colors.gradient as unknown as [string, string]} style={styles.timerBackground}>
+        <View style={styles.timerBackground}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
@@ -1315,9 +1323,9 @@ export default function TimerScreen() {
                 activeOpacity={0.7}
               >
                 {settings.soundEnabled ? (
-                  <Volume2 size={18} color="rgba(255,255,255,0.85)" />
+                  <Volume2 size={18} color="#059669" />
                 ) : (
-                  <VolumeX size={18} color="rgba(255,255,255,0.4)" />
+                  <VolumeX size={18} color="rgba(5,150,105,0.45)" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
@@ -1325,7 +1333,7 @@ export default function TimerScreen() {
                 onPress={() => setShowSettings(true)}
                 activeOpacity={0.7}
               >
-                <Settings size={18} color="rgba(255,255,255,0.85)" />
+                <Settings size={18} color="#059669" />
               </TouchableOpacity>
             </View>
           </View>
@@ -1342,34 +1350,34 @@ export default function TimerScreen() {
               width: timerCircleSize + 20,
               height: timerCircleSize + 20,
               borderRadius: (timerCircleSize + 20) / 2,
-              backgroundColor: 'rgba(255,255,255,0.05)',
+              backgroundColor: 'rgba(255,255,255,0.65)',
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.10)',
+              borderColor: 'rgba(16,185,129,0.12)',
             }]}>
               <View style={[styles.timerDarkCircle, {
                 width: timerCircleSize,
                 height: timerCircleSize,
-                shadowColor: 'rgba(99,102,241,0.45)',
+                shadowColor: 'rgba(16,185,129,0.30)',
               }]}>
                 <Svg width={timerCircleSize} height={timerCircleSize}>
                   <Circle
                     cx={timerCircleSize / 2}
                     cy={timerCircleSize / 2}
                     r={timerCircleSize / 2}
-                    fill="rgba(15,17,40,0.35)"
+                    fill="#FFFFFF"
                   />
                   <Circle
                     cx={timerCircleSize / 2}
                     cy={timerCircleSize / 2}
                     r={timerCircleSize / 2 - 3}
-                    fill="rgba(255,255,255,0.05)"
+                    fill="#F4FBF8"
                   />
                   {renderWatchFace()}
                   <Circle
                     cx={timerCircleSize / 2}
                     cy={timerCircleSize / 2}
                     r={timerRadius}
-                    stroke="rgba(255,255,255,0.12)"
+                    stroke="rgba(16,185,129,0.12)"
                     strokeWidth={4}
                     fill="none"
                   />
@@ -1377,7 +1385,7 @@ export default function TimerScreen() {
                     cx={timerCircleSize / 2}
                     cy={timerCircleSize / 2}
                     r={timerRadius}
-                    stroke="#FFFFFF"
+                    stroke={FOCUS_GREEN}
                     strokeWidth={4}
                     fill="none"
                     strokeDasharray={circumference}
@@ -1404,15 +1412,15 @@ export default function TimerScreen() {
                 style={[
                   styles.courseChip,
                   { 
-                    backgroundColor: !selectedCourse ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
-                    borderColor: !selectedCourse ? 'rgba(255,255,255,0.5)' : 'transparent',
+                    backgroundColor: !selectedCourse ? '#FFFFFF' : 'rgba(255,255,255,0.65)',
+                    borderColor: !selectedCourse ? 'rgba(16,185,129,0.45)' : 'transparent',
                     borderWidth: 1,
                   }
                 ]}
                 onPress={() => setSelectedCourse('')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.courseChipText, { color: !selectedCourse ? '#FFFFFF' : 'rgba(255,255,255,0.55)' }]}>Allmänt</Text>
+                <Text style={[styles.courseChipText, { color: !selectedCourse ? FOCUS_GREEN_DARK : FOCUS_TEXT_MID }]}>Allmänt</Text>
               </TouchableOpacity>
               {courses.map((course) => (
                 <TouchableOpacity
@@ -1420,15 +1428,15 @@ export default function TimerScreen() {
                   style={[
                     styles.courseChip,
                     { 
-                      backgroundColor: selectedCourse === course.id ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
-                      borderColor: selectedCourse === course.id ? 'rgba(255,255,255,0.5)' : 'transparent',
+                      backgroundColor: selectedCourse === course.id ? '#FFFFFF' : 'rgba(255,255,255,0.65)',
+                      borderColor: selectedCourse === course.id ? 'rgba(16,185,129,0.45)' : 'transparent',
                       borderWidth: 1,
                     }
                   ]}
                   onPress={() => setSelectedCourse(course.id)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.courseChipText, { color: selectedCourse === course.id ? '#FFFFFF' : 'rgba(255,255,255,0.55)' }]} numberOfLines={1}>{course.title}</Text>
+                  <Text style={[styles.courseChipText, { color: selectedCourse === course.id ? FOCUS_GREEN_DARK : FOCUS_TEXT_MID }]} numberOfLines={1}>{course.title}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -1445,15 +1453,15 @@ export default function TimerScreen() {
                     style={[
                       styles.quickTimeChip,
                       { 
-                        backgroundColor: focusTime === time ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
-                        borderColor: focusTime === time ? 'rgba(255,255,255,0.5)' : 'transparent',
+                        backgroundColor: focusTime === time ? '#FFFFFF' : 'rgba(255,255,255,0.65)',
+                        borderColor: focusTime === time ? 'rgba(16,185,129,0.45)' : 'transparent',
                         borderWidth: 1,
                       }
                     ]}
                     onPress={() => { setFocusTime(time); setTimeLeft(time * 60); }}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.quickTimeText, { color: focusTime === time ? '#FFFFFF' : 'rgba(255,255,255,0.55)' }]}>{time} min</Text>
+                    <Text style={[styles.quickTimeText, { color: focusTime === time ? FOCUS_GREEN_DARK : FOCUS_TEXT_MID }]}>{time} min</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -1464,7 +1472,7 @@ export default function TimerScreen() {
                 activeOpacity={0.85}
               >
                 <View style={styles.playButtonInner}>
-                  <Play size={28} color={theme.colors.primary} fill={theme.colors.primary} />
+                  <Play size={28} color="#FFFFFF" fill="#FFFFFF" />
                 </View>
               </TouchableOpacity>
             </View>
@@ -1485,15 +1493,15 @@ export default function TimerScreen() {
               >
                 <View style={styles.mainControlInner}>
                   {timerState === 'running' ? (
-                    <Pause size={26} color={theme.colors.primary} fill={theme.colors.primary} />
+                    <Pause size={26} color="#FFFFFF" fill="#FFFFFF" />
                   ) : (
-                    <Play size={26} color={theme.colors.primary} fill={theme.colors.primary} />
+                    <Play size={26} color="#FFFFFF" fill="#FFFFFF" />
                   )}
                 </View>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.controlButton, { backgroundColor: 'rgba(255,255,255,0.14)' }]} 
+                style={[styles.controlButton, { backgroundColor: 'rgba(255,255,255,0.7)' }]} 
                 onPress={async () => {
                   setSessionType(sessionType === 'focus' ? 'break' : 'focus');
                   setTimeLeft(sessionType === 'focus' ? breakTime * 60 : focusTime * 60);
@@ -1504,7 +1512,7 @@ export default function TimerScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <SkipForward size={20} color="rgba(255,255,255,0.75)" />
+                <SkipForward size={20} color={FOCUS_TEXT_MID} />
               </TouchableOpacity>
             </View>
           )}
@@ -1525,18 +1533,18 @@ export default function TimerScreen() {
             </View>
           ))}
         </View>
-        </LinearGradient>
+        </View>
 
-        <View style={[styles.sectionContainer, { backgroundColor: theme.colors.background, paddingTop: 28, borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: 4 }]}>
+        <View style={[styles.sectionContainer, { backgroundColor: FOCUS_BG, paddingTop: 28, borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: 4 }]}>
           <View style={styles.statsSectionHeader}>
             <View style={styles.statsSectionTitleRow}>
-              <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>Statistik</Text>
+              <Text style={[styles.sectionTitle, { color: '#0F172A' }]}>Statistik</Text>
             </View>
-            <Text style={[styles.statsSectionSubtitle, { color: isDark ? 'rgba(255,255,255,0.45)' : '#64748B' }]}>Din studieprestanda</Text>
+            <Text style={[styles.statsSectionSubtitle, { color: '#64748B' }]}>Din studieprestanda</Text>
           </View>
           {!isPremium && (
             <LinearGradient
-              colors={theme.colors.gradient as unknown as [string, string]}
+              colors={['#10B981', '#34D399'] as [string, string]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.premiumGate}
@@ -1577,45 +1585,45 @@ export default function TimerScreen() {
                 onPress={() => router.push('/premium')}
                 activeOpacity={0.85}
               >
-                <Star size={15} color={theme.colors.primary} fill={theme.colors.primary} />
+                <Star size={15} color="#059669" fill="#059669" />
                 <Text style={styles.premiumGateBtnText}>Lås upp Premium</Text>
-                <ChevronRight size={15} color={theme.colors.primary} />
+                <ChevronRight size={15} color="#059669" />
               </TouchableOpacity>
             </LinearGradient>
           )}
 
           {isPremium && (
           <>
-          <View style={[styles.focusScoreCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.06, shadowRadius: 14, elevation: 3 }]}>
+          <View style={[styles.focusScoreCard, { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 14, elevation: 3 }]}>
             <View style={styles.focusScoreRow}>
               <View style={styles.focusScoreLeft}>
-                <Text style={[styles.focusScoreLabel, { color: isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>FOKUSPOÄNG</Text>
-                <Text style={[styles.focusScoreValue, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>{focusScore.score}</Text>
-                <View style={[styles.focusScoreBadge, { backgroundColor: theme.colors.primary + '18' }]}>
-                  <Trophy size={11} color={theme.colors.primary} />
-                  <Text style={[styles.focusScoreLevel, { color: theme.colors.primary }]}>{focusScore.level}</Text>
+                <Text style={[styles.focusScoreLabel, { color: '#94A3B8' }]}>FOKUSPOÄNG</Text>
+                <Text style={[styles.focusScoreValue, { color: '#0F172A' }]}>{focusScore.score}</Text>
+                <View style={[styles.focusScoreBadge, { backgroundColor: FOCUS_GREEN + '18' }]}>
+                  <Trophy size={11} color={FOCUS_GREEN} />
+                  <Text style={[styles.focusScoreLevel, { color: FOCUS_GREEN }]}>{focusScore.level}</Text>
                 </View>
               </View>
               <View style={styles.focusScoreRight}>
                 <Svg width={96} height={96}>
                   <Circle cx={48} cy={48} r={40} stroke={isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'} strokeWidth={6} fill="none" />
-                  <Circle cx={48} cy={48} r={40} stroke={theme.colors.primary} strokeWidth={6} fill="none" strokeDasharray={2 * Math.PI * 40} strokeDashoffset={2 * Math.PI * 40 * (1 - focusScore.score / 100)} strokeLinecap="round" transform="rotate(-90 48 48)" />
+                  <Circle cx={48} cy={48} r={40} stroke={FOCUS_GREEN} strokeWidth={6} fill="none" strokeDasharray={2 * Math.PI * 40} strokeDashoffset={2 * Math.PI * 40 * (1 - focusScore.score / 100)} strokeLinecap="round" transform="rotate(-90 48 48)" />
                 </Svg>
                 <View style={styles.focusScoreCenter}>
-                  <Award size={24} color={theme.colors.primary} />
+                  <Award size={24} color={FOCUS_GREEN} />
                 </View>
               </View>
             </View>
-            <Text style={[styles.focusScoreDesc, { color: isDark ? 'rgba(255,255,255,0.55)' : '#475569' }]}>{focusScore.description}</Text>
+            <Text style={[styles.focusScoreDesc, { color: '#475569' }]}>{focusScore.description}</Text>
           </View>
 
-          <View style={[styles.viewToggle, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#EEF2F7' }]}>
+          <View style={[styles.viewToggle, { backgroundColor: '#EEF2F7' }]}>
             {(['day', 'week'] as const).map((view) => (
               <TouchableOpacity 
                 key={view}
                 style={[
                   styles.viewToggleButton,
-                  selectedStatView === view && { backgroundColor: theme.colors.primary }
+                  selectedStatView === view && { backgroundColor: FOCUS_GREEN }
                 ]}
                 onPress={() => setSelectedStatView(view)}
                 activeOpacity={0.8}
@@ -1630,36 +1638,36 @@ export default function TimerScreen() {
 
           <View style={styles.statsGrid}>
             {[
-              { value: selectedStatView === 'day' ? todayStats.sessions.toString() : weekStats.sessions.toString(), label: 'Sessioner', icon: Brain, color: theme.colors.primary },
+              { value: selectedStatView === 'day' ? todayStats.sessions.toString() : weekStats.sessions.toString(), label: 'Sessioner', icon: Brain, color: FOCUS_GREEN },
               { value: selectedStatView === 'day' ? `${Math.floor(todayStats.minutes / 60)}h ${todayStats.minutes % 60}m` : `${Math.floor(weekStats.minutes / 60)}h`, label: 'Total tid', icon: Zap, color: '#F59E0B' },
               { value: streakStats.longest.toString(), label: `Bästa streak`, icon: Flame, color: '#EF4444' },
             ].map((stat, i) => (
-              <View key={i} style={[styles.statsGridCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+              <View key={i} style={[styles.statsGridCard, { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }]}>
                 <View style={[styles.statsGridIcon, { backgroundColor: stat.color + '22' }]}>
                   <stat.icon size={17} color={stat.color} />
                 </View>
-                <Text style={[styles.statsGridValue, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>{stat.value}</Text>
-                <Text style={[styles.statsGridLabel, { color: isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{stat.label}</Text>
+                <Text style={[styles.statsGridValue, { color: '#0F172A' }]}>{stat.value}</Text>
+                <Text style={[styles.statsGridLabel, { color: '#94A3B8' }]}>{stat.label}</Text>
               </View>
             ))}
           </View>
 
-          <View style={[styles.weekComparisonCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+          <View style={[styles.weekComparisonCard, { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.weekComparisonHeader}>
-              <BarChart3 size={16} color={theme.colors.primary} />
-              <Text style={[styles.weekComparisonTitle, { color: theme.colors.text }]}>Veckoförändring</Text>
+              <BarChart3 size={16} color={FOCUS_GREEN} />
+              <Text style={[styles.weekComparisonTitle, { color: '#0F172A' }]}>Veckoförändring</Text>
             </View>
             <View style={styles.weekComparisonContent}>
               <View style={styles.weekComparisonItem}>
-                <Text style={[styles.weekComparisonLabel, { color: theme.colors.textMuted }]}>Denna vecka</Text>
-                <Text style={[styles.weekComparisonValue, { color: theme.colors.text }]}>
+                <Text style={[styles.weekComparisonLabel, { color: '#64748B' }]}>Denna vecka</Text>
+                <Text style={[styles.weekComparisonValue, { color: '#0F172A' }]}>
                   {Math.floor(weekComparison.thisWeek.minutes / 60)}h {weekComparison.thisWeek.minutes % 60}m
                 </Text>
               </View>
-              <View style={[styles.weekComparisonDivider, { backgroundColor: theme.colors.border }]} />
+              <View style={[styles.weekComparisonDivider, { backgroundColor: '#E2E8F0' }]} />
               <View style={styles.weekComparisonItem}>
-                <Text style={[styles.weekComparisonLabel, { color: theme.colors.textMuted }]}>Förra veckan</Text>
-                <Text style={[styles.weekComparisonValue, { color: theme.colors.text }]}>
+                <Text style={[styles.weekComparisonLabel, { color: '#64748B' }]}>Förra veckan</Text>
+                <Text style={[styles.weekComparisonValue, { color: '#0F172A' }]}>
                   {Math.floor(weekComparison.lastWeek.minutes / 60)}h {weekComparison.lastWeek.minutes % 60}m
                 </Text>
               </View>
@@ -1677,8 +1685,8 @@ export default function TimerScreen() {
           </View>
 
           {selectedStatView === 'week' && (
-            <View style={[styles.weeklyGraph, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
-              <Text style={[styles.graphTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>Veckoöversikt</Text>
+            <View style={[styles.weeklyGraph, { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }]}>
+              <Text style={[styles.graphTitle, { color: '#0F172A' }]}>Veckoöversikt</Text>
               <View style={styles.graphBars}>
                 {weekStats.dailyStats.map((day: any, i: number) => {
                   const dayName = day.date.toLocaleDateString('sv-SE', { weekday: 'short' });
@@ -1694,7 +1702,7 @@ export default function TimerScreen() {
                             styles.dayBar, 
                             { 
                               height: `${barHeight}%`,
-                              backgroundColor: isToday ? theme.colors.primary : (isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0'),
+                              backgroundColor: isToday ? FOCUS_GREEN : '#E2E8F0',
                             }
                           ]} 
                         />
@@ -1702,7 +1710,7 @@ export default function TimerScreen() {
                       <Text style={[
                         styles.dayLabel, 
                         { 
-                          color: isToday ? theme.colors.primary : (isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8'),
+                          color: isToday ? FOCUS_GREEN_DARK : (isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8'),
                           fontWeight: isToday ? '600' as const : '400' as const
                         }
                       ]}>{dayName}</Text>
@@ -1713,10 +1721,10 @@ export default function TimerScreen() {
             </View>
           )}
 
-          <View style={[styles.productivityCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+          <View style={[styles.productivityCard, { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Activity size={16} color={theme.colors.secondary} />
-              <Text style={[styles.cardHeaderTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>Produktivitet per tid</Text>
+              <Text style={[styles.cardHeaderTitle, { color: '#0F172A' }]}>Produktivitet per tid</Text>
             </View>
             <View style={styles.productivityBars}>
               {Object.entries(productivityByTimeOfDay.periods).map(([key, period]) => {
@@ -1731,13 +1739,13 @@ export default function TimerScreen() {
                       <View style={[styles.productivityIcon, { backgroundColor: theme.colors.secondary + '14' }]}>
                         <IconComponent size={13} color={theme.colors.secondary} />
                       </View>
-                      <Text style={[styles.productivityLabel, { color: isDark ? 'rgba(255,255,255,0.8)' : '#334155' }]}>{period.label}</Text>
+                      <Text style={[styles.productivityLabel, { color: '#334155' }]}>{period.label}</Text>
                     </View>
                     <View style={styles.productivityBarContainer}>
-                      <View style={[styles.productivityBarBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}>
+                      <View style={[styles.productivityBarBg, { backgroundColor: '#E2E8F0' }]}>
                         <View style={[styles.productivityBarFill, { width: `${Math.max(percentage, 2)}%`, backgroundColor: theme.colors.secondary }]} />
                       </View>
-                      <Text style={[styles.productivityValue, { color: isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>
+                      <Text style={[styles.productivityValue, { color: '#94A3B8' }]}>
                         {Math.round(period.minutes / 60)}h
                       </Text>
                     </View>
@@ -1748,10 +1756,10 @@ export default function TimerScreen() {
           </View>
 
           {courseDistribution.length > 0 && (
-            <View style={[styles.courseDistCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+            <View style={[styles.courseDistCard, { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }]}>
               <View style={styles.cardHeader}>
                 <PieChart size={16} color={theme.colors.primary} />
-                <Text style={[styles.cardHeaderTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>Kursfördelning</Text>
+                <Text style={[styles.cardHeaderTitle, { color: '#0F172A' }]}>Kursfördelning</Text>
               </View>
               {courseDistribution.slice(0, 5).map((course, index) => {
                 const totalMinutes = courseDistribution.reduce((sum, c) => sum + c.minutes, 0);
@@ -1760,25 +1768,25 @@ export default function TimerScreen() {
                   <View key={index} style={styles.courseDistItem}>
                     <View style={styles.courseDistLeft}>
                       <View style={[styles.courseDistDot, { backgroundColor: course.color }]} />
-                      <Text style={[styles.courseDistName, { color: isDark ? 'rgba(255,255,255,0.85)' : '#1E293B' }]} numberOfLines={1}>{course.name}</Text>
+                      <Text style={[styles.courseDistName, { color: '#1E293B' }]} numberOfLines={1}>{course.name}</Text>
                     </View>
-                    <Text style={[styles.courseDistPercent, { color: isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{percentage}%</Text>
+                    <Text style={[styles.courseDistPercent, { color: '#94A3B8' }]}>{percentage}%</Text>
                   </View>
                 );
               })}
             </View>
           )}
 
-          <View style={[styles.heatmapCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+          <View style={[styles.heatmapCard, { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Calendar size={16} color={theme.colors.warning} />
-              <Text style={[styles.cardHeaderTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>
+              <Text style={[styles.cardHeaderTitle, { color: '#0F172A' }]}>
                 {monthlyHeatmap.monthName.charAt(0).toUpperCase() + monthlyHeatmap.monthName.slice(1)}
               </Text>
             </View>
             <View style={styles.heatmapWeekdays}>
               {['M', 'T', 'O', 'T', 'F', 'L', 'S'].map((day, i) => (
-                <Text key={`${day}-${i}`} style={[styles.heatmapWeekday, { color: isDark ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>{day}</Text>
+                <Text key={`${day}-${i}`} style={[styles.heatmapWeekday, { color: '#94A3B8' }]}>{day}</Text>
               ))}
             </View>
             <View style={styles.heatmapGrid}>
@@ -1787,11 +1795,11 @@ export default function TimerScreen() {
               ))}
               {monthlyHeatmap.data.map((day) => {
                 const intensityColors = [
-                  isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                  theme.colors.primary + '30',
-                  theme.colors.primary + '55',
-                  theme.colors.primary + '88',
-                  theme.colors.primary
+                  '#F1F5F9',
+                  FOCUS_GREEN + '30',
+                  FOCUS_GREEN + '55',
+                  FOCUS_GREEN + '88',
+                  FOCUS_GREEN
                 ];
                 const isToday = day.day === new Date().getDate();
                 
@@ -1806,7 +1814,7 @@ export default function TimerScreen() {
                   >
                     <Text style={[
                       styles.heatmapDayText,
-                      { color: day.intensity >= 2 ? '#FFFFFF' : (isDark ? 'rgba(255,255,255,0.35)' : '#94A3B8') },
+                      { color: day.intensity >= 2 ? '#FFFFFF' : '#94A3B8' },
                       isToday && { fontWeight: '700' as const }
                     ]}>
                       {day.day}
@@ -1816,53 +1824,53 @@ export default function TimerScreen() {
               })}
             </View>
             <View style={styles.heatmapLegend}>
-              <Text style={[styles.heatmapLegendText, { color: isDark ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>Mindre</Text>
+              <Text style={[styles.heatmapLegendText, { color: '#94A3B8' }]}>Mindre</Text>
               <View style={styles.heatmapLegendColors}>
                 {[0, 1, 2, 3, 4].map(i => (
                   <View 
                     key={i} 
                     style={[styles.heatmapLegendCell, { backgroundColor: [
-                      isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                      theme.colors.primary + '30',
-                      theme.colors.primary + '55',
-                      theme.colors.primary + '88',
-                      theme.colors.primary
+                      '#F1F5F9',
+                      FOCUS_GREEN + '30',
+                      FOCUS_GREEN + '55',
+                      FOCUS_GREEN + '88',
+                      FOCUS_GREEN
                     ][i] }]} 
                   />
                 ))}
               </View>
-              <Text style={[styles.heatmapLegendText, { color: isDark ? 'rgba(255,255,255,0.35)' : '#94A3B8' }]}>Mer</Text>
+              <Text style={[styles.heatmapLegendText, { color: '#94A3B8' }]}>Mer</Text>
             </View>
           </View>
 
           <View style={styles.extraStatsRow}>
             {[
-              { value: `${longestSession}m`, label: `Längsta`, icon: Clock, color: theme.colors.primary },
+              { value: `${longestSession}m`, label: `Längsta`, icon: Clock, color: FOCUS_GREEN },
               { value: `${Math.floor(totalAllTime / 60)}h`, label: 'Totalt', icon: Target, color: theme.colors.secondary },
               { value: `${pomodoroSessions.length > 0 ? Math.round(totalAllTime / pomodoroSessions.length) : 0}m`, label: 'Snitt', icon: Brain, color: theme.colors.warning },
             ].map((stat, i) => (
-              <View key={i} style={[styles.extraStatCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+              <View key={i} style={[styles.extraStatCard, { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }]}>
                 <stat.icon size={16} color={stat.color} />
-                <Text style={[styles.extraStatValue, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>{stat.value}</Text>
-                <Text style={[styles.extraStatLabel, { color: isDark ? 'rgba(255,255,255,0.45)' : '#94A3B8' }]}>{stat.label}</Text>
+                <Text style={[styles.extraStatValue, { color: '#0F172A' }]}>{stat.value}</Text>
+                <Text style={[styles.extraStatLabel, { color: '#94A3B8' }]}>{stat.label}</Text>
               </View>
             ))}
           </View>
 
-          <View style={[styles.insightsCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: 2 }]}>
+          <View style={[styles.insightsCard, { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }]}>
             <View style={styles.cardHeader}>
               <Lightbulb size={16} color="#F59E0B" />
-              <Text style={[styles.cardHeaderTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>Insikter</Text>
+              <Text style={[styles.cardHeaderTitle, { color: '#0F172A' }]}>Insikter</Text>
             </View>
             {studyInsights.map((insight, index) => (
               <View 
                 key={index} 
-                style={[styles.insightItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC' }]}
+                style={[styles.insightItem, { backgroundColor: '#F8FAFC' }]}
               >
                 <Text style={styles.insightEmoji}>{insight.icon}</Text>
                 <View style={styles.insightContent}>
-                  <Text style={[styles.insightTitle, { color: isDark ? '#FFFFFF' : '#1E293B' }]}>{insight.title}</Text>
-                  <Text style={[styles.insightDesc, { color: isDark ? 'rgba(255,255,255,0.5)' : '#64748B' }]}>{insight.description}</Text>
+                  <Text style={[styles.insightTitle, { color: '#1E293B' }]}>{insight.title}</Text>
+                  <Text style={[styles.insightDesc, { color: '#64748B' }]}>{insight.description}</Text>
                 </View>
               </View>
             ))}
@@ -2188,7 +2196,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 20,
     marginBottom: 24,
-    shadowColor: '#6366F1',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.35,
     shadowRadius: 24,
@@ -2267,7 +2275,7 @@ const styles = StyleSheet.create({
   premiumGateBtnText: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#4F46E5',
+    color: '#059669',
     letterSpacing: 0.1,
   },
   scrollView: {
@@ -2296,7 +2304,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     letterSpacing: -0.3,
-    color: '#FFFFFF',
+    color: FOCUS_TEXT,
   },
   headerSubtitle: {
     fontSize: 15,
@@ -2310,7 +2318,7 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: 'rgba(16,185,129,0.12)',
   },
   timerSection: {
     alignItems: 'center',
@@ -2320,14 +2328,14 @@ const styles = StyleSheet.create({
   timerSessionName: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: FOCUS_TEXT,
     letterSpacing: -0.5,
     textAlign: 'center',
   },
   timerSessionSub: {
     fontSize: 14,
     fontWeight: '400',
-    color: 'rgba(255,255,255,0.65)',
+    color: FOCUS_TEXT_MUTED,
     marginTop: 4,
     marginBottom: 20,
     textAlign: 'center',
@@ -2356,7 +2364,7 @@ const styles = StyleSheet.create({
   timerDigitsBelow: {
     fontSize: 44,
     fontWeight: '300',
-    color: '#FFFFFF',
+    color: FOCUS_TEXT,
     letterSpacing: 3,
     marginTop: 22,
     fontVariant: ['tabular-nums'],
@@ -2369,7 +2377,7 @@ const styles = StyleSheet.create({
   timerRunningHint: {
     fontSize: 13,
     fontWeight: '400' as const,
-    color: 'rgba(255,255,255,0.45)',
+    color: FOCUS_TEXT_MUTED,
     marginTop: 6,
     letterSpacing: 0.5,
   },
@@ -2416,7 +2424,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.55)',
+    color: FOCUS_TEXT_MUTED,
     marginBottom: 10,
     paddingHorizontal: 20,
   },
@@ -2454,8 +2462,8 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    shadowColor: 'rgba(99,102,241,0.5)',
+    backgroundColor: FOCUS_GREEN,
+    shadowColor: 'rgba(16,185,129,0.45)',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.5,
     shadowRadius: 24,
@@ -2508,8 +2516,8 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    shadowColor: 'rgba(99,102,241,0.5)',
+    backgroundColor: FOCUS_GREEN,
+    shadowColor: 'rgba(16,185,129,0.45)',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
     shadowRadius: 20,
@@ -2535,7 +2543,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.75)',
   },
   statMiniIcon: {
     width: 36,
@@ -2550,13 +2558,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.5,
     marginBottom: 2,
-    color: '#FFFFFF',
+    color: FOCUS_TEXT,
   },
   statMiniLabel: {
     fontSize: 11,
     fontWeight: '500',
     letterSpacing: 0.2,
-    color: 'rgba(255,255,255,0.55)',
+    color: FOCUS_TEXT_MUTED,
   },
   sectionContainer: {
     paddingHorizontal: 20,

@@ -25,6 +25,7 @@ import { HogskoleprovetProvider } from "@/contexts/HogskoleprovetContext";
 import { HPTrialProvider } from "@/contexts/HPTrialContext";
 import { CommunityProvider } from "@/contexts/CommunityContext";
 import { HPStudyPlanProvider } from "@/contexts/HPStudyPlanContext";
+import { HPTheoryProvider } from "@/contexts/HPTheoryContext";
 import { RatingProvider, useRating } from "@/contexts/RatingContext";
 import RatingModal from "@/components/RatingModal";
 
@@ -116,6 +117,8 @@ function AppContent() {
         <Stack.Screen name="hp-results" options={{ headerShown: false }} />
         <Stack.Screen name="hp-stats" options={{ headerShown: false }} />
         <Stack.Screen name="hp-study-plan" options={{ headerShown: false }} />
+        <Stack.Screen name="hp-theory" options={{ headerShown: false }} />
+        <Stack.Screen name="hp-theory/[articleId]" options={{ headerShown: false }} />
         <Stack.Screen name="hp-attempt/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="community/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="study-insights" options={{ headerShown: false }} />
@@ -176,12 +179,14 @@ export default function RootLayout() {
                                     <HPTrialProvider>
                                       <HogskoleprovetProvider>
                                         <HPStudyPlanProvider>
-                                          <CommunityProvider>
-                                            <RatingProvider>
-                                              <RootLayoutNav />
-                                              <RatingModal />
-                                            </RatingProvider>
-                                          </CommunityProvider>
+                                          <HPTheoryProvider>
+                                            <CommunityProvider>
+                                              <RatingProvider>
+                                                <RootLayoutNav />
+                                                <RatingModal />
+                                              </RatingProvider>
+                                            </CommunityProvider>
+                                          </HPTheoryProvider>
                                         </HPStudyPlanProvider>
                                       </HogskoleprovetProvider>
                                     </HPTrialProvider>

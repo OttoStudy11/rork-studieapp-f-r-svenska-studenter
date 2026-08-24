@@ -17,6 +17,7 @@ import {
 } from '@/constants/hogskoleprovet';
 import { EXTENDED_HP_QUESTIONS } from '@/constants/hogskoleprovet-questions-extended';
 import { ALL_HP_QUESTIONS } from '@/constants/hogskoleprovet-questions';
+import { HP_QUESTIONS_V2 } from '@/constants/hogskoleprovet-questions-v2';
 import { shuffleAnswerOptions } from '@/lib/question-utils';
 import { generateHPQuestionBank } from '@/lib/hp-question-generator';
 
@@ -415,7 +416,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
   };
 
   const getQuestionsBySection = useCallback((sectionCode: string, count: number = 40, testVersion?: string): LocalHPQuestion[] => {
-    const staticQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS];
+    const staticQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS, ...HP_QUESTIONS_V2];
 
     if (testVersion) {
       const versionFiltered = staticQuestions.filter(
@@ -450,7 +451,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
   }, []);
 
   const getQuestionsByTestVersion = useCallback((testVersionId: string): LocalHPQuestion[] => {
-    const staticQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS];
+    const staticQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS, ...HP_QUESTIONS_V2];
     const baseVersionQuestions = staticQuestions.filter(q => q.testVersion === testVersionId);
 
     const sectionCode = HP_TEST_VERSIONS.find(v => v.id === testVersionId)?.sectionCode;

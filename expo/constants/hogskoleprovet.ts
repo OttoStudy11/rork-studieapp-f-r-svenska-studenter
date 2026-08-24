@@ -198,6 +198,12 @@ export interface HPQuestion {
   difficulty: 'easy' | 'medium' | 'hard';
   readingPassage?: string;
   imageUrl?: string;
+  /** Fine-grained topic within the section, e.g. 'synonymer', 'geometri', 'procent' */
+  topic?: string;
+  /** ISO date when the question was added to the bank */
+  dateAdded?: string;
+  /** Source of the question: bundled locally or imported from Supabase */
+  source?: 'local' | 'supabase';
 }
 
 export interface HPTestVersion {

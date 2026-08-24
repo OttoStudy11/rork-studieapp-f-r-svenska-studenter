@@ -19,18 +19,18 @@ import {
   Calendar,
   Flame,
   CheckCircle2,
-  Bell,
   Trophy,
+  Target,
   Clock,
   TrendingUp,
   ArrowRight,
   CheckCheck,
   Sparkles,
-  Target,
   Crown,
-  BarChart3,
   Zap,
   BookOpen,
+  Lock,
+  Calculator,
   Play,
   Settings,
   Trash2,
@@ -88,22 +88,30 @@ function ScaleOnPress({ onPress, style, children, scaleTo = 0.97 }: {
 // PREMIUM UPSELL — Free users
 // ════════════════════════════════════════════════════════════════════════════════
 
-function PremiumUpsellView({ theme, isDark }: { theme: any; isDark: boolean }) {
+function PremiumUpsellView({ theme, isDark, daysUntil }: { theme: any; isDark: boolean; daysUntil: number }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
   }, [fadeAnim]);
 
-  const features = [
-    { icon: Target, color: '#10B981', title: 'Planera din studietid', desc: 'Anpassad intensitetsnivå baserat på hur lång tid du har kvar' },
-    { icon: Flame, color: '#F97316', title: 'Bygg en streak', desc: 'Håll koll på dina studiedagar och bygg starka vanor' },
-    { icon: Bell, color: '#6366F1', title: 'Smarta påminnelser', desc: 'Få notiser vid rätt tid varje dag så du inte missar ett pass' },
-    { icon: BarChart3, color: '#EC4899', title: 'Detaljerad statistik', desc: 'Se din utveckling vecka för vecka med tydliga grafer' },
+  // Preview rows mirroring the real Premium plan's daily tasks (BALANSERAD intensity)
+  const dailyTasks = [
+    { icon: BookOpen, color: '#6366F1', title: 'Lär dig 30 nya ord', tag: 'Ordträning' },
+    { icon: Zap, color: '#EC4899', title: 'Öva menackomplettering', tag: 'Delprov' },
+    { icon: Calculator, color: '#10B981', title: 'Lös matematikuppgifter', tag: 'Delprov' },
   ];
 
+  const benefits = [
+    'Välj intensitet — Lugn, Balanserad eller Intensiv',
+    'Följ streak, statistik och daglig progress',
+    'Smarta påminnelser så du håller takten',
+  ];
+
+  const cardBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
       <SafeAreaView edges={['top']}>
@@ -124,60 +132,116 @@ function PremiumUpsellView({ theme, isDark }: { theme: any; isDark: boolean }) {
         contentContainerStyle={upStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
-          {/* Crown area */}
-          <View style={upStyles.crownArea}>
-            <LinearGradient
-              colors={['#FFD700', '#F59E0B', '#EA580C']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={upStyles.crownCircle}
-            >
-              <Crown size={48} color="#FFF" fill="#FFF" />
-            </LinearGradient>
-            <View style={upStyles.sparkle1}>
-              <Sparkles size={18} color="#FFD700" />
+        <Animated.View style={{ opacity: fadeAnim }}>
+          {/* Header */}
+          <View style={upStyles.headerRow}>
+            <View style={upStyles.headerIcon}>
+              <Calendar size={22} color="#6366F1" />
             </View>
-            <View style={upStyles.sparkle2}>
-              <Sparkles size={14} color="#FFD700" />
+            <View style={upStyles.headerText}>
+              <Text style={[upStyles.overline, { color: theme.colors.textSecondary }]}>
+                HÖGSKOLEPROVET · STUDIEPLAN
+              </Text>
+              <Text style={[upStyles.title, { color: theme.colors.text }]} numberOfLines={2}>
+                Din personliga studieplan
+              </Text>
+            </View>
+          </View>
+          <Text style={[upStyles.subtitle, { color: theme.colors.textSecondary }]}>
+            Få en strukturerad plan anpassad efter dina kurser, mål och prov.
+          </Text>
+
+          {/* Countdown — real days until the exam */}
+          <View style={upStyles.countdownCard}>
+            <View style={upStyles.countdownLeft}>
+              <Text style={upStyles.countdownNum}>{daysUntil}</Text>
+              <Text style={upStyles.countdownUnit}>dagar kvar</Text>
+            </View>
+            <View style={upStyles.countdownDiv} />
+            <View style={upStyles.countdownRight}>
+              <Calendar size={20} color="rgba(255,255,255,0.6)" />
+              <View>
+                <Text style={upStyles.countdownLabel}>Höst 2026</Text>
+                <Text style={upStyles.countdownDate}>18 oktober</Text>
+              </View>
             </View>
           </View>
 
-          <Text style={upStyles.title}>Studieplan kräver Premium</Text>
-          <Text style={upStyles.subtitle}>
-            Få en personlig studieplan med dagliga mål, streak-tracking och smarta påminnelser inför högskoleprovet
-          </Text>
-
-          {/* Feature cards */}
-          <View style={upStyles.featureList}>
-            {features.map((f, i) => (
-              <View key={i} style={upStyles.featureItem}>
-                <View style={[upStyles.featureIcon, { backgroundColor: f.color + '15' }]}>
-                  <f.icon size={22} color={f.color} />
+          {/* Locked daily tasks preview */}
+          <View style={upStyles.sectionHeader}>
+            <Text style={[upStyles.sectionLabel, { color: theme.colors.textSecondary }]}>DAGENS MÅL</Text>
+            <View style={upStyles.lockChip}>
+              <Lock size={12} color="#6366F1" />
+              <Text style={upStyles.lockChipText}>Låst</Text>
+            </View>
+          </View>
+          <View style={upStyles.taskList}>
+            {dailyTasks.map((task, i) => (
+              <View
+                key={i}
+                style={[upStyles.taskRow, { backgroundColor: theme.colors.surface, borderColor: cardBorder }]}
+              >
+                <View style={[upStyles.taskIcon, { backgroundColor: task.color + '15' }]}>
+                  <task.icon size={20} color={task.color} />
                 </View>
-                <View style={upStyles.featureBody}>
-                  <Text style={upStyles.featureTitle}>{f.title}</Text>
-                  <Text style={upStyles.featureDesc}>{f.desc}</Text>
+                <View style={upStyles.taskBody}>
+                  <Text style={[upStyles.taskTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                    {task.title}
+                  </Text>
+                  <Text style={[upStyles.taskTag, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                    {task.tag}
+                  </Text>
+                </View>
+                <View style={[upStyles.taskLock, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
+                  <Lock size={14} color={theme.colors.textSecondary} />
                 </View>
               </View>
             ))}
           </View>
 
-          {/* CTA */}
-          <ScaleOnPress onPress={() => router.push(ROUTES.premium)} style={upStyles.ctaWrap} scaleTo={0.96}>
-            <LinearGradient
-              colors={['#FFD700', '#F59E0B', '#EA580C']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={upStyles.cta}
-            >
-              <Crown size={20} color="#000" />
-              <Text style={upStyles.ctaText}>Lås upp Studieplan</Text>
-              <ArrowRight size={18} color="#000" />
-            </LinearGradient>
-          </ScaleOnPress>
+          {/* Locked progress preview */}
+          <View style={[upStyles.progressStrip, { backgroundColor: theme.colors.surface, borderColor: cardBorder }]}>
+            <Flame size={20} color="#F97316" />
+            <View style={upStyles.progressBody}>
+              <View style={upStyles.progressRow}>
+                <Text style={[upStyles.progressTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                  Dag 14 · 12 dagars streak
+                </Text>
+                <Lock size={13} color={theme.colors.textSecondary} />
+              </View>
+              <View style={[upStyles.progressTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}>
+                <View style={upStyles.progressFill} />
+              </View>
+            </View>
+          </View>
 
-          <Text style={upStyles.trustText}>Ingår i Premium · Ingen bindningstid</Text>
+          {/* Conversion */}
+          <View style={[upStyles.conversionCard, { backgroundColor: isDark ? '#1E1B4B' : '#EEF2FF' }]}>
+            <View style={upStyles.conversionHeader}>
+              <Crown size={18} color="#6366F1" />
+              <Text style={[upStyles.conversionTitle, { color: theme.colors.text }]}>Lås upp Premium</Text>
+            </View>
+            <View style={upStyles.benefitList}>
+              {benefits.map((benefit, i) => (
+                <View key={i} style={upStyles.benefitRow}>
+                  <CheckCircle2 size={16} color="#6366F1" />
+                  <Text style={[upStyles.benefitText, { color: theme.colors.textSecondary }]} numberOfLines={2}>
+                    {benefit}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <ScaleOnPress onPress={() => router.push(ROUTES.premium)} style={upStyles.ctaWrap} scaleTo={0.96}>
+              <View style={upStyles.cta}>
+                <Crown size={18} color="#FFF" />
+                <Text style={upStyles.ctaText}>Lås upp Premium</Text>
+                <ArrowRight size={18} color="#FFF" />
+              </View>
+            </ScaleOnPress>
+            <Text style={[upStyles.trustText, { color: theme.colors.textSecondary }]}>
+              Ingår i Premium · Ingen bindningstid
+            </Text>
+          </View>
         </Animated.View>
       </ScrollView>
     </View>
@@ -1098,7 +1162,7 @@ export default function HPStudyPlanScreen() {
 
   // Free user → upsell
   if (!isPremium) {
-    return <PremiumUpsellView theme={theme} isDark={isDark} />;
+    return <PremiumUpsellView theme={theme} isDark={isDark} daysUntil={daysUntil} />;
   }
 
   // Premium without plan → selection
@@ -1160,75 +1224,85 @@ const upStyles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     backgroundColor: 'transparent',
   },
-  scrollContent: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 80, alignItems: 'center' },
-  crownArea: {
-    position: 'relative',
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  crownCircle: {
-    width: 104, height: 104, borderRadius: 52,
+  scrollContent: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 80 },
+
+  // Header
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 12 },
+  headerIcon: {
+    width: 52, height: 52, borderRadius: 17,
+    backgroundColor: 'rgba(99,102,241,0.12)',
     justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    elevation: 12,
   },
-  sparkle1: { position: 'absolute', top: -8, left: -24 },
-  sparkle2: { position: 'absolute', bottom: 4, right: -18 },
-  title: {
-    fontSize: 28, fontWeight: '800' as const,
-    textAlign: 'center', letterSpacing: -0.6,
-    color: '#1A1A2E',
-    marginBottom: 14,
-  },
-  subtitle: {
-    fontSize: 15, textAlign: 'center',
-    lineHeight: 24, color: '#64748B',
-    marginBottom: 32,
-    paddingHorizontal: 12,
-  },
-  featureList: {
-    width: '100%',
-    gap: 0,
-    marginBottom: 32,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    gap: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
-    minHeight: 64,
-  },
-  featureIcon: {
-    width: 48, height: 48, borderRadius: 14,
-    justifyContent: 'center', alignItems: 'center',
-    flexShrink: 0,
-  },
-  featureBody: { flex: 1 },
-  featureTitle: { fontSize: 16, fontWeight: '700' as const, color: '#1A1A2E', marginBottom: 3 },
-  featureDesc: { fontSize: 13, lineHeight: 19, color: '#64748B' },
-  ctaWrap: {
-    width: '100%',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 10,
-    marginBottom: 16,
-  },
-  cta: {
+  headerText: { flex: 1 },
+  overline: { fontSize: 11, fontWeight: '700' as const, letterSpacing: 1.2, marginBottom: 4 },
+  title: { fontSize: 26, fontWeight: '800' as const, letterSpacing: -0.6 },
+  subtitle: { fontSize: 15, lineHeight: 22, marginBottom: 24 },
+
+  // Countdown card
+  countdownCard: {
     flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18, paddingHorizontal: 24,
-    borderRadius: 18, gap: 10,
+    backgroundColor: '#1E1B4B', borderRadius: 20, padding: 20,
+    marginBottom: 28,
   },
-  ctaText: { fontSize: 17, fontWeight: '800' as const, color: '#000' },
-  trustText: { fontSize: 13, color: '#94A3B8', textAlign: 'center' },
+  countdownLeft: { alignItems: 'flex-start', marginRight: 20 },
+  countdownNum: { fontSize: 36, fontWeight: '900' as const, color: '#FFF', letterSpacing: -1.2, lineHeight: 40 },
+  countdownUnit: {
+    fontSize: 11, fontWeight: '700' as const, color: 'rgba(255,255,255,0.6)',
+    textTransform: 'uppercase' as const, letterSpacing: 0.5, marginTop: 2,
+  },
+  countdownDiv: { width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.12)', marginRight: 20 },
+  countdownRight: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  countdownLabel: { fontSize: 14, fontWeight: '700' as const, color: '#FFF' },
+  countdownDate: { fontSize: 13, color: 'rgba(255,255,255,0.65)', fontWeight: '500' as const, marginTop: 1 },
+
+  // Section header
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  sectionLabel: { fontSize: 12, fontWeight: '700' as const, letterSpacing: 1 },
+  lockChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10,
+    backgroundColor: 'rgba(99,102,241,0.10)',
+  },
+  lockChipText: { fontSize: 11, fontWeight: '700' as const, color: '#6366F1' },
+
+  // Task rows
+  taskList: { gap: 10, marginBottom: 28 },
+  taskRow: {
+    flexDirection: 'row', alignItems: 'center',
+    padding: 16, borderRadius: 18, borderWidth: 1, gap: 14,
+  },
+  taskIcon: { width: 46, height: 46, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  taskBody: { flex: 1, gap: 3 },
+  taskTitle: { fontSize: 15, fontWeight: '700' as const },
+  taskTag: { fontSize: 12, fontWeight: '500' as const },
+  taskLock: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+
+  // Progress strip
+  progressStrip: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    padding: 16, borderRadius: 18, borderWidth: 1, marginBottom: 28,
+  },
+  progressBody: { flex: 1, gap: 8 },
+  progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  progressTitle: { fontSize: 14, fontWeight: '700' as const, flex: 1 },
+  progressTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3, backgroundColor: '#6366F1', width: '40%' },
+
+  // Conversion card
+  conversionCard: { borderRadius: 22, padding: 22 },
+  conversionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  conversionTitle: { fontSize: 19, fontWeight: '800' as const, letterSpacing: -0.3 },
+  benefitList: { gap: 11, marginBottom: 20 },
+  benefitRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  benefitText: { fontSize: 14, flex: 1, lineHeight: 20, fontWeight: '500' as const },
+  ctaWrap: { marginBottom: 14 },
+  cta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 17, paddingHorizontal: 24,
+    borderRadius: 17, gap: 10, backgroundColor: '#4F46E5',
+  },
+  ctaText: { fontSize: 16, fontWeight: '800' as const, color: '#FFF', flexShrink: 1 },
+  trustText: { fontSize: 13, textAlign: 'center' },
 });
 
 // ─── PLAN SELECTION STYLES ─────────────────────────────────────────────────────

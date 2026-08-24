@@ -328,11 +328,11 @@ export default function HogskoleprovetTab() {
                 onPress={() => router.push(ROUTES.hpStudyPlan)}
                 activeOpacity={0.85}
               >
-                <LinearGradient colors={['#FFFFFF', 'rgba(255,255,255,0.85)']} style={styles.heroStudyPlanGradient}>
+                <View style={styles.heroBtnContent}>
                   <Calendar size={18} color="#4F46E5" />
                   <Text style={styles.heroStudyPlanText} numberOfLines={1}>Studieplan</Text>
                   <ArrowUpRight size={16} color="#4F46E5" />
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -340,20 +340,20 @@ export default function HogskoleprovetTab() {
                 onPress={() => router.push(ROUTES.hpStats)}
                 activeOpacity={0.85}
               >
-                <LinearGradient colors={['rgba(255,255,255,0.22)', 'rgba(255,255,255,0.10)']} style={styles.heroStudyPlanGradient}>
+                <View style={styles.heroBtnContent}>
                   <BarChart3 size={18} color="#FFF" />
                   <Text style={styles.heroStatsText} numberOfLines={1}>Statistik</Text>
                   <ArrowUpRight size={16} color="#FFF" />
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
 
             {!isPremium && (
               <TouchableOpacity style={styles.heroUnlockFullBtn} onPress={() => router.push(ROUTES.premium)} activeOpacity={0.85}>
-                <LinearGradient colors={['#FFD700', '#F59E0B']} style={styles.heroUnlockGradient}>
+                <View style={styles.heroUnlockContent}>
                   <Crown size={16} color="#000" />
                   <Text style={styles.heroUnlockText}>Lås upp PRO</Text>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             )}
           </LinearGradient>
@@ -753,15 +753,14 @@ const styles = StyleSheet.create({
 
   // Hero actions
   heroActions: { flexDirection: 'row', gap: 12, marginBottom: 14 },
-  heroStudyPlanBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 54 },
-  heroStudyPlanGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, paddingHorizontal: 10, gap: 6 },
+  heroStudyPlanBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 54, backgroundColor: 'rgba(255,255,255,0.95)' },
+  heroBtnContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, paddingHorizontal: 10, gap: 6 },
   heroStudyPlanText: { fontSize: 14, fontWeight: '700' as const, color: '#4F46E5', flexShrink: 1 },
-  heroStatsBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 54, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+  heroStatsBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 54, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', backgroundColor: 'rgba(255,255,255,0.14)' },
   heroStatsText: { fontSize: 14, fontWeight: '700' as const, color: '#FFF', flexShrink: 1 },
-  heroUnlockBtn: { flex: 1, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6, minHeight: 52 },
-  heroUnlockGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 12, gap: 6 },
+  heroUnlockContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 12, gap: 6 },
   heroUnlockText: { fontSize: 14, fontWeight: '700' as const, color: '#000', flexShrink: 1 },
-  heroUnlockFullBtn: { borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 6, minHeight: 52 },
+  heroUnlockFullBtn: { borderRadius: 16, overflow: 'hidden', minHeight: 52, backgroundColor: '#F59E0B' },
 
   // ═══ SECTION HEADERS ═══
   sectionHeader: { marginBottom: 18, marginTop: 0 },

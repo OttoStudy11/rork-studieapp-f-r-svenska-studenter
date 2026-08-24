@@ -9,9 +9,34 @@ import {
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { Check, Shield, RefreshCw } from 'lucide-react-native';
+import { Check, Shield, RefreshCw, Sparkles } from 'lucide-react-native';
+import type { PurchasesPackage } from 'react-native-purchases';
 import { onboardingStyles as styles } from './styles';
 import { StepProps, TEXT3 } from './shared';
+
+/**
+ * Derives a Swedish free-trial label (e.g. "3 dagar gratis") from the
+ * product's real introductory offer via RevenueCat / App Store.
+ * Returns null when no free trial is configured, so the UI never
+ * displays a trial that doesn't actually exist.
+ */
+function getFreeTrialText(pkg?: PurchasesPackage): string | null {
+  const intro = pkg?.product?.introPrice;
+  if (!intro || intro.price !== 0 || !intro.periodNumberOfUnits) return null;
+  const units = intro.periodNumberOfUnits;
+  switch ((intro.periodUnit ?? '').toUpperCase()) {
+    case 'DAY':
+      return units === 1 ? '1 dag gratis' : `${units} dagar gratis`;
+    case 'WEEK':
+      return units === 1 ? '1 vecka gratis' : `${units} veckor gratis`;
+    case 'MONTH':
+      return units === 1 ? '1 månad gratis' : `${units} månader gratis`;
+    case 'YEAR':
+      return units === 1 ? '1 år gratis' : `${units} år gratis`;
+    default:
+      return null;
+  }
+}
 
 export default function PaywallStep({
   offerings,
@@ -37,11 +62,15 @@ export default function PaywallStep({
       p.identifier.includes('month')
   );
 
-  const annualPrice = annualPkg?.product?.priceString ?? '249 kr/år';
+  const annualPrice = annualPkg?.product?.priceString ?? '299 kr/år';
   const monthlyPrice = monthlyPkg?.product?.priceString ?? '49 kr/mån';
   const annualMonthly = annualPkg
-    ? `Endast ${((annualPkg.product?.price ?? 249) / 12).toFixed(0)} kr/månad`
-    : 'Endast 21 kr/månad';
+    ? `Endast ${((annualPkg.product?.price ?? 299) / 12).toFixed(0)} kr/månad`
+    : 'Endast ~25 kr/månad';
+
+  // Real introductory offer from RevenueCat — null when no free trial is configured
+  const trialText = getFreeTrialText(annualPkg);
+  const hasTrial = trialText !== null;
 
   const FEATURES = [
     'Personlig AI-studieplan',
@@ -81,6 +110,15 @@ export default function PaywallStep({
       </Text>
       <Text style={styles.paywallSub}>Avsluta när du vill.</Text>
 
+      {hasTrial && (
+        <View style={styles.trialBanner}>
+          <Sparkles size={15} color="#059669" />
+          <Text style={styles.trialBannerText}>
+            Starta {trialText} · Avsluta när du vill
+          </Text>
+        </View>
+      )}
+
       <Text style={[styles.bigBody, { textAlign: 'left', marginTop: 12, marginBottom: 20 }]}>
         Vi vill att du ska använda StudieStugan om det{' '}
         <Text style={styles.bold}>verkligen förändrar dina studieresultat</Text>. Välj en plan och kom igång direkt.
@@ -109,6 +147,9 @@ export default function PaywallStep({
             <View>
               <Text style={styles.pkgTitle}>📦 Årsplan</Text>
               <Text style={styles.pkgSub}>{annualMonthly}</Text>
+              {hasTrial && (
+                <Text style={styles.pkgTrialText}>Inklusive {trialText}</Text>
+              )}
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={styles.pkgPrice}>{annualPrice}</Text>
@@ -158,9 +199,21 @@ export default function PaywallStep({
         {isPurchasing ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <Text style={styles.ctaText}>Kom igång med Premium</Text>
+          <Text style={styles.ctaText}>
+            {selectedPkg === 'annual' && hasTrial
+              ? `Starta ${trialText}`
+              : 'Kom igång med Premium'}
+          </Text>
         )}
       </TouchableOpacity>
+
+      {selectedPkg === 'annual' && hasTrial ? (
+        <Text style={styles.ctaTerms}>
+          Efter provperioden {annualPrice}. Förnyas automatiskt – avsluta när du vill.
+        </Text>
+      ) : (
+        <Text style={styles.ctaTerms}>Förnyas automatiskt – avsluta när du vill.</Text>
+      )}
 
       <TouchableOpacity
         style={styles.skipPaywallBtn}

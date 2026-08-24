@@ -777,6 +777,43 @@ export const onboardingStyles = StyleSheet.create({
     color: TEXT2,
     fontWeight: '500' as const,
   },
+  // Paywall free trial
+  trialBanner: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    alignSelf: 'stretch' as const,
+    backgroundColor: 'rgba(16,185,129,0.10)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.25)',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginTop: 14,
+    marginBottom: 2,
+  },
+  trialBannerText: {
+    color: '#059669',
+    fontSize: 14,
+    fontWeight: '700' as const,
+    letterSpacing: -0.2,
+    textAlign: 'center' as const,
+  },
+  pkgTrialText: {
+    color: ACCENT,
+    fontSize: 12,
+    fontWeight: '700' as const,
+    marginTop: 3,
+  },
+  ctaTerms: {
+    fontSize: 12,
+    color: TEXT3,
+    textAlign: 'center' as const,
+    marginTop: 10,
+    lineHeight: 16,
+    paddingHorizontal: 8,
+  },
   // Paywall
   paywallPage: {
     flexGrow: 1,

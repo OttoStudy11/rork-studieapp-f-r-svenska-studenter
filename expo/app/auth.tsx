@@ -276,10 +276,12 @@ export default function AuthScreen() {
     }
   };
 
-  const [isAppleLoading, setIsAppleLoading] = useState(false);
-
   const handleAppleSignIn = async () => {
-    setIsAppleLoading(true);
+    // Use isLoading (not a separate flag) — the navigation effect below waits
+    // for it, so it must stay true until checkOnboardingStatus has finished
+    // inside signInWithApple. Otherwise a user who already completed
+    // onboarding gets routed straight back into it.
+    setIsLoading(true);
     try {
       const result = await signInWithApple();
       if (result.error) {
@@ -289,7 +291,7 @@ export default function AuthScreen() {
       console.error('Apple sign in error:', error);
       showError('Ett fel uppstod vid Apple-inloggning');
     } finally {
-      setIsAppleLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -579,13 +581,13 @@ export default function AuthScreen() {
                 <TouchableOpacity
                   style={styles.appleBtn}
                   onPress={handleAppleSignIn}
-                  disabled={isAppleLoading}
+                  disabled={isLoading}
                   activeOpacity={0.85}
                   testID="apple-sign-in-button"
                 >
                   <Text style={styles.appleIcon}></Text>
                   <Text style={styles.appleBtnText}>
-                    {isAppleLoading ? 'Loggar in...' : 'Fortsätt med Apple'}
+                    {isLoading ? 'Loggar in...' : 'Fortsätt med Apple'}
                   </Text>
                 </TouchableOpacity>
               )}

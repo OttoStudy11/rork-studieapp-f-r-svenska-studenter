@@ -205,6 +205,12 @@ const STATS: StatItem[] = [
     icon: TrendingUp,
     gradient: ['#14B8A6', '#5EEAD4'] as const,
   },
+  {
+    value: '20k+',
+    label: 'Flashcards skapade',
+    icon: Layers,
+    gradient: ['#6366F1', '#818CF8'] as const,
+  },
 ];
 
 const FAQS: FAQItem[] = [

@@ -47,7 +47,7 @@ import GoalsStep from '@/components/onboarding/GoalsStep';
 import WowStep from '@/components/onboarding/WowStep';
 import SocialProofStep from '@/components/onboarding/SocialProofStep';
 import TestimonialsStep from '@/components/onboarding/TestimonialsStep';
-import PaywallStep from '@/components/onboarding/PaywallStep';
+import PremiumScreen from '@/app/premium';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -132,12 +132,26 @@ export default function OnboardingScreen() {
 
   useEffect(() => {
     if (authContext?.user?.email && !hasInitUsername) {
-      const prefix = authContext.user.email.split('@')[0] || '';
+      // Suggest a human name and clean username from the email prefix:
+      // "anna.lindqvist07@gmail.com" → "Anna Lindqvist" / "anna_lindqvist"
+      const parts = (authContext.user.email.split('@')[0] || '')
+        .toLowerCase()
+        .split(/[._+-]+/)
+        .map((part) => part.replace(/[0-9]+$/, ''))
+        .filter((part) => part.length > 0);
+      const displayName = parts
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+      const username = parts.join('_').slice(0, 20);
       setData(prev => ({
         ...prev,
-        displayName: prefix,
-        username: prefix.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+        displayName: displayName || prev.displayName,
+        username: username.length >= 3 ? username : '',
       }));
+      // Check availability right away so "Fortsätt" works without editing the field
+      if (username.length >= 3) {
+        checkUsername(username);
+      }
       setHasInitUsername(true);
     }
   }, [authContext, hasInitUsername]);
@@ -153,14 +167,6 @@ export default function OnboardingScreen() {
       setData(prev => ({ ...prev, selectedCourses: new Set(mandatoryIds) }));
     }
   }, [data.gymnasiumProgram, data.year]);
-
-  useEffect(() => {
-    if (currentStep === 'paywall' && premiumContext) {
-      premiumContext.getOfferings().then(off => {
-        if (off?.availablePackages) setOfferings(off.availablePackages);
-      }).catch(() => {});
-    }
-  }, [currentStep, premiumContext]);
 
   const questionStepIndex = QUESTION_STEPS.indexOf(currentStep);
   const isQuestionStep = questionStepIndex >= 0;
@@ -325,6 +331,12 @@ export default function OnboardingScreen() {
     return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={ACCENT} /></View>;
   }
 
+  // The paywall step renders the full /premium screen (same experience as the
+  // standalone route). Back button and successful purchase both finish onboarding.
+  if (currentStep === 'paywall') {
+    return <PremiumScreen onBack={handleComplete} onPurchased={handleComplete} />;
+  }
+
   return (
     <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {showHeader && (
@@ -391,27 +403,26 @@ export default function OnboardingScreen() {
         />
       </Animated.View>
 
-      {currentStep !== 'paywall' && (
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.cta, !canProceed() && styles.ctaDisabled]}
-            onPress={goNext}
-            disabled={!canProceed() || isSubmitting}
-            activeOpacity={0.85}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Text style={styles.ctaText}>
-                  {currentStep === 'welcome' ? 'Kom igång' : currentStep === 'testimonials' ? 'Fortsätt' : 'Fortsätt'}
-                </Text>
-                <ArrowRight size={18} color="#fff" />
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Footer — the paywall step early-returns above, so it never reaches here */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.cta, !canProceed() && styles.ctaDisabled]}
+          onPress={goNext}
+          disabled={!canProceed() || isSubmitting}
+          activeOpacity={0.85}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Text style={styles.ctaText}>
+                {currentStep === 'welcome' ? 'Kom igång' : currentStep === 'testimonials' ? 'Fortsätt' : 'Fortsätt'}
+              </Text>
+              <ArrowRight size={18} color="#fff" />
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -432,7 +443,7 @@ function StepRenderer(props: StepProps) {
     case 'wow': return <WowStep {...props} />;
     case 'socialproof': return <SocialProofStep {...props} />;
     case 'testimonials': return <TestimonialsStep {...props} />;
-    case 'paywall': return <PaywallStep {...props} />;
+    case 'paywall': return null;
     default: return null;
   }
 }

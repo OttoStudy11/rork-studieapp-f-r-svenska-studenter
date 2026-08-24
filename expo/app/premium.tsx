@@ -229,9 +229,26 @@ const FAQS: FAQItem[] = [
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function PremiumScreen() {
+interface PremiumScreenProps {
+  /** Overrides the default back navigation (router.back()). */
+  onBack?: () => void;
+  /** Called after a successful purchase or restore instead of router.back(). */
+  onPurchased?: () => void;
+}
+
+export default function PremiumScreen({ onBack, onPurchased }: PremiumScreenProps = {}) {
   const { isPremium, getOfferings, purchasePackage, restorePurchases, isOffline } = usePremium();
   const { triggerRating } = useRating();
+
+  // Allow embedding (e.g. in onboarding) to override the default navigation
+  const handleBack = useCallback(() => {
+    if (onBack) onBack();
+    else router.back();
+  }, [onBack]);
+  const handlePurchaseSuccess = useCallback(() => {
+    if (onPurchased) onPurchased();
+    else router.back();
+  }, [onPurchased]);
 
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
@@ -436,7 +453,7 @@ export default function PremiumScreen() {
             message: `Tack för att du blev Premium-medlem. Vi hoppas du älskar appen!`,
           });
         } catch {}
-        router.back();
+        handlePurchaseSuccess();
       }
     } catch (error) {
       Alert.alert(`Köpfel`, `Något gick fel vid köpet. Försök igen eller kontakta support.`);
@@ -451,7 +468,7 @@ export default function PremiumScreen() {
     try {
       const success = await restorePurchases();
       if (success) {
-        router.back();
+        handlePurchaseSuccess();
       }
     } catch (error) {
       // handled in context
@@ -518,7 +535,7 @@ export default function PremiumScreen() {
            >
               <TouchableOpacity
                 style={styles.backButton}
-                onPress={() => router.back()}
+                onPress={handleBack}
                 activeOpacity={0.8}
               >
                 <ArrowLeft size={22} color={PALETTE.white} />
@@ -583,7 +600,7 @@ export default function PremiumScreen() {
           <BlurView intensity={60} tint="light" style={styles.headerBlur}>
             <TouchableOpacity
               style={styles.headerBackBtn}
-              onPress={() => router.back()}
+              onPress={handleBack}
               activeOpacity={0.8}
             >
               <ArrowLeft size={20} color={PALETTE.textDark} />
@@ -637,7 +654,7 @@ export default function PremiumScreen() {
             {/* Back button */}
             <TouchableOpacity
               style={styles.backButton}
-              onPress={() => router.back()}
+              onPress={handleBack}
               activeOpacity={0.8}
             >
               <BlurView intensity={40} tint="light" style={styles.backButtonBlur}>

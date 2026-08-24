@@ -15,8 +15,22 @@ export default function SocialProofStep(_props: StepProps): React.ReactElement {
           { value: '92%', label: 'Nöjda' },
         ].map((s, i) => (
           <View key={i} style={styles.statBox}>
-            <Text style={styles.statValue}>{s.value}</Text>
-            <Text style={styles.statLabel}>{s.label}</Text>
+            <Text
+              style={styles.statValue}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              {s.value}
+            </Text>
+            <Text
+              style={styles.statLabel}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
+              {s.label}
+            </Text>
           </View>
         ))}
       </View>

@@ -670,26 +670,32 @@ export const onboardingStyles = StyleSheet.create({
   // Stats
   statsRow: {
     flexDirection: 'row' as const,
-    gap: 14,
-    marginVertical: 20,
+    gap: 10,
+    marginVertical: 16,
   },
   statBox: {
     flex: 1,
     backgroundColor: BG2,
     borderRadius: 16,
-    padding: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
     alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '800' as const,
     color: TEXT1,
     marginBottom: 4,
+    lineHeight: 21,
+    alignSelf: 'center' as const,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: TEXT3,
     fontWeight: '500' as const,
+    lineHeight: 14,
+    alignSelf: 'center' as const,
   },
   featureList: {
     marginTop: 24,
@@ -755,8 +761,10 @@ export const onboardingStyles = StyleSheet.create({
   },
   trustRow: {
     flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
     justifyContent: 'center' as const,
-    gap: 20,
+    gap: 12,
+    rowGap: 8,
     marginTop: 12,
   },
   trustItem: {

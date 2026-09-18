@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useHPTheory } from '@/contexts/HPTheoryContext';
+import { usePremium } from '@/contexts/PremiumContext';
 import { getTheoryCategoryById, HPTheoryArticle } from '@/constants/hogskoleprovet-theory';
 import { HPTheoryBlock } from '@/constants/hp-theory-types';
 import { ROUTES } from '@/utils/typedRoutes';
@@ -115,7 +116,13 @@ export default function HPTheoryArticleScreen() {
   const { articleId } = useLocalSearchParams<{ articleId: string }>();
   const { theme, isDark } = useTheme();
   const { articles, getProgress, updateProgress, markCompleted } = useHPTheory();
+  const { isPremium } = usePremium();
   const hasMarkedEnd = useRef<boolean>(false);
+
+  // Reset the completion latch when navigating to another article via router.replace
+  useEffect(() => {
+    hasMarkedEnd.current = false;
+  }, [articleId]);
 
   const article: HPTheoryArticle | undefined = useMemo(
     () => articles.find(a => a.id === articleId),
@@ -143,6 +150,15 @@ export default function HPTheoryArticleScreen() {
       markCompleted(article.id);
     }
   }, [article, updateProgress, markCompleted]);
+
+  const handlePracticePress = () => {
+    if (!article?.sectionCode) return;
+    if (!isPremium) {
+      router.push(ROUTES.premium);
+      return;
+    }
+    router.push(ROUTES.hpPractice(article.sectionCode));
+  };
 
   if (!article) {
     return (
@@ -222,7 +238,7 @@ export default function HPTheoryArticleScreen() {
         {article.sectionCode && (
           <TouchableOpacity
             style={[styles.practiceCta, { backgroundColor: article.color }]}
-            onPress={() => router.push(ROUTES.hpPractice(article.sectionCode ?? ''))}
+            onPress={handlePracticePress}
             activeOpacity={0.9}
           >
             <Text style={styles.practiceCtaText}>Öva {article.sectionCode} nu</Text>

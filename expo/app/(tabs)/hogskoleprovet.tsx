@@ -280,16 +280,18 @@ export default function HogskoleprovetTab() {
   );
 
   const handleRecommendationPress = (rec: HPRecommendation) => {
+    // Dispatch on type first — simulation recommendations can carry an
+    // optional articleId (the simulation guide), which must not hijack the tap.
+    if (rec.type === 'simulation') {
+      void handleStartFullTest();
+      return;
+    }
     if (rec.articleId) {
       router.push({ pathname: '/hp-theory/[articleId]', params: { articleId: rec.articleId } });
       return;
     }
     if (rec.sectionCode) {
       handleStartSection(rec.sectionCode);
-      return;
-    }
-    if (rec.type === 'simulation') {
-      void handleStartFullTest();
       return;
     }
     router.push(ROUTES.hpTheory);

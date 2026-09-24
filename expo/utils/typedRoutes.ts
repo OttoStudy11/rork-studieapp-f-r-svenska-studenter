@@ -52,6 +52,7 @@ export const ROUTES = {
   hpStudyPlan: '/hp-study-plan' as const,
   hpTheory: '/hp-theory' as const,
   hpTheoryArticle: (articleId: string) => `/hp-theory/${articleId}` as const,
+  hpTraining: '/hp-training' as const,
   hpSelectVersion: '/hp-select-version' as const,
   hpAiGenerator: '/hp-ai-generator' as const,
   hpAiPractice: '/hp-ai-practice' as const,

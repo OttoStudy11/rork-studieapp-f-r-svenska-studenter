@@ -6,481 +6,245 @@ import {
   Dimensions,
   Animated,
   TouchableOpacity,
+  PanResponder,
+  BackHandler,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import Svg, {
-  Circle,
-  Rect,
-  Path,
-  Line,
-  Defs,
-  LinearGradient as SvgLinearGradient,
-  Stop,
-  G,
-  Ellipse,
-} from 'react-native-svg';
 import {
   BookOpen,
   Target,
-  TrendingUp,
+  Brain,
   Sparkles,
   ArrowRight,
-  Layers,
-  Brain,
-  ChartBar,
-  Palette,
+  Repeat,
+  GraduationCap,
+  Flame,
+  TrendingUp,
 } from 'lucide-react-native';
 import { ROUTES } from '@/utils/typedRoutes';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const FTUE_COMPLETED_KEY = 'ftue_completed_v2';
+const { width: SW, height: SH } = Dimensions.get('window');
+const FTUE_SEEN_KEY = 'ftue_intro_seen_v3';
 
-// ── Screen definitions ──────────────────────────────────────────────
+// Brand palette — identical to the onboarding design system.
+const BG = '#FFFFFF';
+const BG2 = '#F2F2F7';
+const TEXT1 = '#1C1C1E';
+const TEXT2 = '#636366';
+const TEXT3 = '#AEAEB2';
+const ACCENT = '#10B981';
+const ACCENT_TINT = 'rgba(16,185,129,0.10)';
+const DARK_BTN = '#1C1C1E';
+const BORDER = '#E5E5EA';
 
-interface FTUEScreen {
-  id: number;
+const LOGO_URI =
+  'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbslhfzzhi6qdkgkh0jhm';
+
+const STEP_COUNT = 3;
+
+// ── Step 1 — mini UI mock (real StudieStugan moments) ─────────────────
+
+const MiniCard: React.FC<{
   icon: React.ReactNode;
-  gradientIcon: React.ReactNode;
   title: string;
-  subtitle: string;
-  gradientColors: readonly [string, string, ...string[]];
-  accentColor: string;
-  Illustration: React.FC<{ progress: Animated.AnimatedInterpolation<number> }>;
-}
-
-// ── SVG Illustrations ───────────────────────────────────────────────
-
-const StructuredLearningIllustration: React.FC<{
-  progress: Animated.AnimatedInterpolation<number>;
-}> = React.memo(({ progress }) => {
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  meta: string;
+  progress?: number;
+  delay?: number;
+  style?: object;
+}> = React.memo(({ icon, title, meta, progress, delay = 0, style }) => {
+  const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.08,
-          duration: 1800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1800,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [pulseAnim]);
+    const t = Animated.timing(anim, {
+      toValue: 1,
+      duration: 500,
+      delay,
+      useNativeDriver: true,
+    });
+    t.start();
+    return () => t.stop();
+  }, [anim, delay]);
+
+  const opacity = anim;
+  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [18, 0] });
 
   return (
-    <View style={illusStyles.container}>
-      <Svg width={240} height={200} viewBox="0 0 240 200">
-        <Defs>
-          <SvgLinearGradient id="nodeGrad1" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="rgba(255,255,255,0.25)" />
-            <Stop offset="1" stopColor="rgba(255,255,255,0.08)" />
-          </SvgLinearGradient>
-          <SvgLinearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="rgba(255,255,255,0.4)" />
-            <Stop offset="0.5" stopColor="rgba(255,255,255,0.15)" />
-            <Stop offset="1" stopColor="rgba(255,255,255,0.4)" />
-          </SvgLinearGradient>
-        </Defs>
-
-        {/* Connecting lines */}
-        <Line x1={70} y1={55} x2={160} y2={50} stroke="url(#lineGrad)" strokeWidth={2} strokeDasharray="6,4" />
-        <Line x1={160} y1={65} x2={70} y2={130} stroke="url(#lineGrad)" strokeWidth={2} strokeDasharray="6,4" />
-
-        {/* Node 1 — Kurs */}
-        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-          <G>
-            <Rect
-              x={30}
-              y={30}
-              width={80}
-              height={44}
-              rx={14}
-              fill="url(#nodeGrad1)"
-              stroke="rgba(255,255,255,0.35)"
-              strokeWidth={1.5}
-            />
-          </G>
-        </Animated.View>
-        {/* Node 2 — Modul */}
-        <G>
-          <Rect
-            x={130}
-            y={30}
-            width={80}
-            height={44}
-            rx={14}
-            fill="url(#nodeGrad1)"
-            stroke="rgba(255,255,255,0.35)"
-            strokeWidth={1.5}
-          />
-        </G>
-
-        {/* Node 3 — Lektion */}
-        <G>
-          <Rect
-            x={30}
-            y={108}
-            width={80}
-            height={44}
-            rx={14}
-            fill="url(#nodeGrad1)"
-            stroke="rgba(255,255,255,0.35)"
-            strokeWidth={1.5}
-          />
-        </G>
-
-        {/* Progress indicator dots */}
-        <Circle cx={200} cy={52} r={5} fill="rgba(255,255,255,0.5)" />
-        <Circle cx={200} cy={130} r={5} fill="rgba(255,255,255,0.2)" />
-      </Svg>
-    </View>
+    <Animated.View style={[mockStyles.card, { opacity, transform: [{ translateY }] }, style]}>
+      <View style={mockStyles.iconWrap}>{icon}</View>
+      <View style={mockStyles.cardBody}>
+        <Text style={mockStyles.cardTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={mockStyles.cardMeta} numberOfLines={1}>
+          {meta}
+        </Text>
+        {progress !== undefined && (
+          <View style={mockStyles.barTrack}>
+            <View style={[mockStyles.barFill, { width: `${progress}%` }]} />
+          </View>
+        )}
+      </View>
+    </Animated.View>
   );
 });
 
-const DeepUnderstandingIllustration: React.FC<{
-  progress: Animated.AnimatedInterpolation<number>;
-}> = React.memo(() => {
-  const rippleAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.timing(rippleAnim, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: true,
-      }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [rippleAnim]);
-
-  return (
-    <View style={illusStyles.container}>
-      <Svg width={220} height={200} viewBox="0 0 220 200">
-        <Defs>
-          <SvgLinearGradient id="circleGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="rgba(255,255,255,0.3)" />
-            <Stop offset="1" stopColor="rgba(255,255,255,0.05)" />
-          </SvgLinearGradient>
-        </Defs>
-
-        {/* Outermost ring */}
-        <Circle cx={110} cy={100} r={90} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
-        {/* Ring 2 */}
-        <Circle cx={110} cy={100} r={68} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />
-        {/* Ring 3 */}
-        <Circle cx={110} cy={100} r={48} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={2} />
-        {/* Inner glow */}
-        <Circle cx={110} cy={100} r={30} fill="url(#circleGrad)" stroke="rgba(255,255,255,0.35)" strokeWidth={2} />
-        {/* Core */}
-        <Circle cx={110} cy={100} r={14} fill="rgba(255,255,255,0.25)" />
-
-        {/* Animated ripple */}
-        <AnimatedCircle
-          cx={110}
-          cy={100}
-          r={rippleAnim.interpolate({
-            inputRange: [0, 0.5, 1],
-            outputRange: [14, 50, 14],
-          })}
-          fill="none"
-          stroke="rgba(255,255,255,0.2)"
-          strokeWidth={1}
-        />
-
-        {/* Target crosshair */}
-        <Line x1={110} y1={82} x2={110} y2={118} stroke="rgba(255,255,255,0.4)" strokeWidth={1} />
-        <Line x1={92} y1={100} x2={128} y2={100} stroke="rgba(255,255,255,0.4)" strokeWidth={1} />
-      </Svg>
-    </View>
-  );
-});
-
-const ProgressIllustration: React.FC<{
-  progress: Animated.AnimatedInterpolation<number>;
-}> = React.memo(() => {
-  return (
-    <View style={illusStyles.container}>
-      <Svg width={220} height={200} viewBox="0 0 220 200">
-        <Defs>
-          <SvgLinearGradient id="barGrad1" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="rgba(255,255,255,0.5)" />
-            <Stop offset="1" stopColor="rgba(255,255,255,0.15)" />
-          </SvgLinearGradient>
-        </Defs>
-
-        {/* Grid lines */}
-        <Line x1={40} y1={160} x2={200} y2={160} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
-        <Line x1={40} y1={120} x2={200} y2={120} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
-        <Line x1={40} y1={80} x2={200} y2={80} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
-
-        {/* Bars */}
-        <Rect x={50} y={110} width={28} height={50} rx={6} fill="url(#barGrad1)" />
-        <Rect x={88} y={85} width={28} height={75} rx={6} fill="url(#barGrad1)" />
-        <Rect x={126} y={60} width={28} height={100} rx={6} fill="url(#barGrad1)" />
-        <Rect x={164} y={35} width={28} height={125} rx={6} fill="url(#barGrad1)" />
-
-        {/* Trend line */}
-        <Path
-          d="M 64 105 Q 102 100 140 55 T 178 30"
-          fill="none"
-          stroke="rgba(255,255,255,0.6)"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-        />
-
-        {/* Endpoint dot */}
-        <Circle cx={178} cy={30} r={6} fill="white" opacity={0.8} />
-        <Circle cx={178} cy={30} r={10} fill="white" opacity={0.15} />
-      </Svg>
-    </View>
-  );
-});
-
-const PersonalizedIllustration: React.FC<{
-  progress: Animated.AnimatedInterpolation<number>;
-}> = React.memo(() => {
-  const floatAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, {
-          toValue: 1,
-          duration: 2500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(floatAnim, {
-          toValue: 0,
-          duration: 2500,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [floatAnim]);
-
-  return (
-    <View style={illusStyles.container}>
-      <Svg width={240} height={200} viewBox="0 0 240 200">
-        <Defs>
-          <SvgLinearGradient id="cardGrad" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="rgba(255,255,255,0.25)" />
-            <Stop offset="1" stopColor="rgba(255,255,255,0.06)" />
-          </SvgLinearGradient>
-        </Defs>
-
-        {/* Decorative orbit rings */}
-        <Ellipse cx={120} cy={100} rx={110} ry={80} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
-        <Ellipse cx={120} cy={100} rx={80} ry={55} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
-
-        {/* Branching paths */}
-        <Line x1={60} y1={60} x2={90} y2={120} stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />
-        <Line x1={180} y1={60} x2={150} y2={120} stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />
-        <Line x1={40} y1={55} x2={200} y2={55} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
-
-        {/* Small orbiting nodes */}
-        <AnimatedCircle
-          cx={60}
-          cy={60}
-          r={8}
-          fill="url(#cardGrad)"
-          stroke="rgba(255,255,255,0.3)"
-          strokeWidth={1.5}
-        />
-        <AnimatedCircle
-          cx={180}
-          cy={60}
-          r={8}
-          fill="url(#cardGrad)"
-          stroke="rgba(255,255,255,0.3)"
-          strokeWidth={1.5}
-        />
-
-        {/* Central card */}
-        <G>
-          <Rect
-            x={80}
-            y={100}
-            width={80}
-            height={56}
-            rx={16}
-            fill="url(#cardGrad)"
-            stroke="rgba(255,255,255,0.4)"
-            strokeWidth={1.5}
-          />
-        </G>
-
-        {/* Sparkle dots */}
-        <Circle cx={50} cy={45} r={2.5} fill="rgba(255,255,255,0.5)" />
-        <Circle cx={190} cy={45} r={2.5} fill="rgba(255,255,255,0.5)" />
-        <Circle cx={120} cy={25} r={3} fill="rgba(255,255,255,0.6)" />
-        <Circle cx={85} cy={70} r={2} fill="rgba(255,255,255,0.4)" />
-        <Circle cx={155} cy={70} r={2} fill="rgba(255,255,255,0.4)" />
-      </Svg>
-
-      {/* Central label */}
-      <IllusLabel left={92} top={116} text="Din plan" />
-    </View>
-  );
-});
-
-// ── Animated SVG Circle helper ──────────────────────────────────────
-
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
-// ── SVG text label rendered as RN Text overlay ──────────────────────
-
-const IllusLabel: React.FC<{
-  left: number;
-  top: number;
-  text: string;
-}> = React.memo(({ left, top, text }) => (
-  <View style={{ position: 'absolute' as const, left, top }}>
-    <Text style={illusStyles.label}>{text}</Text>
+const HeroMock: React.FC = React.memo(() => (
+  <View style={mockStyles.stack}>
+    <MiniCard
+      icon={<GraduationCap size={18} color={ACCENT} strokeWidth={2.2} />}
+      title="Matematik 3c"
+      meta="Kapitel 4 · 68% klart"
+      progress={68}
+      delay={150}
+    />
+    <MiniCard
+      icon={<Target size={18} color={ACCENT} strokeWidth={2.2} />}
+      title="Högskoleprovet"
+      meta="Dagens träning · 12 frågor"
+      delay={300}
+      style={{ marginLeft: 18 }}
+    />
+    <MiniCard
+      icon={<Sparkles size={18} color={ACCENT} strokeWidth={2.2} />}
+      title="AI-studieassistent"
+      meta="Hittade 3 svaga områden"
+      delay={450}
+      style={{ marginLeft: 36 }}
+    />
   </View>
 ));
 
-// ── Decorative background elements ──────────────────────────────────
+// ── Step 2 — capability rows, staggered ───────────────────────────────
 
-const BackgroundDecoration: React.FC<{ accentColor: string }> = React.memo(
-  ({ accentColor }) => {
-    return (
-      <View style={bgDecoStyles.container} pointerEvents="none">
-        <View
-          style={[
-            bgDecoStyles.orb,
-            {
-              backgroundColor: accentColor,
-              opacity: 0.06,
-              top: -60,
-              right: -40,
-              width: 200,
-              height: 200,
-            },
-          ]}
-        />
-        <View
-          style={[
-            bgDecoStyles.orb,
-            {
-              backgroundColor: accentColor,
-              opacity: 0.04,
-              bottom: -80,
-              left: -60,
-              width: 240,
-              height: 240,
-            },
-          ]}
-        />
-        <View
-          style={[
-            bgDecoStyles.orb,
-            {
-              backgroundColor: '#FFFFFF',
-              opacity: 0.03,
-              top: '40%' as any,
-              right: '10%' as any,
-              width: 100,
-              height: 100,
-            },
-          ]}
-        />
-      </View>
-    );
-  },
-);
-
-// ── Screens configuration ───────────────────────────────────────────
-
-const SCREENS: FTUEScreen[] = [
+const CAPABILITIES: { icon: React.ReactNode; title: string; desc: string }[] = [
   {
-    id: 0,
-    icon: <Layers size={44} color="#FFFFFF" strokeWidth={1.5} />,
-    gradientIcon: <BookOpen size={44} color="#FFFFFF" strokeWidth={1.5} />,
-    title: 'Strukturerat lärande',
-    subtitle:
-      'Kurser, moduler och lektioner — allt organiserat så att du enkelt kan följa din studieplan steg för steg.',
-    gradientColors: ['#0F1B3D', '#162452', '#1A3A6B', '#0EA5E9'],
-    accentColor: '#0EA5E9',
-    Illustration: StructuredLearningIllustration,
+    icon: <BookOpen size={20} color={ACCENT} strokeWidth={2.1} />,
+    title: 'Kurser',
+    desc: 'Håll koll på allt du läser',
   },
   {
-    id: 1,
-    icon: <Brain size={44} color="#FFFFFF" strokeWidth={1.5} />,
-    gradientIcon: <Target size={44} color="#FFFFFF" strokeWidth={1.5} />,
-    title: 'Förstå på djupet',
-    subtitle:
-      'Fokuserade studiepass med tydliga förklaringar. Lär dig på riktigt — inte bara för stunden, utan för livet.',
-    gradientColors: ['#0A2E1F', '#0D3D2A', '#0F5C3B', '#10B981'],
-    accentColor: '#10B981',
-    Illustration: DeepUnderstandingIllustration,
+    icon: <Target size={20} color={ACCENT} strokeWidth={2.1} />,
+    title: 'Högskoleprovet',
+    desc: 'Träna inför provet',
   },
   {
-    id: 2,
-    icon: <ChartBar size={44} color="#FFFFFF" strokeWidth={1.5} />,
-    gradientIcon: <TrendingUp size={44} color="#FFFFFF" strokeWidth={1.5} />,
-    title: 'Se dina framsteg',
-    subtitle:
-      'Varje studiepass räknas. Följ din utveckling, lås upp achievements och bygg upp motivation över tid.',
-    gradientColors: ['#2D1A0A', '#3D2410', '#5C3818', '#F59E0B'],
-    accentColor: '#F59E0B',
-    Illustration: ProgressIllustration,
+    icon: <Brain size={20} color={ACCENT} strokeWidth={2.1} />,
+    title: 'Quiz',
+    desc: 'Testa vad du kan',
   },
   {
-    id: 3,
-    icon: <Palette size={44} color="#FFFFFF" strokeWidth={1.5} />,
-    gradientIcon: <Sparkles size={44} color="#FFFFFF" strokeWidth={1.5} />,
-    title: 'Anpassat för dig',
-    subtitle:
-      'Välj ditt program och dina kurser. Appen anpassar innehåll, rekommendationer och studietekniker efter just dig.',
-    gradientColors: ['#1A0A2E', '#2D1050', '#4C1D8A', '#8B5CF6'],
-    accentColor: '#8B5CF6',
-    Illustration: PersonalizedIllustration,
+    icon: <Repeat size={20} color={ACCENT} strokeWidth={2.1} />,
+    title: 'Repetition',
+    desc: 'Repetera det du behöver',
+  },
+  {
+    icon: <Sparkles size={20} color={ACCENT} strokeWidth={2.1} />,
+    title: 'AI-hjälp',
+    desc: 'Personlig hjälp när du fastnar',
   },
 ];
 
-// ── Main FTUE Component ─────────────────────────────────────────────
+const CapabilityRow: React.FC<{ item: (typeof CAPABILITIES)[number]; index: number; shown: boolean }> =
+  React.memo(({ item, index, shown }) => {
+    const anim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+      anim.setValue(0);
+      if (!shown) return;
+      const t = Animated.timing(anim, {
+        toValue: 1,
+        duration: 420,
+        delay: 120 + index * 90,
+        useNativeDriver: true,
+      });
+      t.start();
+      return () => t.stop();
+    }, [anim, shown, index]);
+
+    const opacity = anim;
+    const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [22, 0] });
+    const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] });
+
+    return (
+      <Animated.View style={[capStyles.row, { opacity, transform: [{ translateY }, { scale }] }]}>
+        <View style={capStyles.iconWrap}>{item.icon}</View>
+        <View style={capStyles.body}>
+          <Text style={capStyles.title}>{item.title}</Text>
+          <Text style={capStyles.desc} numberOfLines={1}>
+            {item.desc}
+          </Text>
+        </View>
+      </Animated.View>
+    );
+  });
+
+// ── Step 3 — outcome chips ────────────────────────────────────────────
+
+const OUTCOMES = [
+  { icon: <Flame size={18} color={ACCENT} strokeWidth={2.2} />, label: 'Streak' },
+  { icon: <TrendingUp size={18} color={ACCENT} strokeWidth={2.2} />, label: 'Framsteg' },
+  { icon: <Target size={18} color={ACCENT} strokeWidth={2.2} />, label: 'Fokus' },
+];
+
+// ── Main component ────────────────────────────────────────────────────
 
 export default function FTUEScreen() {
   const insets = useSafeAreaInsets();
-  const [currentIdx, setCurrentIdx] = useState(0);
+  const [step, setStep] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Animation refs
+  // Entrance: popup fades + scales in.
+  const entryOpacity = useRef(new Animated.Value(0)).current;
+  const entryScale = useRef(new Animated.Value(0.96)).current;
+
+  // Per-step slide/fade transition.
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  // CTA microinteraction.
   const btnScale = useRef(new Animated.Value(1)).current;
 
-  const current = SCREENS[currentIdx];
-  const isLast = currentIdx === SCREENS.length - 1;
-
-  // Progress bar animation
   useEffect(() => {
-    Animated.spring(progressAnim, {
-      toValue: (currentIdx + 1) / SCREENS.length,
-      tension: 80,
-      friction: 10,
-      useNativeDriver: false,
-    }).start();
-  }, [currentIdx, progressAnim]);
+    Animated.parallel([
+      Animated.timing(entryOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+      Animated.spring(entryScale, {
+        toValue: 1,
+        tension: 90,
+        friction: 11,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [entryOpacity, entryScale]);
 
-  // Button press animation
+  // Hardware back: step back between steps, never skip the flow silently.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (step > 0 && !isTransitioning) {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        animateTransition(step - 1, -1);
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  });
+
+  // Staggered capability cards replay when entering step 2.
+  const [capShown, setCapShown] = useState(false);
+  useEffect(() => {
+    if (step === 1) {
+      setCapShown(false);
+      const t = setTimeout(() => setCapShown(true), 60);
+      return () => clearTimeout(t);
+    }
+  }, [step]);
+
   const onPressIn = useCallback(() => {
     Animated.spring(btnScale, {
       toValue: 0.96,
@@ -499,37 +263,28 @@ export default function FTUEScreen() {
     }).start();
   }, [btnScale]);
 
-  // Transition between screens
   const animateTransition = useCallback(
-    (nextIdx: number) => {
+    (nextIdx: number, dir: 1 | -1) => {
       if (isTransitioning) return;
       setIsTransitioning(true);
 
       Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
+        Animated.timing(fadeAnim, { toValue: 0, duration: 160, useNativeDriver: true }),
         Animated.timing(slideAnim, {
-          toValue: -40,
-          duration: 180,
+          toValue: -24 * dir,
+          duration: 160,
           useNativeDriver: true,
         }),
       ]).start(() => {
-        setCurrentIdx(nextIdx);
-        slideAnim.setValue(40);
+        setStep(nextIdx);
+        slideAnim.setValue(28 * dir);
 
         Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 350,
-            useNativeDriver: true,
-          }),
+          Animated.timing(fadeAnim, { toValue: 1, duration: 280, useNativeDriver: true }),
           Animated.spring(slideAnim, {
             toValue: 0,
-            tension: 80,
-            friction: 10,
+            tension: 90,
+            friction: 11,
             useNativeDriver: true,
           }),
         ]).start(() => {
@@ -540,336 +295,473 @@ export default function FTUEScreen() {
     [fadeAnim, slideAnim, isTransitioning],
   );
 
-  const handleNext = useCallback(async () => {
+  const goNext = useCallback(() => {
+    if (step < STEP_COUNT - 1) animateTransition(step + 1, 1);
+  }, [step, animateTransition]);
+
+  const completeFTUE = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem(FTUE_SEEN_KEY, 'true');
+    } catch {
+      // Fails safe: worst case the intro is shown again on next launch.
+    }
+    router.replace(ROUTES.auth as any);
+  }, []);
+
+  const handleCta = useCallback(async () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (currentIdx < SCREENS.length - 1) {
-      animateTransition(currentIdx + 1);
+    if (step < STEP_COUNT - 1) {
+      goNext();
     } else {
       await completeFTUE();
     }
-  }, [currentIdx, animateTransition]);
+  }, [step, goNext, completeFTUE]);
 
-  const handleSkip = useCallback(async () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await completeFTUE();
-  }, []);
+  // Horizontal swipe between steps.
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_e, g) =>
+        Math.abs(g.dx) > 24 && Math.abs(g.dy) < Math.abs(g.dx),
+      onPanResponderRelease: (_e, g) => {
+        if (g.dx < -40 && step < STEP_COUNT - 1 && !isTransitioning) {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          animateTransition(step + 1, 1);
+        } else if (g.dx > 40 && step > 0 && !isTransitioning) {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          animateTransition(step - 1, -1);
+        }
+      },
+    }),
+  ).current;
 
-  const handleDotPress = useCallback(
-    (index: number) => {
-      if (index !== currentIdx && !isTransitioning) {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        animateTransition(index);
-      }
-    },
-    [currentIdx, isTransitioning, animateTransition],
-  );
-
-  const completeFTUE = async () => {
-    try {
-      await AsyncStorage.setItem(FTUE_COMPLETED_KEY, 'true');
-    } catch {
-      // Silently continue
-    }
-    router.replace(ROUTES.auth as any);
-  };
+  const ctaLabel = step === 0 ? 'Visa mig' : step === 1 ? 'Nästa' : 'Kom igång';
 
   return (
-    <View style={styles.root}>
+    <Animated.View
+      style={[
+        styles.root,
+        { opacity: entryOpacity, transform: [{ scale: entryScale }] },
+      ]}
+    >
+      {/* Subtle atmospheric background */}
       <LinearGradient
-        colors={current.gradientColors as readonly [string, string, ...string[]]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradient}
-      >
-        {/* Background decoration */}
-        <BackgroundDecoration accentColor={current.accentColor} />
+        colors={['#FFFFFF', '#F6FBF9', '#F2F2F7']}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.orbTop} pointerEvents="none" />
+      <View style={styles.orbBottom} pointerEvents="none" />
 
-        {/* Safe area wrapper */}
-        <View
-          style={[
-            styles.content,
-            {
-              paddingTop: insets.top + 16,
-              paddingBottom: insets.bottom + 24,
-            },
-          ]}
-        >
-          {/* ── Header: Progress + Skip ── */}
-          <View style={styles.header}>
-            <View style={styles.progressTrack}>
+      <View
+        style={[
+          styles.content,
+          { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 20 },
+        ]}
+      >
+        {/* ── Header: progress dots + skip ── */}
+        <View style={styles.header}>
+          <View style={styles.dotsRow}>
+            {Array.from({ length: STEP_COUNT }).map((_, idx) => (
               <Animated.View
+                key={idx}
                 style={[
-                  styles.progressFill,
-                  {
-                    width: progressAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0%', '100%'],
-                      extrapolate: 'clamp',
-                    }),
-                    backgroundColor: 'rgba(255,255,255,0.85)',
-                  },
+                  styles.dot,
+                  idx === step && styles.dotActive,
                 ]}
               />
-            </View>
-
-            {!isLast && (
-              <TouchableOpacity
-                style={styles.skipBtn}
-                onPress={handleSkip}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.skipText}>Hoppa över</Text>
-              </TouchableOpacity>
-            )}
+            ))}
           </View>
 
-          {/* ── Main Content ── */}
+          {step < STEP_COUNT - 1 && (
+            <TouchableOpacity
+              style={styles.skipBtn}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                void completeFTUE();
+              }}
+              activeOpacity={0.6}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.skipText}>Hoppa över</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* ── Steps (swipeable) ── */}
+        <View style={styles.main} {...panResponder.panHandlers}>
           <Animated.View
             style={[
-              styles.main,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
+              styles.stepWrap,
+              { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
             ]}
+            pointerEvents={isTransitioning ? 'none' : 'auto'}
           >
-            {/* Illustration */}
-            <View style={styles.illustrationArea}>
-              <current.Illustration progress={progressAnim} />
-            </View>
+            {step === 0 && (
+              <View style={styles.stepInner}>
+                <View style={styles.logoWrap}>
+                  <Image source={{ uri: LOGO_URI }} style={styles.logoImg} contentFit="contain" />
+                </View>
+                <Text style={styles.title}>
+                  Plugga <Text style={styles.titleAccent}>smartare.</Text>{'\n'}Inte mer.
+                </Text>
+                <Text style={styles.body}>
+                  StudieStugan samlar ditt plugg på ett ställe och hjälper dig ta reda på
+                  vad du faktiskt behöver fokusera på.
+                </Text>
+                <HeroMock />
+              </View>
+            )}
 
-            {/* Glass icon container */}
-            <BlurView intensity={20} tint="light" style={styles.iconWrap}>
-              {current.icon}
-            </BlurView>
+            {step === 1 && (
+              <View style={styles.stepInner}>
+                <Text style={styles.title}>
+                  Allt ditt plugg.{'\n'}
+                  <Text style={styles.titleAccent}>På ett ställe.</Text>
+                </Text>
+                <View style={styles.capList}>
+                  {CAPABILITIES.map((item, idx) => (
+                    <CapabilityRow key={item.title} item={item} index={idx} shown={capShown} />
+                  ))}
+                </View>
+                <Text style={styles.body}>
+                  Från vanliga skolkurser till Högskoleprovet — StudieStugan hjälper dig
+                  hela vägen.
+                </Text>
+              </View>
+            )}
 
-            {/* Title */}
-            <Text style={styles.title}>{current.title}</Text>
-
-            {/* Subtitle */}
-            <Text style={styles.subtitle}>{current.subtitle}</Text>
+            {step === 2 && (
+              <View style={styles.stepInner}>
+                <Text style={styles.title}>
+                  Redo att <Text style={styles.titleAccent}>börja?</Text>
+                </Text>
+                <Text style={styles.body}>
+                  Vi hjälper dig hålla koll på vad du ska plugga, vad du behöver träna på
+                  och hur du faktiskt utvecklas.
+                </Text>
+                <View style={styles.outcomeRow}>
+                  {OUTCOMES.map((o) => (
+                    <View key={o.label} style={styles.outcomeChip}>
+                      {o.icon}
+                      <Text style={styles.outcomeLabel}>{o.label}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </Animated.View>
-
-          {/* ── Footer: Dots + Button ── */}
-          <View style={styles.footer}>
-            {/* Dot indicators */}
-            <View style={styles.dotsRow}>
-              {SCREENS.map((_, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  onPress={() => handleDotPress(idx)}
-                  activeOpacity={0.7}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Animated.View
-                    style={[
-                      styles.dot,
-                      idx === currentIdx && styles.dotActive,
-                    ]}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* CTA Button */}
-            <Animated.View style={{ transform: [{ scale: btnScale }] }}>
-              <TouchableOpacity
-                style={styles.cta}
-                onPress={handleNext}
-                onPressIn={onPressIn}
-                onPressOut={onPressOut}
-                activeOpacity={0.9}
-              >
-                <BlurView intensity={30} tint="light" style={styles.ctaInner}>
-                  <Text style={styles.ctaText}>
-                    {isLast ? 'Kom igång' : 'Fortsätt'}
-                  </Text>
-                  <ArrowRight
-                    size={20}
-                    color={current.accentColor}
-                    strokeWidth={2.5}
-                  />
-                </BlurView>
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
         </View>
-      </LinearGradient>
-    </View>
+
+        {/* ── CTA ── */}
+        <View style={styles.footer}>
+          <Animated.View style={{ transform: [{ scale: btnScale }] }}>
+            <TouchableOpacity
+              style={styles.cta}
+              onPress={() => {
+                void handleCta();
+              }}
+              onPressIn={onPressIn}
+              onPressOut={onPressOut}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.ctaText}>{ctaLabel}</Text>
+              {step === STEP_COUNT - 1 ? (
+                <ArrowRight size={19} color="#FFFFFF" strokeWidth={2.6} />
+              ) : (
+                <ArrowRight size={19} color="rgba(255,255,255,0.85)" strokeWidth={2.6} />
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+          {step === 0 && (
+            <Text style={styles.footerHint}>Tar mindre än en minut</Text>
+          )}
+        </View>
+      </View>
+    </Animated.View>
   );
 }
 
-// ── Styles ───────────────────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  gradient: { flex: 1 },
+  root: {
+    flex: 1,
+    backgroundColor: BG,
+  },
+  orbTop: {
+    position: 'absolute' as const,
+    top: -SH * 0.12,
+    right: -SW * 0.22,
+    width: SH * 0.34,
+    height: SH * 0.34,
+    borderRadius: 999,
+    backgroundColor: ACCENT,
+    opacity: 0.07,
+  },
+  orbBottom: {
+    position: 'absolute' as const,
+    bottom: -SH * 0.14,
+    left: -SW * 0.24,
+    width: SH * 0.36,
+    height: SH * 0.36,
+    borderRadius: 999,
+    backgroundColor: ACCENT,
+    opacity: 0.05,
+  },
   content: {
     flex: 1,
-    paddingHorizontal: 28,
+    paddingHorizontal: 24,
   },
 
-  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
   },
-  progressTrack: {
-    flex: 1,
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: 2,
-    overflow: 'hidden',
-    marginRight: 16,
+  dotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
   },
-  progressFill: {
-    height: '100%',
-    borderRadius: 2,
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: BORDER,
+  },
+  dotActive: {
+    width: 24,
+    backgroundColor: ACCENT,
+    borderRadius: 4,
   },
   skipBtn: {
     paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   skipText: {
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: 15,
+    color: TEXT3,
+    fontSize: 14,
     fontWeight: '500' as const,
-    letterSpacing: 0.2,
   },
 
-  // Main content
   main: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 20,
   },
-
-  // Illustration
-  illustrationArea: {
-    width: SCREEN_WIDTH - 80,
-    height: 210,
-    marginBottom: 28,
+  stepWrap: {
+    flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-
-  // Glass icon
-  iconWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 28,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-
-  // Typography
-  title: {
-    fontSize: 30,
-    fontWeight: '800' as const,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 14,
-    letterSpacing: -0.8,
-    lineHeight: 36,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.85)',
-    textAlign: 'center',
-    lineHeight: 25,
-    paddingHorizontal: 16,
-    fontWeight: '400' as const,
-    letterSpacing: 0.1,
-  },
-
-  // Footer
-  footer: {
-    paddingBottom: Platform.OS === 'android' ? 12 : 0,
-  },
-
-  // Dots
-  dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 28,
-    gap: 10,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  dotActive: {
-    width: 28,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 4,
-  },
-
-  // CTA
-  cta: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  ctaInner: {
-    flexDirection: 'row',
+  stepInner: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 28,
-    gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+
+  logoWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    backgroundColor: BG,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: BORDER,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 26,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  logoImg: {
+    width: 46,
+    height: 46,
+  },
+
+  title: {
+    fontSize: Math.min(SW * 0.088, 33),
+    fontWeight: '800' as const,
+    color: TEXT1,
+    textAlign: 'center',
+    letterSpacing: -0.9,
+    lineHeight: Math.min(SW * 0.11, 41),
+  },
+  titleAccent: {
+    color: ACCENT,
+  },
+  body: {
+    fontSize: 15.5,
+    color: TEXT2,
+    textAlign: 'center',
+    lineHeight: 23,
+    marginTop: 14,
+    paddingHorizontal: 10,
+    maxWidth: 320,
+  },
+
+  capList: {
+    marginTop: 26,
+    marginBottom: 20,
+    alignSelf: 'stretch' as const,
+    gap: 9,
+  },
+  outcomeRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 30,
+  },
+  outcomeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  outcomeLabel: {
+    fontSize: 13.5,
+    fontWeight: '600' as const,
+    color: TEXT1,
+  },
+
+  footer: {
+    alignItems: 'center',
+  },
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: DARK_BTN,
     borderRadius: 18,
+    height: 56,
+    alignSelf: 'stretch' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 22,
+    elevation: 6,
   },
   ctaText: {
-    fontSize: 17,
-    fontWeight: '700' as const,
     color: '#FFFFFF',
-    letterSpacing: 0.3,
+    fontSize: 16.5,
+    fontWeight: '700' as const,
+    letterSpacing: 0.1,
+  },
+  footerHint: {
+    marginTop: 12,
+    fontSize: 12.5,
+    color: TEXT3,
+    fontWeight: '500' as const,
   },
 });
 
-// ── Background Decoration Styles ─────────────────────────────────────
+// ── Hero mock styles (step 1) ─────────────────────────────────────────
 
-const bgDecoStyles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFillObject,
+const mockStyles = StyleSheet.create({
+  stack: {
+    marginTop: 30,
+    alignSelf: 'stretch' as const,
+    gap: 10,
   },
-  orb: {
-    position: 'absolute' as const,
-    borderRadius: 999,
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 16,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    alignSelf: 'stretch' as const,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    elevation: 3,
   },
-});
-
-// ── Illustration container styles ────────────────────────────────────
-
-const illusStyles = StyleSheet.create({
-  container: {
-    width: '100%',
-    height: '100%',
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: ACCENT_TINT,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative' as const,
   },
-  label: {
-    color: 'rgba(255,255,255,0.9)',
+  cardBody: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 14.5,
+    fontWeight: '700' as const,
+    color: TEXT1,
+  },
+  cardMeta: {
     fontSize: 12,
-    fontWeight: '600' as const,
-    letterSpacing: 0.2,
+    color: TEXT2,
+    marginTop: 2,
+  },
+  barTrack: {
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: BG2,
+    marginTop: 8,
+    overflow: 'hidden' as const,
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: ACCENT,
+  },
+});
+
+// ── Capability row styles (step 2) ────────────────────────────────────
+
+const capStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: ACCENT_TINT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  body: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: TEXT1,
+  },
+  desc: {
+    fontSize: 12.5,
+    color: TEXT2,
+    marginTop: 1,
   },
 });

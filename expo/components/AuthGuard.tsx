@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
-const FTUE_COMPLETED_KEY = 'ftue_completed_v1';
+const FTUE_COMPLETED_KEY = 'ftue_intro_seen_v3';
 
 interface AuthGuardProps {
   children: React.ReactNode;

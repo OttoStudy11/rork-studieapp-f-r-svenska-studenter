@@ -120,7 +120,7 @@ export default function AuthScreen() {
       if (hasCompletedOnboarding) {
         router.replace(ROUTES.home as any);
       } else {
-        router.replace(ROUTES.onboarding as any);
+        router.replace(ROUTES.onboardingV2 as any);
       }
     }
   }, [isAuthenticated, hasCompletedOnboarding, isLoading]);

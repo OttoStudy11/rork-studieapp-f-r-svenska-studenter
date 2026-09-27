@@ -44,7 +44,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         router.replace('/auth' as Href);
       } else if (!hasCompletedOnboarding) {
         console.log('AuthGuard - Navigating to Onboarding');
-        router.replace('/onboarding' as Href);
+        router.replace('/onboarding-v2' as Href);
       } else {
         console.log('AuthGuard - Navigating to Home');
         router.replace('/(tabs)/home' as Href);

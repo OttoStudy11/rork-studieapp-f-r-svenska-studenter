@@ -396,7 +396,7 @@ const ProgressDots: React.FC<{ step: number; total: number }> = React.memo(({ st
 
 export default function OnboardingV2Screen(): React.ReactElement {
   const insets = useSafeAreaInsets();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, setOnboardingCompleted } = useAuth();
   const { updateUser } = useStudy();
 
   const [step, setStep] = useState(0);
@@ -520,9 +520,15 @@ export default function OnboardingV2Screen(): React.ReactElement {
         // Profile sync is best-effort.
       }
     }
+    // Mark onboarding complete so a restart doesn't route back here.
+    try {
+      await setOnboardingCompleted();
+    } catch {
+      // Best-effort; storage failure would only re-prompt the flow.
+    }
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.replace(isAuthenticated ? ROUTES.home : ROUTES.auth as never);
-  }, [canContinue, isSummary, answers, steps.length, user, updateUser, isAuthenticated]);
+  }, [canContinue, isSummary, answers, steps.length, user, updateUser, isAuthenticated, setOnboardingCompleted]);
 
   const ctaLabel = isSummary ? 'Starta min StudieStuga' : 'Vidare';
 

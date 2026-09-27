@@ -17,6 +17,7 @@ export const ROUTES = {
   auth: '/auth' as const,
   ftue: '/ftue' as const,
   onboarding: '/onboarding' as const,
+  onboardingV2: '/onboarding-v2' as const,
 
   // Profile & settings
   profile: '/profile' as const,

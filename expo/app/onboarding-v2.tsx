@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,21 +19,31 @@ import { ArrowLeft, Check } from 'lucide-react-native';
 import { ROUTES } from '@/utils/typedRoutes';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
+import { supabase } from '@/lib/supabase';
+import { getCoursesForProgramAndYear } from '@/constants/gymnasium-courses';
+import { DEFAULT_AVATAR_CONFIG } from '@/constants/avatar-config';
+import type { OnboardingData, StepProps, StepName } from '@/components/onboarding/shared';
+import WowStep from '@/components/onboarding/WowStep';
+import SocialProofStep from '@/components/onboarding/SocialProofStep';
+import TestimonialsStep from '@/components/onboarding/TestimonialsStep';
+import PremiumScreen from '@/app/premium';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
-// ── Design tokens (reference language: dark green × lime) ─────────────
-const BG_TOP = '#0E211A';
-const BG_MID = '#10251C';
-const BG_BOT = '#0B1913';
-const LIME = '#C9F24F';
-const LIME_SOFT = 'rgba(201,242,79,0.45)';
-const ON_LIME = '#132016';
-const CARD = 'rgba(255,255,255,0.055)';
-const CARD_BORDER = 'rgba(255,255,255,0.09)';
-const TITLE = '#F4FAF3';
-const SUB = 'rgba(226,240,224,0.62)';
-const DOT_IDLE = 'rgba(255,255,255,0.16)';
+// ── Design tokens (same palette as the premium gate / premium screen) ──
+const BG_TOP = '#FAFAF8';
+const BG_MID = '#E8F6F0';
+const BG_BOT = '#F7F7F5';
+const GREEN = '#10B981';
+const TEAL = '#14B8A6';
+const GREEN_DARK = '#059669';
+const GREEN_SOFT = 'rgba(16,185,129,0.45)';
+const ON_GREEN = '#FFFFFF';
+const CARD = '#FFFFFF';
+const CARD_BORDER = 'rgba(26,46,37,0.08)';
+const TITLE = '#1A2E25';
+const SUB = '#6A7A72';
+const DOT_IDLE = 'rgba(26,46,37,0.14)';
 
 const STORAGE_KEY = 'studiestugan_onboarding_v2';
 
@@ -46,11 +56,16 @@ interface RowOption {
   value: string;
 }
 
+type StepId =
+  | 'level' | 'year' | 'focus' | 'methods' | 'time' | 'goal'
+  | 'wow' | 'socialproof' | 'testimonials' | 'paywall'
+  | 'summary';
+
 interface StepDef {
-  id: 'level' | 'year' | 'focus' | 'methods' | 'time' | 'goal' | 'summary';
+  id: StepId;
   title: string;
   subtitle?: string;
-  kind: 'rows' | 'grid' | 'summary';
+  kind: 'rows' | 'grid' | 'summary' | 'convert';
   multi?: boolean;
   options: RowOption[];
 }
@@ -81,12 +96,14 @@ const YEAR_OPTIONS: Record<StudyLevel, RowOption[]> = {
   ],
 };
 
+// Six tiles → three symmetric rows of two.
 const FOCUS_OPTIONS: RowOption[] = [
   { emoji: '📚', title: 'Struktur', value: 'Struktur' },
   { emoji: '🧠', title: 'Förstå saker bättre', value: 'Förstå saker bättre' },
   { emoji: '🎯', title: 'Högskoleprovet', value: 'Högskoleprovet' },
   { emoji: '⏱️', title: 'Fokus', value: 'Fokus' },
   { emoji: '📈', title: 'Höja mina betyg', value: 'Höja mina betyg' },
+  { emoji: '🧘', title: 'Mindre stress', value: 'Mindre stress' },
 ];
 
 const METHOD_OPTIONS: RowOption[] = [
@@ -120,6 +137,14 @@ interface Answers {
   time: string | null;
   goal: string | null;
 }
+
+// Conversion steps reused from the previous onboarding (kept for monetization).
+const CONVERT_STEPS: StepDef[] = [
+  { id: 'wow', title: '', kind: 'convert', options: [] },
+  { id: 'socialproof', title: '', kind: 'convert', options: [] },
+  { id: 'testimonials', title: '', kind: 'convert', options: [] },
+  { id: 'paywall', title: '', kind: 'convert', options: [] },
+];
 
 const buildSteps = (level: StudyLevel | null): StepDef[] => [
   {
@@ -166,6 +191,7 @@ const buildSteps = (level: StudyLevel | null): StepDef[] => [
     kind: 'rows',
     options: GOAL_OPTIONS,
   },
+  ...CONVERT_STEPS,
   {
     id: 'summary',
     title: 'Nu kör vi.',
@@ -182,7 +208,16 @@ const TIME_TO_HOURS: Record<string, number> = {
   '2+ timmar': 2,
 };
 
-// ── Selection row (reference style: dark card → lime card) ────────────
+const YEAR_TO_NUMBER: Record<string, number> = {
+  'År 1': 1,
+  'År 2': 2,
+  'År 3': 3,
+  'År 4+': 4,
+  'Grundläggande nivå': 1,
+  'Påbyggnadsnivå': 2,
+};
+
+// ── Selection row (reference style: white card → green card) ──────────
 
 interface OptionRowProps {
   option: RowOption;
@@ -219,14 +254,14 @@ const OptionRow: React.FC<OptionRowProps> = React.memo(({ option, selected, inde
   const enterOpacity = enter;
   const enterTranslate = enter.interpolate({ inputRange: [0, 1], outputRange: [18, 0] });
 
-  const limeOpacity = sel;
+  const greenOpacity = sel;
   const selScale = sel.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] });
   const checkScale = sel.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
-  const titleColor = sel.interpolate({ inputRange: [0, 1], outputRange: [TITLE, ON_LIME] });
-  const subColor = sel.interpolate({ inputRange: [0, 1], outputRange: [SUB, 'rgba(19,32,22,0.7)'] });
+  const titleColor = sel.interpolate({ inputRange: [0, 1], outputRange: [TITLE, ON_GREEN] });
+  const subColor = sel.interpolate({ inputRange: [0, 1], outputRange: [SUB, 'rgba(255,255,255,0.85)'] });
   const emojiBg = sel.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(255,255,255,0.07)', 'rgba(19,32,22,0.14)'],
+    outputRange: ['rgba(16,185,129,0.1)', 'rgba(255,255,255,0.2)'],
   });
 
   return (
@@ -255,8 +290,8 @@ const OptionRow: React.FC<OptionRowProps> = React.memo(({ option, selected, inde
           onPress={onPress}
         >
           <View style={rowStyles.card}>
-            {/* Lime fill layer */}
-            <Animated.View style={[rowStyles.limeFill, { opacity: limeOpacity }]} />
+            {/* Green fill layer */}
+            <Animated.View style={[rowStyles.greenFill, { opacity: greenOpacity }]} />
             <View style={rowStyles.rowInner}>
               <Animated.View style={[rowStyles.emojiWrap, { backgroundColor: emojiBg }]}>
                 <Text style={rowStyles.emoji}>{option.emoji}</Text>
@@ -272,7 +307,7 @@ const OptionRow: React.FC<OptionRowProps> = React.memo(({ option, selected, inde
                 ) : null}
               </View>
               <Animated.View style={[rowStyles.checkWrap, { transform: [{ scale: checkScale }] }]}>
-                <Check size={15} color={ON_LIME} strokeWidth={3} />
+                <Check size={15} color={ON_GREEN} strokeWidth={3} />
               </Animated.View>
             </View>
           </View>
@@ -282,7 +317,7 @@ const OptionRow: React.FC<OptionRowProps> = React.memo(({ option, selected, inde
   );
 });
 
-// ── Grid tile (reference diet-screen style) ───────────────────────────
+// ── Grid tile ─────────────────────────────────────────────────────────
 
 interface GridTileProps {
   option: RowOption;
@@ -318,9 +353,9 @@ const GridTile: React.FC<GridTileProps> = React.memo(({ option, selected, index,
 
   const enterOpacity = enter;
   const enterTranslate = enter.interpolate({ inputRange: [0, 1], outputRange: [18, 0] });
-  const limeOpacity = sel;
+  const greenOpacity = sel;
   const selScale = sel.interpolate({ inputRange: [0, 1], outputRange: [1, 1.03] });
-  const labelColor = sel.interpolate({ inputRange: [0, 1], outputRange: [TITLE, ON_LIME] });
+  const labelColor = sel.interpolate({ inputRange: [0, 1], outputRange: [TITLE, ON_GREEN] });
 
   return (
     <Animated.View style={{ opacity: enterOpacity, transform: [{ translateY: enterTranslate }] }}>
@@ -346,7 +381,7 @@ const GridTile: React.FC<GridTileProps> = React.memo(({ option, selected, index,
           onPress={onPress}
         >
           <View style={gridStyles.tile}>
-            <Animated.View style={[gridStyles.limeFill, { opacity: limeOpacity }]} />
+            <Animated.View style={[gridStyles.greenFill, { opacity: greenOpacity }]} />
             <Text style={gridStyles.emoji}>{option.emoji}</Text>
             <Animated.Text style={[gridStyles.label, { color: labelColor }]} numberOfLines={2}>
               {option.title}
@@ -358,7 +393,7 @@ const GridTile: React.FC<GridTileProps> = React.memo(({ option, selected, index,
   );
 });
 
-// ── Progress dots (reference: pill for active, dots for rest) ─────────
+// ── Progress dots (pill for active, dots for rest) ────────────────────
 
 const ProgressDots: React.FC<{ step: number; total: number }> = React.memo(({ step, total }) => {
   // 0 = idle, 1 = done, 2 = active
@@ -382,7 +417,7 @@ const ProgressDots: React.FC<{ step: number; total: number }> = React.memo(({ st
               width: v.interpolate({ inputRange: [0, 2], outputRange: [8, 26] }),
               backgroundColor: v.interpolate({
                 inputRange: [0, 1, 2],
-                outputRange: [DOT_IDLE, LIME_SOFT, LIME],
+                outputRange: [DOT_IDLE, GREEN_SOFT, GREEN],
               }),
             },
           ]}
@@ -397,9 +432,11 @@ const ProgressDots: React.FC<{ step: number; total: number }> = React.memo(({ st
 export default function OnboardingV2Screen(): React.ReactElement {
   const insets = useSafeAreaInsets();
   const { isAuthenticated, user, setOnboardingCompleted } = useAuth();
-  const { updateUser } = useStudy();
+  const { updateUser, addCourse } = useStudy();
 
   const [step, setStep] = useState(0);
+  const [testimonialDisplay, setTestimonialDisplay] = useState(0);
+  const finishingRef = useRef(false);
   const [answers, setAnswers] = useState<Answers>({
     level: null,
     year: null,
@@ -447,15 +484,17 @@ export default function OnboardingV2Screen(): React.ReactElement {
 
   const canContinue: boolean = isSummary
     ? true
-    : current.multi
-      ? (step === 2 ? answers.focus : answers.methods).length > 0
-      : step === 0
-        ? answers.level !== null
-        : step === 1
-          ? answers.year !== null
-          : step === 4
-            ? answers.time !== null
-            : answers.goal !== null;
+    : current.kind === 'convert'
+      ? true
+      : current.multi
+        ? (current.id === 'focus' ? answers.focus : answers.methods).length > 0
+        : current.id === 'level'
+          ? answers.level !== null
+          : current.id === 'year'
+            ? answers.year !== null
+            : current.id === 'time'
+              ? answers.time !== null
+              : answers.goal !== null;
 
   const goBack = useCallback(() => {
     if (step === 0) return;
@@ -463,7 +502,7 @@ export default function OnboardingV2Screen(): React.ReactElement {
     setStep((s) => Math.max(0, s - 1));
   }, [step]);
 
-  const selectSingle = useCallback((stepId: StepDef['id'], value: string) => {
+  const selectSingle = useCallback((stepId: StepId, value: string) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setAnswers((a) => {
       if (stepId === 'level') {
@@ -478,7 +517,7 @@ export default function OnboardingV2Screen(): React.ReactElement {
     });
   }, []);
 
-  const toggleMulti = useCallback((stepId: StepDef['id'], value: string) => {
+  const toggleMulti = useCallback((stepId: StepId, value: string) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setAnswers((a) => {
       const list = stepId === 'focus' ? [...a.focus] : [...a.methods];
@@ -489,16 +528,36 @@ export default function OnboardingV2Screen(): React.ReactElement {
     });
   }, []);
 
-  const handleCta = useCallback(async () => {
-    if (!canContinue) {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      return;
-    }
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (!isSummary) {
-      setStep((s) => Math.min(steps.length - 1, s + 1));
-      return;
-    }
+  // Data shaped like the legacy onboarding, so the reused conversion
+  // steps (WowStep) can render the user's real answers.
+  const legacyData: OnboardingData = useMemo(
+    () => ({
+      username: '',
+      displayName: '',
+      studyLevel: answers.level ?? 'gymnasie',
+      gymnasium: null,
+      gymnasiumProgram: null,
+      gymnasiumGrade: null,
+      university: null,
+      universityProgram: null,
+      universityProgramType: null,
+      universityYear: null,
+      program: '',
+      goals: answers.focus,
+      problems: [],
+      selectedCourses: new Set(),
+      year: null,
+      avatarConfig: DEFAULT_AVATAR_CONFIG,
+      dailyGoalMinutes: Math.round((TIME_TO_HOURS[answers.time ?? '30–60 min'] ?? 1) * 60),
+      stressLevel: 5,
+      acceptedTerms: true,
+    }),
+    [answers.level, answers.focus, answers.time],
+  );
+
+  const finishOnboarding = useCallback(async () => {
+    if (finishingRef.current) return;
+    finishingRef.current = true;
 
     // Persist: local profile snapshot + merge into existing user profile.
     try {
@@ -509,28 +568,189 @@ export default function OnboardingV2Screen(): React.ReactElement {
     } catch {
       // Storage failure should not block the flow.
     }
+
+    const level = (answers.level ?? 'gymnasie') as StudyLevel;
     if (user) {
       try {
         await updateUser({
-          studyLevel: (answers.level ?? 'gymnasie') as StudyLevel,
+          studyLevel: level,
           dailyGoalHours: TIME_TO_HOURS[answers.time ?? '30–60 min'] ?? 1,
           purpose: answers.goal ?? '',
         });
       } catch {
         // Profile sync is best-effort.
       }
+
+      // Assign starter courses so the home screen isn't empty.
+      try {
+        if (level === 'gymnasie') {
+          // No program is collected in this flow — getGymnasiumCourses falls
+          // back to the gymnasie-common set (Svenska, Engelska, Matematik 1).
+          const yearNum = YEAR_TO_NUMBER[answers.year ?? 'År 1'] ?? 1;
+          const gymCourses = getCoursesForProgramAndYear('StudieStugan-standard', yearNum as 1 | 2 | 3);
+          for (const course of gymCourses) {
+            await supabase.from('courses').upsert(
+              {
+                id: course.code,
+                course_code: course.code,
+                title: course.name,
+                description: `${course.name} – ${course.points} poäng`,
+                subject: 'Gymnasiegemensamt',
+                level: 'gymnasie',
+                points: course.points,
+                resources: ['Kursmaterial', 'Övningsuppgifter'],
+                tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+                related_courses: [],
+                progress: 0,
+              },
+              { onConflict: 'id' },
+            );
+            await supabase.from('user_courses').upsert(
+              {
+                id: `${user.id}-${course.code}`,
+                user_id: user.id,
+                course_id: course.code,
+                progress: 0,
+                is_active: true,
+              },
+              { onConflict: 'id' },
+            );
+            await addCourse({
+              title: course.name,
+              description: `${course.name} – ${course.points} poäng`,
+              subject: 'Gymnasiegemensamt',
+              level: 'gymnasie',
+              progress: 0,
+              isActive: true,
+              resources: ['Kursmaterial', 'Övningsuppgifter'],
+              tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+              relatedCourses: [],
+            });
+          }
+        } else if (level === 'högskola') {
+          // No program is collected in this flow — assign a generic starter
+          // set so the user lands with active courses from day one.
+          const uniStarters: { code: string; title: string; description: string }[] = [
+            { code: 'ss_studieteknik', title: 'Studieteknik', description: 'Planera, läsa och plugga effektivt på högskolenivå' },
+            { code: 'ss_akademiskt_skrivande', title: 'Akademiskt skrivande', description: 'Struktur, argumentation och källhantering' },
+            { code: 'ss_vagen_till_examen', title: 'Vägen till examen', description: 'Kartlägg din utbildning och sätt upp delmål' },
+          ];
+          for (const starter of uniStarters) {
+            await supabase.from('courses').upsert(
+              {
+                id: starter.code,
+                course_code: starter.code,
+                title: starter.title,
+                description: starter.description,
+                subject: 'Allmänt',
+                level: 'hogskola',
+                resources: ['Kursmaterial', 'Övningsuppgifter'],
+                tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+                related_courses: [],
+                progress: 0,
+              },
+              { onConflict: 'id' },
+            );
+            await supabase.from('user_courses').upsert(
+              {
+                id: `${user.id}-${starter.code}`,
+                user_id: user.id,
+                course_id: starter.code,
+                progress: 0,
+                is_active: true,
+              },
+              { onConflict: 'id' },
+            );
+            await addCourse({
+              title: starter.title,
+              description: starter.description,
+              subject: 'Allmänt',
+              level: 'högskola',
+              progress: 0,
+              isActive: true,
+              resources: ['Kursmaterial', 'Övningsuppgifter'],
+              tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+              relatedCourses: [],
+            });
+          }
+        }
+      } catch {
+        // Course assignment is best-effort; user can add courses manually.
+      }
     }
+
     // Mark onboarding complete so a restart doesn't route back here.
     try {
       await setOnboardingCompleted();
     } catch {
       // Best-effort; storage failure would only re-prompt the flow.
     }
+
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.replace(isAuthenticated ? ROUTES.home : ROUTES.auth as never);
-  }, [canContinue, isSummary, answers, steps.length, user, updateUser, isAuthenticated, setOnboardingCompleted]);
+  }, [answers, user, updateUser, addCourse, setOnboardingCompleted, isAuthenticated]);
 
-  const ctaLabel = isSummary ? 'Starta min StudieStuga' : 'Vidare';
+  const handleCta = useCallback(async () => {
+    if (!canContinue) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      return;
+    }
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (isSummary) {
+      await finishOnboarding();
+      return;
+    }
+    setStep((s) => Math.min(steps.length - 1, s + 1));
+  }, [canContinue, isSummary, finishOnboarding, steps.length]);
+
+  // The paywall step renders the full /premium screen (same experience as
+  // the standalone route). Back and successful purchase both complete onboarding.
+  if (current.kind === 'convert' && current.id === 'paywall') {
+    return (
+      <PremiumScreen
+        onBack={() => {
+          void finishOnboarding();
+        }}
+        onPurchased={() => {
+          void finishOnboarding();
+        }}
+      />
+    );
+  }
+
+  // Props bundle satisfying the shared legacy step interface.
+  const stepProps: StepProps = {
+    step: current.id as StepName,
+    data: legacyData,
+    setData: () => {},
+    usernameAvailable: null,
+    checkingUsername: false,
+    checkUsername: () => {},
+    availableCourses: [],
+    gymnasiumSearch: '',
+    setGymnasiumSearch: () => {},
+    universitySearch: '',
+    setUniversitySearch: () => {},
+    komvuxSubjectFilter: 'all',
+    setKomvuxSubjectFilter: () => {},
+    testimonialDisplay,
+    setTestimonialDisplay,
+    offerings: [],
+    selectedPkg: 'annual',
+    setSelectedPkg: () => {},
+    isPurchasing: false,
+    isRestoringPurchase: false,
+    onPurchase: () => {
+      void finishOnboarding();
+    },
+    onRestore: () => {},
+    onSkip: () => {
+      void finishOnboarding();
+    },
+  };
+
+  const isConvert = current.kind === 'convert';
+  const ctaLabel = isSummary ? 'Starta StudieStugan' : isConvert ? 'Fortsätt' : 'Vidare';
 
   return (
     <View style={styles.root}>
@@ -546,55 +766,60 @@ export default function OnboardingV2Screen(): React.ReactElement {
 
       <View style={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 18 }]}>
         {/* ── Header: circular back + progress dots ── */}
-        <View style={styles.header}>
-          <Animated.View style={{ transform: [{ scale: backScale }], width: 46 }}>
-            {step > 0 && (
-              <TouchableOpacity
-                style={styles.backBtn}
-                activeOpacity={0.85}
-                onPressIn={() =>
-                  Animated.spring(backScale, {
-                    toValue: 0.9,
-                    tension: 300,
-                    friction: 14,
-                    useNativeDriver: true,
-                  }).start()
-                }
-                onPressOut={() =>
-                  Animated.spring(backScale, {
-                    toValue: 1,
-                    tension: 300,
-                    friction: 14,
-                    useNativeDriver: true,
-                  }).start()
-                }
-                onPress={goBack}
-              >
-                <ArrowLeft size={20} color={TITLE} strokeWidth={2.4} />
-              </TouchableOpacity>
-            )}
-          </Animated.View>
-          <View style={styles.dotsWrap}>
-            <ProgressDots step={step} total={steps.length} />
+        {!isConvert && (
+          <View style={styles.header}>
+            <Animated.View style={{ transform: [{ scale: backScale }], width: 46 }}>
+              {step > 0 && (
+                <TouchableOpacity
+                  style={styles.backBtn}
+                  activeOpacity={0.85}
+                  onPressIn={() =>
+                    Animated.spring(backScale, {
+                      toValue: 0.9,
+                      tension: 300,
+                      friction: 14,
+                      useNativeDriver: true,
+                    }).start()
+                  }
+                  onPressOut={() =>
+                    Animated.spring(backScale, {
+                      toValue: 1,
+                      tension: 300,
+                      friction: 14,
+                      useNativeDriver: true,
+                    }).start()
+                  }
+                  onPress={goBack}
+                >
+                  <ArrowLeft size={20} color={TITLE} strokeWidth={2.4} />
+                </TouchableOpacity>
+              )}
+            </Animated.View>
+            <View style={styles.dotsWrap}>
+              <ProgressDots step={step} total={steps.length} />
+            </View>
+            <View style={{ width: 46 }} />
           </View>
-          <View style={{ width: 46 }} />
-        </View>
+        )}
 
         {/* ── Step content ── */}
         <Animated.View
           key={step}
           style={[styles.step, { opacity: fade, transform: [{ translateX: slide }] }]}
         >
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollInner}
-          >
-            <Text style={styles.title}>{current.title}</Text>
-            {current.subtitle ? (
-              <Text style={styles.subtitle}>{current.subtitle}</Text>
-            ) : null}
+          {current.id === 'wow' && <WowStep {...stepProps} />}
+          {current.id === 'socialproof' && <SocialProofStep {...stepProps} />}
+          {current.id === 'testimonials' && <TestimonialsStep {...stepProps} />}
 
-            {current.kind === 'rows' && (
+          {current.kind === 'rows' && (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollInner}
+            >
+              <Text style={styles.title}>{current.title}</Text>
+              {current.subtitle ? (
+                <Text style={styles.subtitle}>{current.subtitle}</Text>
+              ) : null}
               <View style={styles.rowsList}>
                 {current.options.map((opt, i) => (
                   <OptionRow
@@ -614,9 +839,18 @@ export default function OnboardingV2Screen(): React.ReactElement {
                   />
                 ))}
               </View>
-            )}
+            </ScrollView>
+          )}
 
-            {current.kind === 'grid' && (
+          {current.kind === 'grid' && (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollInner}
+            >
+              <Text style={styles.title}>{current.title}</Text>
+              {current.subtitle ? (
+                <Text style={styles.subtitle}>{current.subtitle}</Text>
+              ) : null}
               <View style={styles.grid}>
                 {current.options.map((opt, i) => (
                   <View key={opt.value} style={styles.gridCell}>
@@ -633,26 +867,42 @@ export default function OnboardingV2Screen(): React.ReactElement {
                   </View>
                 ))}
               </View>
-            )}
+            </ScrollView>
+          )}
 
-            {current.kind === 'summary' && (
+          {current.kind === 'summary' && (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollInner}
+            >
+              <Text style={styles.title}>{current.title}</Text>
+              {current.subtitle ? (
+                <Text style={styles.subtitle}>{current.subtitle}</Text>
+              ) : null}
               <SummaryView answers={answers} />
-            )}
-          </ScrollView>
+            </ScrollView>
+          )}
         </Animated.View>
 
         {/* ── CTA (fixed bottom) ── */}
         <View style={[styles.ctaWrap, dir === 1 && step !== 0 && styles.ctaEnter]}>
           <Animated.View style={{ opacity: canContinue ? 1 : 0.45 }}>
             <TouchableOpacity
-              style={[styles.cta, !canContinue && styles.ctaDisabled]}
+              style={styles.cta}
               activeOpacity={0.9}
               disabled={!canContinue}
               onPress={() => {
                 void handleCta();
               }}
             >
-              <Text style={styles.ctaText}>{ctaLabel}</Text>
+              <LinearGradient
+                colors={[GREEN, TEAL]}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.ctaGradient}
+              >
+                <Text style={styles.ctaText}>{ctaLabel}</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -661,7 +911,7 @@ export default function OnboardingV2Screen(): React.ReactElement {
   );
 }
 
-// ── Summary (final screen, reference "Your Goal" language) ────────────
+// ── Summary (final screen) ────────────────────────────────────────────
 
 const SummaryView: React.FC<{ answers: Answers }> = React.memo(({ answers }) => {
   const enter = useRef(new Animated.Value(0)).current;
@@ -686,16 +936,23 @@ const SummaryView: React.FC<{ answers: Answers }> = React.memo(({ answers }) => 
 
   return (
     <Animated.View style={{ opacity, transform: [{ translateY }] }}>
-      {/* Lime highlight card */}
-      <View style={sumStyles.goalCard}>
-        <View style={sumStyles.goalHead}>
-          <Text style={sumStyles.goalEmoji}>🎯</Text>
-          <Text style={sumStyles.goalTitle}>Ditt mål</Text>
-        </View>
-        <Text style={sumStyles.goalValue}>{answers.goal ?? 'Komma vidare'}</Text>
-        <Text style={sumStyles.goalSub}>
-          Nu bygger vi en plan som tar dig dit — steg för steg.
-        </Text>
+      {/* Green highlight card */}
+      <View style={sumStyles.goalCardWrap}>
+        <LinearGradient
+          colors={[GREEN, TEAL]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={sumStyles.goalCard}
+        >
+          <View style={sumStyles.goalHead}>
+            <Text style={sumStyles.goalEmoji}>🎯</Text>
+            <Text style={sumStyles.goalTitle}>Ditt mål</Text>
+          </View>
+          <Text style={sumStyles.goalValue}>{answers.goal ?? 'Komma vidare'}</Text>
+          <Text style={sumStyles.goalSub}>
+            Nu bygger vi en plan som tar dig dit — steg för steg.
+          </Text>
+        </LinearGradient>
       </View>
 
       {/* Profile card */}
@@ -730,14 +987,14 @@ const styles = StyleSheet.create({
     left: SW * 0.5 - SH * 0.35,
     width: SH * 0.7,
     height: SH * 0.42,
-    backgroundColor: 'rgba(201,242,79,0.13)',
+    backgroundColor: 'rgba(16,185,129,0.1)',
   },
   glowBottom: {
     bottom: -SH * 0.22,
     right: -SH * 0.2,
     width: SH * 0.5,
     height: SH * 0.5,
-    backgroundColor: 'rgba(201,242,79,0.05)',
+    backgroundColor: 'rgba(20,184,166,0.07)',
   },
   content: {
     flex: 1,
@@ -751,9 +1008,9 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: 'rgba(26,46,37,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: CARD_BORDER,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -805,20 +1062,20 @@ const styles = StyleSheet.create({
   cta: {
     height: 56,
     borderRadius: 28,
-    backgroundColor: LIME,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: LIME,
+    overflow: 'hidden' as const,
+    shadowColor: GREEN,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: Platform.OS === 'android' ? 0 : 0.28,
     shadowRadius: 22,
     elevation: Platform.OS === 'android' ? 0 : 8,
   },
-  ctaDisabled: {
-    backgroundColor: 'rgba(201,242,79,0.55)',
+  ctaGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   ctaText: {
-    color: ON_LIME,
+    color: ON_GREEN,
     fontSize: 16.5,
     fontWeight: '800' as const,
     letterSpacing: 0.2,
@@ -832,10 +1089,15 @@ const rowStyles = StyleSheet.create({
     borderColor: CARD_BORDER,
     backgroundColor: CARD,
     overflow: 'hidden' as const,
+    shadowColor: '#1A2E25',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: Platform.OS === 'android' ? 0 : 0.05,
+    shadowRadius: 10,
+    elevation: Platform.OS === 'android' ? 1 : 0,
   },
-  limeFill: {
+  greenFill: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: LIME,
+    backgroundColor: GREEN,
   },
   rowInner: {
     flexDirection: 'row',
@@ -869,7 +1131,7 @@ const rowStyles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(19,32,22,0.85)',
+    backgroundColor: 'rgba(255,255,255,0.28)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -887,10 +1149,15 @@ const gridStyles = StyleSheet.create({
     paddingVertical: 26,
     paddingHorizontal: 10,
     minHeight: 118,
+    shadowColor: '#1A2E25',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: Platform.OS === 'android' ? 0 : 0.05,
+    shadowRadius: 10,
+    elevation: Platform.OS === 'android' ? 1 : 0,
   },
-  limeFill: {
+  greenFill: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: LIME,
+    backgroundColor: GREEN,
   },
   emoji: {
     fontSize: 30,
@@ -917,16 +1184,18 @@ const dotStyles = StyleSheet.create({
 });
 
 const sumStyles = StyleSheet.create({
-  goalCard: {
+  goalCardWrap: {
     marginTop: 26,
-    backgroundColor: LIME,
     borderRadius: 24,
-    padding: 20,
-    shadowColor: LIME,
+    shadowColor: GREEN,
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25,
+    shadowOpacity: Platform.OS === 'android' ? 0 : 0.25,
     shadowRadius: 26,
     elevation: Platform.OS === 'android' ? 0 : 8,
+  },
+  goalCard: {
+    borderRadius: 24,
+    padding: 20,
   },
   goalHead: {
     flexDirection: 'row',
@@ -940,19 +1209,19 @@ const sumStyles = StyleSheet.create({
   goalTitle: {
     fontSize: 15,
     fontWeight: '800' as const,
-    color: ON_LIME,
+    color: ON_GREEN,
   },
   goalValue: {
     fontSize: 22,
     fontWeight: '800' as const,
-    color: ON_LIME,
+    color: ON_GREEN,
     letterSpacing: -0.4,
   },
   goalSub: {
     marginTop: 8,
     fontSize: 13,
     lineHeight: 19,
-    color: 'rgba(19,32,22,0.72)',
+    color: 'rgba(255,255,255,0.85)',
     fontWeight: '500' as const,
   },
   profileCard: {
@@ -968,7 +1237,7 @@ const sumStyles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800' as const,
     letterSpacing: 1.6,
-    color: 'rgba(201,242,79,0.85)',
+    color: GREEN_DARK,
     marginBottom: 12,
   },
   profileRow: {
@@ -978,7 +1247,7 @@ const sumStyles = StyleSheet.create({
     gap: 14,
     paddingVertical: 9,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: 'rgba(26,46,37,0.06)',
   },
   profileKey: {
     fontSize: 13,

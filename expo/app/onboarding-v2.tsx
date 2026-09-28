@@ -33,7 +33,6 @@ import {
 import { DEFAULT_AVATAR_CONFIG } from '@/constants/avatar-config';
 import type { OnboardingData, StepProps, StepName } from '@/components/onboarding/shared';
 import PremiumScreen from '@/app/premium';
-import { WALKTHROUGH_PENDING_KEY } from '@/components/Walkthrough';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -903,13 +902,6 @@ export default function OnboardingV2Screen(): React.ReactElement {
       if (result.error) {
         setAuthError((result.error as any)?.message || 'Ett fel uppstod vid registrering.');
         return;
-      }
-      // Brand-new account: queue the one-time in-app walkthrough (shown on
-      // first entry into the app, then never again).
-      try {
-        await AsyncStorage.setItem(WALKTHROUGH_PENDING_KEY, '1');
-      } catch {
-        // Queueing is best-effort.
       }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (result.needsEmailConfirmation) {

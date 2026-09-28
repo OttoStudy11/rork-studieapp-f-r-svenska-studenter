@@ -12,10 +12,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BookOpen, GraduationCap, Timer, Users, Sparkles } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
-// ── One-time flags ──────────────────────────────────────────────────────
-// Queued at account creation (onboarding-v2), consumed by the tabs layout.
-// Once WALKTHROUGH_SEEN_KEY is written the walkthrough never shows again.
-export const WALKTHROUGH_PENDING_KEY = 'studiestugan_walkthrough_pending';
+// ── One-time flag ───────────────────────────────────────────────────────
+// The walkthrough shows once per device on first entry into the tabs area
+// (which is right after account creation / completed onboarding). Once
+// WALKTHROUGH_SEEN_KEY is written it never shows again.
 export const WALKTHROUGH_SEEN_KEY = 'studiestugan_walkthrough_seen';
 
 // ── Palette (matches onboarding-v2 / premium gate) ─────────────────────

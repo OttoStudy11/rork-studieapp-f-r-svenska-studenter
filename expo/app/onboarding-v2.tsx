@@ -32,9 +32,6 @@ import {
 } from '@/lib/course-assignment';
 import { DEFAULT_AVATAR_CONFIG } from '@/constants/avatar-config';
 import type { OnboardingData, StepProps, StepName } from '@/components/onboarding/shared';
-import WowStep from '@/components/onboarding/WowStep';
-import SocialProofStep from '@/components/onboarding/SocialProofStep';
-import TestimonialsStep from '@/components/onboarding/TestimonialsStep';
 import PremiumScreen from '@/app/premium';
 
 const { width: SW, height: SH } = Dimensions.get('window');
@@ -68,7 +65,7 @@ interface RowOption {
 
 type StepId =
   | 'level' | 'year' | 'program' | 'focus' | 'methods' | 'time' | 'goal'
-  | 'wow' | 'socialproof' | 'testimonials' | 'account' | 'paywall'
+  | 'account' | 'paywall'
   | 'summary';
 
 interface StepDef {
@@ -167,11 +164,8 @@ interface Answers {
   goal: string | null;
 }
 
-// Conversion steps reused from the previous onboarding (kept for monetization).
+// After the questions: account creation, then the premium gate.
 const CONVERT_STEPS: StepDef[] = [
-  { id: 'wow', title: '', kind: 'convert', options: [] },
-  { id: 'socialproof', title: '', kind: 'convert', options: [] },
-  { id: 'testimonials', title: '', kind: 'convert', options: [] },
   {
     id: 'account',
     title: 'Skapa ditt konto',
@@ -488,7 +482,6 @@ export default function OnboardingV2Screen(): React.ReactElement {
   const { updateUser, addCourse } = useStudy();
 
   const [step, setStep] = useState(0);
-  const [testimonialDisplay, setTestimonialDisplay] = useState(0);
   const [programSearch, setProgramSearch] = useState('');
   const finishingRef = useRef(false);
   const [accountEmail, setAccountEmail] = useState('');
@@ -948,6 +941,7 @@ export default function OnboardingV2Screen(): React.ReactElement {
   if (current.kind === 'convert' && current.id === 'paywall') {
     return (
       <PremiumScreen
+        forceGate
         onBack={() => {
           void finishOnboarding();
         }}
@@ -973,8 +967,8 @@ export default function OnboardingV2Screen(): React.ReactElement {
     setUniversitySearch: () => {},
     komvuxSubjectFilter: 'all',
     setKomvuxSubjectFilter: () => {},
-    testimonialDisplay,
-    setTestimonialDisplay,
+    testimonialDisplay: 0,
+    setTestimonialDisplay: () => {},
     offerings: [],
     selectedPkg: 'annual',
     setSelectedPkg: () => {},
@@ -1055,10 +1049,6 @@ export default function OnboardingV2Screen(): React.ReactElement {
           key={step}
           style={[styles.step, { opacity: fade, transform: [{ translateX: slide }] }]}
         >
-          {current.id === 'wow' && <WowStep {...stepProps} />}
-          {current.id === 'socialproof' && <SocialProofStep {...stepProps} />}
-          {current.id === 'testimonials' && <TestimonialsStep {...stepProps} />}
-
           {current.id === 'account' && (
             <ScrollView
               showsVerticalScrollIndicator={false}

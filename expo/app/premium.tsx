@@ -240,9 +240,12 @@ interface PremiumScreenProps {
   onBack?: () => void;
   /** Called after a successful purchase or restore instead of router.back(). */
   onPurchased?: () => void;
+  /** Always show the conversion gate, even if the user already has premium
+   *  (used during onboarding, where the gate is the conversion step). */
+  forceGate?: boolean;
 }
 
-export default function PremiumScreen({ onBack, onPurchased }: PremiumScreenProps = {}) {
+export default function PremiumScreen({ onBack, onPurchased, forceGate }: PremiumScreenProps = {}) {
   const { isPremium, getOfferings, purchasePackage, restorePurchases, isOffline } = usePremium();
   const { triggerRating } = useRating();
 
@@ -527,7 +530,7 @@ export default function PremiumScreen({ onBack, onPurchased }: PremiumScreenProp
   // ==========================================================================
   // PREMIUM USER VIEW
   // ==========================================================================
-  if (isPremium) {
+  if (isPremium && !forceGate) {
     return (
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea}>

@@ -7,6 +7,7 @@ import {
   Animated,
   TouchableOpacity,
   ScrollView,
+  TextInput,
   BackHandler,
   Platform,
 } from 'react-native';
@@ -21,6 +22,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { supabase } from '@/lib/supabase';
 import { getCoursesForProgramAndYear } from '@/constants/gymnasium-courses';
+import { UNIVERSITY_PROGRAMS } from '@/constants/universities';
+import {
+  assignUniversityCoursesToUser,
+  assignCoursesAfterOnboarding,
+  MAX_COURSES,
+  type AssignedCourse,
+} from '@/lib/course-assignment';
 import { DEFAULT_AVATAR_CONFIG } from '@/constants/avatar-config';
 import type { OnboardingData, StepProps, StepName } from '@/components/onboarding/shared';
 import WowStep from '@/components/onboarding/WowStep';
@@ -57,7 +65,7 @@ interface RowOption {
 }
 
 type StepId =
-  | 'level' | 'year' | 'focus' | 'methods' | 'time' | 'goal'
+  | 'level' | 'year' | 'program' | 'focus' | 'methods' | 'time' | 'goal'
   | 'wow' | 'socialproof' | 'testimonials' | 'paywall'
   | 'summary';
 
@@ -65,7 +73,7 @@ interface StepDef {
   id: StepId;
   title: string;
   subtitle?: string;
-  kind: 'rows' | 'grid' | 'summary' | 'convert';
+  kind: 'rows' | 'grid' | 'program' | 'summary' | 'convert';
   multi?: boolean;
   options: RowOption[];
 }
@@ -95,6 +103,22 @@ const YEAR_OPTIONS: Record<StudyLevel, RowOption[]> = {
     { emoji: '📕', title: 'Påbyggnadsnivå', subtitle: 'Behörighet vidare', value: 'Påbyggnadsnivå' },
   ],
 };
+
+interface SelectedProgram {
+  id: string;
+  name: string;
+}
+
+// Titles must match PROGRAM_NAME_MAPPING in constants/gymnasium-courses so the
+// course lookup finds the right program.
+const GYMNASIE_PROGRAM_OPTIONS: RowOption[] = [
+  { emoji: '🔬', title: 'Naturvetenskapsprogrammet', value: 'na' },
+  { emoji: '⚙️', title: 'Teknikprogrammet', value: 'te' },
+  { emoji: '🏛️', title: 'Samhällsvetenskapsprogrammet', value: 'sa' },
+  { emoji: '💼', title: 'Ekonomiprogrammet', value: 'ek' },
+  { emoji: '🎨', title: 'Estetiska programmet', value: 'es' },
+  { emoji: '📚', title: 'Humanistiska programmet', value: 'hu' },
+];
 
 // Six tiles → three symmetric rows of two.
 const FOCUS_OPTIONS: RowOption[] = [
@@ -132,6 +156,7 @@ const GOAL_OPTIONS: RowOption[] = [
 interface Answers {
   level: StudyLevel | null;
   year: string | null;
+  program: SelectedProgram | null;
   focus: string[];
   methods: string[];
   time: string | null;
@@ -161,6 +186,17 @@ const buildSteps = (level: StudyLevel | null): StepDef[] => [
     kind: 'rows',
     options: YEAR_OPTIONS[level ?? 'gymnasie'],
   },
+  ...(level !== 'komvux'
+    ? [
+        {
+          id: 'program' as const,
+          title: 'Vilket program går du?',
+          subtitle: 'Så vi kan tilldela rätt kurser automatiskt.',
+          kind: 'program' as const,
+          options: [],
+        },
+      ]
+    : []),
   {
     id: 'focus',
     title: 'Vad vill du få bättre koll på?',
@@ -436,10 +472,12 @@ export default function OnboardingV2Screen(): React.ReactElement {
 
   const [step, setStep] = useState(0);
   const [testimonialDisplay, setTestimonialDisplay] = useState(0);
+  const [programSearch, setProgramSearch] = useState('');
   const finishingRef = useRef(false);
   const [answers, setAnswers] = useState<Answers>({
     level: null,
     year: null,
+    program: null,
     focus: [],
     methods: [],
     time: null,
@@ -492,9 +530,11 @@ export default function OnboardingV2Screen(): React.ReactElement {
           ? answers.level !== null
           : current.id === 'year'
             ? answers.year !== null
-            : current.id === 'time'
-              ? answers.time !== null
-              : answers.goal !== null;
+            : current.id === 'program'
+              ? answers.program !== null
+              : current.id === 'time'
+                ? answers.time !== null
+                : answers.goal !== null;
 
   const goBack = useCallback(() => {
     if (step === 0) return;
@@ -508,13 +548,24 @@ export default function OnboardingV2Screen(): React.ReactElement {
       if (stepId === 'level') {
         // Changing level invalidates the previous year choice.
         const level = value as StudyLevel;
-        return { ...a, level, year: a.level === level ? a.year : null };
+        const sameLevel = a.level === level;
+        return {
+          ...a,
+          level,
+          year: sameLevel ? a.year : null,
+          program: sameLevel ? a.program : null,
+        };
       }
       if (stepId === 'year') return { ...a, year: value };
       if (stepId === 'time') return { ...a, time: value };
       if (stepId === 'goal') return { ...a, goal: value };
       return a;
     });
+  }, []);
+
+  const selectProgram = useCallback((program: SelectedProgram) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setAnswers((a) => ({ ...a, program }));
   }, []);
 
   const toggleMulti = useCallback((stepId: StepId, value: string) => {
@@ -555,6 +606,15 @@ export default function OnboardingV2Screen(): React.ReactElement {
     [answers.level, answers.focus, answers.time],
   );
 
+  const filteredUniPrograms: RowOption[] = useMemo(() => {
+    const q = programSearch.trim().toLowerCase();
+    return UNIVERSITY_PROGRAMS.filter(
+      (p) => q.length === 0 || p.name.toLowerCase().includes(q) || p.field.toLowerCase().includes(q),
+    )
+      .slice(0, 8)
+      .map((p) => ({ emoji: '🎓', title: p.name, subtitle: p.field, value: p.id }));
+  }, [programSearch]);
+
   const finishOnboarding = useCallback(async () => {
     if (finishingRef.current) return;
     finishingRef.current = true;
@@ -570,24 +630,38 @@ export default function OnboardingV2Screen(): React.ReactElement {
     }
 
     const level = (answers.level ?? 'gymnasie') as StudyLevel;
+    const yearNum = YEAR_TO_NUMBER[answers.year ?? 'År 1'] ?? 1;
     if (user) {
+      const profileUpdates: Parameters<typeof updateUser>[0] = {
+        studyLevel: level,
+        dailyGoalHours: TIME_TO_HOURS[answers.time ?? '30–60 min'] ?? 1,
+        purpose: answers.goal ?? '',
+      };
+      if (answers.program) {
+        profileUpdates.program = answers.program.name;
+        if (level === 'högskola') {
+          profileUpdates.universityYear = String(yearNum);
+        } else if (level === 'gymnasie') {
+          profileUpdates.gymnasiumGrade = String(Math.min(yearNum, 3));
+        }
+      }
       try {
-        await updateUser({
-          studyLevel: level,
-          dailyGoalHours: TIME_TO_HOURS[answers.time ?? '30–60 min'] ?? 1,
-          purpose: answers.goal ?? '',
-        });
+        await updateUser(profileUpdates);
       } catch {
         // Profile sync is best-effort.
       }
 
-      // Assign starter courses so the home screen isn't empty.
+      // Assign courses so the home screen isn't empty.
       try {
         if (level === 'gymnasie') {
-          // No program is collected in this flow — getGymnasiumCourses falls
-          // back to the gymnasie-common set (Svenska, Engelska, Matematik 1).
-          const yearNum = YEAR_TO_NUMBER[answers.year ?? 'År 1'] ?? 1;
-          const gymCourses = getCoursesForProgramAndYear('StudieStugan-standard', yearNum as 1 | 2 | 3);
+          // Program-specific courses when a program was chosen; the lookup
+          // falls back to the gymnasie-common set (Svenska, Engelska, Matematik).
+          const programName = answers.program?.name ?? 'StudieStugan-standard';
+          const gymCourses = [
+            ...getCoursesForProgramAndYear(programName, Math.min(yearNum, 3) as 1 | 2 | 3),
+          ]
+            .sort((a, b) => Number(Boolean(b.mandatory)) - Number(Boolean(a.mandatory)))
+            .slice(0, MAX_COURSES);
           for (const course of gymCourses) {
             await supabase.from('courses').upsert(
               {
@@ -628,50 +702,82 @@ export default function OnboardingV2Screen(): React.ReactElement {
             });
           }
         } else if (level === 'högskola') {
-          // No program is collected in this flow — assign a generic starter
-          // set so the user lands with active courses from day one.
-          const uniStarters: { code: string; title: string; description: string }[] = [
-            { code: 'ss_studieteknik', title: 'Studieteknik', description: 'Planera, läsa och plugga effektivt på högskolenivå' },
-            { code: 'ss_akademiskt_skrivande', title: 'Akademiskt skrivande', description: 'Struktur, argumentation och källhantering' },
-            { code: 'ss_vagen_till_examen', title: 'Vägen till examen', description: 'Kartlägg din utbildning och sätt upp delmål' },
-          ];
-          for (const starter of uniStarters) {
-            await supabase.from('courses').upsert(
-              {
-                id: starter.code,
-                course_code: starter.code,
+          let assigned: AssignedCourse[] = [];
+          if (answers.program?.id) {
+            // Semester-based lookup: year 1 starts at term 1, year 2 at term 3, …
+            const term = Math.max(1, yearNum * 2 - 1);
+            assigned = await assignUniversityCoursesToUser(user.id, answers.program.id, term);
+            if (assigned.length === 0) {
+              assigned = await assignCoursesAfterOnboarding({
+                userId: user.id,
+                educationLevel: 'hogskola',
+                educationYear: term,
+                universityProgramId: answers.program.id,
+              });
+            }
+          }
+          if (assigned.length > 0) {
+            // assignUniversityCoursesToUser has already synced to the database;
+            // mirror the courses into local state for immediate display.
+            for (let index = 0; index < assigned.length; index++) {
+              const course = assigned[index];
+              await addCourse({
+                title: course.title,
+                description: course.description,
+                subject: course.subject,
+                level: 'högskola',
+                progress: 0,
+                isActive: index < 4,
+                resources: ['Kursmaterial', 'Övningsuppgifter'],
+                tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+                relatedCourses: [],
+              });
+            }
+          } else {
+            // No program match — assign a generic starter set instead.
+            const uniStarters: { code: string; title: string; description: string }[] = [
+              { code: 'ss_studieteknik', title: 'Studieteknik', description: 'Planera, läsa och plugga effektivt på högskolenivå' },
+              { code: 'ss_akademiskt_skrivande', title: 'Akademiskt skrivande', description: 'Struktur, argumentation och källhantering' },
+              { code: 'ss_vagen_till_examen', title: 'Vägen till examen', description: 'Kartlägg din utbildning och sätt upp delmål' },
+            ];
+            for (const starter of uniStarters) {
+              await supabase.from('courses').upsert(
+                {
+                  id: starter.code,
+                  course_code: starter.code,
+                  title: starter.title,
+                  description: starter.description,
+                  subject: 'Allmänt',
+                  level: 'hogskola',
+                  resources: ['Kursmaterial', 'Övningsuppgifter'],
+                  tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
+                  related_courses: [],
+                  progress: 0,
+                },
+                { onConflict: 'id' },
+              );
+              await supabase.from('user_courses').upsert(
+                {
+                  id: `${user.id}-${starter.code}`,
+                  user_id: user.id,
+                  course_id: starter.code,
+                  progress: 0,
+                  is_active: true,
+                },
+                { onConflict: 'id' },
+              );
+              await addCourse({
                 title: starter.title,
                 description: starter.description,
                 subject: 'Allmänt',
-                level: 'hogskola',
+                level: 'högskola',
+                progress: 0,
+                isActive: true,
                 resources: ['Kursmaterial', 'Övningsuppgifter'],
                 tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
-                related_courses: [],
-                progress: 0,
-              },
-              { onConflict: 'id' },
-            );
-            await supabase.from('user_courses').upsert(
-              {
-                id: `${user.id}-${starter.code}`,
-                user_id: user.id,
-                course_id: starter.code,
-                progress: 0,
-                is_active: true,
-              },
-              { onConflict: 'id' },
-            );
-            await addCourse({
-              title: starter.title,
-              description: starter.description,
-              subject: 'Allmänt',
-              level: 'högskola',
-              progress: 0,
-              isActive: true,
-              resources: ['Kursmaterial', 'Övningsuppgifter'],
-              tips: ['Studera regelbundet', 'Fråga läraren vid behov'],
-              relatedCourses: [],
-            });
+                relatedCourses: [],
+              });
+            }
           }
         }
       } catch {
@@ -811,6 +917,44 @@ export default function OnboardingV2Screen(): React.ReactElement {
           {current.id === 'socialproof' && <SocialProofStep {...stepProps} />}
           {current.id === 'testimonials' && <TestimonialsStep {...stepProps} />}
 
+          {current.kind === 'program' && (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollInner}
+            >
+              <Text style={styles.title}>{current.title}</Text>
+              {current.subtitle ? (
+                <Text style={styles.subtitle}>{current.subtitle}</Text>
+              ) : null}
+              {answers.level === 'högskola' && (
+                <View style={styles.searchWrap}>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Sök program..."
+                    placeholderTextColor={SUB}
+                    value={programSearch}
+                    onChangeText={setProgramSearch}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                  />
+                </View>
+              )}
+              <View style={styles.rowsList}>
+                {(answers.level === 'högskola' ? filteredUniPrograms : GYMNASIE_PROGRAM_OPTIONS).map(
+                  (opt, i) => (
+                    <OptionRow
+                      key={opt.value}
+                      option={opt}
+                      index={i}
+                      selected={answers.program?.id === opt.value}
+                      onPress={() => selectProgram({ id: opt.value, name: opt.title })}
+                    />
+                  ),
+                )}
+              </View>
+            </ScrollView>
+          )}
+
           {current.kind === 'rows' && (
             <ScrollView
               showsVerticalScrollIndicator={false}
@@ -928,6 +1072,7 @@ const SummaryView: React.FC<{ answers: Answers }> = React.memo(({ answers }) => 
 
   const profileRows: { label: string; value: string }[] = [
     { label: 'Nivå', value: answers.level ? answers.level.charAt(0).toUpperCase() + answers.level.slice(1) : '—' },
+    ...(answers.program ? [{ label: 'Program', value: answers.program.name }] : []),
     { label: 'År', value: answers.year ?? '—' },
     { label: 'Fokus', value: focusLabel },
     { label: 'Pluggstil', value: methodLabel },
@@ -1044,6 +1189,19 @@ const styles = StyleSheet.create({
   rowsList: {
     marginTop: 26,
     gap: 12,
+  },
+  searchWrap: {
+    marginTop: 22,
+  },
+  searchInput: {
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD,
+    paddingHorizontal: 18,
+    fontSize: 14.5,
+    color: TITLE,
   },
   grid: {
     marginTop: 26,

@@ -3,137 +3,265 @@ import {
   Animated,
   Dimensions,
   Modal,
+  Platform,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BookOpen, GraduationCap, Timer, Users, Sparkles } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 // ── One-time flag ───────────────────────────────────────────────────────
 // The walkthrough shows once per device on first entry into the tabs area
-// (which is right after account creation / completed onboarding). Once
-// WALKTHROUGH_SEEN_KEY is written it never shows again.
+// (right after account creation / completed onboarding). Once the seen key
+// is written it never shows again.
 export const WALKTHROUGH_SEEN_KEY = 'studiestugan_walkthrough_seen';
 
 // ── Palette (matches onboarding-v2 / premium gate) ─────────────────────
-const BG_TOP = '#FCFCFA';
-const BG_MID = '#F7F7F5';
-const BG_BOT = '#EFF6F1';
 const GREEN = '#10B981';
 const GREEN_DARK = '#059669';
-const ON_GREEN = '#FFFFFF';
 const TITLE = '#1A2E25';
-const SUB = '#6A7A72';
-const DOT_IDLE = 'rgba(26,46,37,0.14)';
+const SUB = '#5F6F66';
 
-interface Slide {
-  icon: React.ElementType;
-  iconColor: string;
-  iconBg: string;
+// ── Anchor registry ─────────────────────────────────────────────────────
+// Screens register the real UI elements the spotlight should point at; the
+// overlay measures them in window coordinates when its step becomes active.
+const anchors = new Map<string, View>();
+
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface WalkthroughAnchorProps {
+  id: string;
+  style?: StyleProp<ViewStyle>;
+  children: React.ReactNode;
+}
+
+/** Wraps a real UI element and registers it as a walkthrough spotlight target. */
+export function WalkthroughAnchor({ id, style, children }: WalkthroughAnchorProps): React.ReactElement {
+  return (
+    <View
+      style={style}
+      collapsable={false}
+      ref={(v) => {
+        if (v) anchors.set(id, v);
+        else anchors.delete(id);
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+// Tab bar geometry mirrors the constants in (tabs)/_layout.tsx.
+function getTabBarRect(): Rect {
+  const { width, height } = Dimensions.get('window');
+  const h = 64;
+  const bottom = Platform.OS === 'ios' ? 24 : 16;
+  return { x: 20, y: height - bottom - h, width: width - 40, height: h };
+}
+
+// Measures a registered anchor, retrying briefly while entrance animations
+// (SlideInView etc.) settle and views reach their final position.
+function measureAnchor(id: string): Promise<Rect | null> {
+  return new Promise((resolve) => {
+    let attempts = 0;
+    const attempt = () => {
+      const view = anchors.get(id);
+      if (!view) return retry();
+      view.measureInWindow((x, y, w, h) => {
+        if (w > 0 && h > 0) resolve({ x, y, width: w, height: h });
+        else retry();
+      });
+    };
+    const retry = () => {
+      if (attempts++ >= 15) return resolve(null);
+      setTimeout(attempt, 150);
+    };
+    attempt();
+  });
+}
+
+// ── Steps (max 4, pointing at real UI) ──────────────────────────────────
+interface Step {
+  anchor: string;
   title: string;
   body: string;
 }
 
-const SLIDES: Slide[] = [
+const STEPS: Step[] = [
   {
-    icon: Sparkles,
-    iconColor: GREEN_DARK,
-    iconBg: 'rgba(16,185,129,0.12)',
-    title: 'Välkommen till StudieStugan!',
-    body: 'Ditt konto är klart — nu tar vi en snabb titt runt appen så du kommer igång direkt.',
+    anchor: 'home-hero',
+    title: 'Din streak & dina poäng',
+    body: 'Här följer du din streak, dagens pass och dina poäng — plugga varje dag för att hålla flammorna vid liv.',
   },
   {
-    icon: BookOpen,
-    iconColor: GREEN_DARK,
-    iconBg: 'rgba(16,185,129,0.12)',
-    title: 'Dina kurser',
-    body: 'Allt du pluggar samlas under Kurser — lektioner, quiz och flashcards, med AI-hjälp när du kör fast.',
+    anchor: 'home-focus',
+    title: 'Starta fokus',
+    body: 'Ett tryck här startar fokus-timern — så bygger du streak och poäng.',
   },
   {
-    icon: Timer,
-    iconColor: GREEN_DARK,
-    iconBg: 'rgba(16,185,129,0.12)',
-    title: 'Fokus-timern',
-    body: 'Plugga i koncentrerade pass och bygg din streak — små dagliga vanor ger stora resultat.',
+    anchor: 'home-profile',
+    title: 'Din profil',
+    body: 'Tryck på din avatar för att anpassa den och hitta dina inställningar.',
   },
   {
-    icon: GraduationCap,
-    iconColor: '#B45309',
-    iconBg: 'rgba(245,158,11,0.14)',
-    title: 'Högskoleprovet',
-    body: 'Går du HP? Där tränar du alla delprov — ORD, KVA, NOG, ELF, LÄS, MEK, DTK och XYZ.',
-  },
-  {
-    icon: Users,
-    iconColor: GREEN_DARK,
-    iconBg: 'rgba(16,185,129,0.12)',
-    title: 'Plugga med vänner',
-    body: 'Lägg till vänner, jämför statistik och håll varandra motiverade — hårdare tillsammans.',
+    anchor: 'tabbar',
+    title: 'Allt på ett ställe',
+    body: 'Växla mellan Hem, Kurser, Timer, Vänner och HP här nere.',
   },
 ];
+
+const HOLE_PAD = 10;
+const DIM = 'rgba(12,20,16,0.78)';
 
 interface WalkthroughProps {
   visible: boolean;
   onFinish: () => void;
 }
 
-/** One-time post-signup walkthrough. Render nothing when not visible. */
+/** One-time in-app coach-mark walkthrough: dimmed screen with a spotlight
+ *  hole around each real element and a short tooltip pointing at it. */
 export default function Walkthrough({ visible, onFinish }: WalkthroughProps): React.ReactElement | null {
-  const [slide, setSlide] = useState(0);
-  const enter = useRef(new Animated.Value(0)).current;
-  const isLast = slide === SLIDES.length - 1;
+  const [step, setStep] = useState(0);
+  const [rect, setRect] = useState<Rect | null>(null);
+  const [win, setWin] = useState(() => Dimensions.get('window'));
+  const fade = useRef(new Animated.Value(0)).current;
 
+  // Reset when shown.
+  useEffect(() => {
+    if (visible) {
+      setStep(0);
+      setWin(Dimensions.get('window'));
+    }
+  }, [visible]);
+
+  // Measure the current step's target whenever the step changes.
   useEffect(() => {
     if (!visible) return;
-    enter.setValue(0);
-    Animated.parallel([
-      Animated.spring(enter, { toValue: 1, tension: 60, friction: 9, useNativeDriver: true }),
-      Animated.timing(enter, { toValue: 1, duration: 350, useNativeDriver: true }),
-    ]).start();
-  }, [visible, slide, enter]);
+    let cancelled = false;
+    setRect(null);
+    fade.setValue(0);
+    (async () => {
+      const s = STEPS[step];
+      const r = s.anchor === 'tabbar' ? getTabBarRect() : await measureAnchor(s.anchor);
+      if (cancelled) return;
+      if (!r) {
+        // Target never appeared (e.g. premium badge layout change) — skip it.
+        advance();
+        return;
+      }
+      setRect(r);
+      Animated.timing(fade, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, step]);
 
   if (!visible) return null;
 
-  const next = () => {
+  const advance = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (isLast) {
+    if (step >= STEPS.length - 1) {
       onFinish();
       return;
     }
-    setSlide((s) => s + 1);
+    setStep((s) => s + 1);
   };
 
-  const current = SLIDES[slide];
-  const Icon = current.icon;
-  const iconScale = enter.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
-  const iconRotate = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['-8deg', '0deg'],
-  });
-  const textTranslate = enter.interpolate({ inputRange: [0, 1], outputRange: [24, 0] });
+  // Spotlight geometry (hole slightly larger than the target).
+  const hole = rect
+    ? {
+        x: Math.max(0, rect.x - HOLE_PAD),
+        y: Math.max(0, rect.y - HOLE_PAD),
+        w: Math.min(win.width, rect.width + HOLE_PAD * 2),
+        h: rect.height + HOLE_PAD * 2,
+      }
+    : null;
+
+  // Tooltip above the hole when there is room, otherwise below it.
+  const tooltipWidth = Math.min(win.width - 48, 300);
+  const tooltipX = hole
+    ? Math.min(Math.max(24, hole.x + hole.w / 2 - tooltipWidth / 2), win.width - 24 - tooltipWidth)
+    : 24;
+  const tooltipAbove = hole ? hole.y > 170 : true;
+  const arrowX = hole
+    ? Math.min(Math.max(tooltipX + 18, hole.x + hole.w / 2 - 9), tooltipX + tooltipWidth - 36)
+    : 0;
 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
-      <LinearGradient
-        colors={[BG_TOP, BG_MID, BG_BOT]}
-        style={styles.fill}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.4, y: 1 }}
-      >
-        {/* Decorative glow */}
-        <Animated.View
-          style={[
-            styles.glow,
-            {
-              opacity: enter.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
-            },
-          ]}
-          pointerEvents="none"
-        />
+      <View style={styles.fill}>
+        {/* Tap-anywhere-to-advance surface */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={advance} />
 
+        {/* Dimmed cut-out: four rects around the hole */}
+        {hole && (
+          <>
+            <View style={[styles.dim, { top: 0, left: 0, right: 0, height: hole.y }]} pointerEvents="none" />
+            <View
+              style={[styles.dim, { top: hole.y + hole.h, left: 0, right: 0, bottom: 0 }]}
+              pointerEvents="none"
+            />
+            <View style={[styles.dim, { top: hole.y, height: hole.h, left: 0, width: hole.x }]} pointerEvents="none" />
+            <View
+              style={[styles.dim, { top: hole.y, height: hole.h, left: hole.x + hole.w, right: 0 }]}
+              pointerEvents="none"
+            />
+          </>
+        )}
+
+        {/* Spotlight ring */}
+        {hole && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.ring,
+              { left: hole.x, top: hole.y, width: hole.w, height: hole.h, opacity: fade },
+            ]}
+          />
+        )}
+
+        {/* Tooltip */}
+        {hole && (
+          <Animated.View
+            style={[
+              styles.tooltip,
+              tooltipAbove
+                ? { bottom: win.height - hole.y + 10, left: tooltipX, width: tooltipWidth }
+                : { top: hole.y + hole.h + 10, left: tooltipX, width: tooltipWidth },
+              { opacity: fade, transform: [{ translateY: fade.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] },
+            ]}
+          >
+            <View
+              style={[
+                styles.arrow,
+                tooltipAbove
+                  ? { bottom: -7, left: arrowX - tooltipX }
+                  : { top: -7, left: arrowX - tooltipX },
+              ]}
+            />
+            <Text style={styles.title}>{STEPS[step].title}</Text>
+            <Text style={styles.body}>{STEPS[step].body}</Text>
+            <View style={styles.dotsRow}>
+              {STEPS.map((_, i) => (
+                <View key={i} style={[styles.dot, i === step && styles.dotActive]} />
+              ))}
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Skip */}
         <TouchableOpacity
           style={styles.skipBtn}
           activeOpacity={0.7}
@@ -144,150 +272,86 @@ export default function Walkthrough({ visible, onFinish }: WalkthroughProps): Re
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Text style={styles.skipText}>Hoppa över</Text>
+          <X size={14} color="#FFFFFF" strokeWidth={2.4} />
         </TouchableOpacity>
-
-        <View style={styles.content}>
-          <Animated.View
-            style={[
-              styles.iconWrap,
-              { backgroundColor: current.iconBg, transform: [{ scale: iconScale }, { rotate: iconRotate }] },
-            ]}
-          >
-            <Icon size={54} color={current.iconColor} strokeWidth={1.8} />
-          </Animated.View>
-
-          <Animated.View style={{ opacity: enter, transform: [{ translateY: textTranslate }] }}>
-            <Text style={styles.title}>{current.title}</Text>
-            <Text style={styles.body}>{current.body}</Text>
-          </Animated.View>
-        </View>
-
-        <View style={styles.footer}>
-          <View style={styles.dotsRow}>
-            {SLIDES.map((_, i) => (
-              <Animated.View
-                key={i}
-                style={[styles.dot, i === slide && styles.dotActive]}
-              />
-            ))}
-          </View>
-
-          <TouchableOpacity
-            style={[styles.cta, isLast && styles.ctaLast]}
-            activeOpacity={0.85}
-            onPress={next}
-          >
-            <LinearGradient
-              colors={[GREEN, GREEN_DARK]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.ctaGradient}
-            >
-              <Text style={[styles.ctaText, isLast && { color: ON_GREEN }]}>{isLast ? 'Kom igång!' : 'Vidare'}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
+      </View>
     </Modal>
   );
 }
 
-const { width } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  glow: {
+  dim: { position: 'absolute', backgroundColor: DIM },
+  ring: {
     position: 'absolute',
-    top: -140,
-    right: -120,
-    width: 380,
-    height: 380,
-    borderRadius: 190,
-    backgroundColor: 'rgba(16,185,129,0.10)',
+    borderRadius: 22,
+    borderWidth: 2.5,
+    borderColor: GREEN,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 0,
   },
-  skipBtn: {
+  tooltip: {
     position: 'absolute',
-    top: 64,
-    right: 24,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(26,46,37,0.08)',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  skipText: { fontSize: 13, fontWeight: '600', color: SUB },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  iconWrap: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 36,
-    borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.18)',
+  arrow: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    backgroundColor: '#FFFFFF',
+    transform: [{ rotate: '45deg' }],
+    borderRadius: 3,
   },
   title: {
-    fontSize: 26,
+    fontSize: 17,
     fontWeight: '800',
     color: TITLE,
-    textAlign: 'center',
-    letterSpacing: -0.4,
-    marginBottom: 14,
+    letterSpacing: -0.3,
+    marginBottom: 6,
   },
   body: {
-    fontSize: 15.5,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
     color: SUB,
-    textAlign: 'center',
-    maxWidth: width - 80,
-  },
-  footer: {
-    paddingHorizontal: 24,
-    paddingBottom: 56,
   },
   dotsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 24,
+    gap: 6,
+    marginTop: 14,
   },
   dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: DOT_IDLE,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(26,46,37,0.14)',
   },
   dotActive: {
-    width: 22,
-    backgroundColor: GREEN,
+    width: 18,
+    backgroundColor: GREEN_DARK,
   },
-  cta: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 4,
-  },
-  ctaGradient: {
-    paddingVertical: 17,
+  skipBtn: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
-  ctaLast: {
-    shadowColor: GREEN_DARK,
-  },
-  ctaText: {
-    fontSize: 16.5,
-    fontWeight: '700',
-    color: ON_GREEN,
-    letterSpacing: 0.2,
-  },
+  skipText: { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
 });

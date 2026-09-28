@@ -1,10 +1,15 @@
 import { Tabs, useRouter, useSegments } from "expo-router";
-import React, { useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Home, BookOpen, Timer, Users, GraduationCap } from "lucide-react-native";
 import { Platform, PanResponder, Dimensions, View, StyleSheet } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "@/constants/design-system";
 import { t } from "@/constants/translations";
 import { useTheme } from "@/contexts/ThemeContext";
+import Walkthrough, {
+  WALKTHROUGH_PENDING_KEY,
+  WALKTHROUGH_SEEN_KEY,
+} from "@/components/Walkthrough";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -14,6 +19,41 @@ export default function TabLayout() {
   const router = useRouter();
   const segments = useSegments();
   const { isDark } = useTheme();
+
+  // One-time walkthrough for newly created accounts. It only ever shows if a
+  // pending flag was written at signup AND the seen flag has not been written;
+  // finishing it marks it seen so it never appears again.
+  const [walkthroughVisible, setWalkthroughVisible] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [pending, seen] = await Promise.all([
+          AsyncStorage.getItem(WALKTHROUGH_PENDING_KEY),
+          AsyncStorage.getItem(WALKTHROUGH_SEEN_KEY),
+        ]);
+        if (!cancelled && pending === "1" && seen !== "1") {
+          setWalkthroughVisible(true);
+        }
+      } catch {
+        // Flag errors should never block the tabs.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const finishWalkthrough = useCallback(async () => {
+    setWalkthroughVisible(false);
+    try {
+      await AsyncStorage.setItem(WALKTHROUGH_SEEN_KEY, "1");
+      await AsyncStorage.removeItem(WALKTHROUGH_PENDING_KEY);
+    } catch {
+      // Best-effort persistence.
+    }
+  }, []);
+
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
@@ -174,6 +214,7 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    <Walkthrough visible={walkthroughVisible} onFinish={() => void finishWalkthrough()} />
     </View>
   );
 }

@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
 const FTUE_COMPLETED_KEY = 'ftue_intro_seen_v3';
+const ONBOARDING_SNAPSHOT_KEY = 'studiestugan_onboarding_v2';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -34,20 +35,35 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         isFtueComplete
       });
 
+      // Device-level check: has onboarding ever been completed on this device?
+      // (v2 snapshot key or any legacy per-user key) — returning users should
+      // sign in instead of redoing onboarding.
+      let deviceOnboarded = false;
+      try {
+        const keys = await AsyncStorage.getAllKeys();
+        deviceOnboarded =
+          keys.includes(ONBOARDING_SNAPSHOT_KEY) ||
+          keys.some((key) => key.startsWith('hasCompletedOnboarding_'));
+      } catch {
+      }
+
       hasNavigatedRef.current = true;
       
       if (!isFtueComplete) {
         console.log('AuthGuard - Navigating to FTUE');
         router.replace('/ftue' as Href);
-      } else if (!isAuthenticated) {
-        console.log('AuthGuard - Navigating to Auth');
-        router.replace('/auth' as Href);
-      } else if (!hasCompletedOnboarding) {
-        console.log('AuthGuard - Navigating to Onboarding');
+      } else if (isAuthenticated && !hasCompletedOnboarding) {
+        console.log('AuthGuard - Navigating to Onboarding v2');
         router.replace('/onboarding-v2' as Href);
-      } else {
+      } else if (isAuthenticated) {
         console.log('AuthGuard - Navigating to Home');
         router.replace('/(tabs)/home' as Href);
+      } else if (deviceOnboarded) {
+        console.log('AuthGuard - Navigating to Auth (device already onboarded)');
+        router.replace('/auth' as Href);
+      } else {
+        console.log('AuthGuard - Navigating to Onboarding v2 (new user)');
+        router.replace('/onboarding-v2' as Href);
       }
     } catch (error) {
       console.error('AuthGuard - Navigation error:', error);

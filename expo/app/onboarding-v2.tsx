@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
+  ActivityIndicator,
   StyleSheet,
   Dimensions,
   Animated,
@@ -16,7 +17,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import { ArrowLeft, Check } from 'lucide-react-native';
+import { ArrowLeft, Check, Eye, EyeOff, Mail } from 'lucide-react-native';
 import { ROUTES } from '@/utils/typedRoutes';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
@@ -52,10 +53,11 @@ const CARD_BORDER = 'rgba(26,46,37,0.08)';
 const TITLE = '#1A2E25';
 const SUB = '#6A7A72';
 const DOT_IDLE = 'rgba(26,46,37,0.14)';
+const ERROR = '#DC2626';
 
 const STORAGE_KEY = 'studiestugan_onboarding_v2';
 
-type StudyLevel = 'gymnasie' | 'högskola' | 'komvux';
+type StudyLevel = 'gymnasie' | 'högskola' | 'komvux' | 'högskoleprovet';
 
 interface RowOption {
   emoji: string;
@@ -66,7 +68,7 @@ interface RowOption {
 
 type StepId =
   | 'level' | 'year' | 'program' | 'focus' | 'methods' | 'time' | 'goal'
-  | 'wow' | 'socialproof' | 'testimonials' | 'paywall'
+  | 'wow' | 'socialproof' | 'testimonials' | 'account' | 'paywall'
   | 'summary';
 
 interface StepDef {
@@ -84,6 +86,7 @@ const LEVEL_OPTIONS: RowOption[] = [
   { emoji: '🎓', title: 'Gymnasiet', subtitle: 'Årskurs 1–3, nationella program', value: 'gymnasie' },
   { emoji: '🏫', title: 'Högskola', subtitle: 'Universitet eller högskola', value: 'högskola' },
   { emoji: '📘', title: 'Komvux', subtitle: 'Vuxenutbildning', value: 'komvux' },
+  { emoji: '📝', title: 'Högskoleprovet', subtitle: 'Plugga inför provet', value: 'högskoleprovet' },
 ];
 
 const YEAR_OPTIONS: Record<StudyLevel, RowOption[]> = {
@@ -92,12 +95,12 @@ const YEAR_OPTIONS: Record<StudyLevel, RowOption[]> = {
     { emoji: '🌿', title: 'År 2', value: 'År 2' },
     { emoji: '🌳', title: 'År 3', value: 'År 3' },
   ],
-  högskola: [
-    { emoji: '🌱', title: 'År 1', value: 'År 1' },
-    { emoji: '🌿', title: 'År 2', value: 'År 2' },
-    { emoji: '🌳', title: 'År 3', value: 'År 3' },
-    { emoji: '🏛️', title: 'År 4+', value: 'År 4+' },
-  ],
+  högskola: Array.from({ length: 10 }, (_, i): RowOption => ({
+    emoji: '📘',
+    title: `T${i + 1}`,
+    value: `T${i + 1}`,
+  })),
+  högskoleprovet: [],
   komvux: [
     { emoji: '📗', title: 'Grundläggande nivå', subtitle: 'Bygger upp grunden', value: 'Grundläggande nivå' },
     { emoji: '📕', title: 'Påbyggnadsnivå', subtitle: 'Behörighet vidare', value: 'Påbyggnadsnivå' },
@@ -136,6 +139,7 @@ const METHOD_OPTIONS: RowOption[] = [
   { emoji: '✍️', title: 'Övar på uppgifter', value: 'Övar på uppgifter' },
   { emoji: '🎯', title: 'Gör quiz', value: 'Gör quiz' },
   { emoji: '🤷', title: 'Lite av varje', value: 'Lite av varje' },
+  { emoji: '😴', title: 'Jag pluggar inte alls', value: 'Jag pluggar inte alls' },
 ];
 
 const TIME_OPTIONS: RowOption[] = [
@@ -168,6 +172,13 @@ const CONVERT_STEPS: StepDef[] = [
   { id: 'wow', title: '', kind: 'convert', options: [] },
   { id: 'socialproof', title: '', kind: 'convert', options: [] },
   { id: 'testimonials', title: '', kind: 'convert', options: [] },
+  {
+    id: 'account',
+    title: 'Skapa ditt konto',
+    subtitle: 'Spara dina svar och lås upp allt direkt.',
+    kind: 'convert',
+    options: [],
+  },
   { id: 'paywall', title: '', kind: 'convert', options: [] },
 ];
 
@@ -179,14 +190,20 @@ const buildSteps = (level: StudyLevel | null): StepDef[] => [
     kind: 'rows',
     options: LEVEL_OPTIONS,
   },
-  {
-    id: 'year',
-    title: 'Vilket år går du?',
-    subtitle: 'Så vi träffar rätt nivå direkt.',
-    kind: 'rows',
-    options: YEAR_OPTIONS[level ?? 'gymnasie'],
-  },
-  ...(level !== 'komvux'
+  ...(level !== 'högskoleprovet'
+    ? [
+        {
+          id: 'year' as const,
+          title: level === 'högskola' ? 'Vilken termin går du?' : 'Vilket år går du?',
+          subtitle: level === 'högskola'
+            ? 'T1–T10, så kurserna träffar rätt direkt.'
+            : 'Så vi träffar rätt nivå direkt.',
+          kind: 'rows' as const,
+          options: YEAR_OPTIONS[level ?? 'gymnasie'],
+        },
+      ]
+    : []),
+  ...(level === 'gymnasie' || level === 'högskola'
     ? [
         {
           id: 'program' as const,
@@ -245,10 +262,10 @@ const TIME_TO_HOURS: Record<string, number> = {
 };
 
 const YEAR_TO_NUMBER: Record<string, number> = {
+  ...Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`T${i + 1}`, i + 1])),
   'År 1': 1,
   'År 2': 2,
   'År 3': 3,
-  'År 4+': 4,
   'Grundläggande nivå': 1,
   'Påbyggnadsnivå': 2,
 };
@@ -467,13 +484,23 @@ const ProgressDots: React.FC<{ step: number; total: number }> = React.memo(({ st
 
 export default function OnboardingV2Screen(): React.ReactElement {
   const insets = useSafeAreaInsets();
-  const { isAuthenticated, user, setOnboardingCompleted } = useAuth();
+  const { isAuthenticated, user, setOnboardingCompleted, signUp, signIn, resendConfirmation } = useAuth();
   const { updateUser, addCourse } = useStudy();
 
   const [step, setStep] = useState(0);
   const [testimonialDisplay, setTestimonialDisplay] = useState(0);
   const [programSearch, setProgramSearch] = useState('');
   const finishingRef = useRef(false);
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountUsername, setAccountUsername] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isAccountBusy, setIsAccountBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [pendingConfirmation, setPendingConfirmation] = useState(false);
   const [answers, setAnswers] = useState<Answers>({
     level: null,
     year: null,
@@ -520,10 +547,43 @@ export default function OnboardingV2Screen(): React.ReactElement {
     return () => sub.remove();
   });
 
+  const handleUsernameChange = useCallback((text: string) => {
+    setAccountUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20));
+  }, []);
+
+  // Debounced username availability check (same RPC as the old onboarding).
+  useEffect(() => {
+    const username = accountUsername.trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+      setUsernameAvailable(null);
+      return;
+    }
+    setCheckingUsername(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.rpc('check_username_available', {
+          username_to_check: username,
+        });
+        setUsernameAvailable(error ? null : Boolean(data));
+      } catch {
+        setUsernameAvailable(null);
+      } finally {
+        setCheckingUsername(false);
+      }
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [accountUsername]);
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountEmail.trim());
+  const accountFormValid =
+    emailValid && accountPassword.length >= 6 && usernameAvailable === true && acceptedTerms;
+
   const canContinue: boolean = isSummary
     ? true
     : current.kind === 'convert'
-      ? true
+      ? current.id === 'account'
+        ? pendingConfirmation || accountFormValid
+        : true
       : current.multi
         ? (current.id === 'focus' ? answers.focus : answers.methods).length > 0
         : current.id === 'level'
@@ -539,8 +599,13 @@ export default function OnboardingV2Screen(): React.ReactElement {
   const goBack = useCallback(() => {
     if (step === 0) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setStep((s) => Math.max(0, s - 1));
-  }, [step]);
+    setStep((s) => {
+      let prev = s - 1;
+      // Signed-in users never see the account step — skip over it.
+      while (prev > 0 && steps[prev].id === 'account' && isAuthenticated) prev--;
+      return Math.max(0, prev);
+    });
+  }, [step, steps, isAuthenticated]);
 
   const selectSingle = useCallback((stepId: StepId, value: string) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -585,7 +650,7 @@ export default function OnboardingV2Screen(): React.ReactElement {
     () => ({
       username: '',
       displayName: '',
-      studyLevel: answers.level ?? 'gymnasie',
+      studyLevel: answers.level === 'högskoleprovet' ? '' : answers.level ?? 'gymnasie',
       gymnasium: null,
       gymnasiumProgram: null,
       gymnasiumGrade: null,
@@ -630,13 +695,22 @@ export default function OnboardingV2Screen(): React.ReactElement {
     }
 
     const level = (answers.level ?? 'gymnasie') as StudyLevel;
-    const yearNum = YEAR_TO_NUMBER[answers.year ?? 'År 1'] ?? 1;
+    const isHogskoleprovet = level === 'högskoleprovet';
+    const yearNum = YEAR_TO_NUMBER[answers.year ?? (level === 'högskola' ? 'T1' : 'År 1')] ?? 1;
     if (user) {
       const profileUpdates: Parameters<typeof updateUser>[0] = {
-        studyLevel: level,
         dailyGoalHours: TIME_TO_HOURS[answers.time ?? '30–60 min'] ?? 1,
-        purpose: answers.goal ?? '',
+        purpose: answers.goal ?? (isHogskoleprovet ? 'Högskoleprovet' : ''),
       };
+      // User.studyLevel is a fixed union — Högskoleprovet keeps the profile level.
+      if (!isHogskoleprovet) {
+        profileUpdates.studyLevel = level as 'gymnasie' | 'högskola' | 'komvux';
+      }
+      if (accountUsername.trim().length >= 3) {
+        const username = accountUsername.trim().toLowerCase();
+        profileUpdates.username = username;
+        profileUpdates.displayName = username;
+      }
       if (answers.program) {
         profileUpdates.program = answers.program.name;
         if (level === 'högskola') {
@@ -704,8 +778,8 @@ export default function OnboardingV2Screen(): React.ReactElement {
         } else if (level === 'högskola') {
           let assigned: AssignedCourse[] = [];
           if (answers.program?.id) {
-            // Semester-based lookup: year 1 starts at term 1, year 2 at term 3, …
-            const term = Math.max(1, yearNum * 2 - 1);
+            // T-number is the semester (T1–T10); the helper maps it to a year.
+            const term = Math.max(1, Math.min(yearNum, 10));
             assigned = await assignUniversityCoursesToUser(user.id, answers.program.id, term);
             if (assigned.length === 0) {
               assigned = await assignCoursesAfterOnboarding({
@@ -794,20 +868,80 @@ export default function OnboardingV2Screen(): React.ReactElement {
 
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.replace(isAuthenticated ? ROUTES.home : ROUTES.auth as never);
-  }, [answers, user, updateUser, addCourse, setOnboardingCompleted, isAuthenticated]);
+  }, [answers, user, updateUser, addCourse, setOnboardingCompleted, isAuthenticated, accountUsername]);
 
-  const handleCta = useCallback(async () => {
-    if (!canContinue) {
+  const handleAccountCta = useCallback(async () => {
+    if (isAccountBusy) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setAuthError(null);
+
+    if (pendingConfirmation) {
+      // The user confirmed via the email link — verify by signing in.
+      setIsAccountBusy(true);
+      try {
+        const result = await signIn(accountEmail.trim(), accountPassword, false);
+        if (result.error) {
+          const code = (result.error as any)?.code ?? '';
+          const message = (result.error as any)?.message ?? '';
+          setAuthError(
+            code === 'EMAIL_NOT_CONFIRMED' || message.toLowerCase().includes('confirm')
+              ? 'Kontot är inte bekräftat ännu — kolla din inkorg.'
+              : message || 'Inloggningen misslyckades. Försök igen.',
+          );
+          return;
+        }
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setPendingConfirmation(false);
+        setStep((s) => Math.min(steps.length - 1, s + 1));
+      } finally {
+        setIsAccountBusy(false);
+      }
+      return;
+    }
+
+    if (!accountFormValid) {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       return;
     }
+    setIsAccountBusy(true);
+    try {
+      const result = await signUp(accountEmail.trim(), accountPassword);
+      if (result.error) {
+        setAuthError((result.error as any)?.message || 'Ett fel uppstod vid registrering.');
+        return;
+      }
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (result.needsEmailConfirmation) {
+        setPendingConfirmation(true);
+        return;
+      }
+      setStep((s) => Math.min(steps.length - 1, s + 1));
+    } finally {
+      setIsAccountBusy(false);
+    }
+  }, [isAccountBusy, pendingConfirmation, accountFormValid, accountEmail, accountPassword, signUp, signIn, steps.length]);
+
+  const handleCta = useCallback(async () => {
+    if (!canContinue || isAccountBusy) {
+      if (!isAccountBusy) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      return;
+    }
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (current.id === 'account') {
+      await handleAccountCta();
+      return;
+    }
     if (isSummary) {
       await finishOnboarding();
       return;
     }
-    setStep((s) => Math.min(steps.length - 1, s + 1));
-  }, [canContinue, isSummary, finishOnboarding, steps.length]);
+    // Signed-in users never see the account step — skip over it.
+    setStep((s) => {
+      let next = s + 1;
+      while (next < steps.length - 1 && steps[next].id === 'account' && isAuthenticated) next++;
+      return Math.min(steps.length - 1, next);
+    });
+  }, [canContinue, isAccountBusy, current.id, handleAccountCta, isSummary, finishOnboarding, steps, isAuthenticated]);
 
   // The paywall step renders the full /premium screen (same experience as
   // the standalone route). Back and successful purchase both complete onboarding.
@@ -856,7 +990,15 @@ export default function OnboardingV2Screen(): React.ReactElement {
   };
 
   const isConvert = current.kind === 'convert';
-  const ctaLabel = isSummary ? 'Starta StudieStugan' : isConvert ? 'Fortsätt' : 'Vidare';
+  const ctaLabel = isSummary
+    ? 'Starta StudieStugan'
+    : current.id === 'account'
+      ? pendingConfirmation
+        ? 'Jag har bekräftat – fortsätt'
+        : 'Skapa konto'
+      : isConvert
+        ? 'Fortsätt'
+        : 'Vidare';
 
   return (
     <View style={styles.root}>
@@ -872,7 +1014,7 @@ export default function OnboardingV2Screen(): React.ReactElement {
 
       <View style={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 18 }]}>
         {/* ── Header: circular back + progress dots ── */}
-        {!isConvert && (
+        {!(isConvert && current.id !== 'account') && (
           <View style={styles.header}>
             <Animated.View style={{ transform: [{ scale: backScale }], width: 46 }}>
               {step > 0 && (
@@ -916,6 +1058,131 @@ export default function OnboardingV2Screen(): React.ReactElement {
           {current.id === 'wow' && <WowStep {...stepProps} />}
           {current.id === 'socialproof' && <SocialProofStep {...stepProps} />}
           {current.id === 'testimonials' && <TestimonialsStep {...stepProps} />}
+
+          {current.id === 'account' && (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollInner}
+            >
+              <Text style={styles.title}>{current.title}</Text>
+              {current.subtitle ? (
+                <Text style={styles.subtitle}>{current.subtitle}</Text>
+              ) : null}
+              {pendingConfirmation ? (
+                <View style={accStyles.pendingCard}>
+                  <Mail size={30} color={GREEN_DARK} />
+                  <Text style={accStyles.pendingTitle}>Kolla din inkorg!</Text>
+                  <Text style={accStyles.pendingText}>
+                    Vi har skickat en bekräftelselänk till {accountEmail.trim()}. Bekräfta
+                    kontot och tryck sedan på knappen nedan.
+                  </Text>
+                  <TouchableOpacity
+                    style={accStyles.resendBtn}
+                    activeOpacity={0.8}
+                    disabled={isAccountBusy}
+                    onPress={() => {
+                      void resendConfirmation(accountEmail.trim());
+                    }}
+                  >
+                    <Text style={accStyles.resendText}>Skicka e-post igen</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={accStyles.form}>
+                  <View>
+                    <Text style={accStyles.label}>E-post</Text>
+                    <TextInput
+                      style={accStyles.input}
+                      placeholder="din@epost.se"
+                      placeholderTextColor={SUB}
+                      value={accountEmail}
+                      onChangeText={setAccountEmail}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="email-address"
+                    />
+                  </View>
+                  <View>
+                    <Text style={accStyles.label}>Lösenord</Text>
+                    <View style={accStyles.inputRow}>
+                      <TextInput
+                        style={[accStyles.input, accStyles.inputFlex]}
+                        placeholder="Minst 6 tecken"
+                        placeholderTextColor={SUB}
+                        value={accountPassword}
+                        onChangeText={setAccountPassword}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                      />
+                      <TouchableOpacity
+                        style={accStyles.eyeBtn}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        onPress={() => setShowPassword((v) => !v)}
+                      >
+                        {showPassword ? (
+                          <EyeOff size={18} color={SUB} />
+                        ) : (
+                          <Eye size={18} color={SUB} />
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <View>
+                    <Text style={accStyles.label}>Användarnamn</Text>
+                    <TextInput
+                      style={accStyles.input}
+                      placeholder="t.ex. anna_lind"
+                      placeholderTextColor={SUB}
+                      value={accountUsername}
+                      onChangeText={handleUsernameChange}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    {accountUsername.trim().length > 0 && (
+                      <Text
+                        style={[
+                          accStyles.hint,
+                          usernameAvailable === true && accStyles.hintOk,
+                          usernameAvailable === false && accStyles.hintError,
+                        ]}
+                      >
+                        {checkingUsername
+                          ? 'Kollar om namnet är ledigt…'
+                          : usernameAvailable === true
+                            ? 'Ledigt — det är ditt!'
+                            : usernameAvailable === false
+                              ? 'Tyvärr, det är upptaget.'
+                              : '3–20 tecken: a–z, siffror och _'}
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={accStyles.termsRow}
+                    activeOpacity={0.8}
+                    onPress={() => setAcceptedTerms((v) => !v)}
+                  >
+                    <View style={[accStyles.checkbox, acceptedTerms && accStyles.checkboxOn]}>
+                      {acceptedTerms && <Check size={14} color={ON_GREEN} strokeWidth={3} />}
+                    </View>
+                    <Text style={accStyles.termsText}>
+                      Jag godkänner{' '}
+                      <Text
+                        style={accStyles.termsLink}
+                        onPress={() => router.push('/terms' as never)}
+                      >
+                        användarvillkoren
+                      </Text>
+                    </Text>
+                  </TouchableOpacity>
+                  {authError ? (
+                    <View style={accStyles.errorCard}>
+                      <Text style={accStyles.errorText}>{authError}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              )}
+            </ScrollView>
+          )}
 
           {current.kind === 'program' && (
             <ScrollView
@@ -1030,11 +1297,11 @@ export default function OnboardingV2Screen(): React.ReactElement {
 
         {/* ── CTA (fixed bottom) ── */}
         <View style={[styles.ctaWrap, dir === 1 && step !== 0 && styles.ctaEnter]}>
-          <Animated.View style={{ opacity: canContinue ? 1 : 0.45 }}>
+          <Animated.View style={{ opacity: canContinue && !isAccountBusy ? 1 : 0.45 }}>
             <TouchableOpacity
               style={styles.cta}
               activeOpacity={0.9}
-              disabled={!canContinue}
+              disabled={!canContinue || isAccountBusy}
               onPress={() => {
                 void handleCta();
               }}
@@ -1045,7 +1312,11 @@ export default function OnboardingV2Screen(): React.ReactElement {
                 end={{ x: 1, y: 0.5 }}
                 style={styles.ctaGradient}
               >
-                <Text style={styles.ctaText}>{ctaLabel}</Text>
+                {current.id === 'account' && isAccountBusy ? (
+                  <ActivityIndicator size="small" color={ON_GREEN} />
+                ) : (
+                  <Text style={styles.ctaText}>{ctaLabel}</Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
@@ -1073,7 +1344,7 @@ const SummaryView: React.FC<{ answers: Answers }> = React.memo(({ answers }) => 
   const profileRows: { label: string; value: string }[] = [
     { label: 'Nivå', value: answers.level ? answers.level.charAt(0).toUpperCase() + answers.level.slice(1) : '—' },
     ...(answers.program ? [{ label: 'Program', value: answers.program.name }] : []),
-    { label: 'År', value: answers.year ?? '—' },
+    ...(answers.level !== 'högskoleprovet' ? [{ label: 'År', value: answers.year ?? '—' }] : []),
     { label: 'Fokus', value: focusLabel },
     { label: 'Pluggstil', value: methodLabel },
     { label: 'Tid per dag', value: answers.time ?? '—' },
@@ -1237,6 +1508,130 @@ const styles = StyleSheet.create({
     fontSize: 16.5,
     fontWeight: '800' as const,
     letterSpacing: 0.2,
+  },
+});
+
+const accStyles = StyleSheet.create({
+  form: {
+    marginTop: 26,
+    gap: 16,
+  },
+  label: {
+    fontSize: 12.5,
+    fontWeight: '700' as const,
+    color: TITLE,
+    marginBottom: 6,
+  },
+  input: {
+    height: 50,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    color: TITLE,
+  },
+  inputRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+  inputFlex: {
+    flex: 1,
+  },
+  eyeBtn: {
+    position: 'absolute' as const,
+    right: 14,
+    top: 16,
+  },
+  hint: {
+    fontSize: 12,
+    color: SUB,
+    marginTop: 6,
+  },
+  hintOk: {
+    color: GREEN_DARK,
+    fontWeight: '600' as const,
+  },
+  hintError: {
+    color: ERROR,
+  },
+  termsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+    marginTop: 4,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxOn: {
+    backgroundColor: GREEN,
+    borderColor: GREEN,
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 13,
+    color: SUB,
+    lineHeight: 18,
+  },
+  termsLink: {
+    color: GREEN_DARK,
+    fontWeight: '700' as const,
+  },
+  errorCard: {
+    borderRadius: 14,
+    backgroundColor: 'rgba(220,38,38,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(220,38,38,0.2)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  errorText: {
+    fontSize: 12.5,
+    color: ERROR,
+    fontWeight: '600' as const,
+    lineHeight: 18,
+  },
+  pendingCard: {
+    marginTop: 26,
+    borderRadius: 20,
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+    padding: 20,
+    alignItems: 'center' as const,
+    gap: 8,
+  },
+  pendingTitle: {
+    fontSize: 17,
+    fontWeight: '800' as const,
+    color: TITLE,
+  },
+  pendingText: {
+    fontSize: 13,
+    color: SUB,
+    textAlign: 'center' as const,
+    lineHeight: 19,
+  },
+  resendBtn: {
+    marginTop: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(16,185,129,0.1)',
+  },
+  resendText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: GREEN_DARK,
   },
 });
 

@@ -1,4 +1,4 @@
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import { Platform } from 'react-native';
 
 export type SoundType = 'start' | 'complete' | 'achievement' | 'reminder';
@@ -11,13 +11,13 @@ const SOUND_URLS = {
 };
 
 class SoundManager {
-  private sounds: Map<SoundType, Audio.Sound> = new Map();
+  private sounds: Map<SoundType, AudioPlayer> = new Map();
   private isEnabled: boolean = true;
   private isInitialized: boolean = false;
 
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
-    
+
     if (Platform.OS === 'web') {
       console.log('Sound manager initialized (web mode - limited support)');
       this.isInitialized = true;
@@ -25,12 +25,12 @@ class SoundManager {
     }
 
     try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: false,
+        interruptionMode: 'doNotMix',
+        interruptionModeAndroid: 'duckOthers',
+        shouldRouteThroughEarpiece: false,
       });
 
       this.isInitialized = true;
@@ -42,18 +42,13 @@ class SoundManager {
 
   async loadSound(type: SoundType): Promise<void> {
     if (Platform.OS === 'web') return;
-    
+
     if (this.sounds.has(type)) return;
 
     try {
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: SOUND_URLS[type] },
-        { shouldPlay: false, volume: 0.6 },
-        null,
-        false
-      );
-
-      this.sounds.set(type, sound);
+      const player = createAudioPlayer({ uri: SOUND_URLS[type] });
+      player.volume = 0.6;
+      this.sounds.set(type, player);
       console.log(`Sound loaded: ${type}`);
     } catch {
       console.warn(`Failed to load sound ${type}, will retry on play`);
@@ -62,7 +57,7 @@ class SoundManager {
 
   async preloadAllSounds(): Promise<void> {
     await this.initialize();
-    
+
     if (Platform.OS === 'web') return;
 
     const soundTypes: SoundType[] = ['start', 'complete', 'achievement', 'reminder'];
@@ -75,28 +70,22 @@ class SoundManager {
     if (Platform.OS === 'web') return;
 
     try {
-      let sound = this.sounds.get(type);
-      
-      if (!sound) {
+      let player = this.sounds.get(type);
+
+      if (!player) {
         try {
-          const { sound: newSound } = await Audio.Sound.createAsync(
-            { uri: SOUND_URLS[type] },
-            { shouldPlay: false, volume: 0.6 },
-            null,
-            false
-          );
-          sound = newSound;
-          this.sounds.set(type, sound);
+          player = createAudioPlayer({ uri: SOUND_URLS[type] });
+          player.volume = 0.6;
+          this.sounds.set(type, player);
         } catch {
           console.warn(`Could not load sound ${type}, skipping playback`);
           return;
         }
       }
 
-      const status = await sound.getStatusAsync();
-      if (status.isLoaded) {
-        await sound.setPositionAsync(0);
-        await sound.playAsync();
+      if (player.isLoaded) {
+        await player.seekTo(0);
+        player.play();
       }
     } catch {
       console.warn(`Sound playback failed for ${type}, continuing without sound`);
@@ -106,9 +95,9 @@ class SoundManager {
   async stopAllSounds(): Promise<void> {
     if (Platform.OS === 'web') return;
 
-    for (const [type, sound] of this.sounds.entries()) {
+    for (const [type, player] of this.sounds.entries()) {
       try {
-        await sound.stopAsync();
+        player.pause();
         console.log(`Stopped sound: ${type}`);
       } catch (error) {
         console.error(`Failed to stop sound ${type}:`, error);
@@ -119,15 +108,15 @@ class SoundManager {
   async unloadAllSounds(): Promise<void> {
     if (Platform.OS === 'web') return;
 
-    for (const [type, sound] of this.sounds.entries()) {
+    for (const [type, player] of this.sounds.entries()) {
       try {
-        await sound.unloadAsync();
+        player.release();
         console.log(`Unloaded sound: ${type}`);
       } catch (error) {
         console.error(`Failed to unload sound ${type}:`, error);
       }
     }
-    
+
     this.sounds.clear();
   }
 

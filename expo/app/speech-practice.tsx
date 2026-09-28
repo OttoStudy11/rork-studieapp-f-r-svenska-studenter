@@ -28,7 +28,7 @@ import {
   Brain,
   MessageSquare,
 } from 'lucide-react-native';
-import { Audio } from 'expo-av';
+import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder } from 'expo-audio';
 import { generateObject } from '@rork-ai/toolkit-sdk';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -128,7 +128,7 @@ export default function SpeechPracticeScreen() {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [step, setStep] = useState<'select' | 'record' | 'result'>('select');
 
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -171,36 +171,19 @@ export default function SpeechPracticeScreen() {
 
         mediaRecorder.start();
       } else {
-        const permission = await Audio.requestPermissionsAsync();
+        const permission = await AudioModule.requestRecordingPermissionsAsync();
         if (!permission.granted) {
           Alert.alert('Tillåtelse behövs', 'Vi behöver tillgång till mikrofonen.');
           return;
         }
 
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
+        await setAudioModeAsync({
+          allowsRecording: true,
+          playsInSilentMode: true,
         });
 
-        const recording = new Audio.Recording();
-        await recording.prepareToRecordAsync({
-          android: {
-            extension: '.m4a',
-            outputFormat: 3,
-            audioEncoder: 3,
-          },
-          ios: {
-            extension: '.wav',
-            outputFormat: 0x6C70636D,
-            audioQuality: 127,
-            sampleRate: 44100,
-            numberOfChannels: 1,
-            bitRate: 128000,
-          },
-          web: {},
-        });
-        await recording.startAsync();
-        recordingRef.current = recording;
+        await audioRecorder.prepareToRecordAsync();
+        audioRecorder.record();
       }
 
       setIsRecording(true);
@@ -219,7 +202,7 @@ export default function SpeechPracticeScreen() {
       console.error('[SpeechPractice] Start recording error:', err);
       Alert.alert('Fel', 'Kunde inte starta inspelning. Kontrollera mikrofontillstånd.');
     }
-  }, []);
+  }, [audioRecorder]);
 
   const stopRecording = useCallback(async () => {
     try {
@@ -258,11 +241,11 @@ export default function SpeechPracticeScreen() {
           });
         }
       } else {
-        if (recordingRef.current) {
-          await recordingRef.current.stopAndUnloadAsync();
-          await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+        if (audioRecorder.isRecording) {
+          await audioRecorder.stop();
+          await setAudioModeAsync({ allowsRecording: false });
 
-          const uri = recordingRef.current.getURI();
+          const uri = audioRecorder.uri;
           if (uri) {
             const uriParts = uri.split('.');
             const fileType = uriParts[uriParts.length - 1];
@@ -276,7 +259,6 @@ export default function SpeechPracticeScreen() {
             formData.append('audio', audioFile as any);
             await doTranscribeAndEvaluate(formData);
           }
-          recordingRef.current = null;
         }
       }
     } catch (err) {
@@ -284,7 +266,7 @@ export default function SpeechPracticeScreen() {
       Alert.alert('Fel', 'Kunde inte stoppa inspelning.');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTopic]);
+  }, [selectedTopic, audioRecorder]);
 
   const transcribeMutation = useMutation({
     mutationFn: async (formData: FormData) => {

@@ -1,5 +1,5 @@
 import { generateText } from '@rork-ai/toolkit-sdk';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export async function extractTextFromImage(imageUri: string): Promise<string> {
   console.log('📸 [Vision AI] Starting text extraction from image:', imageUri);

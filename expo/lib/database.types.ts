@@ -332,7 +332,9 @@ export interface Database {
           gymnasium_grade: string | null
           university_id: string | null
           university_name: string | null
+          total_points: number
           daily_goal_hours: number
+          updated_at: string | null
           created_at: string
         }
         Insert: {
@@ -354,6 +356,7 @@ export interface Database {
           gymnasium_grade?: string | null
           university_id?: string | null
           university_name?: string | null
+          total_points?: number
           daily_goal_hours?: number
           created_at?: string
         }
@@ -376,6 +379,7 @@ export interface Database {
           gymnasium_grade?: string | null
           university_id?: string | null
           university_name?: string | null
+          total_points?: number
           daily_goal_hours?: number
           created_at?: string
         }
@@ -724,6 +728,7 @@ export interface Database {
           longest_streak: number
           last_study_date: string | null
           total_points: number
+          total_xp: number
           created_at: string
           updated_at: string
         }
@@ -735,6 +740,7 @@ export interface Database {
           longest_streak?: number
           last_study_date?: string | null
           total_points?: number
+          total_xp?: number
           created_at?: string
           updated_at?: string
         }
@@ -746,6 +752,7 @@ export interface Database {
           longest_streak?: number
           last_study_date?: string | null
           total_points?: number
+          total_xp?: number
           created_at?: string
           updated_at?: string
         }
@@ -873,6 +880,9 @@ export interface Database {
           requirement_timeframe: 'day' | 'week' | 'month' | 'total' | null
           reward_points: number
           reward_badge: string | null
+          xp_reward: number | null
+          rarity: string | null
+          is_hidden: boolean
           created_at: string
         }
         Insert: {
@@ -887,6 +897,9 @@ export interface Database {
           requirement_timeframe?: 'day' | 'week' | 'month' | 'total' | null
           reward_points?: number
           reward_badge?: string | null
+          xp_reward?: number | null
+          rarity?: string | null
+          is_hidden?: boolean
           created_at?: string
         }
         Update: {
@@ -901,6 +914,9 @@ export interface Database {
           requirement_timeframe?: 'day' | 'week' | 'month' | 'total' | null
           reward_points?: number
           reward_badge?: string | null
+          xp_reward?: number | null
+          rarity?: string | null
+          is_hidden?: boolean
           created_at?: string
         }
         Relationships: []
@@ -2063,6 +2079,260 @@ export interface Database {
           }
         ]
       }
+      user_levels: {
+        Row: {
+          user_id: string
+          current_level: number
+          total_xp: number
+          xp_to_next_level: number
+          level_progress_percent: number
+          last_level_up: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          current_level?: number
+          total_xp?: number
+          xp_to_next_level?: number
+          level_progress_percent?: number
+          last_level_up?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          current_level?: number
+          total_xp?: number
+          xp_to_next_level?: number
+          level_progress_percent?: number
+          last_level_up?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_levels_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      point_transactions: {
+        Row: {
+          id: string
+          user_id: string
+          amount: number
+          source_type: string
+          source_id: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          amount: number
+          source_type: string
+          source_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          amount?: number
+          source_type?: string
+          source_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_points: {
+        Row: {
+          id: string
+          user_id: string
+          points: number
+          source_category: string
+          source_id: string | null
+          source_type: string
+          course_id: string | null
+          metadata: Json
+          awarded_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          points: number
+          source_category?: string
+          source_id?: string | null
+          source_type: string
+          course_id?: string | null
+          metadata?: Json
+          awarded_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          points?: number
+          source_category?: string
+          source_id?: string | null
+          source_type?: string
+          course_id?: string | null
+          metadata?: Json
+          awarded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_points_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_level_history: {
+        Row: {
+          id: string
+          user_id: string
+          level: number
+          total_points: number
+          achieved_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          level: number
+          total_points?: number
+          achieved_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          level?: number
+          total_points?: number
+          achieved_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_level_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      daily_challenges: {
+        Row: {
+          id: string
+          challenge_date: string
+          challenge_type: 'study_minutes' | 'sessions_count'
+          title: string
+          title_sv: string | null
+          description: string
+          description_sv: string | null
+          emoji: string
+          target_value: number
+          xp_reward: number
+          difficulty: 'easy' | 'medium' | 'hard'
+          created_at: string
+        }
+        Insert: {
+          id: string
+          challenge_date: string
+          challenge_type: 'study_minutes' | 'sessions_count'
+          title: string
+          title_sv?: string | null
+          description: string
+          description_sv?: string | null
+          emoji?: string
+          target_value: number
+          xp_reward?: number
+          difficulty?: 'easy' | 'medium' | 'hard'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          challenge_date?: string
+          challenge_type?: 'study_minutes' | 'sessions_count'
+          title?: string
+          title_sv?: string | null
+          description?: string
+          description_sv?: string | null
+          emoji?: string
+          target_value?: number
+          xp_reward?: number
+          difficulty?: 'easy' | 'medium' | 'hard'
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_daily_challenges: {
+        Row: {
+          id: string
+          user_id: string
+          challenge_id: string
+          challenge_date: string
+          current_progress: number
+          is_completed: boolean
+          is_claimed: boolean
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          challenge_id: string
+          challenge_date: string
+          current_progress?: number
+          is_completed?: boolean
+          is_claimed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          challenge_id?: string
+          challenge_date?: string
+          current_progress?: number
+          is_completed?: boolean
+          is_claimed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_daily_challenges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_daily_challenges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "daily_challenges"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       // ── HP Schema V2 ──────────────────────────────────────────
       hp_exam_sets: {
         Row: {
@@ -2577,6 +2847,39 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
+      ensure_daily_challenges: {
+        Args: {
+          p_date?: string
+        }
+        Returns: undefined
+      }
+      check_user_achievements: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      get_global_leaderboard: {
+        Args: {
+          p_limit?: number
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      get_friends_leaderboard: {
+        Args: {
+          p_limit?: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      get_weekly_leaderboard: {
+        Args: {
+          p_limit?: number
+          p_user_id?: string
+        }
+        Returns: Json
+      }
       assign_university_courses: {
         Args: {
           p_program_id: string

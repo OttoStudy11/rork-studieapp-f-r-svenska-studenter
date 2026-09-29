@@ -202,6 +202,13 @@ export const [GamificationProvider, useGamification] = createContextHook<Gamific
     try {
       const today = new Date().toISOString().split('T')[0];
       
+      // Säkerställ att dagens utmaningar finns i databasen (idempotent RPC).
+      try {
+        await (supabase as any).rpc('ensure_daily_challenges', { p_date: today });
+      } catch {
+        // Fallback: lokala utmaningar används om RPC:n inte finns än.
+      }
+
       const { data: challenges, error: challengesError } = await (supabase as any)
         .from('daily_challenges')
         .select('*')

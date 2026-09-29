@@ -23,7 +23,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudy } from '@/contexts/StudyContext';
 import { supabase } from '@/lib/supabase';
 import { getCoursesForProgramAndYear } from '@/constants/gymnasium-courses';
-import { UNIVERSITY_PROGRAMS } from '@/constants/universities';
+import { UNIVERSITY_PROGRAMS, SWEDISH_UNIVERSITIES, type UniversityProgram } from '@/constants/universities';
+import { SWEDISH_GYMNASIUMS } from '@/constants/gymnasiums';
 import {
   assignUniversityCoursesToUser,
   assignCoursesAfterOnboarding,
@@ -64,7 +65,7 @@ interface RowOption {
 }
 
 type StepId =
-  | 'level' | 'year' | 'program' | 'focus' | 'methods' | 'time' | 'goal'
+  | 'level' | 'year' | 'program' | 'school' | 'focus' | 'methods' | 'time' | 'goal'
   | 'account' | 'paywall'
   | 'summary';
 
@@ -72,7 +73,7 @@ interface StepDef {
   id: StepId;
   title: string;
   subtitle?: string;
-  kind: 'rows' | 'grid' | 'program' | 'summary' | 'convert';
+  kind: 'rows' | 'grid' | 'program' | 'school' | 'summary' | 'convert';
   multi?: boolean;
   options: RowOption[];
 }
@@ -120,6 +121,30 @@ const GYMNASIE_PROGRAM_OPTIONS: RowOption[] = [
   { emoji: '📚', title: 'Humanistiska programmet', value: 'hu' },
 ];
 
+// Kategorier för programväljaren (högskola): ger en varierad blandning
+// direkt i stället för att bara visa de första civilingenjörsprogrammen.
+const POPULAR_PROGRAM_IDS = [
+  'lakarprogrammet', 'psykologprogrammet', 'juristprogrammet', 'ekonomprogrammet',
+  'civ_datateknik', 'sjukskoterskeprogrammet', 'civ_industriell_ekonomi',
+  'forskollararprogrammet', 'socionomprogrammet', 'systemvetenskap',
+];
+
+interface ProgramCategory {
+  id: string;
+  label: string;
+  match: (p: UniversityProgram) => boolean;
+}
+
+const PROGRAM_CATEGORIES: ProgramCategory[] = [
+  { id: 'popular', label: 'Populärt', match: p => POPULAR_PROGRAM_IDS.includes(p.id) },
+  { id: 'teknik', label: 'Teknik', match: p => p.degreeType === 'civilingenjör' || p.degreeType === 'högskoleingenjör' },
+  { id: 'medicin', label: 'Medicin & Hälsa', match: p => ['Medicin', 'Vårdvetenskap', 'Psykologi', 'Veterinärmedicin'].includes(p.field) },
+  { id: 'ekonomi', label: 'Ekonomi & Juridik', match: p => ['Ekonomi', 'Juridik'].includes(p.field) },
+  { id: 'samhall', label: 'Samhäll & Media', match: p => ['Statsvetenskap', 'Samhällsvetenskap', 'Socialt arbete', 'Media', 'Humaniora'].includes(p.field) },
+  { id: 'larare', label: 'Lärarutbildning', match: p => p.field === 'Utbildningsvetenskap' },
+  { id: 'natur', label: 'Natur & IT', match: p => ['Naturvetenskap', 'IT', 'Lantbruk', 'Skogshushållning'].includes(p.field) },
+];
+
 // Six tiles → three symmetric rows of two.
 const FOCUS_OPTIONS: RowOption[] = [
   { emoji: '📚', title: 'Struktur', value: 'Struktur' },
@@ -154,10 +179,17 @@ const GOAL_OPTIONS: RowOption[] = [
   { emoji: '🔥', title: 'Bli mer konsekvent', subtitle: 'Plugga regelbundet', value: 'Bli mer konsekvent' },
 ];
 
+interface SelectedSchool {
+  id: string;
+  name: string;
+  city: string;
+}
+
 interface Answers {
   level: StudyLevel | null;
   year: string | null;
   program: SelectedProgram | null;
+  school: SelectedSchool | null;
   focus: string[];
   methods: string[];
   time: string | null;
@@ -204,6 +236,15 @@ const buildSteps = (level: StudyLevel | null): StepDef[] => [
           title: 'Vilket program går du?',
           subtitle: 'Så vi kan tilldela rätt kurser automatiskt.',
           kind: 'program' as const,
+          options: [],
+        },
+        {
+          id: 'school' as const,
+          title: level === 'högskola' ? 'Vilket lärosäte går du på?' : 'Vilken skola går du på?',
+          subtitle: level === 'högskola'
+            ? 'Universitet eller högskola — valfritt, du kan hoppa över.'
+            : 'Din gymnasieskola — valfritt, du kan hoppa över.',
+          kind: 'school' as const,
           options: [],
         },
       ]
@@ -483,6 +524,8 @@ export default function OnboardingV2Screen(): React.ReactElement {
 
   const [step, setStep] = useState(0);
   const [programSearch, setProgramSearch] = useState('');
+  const [schoolSearch, setSchoolSearch] = useState('');
+  const [programCategory, setProgramCategory] = useState('popular');
   const finishingRef = useRef(false);
   const [accountEmail, setAccountEmail] = useState('');
   const [accountPassword, setAccountPassword] = useState('');
@@ -498,6 +541,7 @@ export default function OnboardingV2Screen(): React.ReactElement {
     level: null,
     year: null,
     program: null,
+    school: null,
     focus: [],
     methods: [],
     time: null,
@@ -587,7 +631,9 @@ export default function OnboardingV2Screen(): React.ReactElement {
               ? answers.program !== null
               : current.id === 'time'
                 ? answers.time !== null
-                : answers.goal !== null;
+                : current.id === 'school'
+                  ? true // Skolsteget är valfritt
+                  : answers.goal !== null;
 
   const goBack = useCallback(() => {
     if (step === 0) return;
@@ -612,6 +658,7 @@ export default function OnboardingV2Screen(): React.ReactElement {
           level,
           year: sameLevel ? a.year : null,
           program: sameLevel ? a.program : null,
+          school: sameLevel ? a.school : null,
         };
       }
       if (stepId === 'year') return { ...a, year: value };
@@ -624,6 +671,11 @@ export default function OnboardingV2Screen(): React.ReactElement {
   const selectProgram = useCallback((program: SelectedProgram) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setAnswers((a) => ({ ...a, program }));
+  }, []);
+
+  const selectSchool = useCallback((school: SelectedSchool) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setAnswers((a) => ({ ...a, school }));
   }, []);
 
   const toggleMulti = useCallback((stepId: StepId, value: string) => {
@@ -664,14 +716,37 @@ export default function OnboardingV2Screen(): React.ReactElement {
     [answers.level, answers.focus, answers.time],
   );
 
+  // Programlistan för högskola: sökning söker i alla program; utan söktext
+  // visas den valda kategorin (Populärt ger en varierad startblandning).
   const filteredUniPrograms: RowOption[] = useMemo(() => {
     const q = programSearch.trim().toLowerCase();
-    return UNIVERSITY_PROGRAMS.filter(
-      (p) => q.length === 0 || p.name.toLowerCase().includes(q) || p.field.toLowerCase().includes(q),
-    )
+    const pool = q.length > 0
+      ? UNIVERSITY_PROGRAMS.filter(
+          (p) => p.name.toLowerCase().includes(q) || p.field.toLowerCase().includes(q),
+        )
+      : UNIVERSITY_PROGRAMS.filter(
+          (p) => PROGRAM_CATEGORIES.find((c) => c.id === programCategory)?.match(p) ?? false,
+        );
+    return pool
+      .slice(0, 12)
+      .map((p) => ({
+        emoji: '🎓',
+        title: p.name,
+        subtitle: `${p.field} · ${p.credits} hp`,
+        value: p.id,
+      }));
+  }, [programSearch, programCategory]);
+
+  const filteredSchools: RowOption[] = useMemo(() => {
+    const q = schoolSearch.trim().toLowerCase();
+    const pool = answers.level === 'högskola'
+      ? SWEDISH_UNIVERSITIES.map((u) => ({ id: u.id, name: u.name, sub: `${u.city} · ${u.category}` }))
+      : SWEDISH_GYMNASIUMS.map((g) => ({ id: g.id, name: g.name, sub: `${g.city} · ${g.municipality}` }));
+    return pool
+      .filter((s) => q.length === 0 || s.name.toLowerCase().includes(q) || s.sub.toLowerCase().includes(q))
       .slice(0, 8)
-      .map((p) => ({ emoji: '🎓', title: p.name, subtitle: p.field, value: p.id }));
-  }, [programSearch]);
+      .map((s) => ({ emoji: '🏫', title: s.name, subtitle: s.sub, value: s.id }));
+  }, [schoolSearch, answers.level]);
 
   const finishOnboarding = useCallback(async () => {
     if (finishingRef.current) return;
@@ -690,6 +765,20 @@ export default function OnboardingV2Screen(): React.ReactElement {
     const level = (answers.level ?? 'gymnasie') as StudyLevel;
     const isHogskoleprovet = level === 'högskoleprovet';
     const yearNum = YEAR_TO_NUMBER[answers.year ?? (level === 'högskola' ? 'T1' : 'År 1')] ?? 1;
+
+    // Resolve the auth user id even when the local profile state hasn't
+    // loaded yet (brand-new accounts created in the account step) —
+    // otherwise course assignment would silently be skipped.
+    let userId: string | null = user?.id ?? null;
+    if (!userId) {
+      try {
+        const { data } = await supabase.auth.getUser();
+        userId = data.user?.id ?? null;
+      } catch {
+        userId = null;
+      }
+    }
+
     if (user) {
       const profileUpdates: Parameters<typeof updateUser>[0] = {
         dailyGoalHours: TIME_TO_HOURS[answers.time ?? '30–60 min'] ?? 1,
@@ -712,13 +801,36 @@ export default function OnboardingV2Screen(): React.ReactElement {
           profileUpdates.gymnasiumGrade = String(Math.min(yearNum, 3));
         }
       }
+      if (answers.school) {
+        if (level === 'högskola') {
+          profileUpdates.university = { id: answers.school.id, name: answers.school.name };
+        } else if (level === 'gymnasie') {
+          const gym = SWEDISH_GYMNASIUMS.find((g) => g.id === answers.school?.id);
+          if (gym) profileUpdates.gymnasium = gym;
+        }
+      }
       try {
         await updateUser(profileUpdates);
       } catch {
         // Profile sync is best-effort.
       }
+    }
 
-      // Assign courses so the home screen isn't empty.
+    // Spara skolvalet direkt på profilen (fungerar även för nyss skapade konton).
+    if (userId && answers.school) {
+      try {
+        const schoolCols = level === 'högskola'
+          ? { university_id: answers.school.id, university_name: answers.school.name }
+          : { gymnasium_id: answers.school.id, gymnasium_name: answers.school.name };
+        await supabase.from('profiles').update(schoolCols).eq('id', userId);
+      } catch {
+        // Best-effort.
+      }
+    }
+
+    // Assign courses so the home screen isn't empty — this must run even for
+    // brand-new accounts where the local user state hasn't loaded yet.
+    if (userId) {
       try {
         if (level === 'gymnasie') {
           // Program-specific courses when a program was chosen; the lookup
@@ -748,8 +860,8 @@ export default function OnboardingV2Screen(): React.ReactElement {
             );
             await supabase.from('user_courses').upsert(
               {
-                id: `${user.id}-${course.code}`,
-                user_id: user.id,
+                id: `${userId}-${course.code}`,
+                user_id: userId,
                 course_id: course.code,
                 progress: 0,
                 is_active: true,
@@ -773,10 +885,10 @@ export default function OnboardingV2Screen(): React.ReactElement {
           if (answers.program?.id) {
             // T-number is the semester (T1–T10); the helper maps it to a year.
             const term = Math.max(1, Math.min(yearNum, 10));
-            assigned = await assignUniversityCoursesToUser(user.id, answers.program.id, term);
+            assigned = await assignUniversityCoursesToUser(userId, answers.program.id, term);
             if (assigned.length === 0) {
               assigned = await assignCoursesAfterOnboarding({
-                userId: user.id,
+                userId: userId,
                 educationLevel: 'hogskola',
                 educationYear: term,
                 universityProgramId: answers.program.id,
@@ -825,8 +937,8 @@ export default function OnboardingV2Screen(): React.ReactElement {
               );
               await supabase.from('user_courses').upsert(
                 {
-                  id: `${user.id}-${starter.code}`,
-                  user_id: user.id,
+                  id: `${userId}-${starter.code}`,
+                  user_id: userId,
                   course_id: starter.code,
                   progress: 0,
                   is_active: true,
@@ -1196,6 +1308,32 @@ export default function OnboardingV2Screen(): React.ReactElement {
                   />
                 </View>
               )}
+              {answers.level === 'högskola' && programSearch.trim().length === 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.chipsRow}
+                >
+                  {PROGRAM_CATEGORIES.map((cat) => {
+                    const active = programCategory === cat.id;
+                    return (
+                      <TouchableOpacity
+                        key={cat.id}
+                        style={[styles.chip, active && styles.chipActive]}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setProgramCategory(cat.id);
+                        }}
+                      >
+                        <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                          {cat.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
               <View style={styles.rowsList}>
                 {(answers.level === 'högskola' ? filteredUniPrograms : GYMNASIE_PROGRAM_OPTIONS).map(
                   (opt, i) => (
@@ -1208,6 +1346,40 @@ export default function OnboardingV2Screen(): React.ReactElement {
                     />
                   ),
                 )}
+              </View>
+            </ScrollView>
+          )}
+
+          {current.kind === 'school' && (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollInner}
+            >
+              <Text style={styles.title}>{current.title}</Text>
+              {current.subtitle ? (
+                <Text style={styles.subtitle}>{current.subtitle}</Text>
+              ) : null}
+              <View style={styles.searchWrap}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder={answers.level === 'högskola' ? 'Sök universitet eller högskola...' : 'Sök skola...'}
+                  placeholderTextColor={SUB}
+                  value={schoolSearch}
+                  onChangeText={setSchoolSearch}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                />
+              </View>
+              <View style={styles.rowsList}>
+                {filteredSchools.map((opt, i) => (
+                  <OptionRow
+                    key={opt.value}
+                    option={opt}
+                    index={i}
+                    selected={answers.school?.id === opt.value}
+                    onPress={() => selectSchool({ id: opt.value, name: opt.title, city: opt.subtitle ?? '' })}
+                  />
+                ))}
               </View>
             </ScrollView>
           )}
@@ -1334,6 +1506,7 @@ const SummaryView: React.FC<{ answers: Answers }> = React.memo(({ answers }) => 
   const profileRows: { label: string; value: string }[] = [
     { label: 'Nivå', value: answers.level ? answers.level.charAt(0).toUpperCase() + answers.level.slice(1) : '—' },
     ...(answers.program ? [{ label: 'Program', value: answers.program.name }] : []),
+    ...(answers.school ? [{ label: 'Skola', value: answers.school.name }] : []),
     ...(answers.level !== 'högskoleprovet' ? [{ label: 'År', value: answers.year ?? '—' }] : []),
     { label: 'Fokus', value: focusLabel },
     { label: 'Pluggstil', value: methodLabel },
@@ -1463,6 +1636,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     fontSize: 14.5,
     color: TITLE,
+  },
+  chipsRow: {
+    marginTop: 18,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+  },
+  chipActive: {
+    backgroundColor: GREEN,
+    borderColor: GREEN,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: TITLE,
+  },
+  chipTextActive: {
+    color: ON_GREEN,
+    fontWeight: '700' as const,
   },
   grid: {
     marginTop: 26,

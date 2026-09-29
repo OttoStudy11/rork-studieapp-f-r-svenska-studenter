@@ -32,7 +32,7 @@ const civilingenjorDatateknikkurser: UniversityCourse[] = [
   { id: 'DD1324', code: 'DD1324', name: 'Algoritmer och datastrukturer', credits: 7.5, year: 2, mandatory: true, category: 'grundkurs', field: 'Datateknik' },
   { id: 'DD1351', code: 'DD1351', name: 'Logik för dataloger', credits: 6, year: 2, mandatory: true, category: 'grundkurs', field: 'Datateknik' },
   { id: 'DD1352', code: 'DD1352', name: 'Arkitektur, operativsystem och nätverk', credits: 9, year: 2, mandatory: true, category: 'fördjupningskurs', field: 'Datateknik' },
-  { id: 'SF1624', code: 'SF1680', name: 'Sannolikhetsteori och statistik', credits: 7.5, year: 2, mandatory: true, category: 'grundkurs', field: 'Matematik' },
+  { id: 'SF1680', code: 'SF1680', name: 'Sannolikhetsteori och statistik', credits: 7.5, year: 2, mandatory: true, category: 'grundkurs', field: 'Matematik' },
   { id: 'DD1361', code: 'DD1361', name: 'Programmeringsparadigm', credits: 7.5, year: 2, mandatory: true, category: 'fördjupningskurs', field: 'Datateknik' },
   { id: 'DD1396', code: 'DD1396', name: 'Parallellprogrammering', credits: 6, year: 2, mandatory: true, category: 'fördjupningskurs', field: 'Datateknik' },
   { id: 'DD2350', code: 'DD2350', name: 'Algoritmer och komplexitet', credits: 6, year: 2, mandatory: true, category: 'fördjupningskurs', field: 'Datateknik' },

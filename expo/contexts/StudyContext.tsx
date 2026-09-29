@@ -31,6 +31,7 @@ export interface User {
   subscriptionExpiresAt?: Date;
   gymnasium?: Gymnasium | null;
   gymnasiumGrade?: string | null;
+  university?: { id: string; name: string } | null;
   universityYear?: string | null;
   komvuxYear?: string | null;
   dailyGoalHours?: number;
@@ -111,6 +112,8 @@ type PartialDbUser = {
   gymnasium_id: string | null;
   gymnasium_name: string | null;
   gymnasium_grade: string | null;
+  university_id: string | null;
+  university_name: string | null;
   daily_goal_hours?: number | null;
 };
 
@@ -135,6 +138,10 @@ const dbUserToUser = (dbUser: PartialDbUser, email: string): User => ({
     type: 'kommunal'
   } : null,
   gymnasiumGrade: dbUser.gymnasium_grade,
+  university: dbUser.university_id && dbUser.university_name ? {
+    id: dbUser.university_id,
+    name: dbUser.university_name
+  } : null,
   universityYear: null
 });
 
@@ -240,7 +247,7 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
       // Load user profile with minimal columns
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, name, username, display_name, email, level, program, purpose, avatar_url, subscription_type, subscription_expires_at, gymnasium_id, gymnasium_name, gymnasium_grade, daily_goal_hours')
+        .select('id, name, username, display_name, email, level, program, purpose, avatar_url, subscription_type, subscription_expires_at, gymnasium_id, gymnasium_name, gymnasium_grade, university_id, university_name, daily_goal_hours')
         .eq('id', userId)
         .maybeSingle();
       
@@ -795,6 +802,10 @@ export const [StudyProvider, useStudy] = createContextHook(() => {
         dbUpdates.gymnasium_name = updates.gymnasium?.name || null;
       }
       if (updates.gymnasiumGrade !== undefined) dbUpdates.gymnasium_grade = updates.gymnasiumGrade;
+      if (updates.university !== undefined) {
+        dbUpdates.university_id = updates.university?.id || null;
+        dbUpdates.university_name = updates.university?.name || null;
+      }
       if (updates.dailyGoalHours !== undefined) dbUpdates.daily_goal_hours = updates.dailyGoalHours;
       
       if (Object.keys(dbUpdates).length > 0) {

@@ -330,6 +330,8 @@ export interface Database {
           gymnasium_id: string | null
           gymnasium_name: string | null
           gymnasium_grade: string | null
+          university_id: string | null
+          university_name: string | null
           daily_goal_hours: number
           created_at: string
         }
@@ -350,6 +352,8 @@ export interface Database {
           gymnasium_id?: string | null
           gymnasium_name?: string | null
           gymnasium_grade?: string | null
+          university_id?: string | null
+          university_name?: string | null
           daily_goal_hours?: number
           created_at?: string
         }
@@ -370,6 +374,8 @@ export interface Database {
           gymnasium_id?: string | null
           gymnasium_name?: string | null
           gymnasium_grade?: string | null
+          university_id?: string | null
+          university_name?: string | null
           daily_goal_hours?: number
           created_at?: string
         }
@@ -1917,6 +1923,10 @@ export interface Database {
           subject_area: string
           prerequisites: string | null
           learning_outcomes: string | null
+          year: number
+          category: string
+          program_id: string | null
+          mandatory: boolean
           created_at: string
         }
         Insert: {
@@ -1929,6 +1939,10 @@ export interface Database {
           subject_area: string
           prerequisites?: string | null
           learning_outcomes?: string | null
+          year?: number
+          category?: string
+          program_id?: string | null
+          mandatory?: boolean
           created_at?: string
         }
         Update: {
@@ -1941,6 +1955,10 @@ export interface Database {
           subject_area?: string
           prerequisites?: string | null
           learning_outcomes?: string | null
+          year?: number
+          category?: string
+          program_id?: string | null
+          mandatory?: boolean
           created_at?: string
         }
         Relationships: []
@@ -1951,6 +1969,7 @@ export interface Database {
           program_id: string
           course_id: string
           semester: number
+          year: number
           is_mandatory: boolean
         }
         Insert: {
@@ -1958,6 +1977,7 @@ export interface Database {
           program_id: string
           course_id: string
           semester?: number
+          year?: number
           is_mandatory?: boolean
         }
         Update: {
@@ -1965,6 +1985,7 @@ export interface Database {
           program_id?: string
           course_id?: string
           semester?: number
+          year?: number
           is_mandatory?: boolean
         }
         Relationships: [
@@ -1990,16 +2011,18 @@ export interface Database {
           user_id: string
           program_id: string | null
           course_id: string
+          semester: number | null
           progress: number
           is_active: boolean
           created_at: string
           updated_at: string
         }
         Insert: {
-          id: string
+          id?: string
           user_id: string
           program_id?: string | null
           course_id: string
+          semester?: number | null
           progress?: number
           is_active?: boolean
           created_at?: string
@@ -2010,6 +2033,7 @@ export interface Database {
           user_id?: string
           program_id?: string | null
           course_id?: string
+          semester?: number | null
           progress?: number
           is_active?: boolean
           created_at?: string
@@ -2553,6 +2577,13 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
+      assign_university_courses: {
+        Args: {
+          p_program_id: string
+          p_term: number
+        }
+        Returns: Json
+      }
       check_username_available: {
         Args: {
           username_to_check: string

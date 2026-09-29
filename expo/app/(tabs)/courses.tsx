@@ -8,23 +8,22 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  StatusBar
+  StatusBar,
+  Dimensions
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
 import { ROUTES } from '@/utils/typedRoutes';
-import { LinearGradient } from 'expo-linear-gradient';
 import { 
   Plus, 
   Search, 
+  Clock,
   Target,
+  ArrowRight,
   User,
   Crown,
-  Award,
-  Calculator,
-  MessageCircle,
-  Sparkles
+  Award
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
@@ -32,12 +31,34 @@ import { FadeInView, SlideInView } from '@/components/Animations';
 import CoursePickerModal, { UnifiedCourse } from '@/components/CoursePickerModal';
 import type { Course as ProgramCourse } from '@/constants/program-courses';
 
+const { width } = Dimensions.get('window');
+
+interface StudyTip {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+  category: string;
+  difficulty: string;
+}
+
+interface StudyTechnique {
+  id: number;
+  title: string;
+  description: string;
+  steps: string[];
+  icon: string;
+  timeNeeded: string;
+}
+
 export default function CoursesScreen() {
   const { user } = useAuth();
   const { theme, isDark } = useTheme();
   const { isPremium } = usePremium();
   
   const [courses, setCourses] = useState<any[]>([]);
+  const [studyTips, setStudyTips] = useState<StudyTip[]>([]);
+  const [studyTechniques, setStudyTechniques] = useState<StudyTechnique[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCoursePickerModal, setShowCoursePickerModal] = useState(false);
@@ -171,6 +192,88 @@ export default function CoursesScreen() {
 
       setCourses(uniqueCourses);
       console.log('Total courses loaded:', uniqueCourses.length);
+
+      // Load study tips from database (hardcoded for now)
+      const tipsData: StudyTip[] = [
+        {
+          id: 1,
+          title: 'Pomodoro-tekniken',
+          description: 'Studera i 25-minuters intervaller med 5 minuters pauser',
+          icon: '🍅',
+          category: 'Tidshantering',
+          difficulty: 'Nybörjare'
+        },
+        {
+          id: 2,
+          title: 'Aktiv repetition',
+          description: 'Testa dig själv istället för att bara läsa om materialet',
+          icon: '🧠',
+          category: 'Minnestekniker',
+          difficulty: 'Medel'
+        },
+        {
+          id: 3,
+          title: 'Spaced repetition',
+          description: 'Repetera material med ökande intervaller för bättre minne',
+          icon: '📅',
+          category: 'Minnestekniker',
+          difficulty: 'Avancerad'
+        },
+        {
+          id: 4,
+          title: 'Feynman-tekniken',
+          description: 'Förklara komplexa koncept med enkla ord',
+          icon: '👨‍🏫',
+          category: 'Förståelse',
+          difficulty: 'Medel'
+        },
+        {
+          id: 5,
+          title: 'Mind mapping',
+          description: 'Skapa visuella kartor för att organisera information',
+          icon: '🗺️',
+          category: 'Organisation',
+          difficulty: 'Nybörjare'
+        },
+        {
+          id: 6,
+          title: 'Miljöbyte',
+          description: 'Byt studiemiljö för att förbättra inlärningen',
+          icon: '🏠',
+          category: 'Miljö',
+          difficulty: 'Nybörjare'
+        }
+      ];
+      setStudyTips(tipsData);
+
+      // Load study techniques from database (hardcoded for now)
+      const techniquesData: StudyTechnique[] = [
+        {
+          id: 1,
+          title: 'SQ3R-metoden',
+          description: 'Survey, Question, Read, Recite, Review - systematisk läsning',
+          steps: ['Överblicka', 'Fråga', 'Läs', 'Återge', 'Repetera'],
+          icon: '📖',
+          timeNeeded: '30-60 min'
+        },
+        {
+          id: 2,
+          title: 'Cornell-anteckningar',
+          description: 'Strukturerad anteckningsmetod med tre sektioner',
+          steps: ['Anteckningar', 'Ledtrådar', 'Sammanfattning'],
+          icon: '📝',
+          timeNeeded: '15-30 min'
+        },
+        {
+          id: 3,
+          title: 'Elaborativ förfrågan',
+          description: 'Ställ "varför" och "hur" frågor för djupare förståelse',
+          steps: ['Läs fakta', 'Fråga varför', 'Förklara samband', 'Koppla till tidigare kunskap'],
+          icon: '❓',
+          timeNeeded: '20-40 min'
+        }
+      ];
+      setStudyTechniques(techniquesData);
 
     } catch (error) {
       console.error('Error in loadAllData:', error);
@@ -560,54 +663,70 @@ export default function CoursesScreen() {
           </View>
         </SlideInView>
 
-        {/* Quick Tools */}
+        {/* Study Tips Section */}
         <SlideInView direction="up" delay={400}>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Snabbverktyg</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietips</Text>
+              <TouchableOpacity onPress={() => router.push(ROUTES.studyTips)}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.toolsGrid}>
-              <TouchableOpacity
-                style={[styles.toolCard, { backgroundColor: isDark ? '#1E1B4B' : '#EEF2FF' }]}
-                onPress={() => router.push(ROUTES.mathChat)}
-                activeOpacity={0.85}
-              >
-                <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.toolIcon}>
-                  <Calculator size={24} color="#FFF" />
-                </LinearGradient>
-                <View style={styles.toolTextBlock}>
-                  <Text style={[styles.toolTitle, { color: theme.colors.text }]} numberOfLines={1}>Matte AI</Text>
-                  <Text style={[styles.toolSubtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>Få hjälp med matte</Text>
-                </View>
-              </TouchableOpacity>
+            
+            <View style={styles.tipsGrid}>
+              {studyTips.slice(0, 6).map((tip, index) => (
+                <FadeInView key={tip.id} delay={500 + index * 50}>
+                  <TouchableOpacity 
+                    style={[styles.compactTipCard, { backgroundColor: theme.colors.card }]}
+                    onPress={() => router.push(ROUTES.studyTip(String(tip.id)))}
+                  >
+                    <Text style={styles.compactTipIcon}>{tip.icon}</Text>
+                    <Text style={[styles.compactTipTitle, { color: theme.colors.text }]}>{tip.title}</Text>
+                    <View style={[styles.compactTipDifficulty, { 
+                      backgroundColor: tip.difficulty === 'Nybörjare' ? theme.colors.success + '20' :
+                                     tip.difficulty === 'Medel' ? theme.colors.warning + '20' :
+                                     theme.colors.error + '20'
+                    }]}>
+                      <Text style={[styles.compactTipDifficultyText, { 
+                        color: tip.difficulty === 'Nybörjare' ? theme.colors.success :
+                              tip.difficulty === 'Medel' ? theme.colors.warning :
+                              theme.colors.error
+                      }]}>{tip.difficulty}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </FadeInView>
+              ))}
+            </View>
+          </View>
+        </SlideInView>
 
-              <TouchableOpacity
-                style={[styles.toolCard, { backgroundColor: isDark ? '#1A2E1A' : '#ECFDF5' }]}
-                onPress={() => router.push(ROUTES.generalChat)}
-                activeOpacity={0.85}
-              >
-                <LinearGradient colors={['#10B981', '#059669']} style={styles.toolIcon}>
-                  <MessageCircle size={24} color="#FFF" />
-                </LinearGradient>
-                <View style={styles.toolTextBlock}>
-                  <Text style={[styles.toolTitle, { color: theme.colors.text }]} numberOfLines={1}>AI</Text>
-                  <Text style={[styles.toolSubtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>Ställ frågor</Text>
-                </View>
+        {/* Study Techniques Section */}
+        <SlideInView direction="up" delay={600}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Studietekniker</Text>
+              <TouchableOpacity onPress={() => router.push(ROUTES.studyTechniques)}>
+                <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>Se alla</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.toolCard, { backgroundColor: isDark ? '#2D1B2E' : '#FDF2F8' }]}
-                onPress={() => router.push(ROUTES.hpAiGenerator)}
-                activeOpacity={0.85}
-              >
-                <LinearGradient colors={['#EC4899', '#8B5CF6']} style={styles.toolIcon}>
-                  <Sparkles size={24} color="#FFF" />
-                </LinearGradient>
-                <View style={styles.toolTextBlock}>
-                  <Text style={[styles.toolTitle, { color: theme.colors.text }]} numberOfLines={1}>AI-Gen</Text>
-                  <Text style={[styles.toolSubtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>Skapa provfrågor</Text>
-                </View>
-              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.techniquesGrid}>
+              {studyTechniques.map((technique, index) => (
+                <FadeInView key={technique.id} delay={700 + index * 50}>
+                  <TouchableOpacity 
+                    style={[styles.compactTechniqueCard, { backgroundColor: theme.colors.card }]}
+                    onPress={() => router.push(ROUTES.studyTechnique(String(technique.id)))}
+                  >
+                    <Text style={styles.compactTechniqueIcon}>{technique.icon}</Text>
+                    <Text style={[styles.compactTechniqueTitle, { color: theme.colors.text }]} numberOfLines={1}>{technique.title}</Text>
+                    <View style={[styles.compactTimeTag, { backgroundColor: theme.colors.primary + '15' }]}>
+                      <Clock size={10} color={theme.colors.primary} />
+                      <Text style={[styles.compactTimeText, { color: theme.colors.primary }]}>{technique.timeNeeded}</Text>
+                    </View>
+                    <ArrowRight size={14} color={theme.colors.textMuted} style={styles.compactArrow} />
+                  </TouchableOpacity>
+                </FadeInView>
+              ))}
             </View>
           </View>
         </SlideInView>
@@ -842,33 +961,89 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  toolsGrid: {
+  tipsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
-  toolCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
+  compactTipCard: {
+    width: (width - 72) / 2,
+    height: 130,
+    borderRadius: 16,
     padding: 16,
-    borderRadius: 18,
-  },
-  toolIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
   },
-  toolTextBlock: {
+  compactTipIcon: {
+    fontSize: 20,
+    marginBottom: 8,
+  },
+  compactTipTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 18,
+    height: 36,
+  },
+  compactTipDifficulty: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  compactTipDifficultyText: {
+    fontSize: 9,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  techniquesGrid: {
+    gap: 12,
+  },
+  compactTechniqueCard: {
+    borderRadius: 16,
+    padding: 18,
+    height: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+  },
+  compactTechniqueIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  compactTechniqueTitle: {
+    fontSize: 15,
+    fontWeight: '600',
     flex: 1,
   },
-  toolTitle: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    letterSpacing: -0.2,
+  compactTimeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    gap: 3,
+    marginRight: 8,
   },
-  toolSubtitle: {
-    fontSize: 12.5,
-    marginTop: 2,
+  compactTimeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  compactArrow: {
+    opacity: 0.6,
   },
 });

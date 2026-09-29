@@ -776,15 +776,7 @@ export default function CourseDetailScreen() {
           accentColor={courseStyle.primaryColor}
         />
 
-        <CourseAISection
-          courseTitle={course.title}
-          courseDescription={course.description}
-          userCourseData={userCourseData}
-          userProgress={userProgress}
-          courseStyle={courseStyle}
-          accentColor={courseStyle.primaryColor}
-          theme={theme}
-        />
+        <CourseAISection />
 
         {studyGuides.length > 0 && (
           <View style={styles.section}>

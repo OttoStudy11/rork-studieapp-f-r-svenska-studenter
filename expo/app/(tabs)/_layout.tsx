@@ -1,12 +1,10 @@
 import { Tabs, useRouter, useSegments } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useRef } from "react";
 import { Home, BookOpen, Timer, Users, GraduationCap } from "lucide-react-native";
 import { Platform, PanResponder, Dimensions, View, StyleSheet } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "@/constants/design-system";
 import { t } from "@/constants/translations";
 import { useTheme } from "@/contexts/ThemeContext";
-import Walkthrough, { WALKTHROUGH_SEEN_KEY } from "@/components/Walkthrough";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -16,38 +14,6 @@ export default function TabLayout() {
   const router = useRouter();
   const segments = useSegments();
   const { isDark } = useTheme();
-
-  // One-time walkthrough: shows once per device on first entry into the tabs
-  // area — i.e. right after a newly created account finishes onboarding, and
-  // once for existing users as a one-time feature rollout. Finishing (or
-  // skipping) it writes the seen flag so it NEVER shows again.
-  const [walkthroughVisible, setWalkthroughVisible] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const seen = await AsyncStorage.getItem(WALKTHROUGH_SEEN_KEY);
-        console.log(`[Walkthrough] seen=${seen ?? "unset"} → ${seen === "1" ? "skip" : "show"}`);
-        if (!cancelled && seen !== "1") {
-          setWalkthroughVisible(true);
-        }
-      } catch {
-        // Flag errors should never block the tabs.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const finishWalkthrough = useCallback(async () => {
-    setWalkthroughVisible(false);
-    try {
-      await AsyncStorage.setItem(WALKTHROUGH_SEEN_KEY, "1");
-    } catch {
-      // Best-effort persistence.
-    }
-  }, []);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -209,7 +175,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
-    <Walkthrough visible={walkthroughVisible} onFinish={() => void finishWalkthrough()} />
     </View>
   );
 }

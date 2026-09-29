@@ -322,8 +322,8 @@ const OptionRow: React.FC<OptionRowProps> = React.memo(({ option, selected, inde
   useEffect(() => {
     const t = Animated.timing(enter, {
       toValue: 1,
-      duration: 400,
-      delay: 80 + index * 70,
+      duration: 300,
+      delay: 40 + index * 45,
       useNativeDriver: true,
     });
     t.start();
@@ -422,8 +422,8 @@ const GridTile: React.FC<GridTileProps> = React.memo(({ option, selected, index,
   useEffect(() => {
     const t = Animated.timing(enter, {
       toValue: 1,
-      duration: 400,
-      delay: 80 + index * 70,
+      duration: 300,
+      delay: 40 + index * 45,
       useNativeDriver: true,
     });
     t.start();
@@ -490,7 +490,7 @@ const ProgressDots: React.FC<{ step: number; total: number }> = React.memo(({ st
   useEffect(() => {
     vals.forEach((v, i) => {
       const target = i === step ? 2 : i < step ? 1 : 0;
-      Animated.spring(v, { toValue: target, tension: 120, friction: 12, useNativeDriver: false }).start();
+      Animated.spring(v, { toValue: target, tension: 200, friction: 18, useNativeDriver: false }).start();
     });
   }, [step, vals]);
 
@@ -548,7 +548,7 @@ export default function OnboardingV2Screen(): React.ReactElement {
     goal: null,
   });
 
-  const steps = buildSteps(answers.level);
+  const steps = useMemo(() => buildSteps(answers.level), [answers.level]);
   const current = steps[step];
   const isSummary = current.kind === 'summary';
 

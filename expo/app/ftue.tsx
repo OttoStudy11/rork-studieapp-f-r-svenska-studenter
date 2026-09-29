@@ -382,7 +382,7 @@ export default function FTUEScreen() {
               activeOpacity={0.6}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.skipText}>Hoppa över</Text>
+              <Text style={styles.skipText} maxFontSizeMultiplier={1.3}>Hoppa över</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -401,10 +401,10 @@ export default function FTUEScreen() {
                 <View style={styles.logoWrap}>
                   <Image source={{ uri: LOGO_URI }} style={styles.logoImg} contentFit="contain" />
                 </View>
-                <Text style={styles.title}>
+                <Text style={styles.title} maxFontSizeMultiplier={1.15}>
                   Plugga <Text style={styles.titleAccent}>smartare.</Text>{'\n'}Inte mer.
                 </Text>
-                <Text style={styles.body}>
+                <Text style={styles.body} maxFontSizeMultiplier={1.25}>
                   StudieStugan samlar ditt plugg på ett ställe och hjälper dig ta reda på
                   vad du faktiskt behöver fokusera på.
                 </Text>
@@ -414,7 +414,7 @@ export default function FTUEScreen() {
 
             {step === 1 && (
               <View style={styles.stepInner}>
-                <Text style={styles.title}>
+                <Text style={styles.title} maxFontSizeMultiplier={1.15}>
                   Allt ditt plugg.{'\n'}
                   <Text style={styles.titleAccent}>På ett ställe.</Text>
                 </Text>
@@ -423,7 +423,7 @@ export default function FTUEScreen() {
                     <CapabilityRow key={item.title} item={item} index={idx} shown={capShown} />
                   ))}
                 </View>
-                <Text style={styles.body}>
+                <Text style={styles.body} maxFontSizeMultiplier={1.25}>
                   Från vanliga skolkurser till Högskoleprovet — StudieStugan hjälper dig
                   hela vägen.
                 </Text>
@@ -432,10 +432,10 @@ export default function FTUEScreen() {
 
             {step === 2 && (
               <View style={styles.stepInner}>
-                <Text style={styles.title}>
+                <Text style={styles.title} maxFontSizeMultiplier={1.15}>
                   Redo att <Text style={styles.titleAccent}>börja?</Text>
                 </Text>
-                <Text style={styles.body}>
+                <Text style={styles.body} maxFontSizeMultiplier={1.25}>
                   Vi hjälper dig hålla koll på vad du ska plugga, vad du behöver träna på
                   och hur du faktiskt utvecklas.
                 </Text>
@@ -464,7 +464,14 @@ export default function FTUEScreen() {
               onPressOut={onPressOut}
               activeOpacity={0.9}
             >
-              <Text style={styles.ctaText}>{ctaLabel}</Text>
+              <Text
+                style={styles.ctaText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                maxFontSizeMultiplier={1.15}
+              >
+                {ctaLabel}
+              </Text>
               {step === STEP_COUNT - 1 ? (
                 <ArrowRight size={19} color="#FFFFFF" strokeWidth={2.6} />
               ) : (
@@ -473,7 +480,7 @@ export default function FTUEScreen() {
             </TouchableOpacity>
           </Animated.View>
           {step === 0 && (
-            <Text style={styles.footerHint}>Tar mindre än en minut</Text>
+            <Text style={styles.footerHint} maxFontSizeMultiplier={1.3}>Tar mindre än en minut</Text>
           )}
         </View>
       </View>

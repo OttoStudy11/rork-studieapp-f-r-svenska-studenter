@@ -26,7 +26,6 @@ import { BookOpen, Clock, Target, Plus, Star, Crown, User, TrendingUp, Calendar,
 import { router } from 'expo-router';
 import { ROUTES } from '@/utils/typedRoutes';
 import { FadeInView, SlideInView } from '@/components/Animations';
-import { WalkthroughAnchor } from '@/components/Walkthrough';
 import CharacterAvatar from '@/components/CharacterAvatar';
 import { XpLevelRing } from '@/components/shared/XpLevelRing';
 
@@ -387,7 +386,7 @@ export default function HomeScreen() {
               <Text style={[styles.greeting, { color: theme.colors.text }]}>Hej, {user?.name}! 👋</Text>
               <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>Redo att plugga idag?</Text>
             </View>
-            <WalkthroughAnchor id="home-profile" style={styles.headerRight}>
+            <View style={styles.headerRight}>
               {isPremium && (
                 <View style={[styles.premiumBadge, { backgroundColor: theme.colors.warning + '20' }]}>
                   <Crown size={16} color={theme.colors.warning} />
@@ -406,7 +405,7 @@ export default function HomeScreen() {
                   </View>
                 )}
               </TouchableOpacity>
-            </WalkthroughAnchor>
+            </View>
           </View>
           {isDemoMode && (
             <View style={[styles.demoBanner, { backgroundColor: theme.colors.info + '15' }]}>
@@ -417,7 +416,6 @@ export default function HomeScreen() {
 
         {/* Hero Stats Card */}
         <SlideInView direction="up" delay={0} duration={300}>
-          <WalkthroughAnchor id="home-hero">
           <LinearGradient
             colors={theme.colors.gradient as any}
             start={{ x: 0, y: 0 }}
@@ -453,7 +451,6 @@ export default function HomeScreen() {
               </View>
             </View>
           </LinearGradient>
-          </WalkthroughAnchor>
         </SlideInView>
 
 
@@ -462,7 +459,6 @@ export default function HomeScreen() {
         <SlideInView direction="up" delay={50} duration={300}>
           <View style={styles.quickActions}>
             <Animated.View style={{ transform: [{ scale: pulseAnim }], width: '100%' }}>
-              <WalkthroughAnchor id="home-focus">
               <TouchableOpacity 
                 style={[styles.actionButton, styles.actionButtonFull, { backgroundColor: theme.colors.primary }]}
                 onPress={() => router.push(ROUTES.timer)}
@@ -470,7 +466,6 @@ export default function HomeScreen() {
                 <Clock size={24} color="white" />
                 <Text style={styles.actionButtonText}>Starta fokus</Text>
               </TouchableOpacity>
-              </WalkthroughAnchor>
             </Animated.View>
           </View>
         </SlideInView>

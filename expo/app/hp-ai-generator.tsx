@@ -348,7 +348,7 @@ export default function HPAIGeneratorScreen() {
 
         {generationMode === 'section' && (
           <View style={styles.sectionSelector}>
-            <Text style={[styles.sectionLabel, { color: theme.colors.text }]}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>
               Välj delprov
             </Text>
             <View style={styles.sectionsGrid}>
@@ -420,7 +420,7 @@ export default function HPAIGeneratorScreen() {
 
         {generationMode === 'section' && (
           <View style={styles.countSection}>
-            <Text style={[styles.sectionLabel, { color: theme.colors.text }]}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>
               Antal frågor
             </Text>
             <View style={styles.countOptions}>
@@ -492,7 +492,7 @@ export default function HPAIGeneratorScreen() {
 
         {storedTests.length > 0 && (
           <View style={styles.savedTestsSection}>
-            <Text style={[styles.sectionLabel, { color: theme.colors.text }]}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>
               Sparade prov
             </Text>
             
@@ -610,6 +610,7 @@ const styles = StyleSheet.create({
     fontWeight: '800' as const,
     color: '#FFF',
     flex: 1,
+    letterSpacing: -0.5,
   },
   aiBadge: {
     width: 28,
@@ -654,14 +655,17 @@ const styles = StyleSheet.create({
   modeButtonText: {
     fontSize: 15,
     fontWeight: '600' as const,
+    letterSpacing: -0.2,
   },
   sectionSelector: {
     marginBottom: 24,
   },
   sectionLabel: {
-    fontSize: 17,
+    fontSize: 12,
     fontWeight: '700' as const,
-    marginBottom: 12,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 14,
   },
   sectionsGrid: {
     flexDirection: 'row',

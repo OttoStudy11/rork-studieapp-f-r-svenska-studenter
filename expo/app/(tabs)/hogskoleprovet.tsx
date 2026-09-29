@@ -41,7 +41,6 @@ import {
   ArrowUpRight,
   BarChart3,
   BookOpen,
-  Dumbbell,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
@@ -52,7 +51,6 @@ import { getRandomTips } from '@/constants/hogskoleprovet-study-tips';
 import { COLORS } from '@/constants/design-system';
 import { useHPStudyPlan, PLAN_CONFIGS } from '@/contexts/HPStudyPlanContext';
 import { useHPTheory } from '@/contexts/HPTheoryContext';
-import { useHPTraining } from '@/contexts/HPTrainingContext';
 import { buildHPRecommendations, HPRecommendation } from '@/lib/hp-recommendations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -270,21 +268,6 @@ export default function HogskoleprovetTab() {
   };
 
   const { readArticleIds, completedCount, articles } = useHPTheory();
-  const { plan: trainingPlan, startTraining } = useHPTraining();
-  const [isBuildingTraining, setIsBuildingTraining] = useState(false);
-
-  const handleStartTraining = async () => {
-    if (!isPremium) {
-      router.push(ROUTES.premium);
-      return;
-    }
-    setIsBuildingTraining(true);
-    const ok = await startTraining();
-    setIsBuildingTraining(false);
-    if (ok) {
-      router.push(ROUTES.hpTraining);
-    }
-  };
 
   const recommendations = useMemo<HPRecommendation[]>(
     () => buildHPRecommendations({
@@ -520,63 +503,6 @@ export default function HogskoleprovetTab() {
                 <Text style={[styles.toolSubtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>Skapa provfrågor</Text>
               </View>
             </TouchableOpacity>
-          </View>
-        </Animated.View>
-
-        {/* ═══════════════════ DIN TRÄNING IDAG ═══════════════════ */}
-        <Animated.View style={{ opacity: fadeAnim }}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Din träning idag</Text>
-            <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-              {trainingPlan.focusMessage}
-            </Text>
-          </View>
-
-          <View style={[styles.trainingCard, { backgroundColor: theme.colors.card, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
-            <View style={styles.trainingMix}>
-              {trainingPlan.items.map(item => {
-                const color = HP_SECTIONS.find(s => s.code === item.sectionCode)?.color ?? '#6366F1';
-                return (
-                  <View key={item.sectionCode} style={styles.trainingMixRow}>
-                    <View style={[styles.trainingMixDot, { backgroundColor: color }]} />
-                    <Text style={[styles.trainingMixCount, { color: theme.colors.text }]}>{item.count}</Text>
-                    <Text style={[styles.trainingMixCode, { color: theme.colors.textSecondary }]}>{item.sectionCode}</Text>
-                    {item.reason === 'weak' && (
-                      <View style={styles.trainingMixBadge}>
-                        <Text style={[styles.trainingMixBadgeText, { color: '#EF4444' }]}>svag</Text>
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-              {trainingPlan.repeatCount > 0 && (
-                <View style={styles.trainingMixRow}>
-                  <View style={[styles.trainingMixDot, { backgroundColor: '#F59E0B' }]} />
-                  <Text style={[styles.trainingMixCount, { color: theme.colors.text }]}>{trainingPlan.repeatCount}</Text>
-                  <Text style={[styles.trainingMixCode, { color: theme.colors.textSecondary }]} numberOfLines={1}>frågor att repetera</Text>
-                </View>
-              )}
-            </View>
-
-            <View style={styles.trainingFooter}>
-              <View style={styles.trainingTimeChip}>
-                <Clock size={13} color={theme.colors.textMuted} />
-                <Text style={[styles.trainingTimeText, { color: theme.colors.textSecondary }]}>
-                  ~{trainingPlan.estimatedMinutes} min
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.trainingStartBtn}
-                onPress={() => void handleStartTraining()}
-                disabled={isBuildingTraining}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel="Starta träning"
-              >
-                <Dumbbell size={15} color="#FFF" />
-                <Text style={styles.trainingStartText}>Starta träning</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </Animated.View>
 
@@ -1123,21 +1049,6 @@ const styles = StyleSheet.create({
     padding: 16, borderRadius: 16, gap: 8, marginTop: 8,
   },
   viewMoreText: { fontSize: 15, fontWeight: '600' as const },
-
-  // ═══ DIN TRÄNING IDAG ═══
-  trainingCard: { borderRadius: 20, borderWidth: 1, padding: 16, marginBottom: 22, gap: 14 },
-  trainingMix: { gap: 8 },
-  trainingMixRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  trainingMixDot: { width: 10, height: 10, borderRadius: 5 },
-  trainingMixCount: { fontSize: 16, fontWeight: '800' as const, minWidth: 26 },
-  trainingMixCode: { fontSize: 13, fontWeight: '600' as const, flex: 1 },
-  trainingMixBadge: { backgroundColor: '#EF44441A', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
-  trainingMixBadgeText: { fontSize: 10, fontWeight: '700' as const },
-  trainingFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  trainingTimeChip: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  trainingTimeText: { fontSize: 12.5, fontWeight: '600' as const },
-  trainingStartBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#6366F1', borderRadius: 14, paddingHorizontal: 18, minHeight: 44 },
-  trainingStartText: { color: '#FFF', fontSize: 13.5, fontWeight: '700' as const },
 });
 
 // ─── SECTION CARD STYLES (redesigned — larger, more premium) ───────────────────

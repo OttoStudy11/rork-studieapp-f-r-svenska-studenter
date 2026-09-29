@@ -563,7 +563,7 @@ export default function HPFullTestScreen() {
                   </View>
                 )}
 
-                <Text style={[styles.questionText, { color: theme.colors.text }]}>
+                <Text style={[styles.questionText, { color: theme.colors.text }]} maxFontSizeMultiplier={1.2}>
                   {currentQuestion.questionText}
                 </Text>
 
@@ -635,7 +635,7 @@ export default function HPFullTestScreen() {
                           { color: theme.colors.text },
                           (showCorrect || (isSelected && !showWrong && showExplanation)) && styles.optionTextCorrect,
                           showWrong && styles.optionTextWrong,
-                        ]}>
+                        ]} maxFontSizeMultiplier={1.2}>
                           {option}
                         </Text>
                       </TouchableOpacity>
@@ -1107,7 +1107,7 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     lineHeight: 28,
     marginBottom: 28,
-    letterSpacing: 0.2,
+    letterSpacing: 0,
   },
   optionsContainer: {
     gap: 12,
@@ -1117,7 +1117,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 18,
     borderRadius: 16,
-    borderWidth: 2.5,
+    borderWidth: 2,
     gap: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

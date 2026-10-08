@@ -8,6 +8,7 @@ import {
   Animated,
   Dimensions,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,7 +32,7 @@ import * as Haptics from 'expo-haptics';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function HPPracticeScreen() {
-  const { sectionCode, testVersionId } = useLocalSearchParams<{ sectionCode: string; testVersionId?: string }>();
+  const { sectionCode } = useLocalSearchParams<{ sectionCode: string; testVersionId?: string }>();
   const { theme, isDark } = useTheme();
   const { 
     sessionState, 
@@ -40,6 +41,7 @@ export default function HPPracticeScreen() {
     submitAnswer,
     completeSession,
     abandonSession,
+    isBankLoading,
   } = useHogskoleprovet();
 
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -53,9 +55,10 @@ export default function HPPracticeScreen() {
 
   useEffect(() => {
     const initSession = async () => {
+      if (isBankLoading) return; // Vänta tills frågebanken är hämtad
       if (!sessionState && sectionCode) {
-        console.log('[HP Practice] Starting session for:', sectionCode, 'testVersion:', testVersionId);
-        await startPracticeSession(sectionCode, testVersionId || undefined);
+        console.log('[HP Practice] Starting session for:', sectionCode);
+        await startPracticeSession(sectionCode);
       }
     };
     initSession();
@@ -72,7 +75,7 @@ export default function HPPracticeScreen() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sectionCode]);
+  }, [sectionCode, isBankLoading]);
 
   useEffect(() => {
     if (sessionState && sessionState.timeRemaining > 0) {
@@ -226,6 +229,7 @@ export default function HPPracticeScreen() {
   if (!sessionState || !currentQuestion || !section) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={[styles.loadingText, { color: theme.colors.text }]}>
           Laddar frågor...
         </Text>

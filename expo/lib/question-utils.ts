@@ -1,6 +1,18 @@
 import { HPQuestion } from '@/constants/hogskoleprovet';
 
+/**
+ * Sections with fixed answer options (KVA: kvantitativa jämförelser,
+ * NOG: kvantitativa resonemang). Their options follow a strict order on the
+ * real exam (A–D) and must never be shuffled.
+ */
+const FIXED_OPTION_SECTIONS = new Set(['KVA', 'NOG']);
+
 export function shuffleAnswerOptions(question: HPQuestion): HPQuestion {
+  // KVA and NOG have fixed options in a defined order — show them as-is.
+  if (FIXED_OPTION_SECTIONS.has(question.sectionCode)) {
+    return question;
+  }
+
   const { options, correctAnswer } = question;
   
   const shuffledOptions = [...options];

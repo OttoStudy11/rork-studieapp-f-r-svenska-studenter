@@ -48,6 +48,7 @@ export default function HPFullTestScreen() {
     submitAnswer,
     completeSession,
     abandonSession,
+    isBankLoading,
   } = useHogskoleprovet();
 
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -84,6 +85,7 @@ export default function HPFullTestScreen() {
 
   useEffect(() => {
     const initSession = async () => {
+      if (isBankLoading) return; // Vänta tills frågebanken är hämtad
       if (!sessionState) {
         console.log('[HP Full Test] Starting full test');
         await startFullTest();
@@ -111,7 +113,7 @@ export default function HPFullTestScreen() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isBankLoading]);
 
   useEffect(() => {
     if (sessionState && sessionState.timeRemaining > 0 && !isPaused) {
@@ -328,8 +330,9 @@ export default function HPFullTestScreen() {
   if (!sessionState || !currentQuestion || !section) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={[styles.loadingText, { color: theme.colors.text }]}>
-          Förbereder provet...
+          {isBankLoading ? 'Hämtar frågebanken...' : 'Förbereder provet...'}
         </Text>
       </View>
     );

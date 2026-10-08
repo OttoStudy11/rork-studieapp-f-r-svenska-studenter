@@ -1,25 +1,21 @@
 import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { logger } from '@/utils/logger';
 import { 
   HP_SECTIONS, 
-  SAMPLE_HP_QUESTIONS, 
   calculateHPScore,
   HPSectionConfig,
   HPQuestion as LocalHPQuestion,
-  HP_TEST_VERSIONS,
-  HPTestVersion,
 } from '@/constants/hogskoleprovet';
-import { EXTENDED_HP_QUESTIONS } from '@/constants/hogskoleprovet-questions-extended';
-import { ALL_HP_QUESTIONS } from '@/constants/hogskoleprovet-questions';
-import { HP_QUESTIONS_V2 } from '@/constants/hogskoleprovet-questions-v2';
-import { shuffleAnswerOptions } from '@/lib/question-utils';
-import { generateHPQuestionBank } from '@/lib/hp-question-generator';
+import { useHPQuestionBank } from '@/lib/hp-content';
+import { fetchPerformances } from '@/lib/hp-training-store';
+import { HPQuestionPerformance } from '@/lib/hp-training-engine';
+import { shuffleAnswerOptions, shuffleQuestions } from '@/lib/question-utils';
 
 export interface HPSection {
   id: string;
@@ -127,19 +123,120 @@ const STORAGE_KEYS = {
   HP_MILESTONES: 'hp_unlocked_milestones',
 };
 
+/** Which half of the exam a full test covers. */
+export type HPFullTestPart = 'verbal' | 'kvantitativ';
+
+/** Official HP distribution per part: 40 questions / 55 minutes each. */
+const FULL_TEST_PARTS: Record<HPFullTestPart, Array<{ code: string; count: number }>> = {
+  verbal: [
+    { code: 'ORD', count: 10 },
+    { code: 'LÄS', count: 10 },
+    { code: 'MEK', count: 10 },
+    { code: 'ELF', count: 10 },
+  ],
+  kvantitativ: [
+    { code: 'XYZ', count: 12 },
+    { code: 'KVA', count: 10 },
+    { code: 'NOG', count: 6 },
+    { code: 'DTK', count: 12 },
+  ],
+};
+
+const FULL_TEST_PART_MINUTES = 55;
+
+interface PassageQuestionGroup {
+  questions: LocalHPQuestion[];
+  /** True when at least one question in the group has never been shown. */
+  hasUnseen: boolean;
+  /** Newest last-seen timestamp inside the group (null if entirely unseen). */
+  lastSeenAt: string | null;
+}
+
+/**
+ * Groups questions by passage. Reading-comprehension questions sharing a
+ * passageGroup always travel together, ordered by orderInPassage; standalone
+ * questions become singleton groups.
+ */
+const groupQuestions = (
+  questions: LocalHPQuestion[],
+  performances: Record<string, HPQuestionPerformance>
+): PassageQuestionGroup[] => {
+  const map = new Map<string, LocalHPQuestion[]>();
+  for (const q of questions) {
+    const key = q.passageGroup ? `${q.sectionCode}:${q.passageGroup}` : `solo:${q.id}`;
+    const list = map.get(key);
+    if (list) list.push(q);
+    else map.set(key, [q]);
+  }
+  return Array.from(map.values()).map(qs => {
+    qs.sort(
+      (a, b) => (a.orderInPassage ?? Number.MAX_SAFE_INTEGER) - (b.orderInPassage ?? Number.MAX_SAFE_INTEGER)
+    );
+    let hasUnseen = false;
+    let lastSeenAt: string | null = null;
+    for (const q of qs) {
+      const perf = performances[q.id];
+      if (!perf || perf.timesSeen === 0) hasUnseen = true;
+      if (perf?.lastSeenAt && (!lastSeenAt || perf.lastSeenAt > lastSeenAt)) {
+        lastSeenAt = perf.lastSeenAt;
+      }
+    }
+    return { questions: qs, hasUnseen, lastSeenAt };
+  });
+};
+
+/**
+ * Picks questions for one section: unseen questions first, then seen ones
+ * ordered by how long ago they were shown. Whole passage groups are taken —
+ * never a single question out of a passage — and the bank is never padded
+ * with generated filler: if it holds fewer questions than requested, fewer
+ * are returned.
+ */
+const pickQuestionsForSection = (
+  sectionCode: string,
+  count: number,
+  difficulty: LocalHPQuestion['difficulty'] | undefined,
+  bank: LocalHPQuestion[],
+  performances: Record<string, HPQuestionPerformance>
+): LocalHPQuestion[] => {
+  const candidates = bank.filter(
+    q => q.sectionCode === sectionCode && (!difficulty || q.difficulty === difficulty)
+  );
+  if (candidates.length === 0) return [];
+
+  const groups = groupQuestions(candidates, performances);
+  const unseen = shuffleQuestions(groups.filter(g => g.hasUnseen));
+  const seen = groups
+    .filter(g => !g.hasUnseen)
+    .sort((a, b) => (a.lastSeenAt ?? '').localeCompare(b.lastSeenAt ?? ''));
+  const ordered = [...unseen, ...seen];
+
+  const picked: LocalHPQuestion[] = [];
+  for (const group of ordered) {
+    if (picked.length + group.questions.length > count) continue;
+    picked.push(...group.questions);
+    if (picked.length >= count) break;
+  }
+
+  // Every group was too big for the slot — take the smallest whole group so
+  // the session still has content rather than nothing.
+  if (picked.length === 0) {
+    const smallest = [...ordered].sort((a, b) => a.questions.length - b.questions.length)[0];
+    if (smallest) picked.push(...smallest.questions);
+  }
+
+  return picked.map(q => shuffleAnswerOptions(q));
+};
+
 interface HogskoleprovetContextValue {
   sections: HPSectionConfig[];
   isLoadingSections: boolean;
   
-  availableTestVersions: HPTestVersion[];
-  getTestVersionsBySection: (sectionCode: string) => HPTestVersion[];
+  getQuestionsBySection: (sectionCode: string, count?: number, difficulty?: LocalHPQuestion['difficulty']) => LocalHPQuestion[];
+  getAllQuestionsForFullTest: (part?: HPFullTestPart) => LocalHPQuestion[];
   
-  getQuestionsBySection: (sectionCode: string, count?: number, testVersion?: string) => LocalHPQuestion[];
-  getQuestionsByTestVersion: (testVersionId: string) => LocalHPQuestion[];
-  getAllQuestionsForFullTest: () => LocalHPQuestion[];
-  
-  startPracticeSession: (sectionCode: string, testVersionId?: string, isTrialMode?: boolean, trialId?: string) => Promise<string | null>;
-  startFullTest: (isTrialMode?: boolean, trialId?: string) => Promise<string | null>;
+  startPracticeSession: (sectionCode: string, isTrialMode?: boolean, trialId?: string) => Promise<string | null>;
+  startFullTest: (isTrialMode?: boolean, trialId?: string, part?: HPFullTestPart) => Promise<string | null>;
   
   submitAnswer: (questionId: string, selectedAnswer: string, timeSpentSeconds: number) => void;
   
@@ -173,6 +270,9 @@ interface HogskoleprovetContextValue {
   checkAndUnlockMilestones: () => string[];
   getUnlockedMilestones: () => string[];
   
+  /** True while the question bank has not been fetched yet. */
+  isBankLoading: boolean;
+  
   isLoading: boolean;
 }
 
@@ -182,6 +282,18 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
+  const { questions: questionBank, isLoading: isBankLoading } = useHPQuestionBank();
+
+  // Shares the same query cache as HPTrainingContext — per-question stats
+  // (times_seen / last_seen_at) drive the unseen-first selection.
+  const performancesQuery = useQuery({
+    queryKey: ['hp-question-performances', user?.id ?? null],
+    queryFn: () => fetchPerformances(user!.id),
+    enabled: Boolean(user?.id),
+    staleTime: 1000 * 60 * 5,
+  });
+  const performances: Record<string, HPQuestionPerformance> = performancesQuery.data ?? {};
+
   const [sessionState, setSessionState] = useState<HPSessionState | null>(null);
   const [userStats, setUserStats] = useState<HPUserStats>({
     totalAttempts: 0,
@@ -415,138 +527,32 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     }
   };
 
-  const getQuestionsBySection = useCallback((sectionCode: string, count: number = 40, testVersion?: string): LocalHPQuestion[] => {
-    const staticQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS, ...HP_QUESTIONS_V2];
+  const getQuestionsBySection = useCallback((sectionCode: string, count: number = 40, difficulty?: LocalHPQuestion['difficulty']): LocalHPQuestion[] => {
+    const selected = pickQuestionsForSection(sectionCode, count, difficulty, questionBank, performances);
+    console.log('[HP] getQuestionsBySection', { sectionCode, requested: count, selected: selected.length });
+    return selected;
+  }, [questionBank, performances]);
 
-    if (testVersion) {
-      const versionFiltered = staticQuestions.filter(
-        q => q.sectionCode === sectionCode && q.testVersion === testVersion
-      );
-
-      if (versionFiltered.length >= count) {
-        console.log('[HP] Using static questions for version', { sectionCode, testVersion, count: versionFiltered.length });
-        return versionFiltered.slice(0, count).map(q => shuffleAnswerOptions(q));
-      }
-
-      const needed = count - versionFiltered.length;
-      const generatedQuestions = generateHPQuestionBank({
-        sectionCode,
-        count: needed,
-        testVersion,
-        seed: `section-${sectionCode}-${testVersion}`,
-      });
-      const combined = [...versionFiltered, ...generatedQuestions].slice(0, count);
-      console.log('[HP] Mixed static + generated', { sectionCode, testVersion, staticCount: versionFiltered.length, generatedCount: generatedQuestions.length, total: combined.length });
-      return combined.map(q => shuffleAnswerOptions(q));
-    }
-
-    const sectionQuestions = staticQuestions.filter(q => q.sectionCode === sectionCode);
-    const generatedQuestions = generateHPQuestionBank({ sectionCode, count: Math.max(count, 40), seed: `section-random-${sectionCode}` });
-    const allQ = [...sectionQuestions, ...generatedQuestions];
-    const shuffled = [...allQ].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, Math.min(count, allQ.length));
-
-    console.log('[HP] getQuestionsBySection final', { sectionCode, requested: count, selected: selected.length });
-    return selected.map(q => shuffleAnswerOptions(q));
-  }, []);
-
-  const getQuestionsByTestVersion = useCallback((testVersionId: string): LocalHPQuestion[] => {
-    const staticQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS, ...HP_QUESTIONS_V2];
-    const baseVersionQuestions = staticQuestions.filter(q => q.testVersion === testVersionId);
-
-    const sectionCode = HP_TEST_VERSIONS.find(v => v.id === testVersionId)?.sectionCode;
-    const targetCount = 20;
-
-    if (baseVersionQuestions.length >= targetCount) {
-      console.log('[HP] getQuestionsByTestVersion using static', { testVersionId, count: baseVersionQuestions.length });
-      return baseVersionQuestions.slice(0, targetCount).map(q => shuffleAnswerOptions(q));
-    }
-
-    if (!sectionCode) {
-      console.warn('[HP] getQuestionsByTestVersion could not resolve sectionCode', { testVersionId });
-      if (baseVersionQuestions.length > 0) return baseVersionQuestions.map(q => shuffleAnswerOptions(q));
-      return generateHPQuestionBank({ sectionCode: 'ORD', count: targetCount, testVersion: testVersionId, seed: `fallback-${testVersionId}` }).map(q => shuffleAnswerOptions(q));
-    }
-
-    const needed = targetCount - baseVersionQuestions.length;
-    const generatedTopUp = generateHPQuestionBank({
-      sectionCode,
-      count: needed,
-      testVersion: testVersionId,
-      seed: `version-${testVersionId}`,
-    });
-
-    const combined = [...baseVersionQuestions, ...generatedTopUp].slice(0, targetCount);
-    console.log('[HP] getQuestionsByTestVersion', {
-      testVersionId,
-      sectionCode,
-      staticCount: baseVersionQuestions.length,
-      generatedCount: generatedTopUp.length,
-      total: combined.length,
-    });
-
-    return combined.map(q => shuffleAnswerOptions(q));
-  }, []);
-
-  const getTestVersionsBySection = useCallback((sectionCode: string): HPTestVersion[] => {
-    console.log('[HP Context] getTestVersionsBySection called with:', sectionCode);
-    console.log('[HP Context] HP_TEST_VERSIONS available:', HP_TEST_VERSIONS?.length ?? 0);
-    
-    if (!sectionCode || !HP_TEST_VERSIONS || HP_TEST_VERSIONS.length === 0) {
-      console.warn('[HP Context] No sectionCode or HP_TEST_VERSIONS not available');
-      return [];
-    }
-    
-    const filtered = HP_TEST_VERSIONS.filter(v => v.sectionCode === sectionCode);
-    console.log('[HP Context] Filtered test versions for', sectionCode, ':', filtered.length);
-    return filtered;
-  }, []);
-
-  const getAllQuestionsForFullTest = useCallback((fullTestVersionId?: string): LocalHPQuestion[] => {
+  const getAllQuestionsForFullTest = useCallback((part?: HPFullTestPart): LocalHPQuestion[] => {
+    const parts: HPFullTestPart[] = part ? [part] : ['verbal', 'kvantitativ'];
     const allQuestions: LocalHPQuestion[] = [];
-    const staticQuestions = [...SAMPLE_HP_QUESTIONS, ...EXTENDED_HP_QUESTIONS, ...ALL_HP_QUESTIONS];
-
-    const versionSuffix = fullTestVersionId ? fullTestVersionId.replace('hp-', '') : `random-${Date.now()}`;
-
-    HP_SECTIONS.forEach(section => {
-      const sectionVersionId = `${section.code.toLowerCase()}-${versionSuffix}`;
-
-      const versionStatic = staticQuestions.filter(
-        q => q.sectionCode === section.code && q.testVersion === sectionVersionId
-      );
-
-      let sectionQuestions: LocalHPQuestion[];
-
-      if (versionStatic.length >= 20) {
-        sectionQuestions = versionStatic.slice(0, 20);
-      } else {
-        const needed = 20 - versionStatic.length;
-        const generated = generateHPQuestionBank({
-          sectionCode: section.code,
-          count: needed,
-          testVersion: sectionVersionId,
-          seed: `fulltest-${sectionVersionId}`,
-        });
-        sectionQuestions = [...versionStatic, ...generated].slice(0, 20);
+    for (const p of parts) {
+      for (const { code, count } of FULL_TEST_PARTS[p]) {
+        allQuestions.push(...pickQuestionsForSection(code, count, undefined, questionBank, performances));
       }
-
-      console.log('[HP] FullTest section pick', {
-        sectionCode: section.code,
-        versionId: sectionVersionId,
-        staticCount: versionStatic.length,
-        totalPicked: sectionQuestions.length,
-      });
-
-      allQuestions.push(...sectionQuestions.map(q => shuffleAnswerOptions(q)));
-    });
-
-    console.log('[HP] getAllQuestionsForFullTest', { total: allQuestions.length, fullTestVersionId });
+    }
+    console.log('[HP] getAllQuestionsForFullTest', { part: part ?? 'both', total: allQuestions.length });
     return allQuestions;
-  }, []);
+  }, [questionBank, performances]);
 
-  const startPracticeSession = useCallback(async (sectionCode: string, testVersionId?: string, isTrialMode?: boolean, trialId?: string): Promise<string | null> => {
+  const startPracticeSession = useCallback(async (sectionCode: string, isTrialMode?: boolean, trialId?: string): Promise<string | null> => {
     if (!user?.id) {
       Alert.alert('Fel', 'Du måste vara inloggad för att starta en övning');
+      return null;
+    }
+
+    if (isBankLoading) {
+      Alert.alert('Laddar', 'Frågebanken laddas – försök igen om en stund');
       return null;
     }
 
@@ -559,18 +565,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
         return null;
       }
 
-      let questions: LocalHPQuestion[];
-      if (testVersionId) {
-        questions = getQuestionsByTestVersion(testVersionId);
-        const targetCount = section.questionCount || 20;
-        if (questions.length > targetCount) {
-          const shuffled = [...questions].sort(() => Math.random() - 0.5);
-          questions = shuffled.slice(0, targetCount);
-        }
-        console.log('[HP] Using test version:', testVersionId, 'questions:', questions.length);
-      } else {
-        questions = getQuestionsBySection(sectionCode, section.questionCount || 20, undefined);
-      }
+      const questions = getQuestionsBySection(sectionCode, section.questionCount || 20);
       
       if (questions.length === 0) {
         Alert.alert('Fel', 'Inga frågor tillgängliga för detta delprov');
@@ -582,7 +577,6 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
       const newSession: HPSessionState = {
         attemptId,
         sectionCode,
-        testVersionId,
         questions,
         currentQuestionIndex: 0,
         answers: {},
@@ -604,25 +598,31 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
       Alert.alert('Fel', 'Kunde inte starta övningen');
       return null;
     }
-  }, [user?.id, getQuestionsBySection, getQuestionsByTestVersion]);
+  }, [user?.id, isBankLoading, getQuestionsBySection]);
 
-  const startFullTest = useCallback(async (isTrialMode?: boolean, trialId?: string): Promise<string | null> => {
+  const startFullTest = useCallback(async (isTrialMode?: boolean, trialId?: string, part?: HPFullTestPart): Promise<string | null> => {
     if (!user?.id) {
       Alert.alert('Fel', 'Du måste vara inloggad för att starta provet');
       return null;
     }
 
+    if (isBankLoading) {
+      Alert.alert('Laddar', 'Frågebanken laddas – försök igen om en stund');
+      return null;
+    }
+
     try {
-      console.log('[HP] Starting full test');
+      console.log('[HP] Starting full test', { part: part ?? 'both' });
       
-      const allQuestions = getAllQuestionsForFullTest();
+      const allQuestions = getAllQuestionsForFullTest(part);
       if (allQuestions.length === 0) {
         Alert.alert('Fel', 'Inga frågor tillgängliga');
         return null;
       }
 
       const attemptId = `local_full_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const totalTime = HP_SECTIONS.reduce((sum, s) => sum + s.timeMinutes, 0);
+      const parts: HPFullTestPart[] = part ? [part] : ['verbal', 'kvantitativ'];
+      const totalTime = FULL_TEST_PART_MINUTES * parts.length;
 
       const newSession: HPSessionState = {
         attemptId,
@@ -648,7 +648,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
       Alert.alert('Fel', 'Kunde inte starta provet');
       return null;
     }
-  }, [user?.id, getAllQuestionsForFullTest]);
+  }, [user?.id, isBankLoading, getAllQuestionsForFullTest]);
 
   const checkMilestones = useCallback((
     sectionCode: string | null,
@@ -871,11 +871,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     sections: HP_SECTIONS,
     isLoadingSections: false,
     
-    availableTestVersions: HP_TEST_VERSIONS,
-    getTestVersionsBySection,
-    
     getQuestionsBySection,
-    getQuestionsByTestVersion,
     getAllQuestionsForFullTest,
     startPracticeSession,
     startFullTest,
@@ -890,11 +886,10 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     getEstimatedHPScore,
     checkAndUnlockMilestones,
     getUnlockedMilestones,
+    isBankLoading,
     isLoading,
   }), [
     getQuestionsBySection,
-    getQuestionsByTestVersion,
-    getTestVersionsBySection,
     getAllQuestionsForFullTest,
     startPracticeSession,
     startFullTest,
@@ -908,6 +903,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     getEstimatedHPScore,
     checkAndUnlockMilestones,
     getUnlockedMilestones,
+    isBankLoading,
     isLoading,
   ]);
 

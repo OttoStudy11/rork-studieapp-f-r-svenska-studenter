@@ -340,10 +340,8 @@ export const buildDailyTrainingPlan = (
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface HPQuestionPool {
-  /** Bundled bank questions for one section. */
+  /** Bank questions for one section, straight from the question bank. */
   bank: LocalHPQuestion[];
-  /** Generator callback producing deterministic top-up questions. */
-  generate: (count: number) => LocalHPQuestion[];
 }
 
 export interface PickQuestionsInput {
@@ -401,7 +399,7 @@ export const pickTrainingQuestions = (input: PickQuestionsInput): HPTrainingQues
         .filter((t): t is LocalHPQuestion['questionType'] => Boolean(t))
     );
 
-    const candidates = [...pool.bank, ...pool.generate(Math.max(item.count, 10))]
+    const candidates = pool.bank
       .filter(q => !usedIds.has(q.id) && !recent.has(q.id));
 
     // Score: unseen first, then difficulty fit, then untrained types, then staleness.

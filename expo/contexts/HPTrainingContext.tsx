@@ -25,15 +25,11 @@ import {
   savePerformanceUpdates,
   saveTrainingSession,
 } from '@/lib/hp-training-store';
-import { ALL_HP_QUESTIONS } from '@/constants/hogskoleprovet-questions';
-import { EXTENDED_HP_QUESTIONS } from '@/constants/hogskoleprovet-questions-extended';
-import { HP_QUESTIONS_V2 } from '@/constants/hogskoleprovet-questions-v2';
 import {
   HP_SECTIONS,
-  SAMPLE_HP_QUESTIONS,
   HPQuestion as LocalHPQuestion,
 } from '@/constants/hogskoleprovet';
-import { generateHPQuestionBank } from '@/lib/hp-question-generator';
+import { useHPQuestionBank } from '@/lib/hp-content';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { shuffleAnswerOptions } from '@/lib/question-utils';
 
@@ -48,27 +44,12 @@ export interface HPActiveTrainingSession {
   startedAt: number;
 }
 
-const STATIC_BANK: LocalHPQuestion[] = [
-  ...SAMPLE_HP_QUESTIONS,
-  ...EXTENDED_HP_QUESTIONS,
-  ...ALL_HP_QUESTIONS,
-  ...HP_QUESTIONS_V2,
-];
-
-/** Per-section question pools: bundled bank + deterministic generator top-up. */
-const buildPools = (): Record<string, HPQuestionPool> => {
+/** Per-section question pools built from the fetched question bank. */
+const buildPools = (bank: LocalHPQuestion[]): Record<string, HPQuestionPool> => {
   const pools: Record<string, HPQuestionPool> = {};
   for (const section of HP_SECTIONS) {
-    const bank = STATIC_BANK.filter(q => q.sectionCode === section.code);
     pools[section.code] = {
-      bank,
-      // Stable seed keeps generated ids deterministic so repeats can resolve.
-      generate: (count: number) =>
-        generateHPQuestionBank({
-          sectionCode: section.code,
-          count,
-          seed: `training-${section.code}`,
-        }),
+      bank: bank.filter(q => q.sectionCode === section.code),
     };
   }
   return pools;
@@ -79,6 +60,8 @@ export const [HPTrainingProvider, useHPTraining] = createContextHook(() => {
   const { getUserStats } = useHogskoleprovet();
   const { getDaysUntilHP } = useHPStudyPlan();
   const queryClient = useQueryClient();
+
+  const { questions: questionBank, isLoading: isBankLoading } = useHPQuestionBank();
 
   const [activeSession, setActiveSession] = useState<HPActiveTrainingSession | null>(null);
   const [isSessionHydrated, setIsSessionHydrated] = useState<boolean>(false);
@@ -164,9 +147,11 @@ export const [HPTrainingProvider, useHPTraining] = createContextHook(() => {
   const startTraining = useCallback(async (): Promise<boolean> => {
     if (!userId) return false;
 
+    if (isBankLoading) return false;
+
     const questions = pickTrainingQuestions({
       plan,
-      pools: buildPools(),
+      pools: buildPools(questionBank),
       performances,
       recentQuestionIds: historyQuery.data?.recentQuestionIds,
     });
@@ -189,7 +174,7 @@ export const [HPTrainingProvider, useHPTraining] = createContextHook(() => {
     setActiveSession(session);
     persistActiveSession(session);
     return true;
-  }, [userId, plan, performances, historyQuery.data, persistActiveSession]);
+  }, [userId, plan, performances, historyQuery.data, persistActiveSession, questionBank, isBankLoading]);
 
   const submitTrainingAnswer = useCallback(
     (questionId: string, answer: string, timeSpentSeconds: number) => {
@@ -243,7 +228,7 @@ export const [HPTrainingProvider, useHPTraining] = createContextHook(() => {
     persistActiveSession(null);
   }, [persistActiveSession]);
 
-  const isLoading = Boolean(userId) && (!isSessionHydrated || performancesQuery.isLoading);
+  const isLoading = Boolean(userId) && (!isSessionHydrated || performancesQuery.isLoading || isBankLoading);
 
   return {
     plan,

@@ -46,7 +46,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
 
-import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HP_FULL_TEST_VERSIONS, HPSectionConfig } from '@/constants/hogskoleprovet';
+import { HP_SECTIONS, HP_MILESTONES, getScoreLabel, HPSectionConfig } from '@/constants/hogskoleprovet';
 import { getRandomTips } from '@/constants/hogskoleprovet-study-tips';
 import { COLORS } from '@/constants/design-system';
 import { useHPStudyPlan, PLAN_CONFIGS } from '@/contexts/HPStudyPlanContext';
@@ -91,8 +91,14 @@ function ScoreRing({ score, maxScore, color, size = 80, strokeWidth = 6 }: {
 
 // ─── Full Test Modal ───────────────────────────────────────────────────────────
 
-function FullTestVersionModal({ visible, onClose, onSelectVersion }: {
-  visible: boolean; onClose: () => void; onSelectVersion: (versionId?: string) => void;
+const FULL_TEST_PART_OPTIONS: Array<{ part?: 'verbal' | 'kvantitativ'; title: string; meta: string }> = [
+  { part: 'verbal', title: 'Provpass verbal', meta: '40 frågor · 55 min' },
+  { part: 'kvantitativ', title: 'Provpass kvantitativ', meta: '40 frågor · 55 min' },
+  { part: undefined, title: 'Helt prov', meta: '80 frågor · 110 min' },
+];
+
+function FullTestPartModal({ visible, onClose, onSelectPart }: {
+  visible: boolean; onClose: () => void; onSelectPart: (part?: 'verbal' | 'kvantitativ') => void;
 }) {
   const { theme, isDark } = useTheme();
   return (
@@ -105,8 +111,8 @@ function FullTestVersionModal({ visible, onClose, onSelectVersion }: {
                 <GraduationCap size={20} color="#FFF" />
               </LinearGradient>
               <View>
-                <Text style={[fm.title, { color: theme.colors.text }]}>Välj provversion</Text>
-                <Text style={[fm.subtitle, { color: theme.colors.textSecondary }]}>Komplett högskoleprov</Text>
+                <Text style={[fm.title, { color: theme.colors.text }]}>Starta prov</Text>
+                <Text style={[fm.subtitle, { color: theme.colors.textSecondary }]}>Välj provpass</Text>
               </View>
             </View>
             <TouchableOpacity style={[fm.closeBtn, { backgroundColor: theme.colors.surface }]} onPress={onClose}>
@@ -114,43 +120,29 @@ function FullTestVersionModal({ visible, onClose, onSelectVersion }: {
             </TouchableOpacity>
           </View>
           <ScrollView style={fm.scroll} showsVerticalScrollIndicator={false}>
-            <TouchableOpacity style={[fm.mixedCard, { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)' }]}
-              onPress={() => onSelectVersion('')} activeOpacity={0.7}>
-              <LinearGradient colors={[COLORS.primary, '#8B5CF6']} style={fm.mixedIcon}>
-                <Shuffle size={24} color="#FFF" />
-              </LinearGradient>
-              <View style={fm.mixedText}>
-                <Text style={[fm.mixedTitle, { color: theme.colors.text }]}>Blandade frågor</Text>
-                <Text style={[fm.mixedDesc, { color: theme.colors.textSecondary }]}>Slumpmässigt urval · 120 frågor · 235 min</Text>
-              </View>
-              <Play size={20} color={COLORS.primary} fill={COLORS.primary} />
-            </TouchableOpacity>
-            {HP_FULL_TEST_VERSIONS.length > 0 && (
-              <View style={fm.divider}>
-                <View style={[fm.dividerLine, { backgroundColor: theme.colors.border }]} />
-                <Text style={[fm.dividerText, { color: theme.colors.textSecondary }]}>Provtillfällen</Text>
-                <View style={[fm.dividerLine, { backgroundColor: theme.colors.border }]} />
-              </View>
-            )}
-            {HP_FULL_TEST_VERSIONS.map((version) => (
-              <TouchableOpacity key={version.id} style={[fm.versionCard, { backgroundColor: theme.colors.surface }]}
-                onPress={() => onSelectVersion(version.id)} activeOpacity={0.7}>
+            {FULL_TEST_PART_OPTIONS.map((option, index) => (
+              <TouchableOpacity
+                key={option.title}
+                style={[
+                  fm.versionCard,
+                  { backgroundColor: theme.colors.surface },
+                  index === FULL_TEST_PART_OPTIONS.length - 1 && { marginBottom: 20 },
+                ]}
+                onPress={() => onSelectPart(option.part)}
+                activeOpacity={0.7}
+              >
                 <View style={[fm.versionIcon, { backgroundColor: `${COLORS.primary}15` }]}>
-                  <Text style={fm.seasonEmoji}>{version.season === 'spring' ? '🌸' : '🍂'}</Text>
+                  <Play size={18} color={COLORS.primary} fill={COLORS.primary} />
                 </View>
                 <View style={fm.versionInfo}>
-                  <Text style={[fm.versionName, { color: theme.colors.text }]}>{version.displayName}</Text>
+                  <Text style={[fm.versionName, { color: theme.colors.text }]}>{option.title}</Text>
                   <View style={fm.versionMeta}>
-                    <Target size={12} color={theme.colors.textSecondary} />
-                    <Text style={[fm.versionMetaText, { color: theme.colors.textSecondary }]}>{version.questionCount} frågor</Text>
-                    <Clock size={12} color={theme.colors.textSecondary} />
-                    <Text style={[fm.versionMetaText, { color: theme.colors.textSecondary }]}>{version.timeMinutes} min</Text>
+                    <Text style={[fm.versionMetaText, { color: theme.colors.textSecondary }]}>{option.meta}</Text>
                   </View>
                 </View>
                 <ChevronRight size={20} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             ))}
-            <View style={{ height: 20 }} />
           </ScrollView>
         </View>
       </View>
@@ -254,9 +246,9 @@ export default function HogskoleprovetTab() {
     setFullTestModalVisible(true);
   };
 
-  const handleStartFullTestWithVersion = (testVersionId?: string) => {
+  const handleStartFullTestPart = (part?: 'verbal' | 'kvantitativ') => {
     setFullTestModalVisible(false);
-    router.push({ pathname: ROUTES.hpTest, params: { testVersionId: testVersionId || '' } });
+    router.push({ pathname: ROUTES.hpTest, params: { part: part || '' } });
   };
 
   const handleStartSection = (sectionCode: string) => {
@@ -767,8 +759,8 @@ export default function HogskoleprovetTab() {
       </ScrollView>
 
       {fullTestModalVisible && (
-        <FullTestVersionModal visible={fullTestModalVisible} onClose={() => setFullTestModalVisible(false)}
-          onSelectVersion={handleStartFullTestWithVersion} />
+        <FullTestPartModal visible={fullTestModalVisible} onClose={() => setFullTestModalVisible(false)}
+          onSelectPart={handleStartFullTestPart} />
       )}
     </View>
   );

@@ -32,7 +32,11 @@ import * as Haptics from 'expo-haptics';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function HPPracticeScreen() {
-  const { sectionCode } = useLocalSearchParams<{ sectionCode: string; testVersionId?: string }>();
+  const { sectionCode, count, difficulty } = useLocalSearchParams<{
+    sectionCode: string;
+    count?: string;
+    difficulty?: string;
+  }>();
   const { theme, isDark } = useTheme();
   const { 
     sessionState, 
@@ -57,8 +61,12 @@ export default function HPPracticeScreen() {
     const initSession = async () => {
       if (isBankLoading) return; // Vänta tills frågebanken är hämtad
       if (!sessionState && sectionCode) {
-        console.log('[HP Practice] Starting session for:', sectionCode);
-        await startPracticeSession(sectionCode);
+        const parsedCount = count ? parseInt(count, 10) : undefined;
+        const validDifficulty = ['easy', 'medium', 'hard'].includes(difficulty || '')
+          ? (difficulty as 'easy' | 'medium' | 'hard')
+          : undefined;
+        console.log('[HP Practice] Starting session for:', sectionCode, { count: parsedCount, difficulty: validDifficulty });
+        await startPracticeSession(sectionCode, { count: parsedCount, difficulty: validDifficulty });
       }
     };
     initSession();
@@ -75,7 +83,7 @@ export default function HPPracticeScreen() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sectionCode, isBankLoading]);
+  }, [sectionCode, isBankLoading, count, difficulty]);
 
   useEffect(() => {
     if (sessionState && sessionState.timeRemaining > 0) {

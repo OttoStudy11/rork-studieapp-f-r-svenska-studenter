@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,53 +14,50 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { ROUTES } from '@/utils/typedRoutes';
 import {
   ChevronLeft,
-  Shuffle,
-  Calendar,
   Target,
   Clock,
-  FileText,
   Play,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
-import { HP_SECTIONS, HP_TEST_VERSIONS, HPTestVersion, HPSectionConfig } from '@/constants/hogskoleprovet';
+import { HP_SECTIONS, HPSectionConfig, HPQuestion } from '@/constants/hogskoleprovet';
+import { useHPQuestionBank } from '@/lib/hp-content';
 import { COLORS } from '@/constants/design-system';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+const COUNT_OPTIONS = [10, 20, 40];
 
+const DIFFICULTY_OPTIONS: Array<{ value: HPQuestion['difficulty'] | 'all'; label: string }> = [
+  { value: 'all', label: 'Alla' },
+  { value: 'easy', label: 'Lätt' },
+  { value: 'medium', label: 'Medel' },
+  { value: 'hard', label: 'Svår' },
+];
 
 export default function HPSelectVersionScreen() {
   const { theme, isDark } = useTheme();
   const { isPremium } = usePremium();
+  const { questions: questionBank, isLoading: isBankLoading } = useHPQuestionBank();
   const params = useLocalSearchParams<{ sectionCode: string }>();
   const [isReady, setIsReady] = useState(false);
-  
+  const [selectedCount, setSelectedCount] = useState<number>(10);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<HPQuestion['difficulty'] | 'all'>('all');
+
   const sectionCode = useMemo(() => {
     const code = params.sectionCode || '';
-    const decoded = decodeURIComponent(code);
-    console.log('[HP Select Version] Raw params:', params);
-    console.log('[HP Select Version] Decoded sectionCode:', decoded);
-    return decoded;
+    return decodeURIComponent(code);
   }, [params]);
 
   const section = useMemo((): HPSectionConfig | undefined => {
     if (!sectionCode) return undefined;
-    const found = HP_SECTIONS.find(s => s.code === sectionCode);
-    console.log('[HP Select Version] Found section:', found?.name);
-    return found;
+    return HP_SECTIONS.find(s => s.code === sectionCode);
   }, [sectionCode]);
 
-  const testVersions = useMemo((): HPTestVersion[] => {
-    if (!sectionCode) {
-      console.log('[HP Select Version] No sectionCode, returning empty');
-      return [];
-    }
-    
-    const filtered = HP_TEST_VERSIONS.filter(v => v.sectionCode === sectionCode);
-    console.log('[HP Select Version] Found test versions:', filtered.length);
-    return filtered;
-  }, [sectionCode]);
+  const bankCount = useMemo(
+    () => questionBank.filter(q => q.sectionCode === sectionCode).length,
+    [questionBank, sectionCode]
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 100);
@@ -72,28 +70,14 @@ export default function HPSelectVersionScreen() {
     }
   }, [isReady, isPremium]);
 
-  useEffect(() => {
-    console.log('[HP Select Version] State:', {
-      sectionCode,
-      sectionName: section?.name,
-      testVersionsCount: testVersions.length,
-      isReady,
-    });
-  }, [sectionCode, section, testVersions, isReady]);
-
-  const handleSelectMixed = () => {
-    console.log('[HP Select Version] Selected: Mixed questions for', sectionCode);
+  const handleStart = () => {
+    if (isBankLoading || bankCount === 0) return;
     router.push({
       pathname: `/hp-practice/${sectionCode}` as any,
-      params: { testVersionId: '' },
-    });
-  };
-
-  const handleSelectVersion = (version: HPTestVersion) => {
-    console.log('[HP Select Version] Selected version:', version.id);
-    router.push({
-      pathname: `/hp-practice/${sectionCode}` as any,
-      params: { testVersionId: version.id },
+      params: {
+        count: String(selectedCount),
+        difficulty: selectedDifficulty === 'all' ? '' : selectedDifficulty,
+      },
     });
   };
 
@@ -117,6 +101,8 @@ export default function HPSelectVersionScreen() {
       </View>
     );
   }
+
+  const canStart = !isBankLoading && bankCount > 0;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -143,9 +129,7 @@ export default function HPSelectVersionScreen() {
               </View>
               <View style={styles.headerTextContainer}>
                 <Text style={styles.headerTitle}>{section.fullName}</Text>
-                <Text style={styles.headerSubtitle}>
-                  Välj en testversion eller blandade frågor
-                </Text>
+                <Text style={styles.headerSubtitle}>Övningspass</Text>
               </View>
             </View>
 
@@ -156,7 +140,9 @@ export default function HPSelectVersionScreen() {
               </View>
               <View style={styles.sectionInfoItem}>
                 <Target size={14} color="rgba(255,255,255,0.8)" />
-                <Text style={styles.sectionInfoText}>{section.questionCount} frågor</Text>
+                <Text style={styles.sectionInfoText}>
+                  {isBankLoading ? '…' : bankCount} frågor i banken
+                </Text>
               </View>
             </View>
           </View>
@@ -168,95 +154,108 @@ export default function HPSelectVersionScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Mixed Questions - Primary Option */}
-        <TouchableOpacity
-          style={[styles.mixedCard, { backgroundColor: isDark ? `${section.color}25` : `${section.color}12` }]}
-          onPress={handleSelectMixed}
-          activeOpacity={0.7}
-        >
-          <LinearGradient
-            colors={section.gradientColors as [string, string]}
-            style={styles.mixedIconBg}
-          >
-            <Shuffle size={28} color="#FFF" />
-          </LinearGradient>
-          <View style={styles.mixedContent}>
-            <Text style={[styles.mixedTitle, { color: theme.colors.text }]}>
-              Blandade frågor
+        {isBankLoading ? (
+          <View style={[styles.loadingCard, { backgroundColor: theme.colors.surface }]}>
+            <ActivityIndicator size="large" color={section.color} />
+            <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+              Hämtar frågebanken…
             </Text>
-            <Text style={[styles.mixedDescription, { color: theme.colors.textSecondary }]}>
-              Slumpmässigt urval från alla tillgängliga frågor. Perfekt för varierad träning.
-            </Text>
-            <View style={styles.mixedBadge}>
-              <Text style={[styles.mixedBadgeText, { color: section.color }]}>
-                Rekommenderat
-              </Text>
+          </View>
+        ) : (
+          <>
+            {/* Antal frågor */}
+            <View style={styles.optionGroup}>
+              <Text style={[styles.optionLabel, { color: theme.colors.text }]}>Antal frågor</Text>
+              <View style={styles.chipRow}>
+                {COUNT_OPTIONS.map(count => {
+                  const isSelected = selectedCount === count;
+                  return (
+                    <TouchableOpacity
+                      key={count}
+                      style={[
+                        styles.chip,
+                        { backgroundColor: isSelected ? section.color : theme.colors.surface },
+                      ]}
+                      onPress={() => setSelectedCount(count)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          { color: isSelected ? '#FFF' : theme.colors.text },
+                        ]}
+                        maxFontSizeMultiplier={1.3}
+                      >
+                        {count}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
-          </View>
-          <View style={[styles.playButton, { backgroundColor: section.color }]}>
-            <Play size={20} color="#FFF" fill="#FFF" />
-          </View>
-        </TouchableOpacity>
 
-        {/* Divider */}
-        <View style={styles.dividerContainer}>
-          <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-          <View style={[styles.dividerTextBg, { backgroundColor: theme.colors.background }]}>
-            <FileText size={14} color={theme.colors.textSecondary} />
-            <Text style={[styles.dividerText, { color: theme.colors.textSecondary }]}>
-              Specifika testversioner
-            </Text>
-          </View>
-          <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-        </View>
+            {/* Nivå */}
+            <View style={styles.optionGroup}>
+              <Text style={[styles.optionLabel, { color: theme.colors.text }]}>Nivå</Text>
+              <View style={styles.chipRow}>
+                {DIFFICULTY_OPTIONS.map(option => {
+                  const isSelected = selectedDifficulty === option.value;
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.chip,
+                        { backgroundColor: isSelected ? section.color : theme.colors.surface },
+                      ]}
+                      onPress={() => setSelectedDifficulty(option.value)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          { color: isSelected ? '#FFF' : theme.colors.text },
+                        ]}
+                        maxFontSizeMultiplier={1.3}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
 
-        {/* Test Version Cards */}
-        <View style={styles.versionsGrid}>
-          {testVersions.map((version) => (
+            {/* Starta övning */}
             <TouchableOpacity
-              key={version.id}
               style={[
-                styles.versionCard,
-                { backgroundColor: theme.colors.surface },
+                styles.startButton,
+                { backgroundColor: canStart ? section.color : theme.colors.surface },
+                !canStart && styles.startButtonDisabled,
               ]}
-              onPress={() => handleSelectVersion(version)}
-              activeOpacity={0.7}
+              onPress={handleStart}
+              disabled={!canStart}
+              activeOpacity={0.8}
             >
-              <View style={[styles.versionIconBg, { backgroundColor: `${section.color}15` }]}>
-                <Calendar size={24} color={section.color} />
-              </View>
-              <Text style={[styles.versionName, { color: theme.colors.text }]}>
-                {version.name}
-              </Text>
-              <View style={styles.versionDetails}>
-                <Text style={[styles.versionQuestionCount, { color: theme.colors.textSecondary }]}>
-                  {version.questionCount} frågor
+              <LinearGradient
+                colors={canStart ? section.gradientColors as [string, string] : [theme.colors.surface, theme.colors.surface]}
+                style={styles.startButtonGradient}
+              >
+                <Play size={22} color={canStart ? '#FFF' : theme.colors.textSecondary} fill={canStart ? '#FFF' : theme.colors.textSecondary} />
+                <Text
+                  style={[styles.startButtonText, { color: canStart ? '#FFF' : theme.colors.textSecondary }]}
+                  maxFontSizeMultiplier={1.3}
+                >
+                  Starta övning
                 </Text>
-                {version.year && (
-                  <Text style={[styles.versionYear, { color: theme.colors.textSecondary }]}>
-                    {version.season === 'spring' ? 'Vår' : 'Höst'} {version.year}
-                  </Text>
-                )}
-              </View>
-              <View style={[styles.versionStartButton, { backgroundColor: `${section.color}15` }]}>
-                <Play size={14} color={section.color} fill={section.color} />
-                <Text style={[styles.versionStartText, { color: section.color }]}>
-                  Starta
-                </Text>
-              </View>
+              </LinearGradient>
             </TouchableOpacity>
-          ))}
-        </View>
 
-        {testVersions.length === 0 && (
-          <View style={[styles.emptyState, { backgroundColor: theme.colors.surface }]}>
-            <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
-              Inga specifika testversioner tillgängliga för detta delprov ännu.
-            </Text>
-            <Text style={[styles.emptyStateHint, { color: theme.colors.textSecondary }]}>
-              Använd Blandade frågor ovan för att börja träna!
-            </Text>
-          </View>
+            {bankCount === 0 && (
+              <Text style={[styles.emptyHint, { color: theme.colors.textSecondary }]}>
+                Inga frågor i banken för detta delprov ännu.
+              </Text>
+            )}
+          </>
         )}
 
         {/* Tips Section */}
@@ -353,142 +352,64 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 24,
   },
-  mixedCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
+  loadingCard: {
+    padding: 32,
     borderRadius: 20,
-    gap: 16,
+    alignItems: 'center',
+    gap: 14,
     marginBottom: 24,
   },
-  mixedIconBg: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+  loadingText: {
+    fontSize: 14,
   },
-  mixedContent: {
-    flex: 1,
+  optionGroup: {
+    marginBottom: 28,
   },
-  mixedTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    marginBottom: 4,
-  },
-  mixedDescription: {
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 8,
-  },
-  mixedBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-  },
-  mixedBadgeText: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-  },
-  playButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerTextBg: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-  },
-  dividerText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  versionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
-  },
-  versionCard: {
-    width: (SCREEN_WIDTH - 52) / 2,
-    padding: 18,
-    borderRadius: 18,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  versionIconBg: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  versionName: {
+  optionLabel: {
     fontSize: 16,
     fontWeight: '700' as const,
-    marginBottom: 4,
-    textAlign: 'center' as const,
-  },
-  versionDetails: {
-    alignItems: 'center',
     marginBottom: 12,
-    gap: 2,
   },
-  versionQuestionCount: {
-    fontSize: 13,
-  },
-  versionYear: {
-    fontSize: 11,
-  },
-  versionStartButton: {
+  chipRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
+    flexWrap: 'wrap',
+    gap: 10,
   },
-  versionStartText: {
-    fontSize: 13,
+  chip: {
+    minWidth: (SCREEN_WIDTH - 40 - 30) / 4,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipText: {
+    fontSize: 15,
     fontWeight: '600' as const,
   },
-  emptyState: {
-    flex: 1,
-    width: '100%',
-    padding: 24,
-    borderRadius: 16,
+  startButton: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  startButtonDisabled: {
+    opacity: 0.7,
+  },
+  startButtonGradient: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 18,
   },
-  emptyStateText: {
-    fontSize: 14,
-    textAlign: 'center' as const,
-    marginBottom: 8,
+  startButtonText: {
+    fontSize: 18,
+    fontWeight: '700' as const,
   },
-  emptyStateHint: {
+  emptyHint: {
     fontSize: 13,
     textAlign: 'center' as const,
+    marginBottom: 16,
     fontStyle: 'italic' as const,
   },
   tipsCard: {

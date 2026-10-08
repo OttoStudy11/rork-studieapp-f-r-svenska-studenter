@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import {
   X,
   Clock,
@@ -41,6 +41,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function HPFullTestScreen() {
   const { theme, isDark } = useTheme();
+  const { part } = useLocalSearchParams<{ part?: string }>();
+  const validPart: 'verbal' | 'kvantitativ' | undefined =
+    part === 'verbal' || part === 'kvantitativ' ? part : undefined;
   const { 
     sessionState, 
     setSessionState,
@@ -87,8 +90,8 @@ export default function HPFullTestScreen() {
     const initSession = async () => {
       if (isBankLoading) return; // Vänta tills frågebanken är hämtad
       if (!sessionState) {
-        console.log('[HP Full Test] Starting full test');
-        await startFullTest();
+        console.log('[HP Full Test] Starting full test', { part: validPart ?? 'both' });
+        await startFullTest(undefined, undefined, validPart);
       }
     };
     initSession();
@@ -113,7 +116,7 @@ export default function HPFullTestScreen() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBankLoading]);
+  }, [isBankLoading, validPart]);
 
   useEffect(() => {
     if (sessionState && sessionState.timeRemaining > 0 && !isPaused) {

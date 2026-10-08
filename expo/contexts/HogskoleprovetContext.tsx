@@ -104,7 +104,6 @@ export interface HPUserStats {
 export interface HPSessionState {
   attemptId: string | null;
   sectionCode: string | null;
-  testVersionId?: string;
   questions: LocalHPQuestion[];
   currentQuestionIndex: number;
   answers: Record<string, { answer: string; timeSpent: number }>;
@@ -125,6 +124,16 @@ const STORAGE_KEYS = {
 
 /** Which half of the exam a full test covers. */
 export type HPFullTestPart = 'verbal' | 'kvantitativ';
+
+/** Optional settings when starting a practice session. */
+export interface HPPracticeSessionOptions {
+  /** Number of questions to practice (bank allows fewer). */
+  count?: number;
+  /** Difficulty filter; undefined = all levels. */
+  difficulty?: LocalHPQuestion['difficulty'];
+  isTrialMode?: boolean;
+  trialId?: string;
+}
 
 /** Official HP distribution per part: 40 questions / 55 minutes each. */
 const FULL_TEST_PARTS: Record<HPFullTestPart, Array<{ code: string; count: number }>> = {
@@ -235,7 +244,7 @@ interface HogskoleprovetContextValue {
   getQuestionsBySection: (sectionCode: string, count?: number, difficulty?: LocalHPQuestion['difficulty']) => LocalHPQuestion[];
   getAllQuestionsForFullTest: (part?: HPFullTestPart) => LocalHPQuestion[];
   
-  startPracticeSession: (sectionCode: string, isTrialMode?: boolean, trialId?: string) => Promise<string | null>;
+  startPracticeSession: (sectionCode: string, options?: HPPracticeSessionOptions) => Promise<string | null>;
   startFullTest: (isTrialMode?: boolean, trialId?: string, part?: HPFullTestPart) => Promise<string | null>;
   
   submitAnswer: (questionId: string, selectedAnswer: string, timeSpentSeconds: number) => void;
@@ -545,7 +554,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     return allQuestions;
   }, [questionBank, performances]);
 
-  const startPracticeSession = useCallback(async (sectionCode: string, isTrialMode?: boolean, trialId?: string): Promise<string | null> => {
+  const startPracticeSession = useCallback(async (sectionCode: string, options?: HPPracticeSessionOptions): Promise<string | null> => {
     if (!user?.id) {
       Alert.alert('Fel', 'Du måste vara inloggad för att starta en övning');
       return null;
@@ -565,7 +574,11 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
         return null;
       }
 
-      const questions = getQuestionsBySection(sectionCode, section.questionCount || 20);
+      const questions = getQuestionsBySection(
+        sectionCode,
+        options?.count ?? (section.questionCount || 20),
+        options?.difficulty
+      );
       
       if (questions.length === 0) {
         Alert.alert('Fel', 'Inga frågor tillgängliga för detta delprov');
@@ -584,8 +597,8 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
         timeRemaining: section.timeMinutes * 60,
         isPaused: false,
         isCompleted: false,
-        isTrialMode,
-        trialId,
+        isTrialMode: options?.isTrialMode,
+        trialId: options?.trialId,
       };
 
       setSessionState(newSession);

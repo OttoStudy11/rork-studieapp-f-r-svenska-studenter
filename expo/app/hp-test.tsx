@@ -341,7 +341,6 @@ export default function HPFullTestScreen() {
     );
   }
 
-  const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
   const timeRemaining = sessionState.timeRemaining;
   const isLowTime = timeRemaining < 300;
 
@@ -649,30 +648,6 @@ export default function HPFullTestScreen() {
                   })}
                 </View>
 
-                {showExplanation && currentQuestion.explanation && (
-                  <View style={[
-                    styles.explanationContainer,
-                    { backgroundColor: isCorrect ? `${COLORS.success}10` : `${COLORS.error}10`,
-                      borderColor: isCorrect ? `${COLORS.success}25` : `${COLORS.error}25` }
-                  ]}>
-                    <View style={styles.explanationHeader}>
-                      {isCorrect ? (
-                        <CheckCircle size={20} color={COLORS.success} />
-                      ) : (
-                        <AlertCircle size={20} color={COLORS.error} />
-                      )}
-                      <Text style={[
-                        styles.explanationTitle,
-                        { color: isCorrect ? COLORS.success : COLORS.error }
-                      ]}>
-                        {isCorrect ? 'Rätt svar!' : 'Fel svar'}
-                      </Text>
-                    </View>
-                    <Text style={[styles.explanationText, { color: theme.colors.text }]}>
-                      {currentQuestion.explanation}
-                    </Text>
-                  </View>
-                )}
               </Animated.View>
             </ScrollView>
 

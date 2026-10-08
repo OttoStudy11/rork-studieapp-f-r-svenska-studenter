@@ -3,17 +3,26 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, Clock, Trophy, Target, CheckCircle2 } from 'lucide-react-native';
+import { ChevronRight, Clock, Trophy, Target, CheckCircle2, X } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
 import { ROUTES } from '@/utils/typedRoutes';
 import { COLORS } from '@/constants/design-system';
+
+type ReviewItem = {
+  id: string;
+  questionText: string;
+  correctAnswer: string;
+  userAnswer: string | null;
+  explanation?: string;
+};
 
 export default function HPResultScreen() {
   const { theme, isDark } = useTheme();
   const { sessionState, completeSession } = useHogskoleprovet();
 
   const [results, setResults] = useState<any>(null);
+  const [review, setReview] = useState<ReviewItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,6 +34,17 @@ export default function HPResultScreen() {
       }
 
       try {
+        // Fånga frågor/svar innan completeSession rensar sessionsstate
+        setReview(
+          sessionState.questions.map(q => ({
+            id: q.id,
+            questionText: q.questionText,
+            correctAnswer: q.correctAnswer,
+            userAnswer: sessionState.answers[q.id]?.answer ?? null,
+            explanation: q.explanation,
+          }))
+        );
+
         console.log('[HP Results] Completing session');
         const result = await completeSession();
 
@@ -146,6 +166,50 @@ export default function HPResultScreen() {
             <Text style={[styles.hpScoreValue, { color: COLORS.primary }]}>
               {results.estimatedHPScore.toFixed(2)} / 2.0
             </Text>
+          </View>
+        )}
+
+        {review.length > 0 && (
+          <View style={styles.reviewSection}>
+            <Text style={[styles.reviewTitle, { color: theme.colors.text }]}>Genomgång</Text>
+            {review.map((item, index) => {
+              const isCorrect = item.userAnswer === item.correctAnswer;
+              return (
+                <View key={item.id} style={[styles.reviewCard, { backgroundColor: theme.colors.surface }]}>
+                  <View style={styles.reviewCardHeader}>
+                    <View style={[styles.reviewBadge, { backgroundColor: isCorrect ? `${COLORS.success}20` : `${COLORS.error}20` }]}>
+                      {isCorrect ? (
+                        <CheckCircle2 size={16} color={COLORS.success} />
+                      ) : (
+                        <X size={16} color={COLORS.error} />
+                      )}
+                    </View>
+                    <Text style={[styles.reviewIndex, { color: theme.colors.textSecondary }]}>{index + 1}</Text>
+                  </View>
+                  <Text style={[styles.reviewQuestion, { color: theme.colors.text }]}>
+                    {item.questionText}
+                  </Text>
+                  <View style={styles.reviewAnswers}>
+                    {!isCorrect && item.userAnswer && (
+                      <Text style={[styles.reviewAnswerText, { color: COLORS.error }]}>
+                        Ditt svar: {item.userAnswer}
+                      </Text>
+                    )}
+                    <Text style={[styles.reviewAnswerText, { color: COLORS.success }]}>
+                      Rätt svar: {item.correctAnswer}
+                    </Text>
+                  </View>
+                  {item.explanation ? (
+                    <View style={[styles.reviewExplanation, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
+                      <Text style={[styles.reviewExplanationLabel, { color: theme.colors.textSecondary }]}>Förklaring</Text>
+                      <Text style={[styles.reviewExplanationText, { color: theme.colors.text }]}>
+                        {item.explanation}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -281,6 +345,66 @@ const styles = StyleSheet.create({
   hpScoreValue: {
     fontSize: 36,
     fontWeight: '800' as const,
+  },
+  reviewSection: {
+    marginBottom: 20,
+  },
+  reviewTitle: {
+    fontSize: 20,
+    fontWeight: '800' as const,
+    marginBottom: 12,
+  },
+  reviewCard: {
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  reviewCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  reviewBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reviewIndex: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+  },
+  reviewQuestion: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600' as const,
+    marginBottom: 10,
+  },
+  reviewAnswers: {
+    gap: 4,
+    marginBottom: 8,
+  },
+  reviewAnswerText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  reviewExplanation: {
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 4,
+  },
+  reviewExplanationLabel: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  reviewExplanationText: {
+    fontSize: 14,
+    lineHeight: 21,
   },
   trialInfoCard: {
     flexDirection: 'row',

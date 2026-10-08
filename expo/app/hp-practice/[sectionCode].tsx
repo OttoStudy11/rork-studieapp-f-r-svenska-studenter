@@ -9,6 +9,8 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  Image,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,6 +24,7 @@ import {
   Circle,
   AlertCircle,
   Flag,
+  ZoomIn,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useHogskoleprovet } from '@/contexts/HogskoleprovetContext';
@@ -50,6 +53,8 @@ export default function HPPracticeScreen() {
 
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -326,13 +331,49 @@ export default function HPPracticeScreen() {
               </Text>
             </View>
 
+            {/* ── Question image (DTK / XYZ / etc.) ── */}
+            {currentQuestion.imageUrl && (
+              <View style={styles.imageContainer}>
+                {imageLoading && (
+                  <View style={styles.imageSkeleton}>
+                    <ActivityIndicator size="small" color={section.color} />
+                    <Text style={[styles.imageLoadingText, { color: section.color }]}>Laddar bild...</Text>
+                  </View>
+                )}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => setImageModalVisible(true)}
+                >
+                  <Image
+                    source={{ uri: currentQuestion.imageUrl }}
+                    style={[styles.questionImage, imageLoading && { opacity: 0 }]}
+                    resizeMode="contain"
+                    onLoadStart={() => setImageLoading(true)}
+                    onLoadEnd={() => setImageLoading(false)}
+                  />
+                  {/* Zoom hint */}
+                  {!imageLoading && (
+                    <View style={styles.zoomHint} pointerEvents="none">
+                      <ZoomIn size={14} color="#FFF" />
+                      <Text style={styles.zoomHintText}>Tryck för att zooma</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
             {currentQuestion.readingPassage && (
               <View style={[styles.passageContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
                 <Text style={[styles.passageLabel, { color: theme.colors.textSecondary }]}>
                   Läs texten:
                 </Text>
                 <Text style={[styles.passageText, { color: theme.colors.text }]}>
-                  {currentQuestion.readingPassage}
+                  {currentQuestion.readingPassage.split('\n').map((line, i, arr) => (
+                    <Text key={i}>
+                      {line}
+                      {i < arr.length - 1 ? '\n' : ''}
+                    </Text>
+                  ))}
                 </Text>
               </View>
             )}
@@ -442,6 +483,31 @@ export default function HPPracticeScreen() {
             )}
           </Animated.View>
         </ScrollView>
+
+        {/* ── Full-screen image zoom modal ── */}
+        <Modal
+          visible={imageModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setImageModalVisible(false)}
+        >
+          <View style={styles.imageModal}>
+            <TouchableOpacity
+              style={styles.imageModalClose}
+              onPress={() => setImageModalVisible(false)}
+            >
+              <X size={22} color="#FFF" />
+            </TouchableOpacity>
+            {currentQuestion?.imageUrl && (
+              <Image
+                source={{ uri: currentQuestion.imageUrl }}
+                style={styles.imageModalFull}
+                resizeMode="contain"
+              />
+            )}
+            <Text style={styles.imageModalHint}>Tryck var som helst för att stänga</Text>
+          </View>
+        </Modal>
 
         <View style={[styles.footer, { backgroundColor: theme.colors.background }]}>
           <TouchableOpacity
@@ -611,6 +677,76 @@ const styles = StyleSheet.create({
   passageText: {
     fontSize: 14,
     lineHeight: 22,
+  },
+  imageContainer: {
+    marginBottom: 16,
+    borderRadius: 14,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  imageSkeleton: {
+    height: 180,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  imageLoadingText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  questionImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.04)',
+  },
+  zoomHint: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  zoomHintText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '600' as const,
+  },
+  imageModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalClose: {
+    position: 'absolute',
+    top: 60,
+    right: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  imageModalFull: {
+    width: SCREEN_WIDTH - 32,
+    height: SCREEN_WIDTH - 32,
+  },
+  imageModalHint: {
+    position: 'absolute',
+    bottom: 60,
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 13,
+    fontWeight: '500' as const,
   },
   questionText: {
     fontSize: 18,

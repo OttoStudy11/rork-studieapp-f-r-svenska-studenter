@@ -732,7 +732,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     try {
       console.log('[HP] Completing session');
 
-      const { questions, answers, startTime, sectionCode } = sessionState;
+      const { questions, answers, startTime, sectionCode, attemptId } = sessionState;
       
       let correctAnswers = 0;
       questions.forEach(q => {
@@ -747,8 +747,10 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
       const timeSpentMinutes = Math.round((Date.now() - startTime) / 60000);
       const estimatedHPScore = calculateHPScore(correctAnswers, totalQuestions);
 
+      // ── Persistera allt i Supabase (best-effort, lokalt sparande fortsätter vid fel) ──
       try {
-        await supabase
+        // 1) Attempt-rad
+        const { data: attemptRow, error: attemptError } = await supabase
           .from('hp_user_exam_attempts')
           .insert({
             user_id: user.id,
@@ -759,7 +761,88 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
             raw_score: correctAnswers,
             time_spent_seconds: timeSpentMinutes * 60,
             completed_at: new Date().toISOString(),
-          } as any);
+          } as any)
+          .select('id')
+          .single();
+
+        if (attemptError) throw attemptError;
+        const dbAttemptId = (attemptRow as { id?: string } | null)?.id;
+
+        // 2) En rad per besvarad fråga
+        const answerRows = questions.map(q => {
+          const a = answers[q.id];
+          return {
+            attempt_id: dbAttemptId || attemptId,
+            user_id: user.id,
+            question_id: q.id,
+            section_code: q.sectionCode,
+            selected_answer: a?.answer ?? null,
+            is_correct: !!a && a.answer === q.correctAnswer,
+            time_seconds: a?.timeSpent ?? 0,
+            answered_at: new Date().toISOString(),
+          };
+        });
+
+        if (answerRows.length > 0) {
+          const { error: answersError } = await supabase
+            .from('hp_user_attempt_answers')
+            .insert(answerRows as any);
+          if (answersError) throw answersError;
+        }
+
+        // 3) Aggregerad per-fråga-statistik (läs -> slå ihop -> upsert)
+        const answeredIds = questions.filter(q => answers[q.id]).map(q => q.id);
+        if (answeredIds.length > 0) {
+          const { data: existingProgress, error: progressFetchError } = await supabase
+            .from('hp_user_question_progress')
+            .select('question_id, correct_count, incorrect_count, total_attempts, avg_time_seconds')
+            .eq('user_id', user.id)
+            .in('question_id', answeredIds);
+          if (progressFetchError) throw progressFetchError;
+
+          const existingMap = new Map<string, { correct: number; incorrect: number; total: number; avgTime: number | null }>(
+            ((existingProgress ?? []) as any[]).map(r => [
+              r.question_id as string,
+              {
+                correct: r.correct_count as number,
+                incorrect: r.incorrect_count as number,
+                total: r.total_attempts as number,
+                avgTime: (r.avg_time_seconds as number | null) ?? null,
+              },
+            ])
+          );
+
+          const progressRows = questions
+            .filter(q => answers[q.id])
+            .map(q => {
+              const a = answers[q.id];
+              const isCorrect = a.answer === q.correctAnswer;
+              const prev = existingMap.get(q.id);
+              const total = (prev?.total ?? 0) + 1;
+              const prevAvg = prev?.avgTime ?? null;
+              const newAvg =
+                prevAvg !== null
+                  ? Math.round((prevAvg * (total - 1) + a.timeSpent) / total)
+                  : a.timeSpent;
+              return {
+                user_id: user.id,
+                question_id: q.id,
+                section_code: q.sectionCode,
+                correct_count: (prev?.correct ?? 0) + (isCorrect ? 1 : 0),
+                incorrect_count: (prev?.incorrect ?? 0) + (isCorrect ? 0 : 1),
+                total_attempts: total,
+                last_correct: isCorrect,
+                avg_time_seconds: newAvg,
+                last_seen_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              };
+            });
+
+          const { error: progressUpsertError } = await supabase
+            .from('hp_user_question_progress')
+            .upsert(progressRows as any, { onConflict: 'user_id,question_id' });
+          if (progressUpsertError) throw progressUpsertError;
+        }
       } catch (dbError) {
         console.error('[HP] Database insert error (continuing locally):', dbError);
       }
@@ -808,6 +891,31 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
 
       setUserStats(updatedStats);
       await AsyncStorage.setItem(`${STORAGE_KEYS.HP_STATS}_${user.id}`, JSON.stringify(updatedStats));
+
+      // 4) Aggregerad användarstatistik — spegling av AsyncStorage i Supabase
+      try {
+        const statsClient = supabase as unknown as {
+          from: (t: string) => {
+            upsert: (row: unknown, opts?: { onConflict: string }) => Promise<{ error: unknown }>;
+          };
+        };
+        const { error: statsError } = await statsClient
+          .from('hp_user_stats')
+          .upsert({
+            user_id: user.id,
+            total_attempts: updatedStats.totalAttempts,
+            total_study_time: updatedStats.totalStudyTime,
+            average_score: updatedStats.averageScore,
+            best_score: updatedStats.bestScore,
+            estimated_hp_score: updatedStats.estimatedHPScore,
+            section_stats: updatedStats.sectionStats,
+            unlocked_milestones: updatedStats.unlockedMilestones,
+            updated_at: new Date().toISOString(),
+          } as any, { onConflict: 'user_id' });
+        if (statsError) throw statsError;
+      } catch (statsDbError) {
+        console.error('[HP] Stats upsert error (continuing locally):', statsDbError);
+      }
 
       setSessionState(null);
       await AsyncStorage.removeItem(`${STORAGE_KEYS.HP_SESSION}_${user.id}`);

@@ -91,47 +91,43 @@ export default function HPResultScreen() {
       >
         <SafeAreaView edges={['top']}>
           <View style={styles.header}>
-            <View style={styles.crownContainer}>
-              <Trophy size={64} color="#FFF" />
+            <View style={styles.headerLeft}>
+              <View style={styles.headerBadge}>
+                <Trophy size={18} color="#FFF" />
+              </View>
+              <View style={styles.headerTexts}>
+                <Text style={styles.headerTitle}>Resultat</Text>
+                <Text style={styles.headerSubtitle} numberOfLines={1}>
+                  {scorePercentage >= 80
+                    ? 'Fantastiskt!'
+                    : scorePercentage >= 60
+                    ? 'Bra jobbat!'
+                    : 'Du gör framsteg!'}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.headerTitle}>Resultat</Text>
-            <Text style={styles.headerSubtitle}>
-              {scorePercentage >= 80
-                ? 'Fantastiskt resultat!'
-                : scorePercentage >= 60
-                ? 'Bra jobbat!'
-                : 'Du gör framsteg!'}
-            </Text>
+            <View style={styles.headerScore}>
+              <Text style={styles.headerScoreValue}>{scorePercentage.toFixed(0)}%</Text>
+              <Text style={styles.headerScoreSub}>
+                {results.correctAnswers} av {results.totalQuestions} rätt
+              </Text>
+            </View>
+          </View>
+          <View style={styles.headerProgressTrack}>
+            <View
+              style={[
+                styles.headerProgressFill,
+                {
+                  width: `${scorePercentage}%`,
+                  backgroundColor: isDark ? scoreColor : '#FFF',
+                },
+              ]}
+            />
           </View>
         </SafeAreaView>
       </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.scoreCard, { backgroundColor: theme.colors.surface }]}>
-          <View style={styles.scoreHeader}>
-            <Text style={[styles.scoreLabel, { color: theme.colors.textSecondary }]}>
-              Ditt resultat
-            </Text>
-            <View style={styles.scoreRow}>
-              <Text style={[styles.scoreValue, { color: scoreColor }]}>
-                {scorePercentage.toFixed(1)}%
-              </Text>
-            </View>
-            <Text style={[styles.scoreSubtext, { color: theme.colors.textSecondary }]}>
-              {results.correctAnswers} av {results.totalQuestions} rätt
-            </Text>
-          </View>
-
-          <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${scorePercentage}%`, backgroundColor: scoreColor },
-              ]}
-            />
-          </View>
-        </View>
-
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
             <View style={[styles.statIcon, { backgroundColor: `${COLORS.primary}20` }]}>
@@ -243,67 +239,72 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   headerGradient: {
-    paddingBottom: 40,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+    paddingBottom: 14,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
+    paddingTop: 10,
+    marginBottom: 12,
   },
-  crownContainer: {
-    marginBottom: 20,
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    marginRight: 12,
+  },
+  headerBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTexts: {
+    flexShrink: 1,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 17,
     fontWeight: '800' as const,
     color: '#FFF',
-    textAlign: 'center',
-    marginBottom: 8,
   },
   headerSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.9)',
-    textAlign: 'center',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.85)',
+  },
+  headerScore: {
+    alignItems: 'flex-end',
+  },
+  headerScoreValue: {
+    fontSize: 26,
+    fontWeight: '800' as const,
+    color: '#FFF',
+  },
+  headerScoreSub: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.85)',
+  },
+  headerProgressTrack: {
+    marginHorizontal: 20,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    overflow: 'hidden',
+  },
+  headerProgressFill: {
+    height: '100%',
+    borderRadius: 3,
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 24,
-  },
-  scoreCard: {
-    padding: 28,
-    borderRadius: 24,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  scoreHeader: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  scoreLabel: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  scoreRow: {
-    marginBottom: 8,
-  },
-  scoreValue: {
-    fontSize: 56,
-    fontWeight: '800' as const,
-  },
-  scoreSubtext: {
-    fontSize: 15,
-  },
-  progressBar: {
-    width: '100%',
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
+    paddingTop: 20,
   },
   statsGrid: {
     flexDirection: 'row',

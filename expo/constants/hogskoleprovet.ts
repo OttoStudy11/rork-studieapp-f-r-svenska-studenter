@@ -197,6 +197,10 @@ export interface HPQuestion {
   explanation: string;
   difficulty: 'easy' | 'medium' | 'hard';
   readingPassage?: string;
+  /** Group key for reading-comprehension questions sharing one passage */
+  passageGroup?: string;
+  /** Sort order of this question within its passage group */
+  orderInPassage?: number;
   imageUrl?: string;
   /** Fine-grained topic within the section, e.g. 'synonymer', 'geometri', 'procent' */
   topic?: string;

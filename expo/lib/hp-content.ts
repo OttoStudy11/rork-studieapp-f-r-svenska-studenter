@@ -10,6 +10,8 @@
 // If the tables don't exist yet, everything falls back silently to bundled content.
 
 import { supabase } from '@/lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useQuery } from '@tanstack/react-query';
 import { HPQuestion } from '@/constants/hogskoleprovet';
 import { HP_QUESTIONS_V2 } from '@/constants/hogskoleprovet-questions-v2';
 import { ALL_HP_QUESTIONS } from '@/constants/hogskoleprovet-questions';
@@ -32,6 +34,8 @@ interface HPQuestionRow {
   difficulty: string | null;
   topic: string | null;
   reading_passage: string | null;
+  passage_group: string | null;
+  order_in_passage: number | null;
   image_url: string | null;
   created_at: string | null;
 }
@@ -78,6 +82,8 @@ const mapQuestionRow = (row: HPQuestionRow, index: number): HPQuestion | null =>
     difficulty,
     topic: row.topic ?? undefined,
     readingPassage: row.reading_passage ?? undefined,
+    passageGroup: row.passage_group ?? undefined,
+    orderInPassage: row.order_in_passage ?? undefined,
     imageUrl: row.image_url ?? undefined,
     dateAdded: row.created_at ?? undefined,
     source: 'supabase',
@@ -134,26 +140,107 @@ const fetchRows = async (table: string, limit: number): Promise<unknown[] | null
   return data;
 };
 
+const QUESTION_BANK_PAGE_SIZE = 1000;
+
 /**
- * Fetches remotely imported questions and merges them with the bundled bank.
- * Silently falls back to local content if the table is missing or offline.
+ * Fetches ALL approved rows from hp_question_bank in pages of 1000 using
+ * .range(), until a page comes back with fewer rows than requested.
+ */
+const fetchApprovedQuestionRows = async (): Promise<unknown[] | null> => {
+  const client = supabase as unknown as {
+    from: (t: string) => {
+      select: (c: string) => {
+        eq: (
+          col: string,
+          val: string,
+        ) => {
+          range: (
+            from: number,
+            to: number,
+          ) => Promise<{ data: unknown[] | null; error: unknown }>;
+        };
+      };
+    };
+  };
+  const allRows: unknown[] = [];
+  for (let from = 0; ; from += QUESTION_BANK_PAGE_SIZE) {
+    const { data, error } = await client
+      .from('hp_question_bank')
+      .select('*')
+      .eq('status', 'approved')
+      .range(from, from + QUESTION_BANK_PAGE_SIZE - 1);
+    if (error || !data) return null;
+    allRows.push(...data);
+    if (data.length < QUESTION_BANK_PAGE_SIZE) break;
+  }
+  return allRows;
+};
+
+/**
+ * Cache key for the last successful remote question bank fetch. Used as the
+ * offline fallback before resorting to the bundled bank.
+ */
+const QUESTION_BANK_CACHE_KEY = 'hp_question_bank_cache_v1';
+
+const readQuestionBankCache = async (): Promise<HPQuestion[] | null> => {
+  try {
+    const raw = await AsyncStorage.getItem(QUESTION_BANK_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? (parsed as HPQuestion[]) : null;
+  } catch (e) {
+    logger.warn('[hp-content]', 'question bank cache read failed', e);
+    return null;
+  }
+};
+
+const writeQuestionBankCache = async (questions: HPQuestion[]): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(QUESTION_BANK_CACHE_KEY, JSON.stringify(questions));
+  } catch (e) {
+    logger.warn('[hp-content]', 'question bank cache write failed', e);
+  }
+};
+
+/**
+ * Fetches the remote approved question bank. When the fetch succeeds with at
+ * least one question, ONLY the Supabase questions are returned (and cached to
+ * AsyncStorage). On failure: cached questions, then the bundled bank as the
+ * last resort.
  */
 export const fetchMergedQuestionBank = async (): Promise<HPQuestion[]> => {
-  const local = getLocalQuestionBank();
   try {
-    const data = await fetchRows('hp_question_bank', 2000);
+    const data = await fetchApprovedQuestionRows();
     if (!data) {
-      return local;
+      throw new Error('hp_question_bank fetch failed');
     }
     const remote = (data as HPQuestionRow[])
       .map(mapQuestionRow)
       .filter((q): q is HPQuestion => q !== null);
-    const localIds = new Set(local.map(q => q.id));
-    return [...local, ...remote.filter(q => !localIds.has(q.id))];
+    if (remote.length === 0) {
+      throw new Error('hp_question_bank returned no questions');
+    }
+    await writeQuestionBankCache(remote);
+    return remote;
   } catch (e) {
-    logger.warn('[hp-content]', 'question bank fetch failed, using local bank', e);
-    return local;
+    logger.warn('[hp-content]', 'question bank fetch failed, falling back to cache/local bank', e);
+    const cached = await readQuestionBankCache();
+    if (cached) return cached;
+    return getLocalQuestionBank();
   }
+};
+
+/**
+ * React Query hook exposing the merged question bank. Caches remotely fetched
+ * questions for 30 minutes before re-fetching.
+ */
+export const useHPQuestionBank = (): { questions: HPQuestion[]; isLoading: boolean } => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['hp-question-bank'],
+    queryFn: fetchMergedQuestionBank,
+    staleTime: 30 * 60 * 1000,
+  });
+  return { questions: data ?? [], isLoading };
 };
 
 /**

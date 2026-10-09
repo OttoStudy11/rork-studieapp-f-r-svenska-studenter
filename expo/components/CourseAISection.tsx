@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Calculator, MessageCircle, Sparkles } from 'lucide-react-native';
+import { Calculator, MessageCircle } from 'lucide-react-native';
 import { ROUTES } from '@/utils/typedRoutes';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -26,16 +26,6 @@ const TOOLS = [
     lightBg: '#ECFDF5',
     darkBg: '#1A2E1A',
     route: ROUTES.generalChat,
-  },
-  {
-    key: 'gen',
-    title: 'AI-Gen',
-    subtitle: 'Skapa provfrågor',
-    icon: Sparkles,
-    gradient: ['#EC4899', '#8B5CF6'] as const,
-    lightBg: '#FDF2F8',
-    darkBg: '#2D1B2E',
-    route: ROUTES.hpAiGenerator,
   },
 ];
 

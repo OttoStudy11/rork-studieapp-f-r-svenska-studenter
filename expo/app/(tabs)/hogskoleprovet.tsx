@@ -29,8 +29,6 @@ import {
   Play,
   Lock,
   Crown,
-  Sparkles,
-  Zap,
   X,
   Shuffle,
   Calendar,
@@ -480,21 +478,6 @@ export default function HogskoleprovetTab() {
                 <Text style={[styles.toolSubtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>Ställ frågor</Text>
               </View>
             </TouchableOpacity>
-
-            {/* AI Generator */}
-            <TouchableOpacity
-              style={[styles.toolCard, { backgroundColor: isDark ? '#2D1B2E' : '#FDF2F8' }]}
-              onPress={() => router.push(ROUTES.hpAiGenerator)}
-              activeOpacity={0.85}
-            >
-              <LinearGradient colors={['#EC4899', '#8B5CF6']} style={styles.toolIcon}>
-                <Sparkles size={26} color="#FFF" />
-              </LinearGradient>
-              <View style={styles.toolTextBlock}>
-                <Text style={[styles.toolTitle, { color: theme.colors.text }]} numberOfLines={1}>AI-Gen</Text>
-                <Text style={[styles.toolSubtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>Skapa provfrågor</Text>
-              </View>
-            </TouchableOpacity>
           </View>
         </Animated.View>
 
@@ -716,7 +699,7 @@ export default function HogskoleprovetTab() {
               </LinearGradient>
               <Text style={[styles.upsellTitle, { color: theme.colors.text }]}>Få tillgång till alla delprov</Text>
               <Text style={[styles.upsellSub, { color: theme.colors.textSecondary }]}>
-                Full tillgång till 8 delprov · AI-generator · Studieplan · Obegränsat övande
+                Full tillgång till 8 delprov · Studieplan · Obegränsat övande
               </Text>
               <View style={[styles.upsellCta, { backgroundColor: COLORS.primary }]}>
                 <Text style={styles.upsellCtaText}>Se Premium</Text>

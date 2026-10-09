@@ -28,8 +28,6 @@ import {
   BarChart3,
   Lock,
   Crown,
-  Sparkles,
-  Zap,
   X,
   Shuffle,
   Calendar,
@@ -39,7 +37,6 @@ import {
   BookOpen,
   Calculator,
   Star,
-  ArrowRight,
 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePremium } from '@/contexts/PremiumContext';
@@ -177,7 +174,7 @@ function HPCountdownCard({
             <Text style={[countdownStyles.examLabel, { color: theme.colors.textSecondary }]}>{nextHP.icon} {nextHP.label}</Text>
           </View>
           <Text style={[countdownStyles.msg, { color: theme.colors.text }]} numberOfLines={2}>{countdownMsg}</Text>
-          {planConfig ? (
+          {planConfig && (
             <View style={[countdownStyles.planBadge, {
               backgroundColor: planConfig.color + '14',
               borderColor: planConfig.color + '30',
@@ -187,8 +184,6 @@ function HPCountdownCard({
                 {planConfig.emoji} {planConfig.name}
               </Text>
             </View>
-          ) : (
-            <Text style={[countdownStyles.ctaText, { color: COLORS.primary }]}>Starta studieplan →</Text>
           )}
         </View>
 
@@ -471,34 +466,6 @@ function PremiumDashboard({
           ))}
         </View>
       </LinearGradient>
-
-      {/* AI Generator card — nested inside dashboard */}
-      <TouchableOpacity
-        style={dashboardStyles.aiCard}
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push(ROUTES.hpAiGenerator); }}
-        activeOpacity={0.82}
-      >
-        <LinearGradient
-          colors={isDark ? ['#7C3AED', '#6366F1'] : ['#8B5CF6', '#6366F1']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={dashboardStyles.aiGradient}
-        >
-          <View style={dashboardStyles.aiLeft}>
-            <Sparkles size={20} color="#FFF" />
-            <View>
-              <Text style={dashboardStyles.aiTitle}>AI-generator</Text>
-              <Text style={dashboardStyles.aiSubtitle}>Skapa anpassade prov med AI</Text>
-            </View>
-          </View>
-          <View style={dashboardStyles.aiRight}>
-            <View style={dashboardStyles.aiBadge}>
-              <Zap size={11} color="#FFD700" />
-            </View>
-            <ArrowRight size={18} color="rgba(255,255,255,0.8)" />
-          </View>
-        </LinearGradient>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -686,11 +653,11 @@ export default function HogskoleprovetScreen() {
                 style={styles.backButton}
                 onPress={() => router.back()}
               >
-                <ChevronRight size={18} color="#FFF" style={{ transform: [{ rotate: '180deg' }] }} />
+                <ChevronRight size={20} color="#FFF" style={{ transform: [{ rotate: '180deg' }] }} />
               </TouchableOpacity>
 
               <View style={styles.headerCapIcon}>
-                <GraduationCap size={17} color="#FFF" strokeWidth={2.2} />
+                <GraduationCap size={20} color="#FFF" strokeWidth={2.2} />
               </View>
 
               <View style={styles.headerTexts}>
@@ -711,7 +678,7 @@ export default function HogskoleprovetScreen() {
               {/* Score ring — visible for premium users with data */}
               {isPremium && stats.totalAttempts > 0 && (
                 <View style={styles.headerScoreRing}>
-                  <ScoreRing score={estimatedScore} maxScore={2.0} color="#FFD700" size={50} strokeWidth={4} />
+                  <ScoreRing score={estimatedScore} maxScore={2.0} color="#FFD700" size={56} strokeWidth={4.5} />
                 </View>
               )}
             </View>
@@ -1023,33 +990,33 @@ const styles = StyleSheet.create({
 
   // Header — compact single-row
   headerGradient: {
-    paddingBottom: 16,
-    paddingTop: 6,
+    paddingBottom: 20,
+    paddingTop: 8,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     overflow: 'hidden',
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 10,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   backButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: 'rgba(255,255,255,0.20)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerCapIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
+    width: 40,
+    height: 40,
+    borderRadius: 13,
     backgroundColor: 'rgba(255,255,255,0.20)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1064,19 +1031,19 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerTitle: {
-    fontSize: 19,
+    fontSize: 22,
     fontWeight: '800' as const,
     color: '#FFF',
     letterSpacing: -0.4,
-    lineHeight: 24,
+    lineHeight: 27,
     flexShrink: 1,
   },
   headerSubtitle: {
-    fontSize: 12.5,
+    fontSize: 13.5,
     color: 'rgba(255,255,255,0.85)',
-    marginTop: 1,
+    marginTop: 2,
     letterSpacing: -0.1,
-    lineHeight: 16,
+    lineHeight: 17,
   },
   proBadge: {
     paddingHorizontal: 7,
@@ -1483,49 +1450,6 @@ const dashboardStyles = StyleSheet.create({
     fontWeight: '600' as const,
     textAlign: 'center',
   },
-  aiCard: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  aiGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 18,
-  },
-  aiLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  aiTitle: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    color: '#FFF',
-  },
-  aiSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
-  },
-  aiRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  aiBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,215,0,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 });
 
 // ─── Full Test Card Styles ────────────────────────────────────────────────────
@@ -1723,10 +1647,6 @@ const countdownStyles = StyleSheet.create({
     fontWeight: '600' as const,
     minWidth: 28,
     textAlign: 'right',
-  },
-  ctaText: {
-    fontSize: 13,
-    fontWeight: '700' as const,
   },
 });
 

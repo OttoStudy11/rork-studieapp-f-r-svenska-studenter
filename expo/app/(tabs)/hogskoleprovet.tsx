@@ -481,66 +481,6 @@ export default function HogskoleprovetTab() {
           </View>
         </Animated.View>
 
-        {/* ═══════════════════ TEORI & GUIDER ═══════════════════ */}
-        <Animated.View style={{ opacity: fadeAnim }}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Teori & guider</Text>
-            <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>Lär dig allt om provet, strategier och studietekniker</Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.theoryCard}
-            onPress={() => router.push(ROUTES.hpTheory)}
-            activeOpacity={0.9}
-            testID="hp-theory-entry"
-          >
-            <LinearGradient
-              colors={isDark ? ['#1E1B4B', '#312E81', '#4338CA'] : ['#4F46E5', '#6366F1', '#8B5CF6']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={styles.theoryGradient}
-            >
-              <View style={styles.theoryIconBox}>
-                <BookOpen size={26} color="#FFF" strokeWidth={2.2} />
-              </View>
-              <View style={styles.theoryTextBlock}>
-                <Text style={styles.theoryTitle}>Bli expert på provet</Text>
-                <Text style={styles.theorySubtitle} numberOfLines={2}>
-                  {articles.length} guider om delproven, poängsystemet, studietekniker och provdagen
-                </Text>
-                <View style={styles.theoryProgressRow}>
-                  <View style={styles.theoryProgressBg}>
-                    <View style={[styles.theoryProgressFill, { width: `${articles.length > 0 ? Math.round((completedCount / articles.length) * 100) : 0}%` }]} />
-                  </View>
-                  <Text style={styles.theoryProgressText}>{completedCount}/{articles.length} lästa</Text>
-                </View>
-              </View>
-              <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {recommendations.length > 0 && (
-            <View style={styles.recList}>
-              {recommendations.map(rec => (
-                <TouchableOpacity
-                  key={rec.id}
-                  style={[styles.recRow, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}
-                  onPress={() => handleRecommendationPress(rec)}
-                  activeOpacity={0.85}
-                >
-                  <View style={[styles.recIconCircle, { backgroundColor: rec.color + '16' }]}>
-                    <Text style={styles.recIconEmoji}>{rec.emoji}</Text>
-                  </View>
-                  <View style={styles.recTextBlock}>
-                    <Text style={[styles.recRowTitle, { color: theme.colors.text }]} numberOfLines={1}>{rec.title}</Text>
-                    <Text style={[styles.recRowMsg, { color: theme.colors.textSecondary }]} numberOfLines={2}>{rec.message}</Text>
-                  </View>
-                  <ChevronRight size={16} color={theme.colors.textSecondary} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </Animated.View>
-
         {/* ═══════════════════ COMPLETE HÖGSKOLEPROVET ═══════════════════ */}
         <Animated.View style={{ opacity: fadeAnim }}>
           <View style={styles.sectionHeader}>
@@ -683,6 +623,66 @@ export default function HogskoleprovetTab() {
               {kvantSections.map((section) => (
                 <SectionCard key={section.code} section={section} progress={getSectionProgress(section.code)}
                   isLocked={!isPremium} onPress={() => handleStartSection(section.code)} isDark={isDark} theme={theme} />
+              ))}
+            </View>
+          )}
+        </Animated.View>
+
+        {/* ═══════════════════ TEORI & GUIDER ═══════════════════ */}
+        <Animated.View style={{ opacity: fadeAnim, marginTop: 36 }}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Teori & guider</Text>
+            <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>Lär dig allt om provet, strategier och studietekniker</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.theoryCard}
+            onPress={() => router.push(ROUTES.hpTheory)}
+            activeOpacity={0.9}
+            testID="hp-theory-entry"
+          >
+            <LinearGradient
+              colors={isDark ? ['#1E1B4B', '#312E81', '#4338CA'] : ['#4F46E5', '#6366F1', '#8B5CF6']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={styles.theoryGradient}
+            >
+              <View style={styles.theoryIconBox}>
+                <BookOpen size={26} color="#FFF" strokeWidth={2.2} />
+              </View>
+              <View style={styles.theoryTextBlock}>
+                <Text style={styles.theoryTitle}>Bli expert på provet</Text>
+                <Text style={styles.theorySubtitle} numberOfLines={2}>
+                  {articles.length} guider om delproven, poängsystemet, studietekniker och provdagen
+                </Text>
+                <View style={styles.theoryProgressRow}>
+                  <View style={styles.theoryProgressBg}>
+                    <View style={[styles.theoryProgressFill, { width: `${articles.length > 0 ? Math.round((completedCount / articles.length) * 100) : 0}%` }]} />
+                  </View>
+                  <Text style={styles.theoryProgressText}>{completedCount}/{articles.length} lästa</Text>
+                </View>
+              </View>
+              <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {recommendations.length > 0 && (
+            <View style={styles.recList}>
+              {recommendations.map(rec => (
+                <TouchableOpacity
+                  key={rec.id}
+                  style={[styles.recRow, { backgroundColor: theme.colors.surface, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}
+                  onPress={() => handleRecommendationPress(rec)}
+                  activeOpacity={0.85}
+                >
+                  <View style={[styles.recIconCircle, { backgroundColor: rec.color + '16' }]}>
+                    <Text style={styles.recIconEmoji}>{rec.emoji}</Text>
+                  </View>
+                  <View style={styles.recTextBlock}>
+                    <Text style={[styles.recRowTitle, { color: theme.colors.text }]} numberOfLines={1}>{rec.title}</Text>
+                    <Text style={[styles.recRowMsg, { color: theme.colors.textSecondary }]} numberOfLines={2}>{rec.message}</Text>
+                  </View>
+                  <ChevronRight size={16} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
               ))}
             </View>
           )}

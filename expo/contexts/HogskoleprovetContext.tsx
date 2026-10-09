@@ -365,6 +365,41 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
     if (!user?.id) return;
 
     try {
+      // ── 1) hp_user_stats är källan för värden/normeringsvärde — hämtas alltid vid start ──
+      const { data: statsRows, error: statsFetchError } = await (supabase as any)
+        .from('hp_user_stats')
+        .select('total_attempts, total_study_time, average_score, best_score, estimated_hp_score, section_stats, unlocked_milestones')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (statsFetchError) {
+        console.error('[HP] hp_user_stats fetch error:', statsFetchError);
+      }
+
+      const statsRow = (statsRows as any[] | null)?.[0];
+      if (statsRow && (statsRow.total_attempts ?? 0) > 0) {
+        const dbSectionStats: HPUserStats['sectionStats'] = statsRow.section_stats ?? {};
+        const sortedDbSections = Object.entries(dbSectionStats)
+          .sort((a, b) => b[1].averageScore - a[1].averageScore);
+
+        setUserStats(prev => ({
+          ...prev,
+          totalAttempts: statsRow.total_attempts ?? 0,
+          averageScore: statsRow.average_score ?? 0,
+          bestScore: statsRow.best_score ?? 0,
+          totalStudyTime: statsRow.total_study_time ?? 0,
+          estimatedHPScore: statsRow.estimated_hp_score ?? 0,
+          sectionStats: dbSectionStats,
+          strongSections: sortedDbSections.slice(0, 2).map(([code]) => code),
+          weakSections: sortedDbSections.slice(-2).reverse().map(([code]) => code),
+          unlockedMilestones: (statsRow.unlocked_milestones?.length
+            ? statsRow.unlocked_milestones
+            : prev.unlockedMilestones) as string[],
+        }));
+        return;
+      }
+
+      // ── 2) Fallback: räkna om från attempts (äldre data) och backfill'a hp_user_stats ──
       const { data: attempts, error } = await supabase
         .from('hp_user_exam_attempts')
         .select('*')
@@ -378,66 +413,63 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
       }
 
       if (attempts && attempts.length > 0) {
-        const sectionStatsLocal: Record<string, { attempts: number; totalScore: number; bestScore: number; lastAttempt?: string }> = {};
         let totalScore = 0;
         let bestScore = 0;
         let totalTime = 0;
 
         attempts.forEach((attempt: any) => {
-          const score = attempt.normed_score ? attempt.normed_score * 50 : 0;
+          // normed_score (0–2.0) → procent; fallback till råpoäng
+          const score = attempt.normed_score != null
+            ? attempt.normed_score * 50
+            : (attempt.total_questions > 0 ? ((attempt.raw_score || 0) / attempt.total_questions) * 100 : 0);
           totalScore += score;
           totalTime += Math.round((attempt.time_spent_seconds || 0) / 60);
-          
+
           if (score > bestScore) bestScore = score;
-
-          if (attempt.section_id) {
-            const sectionCode = (attempt as any).section_code || 'unknown';
-            if (!sectionStatsLocal[sectionCode]) {
-              sectionStatsLocal[sectionCode] = { attempts: 0, totalScore: 0, bestScore: 0 };
-            }
-            sectionStatsLocal[sectionCode].attempts++;
-            sectionStatsLocal[sectionCode].totalScore += score;
-            if (score > sectionStatsLocal[sectionCode].bestScore) {
-              sectionStatsLocal[sectionCode].bestScore = score;
-            }
-            if (!sectionStatsLocal[sectionCode].lastAttempt) {
-              sectionStatsLocal[sectionCode].lastAttempt = attempt.completed_at || undefined;
-            }
-          }
         });
 
-        const processedSectionStats: Record<string, { attempts: number; averageScore: number; bestScore: number; lastAttempt?: string }> = {};
-        Object.entries(sectionStatsLocal).forEach(([code, stats]) => {
-          processedSectionStats[code] = {
-            attempts: stats.attempts,
-            averageScore: stats.totalScore / stats.attempts,
-            bestScore: stats.bestScore,
-            lastAttempt: stats.lastAttempt,
-          };
-        });
-
-        const sortedSections = Object.entries(processedSectionStats)
-          .sort((a, b) => b[1].averageScore - a[1].averageScore);
-        
-        const strongSections = sortedSections.slice(0, 2).map(([code]) => code);
-        const weakSections = sortedSections.slice(-2).reverse().map(([code]) => code);
-
+        const averageScore = totalScore / attempts.length;
         const estimatedHP = calculateHPScore(
-          Math.round((totalScore / attempts.length) / 100 * 120),
+          Math.round((averageScore / 100) * 120),
           120
         );
 
-        setUserStats(prev => ({
-          ...prev,
+        const recomputed = {
           totalAttempts: attempts.length,
-          averageScore: totalScore / attempts.length,
+          averageScore,
           bestScore,
-          strongSections,
-          weakSections,
           totalStudyTime: totalTime,
-          sectionStats: processedSectionStats,
+          sectionStats: {} as HPUserStats['sectionStats'],
+          strongSections: [] as string[],
+          weakSections: [] as string[],
           estimatedHPScore: estimatedHP,
-        }));
+        };
+
+        setUserStats(prev => ({ ...prev, ...recomputed }));
+
+        // Self-heal: spegla omräknad statistik till hp_user_stats
+        try {
+          const healClient = supabase as unknown as {
+            from: (t: string) => {
+              upsert: (row: unknown, opts?: { onConflict: string }) => Promise<{ error: unknown }>;
+            };
+          };
+          await healClient
+            .from('hp_user_stats')
+            .upsert({
+              user_id: user.id,
+              total_attempts: recomputed.totalAttempts,
+              total_study_time: recomputed.totalStudyTime,
+              average_score: recomputed.averageScore,
+              best_score: recomputed.bestScore,
+              estimated_hp_score: recomputed.estimatedHPScore,
+              section_stats: recomputed.sectionStats,
+              unlocked_milestones: [],
+              updated_at: new Date().toISOString(),
+            } as any, { onConflict: 'user_id' });
+        } catch (healError) {
+          console.error('[HP] Stats backfill error:', healError);
+        }
       }
     } catch (error) {
       console.error('[HP] Error processing database stats:', error);
@@ -759,6 +791,7 @@ export function HogskoleprovetProvider({ children }: { children: React.ReactNode
             total_questions: totalQuestions,
             correct_answers: correctAnswers,
             raw_score: correctAnswers,
+            normed_score: estimatedHPScore,
             time_spent_seconds: timeSpentMinutes * 60,
             completed_at: new Date().toISOString(),
           } as any)

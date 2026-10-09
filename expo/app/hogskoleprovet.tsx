@@ -66,14 +66,14 @@ const VERBAL_CODES = ['ORD', 'LÄS', 'MEK', 'ELF'];
 const KVANT_CODES = ['XYZ', 'KVA', 'NOG', 'DTK'];
 
 // ─── Score Ring ──────────────────────────────────────────────────────────────
-function ScoreRing({ score, maxScore, color, size = 72 }: {
+function ScoreRing({ score, maxScore, color, size = 72, strokeWidth = 6 }: {
   score: number;
   maxScore: number;
   color: string;
   size?: number;
+  strokeWidth?: number;
 }) {
   const pct = Math.min(1, Math.max(0, score / maxScore));
-  const strokeWidth = 6;
   const radius = (size - strokeWidth * 2) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDash = circumference * pct;
@@ -405,7 +405,6 @@ function PremiumDashboard({
   const statItems = [
     { icon: <CheckCircle2 size={15} color="#10B981" />, value: stats.totalAttempts > 0 ? `${Math.round(stats.averageScore)}%` : '—', label: 'Snitträtt', color: '#10B981' },
     { icon: <Flame size={15} color="#F97316" />, value: stats.currentStreak > 0 ? `${stats.currentStreak}` : '0', label: 'Streak', color: '#F97316' },
-    { icon: <Clock size={15} color="#6366F1" />, value: stats.totalStudyTime > 0 ? `${stats.totalStudyTime}h` : '—', label: 'Studietid', color: '#6366F1' },
     { icon: <TrendingUp size={15} color="#EC4899" />, value: stats.totalAttempts > 0 ? `${stats.totalAttempts}` : '0', label: 'Pass', color: '#EC4899' },
   ];
 
@@ -681,40 +680,38 @@ export default function HogskoleprovetScreen() {
       >
         <SafeAreaView edges={['top']}>
           <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
-            {/* Back button */}
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.back()}
-            >
-              <ChevronRight size={22} color="#FFF" style={{ transform: [{ rotate: '180deg' }] }} />
-            </TouchableOpacity>
+            {/* Single compact row: back · icon · title · score ring */}
+            <View style={styles.headerRow}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => router.back()}
+              >
+                <ChevronRight size={18} color="#FFF" style={{ transform: [{ rotate: '180deg' }] }} />
+              </TouchableOpacity>
 
-            {/* Title area */}
-            <View style={styles.headerTitleArea}>
-              <View style={styles.headerTitleRow}>
-                <View style={styles.headerCapIcon}>
-                  <GraduationCap size={28} color="#FFF" strokeWidth={2.2} />
+              <View style={styles.headerCapIcon}>
+                <GraduationCap size={17} color="#FFF" strokeWidth={2.2} />
+              </View>
+
+              <View style={styles.headerTexts}>
+                <View style={styles.headerTitleRow}>
+                  <Text style={styles.headerTitle} numberOfLines={1}>Högskoleprovet</Text>
+                  {isPremium && (
+                    <View style={styles.proBadge}>
+                      <Crown size={10} color="#FFD700" />
+                      <Text style={styles.proBadgeText}>PRO</Text>
+                    </View>
+                  )}
                 </View>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Text style={styles.headerTitle}>Högskoleprovet</Text>
-                    {isPremium && (
-                      <View style={styles.proBadge}>
-                        <Crown size={12} color="#FFD700" />
-                        <Text style={styles.proBadgeText}>PRO</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.headerSubtitle}>
-                    Träna inför hösten 2026 · 18 oktober
-                  </Text>
-                </View>
+                <Text style={styles.headerSubtitle} numberOfLines={1}>
+                  Träna inför hösten · 18 oktober
+                </Text>
               </View>
 
               {/* Score ring — visible for premium users with data */}
               {isPremium && stats.totalAttempts > 0 && (
                 <View style={styles.headerScoreRing}>
-                  <ScoreRing score={estimatedScore} maxScore={2.0} color="#FFD700" size={78} />
+                  <ScoreRing score={estimatedScore} maxScore={2.0} color="#FFD700" size={50} strokeWidth={4} />
                 </View>
               )}
             </View>
@@ -732,9 +729,9 @@ export default function HogskoleprovetScreen() {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                 >
-                  <Lock size={15} color="#1a1a2e" />
+                  <Lock size={14} color="#1a1a2e" />
                   <Text style={styles.premiumCTAText}>Lås upp alla delprov med Premium</Text>
-                  <ChevronRight size={16} color="#1a1a2e" />
+                  <ChevronRight size={15} color="#1a1a2e" />
                 </LinearGradient>
               </TouchableOpacity>
             )}
@@ -748,7 +745,7 @@ export default function HogskoleprovetScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Countdown ── */}
-        <View style={{ marginBottom: 32 }}>
+        <View style={{ marginBottom: 20 }}>
           <HPCountdownCard
             daysUntil={daysUntilHP}
             countdownMsg={countdownMsg}
@@ -1024,73 +1021,74 @@ export default function HogskoleprovetScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  // Header — dramatically larger and more prominent
+  // Header — compact single-row
   headerGradient: {
-    paddingBottom: 40,
-    paddingTop: 32,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+    paddingBottom: 16,
+    paddingTop: 6,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     overflow: 'hidden',
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: 'rgba(255,255,255,0.20)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
   },
-  headerTitleArea: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 24,
+  headerCapIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.20)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTexts: {
+    flex: 1,
+    marginRight: 8,
   },
   headerTitleRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 16,
-    flex: 1,
-    marginRight: 20,
-  },
-  headerCapIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.20)',
-    justifyContent: 'center',
     alignItems: 'center',
+    gap: 8,
   },
   headerTitle: {
-    fontSize: 34,
+    fontSize: 19,
     fontWeight: '800' as const,
     color: '#FFF',
-    letterSpacing: -0.5,
-    lineHeight: 40,
+    letterSpacing: -0.4,
+    lineHeight: 24,
+    flexShrink: 1,
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: 12.5,
     color: 'rgba(255,255,255,0.85)',
-    marginTop: 6,
-    letterSpacing: -0.2,
-    lineHeight: 22,
+    marginTop: 1,
+    letterSpacing: -0.1,
+    lineHeight: 16,
   },
   proBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 7,
     backgroundColor: 'rgba(255,215,0,0.22)',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   proBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700' as const,
     color: '#FFD700',
     letterSpacing: 0.5,
@@ -1126,7 +1124,7 @@ const styles = StyleSheet.create({
 
   // Scroll — generous spacing
   scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 32, paddingBottom: 48 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 48 },
 
   // Section labels — more breathing room
   sectionLabel: {

@@ -42,7 +42,6 @@ export const ROUTES = {
   quiz: (id: string) => `/quiz/${id}` as const,
   flashcards: (courseId: string) => `/flashcards/${courseId}` as const,
   flashcardsV2: (courseId: string) => `/flashcards-v2/${courseId}` as const,
-  smartFlashcards: '/smart-flashcards' as const,
 
   // Högskoleprovet
   hogskoleprovetMain: '/hogskoleprovet' as const,
@@ -62,8 +61,6 @@ export const ROUTES = {
   // Study features
   studyInsights: '/study-insights' as const,
   advancedAnalytics: '/advanced-analytics' as const,
-  studyCoach: '/study-coach' as const,
-  speechPractice: '/speech-practice' as const,
   studyPlan: (examId: string) => `/study-plan/${examId}` as const,
   studyTechniques: '/study-techniques' as const,
   studyTips: '/study-tips' as const,

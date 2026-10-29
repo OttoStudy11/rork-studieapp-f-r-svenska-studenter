@@ -20,6 +20,7 @@ import { compressImage } from '@/utils/compressImage';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cleanMarkdown } from '@/utils/cleanMarkdown';
+import { clampText } from '@/lib/ai';
 
 interface MathAIChatProps {
   onBack: () => void;
@@ -240,7 +241,7 @@ export default function MathAIChat({ onBack }: MathAIChatProps) {
         sendMessage(messagePayload);
       } else {
         console.log('[MathAI] Sending text message:', userText);
-        sendMessage(userText);
+        sendMessage(clampText(userText, 4_000));
       }
       console.log('[MathAI] Message sent successfully');
     } catch (err) {

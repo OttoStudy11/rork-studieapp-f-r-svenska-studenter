@@ -1,4 +1,4 @@
-import { generateObject } from '@rork-ai/toolkit-sdk';
+import { generateObject } from '@/lib/ai';
 import { z } from 'zod';
 
 const MAX_FLASHCARDS = 30 as const;
@@ -88,7 +88,7 @@ export async function generateFlashcardsWithAI(
     
     let response: any;
     try {
-      const messageContent: Array<{ type: string; text?: string; image?: string }> = [];
+      const messageContent: Array<{ type: 'text'; text: string } | { type: 'image'; image: string }> = [];
 
       if (hasImages) {
         for (const img of request.images!) {

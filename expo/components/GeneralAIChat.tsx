@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { useRorkAgent } from '@rork-ai/toolkit-sdk';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cleanMarkdown } from '@/utils/cleanMarkdown';
+import { clampText } from '@/lib/ai';
 
 interface GeneralAIChatProps {
   onBack: () => void;
@@ -156,7 +157,7 @@ export default function GeneralAIChat({ onBack }: GeneralAIChatProps) {
 
     try {
       console.log('[GeneralAI] Sending message:', userMessage);
-      sendMessage(userMessage);
+      sendMessage(clampText(userMessage, 4_000));
       console.log('[GeneralAI] Message sent successfully');
     } catch (err) {
       console.error('[GeneralAI] Error sending message:', err);

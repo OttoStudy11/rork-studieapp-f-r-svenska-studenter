@@ -24,7 +24,7 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
-import { generateObject } from '@rork-ai/toolkit-sdk';
+import { generateObject } from '@/lib/ai';
 import { z } from 'zod';
 import * as Haptics from 'expo-haptics';
 

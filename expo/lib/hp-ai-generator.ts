@@ -1,4 +1,4 @@
-import { generateObject } from '@rork-ai/toolkit-sdk';
+import { generateObject } from '@/lib/ai';
 import { z } from 'zod';
 import { HPQuestion, HP_SECTIONS, HPSectionConfig } from '@/constants/hogskoleprovet';
 

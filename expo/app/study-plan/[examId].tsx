@@ -21,7 +21,7 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import { useExams } from '@/contexts/ExamContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { generateText } from '@rork-ai/toolkit-sdk';
+import { generateText } from '@/lib/ai';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

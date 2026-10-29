@@ -1,4 +1,4 @@
-import { generateObject } from '@rork-ai/toolkit-sdk';
+import { generateObject } from '@/lib/ai';
 import { z } from 'zod';
 import { supabase } from './supabase';
 import { canGenerateAI, incrementAIUsage } from './ai-usage-tracker';
